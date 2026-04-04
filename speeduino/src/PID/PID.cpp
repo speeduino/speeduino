@@ -7,7 +7,7 @@
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
 PID::PID(long* Input, long* Output, long* Setpoint,
-        uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection)
+        uint8_t Kp, uint8_t Ki, uint8_t Kd)
 {
 
     myOutput = Output;
@@ -16,8 +16,6 @@ PID::PID(long* Input, long* Output, long* Setpoint,
 
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
-
-    PID::SetControllerDirection(ControllerDirection);
     PID::SetTunings(Kp, Ki, Kd);
 }
 

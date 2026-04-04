@@ -185,9 +185,9 @@ constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPa
 
 //Old PID method. Retained in case the new one has issues
 //integerPID boostPID(&MAPx100, &boost_pwm_target_value, &boostTargetx100, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT);
-static integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-static integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage6.vvtPWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-static integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD, configPage4.vvt2PWMdir); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID_ideal boostPID(&currentStatus.MAP, &currentStatus.boostDuty , &currentStatus.boostTarget, &configPage10.boostSens, &configPage10.boostIntv, configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID vvtPID(&vvt_pid_current_angle, &currentStatus.vvt1Duty, &vvt_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+static integerPID vvt2PID(&vvt2_pid_current_angle, &currentStatus.vvt2Duty, &vvt2_pid_target_angle, configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 static inline void checkAirConCoolantLockout(void);
 static inline void checkAirConTPSLockout(void);
@@ -586,6 +586,7 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
+  boostPID.SetControllerDirection(DIRECT);
   if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
   else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
 
@@ -607,12 +608,14 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
       vvtPID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
+      vvtPID.SetControllerDirection(configPage6.vvtPWMdir);
       vvtPID.activate(); //Turn PID on
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
         vvt2PID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
         vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
         vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
+        vvt2PID.SetControllerDirection(configPage4.vvt2PWMdir);
         vvt2PID.activate(); //Turn PID on
       }
     }

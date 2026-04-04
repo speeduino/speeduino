@@ -12,7 +12,7 @@ static void test_p_only_clamped_to_min(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 0, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 0, 0);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -27,7 +27,7 @@ static void test_p_only_clamped_to_max(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 100, 0, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 100, 0, 0);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -42,7 +42,7 @@ static void test_sample_time_gate(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 250;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 0, 0, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 0, 0, 0);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -58,7 +58,7 @@ static void test_ki_windup_limits(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 10, 10, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 10, 10, 0);
     pid.SetOutputLimits(20, 80);
     pid.Initialize();
 
@@ -76,15 +76,16 @@ static void test_reverse_direction(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pidDirect(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0, DIRECT);
+    integerPID_ideal pidDirect(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0);
     pidDirect.SetOutputLimits(0, 100);
     pidDirect.Initialize();
 
     TEST_ASSERT_TRUE(pidDirect.Compute(NOW, 0));
     uint16_t directOutput = output;
 
-    integerPID_ideal pidReverse(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0, REVERSE);
+    integerPID_ideal pidReverse(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0);
     pidReverse.SetOutputLimits(0, 100);
+    pidReverse.SetControllerDirection(REVERSE);
     pidReverse.Initialize();
     TEST_ASSERT_TRUE(pidReverse.Compute(NOW, 0));
     uint16_t reverseOutput = output;
@@ -99,7 +100,7 @@ static void test_feedforward_applied(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 0, 0, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 0, 0, 0);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 5000));
@@ -114,7 +115,7 @@ static void test_set_output_limits_invalid_bounds_are_ignored(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 100, 0, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 100, 0, 0);
     pid.SetOutputLimits(80, 20);
     pid.Initialize();
 
@@ -130,7 +131,7 @@ static void test_initialize_resets_integral_and_error(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 10, 0, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 10, 0);
     pid.SetOutputLimits(0, 100);
     pid.Initialize();
 
@@ -150,7 +151,7 @@ static void test_derivative_term_changes_output_on_error_transition(void)
     uint16_t sensitivity = 50;
     uint8_t sampleTime = 0;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 0, 1, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 0, 1);
     pid.SetOutputLimits(0, 100);
     pid.Initialize();
 
@@ -193,7 +194,7 @@ static void test_end_to_end_positive_positive_up(void)
     uint16_t sensitivity = 0;
     uint8_t sampleTime = 25;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 3, 2, 1, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 3, 2, 1);
     pid.SetOutputLimits(0, 255);
     pid.Initialize();
 
@@ -208,7 +209,7 @@ static void test_end_to_end_positive_positive_down(void)
     uint16_t sensitivity = 0;
     uint8_t sampleTime = 25;
 
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 3, 2, 1, DIRECT);
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 3, 2, 1);
     pid.SetOutputLimits(0, 255);
     pid.Initialize();
 

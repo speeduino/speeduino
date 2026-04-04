@@ -68,7 +68,7 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt
@@ -123,6 +123,7 @@ void initialiseIdle(bool forcehoming)
       //Case 6 is PWM closed loop with open loop table used as feed forward
       idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+      idlePID.SetControllerDirection(DIRECT);
       idlePID.activate(); //Turn PID on
       idle_pid_target_value = 0;
       idlePID.Initialize();
@@ -134,6 +135,7 @@ void initialiseIdle(bool forcehoming)
       //Case 3 is PWM closed loop
       idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+      idlePID.SetControllerDirection(DIRECT);
       idlePID.activate(); //Turn PID on
       idle_pid_target_value = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant));
       idlePID.Initialize();
@@ -173,6 +175,7 @@ void initialiseIdle(bool forcehoming)
       idlePID.SetSampleTime(250); //4Hz means 250ms
       idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+      idlePID.SetControllerDirection(DIRECT);
       idlePID.activate(); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       idle_pid_target_value = currentStatus.CLIdleTarget * 3;
@@ -195,6 +198,7 @@ void initialiseIdle(bool forcehoming)
       idlePID.SetSampleTime(250); //4Hz means 250ms
       idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
       idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+      idlePID.SetControllerDirection(DIRECT);
       idlePID.activate(); //Turn PID on
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       idle_pid_target_value = 0;

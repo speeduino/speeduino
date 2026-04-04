@@ -16,7 +16,7 @@ constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
  * @return uint8_t The current target advance value in degrees
  */
 integerPID::integerPID(long* Input, long* Output, long* Setpoint,
-        int16_t Kp, int16_t Ki, int16_t Kd, uint8_t ControllerDirection)
+        int16_t Kp, int16_t Ki, int16_t Kd)
 {
 
    myOutput = Output;
@@ -27,7 +27,7 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
 
    SampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
 
-   integerPID::SetControllerDirection(ControllerDirection);
+   SetControllerDirection(DIRECT);
    integerPID::SetTunings(Kp, Ki, Kd);
 
    lastTime = millis()-SampleTime;
