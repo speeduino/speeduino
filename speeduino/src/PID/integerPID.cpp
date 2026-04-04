@@ -26,8 +26,6 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint)
 
    SampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
 
-   integerPID::SetTunings(1, 1, 1);
-
    lastTime = millis()-SampleTime;
 }
 
@@ -50,9 +48,9 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
       long dInput = (input - lastInput);
       FeedForwardTerm <<= PID_SHIFTS;
 
-      if (ki != 0)
+      if (_pidParams.Ki!= 0)
       {
-         outputSum += (ki * error); //integral += error × dt
+         outputSum += (_pidParams.Ki * error); //integral += error × dt
          if(outputSum > outMax-FeedForwardTerm) { outputSum = outMax-FeedForwardTerm; }
          else if(outputSum < outMin-FeedForwardTerm) { outputSum = outMin-FeedForwardTerm; }
       }
@@ -60,9 +58,9 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
       /*Compute PID Output*/
       long output;
       
-      output = (kp * error);
-      if (ki != 0) { output += outputSum; }
-      if (kd != 0) { output -= (kd * dInput)>>2; }
+      output = (_pidParams.Kp * error);
+      if (_pidParams.Ki != 0) { output += outputSum; }
+      if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
       output += FeedForwardTerm;
 
       if(output > outMax) output = outMax;
@@ -91,25 +89,23 @@ bool integerPID::Compute(long FeedForwardTerm)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd)
+void integerPID::SetTunings(const PidTuningParameters &pidParams)
 {
    /*
    double SampleTimeInSec = ((double)SampleTime)/1000;
-   kp = Kp;
-   ki = Ki * SampleTimeInSec;
-   kd = Kd / SampleTimeInSec;
+   _pidParams.Kp = Kp;
+   _pidParams.Ki = Ki * SampleTimeInSec;
+   _pidParams.Kd = Kd / SampleTimeInSec;
    */
    long InverseSampleTimeInSec = 1000 / SampleTime;
-   //New resolution, 32x to improve ki here | kp 3.125% | ki 3.125% | kd 0.781%
-   kp = Kp * 32;
-   ki = (long)(Ki * 32) / InverseSampleTimeInSec;
-   kd = (long)(Kd * 32) * InverseSampleTimeInSec;
+   //New resolution, 32x to improve _pidParams.Ki here | _pidParams.Kp 3.125% | _pidParams.Ki 3.125% | _pidParams.Kd 0.781%
+   _pidParams = pidParams * 32;
+   _pidParams.Ki = _pidParams.Ki / InverseSampleTimeInSec;
+   _pidParams.Kd = _pidParams.Kd * InverseSampleTimeInSec;
 
    if(_direction == PidDirection::Reverse)
    {
-      kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
+      _pidParams = _pidParams * -1;
    }
 }
 
@@ -120,20 +116,18 @@ void integerPID::SetSampleTime(uint16_t NewSampleTime)
 {
    if (SampleTime == (unsigned long)NewSampleTime) return; //If new value = old value, no action required.
 
+   auto deScaledParams = _pidParams / 32;
    int16_t oldInverseSampleTimeInSec = 1000 / SampleTime;
-   int16_t reverseKp = kp / 32;
-   int16_t reverseKi = (long)(ki / 32) * oldInverseSampleTimeInSec;
-   int16_t reverseKd = (long)(kd / 32) / oldInverseSampleTimeInSec;
+   deScaledParams.Ki = deScaledParams.Ki * oldInverseSampleTimeInSec;
+   deScaledParams.Kd = deScaledParams.Kd / oldInverseSampleTimeInSec;
    if(_direction == PidDirection::Reverse)
    {
-      reverseKp *= -1;
-      reverseKi *= -1;
-      reverseKd *= -1;
+      deScaledParams = deScaledParams * -1;
    }
    
    SampleTime = NewSampleTime;
    //This resets the tuning values with the appropriate new scaling
-   SetTunings(reverseKp, reverseKi, reverseKd);
+   SetTunings(deScaledParams);
 }
 
 /* SetOutputLimits(...)****************************************************
@@ -197,9 +191,7 @@ void integerPID::SetControllerDirection(PidDirection direction)
 {
    if(_direction != direction)
    {
-       kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
+      _pidParams = _pidParams * -1;
    }
    _direction = direction;
 }

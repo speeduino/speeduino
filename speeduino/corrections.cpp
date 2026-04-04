@@ -77,6 +77,11 @@ static constexpr uint8_t NO_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 // (yes, it's the same as NO_FUEL_CORRECTION, but captures a slightly different concept)
 static constexpr uint8_t BASELINE_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 
+static void setEgoPidTunings(const config6 &page6) {
+  egoPID.SetOutputLimits(-page6.egoLimit, page6.egoLimit); 
+  egoPID.SetTunings(make_pid_tuning(page6.egoKP, page6.egoKI, page6.egoKD)); 
+  egoPID.SetControllerDirection(PidDirection::Reverse);
+}
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
@@ -87,8 +92,7 @@ void initialiseCorrections(void)
   PID_AFRTarget = 0L;
   // Toggling between modes resets the PID internal state
   // This is required by the unit tests
-  egoPID.SetTunings(configPage6.egoKP, configPage6.egoKI, configPage6.egoKD);
-  egoPID.SetControllerDirection(PidDirection::Reverse);
+  setEgoPidTunings(configPage6);
   egoPID.activate();
   // Force PID re-initialization for unit tests, as PID state needs to be reset between tests.
   egoPID.Initialize();
@@ -705,11 +709,8 @@ static inline uint8_t computeSimpleCorrection(const statuses &current, const con
 }
 
 static inline uint8_t computePIDCorrection(const statuses &current, const config6 &page6) {
-  //Set the limits again, just in case the user has changed them since the last loop. 
-  //Note that these are sent to the PID library as (Eg:) -15 and +15
-  egoPID.SetOutputLimits(-page6.egoLimit, page6.egoLimit); 
   //Set the PID values again, just in case the user has changed them since the last loop
-  egoPID.SetTunings(page6.egoKP, page6.egoKI, page6.egoKD); 
+  setEgoPidTunings(page6);
   PID_O2 = (long)(current.O2);
   PID_AFRTarget = (long)(current.afrTarget);
 
