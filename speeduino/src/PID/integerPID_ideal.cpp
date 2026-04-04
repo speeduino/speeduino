@@ -13,7 +13,7 @@
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
 integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
-                                   uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection)
+                                   uint8_t Kp, uint8_t Ki, uint8_t Kd)
 {
 
     myOutput = Output;
@@ -24,7 +24,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
 
 	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
 
-    integerPID_ideal::SetControllerDirection(ControllerDirection);
     integerPID_ideal::SetTunings(Kp, Ki, Kd);
 
     lastTime = millis()- *mySampleTime;

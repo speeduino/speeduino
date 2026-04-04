@@ -12,7 +12,7 @@ class PID
 
   //commonly used functions **************************************************************************
     PID(long* Input, long* Output, long* Setpoint,
-        uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
+        uint8_t Kp, uint8_t Ki, uint8_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
 
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
     void activate(void);
@@ -40,7 +40,7 @@ private:
   long ki;                  // * (I)ntegral Tuning Parameter
   long kd;                  // * (D)erivative Tuning Parameter
 
-	int controllerDirection;
+	int controllerDirection = DIRECT;
 
   long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
   long *myOutput;             //   This creates a hard link between the variables and the

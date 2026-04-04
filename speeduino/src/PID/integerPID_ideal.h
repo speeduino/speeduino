@@ -12,7 +12,7 @@ public:
 
   //commonly used functions **************************************************************************
     integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
-                                   uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
+                                   uint8_t Kp, uint8_t Ki, uint8_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
 
     bool Compute(unsigned long now, uint16_t FeedForward);  // * performs the PID calculation with injected time.
     bool Compute(uint16_t FeedForward);                      // * legacy wrapper that calls millis().
@@ -49,7 +49,7 @@ public:
   uint16_t  ki;                  // * (I)ntegral Tuning Parameter
   uint16_t  kd;                  // * (D)erivative Tuning Parameter
 
-	int controllerDirection;
+	int controllerDirection = DIRECT;
 
     long *myInput;              //
     uint16_t *myOutput;         //   This is a percentage figure multiplied by 100 (To give 2 points of precision)

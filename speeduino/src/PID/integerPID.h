@@ -12,7 +12,7 @@ public:
   
   //commonly used functions **************************************************************************
     integerPID(long* Input, long* Output, long* Setpoint,
-        int16_t Kp, int16_t Ki, int16_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
+        int16_t Kp, int16_t Ki, int16_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
 
 
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */

@@ -42,7 +42,7 @@ static long PID_AFRTarget;
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
+static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD);
 
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
@@ -87,7 +87,7 @@ void initialiseCorrections(void)
   PID_AFRTarget = 0L;
   // Toggling between modes resets the PID internal state
   // This is required by the unit tests
-  // TODO: modify PID code to provide a method to reset it. 
+  egoPID.SetControllerDirection(REVERSE);
   egoPID.activate();
   // Force PID re-initialization for unit tests, as PID state needs to be reset between tests.
   egoPID.Initialize();
