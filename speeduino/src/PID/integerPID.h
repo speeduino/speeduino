@@ -13,35 +13,34 @@ public:
   #define REVERSE  1
   
   //commonly used functions **************************************************************************
-    integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
-        int16_t, int16_t, int16_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
+    integerPID(long* Input, long* Output, long* Setpoint,
+        int16_t Kp, int16_t Ki, int16_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
 
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
     bool Compute(unsigned long now, long FeedForwardTerm = 0);   // * performs the PID calculation at provided time.
     bool Compute(long FeedForwardTerm = 0);                      // * legacy wrapper that calls millis().
-    void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
+    void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application
 
 
 
   //available but not commonly used functions ********************************************************
-    void SetTunings(int16_t, int16_t,       // * While most users will set the tunings once in the
-                    int16_t);       	  //   constructor, this function gives the user the option
+    void SetTunings(int16_t Kp, int16_t Ki, int16_t Kd);       	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
+	void SetControllerDirection(uint8_t Direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
-  void SetSampleTime(uint16_t);              // * sets the frequency, in Milliseconds, with which
+  void SetSampleTime(uint16_t NewSampleTime);              // * sets the frequency, in Milliseconds, with which
                                           //   the PID calculation is performed.  default is 100
 
 
 
-  void Initialize();
-  void ResetIntegeral();
+  void Initialize(void);
+  void ResetIntegeral(void);
 
   private:
 
