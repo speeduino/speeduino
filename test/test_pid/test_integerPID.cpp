@@ -10,7 +10,8 @@ static void test_integerPID_manual_mode_compute_false(void)
     long output = 8;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
 
     TEST_ASSERT_FALSE(pid.Compute(NOW));
     TEST_ASSERT_EQUAL(8, output);
@@ -22,7 +23,8 @@ static void test_integerPID_auto_mode_p_on_error(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -37,7 +39,8 @@ static void test_integerPID_output_limits_clamp(void)
     long output = 0;
     long setpoint = 1000;
 
-    integerPID pid(&input, &output, &setpoint, 255, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(255, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 10);
     pid.activate();
@@ -52,7 +55,8 @@ static void test_integerPID_output_limits_zero_range(void)
     long output = 0;
     long setpoint = 1000;
 
-    integerPID pid(&input, &output, &setpoint, 255, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(255, 0, 0);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -71,8 +75,9 @@ static void test_integerPID_controller_direction_switches_effect(void)
     long output = 0;
     long setpoint = 100;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
     pid.SetControllerDirection(PidDirection::Direct);
+    pid.SetTunings(10, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -100,7 +105,8 @@ static void test_integerPID_controller_direction_maintains_output_limits(void)
     long output = 0;
     long setpoint = 100;
 
-    integerPID pid(&input, &output, &setpoint, 255, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(255, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-50, 50);
     pid.activate();
@@ -121,7 +127,8 @@ static void test_integerPID_reverse_direction(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetControllerDirection(PidDirection::Reverse);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255);
@@ -137,7 +144,7 @@ static void test_integerPID_feedforward_term(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 0, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -151,7 +158,8 @@ static void test_integerPID_integral_with_feedforward(void)
     long output = 0;
     long setpoint = 100;
 
-    integerPID pid(&input, &output, &setpoint, 0, 100, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(0, 100, 0);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -168,7 +176,8 @@ static void test_integerPID_output_limits_upper_clamp(void)
     long output = 0;
     long setpoint = 1000;
 
-    integerPID pid(&input, &output, &setpoint, 255, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(255, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 50); // Set max to 50
     pid.activate();
@@ -183,7 +192,8 @@ static void test_integerPID_output_limits_lower_clamp(void)
     long output = 0;
     long setpoint = 0;
 
-    integerPID pid(&input, &output, &setpoint, 255, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(255, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(100, 255); // Set min to 100
     pid.activate();
@@ -198,7 +208,8 @@ static void test_integerPID_output_limits_negative_range(void)
     long output = 0;
     long setpoint = 1000;
 
-    integerPID pid(&input, &output, &setpoint, 255, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(255, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-100, 10);
     pid.SetControllerDirection(PidDirection::Reverse);
@@ -215,7 +226,8 @@ static void test_integerPID_output_limits_no_clamp_needed(void)
     long output = 0;
     long setpoint = 100;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetControllerDirection(PidDirection::Direct);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 255); // Wide limits
@@ -233,7 +245,8 @@ static void test_integerPID_output_limits_affects_integral(void)
     long output = 0;
     long setpoint = 200;
 
-    integerPID pid(&input, &output, &setpoint, 0, 50, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(0, 50, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 20); // Tight limit
     pid.activate();
@@ -249,7 +262,8 @@ static void test_integerPID_auto_mode_output_limits(void)
     long output = 0;
     long setpoint = 200;
 
-    integerPID pid(&input, &output, &setpoint, 0, 50, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(0, 50, 0);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -274,7 +288,8 @@ static void test_integerPID_derivative_term(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 0, 0, 1); // kp=0, ki=0, kd=1
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(0, 0, 1); // kp=0, ki=0, kd=1
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255); // allow negative derivative output
     pid.SetTunings(0, 0, 1); // Re-set tunings after SetSampleTime
@@ -300,7 +315,8 @@ static void test_Compute_NoTimeChange_ReturnsFalse(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetSampleTime(100); // Set sample time to 100ms
     pid.activate();
 
@@ -316,7 +332,8 @@ static void test_integerPID_set_sample_time_recalculates_tunings(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 10, 10);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 10, 10);
     pid.SetSampleTime(1); // Initial sample time
     pid.activate();
 
@@ -337,7 +354,8 @@ static void test_integerPID_initialize_resets_state(void)
     long output = 50;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 0, 10, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(0, 10, 0);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -355,7 +373,8 @@ static void test_integerPID_reset_integral_zeros_output_sum(void)
     long output = 0;
     long setpoint = 2000;
 
-    integerPID pid(&input, &output, &setpoint, 5, 100, 60);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(5, 100, 60);
     pid.SetSampleTime(1);
     pid.activate();
     pid.SetOutputLimits(-5000, 5000);
@@ -381,7 +400,8 @@ static void test_integerPID_set_tunings_runtime_changes(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetSampleTime(1);
     pid.activate();
 
@@ -400,7 +420,8 @@ static void test_integerPID_compute_in_manual_mode_returns_false(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
 
     TEST_ASSERT_FALSE(pid.Compute(NOW)); // Should return false in manual mode
     TEST_ASSERT_EQUAL(0, output); // Output unchanged
@@ -412,7 +433,8 @@ static void test_integerPID_set_output_limits_invalid_ignored(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
     pid.activate();
 
@@ -427,7 +449,8 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
     long output = 0;
     long setpoint = 20;
 
-    integerPID pid(&input, &output, &setpoint, 10, 0, 0);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(10, 0, 0);
     pid.SetControllerDirection(PidDirection::Reverse);
     pid.SetOutputLimits(-25, 25);
     pid.activate();
@@ -470,7 +493,8 @@ static void test_end_to_end_positive_positive_up(void)
     long input = 90;
     long setpoint = 155;
 
-    integerPID pid(&input, &output, &setpoint, 3, 1, 2);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(3, 1, 2);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -485,7 +509,8 @@ static void test_end_to_end_positive_positive_down(void)
     long input = 235;
     long setpoint = 155;
 
-    integerPID pid(&input, &output, &setpoint, 5, 2, 4);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(5, 2, 4);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -501,7 +526,8 @@ static void test_end_to_end_negative_negative_up(void)
     long input = -235;
     long setpoint = -155;
 
-    integerPID pid(&input, &output, &setpoint, 15, 3, 2);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(15, 3, 2);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -516,7 +542,8 @@ static void test_end_to_end_negative_negative_down(void)
     long input = -155;
     long setpoint = -235;
 
-    integerPID pid(&input, &output, &setpoint, 15, 3, 2);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(15, 3, 2);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -531,7 +558,8 @@ static void test_end_to_end_positive_negative(void)
     long input = 63;
     long setpoint = -55;
 
-    integerPID pid(&input, &output, &setpoint, 15, 1, 1);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(15, 1, 1);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -546,7 +574,8 @@ static void test_end_to_end_negative_positive(void)
     long input = -55;
     long setpoint = 65;
 
-    integerPID pid(&input, &output, &setpoint, 15, 3, 2);
+    integerPID pid(&input, &output, &setpoint);
+    pid.SetTunings(15, 3, 2);
     pid.SetSampleTime(SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();

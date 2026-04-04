@@ -8,8 +8,7 @@ class integerPID
 public:
   
   //commonly used functions **************************************************************************
-    integerPID(long* Input, long* Output, long* Setpoint,
-        int16_t Kp, int16_t Ki, int16_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
+    integerPID(long* Input, long* Output, long* Setpoint);     //   Setpoint.  Initial tuning parameters are also set here
 
 
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */

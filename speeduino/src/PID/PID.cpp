@@ -6,8 +6,7 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-PID::PID(long* Input, long* Output, long* Setpoint,
-        uint8_t Kp, uint8_t Ki, uint8_t Kd)
+PID::PID(long* Input, long* Output, long* Setpoint)
 {
 
     myOutput = Output;
@@ -16,7 +15,6 @@ PID::PID(long* Input, long* Output, long* Setpoint,
 
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
-    PID::SetTunings(Kp, Ki, Kd);
 }
 
 

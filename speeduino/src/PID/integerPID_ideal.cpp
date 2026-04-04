@@ -12,8 +12,7 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
-                                   uint8_t Kp, uint8_t Ki, uint8_t Kd)
+integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime)
 {
 
     myOutput = Output;
@@ -23,8 +22,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
     mySampleTime = SampleTime;
 
 	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
-
-    integerPID_ideal::SetTunings(Kp, Ki, Kd);
 
     lastTime = millis()- *mySampleTime;
 }

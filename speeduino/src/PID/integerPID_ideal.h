@@ -7,8 +7,7 @@ class integerPID_ideal
 {
 public:
   //commonly used functions **************************************************************************
-    integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
-                                   uint8_t Kp, uint8_t Ki, uint8_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
+    integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime);
 
     bool Compute(unsigned long now, uint16_t FeedForward);  // * performs the PID calculation with injected time.
     bool Compute(uint16_t FeedForward);                      // * legacy wrapper that calls millis().
@@ -41,9 +40,9 @@ public:
 	uint8_t dispKi;				//   format for display purposes
 	uint8_t dispKd;				//
 
-	uint16_t  kp;                  // * (P)roportional Tuning Parameter
-  uint16_t  ki;                  // * (I)ntegral Tuning Parameter
-  uint16_t  kd;                  // * (D)erivative Tuning Parameter
+	uint16_t  kp = 1;                  // * (P)roportional Tuning Parameter
+  uint16_t  ki = 1;                  // * (I)ntegral Tuning Parameter
+  uint16_t  kd = 1;                  // * (D)erivative Tuning Parameter
 
 	PidDirection _direction = PidDirection::Direct;
 
