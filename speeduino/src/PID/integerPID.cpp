@@ -93,9 +93,6 @@ bool integerPID::Compute(long FeedForwardTerm)
  ******************************************************************************/
 void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd)
 {
-   if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
-   dispKp = Kp; dispKi = Ki; dispKd = Kd;
-
    /*
    double SampleTimeInSec = ((double)SampleTime)/1000;
    kp = Kp;
@@ -122,12 +119,21 @@ void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd)
 void integerPID::SetSampleTime(uint16_t NewSampleTime)
 {
    if (SampleTime == (unsigned long)NewSampleTime) return; //If new value = old value, no action required.
-   SampleTime = NewSampleTime;
 
+   int16_t oldInverseSampleTimeInSec = 1000 / SampleTime;
+   int16_t reverseKp = kp / 32;
+   int16_t reverseKi = (long)(ki / 32) * oldInverseSampleTimeInSec;
+   int16_t reverseKd = (long)(kd / 32) / oldInverseSampleTimeInSec;
+   if(_direction == PidDirection::Reverse)
+   {
+      reverseKp *= -1;
+      reverseKi *= -1;
+      reverseKd *= -1;
+   }
+   
+   SampleTime = NewSampleTime;
    //This resets the tuning values with the appropriate new scaling
-   //The +1/-1 is there just so that this doesn't trip the check at the beginning of the SetTunings() function
-   SetTunings(dispKp+1, dispKi+1, dispKd+1);
-   SetTunings(dispKp-1, dispKi-1, dispKd-1);
+   SetTunings(reverseKp, reverseKi, reverseKd);
 }
 
 /* SetOutputLimits(...)****************************************************
