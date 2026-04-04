@@ -88,9 +88,6 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
  ******************************************************************************/
 void integerPID_ideal::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
 {
-   if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
-   dispKp = Kp; dispKi = Ki; dispKd = Kd;
-
   kp = Kp;
   ki = Ki;
   kd = Kd;

@@ -35,11 +35,6 @@ public:
 
   private:
 
-
-	uint8_t dispKp;				// * we'll hold on to the tuning parameters in user-entered
-	uint8_t dispKi;				//   format for display purposes
-	uint8_t dispKd;				//
-
 	uint16_t  kp = 1;                  // * (P)roportional Tuning Parameter
   uint16_t  ki = 1;                  // * (I)ntegral Tuning Parameter
   uint16_t  kd = 1;                  // * (D)erivative Tuning Parameter

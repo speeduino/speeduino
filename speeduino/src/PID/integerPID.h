@@ -39,10 +39,6 @@ public:
 
   private:
 
-
-  int16_t dispKp;
-  int16_t dispKi;
-  int16_t dispKd;
 	int16_t  kp;                  // * (P)roportional Tuning Parameter
   int16_t  ki;                  // * (I)ntegral Tuning Parameter
   int16_t  kd;                  // * (D)erivative Tuning Parameter
