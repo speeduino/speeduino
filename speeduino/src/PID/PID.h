@@ -13,8 +13,8 @@ class PID
   #define REVERSE  1
 
   //commonly used functions **************************************************************************
-    PID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
-        uint8_t, uint8_t, uint8_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
+    PID(long* Input, long* Output, long* Setpoint,
+        uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
 
     void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
 
@@ -22,17 +22,16 @@ class PID
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
 
-    void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
+    void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application
 
 
 
   //available but not commonly used functions ********************************************************
-    void SetTunings(uint8_t, uint8_t,       // * While most users will set the tunings once in the
-                    uint8_t);         	  //   constructor, this function gives the user the option
+    void SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd);         	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
+	void SetControllerDirection(uint8_t Direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.

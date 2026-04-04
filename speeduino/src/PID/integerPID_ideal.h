@@ -13,33 +13,32 @@ public:
   #define REVERSE  1
 
   //commonly used functions **************************************************************************
-    integerPID_ideal(long*, uint16_t*, uint16_t*, uint16_t*, uint8_t*,        // * constructor.  links the PID to the Input, Output, and
-        uint8_t, uint8_t, uint8_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
+    integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
+                                   uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
 
-    bool Compute(unsigned long now, uint16_t);  // * performs the PID calculation with injected time.
-    bool Compute(uint16_t);                      // * legacy wrapper that calls millis().
+    bool Compute(unsigned long now, uint16_t FeedForward);  // * performs the PID calculation with injected time.
+    bool Compute(uint16_t FeedForward);                      // * legacy wrapper that calls millis().
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
 
-    void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
+    void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application
 
 
 
   //available but not commonly used functions ********************************************************
-    void SetTunings(uint8_t, uint8_t,       // * While most users will set the tunings once in the
-                    uint8_t);         	  //   constructor, this function gives the user the option
+    void SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd);         	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
+	void SetControllerDirection(uint8_t Direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
 
 
 
-	void Initialize();
+	void Initialize(void);
 
   private:
 
