@@ -89,6 +89,21 @@ static inline void initialiseIdleUpOutput(void)
   currentStatus.idleUpOutputActive = false;
 }
 
+static void setIdlePidTunings(const config6 &page6)
+{
+  idlePID.SetTunings(make_pid_tuning(page6.idleKP, page6.idleKI, page6.idleKD));
+}
+
+static void configureIdlePID(const config6 &page6, uint32_t minOutput, uint32_t maxOutput, uint16_t initialTarget)
+{
+    idlePID.SetOutputLimits(minOutput, maxOutput);
+    setIdlePidTunings(page6);
+    idlePID.SetControllerDirection(PidDirection::Direct);
+    idlePID.activate(); //Turn PID on
+    idle_pid_target_value = initialTarget;
+    idlePID.Initialize();
+}
+
 void initialiseIdle(bool forcehoming)
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
@@ -121,26 +136,20 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_PWM_OLCL:
       //Case 6 is PWM closed loop with open loop table used as feed forward
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
-      idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-      idlePID.SetControllerDirection(PidDirection::Direct);
-      idlePID.activate(); //Turn PID on
-      idle_pid_target_value = 0;
-      idlePID.Initialize();
+      configureIdlePID(configPage6, 
+                        percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), 
+                        percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2), 
+                        0);
       idleCounter = 0;
-
       break;
 
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
-      idlePID.SetOutputLimits(percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2));
-      idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-      idlePID.SetControllerDirection(PidDirection::Direct);
-      idlePID.activate(); //Turn PID on
-      idle_pid_target_value = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant));
-      idlePID.Initialize();
+      configureIdlePID( configPage6, 
+                        percentage(configPage2.iacCLminValue, idle_pwm_max_count<<2), 
+                        percentage(configPage2.iacCLmaxValue, idle_pwm_max_count<<2),
+                        table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)));
       idleCounter = 0;
-
       break;
 
     case IAC_ALGORITHM_STEP_OL:
@@ -173,13 +182,11 @@ void initialiseIdle(bool forcehoming)
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
-      idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
-      idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-      idlePID.SetControllerDirection(PidDirection::Direct);
-      idlePID.activate(); //Turn PID on
+      configureIdlePID(configPage6, 
+                       (configPage2.iacCLminValue * 3)<<2, 
+                       (configPage2.iacCLmaxValue * 3)<<2,
+                       currentStatus.CLIdleTarget * 3);
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
-      idle_pid_target_value = currentStatus.CLIdleTarget * 3;
-      idlePID.Initialize();
       break;
 
     case IAC_ALGORITHM_STEP_OLCL:
@@ -196,13 +203,11 @@ void initialiseIdle(bool forcehoming)
       }
 
       idlePID.SetSampleTime(250); //4Hz means 250ms
-      idlePID.SetOutputLimits((configPage2.iacCLminValue * 3)<<2, (configPage2.iacCLmaxValue * 3)<<2); //Maximum number of steps; always less than home steps count.
-      idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
-      idlePID.SetControllerDirection(PidDirection::Direct);
-      idlePID.activate(); //Turn PID on
+      configureIdlePID(configPage6, 
+                       (configPage2.iacCLminValue * 3)<<2,
+                       (configPage2.iacCLmaxValue * 3)<<2, //Maximum number of steps; always less than home steps count.
+                       0);
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
-      idle_pid_target_value = 0;
-      idlePID.Initialize();
       break;
 
     default:
@@ -448,7 +453,7 @@ void idleControl(void)
       else
       {
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
-        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
+        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         
         PID_computed = idlePID.Compute();
         long TEMP_idle_pwm_target_value;
@@ -529,7 +534,7 @@ void idleControl(void)
         
     
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
-        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
+        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         if((currentStatus.RPM - idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (coming back from high rpm with throttle closed)
           idlePID.ResetIntegeral();
         }
@@ -677,7 +682,7 @@ void idleControl(void)
       if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Use timer flag instead idle count
       {
         //This only needs to be run very infrequently, once per second
-        idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD);
+        setIdlePidTunings(configPage6);
         iacStepTime_uS = configPage6.iacStepTime * 1000;
         iacCoolTime_uS = configPage9.iacCoolTime * 1000;
       }

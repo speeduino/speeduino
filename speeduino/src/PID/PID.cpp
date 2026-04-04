@@ -30,13 +30,13 @@ bool PID::Compute(void)
    /*Compute all the working error variables*/
    long input = *myInput;
    long error = *mySetpoint - input;
-   ITerm += (ki * error);
+   ITerm += (_pidParams.Ki * error);
    if(ITerm > outMax) ITerm= outMax;
    else if(ITerm < outMin) ITerm = outMin;
    long dInput = (input - lastInput);
 
    /*Compute PID Output*/
-   long output = (kp * error) + ITerm- (kd * dInput);
+   long output = (_pidParams.Kp * error) + ITerm- (_pidParams.Kd * dInput);
 
    if(output > outMax) { output = outMax; }
    else if(output < outMin) { output = outMin; }
@@ -52,24 +52,21 @@ bool PID::Compute(void)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void PID::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
+void PID::SetTunings(const PidTuningParameters &pidParams)
 {
    /*
    double SampleTimeInSec = ((double)SampleTime)/1000;
-   kp = Kp;
-   ki = Ki * SampleTimeInSec;
-   kd = Kd / SampleTimeInSec;
+   _pidParams.Kp = Kp;
+   _pidParams.Ki = Ki * SampleTimeInSec;
+   _pidParams.Kd = Kd / SampleTimeInSec;
    */
   //long InverseSampleTimeInSec = 100;
-  kp = Kp;
-  ki = Ki;
-  kd = Kd * 10;
+  _pidParams = pidParams;
+  _pidParams.Kd = _pidParams.Kd * 10;
 
   if(_direction == PidDirection::Reverse)
    {
-      kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
+      _pidParams = _pidParams * -1;
    }
 }
 
@@ -129,9 +126,7 @@ void PID::SetControllerDirection(PidDirection direction)
 {
    if(_direction != direction)
    {
-       kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
+      _pidParams = _pidParams * -1;
    }
    _direction = direction;
 }

@@ -19,10 +19,6 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/outputPin.h"
 #include "scheduler_fuel_controller.h"
 
-constexpr uint8_t SIMPLE_BOOST_P = 1U;
-constexpr uint8_t SIMPLE_BOOST_I = 1U;
-constexpr uint8_t SIMPLE_BOOST_D = 1U;
-
 static long vvt1_pwm_value;
 static long vvt2_pwm_value;
 static volatile unsigned int vvt1_pwm_cur_value;
@@ -574,6 +570,32 @@ static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint
   vvt2_pin.setPin(pin2, OUTPUT);
 }
 
+static void setBoostPidTunings(const config6 &page6)
+{
+  if(page6.boostMode == BOOST_MODE_SIMPLE)
+  {
+    boostPID.SetTunings(PID_TUNING_UNIT);
+  }
+  else
+  {
+    boostPID.SetTunings(make_pid_tuning(page6.boostKP, page6.boostKI, page6.boostKD));
+  }
+}
+
+static void setVvtPidTunings(integerPID &pid, const config10 &page10, PidDirection direction)
+{
+  pid.SetTunings(make_pid_tuning(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD));
+  pid.SetControllerDirection(direction);
+}
+
+static void configureVvtPid(integerPID &pid, const config10 &page10, PidDirection direction)
+{
+  pid.SetOutputLimits(page10.vvtCLminDuty, page10.vvtCLmaxDuty);
+  setVvtPidTunings(pid, page10, direction);
+  pid.SetSampleTime(33); //30Hz is 33,33ms
+  pid.activate(); //Turn PID on
+}
+
 void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
   boost_pin.setPin(pinBoost, OUTPUT);
@@ -586,8 +608,7 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
   boostPID.SetControllerDirection(PidDirection::Direct);
-  if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
-  else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
+  setBoostPidTunings(configPage6);
 
   if( configPage6.vvtEnabled > 0)
   {
@@ -604,18 +625,10 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      vvtPID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
-      vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
-      vvtPID.SetSampleTime(33); //30Hz is 33,33ms
-      vvtPID.SetControllerDirection((PidDirection)configPage6.vvtPWMdir);
-      vvtPID.activate(); //Turn PID on
+      configureVvtPid(vvtPID, configPage10, (PidDirection)configPage6.vvtPWMdir);
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        vvt2PID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
-        vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
-        vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
-        vvt2PID.SetControllerDirection((PidDirection)configPage4.vvt2PWMdir);
-        vvt2PID.activate(); //Turn PID on
+        configureVvtPid(vvt2PID, configPage10, (PidDirection)configPage4.vvt2PWMdir);
       }
     }
 
@@ -839,9 +852,7 @@ void boostControl(void)
           if( (boostCounter & 15) == 1)
           {
             boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
-
-            if(configPage6.boostMode == BOOST_MODE_SIMPLE) { boostPID.SetTunings(SIMPLE_BOOST_P, SIMPLE_BOOST_I, SIMPLE_BOOST_D); }
-            else { boostPID.SetTunings(configPage6.boostKP, configPage6.boostKI, configPage6.boostKD); }
+            setBoostPidTunings(configPage6);
           }
 
           bool PIDcomputed = boostPID.Compute(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2); //Compute() returns false if the required interval has not yet passed.
@@ -956,8 +967,9 @@ void vvtControl(void)
         if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
         else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (uint16_t)currentStatus.MAP, currentStatus.RPM); }
 
-        if( (vvtCounter & 31) == 1) { vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-        vvtPID.SetControllerDirection((PidDirection)configPage6.vvtPWMdir); }
+        if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
+          setVvtPidTunings(vvtPID, configPage10, (PidDirection)configPage6.vvtPWMdir);  
+        }
 
         // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
         // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
@@ -994,8 +1006,9 @@ void vvtControl(void)
           if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
           else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (uint16_t)currentStatus.MAP, currentStatus.RPM); }
 
-          if( (vvtCounter & 31) == 1) { vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);  //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-          vvt2PID.SetControllerDirection((PidDirection)configPage4.vvt2PWMdir); }
+          if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
+            setVvtPidTunings(vvt2PID, configPage10, (PidDirection)configPage4.vvt2PWMdir);
+        }
 
           // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
           // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.

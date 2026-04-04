@@ -23,7 +23,7 @@ public:
 
 
   //available but not commonly used functions ********************************************************
-    void SetTunings(int16_t Kp, int16_t Ki, int16_t Kd);       	  //   constructor, this function gives the user the option
+    void SetTunings(const PidTuningParameters &pidParams);       	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
 	void SetControllerDirection(PidDirection direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
@@ -39,10 +39,7 @@ public:
 
   private:
 
-	int16_t  kp;                  // * (P)roportional Tuning Parameter
-  int16_t  ki;                  // * (I)ntegral Tuning Parameter
-  int16_t  kd;                  // * (D)erivative Tuning Parameter
-
+  PidTuningParameters _pidParams = PID_TUNING_UNIT;
 	PidDirection _direction = PidDirection::Direct;
 
     long *myInput;              // * Pointers to the Input, Output, and Setpoint variables

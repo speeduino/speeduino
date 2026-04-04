@@ -49,7 +49,7 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
       ITerm += error;
 
       /*Compute PID Output*/
-      long output = scaledFeedForward + (kp * error) + (ki * ITerm) + (kd * (lastInput - *myInput));
+      long output = scaledFeedForward + (_pidParams.Kp * error) + (_pidParams.Ki * ITerm) + (_pidParams.Kd * (lastInput - *myInput));
       
       if(output > outMax)
       {
@@ -86,17 +86,12 @@ bool integerPID_ideal::Compute(uint16_t FeedForward)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID_ideal::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
+void integerPID_ideal::SetTunings(const PidTuningParameters& pidParams)
 {
-  kp = Kp;
-  ki = Ki;
-  kd = Kd;
-
+   _pidParams = pidParams;
   if(_direction == PidDirection::Reverse)
    {
-      kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
+      _pidParams = _pidParams * -1;
    }
 }
 
@@ -139,9 +134,7 @@ void integerPID_ideal::SetControllerDirection(PidDirection direction)
 {
    if(_direction != direction)
    {
-       kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
+      _pidParams = _pidParams * -1;
    }
    _direction = direction;
 }
