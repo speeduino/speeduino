@@ -39,7 +39,7 @@ public:
                                   //   what these values are.  with pointers we'll just know.
 
 	unsigned long lastTime;
-	long outputSum, lastInput, lastMinusOneInput;
+	long outputSum, lastInput;
   
 	uint16_t _sampleTime = 250; //default sample time is 250ms
 	long outMin, outMax;

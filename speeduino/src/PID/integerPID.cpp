@@ -158,7 +158,6 @@ void integerPID::Initialize()
 {
    outputSum = *myOutput<<PID_SHIFTS;
    lastInput = *myInput;
-   lastMinusOneInput = *myInput;
    if(outputSum > outMax) { outputSum = outMax; }
    else if(outputSum < outMin) { outputSum = outMin; }
 }
