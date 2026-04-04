@@ -17,14 +17,11 @@ constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
  */
 integerPID::integerPID(long* Input, long* Output, long* Setpoint)
 {
-
    myOutput = Output;
    myInput = Input;
    mySetpoint = Setpoint;
 
 	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
-
-   _sampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
 
    lastTime = millis()-_sampleTime;
 }
@@ -84,6 +81,15 @@ bool integerPID::Compute(long FeedForwardTerm)
 }
 // LCOV_EXCL_STOP
 
+static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t sampleTime)
+{
+    PidTuningParameters scaledParams = params * 32;
+    uint16_t inverseSampleTimeInSec = 1000U / sampleTime;
+    scaledParams.Ki = (scaledParams.Ki) / inverseSampleTimeInSec;
+    scaledParams.Kd = (scaledParams.Kd) * inverseSampleTimeInSec;
+    return scaledParams;
+}
+
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.
  * it's called automatically from the constructor, but tunings can also
@@ -93,21 +99,13 @@ void integerPID::SetTunings(const PidTuningParameters &pidParams, PidDirection d
 {
    _sampleTime = sampleTime;
 
-   /*
-   double SampleTimeInSec = ((double)_sampleTime)/1000;
-   _pidParams.Kp = Kp;
-   _pidParams.Ki = Ki * SampleTimeInSec;
-   _pidParams.Kd = Kd / SampleTimeInSec;
-   */
-   long InverseSampleTimeInSec = 1000 / _sampleTime;
-   //New resolution, 32x to improve _pidParams.Ki here | _pidParams.Kp 3.125% | _pidParams.Ki 3.125% | _pidParams.Kd 0.781%
-   _pidParams = pidParams * 32;
-   _pidParams.Ki = _pidParams.Ki / InverseSampleTimeInSec;
-   _pidParams.Kd = _pidParams.Kd * InverseSampleTimeInSec;
-
    if(direction == PidDirection::Reverse)
    {
-      _pidParams = _pidParams * -1;
+      _pidParams = scaleTuningParameters(pidParams, sampleTime) * -1;
+   }
+   else
+   {
+      _pidParams = scaleTuningParameters(pidParams, sampleTime);
    }
 }
 
