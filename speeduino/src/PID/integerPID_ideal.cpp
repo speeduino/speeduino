@@ -98,7 +98,7 @@ void integerPID_ideal::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
   ki = Ki;
   kd = Kd;
 
-  if(controllerDirection == REVERSE)
+  if(_direction == PidDirection::Reverse)
    {
       kp = (0 - kp);
       ki = (0 - ki);
@@ -141,13 +141,13 @@ void integerPID_ideal::Initialize()
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
  ******************************************************************************/
-void integerPID_ideal::SetControllerDirection(uint8_t Direction)
+void integerPID_ideal::SetControllerDirection(PidDirection direction)
 {
-   if(Direction != controllerDirection)
+   if(_direction != direction)
    {
-	    kp = (0 - kp);
+       kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
    }
-   controllerDirection = Direction;
+   _direction = direction;
 }

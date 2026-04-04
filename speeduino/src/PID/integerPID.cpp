@@ -110,7 +110,7 @@ void integerPID::SetTunings(int16_t Kp, int16_t Ki, int16_t Kd)
    ki = (long)(Ki * 32) / InverseSampleTimeInSec;
    kd = (long)(Kd * 32) * InverseSampleTimeInSec;
 
-   if(controllerDirection == REVERSE)
+   if(_direction == PidDirection::Reverse)
    {
       kp = (0 - kp);
       ki = (0 - ki);
@@ -189,15 +189,15 @@ void integerPID::Initialize()
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
  ******************************************************************************/
-void integerPID::SetControllerDirection(uint8_t Direction)
+void integerPID::SetControllerDirection(PidDirection direction)
 {
-   if((_isActive) && (Direction !=controllerDirection))
+   if(_direction != direction)
    {
-	  kp = (0 - kp);
+       kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
    }
-   controllerDirection = Direction;
+   _direction = direction;
 }
 
 void integerPID::ResetIntegeral() { outputSum=0;}

@@ -87,7 +87,7 @@ void initialiseCorrections(void)
   PID_AFRTarget = 0L;
   // Toggling between modes resets the PID internal state
   // This is required by the unit tests
-  egoPID.SetControllerDirection(REVERSE);
+  egoPID.SetControllerDirection(PidDirection::Reverse);
   egoPID.activate();
   // Force PID re-initialization for unit tests, as PID state needs to be reset between tests.
   egoPID.Initialize();

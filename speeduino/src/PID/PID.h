@@ -1,14 +1,11 @@
 #pragma once
 
 #include <stdint.h>
+#include "pid_common.h"
 
 class PID
 {
-  public:
-
-  //Constants used in some of the functions below
-  #define DIRECT  0
-  #define REVERSE  1
+public:
 
   //commonly used functions **************************************************************************
     PID(long* Input, long* Output, long* Setpoint,
@@ -30,7 +27,7 @@ class PID
   //available but not commonly used functions ********************************************************
     void SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd);         	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t Direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
+	void SetControllerDirection(PidDirection direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
@@ -40,7 +37,7 @@ private:
   long ki;                  // * (I)ntegral Tuning Parameter
   long kd;                  // * (D)erivative Tuning Parameter
 
-	int controllerDirection = DIRECT;
+  PidDirection _direction = PidDirection::Direct;
 
   long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
   long *myOutput;             //   This creates a hard link between the variables and the
