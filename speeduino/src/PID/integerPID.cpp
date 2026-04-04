@@ -22,7 +22,6 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
    myOutput = Output;
    myInput = Input;
    mySetpoint = Setpoint;
-	inAuto = false;
 
 	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
 
@@ -43,7 +42,7 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint,
  **********************************************************************************/
 bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
 {
-   if(!inAuto) return false;
+   if(!_isActive) return false;
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= SampleTime)
    {
@@ -147,7 +146,7 @@ void integerPID::SetOutputLimits(long Min, long Max)
    outMin = Min << PID_SHIFTS;
    outMax = Max << PID_SHIFTS;
 
-   if(inAuto)
+   if(_isActive)
    {
       if(*myOutput > Max) *myOutput = Max;
 	   else if(*myOutput < Min) *myOutput = Min;
@@ -162,14 +161,13 @@ void integerPID::SetOutputLimits(long Min, long Max)
  * when the transition from manual to auto occurs, the controller is
  * automatically initialized
  ******************************************************************************/
-void integerPID::SetMode(int Mode)
+void integerPID::activate(void)
 {
-    bool newAuto = (Mode == AUTOMATIC);
-    if(newAuto == !inAuto)
-    {  /*we just went from manual to auto*/
-        integerPID::Initialize();
-    }
-    inAuto = newAuto;
+   if (!_isActive)
+   {  /*we just went from manual to auto*/
+      integerPID::Initialize();
+   }
+   _isActive = true;
 }
 
 /* Initialize()****************************************************************
@@ -193,7 +191,7 @@ void integerPID::Initialize()
  ******************************************************************************/
 void integerPID::SetControllerDirection(uint8_t Direction)
 {
-   if(inAuto && Direction !=controllerDirection)
+   if((_isActive) && (Direction !=controllerDirection))
    {
 	  kp = (0 - kp);
       ki = (0 - ki);

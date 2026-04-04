@@ -13,7 +13,6 @@ PID::PID(long* Input, long* Output, long* Setpoint,
     myOutput = Output;
     myInput = Input;
     mySetpoint = Setpoint;
-	inAuto = false;
 
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
@@ -31,7 +30,7 @@ PID::PID(long* Input, long* Output, long* Setpoint,
  **********************************************************************************/
 bool PID::Compute(void)
 {
-   if(!inAuto) return false;
+   if(!_isActive) return false;
    /*Compute all the working error variables*/
    long input = *myInput;
    long error = *mySetpoint - input;
@@ -93,7 +92,7 @@ void PID::SetOutputLimits(long Min, long Max)
    outMin = Min*1000;
    outMax = Max*1000;
 
-   if(inAuto)
+   if(_isActive)
    {
 	   if(*myOutput > outMax) *myOutput = outMax;
 	   else if(*myOutput < outMin) *myOutput = outMin;
@@ -103,19 +102,13 @@ void PID::SetOutputLimits(long Min, long Max)
    }
 }
 
-/* SetMode(...)****************************************************************
- * Allows the controller Mode to be set to manual (0) or Automatic (non-zero)
- * when the transition from manual to auto occurs, the controller is
- * automatically initialized
- ******************************************************************************/
-void PID::SetMode(int Mode)
+void PID::activate(void)
 {
-    bool newAuto = (Mode == AUTOMATIC);
-    if(newAuto == !inAuto)
+    if(!_isActive)
     {  /*we just went from manual to auto*/
         PID::Initialize();
     }
-    inAuto = newAuto;
+    _isActive = true;
 }
 
 /* Initialize()****************************************************************
@@ -138,7 +131,7 @@ void PID::Initialize()
  ******************************************************************************/
 void PID::SetControllerDirection(uint8_t Direction)
 {
-   if(inAuto && Direction !=controllerDirection)
+   if((_isActive) && (Direction !=controllerDirection))
    {
 	  kp = (0 - kp);
       ki = (0 - ki);

@@ -7,8 +7,6 @@ class integerPID
 public:
 
   //Constants used in some of the functions below
-  #define AUTOMATIC	1
-  #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
   
@@ -17,7 +15,8 @@ public:
         int16_t Kp, int16_t Ki, int16_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
 
 
-    void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
+    /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
+    void activate(void);
 
     bool Compute(unsigned long now, long FeedForwardTerm = 0);   // * performs the PID calculation at provided time.
     bool Compute(long FeedForwardTerm = 0);                      // * legacy wrapper that calls millis().
@@ -64,5 +63,5 @@ public:
   
 	uint16_t SampleTime;
 	long outMin, outMax;
-	bool inAuto;
+	bool _isActive = false;
 };

@@ -607,13 +607,13 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
       vvtPID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
       vvtPID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
       vvtPID.SetSampleTime(33); //30Hz is 33,33ms
-      vvtPID.SetMode(AUTOMATIC); //Turn PID on
+      vvtPID.activate(); //Turn PID on
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
         vvt2PID.SetOutputLimits(configPage10.vvtCLminDuty, configPage10.vvtCLmaxDuty);
         vvt2PID.SetTunings(configPage10.vvtCLKP, configPage10.vvtCLKI, configPage10.vvtCLKD);
         vvt2PID.SetSampleTime(33); //30Hz is 33,33ms
-        vvt2PID.SetMode(AUTOMATIC); //Turn PID on
+        vvt2PID.activate(); //Turn PID on
       }
     }
 

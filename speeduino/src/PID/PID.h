@@ -7,8 +7,6 @@ class PID
   public:
 
   //Constants used in some of the functions below
-  #define AUTOMATIC	1
-  #define MANUAL	0
   #define DIRECT  0
   #define REVERSE  1
 
@@ -16,7 +14,8 @@ class PID
     PID(long* Input, long* Output, long* Setpoint,
         uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection);     //   Setpoint.  Initial tuning parameters are also set here
 
-    void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
+    /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
+    void activate(void);
 
     bool Compute(void);                   //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
@@ -51,6 +50,6 @@ private:
   long ITerm, lastInput;
 
   long outMin, outMax;
-  bool inAuto;
+  bool _isActive = false;
 };
 

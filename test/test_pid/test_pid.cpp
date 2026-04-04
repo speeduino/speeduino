@@ -10,7 +10,7 @@ static void test_pid_mode_transitions_and_controller_direction(void)
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetOutputLimits(-200, 200);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(12, output); // 255*50/1000 integer scaling yields 12
@@ -27,7 +27,7 @@ static void test_pid_output_limits_in_auto_scope(void)
     long setpoint = 500;
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.SetOutputLimits(0, 100); // inAuto path updates output and ITerm
 
     TEST_ASSERT_TRUE(pid.Compute());
@@ -41,7 +41,6 @@ static void test_pid_manual_mode_compute_false(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 100, 0, 0, DIRECT);
-    pid.SetMode(MANUAL);
 
     TEST_ASSERT_FALSE(pid.Compute());
     TEST_ASSERT_EQUAL(42, output);
@@ -54,7 +53,7 @@ static void test_pid_auto_mode_proportional(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(25, output);  // 255 * 100 / 1000 = 25
@@ -72,7 +71,7 @@ static void test_pid_output_limits_clamp(void)
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
     pid.SetOutputLimits(0, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(255, output);
@@ -86,7 +85,7 @@ static void test_pid_reverse_direction(void)
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, REVERSE);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(-255, output);
@@ -99,7 +98,7 @@ static void test_pid_set_output_limits_long_range(void)
     long setpoint = 1000;
 
     PID pid(&input, &output, &setpoint, 255, 0, 0, DIRECT);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     pid.SetOutputLimits(0, 10);
     TEST_ASSERT_TRUE(pid.Compute());
@@ -134,7 +133,7 @@ static void test_pid_integral_accumulation(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 0, 10, 0, DIRECT);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(1, output);
@@ -150,7 +149,7 @@ static void test_pid_set_tunings_runtime_changes(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     long originalOutput = output;
@@ -168,7 +167,7 @@ static void test_pid_initialize_resets_state(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 0, 10, 0, DIRECT);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute()); // Accumulate some integral
 
@@ -186,7 +185,7 @@ static void test_pid_set_output_limits_invalid_ignored(void)
 
     PID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
     // Output should still be computed normally (limits ignored, default 0-255)
@@ -200,10 +199,9 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 10, 0, 0, DIRECT);
-    pid.SetMode(MANUAL); // Manual mode
     pid.SetControllerDirection(REVERSE); // Should not affect in manual mode
+    pid.activate();
 
-    pid.SetMode(AUTOMATIC);
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_GREATER_THAN(0, output); // Reverse direction normally produces negative output
 }
@@ -244,7 +242,7 @@ static void test_end_to_end_positive_positive_up(void)
 
     PID pid(&input, &output, &setpoint, 100, 30, 50, DIRECT);
     pid.SetOutputLimits(-25, 25);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, setpoint, 50);
@@ -258,7 +256,7 @@ static void test_end_to_end_positive_positive_down(void)
 
     PID pid(&input, &output, &setpoint, 100, 5, 5, DIRECT);
     pid.SetOutputLimits(-75, 75);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, setpoint, 100);
@@ -272,7 +270,7 @@ static void test_end_to_end_negative_negative_up(void)
 
     PID pid(&input, &output, &setpoint, 100, 25, 2, DIRECT);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, setpoint, 50);
@@ -286,7 +284,7 @@ static void test_end_to_end_negative_negative_down(void)
 
     PID pid(&input, &output, &setpoint, 100, 30, 50, DIRECT);
     pid.SetOutputLimits(-25, 25);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, setpoint, 50);
@@ -300,8 +298,7 @@ static void test_end_to_end_negative_positive(void)
 
     PID pid(&input, &output, &setpoint, 50, 1, 80, DIRECT);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
-    pid.Initialize();
+    pid.activate();
 
     assert_pid_complete(pid, &input, &output, setpoint, 50);
 }
@@ -314,7 +311,7 @@ static void test_end_to_end_positive_to_negative(void)
 
     PID pid(&input, &output, &setpoint, 100, 30, 20, DIRECT);
     pid.SetOutputLimits(-255, 255);
-    pid.SetMode(AUTOMATIC);
+    pid.activate();
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, setpoint, 50);
