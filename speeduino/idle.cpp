@@ -91,14 +91,13 @@ static inline void initialiseIdleUpOutput(void)
 
 static void setIdlePidTunings(const config6 &page6)
 {
-  idlePID.SetTunings(make_pid_tuning(page6.idleKP, page6.idleKI, page6.idleKD));
+  idlePID.SetTunings(make_pid_tuning(page6.idleKP, page6.idleKI, page6.idleKD), PidDirection::Direct, 250); //4Hz means 250ms
 }
 
 static void configureIdlePID(const config6 &page6, uint32_t minOutput, uint32_t maxOutput, uint16_t initialTarget)
 {
     idlePID.SetOutputLimits(minOutput, maxOutput);
     setIdlePidTunings(page6);
-    idlePID.SetControllerDirection(PidDirection::Direct);
     idlePID.activate(); //Turn PID on
     idle_pid_target_value = initialTarget;
     idlePID.Initialize();
@@ -181,7 +180,6 @@ void initialiseIdle(bool forcehoming)
         idleStepper.stepperStatus = SOFF;
       }
 
-      idlePID.SetSampleTime(250); //4Hz means 250ms
       configureIdlePID(configPage6, 
                        (configPage2.iacCLminValue * 3)<<2, 
                        (configPage2.iacCLmaxValue * 3)<<2,
@@ -202,7 +200,6 @@ void initialiseIdle(bool forcehoming)
         idleStepper.stepperStatus = SOFF;
       }
 
-      idlePID.SetSampleTime(250); //4Hz means 250ms
       configureIdlePID(configPage6, 
                        (configPage2.iacCLminValue * 3)<<2,
                        (configPage2.iacCLmaxValue * 3)<<2, //Maximum number of steps; always less than home steps count.

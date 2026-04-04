@@ -574,25 +574,23 @@ static void setBoostPidTunings(const config6 &page6)
 {
   if(page6.boostMode == BOOST_MODE_SIMPLE)
   {
-    boostPID.SetTunings(PID_TUNING_UNIT);
+    boostPID.SetTunings(PID_TUNING_UNIT, PidDirection::Direct);
   }
   else
   {
-    boostPID.SetTunings(make_pid_tuning(page6.boostKP, page6.boostKI, page6.boostKD));
+    boostPID.SetTunings(make_pid_tuning(page6.boostKP, page6.boostKI, page6.boostKD), PidDirection::Direct);
   }
 }
 
 static void setVvtPidTunings(integerPID &pid, const config10 &page10, PidDirection direction)
 {
-  pid.SetTunings(make_pid_tuning(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD));
-  pid.SetControllerDirection(direction);
+  pid.SetTunings(make_pid_tuning(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD), direction, 33);
 }
 
 static void configureVvtPid(integerPID &pid, const config10 &page10, PidDirection direction)
 {
   pid.SetOutputLimits(page10.vvtCLminDuty, page10.vvtCLmaxDuty);
   setVvtPidTunings(pid, page10, direction);
-  pid.SetSampleTime(33); //30Hz is 33,33ms
   pid.activate(); //Turn PID on
 }
 
@@ -607,7 +605,6 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
 
   boostPID.SetOutputLimits(configPage2.boostMinDuty, configPage2.boostMaxDuty);
-  boostPID.SetControllerDirection(PidDirection::Direct);
   setBoostPidTunings(configPage6);
 
   if( configPage6.vvtEnabled > 0)

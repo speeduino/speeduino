@@ -24,9 +24,9 @@ integerPID::integerPID(long* Input, long* Output, long* Setpoint)
 
 	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
 
-   SampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
+   _sampleTime = 250;							//default Controller Sample Time is 0.25 seconds. This is the 4Hz control time for Idle and VVT
 
-   lastTime = millis()-SampleTime;
+   lastTime = millis()-_sampleTime;
 }
 
 
@@ -40,7 +40,7 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
 {
    if(!_isActive) return false;
    unsigned long timeChange = (now - lastTime);
-   if(timeChange >= SampleTime)
+   if(timeChange >= _sampleTime)
    {
       /*Compute all the working error variables*/
 	   long input = *myInput;
@@ -89,46 +89,28 @@ bool integerPID::Compute(long FeedForwardTerm)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID::SetTunings(const PidTuningParameters &pidParams)
+void integerPID::SetTunings(const PidTuningParameters &pidParams, PidDirection direction, uint16_t sampleTime)
 {
+   _sampleTime = sampleTime;
+
    /*
-   double SampleTimeInSec = ((double)SampleTime)/1000;
+   double SampleTimeInSec = ((double)_sampleTime)/1000;
    _pidParams.Kp = Kp;
    _pidParams.Ki = Ki * SampleTimeInSec;
    _pidParams.Kd = Kd / SampleTimeInSec;
    */
-   long InverseSampleTimeInSec = 1000 / SampleTime;
+   long InverseSampleTimeInSec = 1000 / _sampleTime;
    //New resolution, 32x to improve _pidParams.Ki here | _pidParams.Kp 3.125% | _pidParams.Ki 3.125% | _pidParams.Kd 0.781%
    _pidParams = pidParams * 32;
    _pidParams.Ki = _pidParams.Ki / InverseSampleTimeInSec;
    _pidParams.Kd = _pidParams.Kd * InverseSampleTimeInSec;
 
-   if(_direction == PidDirection::Reverse)
+   if(direction == PidDirection::Reverse)
    {
       _pidParams = _pidParams * -1;
    }
 }
 
-/* SetSampleTime(...) *********************************************************
- * sets the period, in Milliseconds, at which the calculation is performed
- ******************************************************************************/
-void integerPID::SetSampleTime(uint16_t NewSampleTime)
-{
-   if (SampleTime == (unsigned long)NewSampleTime) return; //If new value = old value, no action required.
-
-   auto deScaledParams = _pidParams / 32;
-   int16_t oldInverseSampleTimeInSec = 1000 / SampleTime;
-   deScaledParams.Ki = deScaledParams.Ki * oldInverseSampleTimeInSec;
-   deScaledParams.Kd = deScaledParams.Kd / oldInverseSampleTimeInSec;
-   if(_direction == PidDirection::Reverse)
-   {
-      deScaledParams = deScaledParams * -1;
-   }
-   
-   SampleTime = NewSampleTime;
-   //This resets the tuning values with the appropriate new scaling
-   SetTunings(deScaledParams);
-}
 
 /* SetOutputLimits(...)****************************************************
  *     This function will be used far more often than SetInputLimits.  while
@@ -179,21 +161,6 @@ void integerPID::Initialize()
    lastMinusOneInput = *myInput;
    if(outputSum > outMax) { outputSum = outMax; }
    else if(outputSum < outMin) { outputSum = outMin; }
-}
-
-/* SetControllerDirection(...)*************************************************
- * The PID will either be connected to a DIRECT acting process (+Output leads
- * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
- * know which one, because otherwise we may increase the output when we should
- * be decreasing.  This is called from the constructor.
- ******************************************************************************/
-void integerPID::SetControllerDirection(PidDirection direction)
-{
-   if(_direction != direction)
-   {
-      _pidParams = _pidParams * -1;
-   }
-   _direction = direction;
 }
 
 void integerPID::ResetIntegeral() { outputSum=0;}
