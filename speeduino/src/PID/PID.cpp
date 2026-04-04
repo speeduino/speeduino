@@ -67,7 +67,7 @@ void PID::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
   ki = Ki;
   kd = Kd * 10;
 
-  if(controllerDirection ==REVERSE)
+  if(_direction == PidDirection::Reverse)
    {
       kp = (0 - kp);
       ki = (0 - ki);
@@ -127,13 +127,13 @@ void PID::Initialize()
  * know which one, because otherwise we may increase the output when we should
  * be decreasing.  This is called from the constructor.
  ******************************************************************************/
-void PID::SetControllerDirection(uint8_t Direction)
+void PID::SetControllerDirection(PidDirection direction)
 {
-   if((_isActive) && (Direction !=controllerDirection))
+   if(_direction != direction)
    {
-	  kp = (0 - kp);
+       kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
    }
-   controllerDirection = Direction;
+   _direction = direction;
 }

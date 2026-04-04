@@ -1,15 +1,11 @@
 #pragma once
 
 #include <stdint.h>
+#include "pid_common.h"
 
 class integerPID_ideal
 {
 public:
-
-  //Constants used in some of the functions below
-  #define DIRECT  0
-  #define REVERSE  1
-
   //commonly used functions **************************************************************************
     integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
                                    uint8_t Kp, uint8_t Ki, uint8_t Kd);     //   Setpoint.  Initial tuning parameters are also set here
@@ -29,7 +25,7 @@ public:
   //available but not commonly used functions ********************************************************
     void SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd);         	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t Direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
+	void SetControllerDirection(PidDirection direction);	  // * Sets the Direction, or "Action" of the controller. DIRECT
 										  //   means the output will increase when error is positive. REVERSE
 										  //   means the opposite.  it's very unlikely that this will be needed
 										  //   once it is set in the constructor.
@@ -49,7 +45,7 @@ public:
   uint16_t  ki;                  // * (I)ntegral Tuning Parameter
   uint16_t  kd;                  // * (D)erivative Tuning Parameter
 
-	int controllerDirection = DIRECT;
+	PidDirection _direction = PidDirection::Direct;
 
     long *myInput;              //
     uint16_t *myOutput;         //   This is a percentage figure multiplied by 100 (To give 2 points of precision)

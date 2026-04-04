@@ -72,7 +72,7 @@ static void test_integerPID_controller_direction_switches_effect(void)
     long setpoint = 100;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(DIRECT);
+    pid.SetControllerDirection(PidDirection::Direct);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -82,13 +82,13 @@ static void test_integerPID_controller_direction_switches_effect(void)
     long directOutput = output;
     TEST_ASSERT_GREATER_THAN(0, directOutput);
 
-    pid.SetControllerDirection(REVERSE);
+    pid.SetControllerDirection(PidDirection::Reverse);
     now += 100;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_NOT_EQUAL(directOutput, output);
     TEST_ASSERT_LESS_THAN(0, output);
 
-    pid.SetControllerDirection(DIRECT);
+    pid.SetControllerDirection(PidDirection::Direct);
     now += 100;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_GREATER_THAN(0, output);
@@ -109,7 +109,7 @@ static void test_integerPID_controller_direction_maintains_output_limits(void)
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_LESS_OR_EQUAL(50, output);
 
-    pid.SetControllerDirection(REVERSE);
+    pid.SetControllerDirection(PidDirection::Reverse);
     now += 100;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_GREATER_OR_EQUAL(-50, output);
@@ -122,7 +122,7 @@ static void test_integerPID_reverse_direction(void)
     long setpoint = 20;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(REVERSE);
+    pid.SetControllerDirection(PidDirection::Reverse);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
@@ -201,7 +201,7 @@ static void test_integerPID_output_limits_negative_range(void)
     integerPID pid(&input, &output, &setpoint, 255, 0, 0);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(-100, 10);
-    pid.SetControllerDirection(REVERSE);
+    pid.SetControllerDirection(PidDirection::Reverse);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
@@ -216,7 +216,7 @@ static void test_integerPID_output_limits_no_clamp_needed(void)
     long setpoint = 100;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(DIRECT);
+    pid.SetControllerDirection(PidDirection::Direct);
     pid.SetSampleTime(1);
     pid.SetOutputLimits(0, 255); // Wide limits
     pid.activate();
@@ -428,11 +428,12 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
     long setpoint = 20;
 
     integerPID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(REVERSE); // Should not affect in manual mode
+    pid.SetControllerDirection(PidDirection::Reverse);
+    pid.SetOutputLimits(-25, 25);
     pid.activate();
     
     TEST_ASSERT_TRUE(pid.Compute(NOW));
-    TEST_ASSERT_GREATER_THAN(0, output);
+    TEST_ASSERT_LESS_THAN(0, output);
 }
 
 static String createIterationMsg(int16_t iteration, long input, long output)

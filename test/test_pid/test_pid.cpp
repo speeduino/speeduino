@@ -15,7 +15,7 @@ static void test_pid_mode_transitions_and_controller_direction(void)
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(12, output); // 255*50/1000 integer scaling yields 12
 
-    pid.SetControllerDirection(REVERSE);
+    pid.SetControllerDirection(PidDirection::Reverse);
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_LESS_THAN(0, output); // sign changed
 }
@@ -86,7 +86,7 @@ static void test_pid_reverse_direction(void)
     PID pid(&input, &output, &setpoint, 255, 0, 0);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
-    pid.SetControllerDirection(REVERSE);
+    pid.SetControllerDirection(PidDirection::Reverse);
 
     TEST_ASSERT_TRUE(pid.Compute());
     TEST_ASSERT_EQUAL(-255, output);
@@ -150,7 +150,7 @@ static void test_pid_set_tunings_runtime_changes(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(DIRECT);
+    pid.SetControllerDirection(PidDirection::Direct);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
@@ -169,7 +169,7 @@ static void test_pid_initialize_resets_state(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 0, 10, 0);
-    pid.SetControllerDirection(DIRECT);
+    pid.SetControllerDirection(PidDirection::Direct);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute()); // Accumulate some integral
@@ -187,7 +187,7 @@ static void test_pid_set_output_limits_invalid_ignored(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(DIRECT);
+    pid.SetControllerDirection(PidDirection::Direct);
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
     pid.activate();
 
@@ -203,11 +203,12 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     long setpoint = 100;
 
     PID pid(&input, &output, &setpoint, 10, 0, 0);
-    pid.SetControllerDirection(REVERSE); // Should not affect in manual mode
+    pid.SetControllerDirection(PidDirection::Reverse); // Should not affect in manual mode
+    pid.SetOutputLimits(-25, 25);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute());
-    TEST_ASSERT_GREATER_THAN(0, output); // Reverse direction normally produces negative output
+    TEST_ASSERT_LESS_THAN(0, output); // Reverse direction normally produces negative output
 }
 
 static String createIterationMsg(int16_t iteration, long input, long output)

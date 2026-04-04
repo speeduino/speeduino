@@ -85,7 +85,7 @@ static void test_reverse_direction(void)
 
     integerPID_ideal pidReverse(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0);
     pidReverse.SetOutputLimits(0, 100);
-    pidReverse.SetControllerDirection(REVERSE);
+    pidReverse.SetControllerDirection(PidDirection::Reverse);
     pidReverse.Initialize();
     TEST_ASSERT_TRUE(pidReverse.Compute(NOW, 0));
     uint16_t reverseOutput = output;
