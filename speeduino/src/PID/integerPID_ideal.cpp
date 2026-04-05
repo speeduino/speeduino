@@ -13,18 +13,15 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime)
+integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity)
 {
 
     myOutput = Output;
     myInput = (long*)Input;
     mySetpoint = Setpoint;
     mySensitivity = Sensitivity;
-    mySampleTime = SampleTime;
 
 	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
-
-    lastTime = millis()- *mySampleTime;
 }
 
 
@@ -37,7 +34,7 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
 bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 {
    unsigned long timeChange = (now - lastTime);
-   if(timeChange >= *mySampleTime)
+   if(timeChange >= _sampleTime)
    {
       /*Compute all the working error variables*/
       uint16_t sensitivity = 10001 - (*mySensitivity * 2);
@@ -126,5 +123,10 @@ void integerPID_ideal::Initialize()
 {
    ITerm = 0;
    lastInput = *myInput;
-   // lastError = 0;
+}
+
+void integerPID_ideal::setSampleTime(unsigned long nowMs, uint16_t sampleTimeMs) 
+{ 
+   _sampleTime = sampleTimeMs; 
+   lastTime = nowMs-sampleTimeMs;
 }
