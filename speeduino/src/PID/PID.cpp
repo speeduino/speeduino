@@ -1,6 +1,6 @@
-#include "PID.h"
-
 #include <Arduino.h>
+#include "PID.h"
+#include "../../maths.h"
 
 /*Constructor (...)*********************************************************
  *    The parameters specified here are those for for which we can't set up
@@ -28,22 +28,19 @@ bool PID::Compute(void)
 {
    if(!_isActive) return false;
    /*Compute all the working error variables*/
-   long input = *myInput;
-   long error = *mySetpoint - input;
-   ITerm += (_pidParams.Ki * error);
-   if(ITerm > outMax) ITerm= outMax;
-   else if(ITerm < outMin) ITerm = outMin;
-   long dInput = (input - lastInput);
+   long error = *mySetpoint - *myInput;
+   ITerm = clamp(ITerm + (_pidParams.Ki * error), outMin, outMax);
+
+   long dInput = (*myInput - lastInput);
 
    /*Compute PID Output*/
    long output = (_pidParams.Kp * error) + ITerm- (_pidParams.Kd * dInput);
+   output = clamp(output, outMin, outMax);
 
-   if(output > outMax) { output = outMax; }
-   else if(output < outMin) { output = outMin; }
    *myOutput = output/1000;
 
    /*Remember some variables for next time*/
-   lastInput = input;
+   lastInput = *myInput;
    return true;
 }
 
@@ -87,11 +84,8 @@ void PID::SetOutputLimits(long Min, long Max)
 
    if(_isActive)
    {
-	   if(*myOutput > outMax) *myOutput = outMax;
-	   else if(*myOutput < outMin) *myOutput = outMin;
-
-	   if(ITerm > outMax) ITerm= outMax;
-	   else if(ITerm < outMin) ITerm= outMin;
+      *myOutput = clamp(*myOutput, outMin, outMax);
+      ITerm = clamp(ITerm, outMin, outMax);
    }
 }
 
@@ -110,8 +104,6 @@ void PID::activate(void)
  ******************************************************************************/
 void PID::Initialize()
 {
-   ITerm = *myOutput;
+   ITerm = clamp(*myOutput, outMin, outMax);
    lastInput = *myInput;
-   if(ITerm > outMax) ITerm = outMax;
-   else if(ITerm < outMin) ITerm = outMin;
 }

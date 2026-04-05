@@ -1,5 +1,6 @@
-#include "integerPID.h"
 #include <Arduino.h>
+#include "integerPID.h"
+#include "../../maths.h"
 
 constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
 
@@ -48,8 +49,7 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
       if (_pidParams.Ki!= 0)
       {
          outputSum += (_pidParams.Ki * error); //integral += error × dt
-         if(outputSum > outMax-FeedForwardTerm) { outputSum = outMax-FeedForwardTerm; }
-         else if(outputSum < outMin-FeedForwardTerm) { outputSum = outMin-FeedForwardTerm; }
+         outputSum = clamp(outputSum, outMin - FeedForwardTerm, outMax - FeedForwardTerm);
       }
 
       /*Compute PID Output*/
@@ -126,11 +126,8 @@ void integerPID::SetOutputLimits(long Min, long Max)
 
    if(_isActive)
    {
-      if(*myOutput > Max) *myOutput = Max;
-	   else if(*myOutput < Min) *myOutput = Min;
-
-	   if(outputSum > outMax) { outputSum = outMax; }
-	   else if(outputSum < outMin) { outputSum = outMin; }
+      *myOutput = clamp(*myOutput, Min, Max);
+      outputSum = clamp(outputSum, outMin, outMax);
    }
 }
 
@@ -154,10 +151,8 @@ void integerPID::activate(void)
  ******************************************************************************/
 void integerPID::Initialize()
 {
-   outputSum = *myOutput<<PID_SHIFTS;
+   outputSum = clamp(*myOutput<<PID_SHIFTS, outMin, outMax);
    lastInput = *myInput;
-   if(outputSum > outMax) { outputSum = outMax; }
-   else if(outputSum < outMin) { outputSum = outMin; }
 }
 
 void integerPID::ResetIntegeral() { outputSum=0;}

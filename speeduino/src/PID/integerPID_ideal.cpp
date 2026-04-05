@@ -5,6 +5,7 @@
  * This Library is licensed under a GPLv3 License
  **********************************************************************************************/
 #include "integerPID_ideal.h"
+#include "../../maths.h"
 #include <Arduino.h>
 
 
