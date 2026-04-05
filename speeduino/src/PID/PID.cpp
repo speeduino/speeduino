@@ -75,11 +75,6 @@ void PID::SetOutputLimits(long Min, long Max)
    if(Min >= Max) return;
    outMin = Min*1000;
    outMax = Max*1000;
-
-   if(_isActive)
-   {
-      ITerm = clamp(ITerm, outMin, outMax);
-   }
 }
 
 void PID::activate(long input)

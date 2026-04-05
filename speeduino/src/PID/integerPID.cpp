@@ -107,11 +107,6 @@ void integerPID::SetOutputLimits(long Min, long Max)
    if(Min >= Max) return;
    outMin = Min << PID_SHIFTS;
    outMax = Max << PID_SHIFTS;
-
-   if(_isActive)
-   {
-      outputSum = clamp(outputSum, outMin, outMax);
-   }
 }
 
 /* SetMode(...)****************************************************************
