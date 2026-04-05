@@ -45,7 +45,7 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const confi
 {
   return (page6.engineProtectType != PROTECT_CUT_OFF)
       && (page6.boostCutEnabled) 
-      && (current.MAP > (long)MAP.toUser(page6.boostLimit));
+      && (current.MAP > MAP.toUser(page6.boostLimit));
 }
 
 static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
@@ -69,7 +69,7 @@ static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &pag
 
 static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-    return (current.MAP >= (long)MAP.toUser(page9.afrProtectMinMAP))
+    return (current.MAP >= MAP.toUser(page9.afrProtectMinMAP))
           && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
           && (current.TPS >= page9.afrProtectMinTPS) 
           && (current.O2 >= getAfrO2Limit(current, page9)); 

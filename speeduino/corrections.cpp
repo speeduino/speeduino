@@ -732,8 +732,8 @@ static inline bool isAfrClosedLoopOperational(const statuses &current, const con
       && (current.O2 > page6.ego_min) 
       && (current.runSecs > page6.ego_sdelay) 
       && (!current.isDFCOActive) 
-      && (current.MAP <= (long)MAP.toUser( page9.egoMAPMax)) 
-      && (current.MAP >= (long)MAP.toUser( page9.egoMAPMin))
+      && (current.MAP <= MAP.toUser(page9.egoMAPMax)) 
+      && (current.MAP >= MAP.toUser(page9.egoMAPMin))
       ;
 }
 
@@ -917,7 +917,7 @@ static inline bool isWMIAdvanceEnabled(void) {
 static inline bool isWMIAdvanceOperational(void) {
   return (currentStatus.TPS >= configPage10.wmiTPS) 
       && (currentStatus.RPM >= RPM_COARSE.toUser(configPage10.wmiRPM)) 
-      && (currentStatus.MAP >= (int32_t)MAP.toUser(configPage10.wmiMAP)) 
+      && (currentStatus.MAP >= MAP.toUser(configPage10.wmiMAP)) 
       && (temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT);
 }
 
