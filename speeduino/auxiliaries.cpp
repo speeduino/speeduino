@@ -574,17 +574,17 @@ static void setBoostPidTunings(const config6 &page6)
 {
   if(page6.boostMode == BOOST_MODE_SIMPLE)
   {
-    boostPID.SetTunings(PID_TUNING_UNIT, PidDirection::Direct);
+    boostPID.SetTunings(PidTuningParameters(), PidDirection::Direct);
   }
   else
   {
-    boostPID.SetTunings(make_pid_tuning(page6.boostKP, page6.boostKI, page6.boostKD), PidDirection::Direct);
+    boostPID.SetTunings(PidTuningParameters(page6.boostKP, page6.boostKI, page6.boostKD), PidDirection::Direct);
   }
 }
 
 static void setVvtPidTunings(integerPID &pid, const config10 &page10, PidDirection direction)
 {
-  pid.SetTunings(make_pid_tuning(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD), direction, 33);
+  pid.SetTunings(PidTuningParameters(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD), direction, 33);
 }
 
 static void configureVvtPid(integerPID &pid, const config10 &page10, PidDirection direction)

@@ -31,7 +31,7 @@ public:
 
   private:
 
-  PidTuningParameters _pidParams = PID_TUNING_UNIT;
+  PidTuningParameters _pidParams;
 
     long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
     long *myOutput;             //   This creates a hard link between the variables and the

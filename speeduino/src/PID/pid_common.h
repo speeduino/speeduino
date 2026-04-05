@@ -11,37 +11,49 @@ enum class PidDirection : uint8_t
 /** @brief Structure to hold PID tuning parameters */
 struct PidTuningParameters
 {
+    /**
+     * @brief Construct a new PidTuningParameters object
+     * 
+     * @note The parameters are uint8_t for memory efficiency, but are stored as int16_t to allow 
+     * for a wide range of tuning values. They can be scaled as needed using the provided operators 
+     * or by adjusting the tunings directly.
+     * 
+     * @param kp Proportional tuning parameter (default 1)
+     * @param ki Integral tuning parameter (default 1)
+     * @param kd Derivative tuning parameter (default 1)
+     */
+    constexpr PidTuningParameters(uint8_t kp = 1U, uint8_t ki = 1U, uint8_t kd = 1U)
+        : Kp(kp), Ki(ki), Kd(kd) {}
+
     int16_t Kp; ///> Proportional Tuning Parameter
     int16_t Ki; ///> Integral Tuning Parameter
     int16_t Kd; ///> Derivative Tuning Parameter
 };
 
-static inline constexpr PidTuningParameters make_pid_tuning(int16_t Kp, int16_t Ki, int16_t Kd) {
-    return PidTuningParameters{Kp, Ki, Kd};
-}
-
-// Scalar multiplication operator for easy tuning adjustments
+/** @brief Scalar multiplication operator for easy tuning adjustments */
+///@{
 static inline constexpr PidTuningParameters operator*(const PidTuningParameters& params, int8_t scalar) {
-    return make_pid_tuning(
-        static_cast<int16_t>(params.Kp * scalar),
-        static_cast<int16_t>(params.Ki * scalar),
-        static_cast<int16_t>(params.Kd * scalar)
-    );
+    PidTuningParameters scaledParams;
+    scaledParams.Kp = params.Kp * scalar;
+    scaledParams.Ki = params.Ki * scalar;
+    scaledParams.Kd = params.Kd * scalar;
+    return scaledParams;
 }
 static inline constexpr PidTuningParameters operator*(int8_t scalar, const PidTuningParameters& params) {
     return params * scalar;
 }
+///@}
 
-// Scalar division operator for easy tuning adjustments
+/** @brief Scalar division operator for easy tuning adjustments */
+///@{
 static inline constexpr PidTuningParameters operator/(const PidTuningParameters& params, int8_t scalar) {
-    return make_pid_tuning(
-        static_cast<int16_t>(params.Kp / scalar),
-        static_cast<int16_t>(params.Ki / scalar),
-        static_cast<int16_t>(params.Kd / scalar)
-    );
+    PidTuningParameters scaledParams;
+    scaledParams.Kp = params.Kp / scalar;
+    scaledParams.Ki = params.Ki / scalar;
+    scaledParams.Kd = params.Kd / scalar;
+    return scaledParams;
 }
 static inline constexpr PidTuningParameters operator/(int8_t scalar, const PidTuningParameters& params) {
     return params / scalar;
 }
-
-constexpr PidTuningParameters PID_TUNING_UNIT = make_pid_tuning(1, 1, 1); ///< Default tuning parameters for a unit PID controller (Kp=1, Ki=1, Kd=1)
+///@}
