@@ -990,11 +990,14 @@ void vvtControl(void)
         else
         {
           //If not already at target angle, calculate new value from PID
+          long pidOutput = 0;
           vvtPID.setTargetValue(currentStatus.vvt1TargetAngle);
-          bool PID_compute = vvtPID.Compute(millis(), currentStatus.vvt1Angle, &currentStatus.vvt1Duty);
-          //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
-          //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
-          if(PID_compute == true) { vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
+          bool PID_compute = vvtPID.Compute(millis(), currentStatus.vvt1Angle, &pidOutput);
+          if(PID_compute == true) 
+          { 
+            currentStatus.vvt1Duty = (uint8_t)pidOutput;
+            vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); 
+          }
           currentStatus.vvt1AngleError = false;
         }
 
@@ -1027,8 +1030,13 @@ void vvtControl(void)
           {
             vvt2PID.setTargetValue(currentStatus.vvt2TargetAngle);
             //If not already at target angle, calculate new value from PID
-            bool PID_compute = vvt2PID.Compute(millis(), currentStatus.vvt2Angle, &currentStatus.vvt2Duty);
-            if(PID_compute == true) { vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
+            long pidOutput = 0;
+            bool PID_compute = vvt2PID.Compute(millis(), currentStatus.vvt2Angle, &pidOutput);
+            if(PID_compute == true) 
+            { 
+              currentStatus.vvt2Duty = (uint8_t)pidOutput;
+              vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); 
+            }
             currentStatus.vvt2AngleError = false;
           }
         }

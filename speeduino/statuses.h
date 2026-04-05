@@ -220,9 +220,9 @@ struct statuses {
   volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
-  int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt1TargetAngle;
-  long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
+  int16_t vvt1Angle; 
+  uint8_t vvt1TargetAngle;
+  uint8_t vvt1Duty; 
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -272,9 +272,9 @@ struct statuses {
 
   byte fanDuty;
   byte wmiPW;
-  int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt2TargetAngle;
-  long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
+  int16_t vvt2Angle; 
+  uint8_t vvt2TargetAngle;
+  uint8_t vvt2Duty; 
   byte outputsStatus;
 
   // SD card status fields.
