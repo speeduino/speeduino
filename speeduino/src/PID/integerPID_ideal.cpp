@@ -13,12 +13,11 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Sensitivity)
+integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output)
 {
 
     myOutput = Output;
     myInput = Input;
-    mySensitivity = Sensitivity;
 
 	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
 }
@@ -36,7 +35,7 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
    if(timeChange >= _sampleTime)
    {
       /*Compute all the working error variables*/
-      uint16_t sensitivity = 10001 - (*mySensitivity * 2);
+      uint16_t sensitivity = 10001 - (_sensitivity * 2);
       long unitless_setpoint = (_setpoint * 10000L) / sensitivity;
       long unitless_input = (*myInput * 10000L) / sensitivity;
       long error = unitless_setpoint - unitless_input;
