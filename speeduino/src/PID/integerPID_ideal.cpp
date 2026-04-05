@@ -6,7 +6,6 @@
  **********************************************************************************************/
 #include "integerPID_ideal.h"
 #include "../../maths.h"
-#include <Arduino.h>
 
 
 /*Constructor (...)*********************************************************
@@ -69,13 +68,6 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
    }
    else return false;
 }
-
-// LCOV_EXCL_START
-bool integerPID_ideal::Compute(uint16_t FeedForward)
-{
-    return Compute(millis(), FeedForward);
-}
-// LCOV_EXCL_STOP
 
 /* SetTunings(...)*************************************************************
  * This function allows the controller's dynamic performance to be adjusted.

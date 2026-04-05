@@ -10,7 +10,6 @@ public:
     integerPID_ideal(long* Input, uint16_t* Output);
 
     bool Compute(unsigned long now, uint16_t FeedForward);  // * performs the PID calculation with injected time.
-    bool Compute(uint16_t FeedForward);                      // * legacy wrapper that calls millis().
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively

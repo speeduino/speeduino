@@ -91,7 +91,7 @@ static inline void initialiseIdleUpOutput(void)
 
 static void setIdlePidTunings(const config6 &page6)
 {
-  idlePID.SetTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), PidDirection::Direct, 250); //4Hz means 250ms
+  idlePID.SetTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), PidDirection::Direct, millis(), 250); //4Hz means 250ms
   idlePID.setTargetValue(idle_cl_target_rpm);
 }
 
@@ -453,7 +453,7 @@ void idleControl(void)
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         
-        PID_computed = idlePID.Compute();
+        PID_computed = idlePID.Compute(millis());
         long TEMP_idle_pwm_target_value;
         if(PID_computed == true)
         {
@@ -537,7 +537,7 @@ void idleControl(void)
           idlePID.ResetIntegeral();
         }
         
-        PID_computed = idlePID.Compute(true, FeedForwardTerm);
+        PID_computed = idlePID.Compute(millis(), FeedForwardTerm);
 
         if(PID_computed == true)
         {
@@ -652,7 +652,7 @@ void idleControl(void)
             else { FeedForwardTerm = idle_pid_target_value; }
           }
 
-          PID_computed = idlePID.Compute(true, FeedForwardTerm);
+          PID_computed = idlePID.Compute(millis(), FeedForwardTerm);
 
           //If DFCO conditions are met keep output from changing
           if( (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue

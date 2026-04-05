@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "integerPID.h"
 #include "../../maths.h"
 
@@ -22,8 +21,6 @@ integerPID::integerPID(long* Input, long* Output)
    myInput = Input;
 
 	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
-
-   lastTime = millis()-_sampleTime;
 }
 
 
@@ -36,7 +33,7 @@ integerPID::integerPID(long* Input, long* Output)
 bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
 {
    if(!_isActive) return false;
-   unsigned long timeChange = (now - lastTime);
+   unsigned long timeChange = (now - _lastTime);
    if(timeChange >= _sampleTime)
    {
       /*Compute all the working error variables*/
@@ -62,19 +59,13 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
 
       /*Remember some variables for next time*/
       lastInput = *myInput;
-      lastTime = now;
+      _lastTime = now;
 
       return true;
    }
    return false;
 }
 
-// LCOV_EXCL_START
-bool integerPID::Compute(long FeedForwardTerm)
-{
-    return Compute(millis(), FeedForwardTerm);
-}
-// LCOV_EXCL_STOP
 
 static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t sampleTime)
 {
@@ -90,9 +81,10 @@ static PidTuningParameters scaleTuningParameters(const PidTuningParameters& para
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID::SetTunings(const PidTuningParameters &pidParams, PidDirection direction, uint16_t sampleTime)
+void integerPID::SetTunings(const PidTuningParameters &pidParams, PidDirection direction, uint32_t nowMs, uint16_t sampleTime)
 {
    _sampleTime = sampleTime;
+   _lastTime = nowMs - sampleTime;
 
    if(direction == PidDirection::Reverse)
    {
