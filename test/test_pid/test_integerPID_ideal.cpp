@@ -8,13 +8,13 @@ static void test_p_only_clamped_to_min(void)
 {
     long input = 100;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
     unsigned long now = 1000000;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.SetTunings(PidTuningParameters(1, 0, 0), PidDirection::Direct); // P-only
     pid.setSampleTime(now, 0);
     pid.setTargetValue(200);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -25,13 +25,13 @@ static void test_p_only_clamped_to_max(void)
 {
     long input = 0;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
     unsigned long now = 1000000;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.SetTunings(PidTuningParameters(100, 0, 0), PidDirection::Direct); // P-only
     pid.setSampleTime(now, 0);
     pid.setTargetValue(1000);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -42,12 +42,12 @@ static void test_sample_time_gate(void)
 {
     long input = 500;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
     unsigned long now = 1000000;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.setSampleTime(now, 250);
     pid.setTargetValue(500);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -59,14 +59,14 @@ static void test_ki_windup_limits(void)
 {
     long input = 0;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
     unsigned long now = 1000000;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.SetTunings(PidTuningParameters(10, 10, 0), PidDirection::Direct);
     pid.setSampleTime(now, 0);
     pid.SetOutputLimits(20, 80);
     pid.setTargetValue(1000);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -79,24 +79,25 @@ static void test_reverse_direction(void)
 {
     long input = 500;
     uint16_t output = 0;
-    uint16_t sensitivity = 1;
     unsigned long now = 1000000;
 
-    integerPID_ideal pidDirect(&input, &output, &sensitivity);
+    integerPID_ideal pidDirect(&input, &output);
     pidDirect.SetTunings(PidTuningParameters(50, 0, 0), PidDirection::Direct);
     pidDirect.setSampleTime(now, 0);
     pidDirect.SetOutputLimits(0, 5000);
     pidDirect.setTargetValue(1000);
+    pidDirect.setSensitivity(1);
     pidDirect.Initialize();
 
     TEST_ASSERT_TRUE(pidDirect.Compute(NOW, 0));
     uint16_t directOutput = output;
 
-    integerPID_ideal pidReverse(&input, &output, &sensitivity);
+    integerPID_ideal pidReverse(&input, &output);
     pidReverse.SetTunings(PidTuningParameters(50, 0, 0), PidDirection::Reverse);
     pidReverse.setSampleTime(now, 0);
     pidReverse.SetOutputLimits(0, 5000);
     pidReverse.setTargetValue(1000);
+    pidReverse.setSensitivity(1);
     pidReverse.Initialize();
     TEST_ASSERT_TRUE(pidReverse.Compute(NOW, 0));
     uint16_t reverseOutput = output;
@@ -108,12 +109,12 @@ static void test_feedforward_applied(void)
 {
     long input = 500;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
     unsigned long now = 1000000;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.setSampleTime(now, 0);
     pid.setTargetValue(500);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 5000));
@@ -124,12 +125,12 @@ static void test_set_output_limits_invalid_bounds_are_ignored(void)
 {
     long input = 0;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.SetTunings(PidTuningParameters(100, 0, 0), PidDirection::Direct);
     pid.SetOutputLimits(80, 20);
     pid.setTargetValue(1000);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -140,12 +141,12 @@ static void test_initialize_resets_integral_and_error(void)
 {
     long input = 0;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.SetTunings(PidTuningParameters(1, 10, 0), PidDirection::Direct);
     pid.SetOutputLimits(0, 100);
     pid.setSampleTime(NOW, 1);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -160,13 +161,13 @@ static void test_derivative_term_changes_output_on_error_transition(void)
 {
     long input = 0;
     uint16_t output = 0;
-    uint16_t sensitivity = 50;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.SetTunings(PidTuningParameters(1, 0, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 100);
     pid.setSampleTime(NOW, 1);
     pid.setTargetValue(1000);
+    pid.setSensitivity(50);
     pid.Initialize();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
@@ -174,7 +175,7 @@ static void test_derivative_term_changes_output_on_error_transition(void)
 
     input = 100;
     TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, 0));
-    TEST_ASSERT_NOT_EQUAL(firstOutput, output);
+    TEST_ASSERT_NOT_EQUAL_UINT16(firstOutput, output);
 }
 
 static String createIterationMsg(int16_t iteration, uint16_t input, uint16_t output)
@@ -204,15 +205,15 @@ static void test_end_to_end_positive_positive_up(void)
 {
     long input = 30;
     uint16_t output = 0;
-    uint16_t sensitivity = 0;
     constexpr uint8_t SAMPLE_TIME = 25;
     constexpr uint16_t SET_POINT = 90;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.setTargetValue(SET_POINT);
     pid.setSampleTime(10000, SAMPLE_TIME);
     pid.SetTunings(PidTuningParameters(3, 2, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
+    pid.setSensitivity(0);
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, SET_POINT, SAMPLE_TIME, 7);
@@ -222,15 +223,15 @@ static void test_end_to_end_positive_positive_down(void)
 {
     long input = 90;
     uint16_t output = 0;
-    uint16_t sensitivity = 0;
     constexpr uint8_t SAMPLE_TIME = 25;
     constexpr uint16_t SET_POINT = 30;
 
-    integerPID_ideal pid(&input, &output, &sensitivity);
+    integerPID_ideal pid(&input, &output);
     pid.setTargetValue(SET_POINT);
     pid.setSampleTime(10000, SAMPLE_TIME);
     pid.SetTunings(PidTuningParameters(3, 2, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
+    pid.setSensitivity(0);
     pid.Initialize();
 
     assert_pid_complete(pid, &input, &output, SET_POINT, SAMPLE_TIME, 11);
