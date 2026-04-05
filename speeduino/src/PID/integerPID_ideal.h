@@ -25,7 +25,7 @@ public:
 
 private:
 
-  PidTuningParameters _pidParams = PID_TUNING_UNIT;
+  PidTuningParameters _pidParams;
 	PidDirection _direction = PidDirection::Direct;
 
     long *myInput;              //

@@ -91,7 +91,7 @@ static inline void initialiseIdleUpOutput(void)
 
 static void setIdlePidTunings(const config6 &page6)
 {
-  idlePID.SetTunings(make_pid_tuning(page6.idleKP, page6.idleKI, page6.idleKD), PidDirection::Direct, 250); //4Hz means 250ms
+  idlePID.SetTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), PidDirection::Direct, 250); //4Hz means 250ms
 }
 
 static void configureIdlePID(const config6 &page6, uint32_t minOutput, uint32_t maxOutput, uint16_t initialTarget)
