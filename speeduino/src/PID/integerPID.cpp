@@ -16,11 +16,10 @@ constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
  * 
  * @return uint8_t The current target advance value in degrees
  */
-integerPID::integerPID(long* Input, long* Output, long* Setpoint)
+integerPID::integerPID(long* Input, long* Output)
 {
    myOutput = Output;
    myInput = Input;
-   mySetpoint = Setpoint;
 
 	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
 
@@ -41,12 +40,11 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
    if(timeChange >= _sampleTime)
    {
       /*Compute all the working error variables*/
-	   long input = *myInput;
-      long error = *mySetpoint - input;
-      long dInput = (input - lastInput);
+      long error = _setpoint - *myInput;
+      long dInput = (*myInput - lastInput);
       FeedForwardTerm <<= PID_SHIFTS;
 
-      if (_pidParams.Ki!= 0)
+      if (_pidParams.Ki != 0)
       {
          outputSum += (_pidParams.Ki * error); //integral += error × dt
          outputSum = clamp(outputSum, outMin - FeedForwardTerm, outMax - FeedForwardTerm);
@@ -58,15 +56,12 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
       output = (_pidParams.Kp * error);
       if (_pidParams.Ki != 0) { output += outputSum; }
       if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
-      output += FeedForwardTerm;
-
-      if(output > outMax) output = outMax;
-      else if(output < outMin) output = outMin;
+      output = clamp(output + FeedForwardTerm, outMin, outMax);
 
       *myOutput = output >> PID_SHIFTS;
 
       /*Remember some variables for next time*/
-      lastInput = input;
+      lastInput = *myInput;
       lastTime = now;
 
       return true;

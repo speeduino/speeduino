@@ -37,12 +37,11 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 
 static long PID_O2;
 static long PID_output;
-static long PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget);
+static PID egoPID(&PID_O2, &PID_output);
 
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
@@ -88,7 +87,6 @@ void initialiseCorrections(void)
 {
   PID_output = 0L;
   PID_O2 = 0L;
-  PID_AFRTarget = 0L;
   // Toggling between modes resets the PID internal state
   // This is required by the unit tests
   setEgoPidTunings(configPage6);
@@ -711,7 +709,7 @@ static inline uint8_t computePIDCorrection(const statuses &current, const config
   //Set the PID values again, just in case the user has changed them since the last loop
   setEgoPidTunings(page6);
   PID_O2 = (long)(current.O2);
-  PID_AFRTarget = (long)(current.afrTarget);
+  egoPID.setTargetValue(current.afrTarget);
 
   (void)egoPID.Compute();
   // Can't do this in one step: MISRA compliance.

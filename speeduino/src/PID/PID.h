@@ -8,7 +8,7 @@ class PID
 public:
 
   //commonly used functions **************************************************************************
-    PID(long* Input, long* Output, long* Setpoint);     //   Setpoint.  Initial tuning parameters are also set here
+    PID(long* Input, long* Output);     //   Setpoint.  Initial tuning parameters are also set here
 
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
     void activate(void);
@@ -21,7 +21,7 @@ public:
 										  //it's likely the user will want to change this depending on
 										  //the application
 
-
+    void setTargetValue(int16_t setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
 
   //available but not commonly used functions ********************************************************
     void SetTunings(const PidTuningParameters &pidParams, PidDirection direction);         	  //   constructor, this function gives the user the option
@@ -33,7 +33,7 @@ private:
 
   long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
   long *myOutput;             //   This creates a hard link between the variables and the
-  long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
+  int16_t _setpoint = 0;           //   PID, freeing the user from having to constantly tell us
                                 //   what these values are.  with pointers we'll just know.
 
   long ITerm, lastInput;
