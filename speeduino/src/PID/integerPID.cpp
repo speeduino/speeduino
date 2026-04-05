@@ -67,7 +67,7 @@ bool integerPID::Compute(unsigned long now, long input, long FeedForwardTerm, lo
 static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t sampleTime)
 {
     PidTuningParameters scaledParams = params * 32;
-    uint16_t inverseSampleTimeInSec = 1000U / sampleTime;
+    uint16_t inverseSampleTimeInSec = MILLIS_PER_SEC / sampleTime;
     scaledParams.Ki = (scaledParams.Ki) / inverseSampleTimeInSec;
     scaledParams.Kd = (scaledParams.Kd) * inverseSampleTimeInSec;
     return scaledParams;
