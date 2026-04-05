@@ -12,23 +12,19 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output)
+integerPID_ideal::integerPID_ideal(void)
 {
-
-    myOutput = Output;
-    myInput = Input;
-
-	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
+   integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
 }
 
-
+#include <Arduino.h>
 /* Compute() **********************************************************************
  *     This, as they say, is where the magic happens.  this function should be called
  *   every time "void loop()" executes.  the function will decide for itself whether a new
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
+bool integerPID_ideal::Compute(unsigned long now, long input, uint16_t FeedForwardTerm, uint16_t* pOutput)
 {
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= _sampleTime)
@@ -36,15 +32,15 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
       /*Compute all the working error variables*/
       uint16_t sensitivity = 10001 - (_sensitivity * 2);
       long unitless_setpoint = (_setpoint * 10000L) / sensitivity;
-      long unitless_input = (*myInput * 10000L) / sensitivity;
+      long unitless_input = (input * 10000L) / sensitivity;
       long error = unitless_setpoint - unitless_input;
       // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
-      uint32_t scaledFeedForward = FeedForward*10UL;
+      uint32_t scaledFeedForward = FeedForwardTerm*10UL;
 
       ITerm += error;
 
       /*Compute PID Output*/
-      long output = scaledFeedForward + (_pidParams.Kp * error) + (_pidParams.Ki * ITerm) + (_pidParams.Kd * (lastInput - *myInput));
+      long output = scaledFeedForward + (_pidParams.Kp * error) + (_pidParams.Ki * ITerm) + (_pidParams.Kd * (lastInput - input));
       
       if(output > outMax)
       {
@@ -58,11 +54,11 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
       }
 
 	   //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. 
-      *myOutput = output/10;
+      *pOutput = output/10;
 
       /*Remember some variables for next time*/
       lastTime = now;
-      lastInput = *myInput;
+      lastInput = input;
 
       return true;
    }
@@ -109,10 +105,10 @@ void integerPID_ideal::SetOutputLimits(long Min, long Max)
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
  ******************************************************************************/
-void integerPID_ideal::Initialize()
+void integerPID_ideal::Initialize(long input)
 {
    ITerm = 0;
-   lastInput = *myInput;
+   lastInput = input;
 }
 
 void integerPID_ideal::setSampleTime(unsigned long nowMs, uint16_t sampleTimeMs) 

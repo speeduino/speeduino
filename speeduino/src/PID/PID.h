@@ -8,12 +8,12 @@ class PID
 public:
 
   //commonly used functions **************************************************************************
-    PID(long* Input, long* Output);     //   Setpoint.  Initial tuning parameters are also set here
+    PID(void);     //   Setpoint.  Initial tuning parameters are also set here
 
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
-    void activate(void);
+    void activate(long input);
 
-    bool Compute(void);                   //   called every time loop() cycles. ON/OFF and
+    bool Compute(long input, long* pOutput);                   //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
 
@@ -26,13 +26,11 @@ public:
   //available but not commonly used functions ********************************************************
     void SetTunings(const PidTuningParameters &pidParams, PidDirection direction);         	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
-	void Initialize();
+	void Initialize(long input);
 
 private:
   PidTuningParameters _pidParams;
 
-  long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
-  long *myOutput;             //   This creates a hard link between the variables and the
   int16_t _setpoint = 0;           //   PID, freeing the user from having to constantly tell us
                                 //   what these values are.  with pointers we'll just know.
 
