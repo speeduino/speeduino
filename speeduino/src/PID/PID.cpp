@@ -6,12 +6,11 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-PID::PID(long* Input, long* Output, long* Setpoint)
+PID::PID(long* Input, long* Output)
 {
 
     myOutput = Output;
     myInput = Input;
-    mySetpoint = Setpoint;
 
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
@@ -28,7 +27,7 @@ bool PID::Compute(void)
 {
    if(!_isActive) return false;
    /*Compute all the working error variables*/
-   long error = *mySetpoint - *myInput;
+   long error = _setpoint - *myInput;
    ITerm = clamp(ITerm + (_pidParams.Ki * error), outMin, outMax);
 
    long dInput = (*myInput - lastInput);

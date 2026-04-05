@@ -13,12 +13,11 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity)
+integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Sensitivity)
 {
 
     myOutput = Output;
-    myInput = (long*)Input;
-    mySetpoint = Setpoint;
+    myInput = Input;
     mySensitivity = Sensitivity;
 
 	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
@@ -38,8 +37,8 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
    {
       /*Compute all the working error variables*/
       uint16_t sensitivity = 10001 - (*mySensitivity * 2);
-      long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
-      long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
+      long unitless_setpoint = (_setpoint * 10000L) / sensitivity;
+      long unitless_input = (*myInput * 10000L) / sensitivity;
       long error = unitless_setpoint - unitless_input;
       // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
       uint32_t scaledFeedForward = FeedForward*10UL;
