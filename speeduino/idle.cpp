@@ -68,7 +68,7 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+integerPID idlePID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt
@@ -99,9 +99,9 @@ static void configureIdlePID(const config6 &page6, uint32_t minOutput, uint32_t 
 {
     idlePID.SetOutputLimits(minOutput, maxOutput);
     setIdlePidTunings(page6);
-    idlePID.activate(); //Turn PID on
+    idlePID.activate(currentStatus.RPM); //Turn PID on
     idle_pid_target_value = initialTarget;
-    idlePID.Initialize();
+    idlePID.Initialize(currentStatus.RPM);
 }
 
 void initialiseIdle(bool forcehoming)
@@ -437,7 +437,7 @@ void idleControl(void)
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
-        idlePID.Initialize(); //Update output to smooth transition
+        idlePID.Initialize(currentStatus.RPM); //Update output to smooth transition
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
       {
@@ -453,7 +453,7 @@ void idleControl(void)
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         
-        PID_computed = idlePID.Compute(millis());
+        PID_computed = idlePID.Compute(millis(), currentStatus.RPM, &idle_pid_target_value);
         long TEMP_idle_pwm_target_value;
         if(PID_computed == true)
         {
@@ -495,7 +495,7 @@ void idleControl(void)
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
-        idlePID.Initialize(); //Update output to smooth transition
+        idlePID.Initialize(currentStatus.RPM); //Update output to smooth transition
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
       {
@@ -537,7 +537,7 @@ void idleControl(void)
           idlePID.ResetIntegeral();
         }
         
-        PID_computed = idlePID.Compute(millis(), FeedForwardTerm);
+        PID_computed = idlePID.Compute(millis(), currentStatus.RPM, FeedForwardTerm, &idle_pid_target_value);
 
         if(PID_computed == true)
         {
@@ -652,7 +652,7 @@ void idleControl(void)
             else { FeedForwardTerm = idle_pid_target_value; }
           }
 
-          PID_computed = idlePID.Compute(millis(), FeedForwardTerm);
+          PID_computed = idlePID.Compute(millis(), currentStatus.RPM, FeedForwardTerm, &idle_pid_target_value);
 
           //If DFCO conditions are met keep output from changing
           if( (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue

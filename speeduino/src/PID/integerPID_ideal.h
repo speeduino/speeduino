@@ -7,9 +7,9 @@ class integerPID_ideal
 {
 public:
   //commonly used functions **************************************************************************
-    integerPID_ideal(long* Input, uint16_t* Output);
+    integerPID_ideal(void);
 
-    bool Compute(unsigned long now, uint16_t FeedForward);  // * performs the PID calculation with injected time.
+    bool Compute(unsigned long now, long input, uint16_t FeedForwardTerm, uint16_t* pOutput);  // * performs the PID calculation with injected time.
                                           //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
@@ -21,15 +21,13 @@ public:
   void SetTunings(const PidTuningParameters& params, PidDirection direction);
   void setTargetValue(uint16_t setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
   void setSensitivity(uint16_t sensitivity) { _sensitivity = sensitivity; }
-	void Initialize(void);
+	void Initialize(long input);
 
 private:
 
   PidTuningParameters _pidParams;
 	PidDirection _direction = PidDirection::Direct;
 
-    long *myInput;              //
-    uint16_t *myOutput;         //   This is a percentage figure multiplied by 100 (To give 2 points of precision)
     uint16_t _setpoint;       //
     uint16_t _sensitivity;
     uint16_t _sampleTime = 250; 

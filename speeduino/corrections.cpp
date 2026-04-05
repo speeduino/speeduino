@@ -35,13 +35,11 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "fuel_calcs.h"
 #include "unit_testing.h"
 
-static long PID_O2;
-static long PID_output;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-static PID egoPID(&PID_O2, &PID_output);
+static PID egoPID;
 
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
@@ -85,14 +83,12 @@ static void setEgoPidTunings(const config6 &page6) {
  */
 void initialiseCorrections(void)
 {
-  PID_output = 0L;
-  PID_O2 = 0L;
   // Toggling between modes resets the PID internal state
   // This is required by the unit tests
   setEgoPidTunings(configPage6);
-  egoPID.activate();
+  egoPID.activate(0);
   // Force PID re-initialization for unit tests, as PID state needs to be reset between tests.
-  egoPID.Initialize();
+  egoPID.Initialize(0);
 
   currentStatus.flexIgnCorrection = 0;
   //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
@@ -708,12 +704,12 @@ static inline uint8_t computeSimpleCorrection(const statuses &current, const con
 static inline uint8_t computePIDCorrection(const statuses &current, const config6 &page6) {
   //Set the PID values again, just in case the user has changed them since the last loop
   setEgoPidTunings(page6);
-  PID_O2 = (long)(current.O2);
   egoPID.setTargetValue(current.afrTarget);
 
-  (void)egoPID.Compute();
+  long pidResult = 0;
+  (void)egoPID.Compute(current.O2, &pidResult);
   // Can't do this in one step: MISRA compliance.
-  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)PID_output;
+  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)pidResult;
   return (uint8_t)correction;
 }
 

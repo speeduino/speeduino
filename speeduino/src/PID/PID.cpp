@@ -5,12 +5,8 @@
  *    The parameters specified here are those for for which we can't set up
  *    reliable defaults, so we need to have the user set them.
  ***************************************************************************/
-PID::PID(long* Input, long* Output)
+PID::PID(void)
 {
-
-    myOutput = Output;
-    myInput = Input;
-
 	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
 												//the arduino pwm limits
 }
@@ -22,23 +18,23 @@ PID::PID(long* Input, long* Output)
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute(void)
+bool PID::Compute(long input, long* pOutput)
 {
    if(!_isActive) return false;
    /*Compute all the working error variables*/
-   long error = _setpoint - *myInput;
+   long error = _setpoint - input;
    ITerm = clamp(ITerm + (_pidParams.Ki * error), outMin, outMax);
 
-   long dInput = (*myInput - lastInput);
+   long dInput = (input - lastInput);
 
    /*Compute PID Output*/
    long output = (_pidParams.Kp * error) + ITerm- (_pidParams.Kd * dInput);
    output = clamp(output, outMin, outMax);
 
-   *myOutput = output/1000;
+   *pOutput = output/1000;
 
    /*Remember some variables for next time*/
-   lastInput = *myInput;
+   lastInput = input;
    return true;
 }
 
@@ -82,26 +78,26 @@ void PID::SetOutputLimits(long Min, long Max)
 
    if(_isActive)
    {
-      *myOutput = clamp(*myOutput, outMin, outMax);
       ITerm = clamp(ITerm, outMin, outMax);
    }
 }
 
-void PID::activate(void)
+void PID::activate(long input)
 {
-    if(!_isActive)
-    {  /*we just went from manual to auto*/
-        PID::Initialize();
-    }
-    _isActive = true;
+   if(!_isActive)
+   {  
+   // We just went from manual to auto
+      PID::Initialize(input);
+   }
+   _isActive = true;
 }
 
 /* Initialize()****************************************************************
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
  ******************************************************************************/
-void PID::Initialize()
+void PID::Initialize(long input)
 {
-   ITerm = clamp(*myOutput, outMin, outMax);
-   lastInput = *myInput;
+   ITerm = 0;
+   lastInput = input;
 }

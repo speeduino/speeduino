@@ -15,12 +15,9 @@ constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
  * 
  * @return uint8_t The current target advance value in degrees
  */
-integerPID::integerPID(long* Input, long* Output)
+integerPID::integerPID(void)
 {
-   myOutput = Output;
-   myInput = Input;
-
-	integerPID::SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
+   SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
 }
 
 
@@ -30,15 +27,15 @@ integerPID::integerPID(long* Input, long* Output)
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
+bool integerPID::Compute(unsigned long now, long input, long FeedForwardTerm, long* pOutput)
 {
    if(!_isActive) return false;
    unsigned long timeChange = (now - _lastTime);
    if(timeChange >= _sampleTime)
    {
       /*Compute all the working error variables*/
-      long error = _setpoint - *myInput;
-      long dInput = (*myInput - lastInput);
+      long error = _setpoint - input;
+      long dInput = (input - lastInput);
       FeedForwardTerm <<= PID_SHIFTS;
 
       if (_pidParams.Ki != 0)
@@ -55,10 +52,10 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
       if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
       output = clamp(output + FeedForwardTerm, outMin, outMax);
 
-      *myOutput = output >> PID_SHIFTS;
+      *pOutput = output >> PID_SHIFTS;
 
       /*Remember some variables for next time*/
-      lastInput = *myInput;
+      lastInput = input;
       _lastTime = now;
 
       return true;
@@ -113,7 +110,6 @@ void integerPID::SetOutputLimits(long Min, long Max)
 
    if(_isActive)
    {
-      *myOutput = clamp(*myOutput, Min, Max);
       outputSum = clamp(outputSum, outMin, outMax);
    }
 }
@@ -123,11 +119,11 @@ void integerPID::SetOutputLimits(long Min, long Max)
  * when the transition from manual to auto occurs, the controller is
  * automatically initialized
  ******************************************************************************/
-void integerPID::activate(void)
+void integerPID::activate(long input)
 {
    if (!_isActive)
    {  /*we just went from manual to auto*/
-      integerPID::Initialize();
+      integerPID::Initialize(input);
    }
    _isActive = true;
 }
@@ -136,10 +132,10 @@ void integerPID::activate(void)
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
  ******************************************************************************/
-void integerPID::Initialize()
+void integerPID::Initialize(long input)
 {
-   outputSum = clamp(*myOutput<<PID_SHIFTS, outMin, outMax);
-   lastInput = *myInput;
+   lastInput = input;
+   ResetIntegeral();
 }
 
 void integerPID::ResetIntegeral() { outputSum=0;}
