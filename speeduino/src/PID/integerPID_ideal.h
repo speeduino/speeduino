@@ -7,7 +7,7 @@ class integerPID_ideal
 {
 public:
   //commonly used functions **************************************************************************
-    integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime);
+    integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity);
 
     bool Compute(unsigned long now, uint16_t FeedForward);  // * performs the PID calculation with injected time.
     bool Compute(uint16_t FeedForward);                      // * legacy wrapper that calls millis().
@@ -18,7 +18,7 @@ public:
     void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
 										  //it's likely the user will want to change this depending on
 										  //the application
-
+  void setSampleTime(unsigned long now, uint16_t sampleTime);
   void SetTunings(const PidTuningParameters& params, PidDirection direction);
 
 	void Initialize(void);
@@ -32,7 +32,7 @@ private:
     uint16_t *myOutput;         //   This is a percentage figure multiplied by 100 (To give 2 points of precision)
     uint16_t *mySetpoint;       //
     uint16_t *mySensitivity;
-    uint8_t *mySampleTime;
+    uint16_t _sampleTime = 250; 
 
 
 	unsigned long lastTime;
