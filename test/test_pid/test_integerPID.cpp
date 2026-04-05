@@ -8,9 +8,10 @@ static void test_integerPID_manual_mode_compute_false(void)
 {
     long input = 10;
     long output = 8;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 250);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 250);
     pid.setTargetValue(20);
 
     TEST_ASSERT_FALSE(pid.Compute(NOW));
@@ -21,9 +22,10 @@ static void test_integerPID_auto_mode_p_on_error(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 250);
     pid.setTargetValue(20);
     pid.activate();
 
@@ -36,9 +38,10 @@ static void test_integerPID_output_limits_clamp(void)
 {
     long input = 1;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, now, 250);
     pid.setTargetValue(1000);
     pid.SetOutputLimits(0, 10);
     pid.activate();
@@ -51,9 +54,10 @@ static void test_integerPID_output_limits_zero_range(void)
 {
     long input = 1;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, now, 250);
     pid.setTargetValue(1000);
     pid.activate();
 
@@ -70,25 +74,25 @@ static void test_integerPID_controller_direction_switches_effect(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = NOW;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 250);
     pid.SetOutputLimits(-255, 255);
     pid.setTargetValue(100);
     pid.activate();
 
-    unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now));
     long directOutput = output;
     TEST_ASSERT_GREATER_THAN(0, directOutput);
 
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, now, 1);
     now += 100;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_NOT_EQUAL(directOutput, output);
     TEST_ASSERT_LESS_THAN(0, output);
 
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 250);
     now += 100;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_GREATER_THAN(0, output);
@@ -98,18 +102,18 @@ static void test_integerPID_controller_direction_maintains_output_limits(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = NOW;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, now, 250);
     pid.SetOutputLimits(-50, 50);
     pid.setTargetValue(100);
     pid.activate();
 
-    unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_LESS_OR_EQUAL(50, output);
 
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, now, 1);
     now += 100;
     TEST_ASSERT_TRUE(pid.Compute(now));
     TEST_ASSERT_GREATER_OR_EQUAL(-50, output);
@@ -119,9 +123,10 @@ static void test_integerPID_reverse_direction(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, now, 1);
     pid.SetOutputLimits(-255, 255);
     pid.setTargetValue(20);
     pid.activate();
@@ -147,9 +152,10 @@ static void test_integerPID_integral_with_feedforward(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(0, 100, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(0, 100, 0), PidDirection::Direct, now, 250);
     pid.setTargetValue(100);
     pid.activate();
 
@@ -164,9 +170,10 @@ static void test_integerPID_output_limits_upper_clamp(void)
 {
     long input = 1;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, now, 250);
     pid.SetOutputLimits(0, 50); // Set max to 50
     pid.setTargetValue(1000);
     pid.activate();
@@ -179,9 +186,10 @@ static void test_integerPID_output_limits_lower_clamp(void)
 {
     long input = 1000;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Direct, now, 250);
     pid.SetOutputLimits(100, 255); // Set min to 100
     pid.setTargetValue(0);
     pid.activate();
@@ -194,9 +202,10 @@ static void test_integerPID_output_limits_negative_range(void)
 {
     long input = 1;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Reverse, 1);
+    pid.SetTunings(PidTuningParameters(255, 0, 0), PidDirection::Reverse, now, 1);
     pid.SetOutputLimits(-100, 10);
     pid.setTargetValue(1000);
     pid.activate();
@@ -210,9 +219,10 @@ static void test_integerPID_output_limits_no_clamp_needed(void)
 {
     long input = 50;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 250);
     pid.SetOutputLimits(0, 255); // Wide limits
     pid.setTargetValue(100);
     pid.activate();
@@ -227,9 +237,10 @@ static void test_integerPID_output_limits_affects_integral(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(0, 50, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(0, 50, 0), PidDirection::Direct, now, 250);
     pid.SetOutputLimits(0, 20); // Tight limit
     pid.setTargetValue(200);
     pid.activate();
@@ -243,9 +254,10 @@ static void test_integerPID_auto_mode_output_limits(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(0, 50, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(0, 50, 0), PidDirection::Direct, now, 250);
     pid.setTargetValue(200);
     pid.activate();
 
@@ -268,14 +280,14 @@ static void test_integerPID_derivative_term(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = NOW;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(0, 0, 1), PidDirection::Direct, 1); // kp=0, ki=0, kd=1
+    pid.SetTunings(PidTuningParameters(0, 0, 1), PidDirection::Direct, now, 1); // kp=0, ki=0, kd=1
     pid.SetOutputLimits(-255, 255); // allow negative derivative output
     pid.setTargetValue(20);
     pid.activate();
 
-    unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now, 0));
     long first_output = output;
 
@@ -293,9 +305,10 @@ static void test_Compute_NoTimeChange_ReturnsFalse(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 10000UL;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 100);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 100);
     pid.setTargetValue(20);
     pid.activate();
 
@@ -310,10 +323,11 @@ static void test_integerPID_set_sample_time_recalculates_tunings(void)
     long input = 1000;
     long output = 0;
     PidTuningParameters tuningParameters(128, 64, 255);
+    unsigned long now = 1000000;
 
     integerPID pid(&input, &output);
     pid.SetOutputLimits(-5000, 5000);
-    pid.SetTunings(tuningParameters, PidDirection::Direct, 1);
+    pid.SetTunings(tuningParameters, PidDirection::Direct, now, 1);
     pid.setTargetValue(2000);
     pid.activate();
 
@@ -321,7 +335,7 @@ static void test_integerPID_set_sample_time_recalculates_tunings(void)
     long firstOutput = output;
 
     // Change sample time, which should recalculate tunings
-    pid.SetTunings(PidTuningParameters(128, 64, 255), PidDirection::Direct, 500); // New sample time
+    pid.SetTunings(PidTuningParameters(128, 64, 255), PidDirection::Direct, NOW, 500); // New sample time
 
     TEST_ASSERT_TRUE(pid.Compute(NOW+1000U));
     // Output should differ due to new tunings
@@ -332,9 +346,10 @@ static void test_integerPID_initialize_resets_state(void)
 {
     long input = 10;
     long output = 50;
+    unsigned long now = 1000000;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(0, 10, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(0, 10, 0), PidDirection::Direct, now, 1);
     pid.setTargetValue(20);
     pid.activate();
 
@@ -350,15 +365,15 @@ static void test_integerPID_reset_integral_zeros_output_sum(void)
 {
     long input = 1000;
     long output = 0;
+    unsigned long now = NOW;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(5, 100, 60), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(5, 100, 60), PidDirection::Direct, now, 1);
     pid.setTargetValue(2000);
     pid.activate();
     pid.SetOutputLimits(-5000, 5000);
     pid.Initialize();
 
-    unsigned long now = NOW;
     TEST_ASSERT_TRUE(pid.Compute(now)); // Accumulate integral
     long firstOutput = output;
     
@@ -378,14 +393,14 @@ static void test_integerPID_set_tunings_runtime_changes(void)
     long output = 0;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, NOW, 1);
     pid.setTargetValue(20);
     pid.activate();
 
     TEST_ASSERT_TRUE(pid.Compute(NOW));
     long originalOutput = output;
 
-    pid.SetTunings(PidTuningParameters(20, 0, 0), PidDirection::Direct, 1); // Change Kp
+    pid.SetTunings(PidTuningParameters(20, 0, 0), PidDirection::Direct, NOW, 1); // Change Kp
     TEST_ASSERT_TRUE(pid.Compute(NOW+1000U));
     // Output should change due to new Kp
     TEST_ASSERT_NOT_EQUAL(originalOutput, output);
@@ -395,10 +410,11 @@ static void test_integerPID_compute_in_manual_mode_returns_false(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 1000000;
 
     integerPID pid(&input, &output);
     pid.setTargetValue(20);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 1);
 
     TEST_ASSERT_FALSE(pid.Compute(NOW)); // Should return false in manual mode
     TEST_ASSERT_EQUAL(0, output); // Output unchanged
@@ -408,9 +424,10 @@ static void test_integerPID_set_output_limits_invalid_ignored(void)
 {
     long input = 10;
     long output = 0;
+    unsigned long now = 1000000;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Direct, now, 1);
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
     pid.setTargetValue(20);
     pid.activate();
@@ -427,7 +444,7 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
 
     integerPID pid(&input, &output);
     pid.setTargetValue(20);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, 1);
+    pid.SetTunings(PidTuningParameters(10, 0, 0), PidDirection::Reverse, NOW, 1);
     pid.SetOutputLimits(-25, 25);
     pid.activate();
     
@@ -471,8 +488,7 @@ static void test_end_to_end_positive_positive_up(void)
     constexpr long SET_POINT = 155;
 
     integerPID pid(&input, &output);
-    // pid.setTargetValue(SET_POINT);
-    pid.SetTunings(PidTuningParameters(3, 1, 2), PidDirection::Direct, SAMPLE_TIME);
+    pid.SetTunings(PidTuningParameters(3, 1, 2), PidDirection::Direct, NOW, SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
 
@@ -487,7 +503,7 @@ static void test_end_to_end_positive_positive_down(void)
     constexpr long SET_POINT = 155;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(5, 2, 4), PidDirection::Direct, SAMPLE_TIME);
+    pid.SetTunings(PidTuningParameters(5, 2, 4), PidDirection::Direct, NOW, SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     // pid.setTargetValue(SET_POINT);
     pid.activate();
@@ -504,7 +520,7 @@ static void test_end_to_end_negative_negative_up(void)
     constexpr long SET_POINT = -155;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(15, 3, 2), PidDirection::Direct, SAMPLE_TIME);
+    pid.SetTunings(PidTuningParameters(15, 3, 2), PidDirection::Direct, NOW, SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     // pid.setTargetValue(SET_POINT);
     pid.activate();
@@ -520,7 +536,7 @@ static void test_end_to_end_negative_negative_down(void)
     constexpr long SET_POINT = -235;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(15, 3, 2), PidDirection::Direct, SAMPLE_TIME);
+    pid.SetTunings(PidTuningParameters(15, 3, 2), PidDirection::Direct, NOW, SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
 
@@ -535,7 +551,7 @@ static void test_end_to_end_positive_negative(void)
     constexpr long SET_POINT = -55;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(15, 1, 1), PidDirection::Direct, SAMPLE_TIME);
+    pid.SetTunings(PidTuningParameters(15, 1, 1), PidDirection::Direct, NOW, SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
 
@@ -550,7 +566,7 @@ static void test_end_to_end_negative_positive(void)
     constexpr long SET_POINT = 65;
 
     integerPID pid(&input, &output);
-    pid.SetTunings(PidTuningParameters(15, 3, 2), PidDirection::Direct, SAMPLE_TIME);
+    pid.SetTunings(PidTuningParameters(15, 3, 2), PidDirection::Direct, NOW, SAMPLE_TIME);
     pid.SetOutputLimits(-255, 255);
     pid.activate();
 
