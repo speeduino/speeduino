@@ -24,7 +24,7 @@ integerPID_ideal::integerPID_ideal(void)
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID_ideal::Compute(unsigned long now, long input, uint16_t FeedForwardTerm, uint16_t* pOutput)
+bool integerPID_ideal::Compute(unsigned long now, long input, uint16_t* pOutput)
 {
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= _sampleTime)
@@ -35,7 +35,7 @@ bool integerPID_ideal::Compute(unsigned long now, long input, uint16_t FeedForwa
       long unitless_input = (input * 10000L) / sensitivity;
       long error = unitless_setpoint - unitless_input;
       // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
-      uint32_t scaledFeedForward = FeedForwardTerm*10UL;
+      uint32_t scaledFeedForward = _feedForwardTerm*10UL;
 
       ITerm += error;
 

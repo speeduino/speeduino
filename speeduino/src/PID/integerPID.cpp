@@ -27,7 +27,7 @@ integerPID::integerPID(void)
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool integerPID::Compute(unsigned long now, long input, long FeedForwardTerm, long* pOutput)
+bool integerPID::Compute(unsigned long now, long input, long* pOutput)
 {
    if(!_isActive) return false;
    unsigned long timeChange = (now - _lastTime);
@@ -36,12 +36,11 @@ bool integerPID::Compute(unsigned long now, long input, long FeedForwardTerm, lo
       /*Compute all the working error variables*/
       long error = _setpoint - input;
       long dInput = (input - lastInput);
-      FeedForwardTerm <<= PID_SHIFTS;
 
       if (_pidParams.Ki != 0)
       {
          outputSum += (_pidParams.Ki * error); //integral += error × dt
-         outputSum = clamp(outputSum, outMin - FeedForwardTerm, outMax - FeedForwardTerm);
+         outputSum = clamp(outputSum, outMin - _feedForwardTerm, outMax - _feedForwardTerm);
       }
 
       /*Compute PID Output*/
@@ -50,7 +49,7 @@ bool integerPID::Compute(unsigned long now, long input, long FeedForwardTerm, lo
       output = (_pidParams.Kp * error);
       if (_pidParams.Ki != 0) { output += outputSum; }
       if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
-      output = clamp(output + FeedForwardTerm, outMin, outMax);
+      output = clamp(output + _feedForwardTerm, outMin, outMax);
 
       *pOutput = output >> PID_SHIFTS;
 
@@ -67,7 +66,7 @@ bool integerPID::Compute(unsigned long now, long input, long FeedForwardTerm, lo
 static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t sampleTime)
 {
     PidTuningParameters scaledParams = params * 32;
-    uint16_t inverseSampleTimeInSec = MILLIS_PER_SEC / sampleTime;
+    uint16_t inverseSampleTimeInSec = MILLI_PER_SEC / sampleTime;
     scaledParams.Ki = (scaledParams.Ki) / inverseSampleTimeInSec;
     scaledParams.Kd = (scaledParams.Kd) * inverseSampleTimeInSec;
     return scaledParams;
@@ -134,3 +133,8 @@ void integerPID::Initialize(long input)
 }
 
 void integerPID::ResetIntegeral() { outputSum=0;}
+
+void integerPID::setFeedForwardTerm(long feedForwardTerm) 
+{ 
+   _feedForwardTerm = feedForwardTerm << PID_SHIFTS; 
+}

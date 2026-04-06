@@ -118,9 +118,10 @@ static void test_integerPID_feedforward_term(void)
 
     integerPID pid;
     pid.setTargetValue(20);
+    pid.setFeedForwardTerm(15);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, 15, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(15, output);
 }
 
@@ -132,11 +133,12 @@ static void test_integerPID_integral_with_feedforward(void)
     integerPID pid;
     pid.SetTunings(PidTuningParameters(0, 100, 0), PidDirection::Direct, NOW, 250);
     pid.setTargetValue(100);
+    pid.setFeedForwardTerm(10);
     pid.activate(input);
 
     // With ki=100 (non-zero), error=90, kp=0, and feedforward=10
     // This tests that Compute with ki!=0 path is executed
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, 10, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     // Output should be non-zero (either integral term or feedforward)
     TEST_ASSERT_NOT_EQUAL(0, output);
 }
