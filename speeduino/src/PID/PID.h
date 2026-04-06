@@ -25,8 +25,12 @@ public:
 
   //available but not commonly used functions ********************************************************
     void SetTunings(const PidTuningParameters &pidParams, PidDirection direction);         	  //   constructor, this function gives the user the option
-                                          //   of changing tunings during runtime for Adaptive control
-	void Initialize(long input);
+                                        //   of changing tunings during runtime for Adaptive control
+
+#if !defined(UNIT_TEST)
+private:
+#endif
+  void resetIntegral(long input);
 
 private:
   PidTuningParameters _pidParams;

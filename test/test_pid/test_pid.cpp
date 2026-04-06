@@ -176,7 +176,7 @@ static void test_pid_initialize_resets_state(void)
 
     TEST_ASSERT_TRUE(pid.Compute(input, &output)); // Accumulate some integral
 
-    pid.Initialize(input); // Reset state
+    pid.resetIntegral(input); // Reset state
     TEST_ASSERT_TRUE(pid.Compute(input, &output));
     // After reset, output should be based on new state (integral reset)
     TEST_ASSERT_NOT_EQUAL(50, output); // Should not be the initial output

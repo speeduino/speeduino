@@ -7,6 +7,7 @@
 #include "sensors_map_structs.h"
 #include "units.h"
 #include "fuel_calcs.h"
+#include "src/PID/PID.h"
 
 extern byte correctionWUE(void);
 extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
@@ -328,8 +329,10 @@ static void setup_valid_ego_cycle(void) {
   ignitionCount = AFRnextCycle + (configPage6.egoCount/2U); 
 }
 
+extern PID egoPID;
 static void setup_ego_simple(void) {
   initialiseCorrections();
+  egoPID.resetIntegral(0);
 
   configPage6.egoType = EGO_TYPE_NARROW;
   configPage6.egoAlgorithm = EGO_ALGORITHM_SIMPLE;
