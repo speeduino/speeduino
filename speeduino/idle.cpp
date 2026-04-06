@@ -537,7 +537,8 @@ void idleControl(void)
           idlePID.ResetIntegeral();
         }
         
-        PID_computed = idlePID.Compute(millis(), currentStatus.RPM, FeedForwardTerm, &idle_pid_target_value);
+        idlePID.setFeedForwardTerm(FeedForwardTerm);
+        PID_computed = idlePID.Compute(millis(), currentStatus.RPM, &idle_pid_target_value);
 
         if(PID_computed == true)
         {
@@ -652,7 +653,8 @@ void idleControl(void)
             else { FeedForwardTerm = idle_pid_target_value; }
           }
 
-          PID_computed = idlePID.Compute(millis(), currentStatus.RPM, FeedForwardTerm, &idle_pid_target_value);
+          idlePID.setFeedForwardTerm(FeedForwardTerm);
+          PID_computed = idlePID.Compute(millis(), currentStatus.RPM, &idle_pid_target_value);
 
           //If DFCO conditions are met keep output from changing
           if( (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue

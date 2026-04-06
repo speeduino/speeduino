@@ -850,10 +850,10 @@ void boostControl(void)
           }
 
           boostPID.setTargetValue(currentStatus.boostTarget);
+          boostPID.setFeedForwardTerm(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2);
           //Compute() returns false if the required interval has not yet passed.
           bool PIDcomputed = boostPID.Compute(millis(), 
                                               currentStatus.MAP,
-                                              get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2,
                                               &currentStatus.boostDuty);
           
           if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down

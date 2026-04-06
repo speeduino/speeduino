@@ -16,7 +16,7 @@ static void test_p_only_clamped_to_min(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(2000u, output); // min clamp 20% *100
 }
 
@@ -32,7 +32,7 @@ static void test_p_only_clamped_to_max(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(8000u, output); // max clamp 80% *100
 }
 
@@ -47,9 +47,9 @@ static void test_sample_time_gate(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     // Running immediately again should be gated by sample time (likely false)
-    TEST_ASSERT_FALSE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_FALSE(pid.Compute(NOW, input, &output));
 }
 
 static void test_ki_windup_limits(void)
@@ -65,7 +65,7 @@ static void test_ki_windup_limits(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     // output should stay within [2000, 8000] scale after clamping
     TEST_ASSERT_LESS_OR_EQUAL(8000u, output);
     TEST_ASSERT_GREATER_OR_EQUAL(2000u, output);
@@ -84,7 +84,7 @@ static void test_reverse_direction(void)
     pidDirect.setSensitivity(1);
     pidDirect.Initialize(input);
 
-    TEST_ASSERT_TRUE(pidDirect.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pidDirect.Compute(NOW, input, &output));
     uint16_t directOutput = output;
 
     integerPID_ideal pidReverse;
@@ -94,7 +94,7 @@ static void test_reverse_direction(void)
     pidReverse.setTargetValue(1000);
     pidReverse.setSensitivity(1);
     pidReverse.Initialize(input);
-    TEST_ASSERT_TRUE(pidReverse.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pidReverse.Compute(NOW, input, &output));
     uint16_t reverseOutput = output;
 
     TEST_ASSERT_LESS_THAN(directOutput, reverseOutput);
@@ -111,7 +111,8 @@ static void test_feedforward_applied(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, 5000, &output));
+    pid.setFeedForwardTerm(5000);
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(5000u, output); // no PID action, output equals feedforward (above min clamp)
 }
 
@@ -127,7 +128,7 @@ static void test_set_output_limits_invalid_bounds_are_ignored(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(8000u, output); // invalid limits ignored, default max clamp remains 80%
 }
 
@@ -144,11 +145,11 @@ static void test_initialize_resets_integral_and_error(void)
     pid.setSensitivity(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, 0, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
 
     input = 1000;
     pid.Initialize(input);
-    TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, input, 0, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, input, &output));
     TEST_ASSERT_EQUAL(0u, output); // with zero error and reset integral, output should return to zero
 }
 
@@ -163,13 +164,14 @@ static void test_derivative_term_changes_output_on_error_transition(void)
     pid.setSampleTime(NOW, 1);
     pid.setTargetValue(1000);
     pid.setSensitivity(50);
+    pid.setTargetValue(50);
     pid.Initialize(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
     uint16_t firstOutput = output;
 
     input = 100;
-    TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, 0, input, &output));
+    TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, input, &output));
     TEST_ASSERT_NOT_EQUAL_UINT16(firstOutput, output);
 }
 
@@ -181,7 +183,7 @@ static String createIterationMsg(int16_t iteration, uint16_t input, uint16_t out
 }
 
 // Run the PID for 50 and confirm it hits the setpoint
-static void assert_pid_complete(integerPID_ideal &pid, long input, uint16_t setpoint, uint8_t sampleTime, uint16_t feedForwardTerm = 0U)
+static void assert_pid_complete(integerPID_ideal &pid, long input, uint16_t setpoint, uint8_t sampleTime)
 {
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
     UnityPrint(createIterationMsg(-1, input, setpoint).c_str()); UNITY_PRINT_EOL();
@@ -189,7 +191,7 @@ static void assert_pid_complete(integerPID_ideal &pid, long input, uint16_t setp
     uint16_t output;
     for (uint16_t iteration=0; iteration<50U; ++iteration)
     {
-        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime), input, 0, &output));
+        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime), input, &output));
         UnityPrint(createIterationMsg(iteration, input, output).c_str()); UNITY_PRINT_EOL();
         input = output;
     }
@@ -209,9 +211,10 @@ static void test_end_to_end_positive_positive_up(void)
     pid.SetTunings(PidTuningParameters(3, 2, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
     pid.setSensitivity(0);
+    pid.setFeedForwardTerm(7);
     pid.Initialize(START_POINT);
 
-    assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME, 7);
+    assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
 }
 
 static void test_end_to_end_positive_positive_down(void) 
@@ -226,9 +229,10 @@ static void test_end_to_end_positive_positive_down(void)
     pid.SetTunings(PidTuningParameters(3, 2, 1), PidDirection::Direct);
     pid.SetOutputLimits(0, 255);
     pid.setSensitivity(0);
+    pid.setFeedForwardTerm(11);
     pid.Initialize(START_POINT);
 
-    assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME, 11);
+    assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
 }
 
 void testIntegerPID_ideal(void)
