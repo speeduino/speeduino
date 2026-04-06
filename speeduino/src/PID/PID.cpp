@@ -81,8 +81,8 @@ void PID::activate(long input)
 {
    if(!_isActive)
    {  
-   // We just went from manual to auto
-      PID::Initialize(input);
+      // We just went from manual to auto
+      resetIntegral(input);
    }
    _isActive = true;
 }
@@ -91,7 +91,7 @@ void PID::activate(long input)
  *	does all the things that need to happen to ensure a bumpless transfer
  *  from manual to automatic mode.
  ******************************************************************************/
-void PID::Initialize(long input)
+void PID::resetIntegral(long input)
 {
    ITerm = 0;
    lastInput = input;

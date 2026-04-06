@@ -39,7 +39,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-static PID egoPID;
+TESTABLE_STATIC PID egoPID;
 
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
@@ -83,12 +83,8 @@ static void setEgoPidTunings(const config6 &page6) {
  */
 void initialiseCorrections(void)
 {
-  // Toggling between modes resets the PID internal state
-  // This is required by the unit tests
   setEgoPidTunings(configPage6);
-  egoPID.activate(0);
-  // Force PID re-initialization for unit tests, as PID state needs to be reset between tests.
-  egoPID.Initialize(0);
+  egoPID.activate(currentStatus.O2);
 
   currentStatus.flexIgnCorrection = 0;
   //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
