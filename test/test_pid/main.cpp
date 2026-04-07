@@ -6,7 +6,9 @@ void runAllPIDTests(void)
     extern void testPID(void);
     extern void testIntegerPID(void);
     extern void testIntegerPID_ideal(void);
+    extern void testPidTuningParameters(void);
 
+    testPidTuningParameters();
     testPID();
     testIntegerPID();
     testIntegerPID_ideal();

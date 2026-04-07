@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "pid_common.h"
+#include "PidTuningParameters.h"
 
 class integerPID
 {
