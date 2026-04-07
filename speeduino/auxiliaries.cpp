@@ -581,16 +581,16 @@ static void setBoostPidTunings(const config2 &page2, const config6 &page6, const
   boostPID.setSensitivity(page10.boostSens);
 }
 
-static void setVvtPidTunings(integerPID &pid, const config10 &page10, PidDirection direction)
+static void setVvtPidTunings(integerPID &pid, const config10 &page10, bool isReverse)
 {
-  int8_t multiplier = direction==PidDirection::Direct ? 1 : -1;
+  int8_t multiplier = isReverse ? 1 : -1;
   pid.SetTunings(PidTuningParameters(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD) * multiplier, millis(), 33);
 }
 
-static void configureVvtPid(integerPID &pid, const config10 &page10, PidDirection direction, long currentAngle)
+static void configureVvtPid(integerPID &pid, const config10 &page10, bool isReverse, long currentAngle)
 {
   pid.SetOutputLimits(page10.vvtCLminDuty, page10.vvtCLmaxDuty);
-  setVvtPidTunings(pid, page10, direction);
+  setVvtPidTunings(pid, page10, isReverse);
   pid.activate(currentAngle); //Turn PID on
 }
 
@@ -621,10 +621,10 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      configureVvtPid(vvtPID, configPage10, (PidDirection)configPage6.vvtPWMdir, currentStatus.vvt1Angle);
+      configureVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1Angle);
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        configureVvtPid(vvt2PID, configPage10, (PidDirection)configPage4.vvt2PWMdir, currentStatus.vvt2Angle);
+        configureVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2Angle);
       }
     }
 
@@ -969,7 +969,7 @@ void vvtControl(void)
         else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
         if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-          setVvtPidTunings(vvtPID, configPage10, (PidDirection)configPage6.vvtPWMdir);  
+          setVvtPidTunings(vvtPID, configPage10, configPage6.vvtPWMdir);  
         }
 
         // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
@@ -1008,7 +1008,7 @@ void vvtControl(void)
           else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
           if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-            setVvtPidTunings(vvt2PID, configPage10, (PidDirection)configPage4.vvt2PWMdir);
+            setVvtPidTunings(vvt2PID, configPage10, configPage4.vvt2PWMdir);
         }
 
           // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
