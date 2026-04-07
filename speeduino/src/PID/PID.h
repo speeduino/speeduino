@@ -24,7 +24,7 @@ public:
     void setTargetValue(int16_t setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
 
   //available but not commonly used functions ********************************************************
-    void SetTunings(const PidTuningParameters &pidParams, PidDirection direction);         	  //   constructor, this function gives the user the option
+    void SetTunings(const PidTuningParameters &pidParams);         	  //   constructor, this function gives the user the option
                                         //   of changing tunings during runtime for Adaptive control
 
 #if !defined(UNIT_TEST)

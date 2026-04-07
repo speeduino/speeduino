@@ -43,22 +43,10 @@ bool PID::Compute(long input, long* pOutput)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void PID::SetTunings(const PidTuningParameters &pidParams, PidDirection direction)
+void PID::SetTunings(const PidTuningParameters &pidParams)
 {
-   /*
-   double SampleTimeInSec = ((double)SampleTime)/1000;
-   _pidParams.Kp = Kp;
-   _pidParams.Ki = Ki * SampleTimeInSec;
-   _pidParams.Kd = Kd / SampleTimeInSec;
-   */
-  //long InverseSampleTimeInSec = 100;
   _pidParams = pidParams;
   _pidParams.Kd = _pidParams.Kd * 10;
-
-  if(direction == PidDirection::Reverse)
-   {
-      _pidParams = _pidParams * -1;
-   }
 }
 
 

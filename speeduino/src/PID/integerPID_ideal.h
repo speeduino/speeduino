@@ -18,7 +18,7 @@ public:
 										  //it's likely the user will want to change this depending on
 										  //the application
   void setSampleTime(unsigned long now, uint16_t sampleTime);
-  void SetTunings(const PidTuningParameters& params, PidDirection direction);
+  void SetTunings(const PidTuningParameters& params);
   void setTargetValue(uint16_t setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
   void setSensitivity(uint16_t sensitivity) { _sensitivity = sensitivity; }
 	void Initialize(long input);
@@ -27,7 +27,6 @@ public:
 private:
 
   PidTuningParameters _pidParams;
-	PidDirection _direction = PidDirection::Direct;
 
   uint16_t _setpoint;       //
   uint16_t _sensitivity;

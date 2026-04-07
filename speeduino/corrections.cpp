@@ -76,7 +76,7 @@ static constexpr uint8_t BASELINE_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 
 static void setEgoPidTunings(const config6 &page6) {
   egoPID.SetOutputLimits(-page6.egoLimit, page6.egoLimit); 
-  egoPID.SetTunings(PidTuningParameters(page6.egoKP, page6.egoKI, page6.egoKD), PidDirection::Reverse); 
+  egoPID.SetTunings(PidTuningParameters(page6.egoKP, page6.egoKI, page6.egoKD) * -1); 
 }
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).

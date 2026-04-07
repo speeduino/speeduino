@@ -22,7 +22,7 @@ public:
     void setFeedForwardTerm(long feedForwardTerm);
 
   //available but not commonly used functions ********************************************************
-    void SetTunings(const PidTuningParameters &pidParams, PidDirection direction, uint32_t nowMs, uint16_t sampleTime);       	  //   constructor, this function gives the user the option
+    void SetTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t sampleTime);       	  //   constructor, this function gives the user the option
                                           //   of changing tunings during runtime for Adaptive control
 
   void Initialize(long input);
