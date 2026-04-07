@@ -18,24 +18,21 @@ PID::PID(void)
  *   pid Output needs to be computed.  returns true when the output is computed,
  *   false when nothing has been done.
  **********************************************************************************/
-bool PID::Compute(long input, long* pOutput)
+long PID::Compute(long input)
 {
-   if(!_isActive) return false;
+   if(!_isActive) return 0L;
+
    /*Compute all the working error variables*/
    long error = _setpoint - input;
    ITerm = clamp(ITerm + (_pidParams.Ki * error), outMin, outMax);
 
    long dInput = (input - lastInput);
+   /*Remember some variables for next time*/
+   lastInput = input;
 
    /*Compute PID Output*/
    long output = (_pidParams.Kp * error) + ITerm- (_pidParams.Kd * dInput);
-   output = clamp(output, outMin, outMax);
-
-   *pOutput = output/1000;
-
-   /*Remember some variables for next time*/
-   lastInput = input;
-   return true;
+   return clamp(output, outMin, outMax)/1000;
 }
 
 /* SetTunings(...)*************************************************************

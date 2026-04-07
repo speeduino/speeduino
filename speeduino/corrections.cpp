@@ -702,10 +702,8 @@ static inline uint8_t computePIDCorrection(const statuses &current, const config
   setEgoPidTunings(page6);
   egoPID.setTargetValue(current.afrTarget);
 
-  long pidResult = 0;
-  (void)egoPID.Compute(current.O2, &pidResult);
   // Can't do this in one step: MISRA compliance.
-  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)pidResult;
+  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)egoPID.Compute(current.O2);
   return (uint8_t)correction;
 }
 
