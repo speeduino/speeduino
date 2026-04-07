@@ -10,7 +10,7 @@ static void test_p_only_clamped_to_min(void)
     uint16_t output = 0;
 
     integerPID_ideal pid;
-    pid.SetTunings(PidTuningParameters(1, 0, 0), PidDirection::Direct); // P-only
+    pid.SetTunings(PidTuningParameters(1, 0, 0)); // P-only
     pid.setSampleTime(NOW, 0);
     pid.setTargetValue(200);
     pid.setSensitivity(50);
@@ -26,7 +26,7 @@ static void test_p_only_clamped_to_max(void)
     uint16_t output = 0;
 
     integerPID_ideal pid;
-    pid.SetTunings(PidTuningParameters(100, 0, 0), PidDirection::Direct); // P-only
+    pid.SetTunings(PidTuningParameters(100, 0, 0)); // P-only
     pid.setSampleTime(NOW, 0);
     pid.setTargetValue(1000);
     pid.setSensitivity(50);
@@ -58,7 +58,7 @@ static void test_ki_windup_limits(void)
     uint16_t output = 0;
 
     integerPID_ideal pid;
-    pid.SetTunings(PidTuningParameters(10, 10, 0), PidDirection::Direct);
+    pid.SetTunings(PidTuningParameters(10, 10, 0));
     pid.setSampleTime(NOW, 0);
     pid.SetOutputLimits(20, 80);
     pid.setTargetValue(1000);
@@ -77,7 +77,7 @@ static void test_reverse_direction(void)
     uint16_t output = 0;
 
     integerPID_ideal pidDirect;
-    pidDirect.SetTunings(PidTuningParameters(50, 0, 0), PidDirection::Direct);
+    pidDirect.SetTunings(PidTuningParameters(50, 0, 0));
     pidDirect.setSampleTime(NOW, 0);
     pidDirect.SetOutputLimits(0, 5000);
     pidDirect.setTargetValue(1000);
@@ -88,7 +88,7 @@ static void test_reverse_direction(void)
     uint16_t directOutput = output;
 
     integerPID_ideal pidReverse;
-    pidReverse.SetTunings(PidTuningParameters(50, 0, 0), PidDirection::Reverse);
+    pidReverse.SetTunings(PidTuningParameters(50, 0, 0) * -1);
     pidReverse.setSampleTime(NOW, 0);
     pidReverse.SetOutputLimits(0, 5000);
     pidReverse.setTargetValue(1000);
@@ -122,7 +122,7 @@ static void test_set_output_limits_invalid_bounds_are_ignored(void)
     uint16_t output = 0;
 
     integerPID_ideal pid;
-    pid.SetTunings(PidTuningParameters(100, 0, 0), PidDirection::Direct);
+    pid.SetTunings(PidTuningParameters(100, 0, 0));
     pid.SetOutputLimits(80, 20);
     pid.setTargetValue(1000);
     pid.setSensitivity(50);
@@ -138,7 +138,7 @@ static void test_initialize_resets_integral_and_error(void)
     uint16_t output = 0;
 
     integerPID_ideal pid;
-    pid.SetTunings(PidTuningParameters(1, 10, 0), PidDirection::Direct);
+    pid.SetTunings(PidTuningParameters(1, 10, 0));
     pid.SetOutputLimits(0, 100);
     pid.setTargetValue(500);
     pid.setSampleTime(NOW, 1);
@@ -159,7 +159,7 @@ static void test_derivative_term_changes_output_on_error_transition(void)
     uint16_t output = 0;
 
     integerPID_ideal pid;
-    pid.SetTunings(PidTuningParameters(1, 0, 1), PidDirection::Direct);
+    pid.SetTunings(PidTuningParameters(1, 0, 1));
     pid.SetOutputLimits(0, 100);
     pid.setSampleTime(NOW, 1);
     pid.setTargetValue(1000);
@@ -208,7 +208,7 @@ static void test_end_to_end_positive_positive_up(void)
     integerPID_ideal pid;
     pid.setTargetValue(SET_POINT);
     pid.setSampleTime(10000, SAMPLE_TIME);
-    pid.SetTunings(PidTuningParameters(3, 2, 1), PidDirection::Direct);
+    pid.SetTunings(PidTuningParameters(3, 2, 1));
     pid.SetOutputLimits(0, 255);
     pid.setSensitivity(0);
     pid.setFeedForwardTerm(7);
@@ -226,7 +226,7 @@ static void test_end_to_end_positive_positive_down(void)
     integerPID_ideal pid;
     pid.setTargetValue(SET_POINT);
     pid.setSampleTime(10000, SAMPLE_TIME);
-    pid.SetTunings(PidTuningParameters(3, 2, 1), PidDirection::Direct);
+    pid.SetTunings(PidTuningParameters(3, 2, 1));
     pid.SetOutputLimits(0, 255);
     pid.setSensitivity(0);
     pid.setFeedForwardTerm(11);

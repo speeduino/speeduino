@@ -77,19 +77,11 @@ static PidTuningParameters scaleTuningParameters(const PidTuningParameters& para
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID::SetTunings(const PidTuningParameters &pidParams, PidDirection direction, uint32_t nowMs, uint16_t sampleTime)
+void integerPID::SetTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t sampleTime)
 {
    _sampleTime = sampleTime;
    _lastTime = nowMs - sampleTime;
-
-   if(direction == PidDirection::Reverse)
-   {
-      _pidParams = scaleTuningParameters(pidParams, sampleTime) * -1;
-   }
-   else
-   {
-      _pidParams = scaleTuningParameters(pidParams, sampleTime);
-   }
+   _pidParams = scaleTuningParameters(pidParams, sampleTime);
 }
 
 

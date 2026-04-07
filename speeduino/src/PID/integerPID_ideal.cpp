@@ -70,16 +70,9 @@ bool integerPID_ideal::Compute(unsigned long now, long input, uint16_t* pOutput)
  * it's called automatically from the constructor, but tunings can also
  * be adjusted on the fly during normal operation
  ******************************************************************************/
-void integerPID_ideal::SetTunings(const PidTuningParameters& pidParams, PidDirection direction)
+void integerPID_ideal::SetTunings(const PidTuningParameters& pidParams)
 {
-   if(direction == PidDirection::Reverse)
-   {
-      _pidParams = _pidParams * -1;
-   }
-   else
-   {
-      _pidParams = pidParams;
-   }
+   _pidParams = pidParams;
 }
 
 /* SetOutputLimits(...)****************************************************
