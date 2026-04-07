@@ -13,7 +13,7 @@ public:
     /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
     void activate(long input);
 
-    bool Compute(long input, long* pOutput);                   //   called every time loop() cycles. ON/OFF and
+    long Compute(long input);                   //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
 

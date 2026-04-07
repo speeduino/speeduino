@@ -5,7 +5,6 @@
 static void test_pid_mode_transitions_and_controller_direction(void)
 {
     long input = 50;
-    long output = 0;
 
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
@@ -13,179 +12,152 @@ static void test_pid_mode_transitions_and_controller_direction(void)
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(12, output); // 255*50/1000 integer scaling yields 12
+    TEST_ASSERT_EQUAL(12, pid.Compute(input)); // 255*50/1000 integer scaling yields 12
 
     pid.SetTunings(PidTuningParameters(255, 0, 0) * -1);
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_LESS_THAN(0, output); // sign changed
+    TEST_ASSERT_LESS_THAN(0, pid.Compute(input)); // sign changed
 }
 
 static void test_pid_output_limits_in_auto_scope(void)
 {
     long input = 0;
-    long output = 100;
-
+    
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(500);
     pid.SetOutputLimits(0, 100); // inAuto path updates output and ITerm
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_LESS_OR_EQUAL(100, output);
+    TEST_ASSERT_LESS_OR_EQUAL(100, pid.Compute(input));
 }
 
 static void test_pid_manual_mode_compute_false(void)
-{
-    long input = 0;
-    long output = 42;
-
+{   
     PID pid;
     pid.setTargetValue(100);
     pid.SetTunings(PidTuningParameters(100, 0, 0));
 
-    TEST_ASSERT_FALSE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(42, output);
+    TEST_ASSERT_EQUAL(0, pid.Compute(0));
 }
 
 static void test_pid_auto_mode_proportional(void)
 {
     long input = 0;
-    long output = 0;
-
+    
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(25, output);  // 255 * 100 / 1000 = 25
+    TEST_ASSERT_EQUAL(25, pid.Compute(input));  // 255 * 100 / 1000 = 25
 
     input = 100;
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(0, output);
+    TEST_ASSERT_EQUAL(0, pid.Compute(input));
 }
 
 static void test_pid_output_limits_clamp(void)
 {
     long input = 0;
-    long output = 0;
-
+    
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(1000); // results in max output for Kp=255
     pid.SetOutputLimits(0, 255);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(255, output);
+    TEST_ASSERT_EQUAL(255, pid.Compute(input));
 }
 
 static void test_pid_reverse_direction(void)
 {
     long input = 0;
-    long output = 0;
-
+    
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0) * -1);
     pid.setTargetValue(1000);
     pid.SetOutputLimits(-255, 255);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(-255, output);
+    TEST_ASSERT_EQUAL(-255, pid.Compute(input));
 }
 
 static void test_pid_set_output_limits_long_range(void)
 {
     long input = 0;
-    long output = 0;
-
+    
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(1000);
     pid.activate(0);
 
     pid.SetOutputLimits(0, 10);
-    TEST_ASSERT_TRUE(pid.Compute(0, &output));
-    TEST_ASSERT_EQUAL(10, output);
+    TEST_ASSERT_EQUAL(10, pid.Compute(input));
 
     pid.SetOutputLimits(-20, 20);
     input = 1000;
     pid.setTargetValue(0);
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(-20, output);
+    TEST_ASSERT_EQUAL(-20, pid.Compute(input));
 
     pid.SetOutputLimits(100, 200);
     input = 0;
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(100, output);
+    TEST_ASSERT_EQUAL(100, pid.Compute(input));
 
     pid.SetOutputLimits(150, 150); // invalid min==max should be ignored
     input = 0;
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(100, output); // remains from previous in-range bounds
+    TEST_ASSERT_EQUAL(100, pid.Compute(input)); // remains from previous in-range bounds
 }
 
 static void test_pid_integral_accumulation(void)
 {
     long input = 0;
-    long output = 0;
-
+    
     PID pid;
     pid.SetTunings(PidTuningParameters(0, 10, 0));
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(1, output);
+    TEST_ASSERT_EQUAL(1, pid.Compute(input));
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_EQUAL(2, output);
+    TEST_ASSERT_EQUAL(2, pid.Compute(input));
 }
 
 static void test_pid_set_tunings_runtime_changes(void)
 {
     long input = 0;
-    long output = 0;
 
     PID pid;
     pid.SetTunings(PidTuningParameters(10, 0, 0));
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    long originalOutput = output;
+    long originalOutput = pid.Compute(input);
 
     pid.SetTunings(PidTuningParameters(20, 0, 0)); // Change Kp
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
     // Output should change due to new Kp
-    TEST_ASSERT_NOT_EQUAL(originalOutput, output);
+    TEST_ASSERT_NOT_EQUAL(originalOutput, pid.Compute(input));
 }
 
 static void test_pid_initialize_resets_state(void)
 {
     long input = 0;
-    long output = 50;
 
     PID pid;
     pid.SetTunings(PidTuningParameters(0, 10, 0));
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output)); // Accumulate some integral
+    long initialCorrection = pid.Compute(input);
+    TEST_ASSERT_NOT_EQUAL_INT32(0, initialCorrection); // Accumulate some integral
+    TEST_ASSERT_NOT_EQUAL_INT32(initialCorrection, pid.Compute(input)); // Accumulate some integral
 
     pid.resetIntegral(input); // Reset state
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
     // After reset, output should be based on new state (integral reset)
-    TEST_ASSERT_NOT_EQUAL(50, output); // Should not be the initial output
+    TEST_ASSERT_EQUAL_INT32(initialCorrection, pid.Compute(input)); // Should be the initial output
 }
 
 static void test_pid_set_output_limits_invalid_ignored(void)
 {
     long input = 0;
-    long output = 0;
 
     PID pid;
     pid.SetTunings(PidTuningParameters(10, 0, 0));
@@ -193,15 +165,13 @@ static void test_pid_set_output_limits_invalid_ignored(void)
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
     // Output should still be computed normally (limits ignored, default 0-255)
-    TEST_ASSERT_NOT_EQUAL(0, output);
+    TEST_ASSERT_NOT_EQUAL(0, pid.Compute(input));
 }
 
 static void test_pid_set_controller_direction_runtime_manual(void)
 {
     long input = 0;
-    long output = 0;
 
     PID pid;
     pid.SetTunings(PidTuningParameters(10, 0, 0)*-1); // Should not affect in manual mode
@@ -209,8 +179,7 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     pid.setTargetValue(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(input, &output));
-    TEST_ASSERT_LESS_THAN(0, output); // Reverse direction normally produces negative output
+    TEST_ASSERT_LESS_THAN(0, pid.Compute(input)); // Reverse direction normally produces negative output
 }
 
 static String createIterationMsg(int16_t iteration, long input, long output)
@@ -229,8 +198,7 @@ static void assert_pid_complete(PID &pid, long input, long setpoint, uint16_t ma
     long output;
     for (uint16_t iteration=0; iteration<maxIterations; ++iteration)
     {
-        TEST_ASSERT_TRUE(pid.Compute(input, &output));
-        input += output;
+        input += pid.Compute(input);
 
         UnityPrint(createIterationMsg(iteration, input, output).c_str()); UNITY_PRINT_EOL();
     }
