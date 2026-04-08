@@ -84,7 +84,7 @@ static void setEgoPidTunings(const config6 &page6) {
 void initialiseCorrections(void)
 {
   setEgoPidTunings(configPage6);
-  egoPID.activate(currentStatus.O2);
+  egoPID.resetIntegral(currentStatus.O2);
 
   currentStatus.flexIgnCorrection = 0;
   //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup

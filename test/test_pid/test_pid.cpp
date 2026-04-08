@@ -10,7 +10,7 @@ static void test_pid_mode_transitions_and_controller_direction(void)
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.SetOutputLimits(-200, 200);
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_EQUAL(12, pid.Compute(input)); // 255*50/1000 integer scaling yields 12
 
@@ -26,18 +26,9 @@ static void test_pid_output_limits_in_auto_scope(void)
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(500);
     pid.SetOutputLimits(0, 100); // inAuto path updates output and ITerm
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_LESS_OR_EQUAL(100, pid.Compute(input));
-}
-
-static void test_pid_manual_mode_compute_false(void)
-{   
-    PID pid;
-    pid.setTargetValue(100);
-    pid.SetTunings(PidTuningParameters(100, 0, 0));
-
-    TEST_ASSERT_EQUAL(0, pid.Compute(0));
 }
 
 static void test_pid_auto_mode_proportional(void)
@@ -47,7 +38,7 @@ static void test_pid_auto_mode_proportional(void)
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_EQUAL(25, pid.Compute(input));  // 255 * 100 / 1000 = 25
 
@@ -63,7 +54,7 @@ static void test_pid_output_limits_clamp(void)
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(1000); // results in max output for Kp=255
     pid.SetOutputLimits(0, 255);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_EQUAL(255, pid.Compute(input));
 }
@@ -76,7 +67,7 @@ static void test_pid_reverse_direction(void)
     pid.SetTunings(PidTuningParameters(255, 0, 0) * -1);
     pid.setTargetValue(1000);
     pid.SetOutputLimits(-255, 255);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_EQUAL(-255, pid.Compute(input));
 }
@@ -88,7 +79,7 @@ static void test_pid_set_output_limits_long_range(void)
     PID pid;
     pid.SetTunings(PidTuningParameters(255, 0, 0));
     pid.setTargetValue(1000);
-    pid.activate(0);
+    pid.resetIntegral(0);
 
     pid.SetOutputLimits(0, 10);
     TEST_ASSERT_EQUAL(10, pid.Compute(input));
@@ -114,7 +105,7 @@ static void test_pid_integral_accumulation(void)
     PID pid;
     pid.SetTunings(PidTuningParameters(0, 10, 0));
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_EQUAL(1, pid.Compute(input));
 
@@ -128,7 +119,7 @@ static void test_pid_set_tunings_runtime_changes(void)
     PID pid;
     pid.SetTunings(PidTuningParameters(10, 0, 0));
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     long originalOutput = pid.Compute(input);
 
@@ -144,7 +135,7 @@ static void test_pid_initialize_resets_state(void)
     PID pid;
     pid.SetTunings(PidTuningParameters(0, 10, 0));
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     long initialCorrection = pid.Compute(input);
     TEST_ASSERT_NOT_EQUAL_INT32(0, initialCorrection); // Accumulate some integral
@@ -163,7 +154,7 @@ static void test_pid_set_output_limits_invalid_ignored(void)
     pid.SetTunings(PidTuningParameters(10, 0, 0));
     pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     // Output should still be computed normally (limits ignored, default 0-255)
     TEST_ASSERT_NOT_EQUAL(0, pid.Compute(input));
@@ -177,7 +168,7 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     pid.SetTunings(PidTuningParameters(10, 0, 0)*-1); // Should not affect in manual mode
     pid.SetOutputLimits(-25, 25);
     pid.setTargetValue(100);
-    pid.activate(input);
+    pid.resetIntegral(input);
 
     TEST_ASSERT_LESS_THAN(0, pid.Compute(input)); // Reverse direction normally produces negative output
 }
@@ -215,7 +206,7 @@ static void test_end_to_end_positive_positive_up(void)
     pid.setTargetValue(SET_POINT);
     pid.SetTunings(PidTuningParameters(100, 30, 50));
     pid.SetOutputLimits(-25, 25);
-    pid.activate(START_POINT);
+    pid.resetIntegral(START_POINT);
     
     assert_pid_complete(pid, START_POINT, SET_POINT, 50);
 }
@@ -229,7 +220,7 @@ static void test_end_to_end_positive_positive_down(void)
     pid.setTargetValue(SET_POINT);
     pid.SetTunings(PidTuningParameters(100, 5, 5));
     pid.SetOutputLimits(-75, 75);
-    pid.activate(START_POINT);
+    pid.resetIntegral(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, 100);
 }
@@ -243,7 +234,7 @@ static void test_end_to_end_negative_negative_up(void)
     pid.SetTunings(PidTuningParameters(100, 25, 2));
     pid.SetOutputLimits(-255, 255);
     pid.setTargetValue(SET_POINT);
-    pid.activate(START_POINT);
+    pid.resetIntegral(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, 50);
 }
@@ -257,7 +248,7 @@ static void test_end_to_end_negative_negative_down(void)
     pid.setTargetValue(SET_POINT);
     pid.SetTunings(PidTuningParameters(100, 30, 50));
     pid.SetOutputLimits(-25, 25);
-    pid.activate(START_POINT);
+    pid.resetIntegral(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, 50);
 }
@@ -271,7 +262,7 @@ static void test_end_to_end_negative_positive(void)
     pid.setTargetValue(SET_POINT);
     pid.SetTunings(PidTuningParameters(50, 1, 80));
     pid.SetOutputLimits(-255, 255);
-    pid.activate(START_POINT);
+    pid.resetIntegral(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, 50);
 }
@@ -285,7 +276,7 @@ static void test_end_to_end_positive_to_negative(void)
     pid.SetTunings(PidTuningParameters(100, 30, 20));
     pid.SetOutputLimits(-255, 255);
     pid.setTargetValue(SET_POINT);
-    pid.activate(START_POINT);
+    pid.resetIntegral(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, 50);
 }
@@ -293,7 +284,6 @@ static void test_end_to_end_positive_to_negative(void)
 void testPID(void)
 {
     SET_UNITY_FILENAME() {
-        RUN_TEST_P(test_pid_manual_mode_compute_false);
         RUN_TEST_P(test_pid_auto_mode_proportional);
         RUN_TEST_P(test_pid_output_limits_clamp);
         RUN_TEST_P(test_pid_reverse_direction);

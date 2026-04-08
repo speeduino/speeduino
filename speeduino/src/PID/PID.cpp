@@ -1,27 +1,13 @@
 #include "PID.h"
 #include "../../maths.h"
 
-/*Constructor (...)*********************************************************
- *    The parameters specified here are those for for which we can't set up
- *    reliable defaults, so we need to have the user set them.
- ***************************************************************************/
 PID::PID(void)
 {
-	PID::SetOutputLimits(0, 255);				//default output limit corresponds to
-												//the arduino pwm limits
+	PID::SetOutputLimits(0, 255);
 }
 
-
-/* Compute() **********************************************************************
- *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
- *   pid Output needs to be computed.  returns true when the output is computed,
- *   false when nothing has been done.
- **********************************************************************************/
 long PID::Compute(long input)
 {
-   if(!_isActive) return 0L;
-
    /*Compute all the working error variables*/
    long error = _setpoint - input;
    ITerm = clamp(ITerm + (_pidParams.Ki * error), outMin, outMax);
@@ -35,26 +21,12 @@ long PID::Compute(long input)
    return clamp(output, outMin, outMax)/1000;
 }
 
-/* SetTunings(...)*************************************************************
- * This function allows the controller's dynamic performance to be adjusted.
- * it's called automatically from the constructor, but tunings can also
- * be adjusted on the fly during normal operation
- ******************************************************************************/
 void PID::SetTunings(const PidTuningParameters &pidParams)
 {
   _pidParams = pidParams;
   _pidParams.Kd = _pidParams.Kd * 10;
 }
 
-
-/* SetOutputLimits(...)****************************************************
- *     This function will be used far more often than SetInputLimits.  while
- *  the input to the controller will generally be in the 0-1023 range (which is
- *  the default already,)  the output will be a little different.  maybe they'll
- *  be doing a time window and will need 0-8000 or something.  or maybe they'll
- *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
- *  here.
- **************************************************************************/
 void PID::SetOutputLimits(long Min, long Max)
 {
    if(Min >= Max) return;
@@ -62,20 +34,6 @@ void PID::SetOutputLimits(long Min, long Max)
    outMax = Max*1000;
 }
 
-void PID::activate(long input)
-{
-   if(!_isActive)
-   {  
-      // We just went from manual to auto
-      resetIntegral(input);
-   }
-   _isActive = true;
-}
-
-/* Initialize()****************************************************************
- *	does all the things that need to happen to ensure a bumpless transfer
- *  from manual to automatic mode.
- ******************************************************************************/
 void PID::resetIntegral(long input)
 {
    ITerm = 0;
