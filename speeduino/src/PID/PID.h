@@ -10,9 +10,6 @@ public:
   //commonly used functions **************************************************************************
     PID(void);     //   Setpoint.  Initial tuning parameters are also set here
 
-    /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
-    void activate(long input);
-
     long Compute(long input);                   //   called every time loop() cycles. ON/OFF and
                                           //   calculation frequency can be set using SetMode
                                           //   SetSampleTime respectively
@@ -27,9 +24,6 @@ public:
     void SetTunings(const PidTuningParameters &pidParams);         	  //   constructor, this function gives the user the option
                                         //   of changing tunings during runtime for Adaptive control
 
-#if !defined(UNIT_TEST)
-private:
-#endif
   void resetIntegral(long input);
 
 private:
@@ -41,6 +35,5 @@ private:
   long ITerm, lastInput;
 
   long outMin, outMax;
-  bool _isActive = false;
 };
 
