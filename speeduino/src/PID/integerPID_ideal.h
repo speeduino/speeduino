@@ -6,35 +6,73 @@
 class integerPID_ideal
 {
 public:
-  //commonly used functions **************************************************************************
-    integerPID_ideal(void);
+  
+  /** @brief Default construction */
+  integerPID_ideal(void);
 
-    bool Compute(unsigned long now, long input, uint16_t* pOutput);  // * performs the PID calculation with injected time.
-                                          //   called every time loop() cycles. ON/OFF and
-                                          //   calculation frequency can be set using SetMode
-                                          //   SetSampleTime respectively
+  /** @name Configuration methods */
+  ///@{
 
-    void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
-										  //it's likely the user will want to change this depending on
-										  //the application
-  void setSampleTime(unsigned long now, uint16_t sampleTime);
-  void SetTunings(const PidTuningParameters& params);
-  void setTargetValue(uint16_t setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
-  void setSensitivity(uint16_t sensitivity) { _sensitivity = sensitivity; }
-	void Initialize(long input);
+  /** @brief Set the output limits */
+  void setOutputLimits(uint8_t min, uint8_t max);
+
+  /**
+   * @brief Set the minimum time interval between computations
+   * 
+   * @param now Current time
+   * @param minComputeInterval Interval between valid calls to compute(). Must be in same units as @p now
+   */
+  void setSampleTime(uint32_t now, uint16_t minComputeInterval) { 
+    _sampleTime = minComputeInterval; 
+    _lastTime = now-minComputeInterval;
+  }
+  
+  /** @brief Set the PID parameters */
+  void setTunings(const PidTuningParameters& params) { _pidParams = params; }
+
+  /** @brief Set the controller set point */
+  void setSetPoint(uint16_t setpoint) { _setpoint = setpoint; }
+  
+  /** @brief (Optional) Set the sensitivity */
+  void setSensitivity(uint16_t sensitivity) { _sensitivity = sensitivity>5000U ? 5000 : sensitivity; }
+  
+  /** @brief (Optional) Set the forward bias */
   void setFeedForwardTerm(uint16_t feedForwardTerm) { _feedForwardTerm = feedForwardTerm; }
+	///@}
 
+  /**
+   * @brief Initialize the controller
+   * 
+   * @param input The first input value (same as the compute() input parameter)
+   */
+	void initialize(uint16_t input);
+
+  /**
+   * @brief Compute the new output.
+   * 
+   * @note The output is not a correction to be applied to the input.
+   * It is the actual output to be applied to the physical system.
+   *  
+   * @param now Current time (same units as used for setSampleTime)
+   * @param input The input value
+   * @param pOutput The new output: only valid when true is returned.
+   * @return true if a calculation occurred, false otherwise 
+   */
+  bool compute(uint32_t now, uint16_t input, uint16_t* pOutput);
+  
 private:
 
   PidTuningParameters _pidParams;
 
-  uint16_t _setpoint;       //
-  uint16_t _sensitivity;
-  uint16_t _sampleTime = 250; 
+  uint16_t _setpoint = 0;
+  uint16_t _sensitivity = 0;
+  uint16_t _sampleTime = 0; 
   uint16_t _feedForwardTerm = 0;
 
-	unsigned long lastTime;
-	long ITerm, lastInput;
+	uint32_t _lastTime = 0;
+	int32_t _integralTerm = 0;
+  uint16_t _lastInput;
 
-	long outMin, outMax;
+	uint32_t _outMin = 0;
+  uint32_t _outMax = 0;
 };
