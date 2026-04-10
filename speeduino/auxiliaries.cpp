@@ -570,13 +570,13 @@ static void setBoostPidTunings(const config2 &page2, const config6 &page6, const
 {
   if(page6.boostMode == BOOST_MODE_SIMPLE)
   {
-    boostPID.SetTunings(PidTuningParameters());
+    boostPID.setTunings(PidTuningParameters());
   }
   else
   {
-    boostPID.SetTunings(PidTuningParameters(page6.boostKP, page6.boostKI, page6.boostKD));
+    boostPID.setTunings(PidTuningParameters(page6.boostKP, page6.boostKI, page6.boostKD));
   }
-  boostPID.SetOutputLimits(page2.boostMinDuty, page2.boostMaxDuty);
+  boostPID.setOutputLimits(page2.boostMinDuty, page2.boostMaxDuty);
   boostPID.setSampleTime(millis(), page10.boostIntv);
   boostPID.setSensitivity(page10.boostSens);
 }
@@ -850,10 +850,10 @@ void boostControl(void)
             setBoostPidTunings(configPage2, configPage6, configPage10);
           }
 
-          boostPID.setTargetValue(currentStatus.boostTarget);
+          boostPID.setSetPoint(currentStatus.boostTarget);
           boostPID.setFeedForwardTerm(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2);
           //Compute() returns false if the required interval has not yet passed.
-          bool PIDcomputed = boostPID.Compute(millis(), 
+          bool PIDcomputed = boostPID.compute(millis(), 
                                               currentStatus.MAP,
                                               &currentStatus.boostDuty);
           
@@ -874,7 +874,7 @@ void boostControl(void)
       }
       else
       {
-        boostPID.Initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
+        boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
         //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
         currentStatus.boostDuty = configPage15.boostDCWhenDisabled*100;
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
@@ -1248,7 +1248,7 @@ void wmiControl(void)
 
 void boostDisable(void)
 {
-  boostPID.Initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
+  boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
   DISABLE_BOOST_TIMER(); //Turn off timer
   boost_pin.setPinLow(); //Make sure solenoid is off (0% duty)
