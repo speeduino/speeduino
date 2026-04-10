@@ -2,6 +2,8 @@
 #include "src/PID/integerPID.h"
 #include "../test_utils.h"
 
+constexpr uint32_t NOW = 10000UL;
+
 static void test_integerPID_manual_mode_compute_false(void)
 {
     long input = 10;
@@ -467,6 +469,83 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
     TEST_ASSERT_GREATER_THAN(0, output);
 }
 
+// Run the PID for 50 iterations and confirm it hits the setpoint
+static inline void assert_pid_complete(integerPID &pid, long *pInput, long *pOutput, long setpoint, uint8_t sampleTime)
+{
+    UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
+
+    char szMsg[64];
+    for (uint16_t iteration=0; iteration<50U; ++iteration)
+    {
+        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime)));
+        *pInput += *pOutput;
+
+        snprintf(szMsg, _countof(szMsg)-1, "%" PRIu16 ", %" PRId32 ", %" PRId32, iteration, (int32_t)*pInput, (int32_t)*pOutput);
+        UnityPrint(szMsg); UNITY_PRINT_EOL();
+    }
+    // UnityPrint("Time,Input,Output"); UNITY_PRINT_EOL();
+    // char szMsg[256];
+    // uint32_t now = 10000UL;
+    // while (now<(10000UL+(199*sampleTime)))
+    // {
+    //     snprintf(szMsg, _countof(szMsg)-1, "%" PRIu32 ", %" PRId32 ", %" PRId32, now, (int32_t)*pInput, (int32_t)*pOutput);
+    //     UnityPrint(szMsg); UNITY_PRINT_EOL();
+
+    //     TEST_ASSERT_TRUE(pid.Compute(now));
+    //     *pInput += *pOutput;
+    //     now += sampleTime;
+    // }
+    // Tolerance of 1%
+    TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
+}
+
+static void test_end_to_end_positive_positive_up(void) 
+{
+    constexpr uint8_t SAMPLE_TIME = 33;
+    long output = 0;
+    long input = 90;
+    long setpoint = 155;
+
+    integerPID pid(&input, &output, &setpoint, 3, 1, 2, DIRECT);
+    pid.SetSampleTime(SAMPLE_TIME);
+    pid.SetOutputLimits(-255, 255);
+    pid.SetMode(AUTOMATIC);
+
+    assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
+}
+
+static void test_end_to_end_positive_positive_down(void) 
+{
+    constexpr uint8_t SAMPLE_TIME = 33;
+    long output = 0;
+    long input = 235;
+    long setpoint = 155;
+
+    integerPID pid(&input, &output, &setpoint, 5, 2, 4, DIRECT);
+    pid.SetSampleTime(SAMPLE_TIME);
+    pid.SetOutputLimits(-255, 255);
+    pid.SetMode(AUTOMATIC);
+
+    assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
+}
+
+static void test_end_to_end_negative_negative_up(void) 
+{
+    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+}
+static void test_end_to_end_negative_negative_down(void) 
+{
+    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+}
+static void test_end_to_end_negative_positive(void) 
+{
+    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+}
+static void test_end_to_end_positive_negative(void) 
+{
+    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+}
+
 void testIntegerPID(void)
 {
     SET_UNITY_FILENAME() {
@@ -495,5 +574,12 @@ void testIntegerPID(void)
         RUN_TEST_P(test_integerPID_compute_in_manual_mode_returns_false);
         RUN_TEST_P(test_integerPID_set_output_limits_invalid_ignored);
         RUN_TEST_P(test_integerPID_set_controller_direction_runtime_manual);
+        RUN_TEST_P(test_end_to_end_positive_positive_up);
+        RUN_TEST_P(test_end_to_end_positive_positive_down);
+        RUN_TEST_P(test_end_to_end_negative_negative_down);
+        RUN_TEST_P(test_end_to_end_negative_negative_up);
+        RUN_TEST_P(test_end_to_end_negative_negative_down);
+        RUN_TEST_P(test_end_to_end_negative_positive);
+        RUN_TEST_P(test_end_to_end_positive_negative);
     }
 }

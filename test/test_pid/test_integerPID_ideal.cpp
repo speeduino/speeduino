@@ -2,6 +2,8 @@
 #include "src/PID/integerPID_ideal.h"
 #include "../test_utils.h"
 
+constexpr uint32_t NOW = 10000UL;
+
 static void test_p_only_clamped_to_min(void)
 {
     long input = 100;
@@ -188,6 +190,54 @@ static void test_runtime_reverse_direction_flips_output_sign(void)
     #endif
 }
 
+// Run the PID for 50 and confirm it hits the setpoint
+static void assert_pid_complete(integerPID_ideal &pid, long *pInput, uint16_t *pOutput, uint16_t setpoint, uint8_t sampleTime)
+{
+    UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
+
+    char szMsg[64];
+    for (uint16_t iteration=0; iteration<50U; ++iteration)
+    {
+        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime), 0));
+        *pInput = *pOutput;
+
+        snprintf(szMsg, _countof(szMsg)-1, "%" PRIu16 ", %" PRId32 ", %" PRId32, iteration, (int32_t)*pInput, (int32_t)*pOutput);
+        UnityPrint(szMsg); UNITY_PRINT_EOL();
+    }
+    // Tolerance of 1%
+    TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
+}
+
+static void test_end_to_end_positive_positive_up(void) 
+{
+    long input = 30;
+    uint16_t output = 0;
+    uint16_t setpoint = 90;
+    uint16_t sensitivity = 0;
+    uint8_t sampleTime = 25;
+
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 3, 2, 1, DIRECT);
+    pid.SetOutputLimits(0, 255);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, sampleTime);
+}
+
+static void test_end_to_end_positive_positive_down(void) 
+{
+    long input = 90;
+    uint16_t output = 0;
+    uint16_t setpoint = 30;
+    uint16_t sensitivity = 0;
+    uint8_t sampleTime = 25;
+
+    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 3, 2, 1, DIRECT);
+    pid.SetOutputLimits(0, 255);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, sampleTime);
+}
+
 void testIntegerPID_ideal(void)
 {
     SET_UNITY_FILENAME() {
@@ -201,5 +251,12 @@ void testIntegerPID_ideal(void)
         RUN_TEST_P(test_initialize_resets_integral_and_error);
         RUN_TEST_P(test_derivative_term_changes_output_on_error_transition);
         RUN_TEST_P(test_runtime_reverse_direction_flips_output_sign);
+        RUN_TEST_P(test_end_to_end_positive_positive_up);
+        RUN_TEST_P(test_end_to_end_positive_positive_down);
+        // Following do not make sense for integerPID_ideal since input & output are uint16_t
+        // RUN_TEST_P(test_end_to_end_negative_negative_up);
+        // RUN_TEST_P(test_end_to_end_negative_negative_down);
+        // RUN_TEST_P(test_end_to_end_negative_positive);
+        // RUN_TEST_P(test_end_to_end_positive_to_negative);       
     }
 }

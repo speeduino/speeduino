@@ -208,6 +208,108 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     TEST_ASSERT_GREATER_THAN(0, output); // Reverse direction normally produces negative output
 }
 
+// Run the PID for maxIterations and confirm it hits the setpoint
+static void assert_pid_complete(PID &pid, long *pInput, long *pOutput, long setpoint, uint16_t maxIterations)
+{
+    UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
+
+    char szMsg[64];
+    for (uint16_t iteration=0; iteration<maxIterations; ++iteration)
+    {
+        TEST_ASSERT_TRUE(pid.Compute());
+        *pInput += *pOutput;
+
+        snprintf(szMsg, _countof(szMsg)-1, "%" PRIu16 ", %" PRId32 ", %" PRId32, iteration, (int32_t)*pInput, (int32_t)*pOutput);
+        UnityPrint(szMsg); UNITY_PRINT_EOL();
+    }
+    // Tolerance of 1%
+    TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
+}
+
+static void test_end_to_end_positive_positive_up(void) 
+{
+    long output = 0;
+    long input = 900;
+    long setpoint = 1500;
+
+    PID pid(&input, &output, &setpoint, 100, 30, 50, DIRECT);
+    pid.SetOutputLimits(-25, 25);
+    pid.SetMode(AUTOMATIC);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, 50);
+}
+
+static void test_end_to_end_positive_positive_down(void) 
+{
+    long output = 0;
+    long input = 1250;
+    long setpoint = 900;
+
+    PID pid(&input, &output, &setpoint, 100, 5, 5, DIRECT);
+    pid.SetOutputLimits(-75, 75);
+    pid.SetMode(AUTOMATIC);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, 100);
+}
+
+static void test_end_to_end_negative_negative_up(void) 
+{
+    long output = 0;
+    long input = -1500;
+    long setpoint = -900;
+
+    PID pid(&input, &output, &setpoint, 100, 30, 50, DIRECT);
+    pid.SetOutputLimits(-25, 25);
+    pid.SetMode(AUTOMATIC);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, 50);
+}
+
+static void test_end_to_end_negative_negative_down(void) 
+{
+    long output = 0;
+    long input = -900;
+    long setpoint = -1500;
+
+    PID pid(&input, &output, &setpoint, 100, 30, 50, DIRECT);
+    pid.SetOutputLimits(-25, 25);
+    pid.SetMode(AUTOMATIC);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, 50);
+}
+
+static void test_end_to_end_negative_positive(void) 
+{
+    long output = 0;
+    long input = -199;
+    long setpoint = 199;
+
+    PID pid(&input, &output, &setpoint, 50, 1, 80, DIRECT);
+    pid.SetOutputLimits(-75, 75);
+    pid.SetMode(AUTOMATIC);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, 50);
+}
+
+static void test_end_to_end_positive_to_negative(void) 
+{
+    long output = 0;
+    long input = 900;
+    long setpoint = -1500;
+
+    PID pid(&input, &output, &setpoint, 100, 30, 20, DIRECT);
+    pid.SetOutputLimits(-25, 25);
+    pid.SetMode(AUTOMATIC);
+    pid.Initialize();
+
+    assert_pid_complete(pid, &input, &output, setpoint, 50);
+}
+
 void testPID(void)
 {
     SET_UNITY_FILENAME() {
@@ -223,5 +325,11 @@ void testPID(void)
         RUN_TEST_P(test_pid_initialize_resets_state);
         RUN_TEST_P(test_pid_set_output_limits_invalid_ignored);
         RUN_TEST_P(test_pid_set_controller_direction_runtime_manual);
+        RUN_TEST_P(test_end_to_end_positive_positive_up);
+        RUN_TEST_P(test_end_to_end_positive_positive_down);
+        RUN_TEST_P(test_end_to_end_negative_negative_up);
+        RUN_TEST_P(test_end_to_end_negative_negative_down);
+        RUN_TEST_P(test_end_to_end_negative_positive);
+        RUN_TEST_P(test_end_to_end_positive_to_negative);
     }
 }
