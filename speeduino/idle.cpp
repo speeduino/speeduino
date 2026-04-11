@@ -99,9 +99,8 @@ static void configureIdlePID(const config6 &page6, uint32_t minOutput, uint32_t 
 {
     idlePID.SetOutputLimits(minOutput, maxOutput);
     setIdlePidTunings(page6);
-    idlePID.activate(currentStatus.RPM); //Turn PID on
     idle_pid_target_value = initialTarget;
-    idlePID.Initialize(currentStatus.RPM);
+    idlePID.activate(currentStatus.RPM); //Turn PID on
 }
 
 void initialiseIdle(bool forcehoming)
