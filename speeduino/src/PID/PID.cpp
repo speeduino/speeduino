@@ -7,8 +7,8 @@ PID::PID(void)
 
 int32_t PID::compute(int32_t input)
 {
-   /*Compute PID Output*/
-   int32_t output = PidBase::compute(0L,  _setpoint - input, _lastInput - input);
+   // We are using "Derivative on Measurement" as described [here](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-derivative-kick/)
+   int32_t output = PidBase::compute(0L, _setpoint - input, _lastInput - input);
 
    /*Remember some variables for next time*/
    _lastInput = input;

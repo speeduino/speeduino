@@ -13,7 +13,7 @@ bool integerPID::compute(uint32_t now, int32_t input, int32_t* pOutput)
    uint32_t timeChange = (now - _lastTime);
    if ((!_isActive) || (timeChange < _sampleTime)) return false;
 
-   /*Compute PID Output*/
+   // We are using "Derivative on Measurement" as described [here](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-derivative-kick/)
    *pOutput = PidBase::compute(_feedForwardTerm, _setpoint - input, _lastInput - input) >> PID_SHIFTS;
 
    /*Remember some variables for next time*/
