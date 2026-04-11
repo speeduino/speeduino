@@ -47,10 +47,10 @@ void integerPID::setOutputLimits(int32_t min, int32_t max)
 void integerPID::activate(int32_t input)
 {
    if (!_isActive)
-   {  /*we just went from manual to auto*/
+   {
       integerPID::reset(input);
+      _isActive = true;
    }
-   _isActive = true;
 }
 
 void integerPID::reset(int32_t input)
