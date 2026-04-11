@@ -68,5 +68,5 @@ private:
   uint16_t _feedForwardTerm = 0;
 
 	uint32_t _lastTime = 0;
-  uint16_t _lastInput;
+  uint16_t _lastInput = 0;
 };
