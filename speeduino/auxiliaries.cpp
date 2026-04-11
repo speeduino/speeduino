@@ -584,12 +584,12 @@ static void setBoostPidTunings(const config2 &page2, const config6 &page6, const
 static void setVvtPidTunings(integerPID &pid, const config10 &page10, bool isReverse)
 {
   int8_t multiplier = isReverse ? 1 : -1;
-  pid.SetTunings(PidTuningParameters(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD) * multiplier, millis(), 33);
+  pid.setTunings(PidTuningParameters(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD) * multiplier, millis(), 33);
 }
 
-static void configureVvtPid(integerPID &pid, const config10 &page10, bool isReverse, long currentAngle)
+static void configureVvtPid(integerPID &pid, const config10 &page10, bool isReverse, int16_t currentAngle)
 {
-  pid.SetOutputLimits(page10.vvtCLminDuty, page10.vvtCLmaxDuty);
+  pid.setOutputLimits(page10.vvtCLminDuty, page10.vvtCLmaxDuty);
   setVvtPidTunings(pid, page10, isReverse);
   pid.activate(currentAngle); //Turn PID on
 }
@@ -985,15 +985,15 @@ void vvtControl(void)
         {
           currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
           vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
-          vvtPID.Initialize(currentStatus.vvt1Angle);
+          vvtPID.reset(currentStatus.vvt1Angle);
           currentStatus.vvt1AngleError = false;
         }
         else
         {
           //If not already at target angle, calculate new value from PID
-          long pidOutput = 0;
-          vvtPID.setTargetValue(currentStatus.vvt1TargetAngle);
-          bool PID_compute = vvtPID.Compute(millis(), currentStatus.vvt1Angle, &pidOutput);
+          int32_t pidOutput = 0;
+          vvtPID.setSetPoint(currentStatus.vvt1TargetAngle);
+          bool PID_compute = vvtPID.compute(millis(), currentStatus.vvt1Angle, &pidOutput);
           if(PID_compute == true) 
           { 
             currentStatus.vvt1Duty = (uint8_t)pidOutput;
@@ -1024,15 +1024,15 @@ void vvtControl(void)
           {
             currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
             vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
-            vvt2PID.Initialize(currentStatus.vvt2Angle);
+            vvt2PID.reset(currentStatus.vvt2Angle);
             currentStatus.vvt2AngleError = false;
           }
           else
           {
-            vvt2PID.setTargetValue(currentStatus.vvt2TargetAngle);
+            vvt2PID.setSetPoint(currentStatus.vvt2TargetAngle);
             //If not already at target angle, calculate new value from PID
-            long pidOutput = 0;
-            bool PID_compute = vvt2PID.Compute(millis(), currentStatus.vvt2Angle, &pidOutput);
+            int32_t pidOutput = 0;
+            bool PID_compute = vvt2PID.compute(millis(), currentStatus.vvt2Angle, &pidOutput);
             if(PID_compute == true) 
             { 
               currentStatus.vvt2Duty = (uint8_t)pidOutput;
