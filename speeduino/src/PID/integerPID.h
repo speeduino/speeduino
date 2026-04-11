@@ -7,38 +7,64 @@ class integerPID
 {
 public:
   
-  //commonly used functions **************************************************************************
-    integerPID(void);     //   Setpoint.  Initial tuning parameters are also set here
+  /** @brief Default construction */
+  integerPID(void); 
 
+  /** @name Configuration methods */
+  ///@{
 
-    /** @brief Activates the PID controller. Must be called before Compute() will have any effect. */
-    void activate(long input);
+  /** @brief Set the output limits */
+  void setOutputLimits(int32_t min, int32_t max); 
 
-    bool Compute(unsigned long now, long input, long* pOutput);   // * performs the PID calculation at provided time.
-    void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
-										  //it's likely the user will want to change this depending on
-										  //the application
-    void setTargetValue(long setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
-    void setFeedForwardTerm(long feedForwardTerm);
+  /** @brief Set the controller set point */
+  void setSetPoint(int32_t setpoint) { _setpoint = setpoint; } 
+  
+  /**
+   * @brief Set the PID tuning parameters
+   * 
+   * @param pidParams P, I & D terms
+   * @param nowMs Current time in milliseconds
+   * @param minComputeInterval Minimum time that should elapse between computations (in milliseconds)
+   */
+  void setTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t minComputeInterval);
 
-  //available but not commonly used functions ********************************************************
-    void SetTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t sampleTime);       	  //   constructor, this function gives the user the option
-                                          //   of changing tunings during runtime for Adaptive control
+  /** @brief (Optional) Set the feed forward term (predictive bias) */
+  void setFeedForwardTerm(int32_t feedForwardTerm);
 
-  void Initialize(long input);
-  void ResetIntegeral(void);
+  ///@}
+  
+  /** @brief Activates the controller. Must be called before compute() will have any effect. */
+  void activate(int32_t input);
 
-  private:
+  /**
+   * @brief Compute the new output.
+   *  
+   * @param nowMs Current time in milliseconds
+   * @param input The input value
+   * @param pOutput A correction to be applied to the input; only valid when true is returned.
+   * @return true if a calculation occurred, false otherwise 
+   */
+  bool compute(uint32_t nowMs, int32_t input, int32_t* pOutput);
+
+  /** @brief (Optional) Reset the controller */
+  void reset(int32_t input);
+
+  /** @brief (Optional) Reset the integral term */
+  void resetIntegeral(void);
+
+private:
 
   PidTuningParameters _pidParams;
 
-  long _setpoint = 0;
-  long _feedForwardTerm = 0;
+  int32_t _setpoint = 0;
+  int32_t _feedForwardTerm = 0;
 
 	uint32_t _lastTime = 0;
-	long outputSum, lastInput;
+	int32_t _integralTerm = 0;
+  int32_t _lastInput = 0;
   
-	uint16_t _sampleTime = 250; //default sample time is 250ms
-	long outMin, outMax;
+	uint16_t _sampleTime = 0;
+	int32_t _outMin = 0;
+  int32_t _outMax = 0;
 	bool _isActive = false;
 };

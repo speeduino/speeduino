@@ -46,10 +46,10 @@ static volatile bool idle_pwm_state;
 static bool lastDFCOValue;
 uint16_t idle_pwm_max_count; //Used for variable PWM frequency
 static volatile unsigned int idle_pwm_cur_value;
-static long idle_pid_target_value;
-static long FeedForwardTerm;
+static int32_t idle_pid_target_value;
+static int32_t FeedForwardTerm;
 static uint32_t idle_pwm_target_value;
-static long idle_cl_target_rpm;
+static int32_t idle_cl_target_rpm;
 
 static fastOutputPin_t idle_pin;
 static fastOutputPin_t idle2_pin;
@@ -91,13 +91,13 @@ static inline void initialiseIdleUpOutput(void)
 
 static void setIdlePidTunings(const config6 &page6)
 {
-  idlePID.SetTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), millis(), 250); //4Hz means 250ms
-  idlePID.setTargetValue(idle_cl_target_rpm);
+  idlePID.setTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), millis(), 250); //4Hz means 250ms
+  idlePID.setSetPoint(idle_cl_target_rpm);
 }
 
 static void configureIdlePID(const config6 &page6, uint32_t minOutput, uint32_t maxOutput, uint16_t initialTarget)
 {
-    idlePID.SetOutputLimits(minOutput, maxOutput);
+    idlePID.setOutputLimits(minOutput, maxOutput);
     setIdlePidTunings(page6);
     idle_pid_target_value = initialTarget;
     idlePID.activate(currentStatus.RPM); //Turn PID on
@@ -436,7 +436,7 @@ void idleControl(void)
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
-        idlePID.Initialize(currentStatus.RPM); //Update output to smooth transition
+        idlePID.reset(currentStatus.RPM); //Update output to smooth transition
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
       {
@@ -452,7 +452,7 @@ void idleControl(void)
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         
-        PID_computed = idlePID.Compute(millis(), currentStatus.RPM, &idle_pid_target_value);
+        PID_computed = idlePID.compute(millis(), currentStatus.RPM, &idle_pid_target_value);
         long TEMP_idle_pwm_target_value;
         if(PID_computed == true)
         {
@@ -494,7 +494,7 @@ void idleControl(void)
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         idle_pwm_target_value = percentage(currentStatus.idleLoad, idle_pwm_max_count);
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
-        idlePID.Initialize(currentStatus.RPM); //Update output to smooth transition
+        idlePID.reset(currentStatus.RPM); //Update output to smooth transition
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
       {
@@ -533,11 +533,11 @@ void idleControl(void)
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10U; //Multiply the byte target value back out by 10
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         if((currentStatus.RPM - idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (coming back from high rpm with throttle closed)
-          idlePID.ResetIntegeral();
+          idlePID.resetIntegeral();
         }
         
         idlePID.setFeedForwardTerm(FeedForwardTerm);
-        PID_computed = idlePID.Compute(millis(), currentStatus.RPM, &idle_pid_target_value);
+        PID_computed = idlePID.compute(millis(), currentStatus.RPM, &idle_pid_target_value);
 
         if(PID_computed == true)
         {
@@ -619,7 +619,7 @@ void idleControl(void)
           
           idleTaper = 0;
           idle_pid_target_value = idleStepper.targetIdleStep << 2; //Resolution increased
-          idlePID.ResetIntegeral();
+          idlePID.resetIntegeral();
           FeedForwardTerm = idle_pid_target_value;
         }
         else 
@@ -646,14 +646,14 @@ void idleControl(void)
               //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Hysteresis (coming back from high rpm with throttle closed) 
               if (((currentStatus.RPM - idle_cl_target_rpm) > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue )
               {
-                idlePID.ResetIntegeral();
+                idlePID.resetIntegeral();
               }
             }
             else { FeedForwardTerm = idle_pid_target_value; }
           }
 
           idlePID.setFeedForwardTerm(FeedForwardTerm);
-          PID_computed = idlePID.Compute(millis(), currentStatus.RPM, &idle_pid_target_value);
+          PID_computed = idlePID.compute(millis(), currentStatus.RPM, &idle_pid_target_value);
 
           //If DFCO conditions are met keep output from changing
           if( (currentStatus.TPS > configPage2.iacTPSlimit) || lastDFCOValue

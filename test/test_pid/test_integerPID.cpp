@@ -10,10 +10,10 @@ static void test_integerPID_manual_mode_compute_false(void)
     long output = 8;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 250);
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 250);
+    pid.setSetPoint(20);
 
-    TEST_ASSERT_FALSE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_FALSE(pid.compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(8, output);
 }
 
@@ -23,11 +23,11 @@ static void test_integerPID_auto_mode_p_on_error(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 250);
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 250);
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     // Expected: kp scaled to 320, error=10, output=3200>>10=3
     TEST_ASSERT_EQUAL(3, output);
 }
@@ -38,12 +38,12 @@ static void test_integerPID_output_limits_clamp(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(255, 0, 0), NOW, 250);
-    pid.setTargetValue(1000);
-    pid.SetOutputLimits(0, 10);
+    pid.setTunings(PidTuningParameters(255, 0, 0), NOW, 250);
+    pid.setSetPoint(1000);
+    pid.setOutputLimits(0, 10);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(10, output);
 }
 
@@ -54,24 +54,24 @@ static void test_integerPID_controller_direction_switches_effect(void)
     unsigned long now = NOW;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), now, 250);
-    pid.SetOutputLimits(-255, 255);
-    pid.setTargetValue(100);
+    pid.setTunings(PidTuningParameters(10, 0, 0), now, 250);
+    pid.setOutputLimits(-255, 255);
+    pid.setSetPoint(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     long directOutput = output;
     TEST_ASSERT_GREATER_THAN(0, directOutput);
 
-    pid.SetTunings(PidTuningParameters(10, 0, 0)* -1, now, 1);
+    pid.setTunings(PidTuningParameters(10, 0, 0)* -1, now, 1);
     now += 100;
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     TEST_ASSERT_NOT_EQUAL(directOutput, output);
     TEST_ASSERT_LESS_THAN(0, output);
 
-    pid.SetTunings(PidTuningParameters(10, 0, 0), now, 250);
+    pid.setTunings(PidTuningParameters(10, 0, 0), now, 250);
     now += 100;
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     TEST_ASSERT_GREATER_THAN(0, output);
 }
 
@@ -82,17 +82,17 @@ static void test_integerPID_controller_direction_maintains_output_limits(void)
     unsigned long now = NOW;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(255, 0, 0), now, 250);
-    pid.SetOutputLimits(-50, 50);
-    pid.setTargetValue(100);
+    pid.setTunings(PidTuningParameters(255, 0, 0), now, 250);
+    pid.setOutputLimits(-50, 50);
+    pid.setSetPoint(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     TEST_ASSERT_LESS_OR_EQUAL(50, output);
 
-    pid.SetTunings(PidTuningParameters(10, 0, 0)* -1, now, 1);
+    pid.setTunings(PidTuningParameters(10, 0, 0)* -1, now, 1);
     now += 100;
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     TEST_ASSERT_GREATER_OR_EQUAL(-50, output);
 }
 
@@ -102,12 +102,12 @@ static void test_integerPID_reverse_direction(void)
     long output = 0;
     
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0)* -1, NOW, 1);
-    pid.SetOutputLimits(-255, 255);
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0)* -1, NOW, 1);
+    pid.setOutputLimits(-255, 255);
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_LESS_THAN(0, output);  // negative output expected in reverse
 }
 
@@ -117,11 +117,11 @@ static void test_integerPID_feedforward_term(void)
     long output = 0;
 
     integerPID pid;
-    pid.setTargetValue(20);
+    pid.setSetPoint(20);
     pid.setFeedForwardTerm(15);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(15, output);
 }
 
@@ -131,14 +131,14 @@ static void test_integerPID_integral_with_feedforward(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(0, 100, 0), NOW, 250);
-    pid.setTargetValue(100);
+    pid.setTunings(PidTuningParameters(0, 100, 0), NOW, 250);
+    pid.setSetPoint(100);
     pid.setFeedForwardTerm(10);
     pid.activate(input);
 
     // With ki=100 (non-zero), error=90, kp=0, and feedforward=10
-    // This tests that Compute with ki!=0 path is executed
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    // This tests that compute with ki!=0 path is executed
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     // Output should be non-zero (either integral term or feedforward)
     TEST_ASSERT_NOT_EQUAL(0, output);
 }
@@ -149,12 +149,12 @@ static void test_integerPID_output_limits_upper_clamp(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(255, 0, 0), NOW, 250);
-    pid.SetOutputLimits(0, 50); // Set max to 50
-    pid.setTargetValue(1000);
+    pid.setTunings(PidTuningParameters(255, 0, 0), NOW, 250);
+    pid.setOutputLimits(0, 50); // Set max to 50
+    pid.setSetPoint(1000);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(50, output); // Should be clamped to max
 }
 
@@ -164,12 +164,12 @@ static void test_integerPID_output_limits_lower_clamp(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(255, 0, 0), NOW, 250);
-    pid.SetOutputLimits(100, 255); // Set min to 100
-    pid.setTargetValue(0);
+    pid.setTunings(PidTuningParameters(255, 0, 0), NOW, 250);
+    pid.setOutputLimits(100, 255); // Set min to 100
+    pid.setSetPoint(0);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(100, output); // Should be clamped to min
 }
 
@@ -179,12 +179,12 @@ static void test_integerPID_output_limits_negative_range(void)
     long output = 0;
     
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(255, 0, 0)* -1, NOW, 1);
-    pid.SetOutputLimits(-100, 10);
-    pid.setTargetValue(1000);
+    pid.setTunings(PidTuningParameters(255, 0, 0)* -1, NOW, 1);
+    pid.setOutputLimits(-100, 10);
+    pid.setSetPoint(1000);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_LESS_OR_EQUAL(10, output);
     TEST_ASSERT_GREATER_OR_EQUAL(-100, output); // Output within negative range
 }
@@ -195,12 +195,12 @@ static void test_integerPID_output_limits_no_clamp_needed(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 250);
-    pid.SetOutputLimits(0, 255); // Wide limits
-    pid.setTargetValue(100);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 250);
+    pid.setOutputLimits(0, 255); // Wide limits
+    pid.setSetPoint(100);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     // Output should not be clamped; error=50, kp=10 yields ~15 internally
     TEST_ASSERT_GREATER_THAN(0, output);
     TEST_ASSERT_LESS_THAN(255, output);
@@ -212,12 +212,12 @@ static void test_integerPID_output_limits_affects_integral(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(0, 50, 0), NOW, 250);
-    pid.SetOutputLimits(0, 20); // Tight limit
-    pid.setTargetValue(200);
+    pid.setTunings(PidTuningParameters(0, 50, 0), NOW, 250);
+    pid.setOutputLimits(0, 20); // Tight limit
+    pid.setSetPoint(200);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     // Integral windup prevention: output should not exceed limit
     TEST_ASSERT_LESS_OR_EQUAL(20, output);
 }
@@ -229,38 +229,38 @@ static void test_integerPID_derivative_term(void)
     unsigned long now = NOW;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(0, 0, 1), now, 1); // kp=0, ki=0, kd=1
-    pid.SetOutputLimits(-255, 255); // allow negative derivative output
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(0, 0, 1), now, 1); // kp=0, ki=0, kd=1
+    pid.setOutputLimits(-255, 255); // allow negative derivative output
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     long first_output = output;
 
     // Change input to introduce derivative effect
     input = 15; // dInput = 15 - 10 = 5
     now += 100;
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
 
     // kd = 1*32*1000 = 32000, 32000*5=160000, >>2=40000, >>10 ~39 (platform-specific signed shift)
     // Accept -39 or -40 due implementation-defined signed shift rounding.
     TEST_ASSERT_INT32_WITHIN(1, first_output - 40, output);
 }
 
-static void test_Compute_NoTimeChange_ReturnsFalse(void)
+static void test_compute_NoTimeChange_ReturnsFalse(void)
 {
     long input = 10;
     long output = 0;
     
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 100);
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 100);
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output)); // First compute should succeed
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output)); // First compute should succeed
 
-    // Call Compute again with the same time, should return false due to no time change
-    TEST_ASSERT_FALSE(pid.Compute(NOW, input, &output));
+    // Call compute again with the same time, should return false due to no time change
+    TEST_ASSERT_FALSE(pid.compute(NOW, input, &output));
 }
 
 static void test_integerPID_set_sample_time_recalculates_tunings(void)
@@ -270,18 +270,18 @@ static void test_integerPID_set_sample_time_recalculates_tunings(void)
     PidTuningParameters tuningParameters(128, 64, 255);
 
     integerPID pid;
-    pid.SetOutputLimits(-5000, 5000);
-    pid.SetTunings(tuningParameters, NOW, 1);
-    pid.setTargetValue(2000);
+    pid.setOutputLimits(-5000, 5000);
+    pid.setTunings(tuningParameters, NOW, 1);
+    pid.setSetPoint(2000);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     long firstOutput = output;
 
     // Change sample time, which should recalculate tunings
-    pid.SetTunings(tuningParameters, NOW, 500); // New sample time
+    pid.setTunings(tuningParameters, NOW, 500); // New sample time
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW+1000U, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW+1000U, input, &output));
     // Output should differ due to new tunings
     TEST_ASSERT_NOT_EQUAL_INT32(firstOutput, output);
 }
@@ -292,14 +292,14 @@ static void test_integerPID_initialize_resets_state(void)
     long output = 50;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(0, 10, 0), NOW, 1);
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(0, 10, 0), NOW, 1);
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output)); // Accumulate some integral
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output)); // Accumulate some integral
 
-    pid.Initialize(input); // Reset state
-    TEST_ASSERT_TRUE(pid.Compute(NOW+1000U, input, &output));
+    pid.resetIntegeral(); // Reset state
+    TEST_ASSERT_TRUE(pid.compute(NOW+1000U, input, &output));
     // After reset, output should be based on new state (integral reset)
     TEST_ASSERT_NOT_EQUAL(50, output); // Should not be the initial output
 }
@@ -311,22 +311,22 @@ static void test_integerPID_reset_integral_zeros_output_sum(void)
     unsigned long now = NOW;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(5, 100, 60), now, 1);
-    pid.setTargetValue(2000);
+    pid.setTunings(PidTuningParameters(5, 100, 60), now, 1);
+    pid.setSetPoint(2000);
     pid.activate(input);
-    pid.SetOutputLimits(-5000, 5000);
-    pid.Initialize(input);
+    pid.setOutputLimits(-5000, 5000);
+    pid.reset(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output)); // Accumulate integral
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output)); // Accumulate integral
     long firstOutput = output;
     
-    pid.ResetIntegeral(); // Zero integral
+    pid.resetIntegeral(); // Zero integral
     now += 1000;
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     TEST_ASSERT_EQUAL_INT32(firstOutput, output);
 
     now += 1000;
-    TEST_ASSERT_TRUE(pid.Compute(now, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(now, input, &output));
     TEST_ASSERT_NOT_EQUAL_INT32(firstOutput, output);
 }
 
@@ -336,15 +336,15 @@ static void test_integerPID_set_tunings_runtime_changes(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 1);
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 1);
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     long originalOutput = output;
 
-    pid.SetTunings(PidTuningParameters(20, 0, 0), NOW, 1); // Change Kp
-    TEST_ASSERT_TRUE(pid.Compute(NOW+1000U, input, &output));
+    pid.setTunings(PidTuningParameters(20, 0, 0), NOW, 1); // Change Kp
+    TEST_ASSERT_TRUE(pid.compute(NOW+1000U, input, &output));
     // Output should change due to new Kp
     TEST_ASSERT_NOT_EQUAL(originalOutput, output);
 }
@@ -355,10 +355,10 @@ static void test_integerPID_compute_in_manual_mode_returns_false(void)
     long output = 0;
 
     integerPID pid;
-    pid.setTargetValue(20);
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 1);
+    pid.setSetPoint(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 1);
 
-    TEST_ASSERT_FALSE(pid.Compute(NOW, input, &output)); // Should return false in manual mode
+    TEST_ASSERT_FALSE(pid.compute(NOW, input, &output)); // Should return false in manual mode
     TEST_ASSERT_EQUAL(0, output); // Output unchanged
 }
 
@@ -368,12 +368,12 @@ static void test_integerPID_set_output_limits_invalid_ignored(void)
     long output = 0;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(10, 0, 0), NOW, 1);
-    pid.SetOutputLimits(50, 20); // Invalid: Min >= Max
-    pid.setTargetValue(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0), NOW, 1);
+    pid.setOutputLimits(50, 20); // Invalid: Min >= Max
+    pid.setSetPoint(20);
     pid.activate(input);
 
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     // Output should still be computed normally (limits ignored)
     TEST_ASSERT_NOT_EQUAL(0, output);
 }
@@ -384,12 +384,12 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
     long output = 0;
 
     integerPID pid;
-    pid.setTargetValue(20);
-    pid.SetTunings(PidTuningParameters(10, 0, 0)*-1, NOW, 1);
-    pid.SetOutputLimits(-25, 25);
+    pid.setSetPoint(20);
+    pid.setTunings(PidTuningParameters(10, 0, 0)*-1, NOW, 1);
+    pid.setOutputLimits(-25, 25);
     pid.activate(input);
     
-    TEST_ASSERT_TRUE(pid.Compute(NOW, input, &output));
+    TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_LESS_THAN(0, output);
 }
 
@@ -406,11 +406,11 @@ static inline void assert_pid_complete(integerPID &pid, long input, long setpoin
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
     UnityPrint(createIterationMsg(-1, input, setpoint).c_str()); UNITY_PRINT_EOL();
 
-    pid.setTargetValue(setpoint);
+    pid.setSetPoint(setpoint);
     long output;
     for (uint16_t iteration=0; iteration<50U; ++iteration)
     {
-        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime), input, &output));
+        TEST_ASSERT_TRUE(pid.compute(NOW+(iteration*sampleTime), input, &output));
         input += output;
         UnityPrint(createIterationMsg(iteration, input, output).c_str()); UNITY_PRINT_EOL();
     }
@@ -425,9 +425,9 @@ static void test_end_to_end_positive_positive_up(void)
     constexpr long SET_POINT = 155;
 
     integerPID pid;
-    pid.setTargetValue(SET_POINT);
-    pid.SetTunings(PidTuningParameters(3, 1, 2), NOW, SAMPLE_TIME);
-    pid.SetOutputLimits(-255, 255);
+    pid.setSetPoint(SET_POINT);
+    pid.setTunings(PidTuningParameters(3, 1, 2), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
     pid.activate(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
@@ -440,8 +440,9 @@ static void test_end_to_end_positive_positive_down(void)
     constexpr long SET_POINT = 155;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(5, 2, 4), NOW, SAMPLE_TIME);
-    pid.SetOutputLimits(-255, 255);
+    pid.setTunings(PidTuningParameters(5, 2, 4), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
+    pid.setSetPoint(SET_POINT);
     pid.activate(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
@@ -455,8 +456,8 @@ static void test_end_to_end_negative_negative_up(void)
     constexpr long SET_POINT = -155;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(15, 3, 2), NOW, SAMPLE_TIME);
-    pid.SetOutputLimits(-255, 255);
+    pid.setTunings(PidTuningParameters(15, 3, 2), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
     pid.activate(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
@@ -469,8 +470,8 @@ static void test_end_to_end_negative_negative_down(void)
     constexpr long SET_POINT = -235;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(15, 3, 2), NOW, SAMPLE_TIME);
-    pid.SetOutputLimits(-255, 255);
+    pid.setTunings(PidTuningParameters(15, 3, 2), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
     pid.activate(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
@@ -483,8 +484,8 @@ static void test_end_to_end_positive_negative(void)
     constexpr long SET_POINT = -55;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(15, 1, 1), NOW, SAMPLE_TIME);
-    pid.SetOutputLimits(-255, 255);
+    pid.setTunings(PidTuningParameters(15, 1, 1), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
     pid.activate(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
@@ -497,8 +498,8 @@ static void test_end_to_end_negative_positive(void)
     constexpr long SET_POINT = 65;
 
     integerPID pid;
-    pid.SetTunings(PidTuningParameters(15, 3, 2), NOW, SAMPLE_TIME);
-    pid.SetOutputLimits(-255, 255);
+    pid.setTunings(PidTuningParameters(15, 3, 2), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
     pid.activate(START_POINT);
 
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
@@ -521,7 +522,7 @@ void testIntegerPID(void)
         RUN_TEST_P(test_integerPID_controller_direction_switches_effect);
         RUN_TEST_P(test_integerPID_controller_direction_maintains_output_limits);
         RUN_TEST_P(test_integerPID_derivative_term);
-        RUN_TEST_P(test_Compute_NoTimeChange_ReturnsFalse);
+        RUN_TEST_P(test_compute_NoTimeChange_ReturnsFalse);
         RUN_TEST_P(test_integerPID_set_sample_time_recalculates_tunings);
         RUN_TEST_P(test_integerPID_initialize_resets_state);
         RUN_TEST_P(test_integerPID_reset_integral_zeros_output_sum);

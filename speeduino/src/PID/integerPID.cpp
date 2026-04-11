@@ -3,130 +3,88 @@
 
 constexpr uint8_t PID_SHIFTS = 10; //Increased resolution
 
-/*Constructor (...)*********************************************************
- *    The parameters specified here are those for for which we can't set up
- *    reliable defaults, so we need to have the user set them.
- ***************************************************************************/
-/**
- * @brief A standard integer PID controller. 
- *
- * @param Input Pointer to the variable holding the current value that is to be controlled. Eg In an idle control this would point to RPM
- * @param Output The address in the page that should be returned. This is as per the page definition in the ini
- * 
- * @return uint8_t The current target advance value in degrees
- */
 integerPID::integerPID(void)
 {
-   SetOutputLimits(0, 255);   //default output limit corresponds to the arduino pwm limits
+   setOutputLimits(0, 255); 
 }
 
-
-/* Compute() **********************************************************************
- *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
- *   pid Output needs to be computed.  returns true when the output is computed,
- *   false when nothing has been done.
- **********************************************************************************/
-bool integerPID::Compute(unsigned long now, long input, long* pOutput)
+bool integerPID::compute(uint32_t now, int32_t input, int32_t* pOutput)
 {
-   if(!_isActive) return false;
-   unsigned long timeChange = (now - _lastTime);
-   if(timeChange >= _sampleTime)
+   uint32_t timeChange = (now - _lastTime);
+   if ((!_isActive) || (timeChange < _sampleTime)) return false;
+
+   /*Compute all the working error variables*/
+   int32_t error = _setpoint - input;
+   int32_t dInput = (input - _lastInput);
+
+   if (_pidParams.Ki != 0)
    {
-      /*Compute all the working error variables*/
-      long error = _setpoint - input;
-      long dInput = (input - lastInput);
-
-      if (_pidParams.Ki != 0)
-      {
-         outputSum += (_pidParams.Ki * error); //integral += error × dt
-         outputSum = clamp(outputSum, outMin - _feedForwardTerm, outMax - _feedForwardTerm);
-      }
-
-      /*Compute PID Output*/
-      long output;
-      
-      output = (_pidParams.Kp * error);
-      if (_pidParams.Ki != 0) { output += outputSum; }
-      if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
-      output = clamp(output + _feedForwardTerm, outMin, outMax);
-
-      *pOutput = output >> PID_SHIFTS;
-
-      /*Remember some variables for next time*/
-      lastInput = input;
-      _lastTime = now;
-
-      return true;
+      _integralTerm += (_pidParams.Ki * error); //integral += error × dt
+      _integralTerm = clamp(_integralTerm, _outMin - _feedForwardTerm, _outMax - _feedForwardTerm);
    }
-   return false;
+
+   /*Compute PID Output*/
+   int32_t output;
+   
+   output = (_pidParams.Kp * error);
+   if (_pidParams.Ki != 0) { output += _integralTerm; }
+   if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
+   output = clamp(output + _feedForwardTerm, _outMin, _outMax);
+
+   *pOutput = output >> PID_SHIFTS;
+
+   /*Remember some variables for next time*/
+   _lastInput = input;
+   _lastTime = now;
+
+   return true;
 }
 
 
-static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t sampleTime)
+static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t minComputeInterval)
 {
     PidTuningParameters scaledParams = params * 32;
-    uint16_t inverseSampleTimeInSec = MILLI_PER_SEC / sampleTime;
+    uint16_t inverseSampleTimeInSec = MILLI_PER_SEC / minComputeInterval;
     scaledParams.Ki = (scaledParams.Ki) / inverseSampleTimeInSec;
     scaledParams.Kd = (scaledParams.Kd) * inverseSampleTimeInSec;
     return scaledParams;
 }
 
-/* SetTunings(...)*************************************************************
- * This function allows the controller's dynamic performance to be adjusted.
- * it's called automatically from the constructor, but tunings can also
- * be adjusted on the fly during normal operation
- ******************************************************************************/
-void integerPID::SetTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t sampleTime)
+void integerPID::setTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t minComputeInterval)
 {
-   _sampleTime = sampleTime;
-   _lastTime = nowMs - sampleTime;
-   _pidParams = scaleTuningParameters(pidParams, sampleTime);
+   _sampleTime = minComputeInterval;
+   _lastTime = nowMs - minComputeInterval;
+   _pidParams = scaleTuningParameters(pidParams, minComputeInterval);
 }
 
-
-/* SetOutputLimits(...)****************************************************
- *     This function will be used far more often than SetInputLimits.  while
- *  the input to the controller will generally be in the 0-1023 range (which is
- *  the default already,)  the output will be a little different.  maybe they'll
- *  be doing a time window and will need 0-8000 or something.  or maybe they'll
- *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
- *  here.
- **************************************************************************/
-void integerPID::SetOutputLimits(long Min, long Max)
+void integerPID::setOutputLimits(int32_t min, int32_t max)
 {
-   if(Min >= Max) return;
-   outMin = Min << PID_SHIFTS;
-   outMax = Max << PID_SHIFTS;
+   if(min >= max) return;
+   _outMin = min << PID_SHIFTS;
+   _outMax = max << PID_SHIFTS;
 }
 
-/* SetMode(...)****************************************************************
- * Allows the controller Mode to be set to manual (0) or Automatic (non-zero)
- * when the transition from manual to auto occurs, the controller is
- * automatically initialized
- ******************************************************************************/
-void integerPID::activate(long input)
+void integerPID::activate(int32_t input)
 {
    if (!_isActive)
    {  /*we just went from manual to auto*/
-      integerPID::Initialize(input);
+      integerPID::reset(input);
    }
    _isActive = true;
 }
 
-/* Initialize()****************************************************************
- *	does all the things that need to happen to ensure a bumpless transfer
- *  from manual to automatic mode.
- ******************************************************************************/
-void integerPID::Initialize(long input)
+void integerPID::reset(int32_t input)
 {
-   lastInput = input;
-   ResetIntegeral();
+   _lastInput = input;
+   resetIntegeral();
 }
 
-void integerPID::ResetIntegeral() { outputSum=0;}
+void integerPID::resetIntegeral(void) 
+{ 
+   _integralTerm=0;
+}
 
-void integerPID::setFeedForwardTerm(long feedForwardTerm) 
+void integerPID::setFeedForwardTerm(int32_t feedForwardTerm) 
 { 
    _feedForwardTerm = feedForwardTerm << PID_SHIFTS; 
 }
