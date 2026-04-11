@@ -495,6 +495,29 @@ static void test_end_to_end_negative_positive(void)
     assert_pid_complete(pid, START_POINT, SET_POINT, SAMPLE_TIME);
 }
 
+
+static void test_multiple_activate(void) 
+{
+    constexpr uint8_t SAMPLE_TIME = 33;
+    constexpr int32_t START_POINT = -155;
+    constexpr int32_t SET_POINT = 235;
+    int32_t output = 0;
+
+    integerPID pid;
+    pid.setSetPoint(SET_POINT);
+    pid.setTunings(PidTuningParameters(1, 10, 1), NOW, SAMPLE_TIME);
+    pid.setOutputLimits(-255, 255);
+    pid.activate(START_POINT);
+
+    TEST_ASSERT_TRUE(pid.compute(NOW+SAMPLE_TIME, START_POINT, &output));
+    TEST_ASSERT_EQUAL_INT32(15, output);
+
+    pid.activate(START_POINT*30); // Should have no effect
+
+    TEST_ASSERT_TRUE(pid.compute(NOW+SAMPLE_TIME*2, START_POINT, &output));
+    TEST_ASSERT_EQUAL_INT32(19, output);
+}
+
 void testIntegerPID(void)
 {
     SET_UNITY_FILENAME() {
@@ -527,5 +550,6 @@ void testIntegerPID(void)
         RUN_TEST_P(test_end_to_end_negative_negative_down);
         RUN_TEST_P(test_end_to_end_negative_positive);
         RUN_TEST_P(test_end_to_end_positive_negative);
+        RUN_TEST_P(test_multiple_activate);
     }
 }
