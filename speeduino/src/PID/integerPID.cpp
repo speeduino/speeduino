@@ -13,26 +13,8 @@ bool integerPID::compute(uint32_t now, int32_t input, int32_t* pOutput)
    uint32_t timeChange = (now - _lastTime);
    if ((!_isActive) || (timeChange < _sampleTime)) return false;
 
-   /*Compute all the working error variables*/
-   int32_t error = _setpoint - input;
-
-   _integralTerm += error;
-
    /*Compute PID Output*/
-   int32_t output = _feedForwardTerm + _pidParams.compute(error, _integralTerm, _lastInput - input);
-
-   /* Clamp output and back-calculate integral if necessary */
-   if (output > _outMax)
-   {
-       output = _outMax;
-       _integralTerm -= error;
-   }
-   else if (output < _outMin)
-   {
-       output = _outMin;
-       _integralTerm -= error;
-   }   
-   *pOutput = output >> PID_SHIFTS;
+   *pOutput = PidBase::compute(_feedForwardTerm, _setpoint - input, _lastInput - input) >> PID_SHIFTS;
 
    /*Remember some variables for next time*/
    _lastInput = input;
@@ -54,14 +36,12 @@ void integerPID::setTunings(const PidTuningParameters &pidParams, uint32_t nowMs
 {
    _sampleTime = minComputeInterval;
    _lastTime = nowMs - minComputeInterval;
-   _pidParams = scaleTuningParameters(pidParams, minComputeInterval);
+   PidBase::setTunings(scaleTuningParameters(pidParams, minComputeInterval));
 }
 
 void integerPID::setOutputLimits(int32_t min, int32_t max)
 {
-   if(min >= max) return;
-   _outMin = min << PID_SHIFTS;
-   _outMax = max << PID_SHIFTS;
+   PidBase::setOutputLimits(min<< PID_SHIFTS, max<< PID_SHIFTS);
 }
 
 void integerPID::activate(int32_t input)
@@ -81,7 +61,7 @@ void integerPID::reset(int32_t input)
 
 void integerPID::resetIntegeral(void) 
 { 
-   _integralTerm=0;
+   PidBase::resetIntegral();
 }
 
 void integerPID::setFeedForwardTerm(int32_t feedForwardTerm) 

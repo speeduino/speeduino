@@ -1,24 +1,23 @@
 #pragma once
 
 #include <stdint.h>
-#include "PidTuningParameters.h"
+#include "PidBase.h"
 
-class PID
+class PID : public PidBase
 {
 public:
 
   /** @brief Default construction */
   PID(void);
 
-
   /** @name Configuration methods */
   ///@{
 
   /** @brief Set the output limits */
-  void setOutputLimits(int32_t Min, int32_t Max);
+  void setOutputLimits(int32_t min, int32_t max);
 
   /** @brief Set the PID parameters */
-  void setTunings(const PidTuningParameters& params);
+  void setTunings(PidTuningParameters params);
 
   /** @brief Set the controller set point */
   void setSetPoint(uint16_t setpoint) { _setpoint = setpoint; }
@@ -40,12 +39,8 @@ public:
   int32_t compute(int32_t input);
 
 private:
-  PidTuningParameters _pidParams;
-
   int16_t _setpoint = 0;
   int32_t _integralTerm;
   int32_t _lastInput;
-  int32_t _outMin;
-  int32_t _outMax;
 };
 

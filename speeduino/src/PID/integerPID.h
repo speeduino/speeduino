@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "PidTuningParameters.h"
+#include "PidBase.h"
 
-class integerPID
+class integerPID : public PidBase
 {
 public:
   
@@ -54,17 +54,12 @@ public:
 
 private:
 
-  PidTuningParameters _pidParams;
-
   int32_t _setpoint = 0;
   int32_t _feedForwardTerm = 0;
 
 	uint32_t _lastTime = 0;
-	int32_t _integralTerm = 0;
   int32_t _lastInput = 0;
   
 	uint16_t _sampleTime = 0;
-	int32_t _outMin = 0;
-  int32_t _outMax = 0;
 	bool _isActive = false;
 };

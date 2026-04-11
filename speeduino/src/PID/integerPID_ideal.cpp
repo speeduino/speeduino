@@ -1,5 +1,4 @@
 #include "integerPID_ideal.h"
-#include "../../maths.h"
 
 integerPID_ideal::integerPID_ideal(void)
 {
@@ -25,25 +24,8 @@ bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
    // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
    uint32_t scaledFeedForward = _feedForwardTerm*10UL;
 
-   _integralTerm += error;
-
-   /*Compute PID Output*/
-   int32_t deltaInput = (int32_t)_lastInput - input;
-   int32_t output = scaledFeedForward + _pidParams.compute(error, _integralTerm, deltaInput);
-      
-   if(output > (int32_t)_outMax)
-   {
-      output = _outMax;
-      _integralTerm -= error;
-   }
-   else if(output < (int32_t)_outMin)
-   {
-      output = _outMin;
-      _integralTerm -= error;
-   }
-
-   //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. 
-   *pOutput = output/10;
+   /* Compute PID Output */
+   *pOutput = PidBase::compute(scaledFeedForward, error, (int32_t)_lastInput - input)/10L;
 
    /*Remember some variables for next time*/
    _lastTime = now;
@@ -54,17 +36,12 @@ bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
 
 void integerPID_ideal::setOutputLimits(uint8_t min, uint8_t max)
 {
-   if(min < max)
-   {
-     constexpr uint32_t LIMIT_FACTOR = 1000UL; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
-
-     _outMin = min * LIMIT_FACTOR;
-     _outMax = max * LIMIT_FACTOR;
-   }
+   constexpr int32_t limitMultiplier = 1000; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+   PidBase::setOutputLimits(min*limitMultiplier, max*limitMultiplier);
 }
 
 void integerPID_ideal::initialize(uint16_t input)
 {
-   _integralTerm = 0;
+   PidBase::resetIntegral();
    _lastInput = input;
 }
