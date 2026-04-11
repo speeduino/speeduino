@@ -4,7 +4,7 @@
 
 static void test_pid_mode_transitions_and_controller_direction(void)
 {
-    long input = 50;
+    int32_t input = 50;
 
     PID pid;
     pid.setTunings(PidTuningParameters(255, 0, 0));
@@ -20,7 +20,7 @@ static void test_pid_mode_transitions_and_controller_direction(void)
 
 static void test_pid_output_limits_in_auto_scope(void)
 {
-    long input = 0;
+    int32_t input = 0;
     
     PID pid;
     pid.setTunings(PidTuningParameters(255, 0, 0));
@@ -33,7 +33,7 @@ static void test_pid_output_limits_in_auto_scope(void)
 
 static void test_pid_auto_mode_proportional(void)
 {
-    long input = 0;
+    int32_t input = 0;
     
     PID pid;
     pid.setTunings(PidTuningParameters(255, 0, 0));
@@ -48,7 +48,7 @@ static void test_pid_auto_mode_proportional(void)
 
 static void test_pid_output_limits_clamp(void)
 {
-    long input = 0;
+    int32_t input = 0;
     
     PID pid;
     pid.setTunings(PidTuningParameters(255, 0, 0));
@@ -61,7 +61,7 @@ static void test_pid_output_limits_clamp(void)
 
 static void test_pid_reverse_direction(void)
 {
-    long input = 0;
+    int32_t input = 0;
     
     PID pid;
     pid.setTunings(PidTuningParameters(255, 0, 0) * -1);
@@ -74,7 +74,7 @@ static void test_pid_reverse_direction(void)
 
 static void test_pid_set_output_limits_long_range(void)
 {
-    long input = 0;
+    int32_t input = 0;
     
     PID pid;
     pid.setTunings(PidTuningParameters(255, 0, 0));
@@ -100,7 +100,7 @@ static void test_pid_set_output_limits_long_range(void)
 
 static void test_pid_integral_accumulation(void)
 {
-    long input = 0;
+    int32_t input = 0;
     
     PID pid;
     pid.setTunings(PidTuningParameters(0, 10, 0));
@@ -114,14 +114,14 @@ static void test_pid_integral_accumulation(void)
 
 static void test_pid_set_tunings_runtime_changes(void)
 {
-    long input = 0;
+    int32_t input = 0;
 
     PID pid;
     pid.setTunings(PidTuningParameters(10, 0, 0));
     pid.setSetPoint(100);
     pid.resetIntegral(input);
 
-    long originalOutput = pid.compute(input);
+    int32_t originalOutput = pid.compute(input);
 
     pid.setTunings(PidTuningParameters(20, 0, 0)); // Change Kp
     // Output should change due to new Kp
@@ -130,14 +130,14 @@ static void test_pid_set_tunings_runtime_changes(void)
 
 static void test_pid_initialize_resets_state(void)
 {
-    long input = 0;
+    int32_t input = 0;
 
     PID pid;
     pid.setTunings(PidTuningParameters(0, 10, 0));
     pid.setSetPoint(100);
     pid.resetIntegral(input);
 
-    long initialCorrection = pid.compute(input);
+    int32_t initialCorrection = pid.compute(input);
     TEST_ASSERT_NOT_EQUAL_INT32(0, initialCorrection); // Accumulate some integral
     TEST_ASSERT_NOT_EQUAL_INT32(initialCorrection, pid.compute(input)); // Accumulate some integral
 
@@ -148,7 +148,7 @@ static void test_pid_initialize_resets_state(void)
 
 static void test_pid_set_output_limits_invalid_ignored(void)
 {
-    long input = 0;
+    int32_t input = 0;
 
     PID pid;
     pid.setTunings(PidTuningParameters(10, 0, 0));
@@ -162,7 +162,7 @@ static void test_pid_set_output_limits_invalid_ignored(void)
 
 static void test_pid_set_controller_direction_runtime_manual(void)
 {
-    long input = 0;
+    int32_t input = 0;
 
     PID pid;
     pid.setTunings(PidTuningParameters(10, 0, 0)*-1); // Should not affect in manual mode
@@ -181,12 +181,12 @@ static String createIterationMsg(int16_t iteration, long input, long output)
 }
 
 // Run the PID for maxIterations and confirm it hits the setpoint
-static void assert_pid_complete(PID &pid, long input, long setpoint, uint16_t maxIterations)
+static void assert_pid_complete(PID &pid, int32_t input, int32_t setpoint, uint16_t maxIterations)
 {
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
     UnityPrint(createIterationMsg(-1, input, setpoint).c_str()); UNITY_PRINT_EOL();
 
-    long output;
+    int32_t output;
     for (uint16_t iteration=0; iteration<maxIterations; ++iteration)
     {
         input += pid.compute(input);
@@ -199,8 +199,8 @@ static void assert_pid_complete(PID &pid, long input, long setpoint, uint16_t ma
 
 static void test_end_to_end_positive_positive_up(void) 
 {
-    constexpr long START_POINT = 900;
-    constexpr long SET_POINT = 1500;
+    constexpr int32_t START_POINT = 900;
+    constexpr int32_t SET_POINT = 1500;
 
     PID pid;
     pid.setSetPoint(SET_POINT);
@@ -213,8 +213,8 @@ static void test_end_to_end_positive_positive_up(void)
 
 static void test_end_to_end_positive_positive_down(void) 
 {
-    constexpr long START_POINT = 1250;
-    constexpr long SET_POINT = 900;
+    constexpr int32_t START_POINT = 1250;
+    constexpr int32_t SET_POINT = 900;
 
     PID pid;
     pid.setSetPoint(SET_POINT);
@@ -227,8 +227,8 @@ static void test_end_to_end_positive_positive_down(void)
 
 static void test_end_to_end_negative_negative_up(void) 
 {
-    constexpr long START_POINT = -1500;
-    constexpr long SET_POINT = -900;
+    constexpr int32_t START_POINT = -1500;
+    constexpr int32_t SET_POINT = -900;
 
     PID pid;
     pid.setTunings(PidTuningParameters(100, 25, 2));
@@ -241,8 +241,8 @@ static void test_end_to_end_negative_negative_up(void)
 
 static void test_end_to_end_negative_negative_down(void) 
 {
-    constexpr long START_POINT = -900;
-    constexpr long SET_POINT = -1500;
+    constexpr int32_t START_POINT = -900;
+    constexpr int32_t SET_POINT = -1500;
 
     PID pid;
     pid.setSetPoint(SET_POINT);
@@ -255,8 +255,8 @@ static void test_end_to_end_negative_negative_down(void)
 
 static void test_end_to_end_negative_positive(void) 
 {
-    constexpr long START_POINT = -199;
-    constexpr long SET_POINT = 199;
+    constexpr int32_t START_POINT = -199;
+    constexpr int32_t SET_POINT = 199;
 
     PID pid;
     pid.setSetPoint(SET_POINT);
@@ -267,10 +267,10 @@ static void test_end_to_end_negative_positive(void)
     assert_pid_complete(pid, START_POINT, SET_POINT, 50);
 }
 
-static void test_end_to_end_positive_to_negative(void) 
+static void test_end_to_end_positive_negative(void) 
 {
-    constexpr long START_POINT = 900;
-    constexpr long SET_POINT = -1500;
+    constexpr int32_t START_POINT = 900;
+    constexpr int32_t SET_POINT = -1500;
 
     PID pid;
     pid.setTunings(PidTuningParameters(100, 30, 20));
@@ -300,6 +300,6 @@ void testPID(void)
         RUN_TEST_P(test_end_to_end_negative_negative_up);
         RUN_TEST_P(test_end_to_end_negative_negative_down);
         RUN_TEST_P(test_end_to_end_negative_positive);
-        RUN_TEST_P(test_end_to_end_positive_to_negative);
+        RUN_TEST_P(test_end_to_end_positive_negative);
     }
 }
