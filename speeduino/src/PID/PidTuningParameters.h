@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-/** @brief Structure to hold PID tuning parameters */
+/** @brief Structure to hold %PID tuning parameters */
 struct PidTuningParameters
 {
     /**
@@ -16,38 +16,44 @@ struct PidTuningParameters
      * @param ki Integral tuning parameter (default 1)
      * @param kd Derivative tuning parameter (default 1)
      */
-    constexpr PidTuningParameters(uint8_t kp = 1U, uint8_t ki = 1U, uint8_t kd = 1U)
+    explicit constexpr PidTuningParameters(uint8_t kp = 1U, uint8_t ki = 1U, uint8_t kd = 1U)
         : Kp(kp), Ki(ki), Kd(kd) {}
 
-    int16_t Kp; ///> Proportional Tuning Parameter
-    int16_t Ki; ///> Integral Tuning Parameter
-    int16_t Kd; ///> Derivative Tuning Parameter
+    int16_t Kp; ///< Proportional Tuning Parameter
+    int16_t Ki; ///< Integral Tuning Parameter
+    int16_t Kd; ///< Derivative Tuning Parameter
+
+    /** @brief Basic %PID calculation */
+    int32_t compute(int32_t proportional, int32_t integral, int32_t derivative) const
+    {
+        return (Kp * proportional) + (Ki * integral) + (Kd * derivative);
+    }
+
+    /** @brief Scalar multiplication operator for easy tuning adjustments */
+    ///@{
+    friend constexpr PidTuningParameters operator*(const PidTuningParameters& params, int8_t scalar) {
+        PidTuningParameters scaledParams;
+        scaledParams.Kp = params.Kp * scalar;
+        scaledParams.Ki = params.Ki * scalar;
+        scaledParams.Kd = params.Kd * scalar;
+        return scaledParams;
+    }
+    friend constexpr PidTuningParameters operator*(int8_t scalar, const PidTuningParameters& params) {
+        return params * scalar;
+    }
+    ///@}
+
+    /** @brief Scalar division operator for easy tuning adjustments */
+    ///@{
+    friend constexpr PidTuningParameters operator/(const PidTuningParameters& params, int8_t scalar) {
+        PidTuningParameters scaledParams;
+        scaledParams.Kp = params.Kp / scalar;
+        scaledParams.Ki = params.Ki / scalar;
+        scaledParams.Kd = params.Kd / scalar;
+        return scaledParams;
+    }
+    friend constexpr PidTuningParameters operator/(int8_t scalar, const PidTuningParameters& params) {
+        return params / scalar;
+    }
+    ///@}
 };
-
-/** @brief Scalar multiplication operator for easy tuning adjustments */
-///@{
-static inline constexpr PidTuningParameters operator*(const PidTuningParameters& params, int8_t scalar) {
-    PidTuningParameters scaledParams;
-    scaledParams.Kp = params.Kp * scalar;
-    scaledParams.Ki = params.Ki * scalar;
-    scaledParams.Kd = params.Kd * scalar;
-    return scaledParams;
-}
-static inline constexpr PidTuningParameters operator*(int8_t scalar, const PidTuningParameters& params) {
-    return params * scalar;
-}
-///@}
-
-/** @brief Scalar division operator for easy tuning adjustments */
-///@{
-static inline constexpr PidTuningParameters operator/(const PidTuningParameters& params, int8_t scalar) {
-    PidTuningParameters scaledParams;
-    scaledParams.Kp = params.Kp / scalar;
-    scaledParams.Ki = params.Ki / scalar;
-    scaledParams.Kd = params.Kd / scalar;
-    return scaledParams;
-}
-static inline constexpr PidTuningParameters operator/(int8_t scalar, const PidTuningParameters& params) {
-    return params / scalar;
-}
-///@}

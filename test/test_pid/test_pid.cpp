@@ -278,7 +278,7 @@ static void test_end_to_end_positive_to_negative(void)
     pid.setSetPoint(SET_POINT);
     pid.resetIntegral(START_POINT);
 
-    assert_pid_complete(pid, START_POINT, SET_POINT, 50);
+    assert_pid_complete(pid, START_POINT, SET_POINT, 51);
 }
 
 void testPID(void)

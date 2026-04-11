@@ -29,7 +29,7 @@ bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
 
    /*Compute PID Output*/
    int32_t deltaInput = (int32_t)_lastInput - input;
-   int32_t output = scaledFeedForward + (_pidParams.Kp * error) + (_pidParams.Ki * _integralTerm) + (_pidParams.Kd * deltaInput);
+   int32_t output = scaledFeedForward + _pidParams.compute(error, _integralTerm, deltaInput);
       
    if(output > (int32_t)_outMax)
    {
