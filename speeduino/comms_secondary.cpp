@@ -20,11 +20,11 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "maths.h"
-#include "utilities.h"
+#include "preprocessor.h"
 #include "comms_legacy.h"
 #include "logger.h"
 #include "page_crc.h"
-#include BOARD_H
+#include "board_definition.h"
 
 uint8_t currentSecondaryCommand;
 SECONDARY_SERIAL_T* pSecondarySerial;
@@ -62,7 +62,7 @@ void secondserial_Command(void)
       break;
 
     case 'B': // AS above but for the serial compatibility mode. 
-      BIT_SET(currentStatus.status4, BIT_STATUS4_COMMS_COMPAT); //Force the compat mode
+      currentStatus.commCompat = true; //Force the compat mode
       legacySerialHandler(currentSecondaryCommand, secondarySerial, serialSecondaryStatusFlag);
       break;
 

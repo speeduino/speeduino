@@ -88,6 +88,15 @@ static inline void fill_table_values(table3d_t &table, table3d_value_t value) {
   invalidate_cache(&table.get_value_cache);
 }
 
+static inline void populate_table_axis(table_axis_iterator it, 
+                                       table3d_axis_t value) {
+  while (!it.at_end())
+  {
+    *it = value;
+    ++it;
+  }
+}
+
 static inline void populate_table_axis_P(table_axis_iterator it, 
                                          const table3d_axis_t *pXValues) {   // PROGMEM if available
   while (!it.at_end())
@@ -143,7 +152,7 @@ static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, val
 }
 
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, const value_t values[], const axis_t bins[]) {
+static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, const value_t (&values)[sizeT], const axis_t (&bins)[sizeT]) {
   memcpy((void*)pTable->axis, bins, sizeT * sizeof(axis_t));
   memcpy((void*)pTable->values, values, sizeT * sizeof(value_t));
   pTable->cache.cacheTime = UINT8_MAX;
@@ -152,7 +161,7 @@ static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, con
 // Populate a 2d table (from PROGMEM if available)
 // You would typically declare the 2 source arrays using TEST_DATA_P
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline void populate_2dtable_P(table2D<axis_t, value_t, sizeT> *pTable, const value_t values[], const axis_t bins[]) {
+static inline void populate_2dtable_P(table2D<axis_t, value_t, sizeT> *pTable, const value_t (&values)[sizeT], const axis_t (&bins)[sizeT]) {
 #if defined(PROGMEM)
   memcpy_P((void*)pTable->axis, bins, sizeT * sizeof(axis_t));
   memcpy_P((void*)pTable->values, values, sizeT * sizeof(value_t));

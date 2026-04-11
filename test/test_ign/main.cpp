@@ -1,39 +1,14 @@
-#include <Arduino.h>
-#include <unity.h>
-#include <avr/sleep.h>
+#include "../test_harness_device.h"
+#include "../test_harness_native.h"
 
-void testIgnCorrections(void);
 
-#define UNITY_EXCLUDE_DETAILS
-
-void setup()
+void runAllIgnitionTests(void)
 {
-    pinMode(LED_BUILTIN, OUTPUT);
-
-    // NOTE!!! Wait for >2 secs
-    // if board doesn't support software reset via Serial.DTR/RTS
-#if !defined(SIMULATOR)
-    delay(2000);
-#endif
-
-    UNITY_BEGIN();    // IMPORTANT LINE!
+    extern void testIgnCorrections(void);
+    extern void testDwell(void);
 
     testIgnCorrections();
-
-    UNITY_END(); // stop unit testing
-
-#if defined(SIMULATOR)       // Tell SimAVR we are done
-    cli();
-    sleep_enable();
-    sleep_cpu();
-#endif     
+    testDwell();
 }
 
-void loop()
-{
-    // Blink to indicate end of test
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(250);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(250);
-}
+TEST_HARNESS(runAllIgnitionTests)

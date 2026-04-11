@@ -3,49 +3,62 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
+#include <Arduino.h>
 #include "idle.h"
 #include "maths.h"
 #include "timers.h"
-#include "utilities.h"
+#include "preprocessor.h"
 #include "src/PID_v1/PID_v1.h"
 #include "units.h"
+#include "globals.h"
+#include "src/pins/fastOutputPin.h"
+
+#define STEPPER_FORWARD 0
+#define STEPPER_BACKWARD 1
+#define STEPPER_POWER_WHEN_ACTIVE 0
+
+enum StepperStatus {SOFF, STEPPING, COOLING}; //The 2 statuses that a stepper can have. STEPPING means that a high pulse is currently being sent and will need to be turned off at some point.
+
+struct StepperIdle
+{
+  int curIdleStep; //Tracks the current location of the stepper
+  int targetIdleStep; //What the targeted step is
+  volatile StepperStatus stepperStatus;
+  volatile unsigned long stepStartTime;
+};
 
 #define STEPPER_LESS_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD)
 #define STEPPER_MORE_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD)
 
-byte idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
-byte idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
-byte idleCounter; //Used for tracking the number of calls to the idle control function
-uint8_t idleTaper;
+static uint8_t idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
+static uint8_t idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
+static uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
+static uint8_t idleTaper;
 
-struct StepperIdle idleStepper;
-bool idleOn; //Simply tracks whether idle was on last time around
-byte idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
-unsigned int iacStepTime_uS;
-unsigned int iacCoolTime_uS;
-unsigned int completedHomeSteps;
+static struct StepperIdle idleStepper;
+static bool idleOn; //Simply tracks whether idle was on last time around
+static uint8_t idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
+static unsigned int iacStepTime_uS;
+static unsigned int iacCoolTime_uS;
+static unsigned int completedHomeSteps;
 
-volatile bool idle_pwm_state;
-bool lastDFCOValue;
+static volatile bool idle_pwm_state;
+static bool lastDFCOValue;
 uint16_t idle_pwm_max_count; //Used for variable PWM frequency
-volatile unsigned int idle_pwm_cur_value;
-long idle_pid_target_value;
-long FeedForwardTerm;
-unsigned long idle_pwm_target_value;
-long idle_cl_target_rpm;
+static volatile unsigned int idle_pwm_cur_value;
+static long idle_pid_target_value;
+static long FeedForwardTerm;
+static uint32_t idle_pwm_target_value;
+static long idle_cl_target_rpm;
 
-volatile PORT_TYPE *idle_pin_port;
-volatile PINMASK_TYPE idle_pin_mask;
-volatile PORT_TYPE *idle2_pin_port;
-volatile PINMASK_TYPE idle2_pin_mask;
-volatile PORT_TYPE *idleUpOutput_pin_port;
-volatile PINMASK_TYPE idleUpOutput_pin_mask;
+static fastOutputPin_t idle_pin;
+static fastOutputPin_t idle2_pin;
 
-static table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
-static table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
+constexpr table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
+constexpr table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
 //Open loop tables specifically for cranking
-static table2D_u8_u8_4 iacCrankStepsTable(&configPage6.iacCrankBins, &configPage6.iacCrankSteps);
-static table2D_u8_u8_4 iacCrankDutyTable(&configPage6.iacCrankBins, &configPage6.iacCrankDuty);
+constexpr table2D_u8_u8_4 iacCrankStepsTable(&configPage6.iacCrankBins, &configPage6.iacCrankSteps);
+constexpr table2D_u8_u8_4 iacCrankDutyTable(&configPage6.iacCrankBins, &configPage6.iacCrankDuty);
 
 /*
 These functions cover the PWM and stepper idle control
@@ -71,16 +84,23 @@ static inline void enableIdle(void)
   }
 }
 
+static inline void initialiseIdleUpOutput(void)
+{
+  if (configPage2.idleUpOutputInv) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
+  else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
+
+  if(configPage2.idleUpEnabled) { digitalWrite(pinIdleUpOutput, idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
+  currentStatus.idleUpOutputActive = false;
+}
+
 void initialiseIdle(bool forcehoming)
 {
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
   //Pin masks must always be initialised, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restart/overflow
-  idle_pin_port = portOutputRegister(digitalPinToPort(pinIdle1));
-  idle_pin_mask = digitalPinToBitMask(pinIdle1);
-  idle2_pin_port = portOutputRegister(digitalPinToPort(pinIdle2));
-  idle2_pin_mask = digitalPinToBitMask(pinIdle2);
+  idle_pin.setPin(pinIdle1, OUTPUT);
+  idle2_pin.setPin(pinIdle2, OUTPUT);
 
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
@@ -93,7 +113,7 @@ void initialiseIdle(bool forcehoming)
       //Case 1 is on/off idle control
       if ((temperatureAddOffset(currentStatus.coolant)) < configPage6.iacFastTemp)
       {
-        IDLE_PIN_HIGH();
+        idle_pin.setPinHigh();
         idleOn = true;
       }
       break;
@@ -196,25 +216,13 @@ void initialiseIdle(bool forcehoming)
   currentStatus.idleLoad = 0;
 }
 
-void initialiseIdleUpOutput(void)
-{
-  if (configPage2.idleUpOutputInv == 1) { idleUpOutputHIGH = LOW; idleUpOutputLOW = HIGH; }
-  else { idleUpOutputHIGH = HIGH; idleUpOutputLOW = LOW; }
-
-  if(configPage2.idleUpEnabled > 0) { digitalWrite(pinIdleUpOutput, idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
-  currentStatus.idleUpOutputActive = false;
-
-  idleUpOutput_pin_port = portOutputRegister(digitalPinToPort(pinIdleUpOutput));
-  idleUpOutput_pin_mask = digitalPinToBitMask(pinIdleUpOutput);
-}
-
 /*
 Checks whether a step is currently underway or whether the motor is in 'cooling' state (ie whether it's ready to begin another step or not)
 Returns:
 True: If a step is underway or motor is 'cooling'
 False: If the motor is ready for another step
 */
-static inline byte checkForStepping(void)
+static inline uint8_t checkForStepping(void)
 {
   bool isStepping = false;
   unsigned int timeCheck;
@@ -230,13 +238,13 @@ static inline byte checkForStepping(void)
       timeCheck = iacCoolTime_uS;
     }
 
-    if(micros_safe() > (idleStepper.stepStartTime + timeCheck) )
+    if(micros() > (idleStepper.stepStartTime + timeCheck) )
     {         
       if(idleStepper.stepperStatus == STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
         digitalWrite(pinStepperStep, LOW); //Turn off the step
-        idleStepper.stepStartTime = micros_safe();
+        idleStepper.stepStartTime = micros();
 
 	//Set status to COOLING. In next cycle, status will be set to SOFF and set stepper power OFF based on given settings
         idleStepper.stepperStatus = COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
@@ -290,14 +298,16 @@ static inline void doStep(void)
 
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros_safe();
+    idleStepper.stepStartTime = micros();
     idleStepper.stepperStatus = STEPPING;
     idleOn = true;
 
-    BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE);
+    currentStatus.idleOn = true;
   }
   else
-    BIT_CLEAR(currentStatus.status2, BIT_STATUS2_IDLE);
+  {
+    currentStatus.idleOn = false;
+  }
 }
 
 /*
@@ -306,7 +316,7 @@ Returns:
 True: If the system has been homed. No other action is taken
 False: If the motor has not yet been homed. Will also perform another homing step.
 */
-static inline byte isStepperHomed(void)
+static inline uint8_t isStepperHomed(void)
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
@@ -314,7 +324,7 @@ static inline byte isStepperHomed(void)
     digitalWrite(pinStepperDir, STEPPER_LESS_AIR_DIRECTION() ); //homing the stepper closes off the air bleed
     digitalWrite(pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinStepperStep, HIGH);
-    idleStepper.stepStartTime = micros_safe();
+    idleStepper.stepStartTime = micros();
     idleStepper.stepperStatus = STEPPING;
     completedHomeSteps++;
     idleOn = true;
@@ -359,29 +369,29 @@ void idleControl(void)
     case IAC_ALGORITHM_ONOFF:      //Case 1 is on/off idle control
       if ( (temperatureAddOffset(currentStatus.coolant)) < configPage6.iacFastTemp) //All temps are offset by 40 degrees
       {
-        IDLE_PIN_HIGH();
+        idle_pin.setPinHigh();
         idleOn = true;
-        BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+        currentStatus.idleOn = true;
 		    currentStatus.idleLoad = 100;
       }
       else if (idleOn)
       {
-        IDLE_PIN_LOW();
+        idle_pin.setPinLow();
         idleOn = false; 
-        BIT_CLEAR(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+        currentStatus.idleOn = false;
 		    currentStatus.idleLoad = 0;
       }
       break;
 
     case IAC_ALGORITHM_PWM_OL:      //Case 2 is PWM open loop
       //Check for cranking pulsewidth
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( currentStatus.engineIsCranking )
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         idleTaper = 0;
       }
-      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      else if ( !currentStatus.engineIsRunning)
       {
         if( configPage6.iacPWMrun == true)
         {
@@ -406,7 +416,7 @@ void idleControl(void)
           currentStatus.idleLoad = table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-        if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
+        if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
       }
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
@@ -418,7 +428,7 @@ void idleControl(void)
 
     case IAC_ALGORITHM_PWM_CL:    //Case 3 is PWM closed loop
         //No cranking specific value for closed loop (yet?)
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( currentStatus.engineIsCranking )
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
@@ -426,7 +436,7 @@ void idleControl(void)
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
-      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      else if ( !currentStatus.engineIsRunning)
       {
         if( configPage6.iacPWMrun == true)
         {
@@ -448,7 +458,7 @@ void idleControl(void)
           
           // Add an offset to the duty cycle, outside of the closed loop. When tuned correctly, the extra load from
           // the air conditioning should exactly cancel this out and the PID loop will be relatively unaffected.
-          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+          if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true)
           {
             // Add air conditioning idle-up
             // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count
@@ -467,7 +477,7 @@ void idleControl(void)
 
           // Now assign the real PWM value
           idle_pwm_target_value = TEMP_idle_pwm_target_value>>2; //increased resolution
-          currentStatus.idleLoad = udiv_32_16(idle_pwm_target_value * 100UL, idle_pwm_max_count);
+          currentStatus.idleLoad = fast_div32_16((uint32_t)(idle_pwm_target_value * 100UL), idle_pwm_max_count);
         }
         idleCounter++;
       }
@@ -476,7 +486,7 @@ void idleControl(void)
 
     case IAC_ALGORITHM_PWM_OLCL: //case 6 is PWM Open Loop table as feedforward term plus closed loop. 
       //No cranking specific value for closed loop (yet?)
-      if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) )
+      if( currentStatus.engineIsCranking )
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
@@ -484,7 +494,7 @@ void idleControl(void)
         idle_pid_target_value = idle_pwm_target_value << 2; //Resolution increased
         idlePID.Initialize(); //Update output to smooth transition
       }
-      else if ( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+      else if ( !currentStatus.engineIsRunning)
       {
         if( configPage6.iacPWMrun == true)
         {
@@ -500,7 +510,7 @@ void idleControl(void)
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
-        if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true)
+        if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true)
         {
           // Add air conditioning idle-up
           // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count <<2 (PWM count * 4)
@@ -542,7 +552,7 @@ void idleControl(void)
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
         //Check for cranking pulsewidth
-        if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) //If ain't running it means off or cranking
+        if( !currentStatus.engineIsRunning ) //If ain't running it means off or cranking
         {
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
@@ -570,7 +580,7 @@ void idleControl(void)
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             
             // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-            if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+            if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
             
             iacStepTime_uS = configPage6.iacStepTime * 1000;
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
@@ -592,7 +602,7 @@ void idleControl(void)
       //First thing to check is whether there is currently a step going on and if so, whether it needs to be turned off
       if( (checkForStepping() == false) && (isStepperHomed() == true) ) //Check that homing is complete and that there's not currently a step already taking place. MUST BE IN THIS ORDER!
       {
-        if( !BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) //If ain't running it means off or cranking
+        if( !currentStatus.engineIsRunning ) //If ain't running it means off or cranking
         {
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
@@ -650,7 +660,7 @@ void idleControl(void)
           idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
 
           // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-          if(configPage15.airConIdleSteps>0 && BIT_CHECK(currentStatus.airConStatus, BIT_AIRCON_TURNING_ON) == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+          if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
         }
         
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
@@ -677,26 +687,26 @@ void idleControl(void)
       //There really should be a valid idle type
       break;
   }
-  lastDFCOValue = BIT_CHECK(currentStatus.status1, BIT_STATUS1_DFCO);
+  lastDFCOValue = currentStatus.isDFCOActive;
 
   //Check for 100% and 0% DC on PWM idle
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
   {
     if(currentStatus.idleLoad >= 100)
     {
-      BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+      currentStatus.idleOn = true;
       IDLE_TIMER_DISABLE();
       if (configPage6.iacPWMdir == 0)
       {
         //Normal direction
-        IDLE_PIN_HIGH();  // Switch pin high
-        if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+        idle_pin.setPinHigh();  // Switch pin high
+        if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
       }
       else
       {
         //Reversed direction
-        IDLE_PIN_LOW();  // Switch pin to low
-        if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+        idle_pin.setPinLow();  // Switch pin to low
+        if(configPage6.iacChannels == 1) { idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
       }
     }
     else if (currentStatus.idleLoad == 0)
@@ -705,7 +715,7 @@ void idleControl(void)
     }
     else
     {
-      BIT_SET(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag on
+      currentStatus.idleOn = true;
       IDLE_TIMER_ENABLE();
     }
   }
@@ -721,14 +731,14 @@ void disableIdle(void)
     if (configPage6.iacPWMdir == 0)
     {
       //Normal direction
-      IDLE_PIN_LOW();  // Switch pin to low
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      idle_pin.setPinLow();  // Switch pin to low
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else
     {
       //Reversed direction
-      IDLE_PIN_HIGH();  // Switch pin high
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      idle_pin.setPinHigh();  // Switch pin high
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
   }
   else if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
@@ -751,15 +761,11 @@ void disableIdle(void)
         idle_pid_target_value = idleStepper.targetIdleStep<<2;
     }
   }
-  BIT_CLEAR(currentStatus.status2, BIT_STATUS2_IDLE); //Turn the idle control flag off
+  currentStatus.idleOn = false;
   currentStatus.idleLoad = 0;
 }
 
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-ISR(TIMER1_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
-#else
-void idleInterrupt(void) //Most ARM chips can simply call a function
-#endif
+void idleInterrupt(void)
 {
   if (idle_pwm_state)
   {
@@ -767,22 +773,22 @@ void idleInterrupt(void) //Most ARM chips can simply call a function
     {
       //Normal direction
       #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      IDLE_PIN_HIGH();
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); }
+      idle_pin.setPinHigh();
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); }
       #else
-      IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      idle_pin.setPinLow();  // Switch pin to low (1 pin mode)
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
       #endif
     }
     else
     {
       //Reversed direction
       #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      IDLE_PIN_LOW();
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); }
+      idle_pin.setPinLow();
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinHigh(); }
       #else
-      IDLE_PIN_HIGH();  // Switch pin high
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      idle_pin.setPinHigh();  // Switch pin high
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
       #endif
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (idle_pwm_max_count - idle_pwm_cur_value) );
@@ -794,22 +800,22 @@ void idleInterrupt(void) //Most ARM chips can simply call a function
     {
       //Normal direction
       #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      IDLE_PIN_LOW();
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); }
+      idle_pin.setPinLow();
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinHigh(); }
       #else
-      IDLE_PIN_HIGH();  // Switch pin high
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      idle_pin.setPinHigh();  // Switch pin high
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
       #endif
     }
     else
     {
       //Reversed direction
       #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      IDLE_PIN_HIGH();
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_LOW(); }
+      idle_pin.setPinHigh();
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); }
       #else
-      IDLE_PIN_LOW();  // Switch pin to low (1 pin mode)
-      if(configPage6.iacChannels == 1) { IDLE2_PIN_HIGH(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      idle_pin.setPinLow();  // Switch pin to low (1 pin mode)
+      if(configPage6.iacChannels == 1) { idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
       #endif
     }
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + idle_pwm_target_value);

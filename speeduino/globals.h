@@ -24,90 +24,20 @@
  */
 #ifndef GLOBALS_H
 #define GLOBALS_H
-#include <Arduino.h>
 #include "table2d.h"
 #include "table3d.h"
 #include "statuses.h"
 #include "config_pages.h"
-
-#if __has_include(<SimplyAtomic.h>)
-  #include <SimplyAtomic.h>
-#else
-  //Fallback for Arduino IDE when SimplyAtomic is not installed. Only works for AVR
-  #include <util/atomic.h>
-  #define ATOMIC() ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  #warning It is strongly recommended to install the SimplyAtomic library rather than relying on the built-in ATOMIC
-#endif 
-
-#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
-  #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
-  #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
-  #define BOARD_MAX_ADC_PINS  15 //Number of analog pins
-  #ifndef LED_BUILTIN
-    #define LED_BUILTIN 13
-  #endif
-  #define CORE_AVR
-  #define BOARD_H "board_avr2560.h"
-  #ifndef INJ_CHANNELS
-    #define INJ_CHANNELS 4
-  #endif
-  #ifndef IGN_CHANNELS
-    #define IGN_CHANNELS 5
-  #endif
-
-#elif defined(CORE_TEENSY)
-  #if defined(__MK64FX512__) || defined(__MK66FX1M0__)
-    #define CORE_TEENSY35
-    #define BOARD_H "board_teensy35.h"
-  #elif defined(__IMXRT1062__)
-    #define CORE_TEENSY41
-    #define BOARD_H "board_teensy41.h"
-  #endif
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
-
-#elif defined(STM32_MCU_SERIES) || defined(ARDUINO_ARCH_STM32) || defined(STM32)
-  #define BOARD_H "board_stm32_official.h"
-  #define CORE_STM32
-
-  #define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
-  #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
-   #define INJ_CHANNELS 8
-   #define IGN_CHANNELS 8
-  #else
-   #define INJ_CHANNELS 4
-   #define IGN_CHANNELS 5
-  #endif
-#elif defined(__SAMD21G18A__)
-  #define BOARD_H "board_samd21.h"
-  #define CORE_SAMD21
-  #define CORE_SAM
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 4
-#elif defined(__SAMC21J18A__)
-  #define BOARD_H "board_samc21.h"
-  #define CORE_SAMC21
-  #define CORE_SAM
-#elif defined(__SAME51J19A__)
-  #define BOARD_H "board_same51.h"
-  #define CORE_SAME51
-  #define CORE_SAM
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
-#else
-  #error Incorrect board selected. Please select the correct board (Usually Mega 2560) and upload again
-#endif
-
-//This can only be included after the above section
-#include BOARD_H //Note that this is not a real file, it is defined in globals.h. 
+#include "atomic.h"
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
-
-#define interruptSafe(c) (noInterrupts(); {c} interrupts();) //Wraps any code between nointerrupt and interrupt calls
 
 #define MICROS_PER_SEC INT32_C(1000000)
 #define MICROS_PER_MIN INT32_C(MICROS_PER_SEC*60U)
 #define MICROS_PER_HOUR INT32_C(MICROS_PER_MIN*60U)
+#define MILLI_PER_SEC INT32_C(MICROS_PER_SEC/1000)
+
+#define UINT16_HALF_RANGE     0x8000
 
 #define SERIAL_PORT_PRIMARY   0
 #define SERIAL_PORT_SECONDARY 3
@@ -128,10 +58,6 @@
 #endif
 // Some code relies on TOOTH_LOG_SIZE being uint8_t.
 static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
-
-#define O2_CALIBRATION_PAGE   2U
-#define IAT_CALIBRATION_PAGE  1U
-#define CLT_CALIBRATION_PAGE  0U
 
 // note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0
@@ -212,65 +138,9 @@ extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
 
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 
-//These are for the direct port manipulation of the injectors, coils and aux outputs
-extern volatile PORT_TYPE *inj1_pin_port;
-extern volatile PINMASK_TYPE inj1_pin_mask;
-extern volatile PORT_TYPE *inj2_pin_port;
-extern volatile PINMASK_TYPE inj2_pin_mask;
-extern volatile PORT_TYPE *inj3_pin_port;
-extern volatile PINMASK_TYPE inj3_pin_mask;
-extern volatile PORT_TYPE *inj4_pin_port;
-extern volatile PINMASK_TYPE inj4_pin_mask;
-extern volatile PORT_TYPE *inj5_pin_port;
-extern volatile PINMASK_TYPE inj5_pin_mask;
-extern volatile PORT_TYPE *inj6_pin_port;
-extern volatile PINMASK_TYPE inj6_pin_mask;
-extern volatile PORT_TYPE *inj7_pin_port;
-extern volatile PINMASK_TYPE inj7_pin_mask;
-extern volatile PORT_TYPE *inj8_pin_port;
-extern volatile PINMASK_TYPE inj8_pin_mask;
-
-extern volatile PORT_TYPE *ign1_pin_port;
-extern volatile PINMASK_TYPE ign1_pin_mask;
-extern volatile PORT_TYPE *ign2_pin_port;
-extern volatile PINMASK_TYPE ign2_pin_mask;
-extern volatile PORT_TYPE *ign3_pin_port;
-extern volatile PINMASK_TYPE ign3_pin_mask;
-extern volatile PORT_TYPE *ign4_pin_port;
-extern volatile PINMASK_TYPE ign4_pin_mask;
-extern volatile PORT_TYPE *ign5_pin_port;
-extern volatile PINMASK_TYPE ign5_pin_mask;
-extern volatile PORT_TYPE *ign6_pin_port;
-extern volatile PINMASK_TYPE ign6_pin_mask;
-extern volatile PORT_TYPE *ign7_pin_port;
-extern volatile PINMASK_TYPE ign7_pin_mask;
-extern volatile PORT_TYPE *ign8_pin_port;
-extern volatile PINMASK_TYPE ign8_pin_mask;
-
-extern volatile PORT_TYPE *tach_pin_port;
-extern volatile PINMASK_TYPE tach_pin_mask;
-extern volatile PORT_TYPE *pump_pin_port;
-extern volatile PINMASK_TYPE pump_pin_mask;
-
-extern volatile PORT_TYPE *flex_pin_port;
-extern volatile PINMASK_TYPE flex_pin_mask;
-
-extern volatile PORT_TYPE *triggerPri_pin_port;
-extern volatile PINMASK_TYPE triggerPri_pin_mask;
-extern volatile PORT_TYPE *triggerSec_pin_port;
-extern volatile PINMASK_TYPE triggerSec_pin_mask;
-extern volatile PORT_TYPE *triggerThird_pin_port;
-extern volatile PINMASK_TYPE triggerThird_pin_mask;
-
-extern byte triggerInterrupt;
-extern byte triggerInterrupt2;
-extern byte triggerInterrupt3;
-
-
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
-extern uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
 extern volatile unsigned long ms_counter; //A counter that increments once per ms
 extern uint16_t fixedCrankingOverride;
@@ -279,16 +149,6 @@ extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 extern volatile unsigned int toothHistoryIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-//The below shouldn't be needed and probably should be cleaned up, but the Atmel SAM (ARM) boards use a specific type for the trigger edge values rather than a simple byte/int
-#if defined(CORE_SAMD21)
-  extern PinStatus primaryTriggerEdge;
-  extern PinStatus secondaryTriggerEdge;
-  extern PinStatus tertiaryTriggerEdge;
-#else
-  extern byte primaryTriggerEdge;
-  extern byte secondaryTriggerEdge;
-  extern byte tertiaryTriggerEdge;
-#endif
 extern int CRANK_ANGLE_MAX_IGN;
 extern int CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10;  /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
@@ -297,8 +157,6 @@ extern volatile byte HWTest_INJ;      /**< Each bit in this variable represents 
 extern volatile byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
 extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
-extern byte maxIgnOutputs;            /**< Number of ignition outputs being used by the current tune configuration */
-extern byte maxInjOutputs;            /**< Number of injection outputs being used by the current tune configuration */
 extern byte resetControl; ///< resetControl needs to be here (as global) because using the config page (4) directly can prevent burning the setting
 extern volatile byte TIMER_mask;
 extern volatile byte LOOP_TIMER;

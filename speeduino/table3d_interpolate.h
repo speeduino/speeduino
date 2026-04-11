@@ -9,17 +9,17 @@
  */
 
 /** @brief A pair of x and y values used for lookups in 3D tables. */
-struct xy_values
+struct xy_pair_t
 {
   uint16_t x;
   uint16_t y;
-};
 
-/** @brief Equality operator for xy_values */
-static inline bool operator==(const xy_values& lhs, const xy_values& rhs)
-{
-    return lhs.x==rhs.x && lhs.y==rhs.y;
-}
+  /** @brief Equality operator for xy_pair_t */
+  friend bool operator==(const xy_pair_t& lhs, const xy_pair_t& rhs)
+  {
+      return lhs.x==rhs.x && lhs.y==rhs.y;
+  }
+};
 
 /** @brief 2D coordinate structure for table lookups */
 struct xy_coord2d
@@ -48,7 +48,7 @@ struct table3DGetValueCache {
   xy_coord2d lastBinMax = { 1U, 1U };
 
   //Store the last input and output values, again for caching purposes
-  xy_values last_lookup = { UINT16_MAX, UINT16_MAX };
+  xy_pair_t last_lookup = { UINT16_MAX, UINT16_MAX };
   table3d_value_t lastOutput;
 };
 
@@ -67,7 +67,7 @@ extern table3d_dim_t find_bin_max(
   table3d_dim_t length,
   table3d_dim_t lastBinMax);
 
-extern table3d_value_t interpolate_3d_value(const xy_values &lookUpValues, 
+extern table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues, 
                     const xy_coord2d &axisCoords,
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
@@ -126,19 +126,22 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
                     const table3d_value_t *pValues,
                     const table3d_axis_t *pXAxis,
                     const table3d_axis_t *pYAxis,
-                    const xy_values &lookupValues) {
+                    const xy_pair_t &lookupValues) {
   
-
+#if !defined(UNIT_TEST) // No caching during unit testing
   // Check if the lookup values are the same as the last time we looked up a value
   // If they are, we can return the cached value
   if( lookupValues == pValueCache->last_lookup)
   {
     return pValueCache->lastOutput;
   }
+#endif
 
   // Figure out where on the axes the incoming coord are
+  // LCOV_EXCL_BR_START
   pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16<xFactor>(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
   pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16<yFactor>(lookupValues.y), pYAxis, axisSize, pValueCache->lastBinMax.y);
+  // LCOV_EXCL_BR_STOP
   // Interpolate based on the bin positions
   pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, xFactor, pYAxis, yFactor);
   // Store the last lookup values so we can check them next time

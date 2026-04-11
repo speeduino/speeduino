@@ -10,17 +10,6 @@
 #ifndef COMMS_H
 #define COMMS_H
 
-#if defined(CORE_TEENSY)
-  #define BLOCKING_FACTOR       251
-  #define TABLE_BLOCKING_FACTOR 256
-#elif defined(CORE_STM32)
-  #define BLOCKING_FACTOR       121
-  #define TABLE_BLOCKING_FACTOR 64
-#elif defined(CORE_AVR)
-  #define BLOCKING_FACTOR       121
-  #define TABLE_BLOCKING_FACTOR 64
-#endif
-
 extern Stream *pPrimarySerial;
 #define primarySerial (*pPrimarySerial)
 
@@ -41,5 +30,18 @@ void serialTransmit(void);
  * @return true if the serial command has been waiting too long
 */
 bool isRxTimeout(void);
+
+/**
+ * @brief During serial comms, defer storage writes
+ * 
+ * Serial comms can send data quicker than we can write it to permanent storage.
+ * This is used to manually throttle the writes so that we don't stall the main loop. 
+ * 
+ * @param time Absolute time in µS 
+ */
+void setStorageWriteTimeout(uint32_t time);
+
+/** @brief Test if the timeout set by @ref setStorageWriteTimeout has expired */
+bool storageWriteTimeoutExpired(void);
 
 #endif // COMMS_H

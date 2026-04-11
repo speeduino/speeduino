@@ -14,16 +14,13 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "globals.h"
 #include "sensors.h"
 #include "scheduler.h"
-#include "scheduledIO.h"
-#include "speeduino.h"
-#include "scheduler.h"
 #include "auxiliaries.h"
 #include "comms.h"
 #include "maths.h"
-
-#if defined(CORE_AVR)
-  #include <avr/wdt.h>
-#endif
+#include "preprocessor.h"
+#include "scheduledIO_ign.h"
+#include "scheduledIO_inj.h"
+#include "src/pins/fastOutputPin.h"
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
@@ -43,10 +40,6 @@ volatile uint16_t tachoSweepAccum;
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
-#if defined (CORE_TEENSY)
-  IntervalTimer lowResTimer;
-#endif
-
 void initialiseTimers(void)
 {
   lastRPM_100ms = 0;
@@ -60,21 +53,44 @@ void initialiseTimers(void)
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
+#if defined(CORE_TEENSY) || defined(CORE_STM32)
+  #define TACHO_PULSE_LOW()         (digitalWrite(pinTachOut, LOW))
+  #define TACHO_PULSE_HIGH()        (digitalWrite(pinTachOut, HIGH))
+  static void initTachoPin(uint8_t pin) { UNUSED(pin); /* Do nothing*/}
+ #else
+  #define TACHO_PULSE_HIGH()        (tach_pin.setPinHigh())
+  #define TACHO_PULSE_LOW()         (tach_pin.setPinLow())
+  static fastOutputPin_t tach_pin;
+  static void initTachoPin(uint8_t pin) 
+  { 
+    tach_pin.setPin(pin, OUTPUT);
+  }
+#endif
+
+void initTacho(uint8_t tachoPin)
+{
+  pinMode(tachoPin, OUTPUT);
+  initTachoPin(tachoPin);
+}
+
+void tachoPulseHigh(void)
+{
+  TACHO_PULSE_HIGH();
+}
+
+void tachoPulseLow(void)
+{
+  TACHO_PULSE_LOW();
+}
+
 static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if ((schedule.Status == RUNNING) && (schedule.startTime < targetOverdwellTime)) { 
+  if ((isRunning(schedule)) && (schedule.startTime < targetOverdwellTime)) { 
     schedule.pEndCallback(); schedule.Status = OFF; 
   }
 }
 
-//Timer2 Overflow Interrupt Vector, called when the timer overflows.
-//Executes every ~1ms.
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
-#else
-void oneMSInterval(void) //Most ARM chips can simply call a function
-#endif
+void oneMSInterval(void)
 {
   BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
   ms_counter++;
@@ -122,7 +138,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   // See if we're in power-on sweep mode
   if( currentStatus.tachoSweepEnabled )
   {
-    if( (currentStatus.engine != 0) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    if( (currentStatus.engineIsRunning) || (currentStatus.engineIsCranking) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
@@ -186,7 +202,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     loop33ms = 0;
 
     //Pulse fuel and ignition test outputs are set at 30Hz
-    if( BIT_CHECK(currentStatus.testOutputs, 1) && (currentStatus.RPM == 0) )
+    if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
     {
       //Check for pulsed injector output test
       if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
@@ -230,7 +246,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
 
-    if ( BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN) ) { runSecsX10++; }
+    if ( currentStatus.engineIsRunning ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
     if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
@@ -263,7 +279,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need to update the run time counter.
-    if (BIT_CHECK(currentStatus.engine, BIT_ENGINE_RUN))
+    if (currentStatus.engineIsRunning)
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
       if (currentStatus.runSecs <= (UINT8_MAX-1U)) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
@@ -292,8 +308,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
         if(currentStatus.RPM == 0)
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          digitalWrite(pinFuelPump, LOW);
-          currentStatus.fuelPumpOn = false;
+          fuelPumpOff();
         }
       }
     }
@@ -335,13 +350,13 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);
-      int32_t tempX100 = (int32_t)rshift<10>(4224UL * flexPulseWidth) - 8125L; //Split up for MISRA compliance
+      int32_t tempX100 = (int32_t)rshift<10>((uint32_t)(4224UL * flexPulseWidth)) - 8125L; //Split up for MISRA compliance
       currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
   }
 
   //Turn off any of the pulsed testing outputs if they are active and have been running for long enough
-  if( BIT_CHECK(currentStatus.testOutputs, 1) )
+  if( currentStatus.isTestModeActive )
   {
     //Check for pulsed injector output test
     if( (HWTest_INJ_Pulsed > 0)  )

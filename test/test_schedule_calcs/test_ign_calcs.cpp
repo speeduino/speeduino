@@ -6,7 +6,9 @@
 #include "decoders.h"
 #include "../test_utils.h"
 
+#if !defined(_countof)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))
+#endif
 
 extern void SetRevolutionTime(uint32_t revTime);
 
@@ -33,12 +35,10 @@ struct ign_test_parameters
   int16_t expectedEndAngle;      // Expected end angle
 };
 
-static void nullIgnCallback(void) { }
-
 void test_calc_ign_timeout(const ign_test_parameters &test_params)
 {
   char msg[150];
-  IgnitionSchedule schedule(IGN4_COUNTER, IGN4_COMPARE, nullIgnCallback, nullIgnCallback);
+  IgnitionSchedule schedule(IGN4_COUNTER, IGN4_COMPARE);
 
   int startAngle;
   int endAngle;
@@ -69,10 +69,10 @@ void test_calc_ign_timeout(const ign_test_parameters *pStart, const ign_test_par
 
 void test_calc_ign_timeout_360()
 {
-  setEngineSpeed(4000, 360);
-  
-  TEST_ASSERT_EQUAL(15000, revolutionTime);    
-  TEST_ASSERT_EQUAL(96, dwellAngle);
+    setEngineSpeed(4000, 360);
+    
+    TEST_ASSERT_EQUAL(15000, currentStatus.revolutionTime);    
+    TEST_ASSERT_EQUAL(96, dwellAngle);
 
   // Expected test values were generated using floating point calculations (in Excel)
   static const ign_test_parameters test_data[] PROGMEM = {

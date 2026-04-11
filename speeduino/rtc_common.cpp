@@ -6,13 +6,7 @@
 
 void initRTC()
 {
-
-  #if defined(CORE_TEENSY35) || defined(CORE_TEENSY36)|| defined(CORE_TEENSY41)
-    setSyncProvider(getTeensy3Time);
-  #elif defined(CORE_STM32)
-  
-  #endif
-
+  boardInitRTC();
 }
 
 uint8_t rtc_getSecond()

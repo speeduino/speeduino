@@ -10,6 +10,7 @@
 #pragma once
 
 #include "table3d_typedefs.h"
+#include "preprocessor.h"
 
 // ========================= INTRA-ROW ITERATION ========================= 
 
@@ -30,10 +31,12 @@ public:
     {
     }
 
+    // LCOV_EXCL_START
     /** @brief Pointer to the end of the row */
     const table3d_value_t* end(void) const { return pEnd; }
     /** @copydoc table_row_iterator::end() const */
     table3d_value_t* end(void) { return const_cast<table3d_value_t *>(pEnd); }
+    // LCOV_EXCL_STOP
 
     /** @brief Advance the iterator
      * @param steps The number of elements to move the iterator
@@ -56,6 +59,7 @@ public:
         return pValue == pEnd;
     }
 
+    // LCOV_EXCL_START
     /** @brief Dereference the iterator */
     const table3d_value_t& operator*(void) const
     {
@@ -66,6 +70,7 @@ public:
     {
         return *const_cast<table3d_value_t *>(pValue);
     }
+    // LCOV_EXCL_STOP
 
     /** @brief Number of elements available */
     table3d_dim_t size(void) const { return pEnd-pValue; }
@@ -121,7 +126,7 @@ public:
     }
 
     /** @brief Dereference the iterator to access a row of data */
-    const table_row_iterator operator*(void) const
+    table_row_iterator operator*(void) const
     {
         return table_row_iterator(pRowsStart, rowWidth);
     }

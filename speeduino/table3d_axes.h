@@ -11,19 +11,19 @@
 
 #include "table3d_typedefs.h"
 
-/**\enum axis_domain
+/**\enum AxisDomain
  * @brief Encodes the real world measurement that a table axis captures
  * */
-enum axis_domain {
+enum class AxisDomain : uint8_t {
     /** RPM (engine speed) */
-    axis_domain_Rpm,
+    Rpm,
     /** Load */
-    axis_domain_Load,
+    Load,
 };
 
-static inline constexpr uint16_t axis_domain_to_factor(axis_domain domain)
+static constexpr uint16_t getConversionFactor(AxisDomain domain)
 {
-    return domain==axis_domain_Rpm ? 100U : 2U;
+    return domain==AxisDomain::Rpm ? 100U : 2U;
 }
 
 /** @brief Iterate over table axis elements */
@@ -60,6 +60,7 @@ public:
         return _pStart == _pEnd;
     }
 
+    // LCOV_EXCL_START
     /** @brief Dereference the iterator */
     table3d_axis_t& operator*(void)
     {
@@ -70,6 +71,7 @@ public:
     {
         return *_pStart;
     }    
+    // LCOV_EXCL_STOP
     
 private:
 
@@ -105,9 +107,11 @@ private:
     };
 
 // This generates the axis types for the following sizes & domains:
+// LCOV_EXCL_START
 TABLE3D_GEN_AXIS(4)
 TABLE3D_GEN_AXIS(6)
 TABLE3D_GEN_AXIS(8)
 TABLE3D_GEN_AXIS(16)
+// LCOV_EXCL_STOP
 
 /** @} */
