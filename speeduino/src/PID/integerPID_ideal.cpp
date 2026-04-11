@@ -24,7 +24,7 @@ bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
    // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
    uint32_t scaledFeedForward = _feedForwardTerm*10UL;
 
-   /* Compute PID Output */
+   // We are using "Derivative on Measurement" as described [here](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-derivative-kick/)
    *pOutput = PidBase::compute(scaledFeedForward, error, (int32_t)_lastInput - input)/10L;
 
    /*Remember some variables for next time*/

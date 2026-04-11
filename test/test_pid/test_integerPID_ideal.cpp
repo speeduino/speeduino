@@ -102,18 +102,19 @@ static void test_reverse_direction(void)
 
 static void test_feedforward_applied(void)
 {
-    uint16_t input = 500;
+    constexpr uint16_t input = 500;
+    constexpr uint16_t FFTERM = 5321;
     uint16_t output = 0;
 
     integerPID_ideal pid;
     pid.setSampleTime(NOW, 0);
-    pid.setSetPoint(500);
+    pid.setSetPoint(input);
     pid.setSensitivity(50);
-    pid.setFeedForwardTerm(5000);
+    pid.setFeedForwardTerm(FFTERM);
     pid.initialize(input);
 
     TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
-    TEST_ASSERT_EQUAL(5000u, output); // no PID action, output equals feedforward (above min clamp)
+    TEST_ASSERT_EQUAL(FFTERM, output); // no PID action, output equals feedforward (above min clamp)
 }
 
 static void test_set_output_limits_invalid_bounds_are_ignored(void)
