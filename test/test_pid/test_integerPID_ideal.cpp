@@ -109,9 +109,9 @@ static void test_feedforward_applied(void)
     pid.setSampleTime(NOW, 0);
     pid.setSetPoint(500);
     pid.setSensitivity(50);
+    pid.setFeedForwardTerm(5000);
     pid.initialize(input);
 
-    pid.setFeedForwardTerm(5000);
     TEST_ASSERT_TRUE(pid.compute(NOW, input, &output));
     TEST_ASSERT_EQUAL(5000u, output); // no PID action, output equals feedforward (above min clamp)
 }
@@ -207,7 +207,7 @@ static void test_end_to_end_positive_positive_up(void)
 
     integerPID_ideal pid;
     pid.setSetPoint(SET_POINT);
-    pid.setSampleTime(10000, SAMPLE_TIME);
+    pid.setSampleTime(NOW, SAMPLE_TIME);
     pid.setTunings(PidTuningParameters(3, 2, 1));
     pid.setOutputLimits(0, 255);
     pid.setSensitivity(0);
@@ -225,7 +225,7 @@ static void test_end_to_end_positive_positive_down(void)
 
     integerPID_ideal pid;
     pid.setSetPoint(SET_POINT);
-    pid.setSampleTime(10000, SAMPLE_TIME);
+    pid.setSampleTime(NOW, SAMPLE_TIME);
     pid.setTunings(PidTuningParameters(3, 2, 1));
     pid.setOutputLimits(0, 255);
     pid.setSensitivity(0);
