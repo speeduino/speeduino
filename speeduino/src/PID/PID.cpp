@@ -10,15 +10,29 @@ int32_t PID::compute(int32_t input)
 {
    /*Compute all the working error variables*/
    int32_t error = _setpoint - input;
-   _integralTerm = clamp(_integralTerm + (_pidParams.Ki * error), _outMin, _outMax);
+   int32_t dInput = _lastInput- input;
 
-   int32_t dInput = (input - _lastInput);
+   _integralTerm += error;
+
+   /*Compute PID Output*/
+   int32_t output = _pidParams.compute(error, _integralTerm, dInput);
+
+   /* Clamp output and back-calculate integral if necessary */
+   if (output > _outMax)
+   {
+       output = _outMax;
+       _integralTerm -= error;
+   }
+   else if (output < _outMin)
+   {
+       output = _outMin;
+       _integralTerm -= error;
+   }   
+
    /*Remember some variables for next time*/
    _lastInput = input;
 
-   /*Compute PID Output*/
-   int32_t output = (_pidParams.Kp * error) + _integralTerm- (_pidParams.Kd * dInput);
-   return clamp(output, _outMin, _outMax)/1000;
+   return output/1000;
 }
 
 void PID::setTunings(const PidTuningParameters &pidParams)

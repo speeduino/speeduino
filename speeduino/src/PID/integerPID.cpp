@@ -15,22 +15,23 @@ bool integerPID::compute(uint32_t now, int32_t input, int32_t* pOutput)
 
    /*Compute all the working error variables*/
    int32_t error = _setpoint - input;
-   int32_t dInput = (input - _lastInput);
 
-   if (_pidParams.Ki != 0)
-   {
-      _integralTerm += (_pidParams.Ki * error); //integral += error × dt
-      _integralTerm = clamp(_integralTerm, _outMin - _feedForwardTerm, _outMax - _feedForwardTerm);
-   }
+   _integralTerm += error;
 
    /*Compute PID Output*/
-   int32_t output;
-   
-   output = (_pidParams.Kp * error);
-   if (_pidParams.Ki != 0) { output += _integralTerm; }
-   if (_pidParams.Kd != 0) { output -= (_pidParams.Kd * dInput)>>2; }
-   output = clamp(output + _feedForwardTerm, _outMin, _outMax);
+   int32_t output = _feedForwardTerm + _pidParams.compute(error, _integralTerm, _lastInput - input);
 
+   /* Clamp output and back-calculate integral if necessary */
+   if (output > _outMax)
+   {
+       output = _outMax;
+       _integralTerm -= error;
+   }
+   else if (output < _outMin)
+   {
+       output = _outMin;
+       _integralTerm -= error;
+   }   
    *pOutput = output >> PID_SHIFTS;
 
    /*Remember some variables for next time*/
@@ -40,13 +41,12 @@ bool integerPID::compute(uint32_t now, int32_t input, int32_t* pOutput)
    return true;
 }
 
-
 static PidTuningParameters scaleTuningParameters(const PidTuningParameters& params, uint8_t minComputeInterval)
 {
     PidTuningParameters scaledParams = params * 32;
     uint16_t inverseSampleTimeInSec = MILLI_PER_SEC / minComputeInterval;
     scaledParams.Ki = (scaledParams.Ki) / inverseSampleTimeInSec;
-    scaledParams.Kd = (scaledParams.Kd) * inverseSampleTimeInSec;
+    scaledParams.Kd = ((scaledParams.Kd) * inverseSampleTimeInSec)>>2;
     return scaledParams;
 }
 
