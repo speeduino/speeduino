@@ -7,33 +7,45 @@ class PID
 {
 public:
 
-  //commonly used functions **************************************************************************
-    PID(void);     //   Setpoint.  Initial tuning parameters are also set here
+  /** @brief Default construction */
+  PID(void);
 
-    long Compute(long input);                   //   called every time loop() cycles. ON/OFF and
-                                          //   calculation frequency can be set using SetMode
-                                          //   SetSampleTime respectively
 
-    void SetOutputLimits(long Min, long Max); //clamps the output to a specific range. 0-255 by default, but
-										  //it's likely the user will want to change this depending on
-										  //the application
+  /** @name Configuration methods */
+  ///@{
 
-    void setTargetValue(int16_t setpoint) { _setpoint = setpoint; } //Convenience function to set the target value without having to dereference the pointer
+  /** @brief Set the output limits */
+  void setOutputLimits(int32_t Min, int32_t Max);
 
-  //available but not commonly used functions ********************************************************
-    void SetTunings(const PidTuningParameters &pidParams);         	  //   constructor, this function gives the user the option
-                                        //   of changing tunings during runtime for Adaptive control
+  /** @brief Set the PID parameters */
+  void setTunings(const PidTuningParameters& params);
 
-  void resetIntegral(long input);
+  /** @brief Set the controller set point */
+  void setSetPoint(uint16_t setpoint) { _setpoint = setpoint; }
+  ///@}
+
+  /**
+   * @brief Initialize/reset the controller
+   * 
+   * @param input Current input value (same value as passed into compute())
+   */
+	void resetIntegral(int32_t input);
+
+  /**
+   * @brief Compute the next correction.
+   * 
+   * @param input The input value
+   * @return A correction to be applied to the input.
+   */
+  int32_t compute(int32_t input);
 
 private:
   PidTuningParameters _pidParams;
 
-  int16_t _setpoint = 0;           //   PID, freeing the user from having to constantly tell us
-                                //   what these values are.  with pointers we'll just know.
-
-  long ITerm, lastInput;
-
-  long outMin, outMax;
+  int16_t _setpoint = 0;
+  int32_t _integralTerm;
+  int32_t _lastInput;
+  int32_t _outMin;
+  int32_t _outMax;
 };
 

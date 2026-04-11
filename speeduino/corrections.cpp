@@ -75,8 +75,8 @@ static constexpr uint8_t NO_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 static constexpr uint8_t BASELINE_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 
 static void setEgoPidTunings(const config6 &page6) {
-  egoPID.SetOutputLimits(-page6.egoLimit, page6.egoLimit); 
-  egoPID.SetTunings(PidTuningParameters(page6.egoKP, page6.egoKI, page6.egoKD) * -1); 
+  egoPID.setOutputLimits(-page6.egoLimit, page6.egoLimit); 
+  egoPID.setTunings(PidTuningParameters(page6.egoKP, page6.egoKI, page6.egoKD) * -1); 
 }
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
@@ -700,10 +700,10 @@ static inline uint8_t computeSimpleCorrection(const statuses &current, const con
 static inline uint8_t computePIDCorrection(const statuses &current, const config6 &page6) {
   //Set the PID values again, just in case the user has changed them since the last loop
   setEgoPidTunings(page6);
-  egoPID.setTargetValue(current.afrTarget);
+  egoPID.setSetPoint(current.afrTarget);
 
   // Can't do this in one step: MISRA compliance.
-  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)egoPID.Compute(current.O2);
+  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)egoPID.compute(current.O2);
   return (uint8_t)correction;
 }
 

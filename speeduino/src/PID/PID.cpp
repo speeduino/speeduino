@@ -3,39 +3,39 @@
 
 PID::PID(void)
 {
-	PID::SetOutputLimits(0, 255);
+	PID::setOutputLimits(0, 255);
 }
 
-long PID::Compute(long input)
+int32_t PID::compute(int32_t input)
 {
    /*Compute all the working error variables*/
-   long error = _setpoint - input;
-   ITerm = clamp(ITerm + (_pidParams.Ki * error), outMin, outMax);
+   int32_t error = _setpoint - input;
+   _integralTerm = clamp(_integralTerm + (_pidParams.Ki * error), _outMin, _outMax);
 
-   long dInput = (input - lastInput);
+   int32_t dInput = (input - _lastInput);
    /*Remember some variables for next time*/
-   lastInput = input;
+   _lastInput = input;
 
    /*Compute PID Output*/
-   long output = (_pidParams.Kp * error) + ITerm- (_pidParams.Kd * dInput);
-   return clamp(output, outMin, outMax)/1000;
+   int32_t output = (_pidParams.Kp * error) + _integralTerm- (_pidParams.Kd * dInput);
+   return clamp(output, _outMin, _outMax)/1000;
 }
 
-void PID::SetTunings(const PidTuningParameters &pidParams)
+void PID::setTunings(const PidTuningParameters &pidParams)
 {
   _pidParams = pidParams;
   _pidParams.Kd = _pidParams.Kd * 10;
 }
 
-void PID::SetOutputLimits(long Min, long Max)
+void PID::setOutputLimits(int32_t Min, int32_t Max)
 {
    if(Min >= Max) return;
-   outMin = Min*1000;
-   outMax = Max*1000;
+   _outMin = Min*1000;
+   _outMax = Max*1000;
 }
 
-void PID::resetIntegral(long input)
+void PID::resetIntegral(int32_t input)
 {
-   ITerm = 0;
-   lastInput = input;
+   _integralTerm = 0;
+   _lastInput = input;
 }
