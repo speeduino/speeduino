@@ -162,26 +162,6 @@ static void test_derivative_term_changes_output_on_error_transition(void)
     TEST_ASSERT_NOT_EQUAL(firstOutput, output);
 }
 
-static void test_runtime_reverse_direction_flips_output_sign(void)
-{
-    #if 0 // Test doesn't work because REVERSE direction doesn't work!
-    long input = 0;
-    uint16_t output = 0;
-    uint16_t setpoint = 1000;
-    uint16_t sensitivity = 0;
-    uint8_t sampleTime = 0;
-
-    integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 0, 0, DIRECT);
-    pid.SetOutputLimits(0, 100);
-    pid.SetControllerDirection(REVERSE);
-    pid.Initialize();
-
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
-    TEST_ASSERT_EQUAL(0u, output);
-    #endif
-}
-
 // Run the PID for 50 and confirm it hits the setpoint
 static void assert_pid_complete(integerPID_ideal &pid, long *pInput, uint16_t *pOutput, uint16_t setpoint, uint8_t sampleTime)
 {
@@ -242,7 +222,6 @@ void testIntegerPID_ideal(void)
         RUN_TEST_P(test_set_output_limits_invalid_bounds_are_ignored);
         RUN_TEST_P(test_initialize_resets_integral_and_error);
         RUN_TEST_P(test_derivative_term_changes_output_on_error_transition);
-        RUN_TEST_P(test_runtime_reverse_direction_flips_output_sign);
         RUN_TEST_P(test_end_to_end_positive_positive_up);
         RUN_TEST_P(test_end_to_end_positive_positive_down);
         // Following do not make sense for integerPID_ideal since input & output are uint16_t
