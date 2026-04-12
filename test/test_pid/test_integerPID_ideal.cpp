@@ -15,8 +15,7 @@ static void test_p_only_clamped_to_min(void)
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 1, 0, 0, DIRECT);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     TEST_ASSERT_EQUAL(2000u, output); // min clamp 20% *100
 }
 
@@ -31,8 +30,7 @@ static void test_p_only_clamped_to_max(void)
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 100, 0, 0, DIRECT);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     TEST_ASSERT_EQUAL(8000u, output); // max clamp 80% *100
 }
 
@@ -47,10 +45,9 @@ static void test_sample_time_gate(void)
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 0, 0, 0, DIRECT);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     // Running immediately again should be gated by sample time (likely false)
-    TEST_ASSERT_FALSE(pid.Compute(now, 0));
+    TEST_ASSERT_FALSE(pid.Compute(NOW, 0));
 }
 
 static void test_ki_windup_limits(void)
@@ -65,8 +62,7 @@ static void test_ki_windup_limits(void)
     pid.SetOutputLimits(20, 80);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     // output should stay within [2000, 8000] scale after clamping
     TEST_ASSERT_LESS_OR_EQUAL(8000u, output);
     TEST_ASSERT_GREATER_OR_EQUAL(2000u, output);
@@ -83,14 +79,14 @@ static void test_reverse_direction(void)
     integerPID_ideal pidDirect(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0, DIRECT);
     pidDirect.SetOutputLimits(0, 100);
     pidDirect.Initialize();
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pidDirect.Compute(now, 0));
+
+    TEST_ASSERT_TRUE(pidDirect.Compute(NOW, 0));
     uint16_t directOutput = output;
 
     integerPID_ideal pidReverse(&input, &output, &setpoint, &sensitivity, &sampleTime, 50, 0, 0, REVERSE);
     pidReverse.SetOutputLimits(0, 100);
     pidReverse.Initialize();
-    TEST_ASSERT_TRUE(pidReverse.Compute(now, 0));
+    TEST_ASSERT_TRUE(pidReverse.Compute(NOW, 0));
     uint16_t reverseOutput = output;
 
     TEST_ASSERT_LESS_OR_EQUAL(reverseOutput, directOutput);
@@ -106,8 +102,7 @@ static void test_feedforward_applied(void)
     integerPID_ideal pid(&input, &output, &setpoint, &sensitivity, &sampleTime, 0, 0, 0, DIRECT);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 5000));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 5000));
     TEST_ASSERT_EQUAL(5000u, output); // no PID action, output equals feedforward (above min clamp)
 }
 
@@ -123,8 +118,7 @@ static void test_set_output_limits_invalid_bounds_are_ignored(void)
     pid.SetOutputLimits(80, 20);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     TEST_ASSERT_EQUAL(8000u, output); // invalid limits ignored, default max clamp remains 80%
 }
 
@@ -140,12 +134,11 @@ static void test_initialize_resets_integral_and_error(void)
     pid.SetOutputLimits(0, 100);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
 
     input = 1000;
     pid.Initialize();
-    TEST_ASSERT_TRUE(pid.Compute(now + 1, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, 0));
     TEST_ASSERT_EQUAL(0u, output); // with zero error and reset integral, output should return to zero
 }
 
@@ -161,12 +154,11 @@ static void test_derivative_term_changes_output_on_error_transition(void)
     pid.SetOutputLimits(0, 100);
     pid.Initialize();
 
-    unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     uint16_t firstOutput = output;
 
     input = 100;
-    TEST_ASSERT_TRUE(pid.Compute(now + 1, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW + 1U, 0));
     TEST_ASSERT_NOT_EQUAL(firstOutput, output);
 }
 
@@ -185,7 +177,7 @@ static void test_runtime_reverse_direction_flips_output_sign(void)
     pid.Initialize();
 
     unsigned long now = 1000000;
-    TEST_ASSERT_TRUE(pid.Compute(now, 0));
+    TEST_ASSERT_TRUE(pid.Compute(NOW, 0));
     TEST_ASSERT_EQUAL(0u, output);
     #endif
 }
