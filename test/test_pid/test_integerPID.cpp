@@ -2,7 +2,7 @@
 #include "src/PID/integerPID.h"
 #include "../test_utils.h"
 
-constexpr uint32_t NOW = 10000UL;
+constexpr unsigned long NOW = 10000UL;
 
 static void test_integerPID_manual_mode_compute_false(void)
 {
@@ -462,18 +462,6 @@ static inline void assert_pid_complete(integerPID &pid, long *pInput, long *pOut
         snprintf(szMsg, _countof(szMsg)-1, "%" PRIu16 ", %" PRId32 ", %" PRId32, iteration, (int32_t)*pInput, (int32_t)*pOutput);
         UnityPrint(szMsg); UNITY_PRINT_EOL();
     }
-    // UnityPrint("Time,Input,Output"); UNITY_PRINT_EOL();
-    // char szMsg[256];
-    // uint32_t now = 10000UL;
-    // while (now<(10000UL+(199*sampleTime)))
-    // {
-    //     snprintf(szMsg, _countof(szMsg)-1, "%" PRIu32 ", %" PRId32 ", %" PRId32, now, (int32_t)*pInput, (int32_t)*pOutput);
-    //     UnityPrint(szMsg); UNITY_PRINT_EOL();
-
-    //     TEST_ASSERT_TRUE(pid.Compute(NOW));
-    //     *pInput += *pOutput;
-    //     now += sampleTime;
-    // }
     // Tolerance of 1%
     TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
 }
