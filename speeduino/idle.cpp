@@ -8,7 +8,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "timers.h"
 #include "preprocessor.h"
-#include "src/PID_v1/PID_v1.h"
+#include "src/PID/integerPID.h"
 #include "units.h"
 #include "globals.h"
 #include "src/pins/fastOutputPin.h"
@@ -450,7 +450,7 @@ void idleControl(void)
         idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ) ) { idlePID.SetTunings(configPage6.idleKP, configPage6.idleKI, configPage6.idleKD); } //Re-read the PID settings once per second
         
-        PID_computed = idlePID.Compute(true);
+        PID_computed = idlePID.Compute();
         long TEMP_idle_pwm_target_value;
         if(PID_computed == true)
         {

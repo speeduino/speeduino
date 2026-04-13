@@ -6,7 +6,8 @@ A full copy of the license may be found in the projects root directory
 #include "auxiliaries.h"
 #include "globals.h"
 #include "maths.h"
-#include "src/PID_v1/PID_v1.h"
+#include "src/PID/integerPID.h"
+#include "src/PID/integerPID_ideal.h"
 #include "decoders.h"
 #include "timers.h"
 #include "preprocessor.h"
@@ -1079,8 +1080,7 @@ void vvtControl(void)
           vvt_pid_current_angle = (long)currentStatus.vvt1Angle;
 
           //If not already at target angle, calculate new value from PID
-          bool PID_compute = vvtPID.Compute(true);
-          //vvtPID.Compute2(currentStatus.vvt1TargetAngle, currentStatus.vvt1Angle, false);
+          bool PID_compute = vvtPID.Compute();
           //vvt_pwm_target_value = percentage(40, vvt_pwm_max_count);
           //if (currentStatus.vvt1Angle > currentStatus.vvt1TargetAngle) { vvt_pwm_target_value = 0; }
           if(PID_compute == true) { vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); }
@@ -1117,7 +1117,7 @@ void vvtControl(void)
             vvt2_pid_target_angle = (unsigned long)currentStatus.vvt2TargetAngle;
             vvt2_pid_current_angle = (long)currentStatus.vvt2Angle;
             //If not already at target angle, calculate new value from PID
-            bool PID_compute = vvt2PID.Compute(true);
+            bool PID_compute = vvt2PID.Compute();
             if(PID_compute == true) { vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); }
             currentStatus.vvt2AngleError = false;
           }
