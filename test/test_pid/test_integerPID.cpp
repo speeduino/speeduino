@@ -115,20 +115,6 @@ static void test_integerPID_controller_direction_maintains_output_limits(void)
     TEST_ASSERT_GREATER_OR_EQUAL(-50, output);
 }
 
-static void test_integerPID_input_zero_failsafe(void)
-{
-    long input = 0;
-    long output = 3;
-    long setpoint = 100;
-
-    integerPID pid(&input, &output, &setpoint, 10, 10, 0, DIRECT);
-    pid.SetSampleTime(1);
-    pid.SetMode(AUTOMATIC);
-
-    TEST_ASSERT_FALSE(pid.Compute(NOW, 0));
-    TEST_ASSERT_EQUAL(3, output);
-}
-
 static void test_integerPID_reverse_direction(void)
 {
     long input = 10;
@@ -451,9 +437,12 @@ static void test_integerPID_set_controller_direction_runtime_manual(void)
 // Run the PID for 50 iterations and confirm it hits the setpoint
 static inline void assert_pid_complete(integerPID &pid, long *pInput, long *pOutput, long setpoint, uint8_t sampleTime)
 {
+    char szMsg[64];
+    snprintf(szMsg, _countof(szMsg)-1, "Start: %" PRId32 ", SetPoint: %" PRId32, (int32_t)*pInput, (int32_t)setpoint);
+    UnityPrint(szMsg); UNITY_PRINT_EOL();
+
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
 
-    char szMsg[64];
     for (uint16_t iteration=0; iteration<50U; ++iteration)
     {
         TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime)));
@@ -463,7 +452,7 @@ static inline void assert_pid_complete(integerPID &pid, long *pInput, long *pOut
         UnityPrint(szMsg); UNITY_PRINT_EOL();
     }
     // Tolerance of 1%
-    TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
+    TEST_ASSERT_INT32_WITHIN(abs(DIV_ROUND_CLOSEST(setpoint, 100, int32_t)), setpoint, *pInput);
 }
 
 static void test_end_to_end_positive_positive_up(void) 
@@ -496,21 +485,65 @@ static void test_end_to_end_positive_positive_down(void)
     assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
 
+
 static void test_end_to_end_negative_negative_up(void) 
 {
-    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+    constexpr uint8_t SAMPLE_TIME = 33;
+    long output = 0;
+    long input = -235;
+    long setpoint = -155;
+
+    integerPID pid(&input, &output, &setpoint, 15, 3, 2, DIRECT);
+    pid.SetSampleTime(SAMPLE_TIME);
+    pid.SetOutputLimits(-255, 255);
+    pid.SetMode(AUTOMATIC);
+
+    assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
+
 static void test_end_to_end_negative_negative_down(void) 
 {
-    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+    constexpr uint8_t SAMPLE_TIME = 33;
+    long output = 0;
+    long input = -155;
+    long setpoint = -235;
+
+    integerPID pid(&input, &output, &setpoint, 15, 3, 2, DIRECT);
+    pid.SetSampleTime(SAMPLE_TIME);
+    pid.SetOutputLimits(-255, 255);
+    pid.SetMode(AUTOMATIC);
+
+    assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
-static void test_end_to_end_negative_positive(void) 
-{
-    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
-}
+
 static void test_end_to_end_positive_negative(void) 
 {
-    TEST_IGNORE_MESSAGE("integerPID doesn't support negative inputs...yet");
+    constexpr uint8_t SAMPLE_TIME = 33;
+    long output = 0;
+    long input = 63;
+    long setpoint = -55;
+
+    integerPID pid(&input, &output, &setpoint, 15, 1, 1, DIRECT);
+    pid.SetSampleTime(SAMPLE_TIME);
+    pid.SetOutputLimits(-255, 255);
+    pid.SetMode(AUTOMATIC);
+
+    assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
+}
+
+static void test_end_to_end_negative_positive(void) 
+{
+    constexpr uint8_t SAMPLE_TIME = 33;
+    long output = 0;
+    long input = -55;
+    long setpoint = 65;
+
+    integerPID pid(&input, &output, &setpoint, 15, 3, 2, DIRECT);
+    pid.SetSampleTime(SAMPLE_TIME);
+    pid.SetOutputLimits(-255, 255);
+    pid.SetMode(AUTOMATIC);
+
+    assert_pid_complete(pid, &input, &output, setpoint, SAMPLE_TIME);
 }
 
 void testIntegerPID(void)
@@ -522,7 +555,6 @@ void testIntegerPID(void)
         RUN_TEST_P(test_integerPID_output_limits_zero_range);
         RUN_TEST_P(test_integerPID_reverse_direction);
         RUN_TEST_P(test_integerPID_feedforward_term);
-        RUN_TEST_P(test_integerPID_input_zero_failsafe);
         RUN_TEST_P(test_integerPID_integral_with_feedforward);
         RUN_TEST_P(test_integerPID_output_limits_upper_clamp);
         RUN_TEST_P(test_integerPID_output_limits_lower_clamp);

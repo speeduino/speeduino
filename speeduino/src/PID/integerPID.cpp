@@ -49,38 +49,35 @@ bool integerPID::Compute(unsigned long now, long FeedForwardTerm)
    {
       /*Compute all the working error variables*/
 	   long input = *myInput;
-      if(input > 0) //Fail safe, should never be 0
+      long error = *mySetpoint - input;
+      long dInput = (input - lastInput);
+      FeedForwardTerm <<= PID_SHIFTS;
+
+      if (ki != 0)
       {
-         long error = *mySetpoint - input;
-         long dInput = (input - lastInput);
-         FeedForwardTerm <<= PID_SHIFTS;
-
-         if (ki != 0)
-         {
-            outputSum += (ki * error); //integral += error × dt
-            if(outputSum > outMax-FeedForwardTerm) { outputSum = outMax-FeedForwardTerm; }
-            else if(outputSum < outMin-FeedForwardTerm) { outputSum = outMin-FeedForwardTerm; }
-         }
-
-         /*Compute PID Output*/
-         long output;
-         
-         output = (kp * error);
-         if (ki != 0) { output += outputSum; }
-         if (kd != 0) { output -= (kd * dInput)>>2; }
-         output += FeedForwardTerm;
-
-         if(output > outMax) output = outMax;
-         else if(output < outMin) output = outMin;
-
-         *myOutput = output >> PID_SHIFTS;
-
-         /*Remember some variables for next time*/
-         lastInput = input;
-         lastTime = now;
-
-         return true;
+         outputSum += (ki * error); //integral += error × dt
+         if(outputSum > outMax-FeedForwardTerm) { outputSum = outMax-FeedForwardTerm; }
+         else if(outputSum < outMin-FeedForwardTerm) { outputSum = outMin-FeedForwardTerm; }
       }
+
+      /*Compute PID Output*/
+      long output;
+      
+      output = (kp * error);
+      if (ki != 0) { output += outputSum; }
+      if (kd != 0) { output -= (kd * dInput)>>2; }
+      output += FeedForwardTerm;
+
+      if(output > outMax) output = outMax;
+      else if(output < outMin) output = outMin;
+
+      *myOutput = output >> PID_SHIFTS;
+
+      /*Remember some variables for next time*/
+      lastInput = input;
+      lastTime = now;
+
+      return true;
    }
    return false;
 }
