@@ -177,7 +177,7 @@ static void assert_pid_complete(integerPID_ideal &pid, long *pInput, uint16_t *p
         UnityPrint(szMsg); UNITY_PRINT_EOL();
     }
     // Tolerance of 1%
-    TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
+    TEST_ASSERT_INT32_WITHIN(abs(DIV_ROUND_CLOSEST(setpoint, 100, int32_t)), setpoint, *pInput);
 }
 
 static void test_end_to_end_positive_positive_up(void) 
