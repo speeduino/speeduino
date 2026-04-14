@@ -33,13 +33,6 @@ struct storage_api_t {
     uint16_t (*getMaxWriteBlockSize)(const statuses &current);
 };
 
-/** 
- * @brief Create a storage_api_t instance that wraps getEEPROM()
- * 
- * Applies the adapter pattern to provide storage_api_t from EEPROM_t 
- */
-storage_api_t getEEPROMStorageApi(void);
-
 /**
  * @brief Conditionally write a byte to storage if it differs from the one already saved.
  * 

@@ -1,9 +1,11 @@
 #if defined(NATIVE_BOARD)
+#include <EEPROM.h>
 #include "board_native.h"
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
+#include "board_eeprom_adapter.hpp"
 
 #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
 #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
@@ -93,14 +95,16 @@ void boardInitPins(void)
   // Do nothing
 }
 
-uint16_t getEepromWriteBlockSize(const statuses &)
+
+static uint16_t getEepromWriteBlockSize(const statuses &)
 {
-    return 64U;
+  return 64U;
 }
 
-EEPROM_t& getEEPROM(void) 
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
 {
-  return EEPROM;
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif

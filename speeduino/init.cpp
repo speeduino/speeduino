@@ -117,7 +117,7 @@ void initialiseAll(void)
 
     // Unit tests should be independent of any stored configuration on the board!
 #if !defined(UNIT_TEST)
-    setStorageAPI(getEEPROMStorageApi());
+    setStorageAPI(getBoardStorageApi());
     processResetStorageRequest();
     loadAllPages();
     loadAllCalibrationTables(); 

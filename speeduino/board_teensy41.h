@@ -68,9 +68,6 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #define BOARD_MAX_DIGITAL_PINS 54
 #define BOARD_MAX_IO_PINS 54
 #define BOARD_MAX_ADC_PINS  17 //Number of analog pins
-#define EEPROM_LIB_H <EEPROM.h>
-class EEPROMClass;
-using EEPROM_t = EEPROMClass;
 #define RTC_ENABLED
 #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
 #define RTC_LIB_H "TimeLib.h"

@@ -53,15 +53,6 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 
 #define TS_SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
 #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
-#ifdef USE_SPI_EEPROM
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  class SPI_EEPROM_Class;
-  using EEPROM_t = SPI_EEPROM_Class;
-#else
-  #define EEPROM_LIB_H <EEPROM.h>
-  class EEPROMClass;
-  using EEPROM_t = EEPROMClass;
-#endif
 #ifdef PLATFORMIO
   #define RTC_LIB_H <TimeLib.h>
 #else

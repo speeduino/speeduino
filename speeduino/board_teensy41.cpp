@@ -1,6 +1,7 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -8,7 +9,7 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
-#include EEPROM_LIB_H
+#include "board_eeprom_adapter.hpp"
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -404,7 +405,7 @@ void boardInitPins(void)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 
-uint16_t getEepromWriteBlockSize(const statuses &current)
+static uint16_t getEepromWriteBlockSize(const statuses &current)
 {
   uint16_t maxWrite = 64;
 
@@ -417,9 +418,10 @@ uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-EEPROM_t& getEEPROM(void) 
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
 {
-  return EEPROM;
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif

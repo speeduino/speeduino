@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 #include "type_traits.h"
+#include "storage_api.h"
 
 /**
  * @brief Initialise the board, including USB comms
@@ -39,21 +40,8 @@ void jumpToBootloader(void);
 /** @brief Get the board temp for display in TunerStudio (optional) */
 uint8_t getSystemTemp(void);
 
-struct statuses;
-
-/**
- * @brief The maximum number of write operations that will be performed in one go.
- * 
- * If this number is too large, we will kill system responsiveness since EEPROM
- * writes are slow. E.g. Each write takes ~3ms on the AVR
- * 
- * This is board specific, since EEPROM write speed is dependent on the
- * EEPROM type and CPU speed. 
- * 
- * @param current So the function can scale the number of writes based on system state
- * @return uint8_t The maximum number of writes.
- */
-uint16_t getEepromWriteBlockSize(const statuses &current);
+/** @brief Get the storage API for the board */
+storage_api_t getBoardStorageApi(void);
 
 // Include a specific header for a board.
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
@@ -83,9 +71,6 @@ void boardInitRTC(void);
 // It is important that we cast this to the actual overflow limit of the timer. 
 // The compare variables type can be wider than the timer overflow.
 #define SET_COMPARE(compare, value) (compare) = (COMPARE_TYPE)(value)
-
-/** @brief Access the EEPROM singleton */
-EEPROM_t& getEEPROM(void);
 
 /** @brief The longest period of time (in uS) that the timer can permit */
 constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros((numeric_limits<COMPARE_TYPE>::max)());

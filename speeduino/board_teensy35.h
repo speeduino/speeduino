@@ -45,15 +45,6 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #define BOARD_MAX_DIGITAL_PINS 57
 #define BOARD_MAX_IO_PINS 57
 #define BOARD_MAX_ADC_PINS  26 //Number of analog pins
-#ifdef USE_SPI_EEPROM
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  class SPI_EEPROM_Class;
-  using EEPROM_t = SPI_EEPROM_Class;
-#else
-  #define EEPROM_LIB_H <EEPROM.h>
-  class EEPROMClass;
-  using EEPROM_t = EEPROMClass;
-#endif
 #define RTC_ENABLED
 #define RTC_LIB_H "TimeLib.h"
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes

@@ -7,7 +7,52 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
-#include EEPROM_LIB_H
+
+#if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
+  #include "src/BackupSram/BackupSramAsEEPROM.h"
+  BackupSramAsEEPROM EEPROM;
+#elif defined(USE_SPI_EEPROM) // Use M25Qxx SPI flash on BlackF407VE
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #if defined(STM32F407xx)
+      SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    #else //Blue/Black Pills
+      SPIClass SPI_for_flash(PB15, PB14, PB13);
+    #endif
+ 
+    //winbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+#elif defined(FRAM_AS_EEPROM) // Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible
+  #include "src/FRAM/Fram.h"
+  #if defined(STM32F407xx)
+    SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    FramClass EEPROM(PB0, SPI_for_FRAM);
+  #else //Blue/Black Pills
+    SPIClass SPI_for_FRAM(PB15, PB14, PB13);
+    FramClass EEPROM(PB12, SPI_for_FRAM);
+  #endif
+#else //default case, internal flash as EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #if defined(STM32F7xx)
+    #if defined(DUAL_BANK)
+      EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+    #else
+      EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+    #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #elif defined(STM32F401xC)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #elif defined(STM32F411xE)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #else //default case, internal flash as EEPROM for STM32F4
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #endif
+#endif
+#include "board_eeprom_adapter.hpp"
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -23,46 +68,6 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
 #if defined SD_LOGGING
     SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
 #endif
-
-#if defined(SRAM_AS_EEPROM)
-    BackupSramAsEEPROM EEPROM;
-#elif defined(USE_SPI_EEPROM)
-    #if defined(STM32F407xx)
-      SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-    #else //Blue/Black Pills
-      SPIClass SPI_for_flash(PB15, PB14, PB13);
-    #endif
- 
-    //winbond W25Q16 SPI flash EEPROM emulation
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
-    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
-    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #if defined(STM32F407xx)
-      SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-      FramClass EEPROM(PB0, SPI_for_FRAM);
-    #else //Blue/Black Pills
-      SPIClass SPI_for_FRAM(PB15, PB14, PB13);
-      FramClass EEPROM(PB12, SPI_for_FRAM);
-    #endif
-#elif defined(STM32F7xx)
-  #if defined(DUAL_BANK)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
-  #else
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
-  #endif
-    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F401xC)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F411xE)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#else //default case, internal flash as EEPROM for STM32F4
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#endif
-
 
 HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
@@ -143,9 +148,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * General
     */
-    #ifndef FLASH_LENGTH
-      #define FLASH_LENGTH 8192
-    #endif
     delay(10);
 
     #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
@@ -234,9 +236,9 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Schedules
     */
-    Timer1.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer2.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer3.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer1.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
+    Timer2.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
+    Timer3.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
 
     Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
@@ -270,7 +272,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer3.attachInterrupt(3, FUEL_INTERRUPT_NAME(3));
     Timer3.attachInterrupt(4, FUEL_INTERRUPT_NAME(4));
     #if (INJ_CHANNELS >= 5)
-    Timer5.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer5.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -310,7 +312,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     Timer2.attachInterrupt(3, IGNITION_INTERRUPT_NAME(3));
     Timer2.attachInterrupt(4, IGNITION_INTERRUPT_NAME(4));
     #if (IGN_CHANNELS >= 5)
-    Timer4.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer4.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
@@ -349,9 +351,9 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
   uint16_t freeRam()
   {
-    uint32_t freeRam;
-    uint32_t stackTop;
-    uint32_t heapTop;
+    uint32_t freeRam = 0;
+    uint32_t stackTop = 0;
+    uint32_t heapTop = 0;
 
     // current position of the stack.
     stackTop = (uint32_t)&stackTop;
@@ -362,8 +364,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     free(hTop);
     freeRam = stackTop - heapTop;
 
-    if(freeRam>0xFFFF){return 0xFFFF;}
-    else{return freeRam;}
+    return min((uint32_t)(numeric_limits<uint16_t>::max)(), freeRam);
   }
 
   void doSystemReset( void )
@@ -420,7 +421,7 @@ void boardInitPins(void)
   // Do nothing
 }
 
-uint16_t getEepromWriteBlockSize(const statuses &current)
+static uint16_t getEepromWriteBlockSize(const statuses &current)
 {
 #if defined(USE_SPI_EEPROM)
   //For use with common Winbond SPI EEPROMs Eg W25Q16JV
@@ -438,9 +439,10 @@ uint16_t getEepromWriteBlockSize(const statuses &current)
   return maxWrite;
 }
 
-EEPROM_t& getEEPROM(void) 
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
 {
-  return EEPROM;
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif
