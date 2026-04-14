@@ -57,7 +57,7 @@ struct statuses {
   uint16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
   uint8_t baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   uint8_t TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
-  uint8_t tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
+  uint16_t tpsADC; /**<  (valued: 0-1023) representation of the TPS. */
   int16_t tpsDOT; /**< TPS delta over time. Measures the % per second that the TPS is changing. Note that is signed value, because TPSdot can be also negative */
   byte TPSlast; /**< The previous TPS reading */
   int16_t mapDOT; /**< MAP delta over time. Measures the kpa per second that the MAP is changing. Note that is signed value, because MAPdot can be also negative */

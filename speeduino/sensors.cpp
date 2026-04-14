@@ -22,13 +22,7 @@ A full copy of the license may be found in the projects root directory
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
 #include "units.h"
-#include "atomic.h"
-#include "board_definition.h"
-#include "preprocessor.h"
-#include "static_for.hpp"
-#include "polling.hpp"
-#include "decoders.h"
-#include "src/pins/fastInputPin.h"
+#include <math.h>
 
 uint8_t statusSensors = 0;
 
@@ -245,14 +239,15 @@ void initialiseADC(void)
   //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
   //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
   //Each sensor has it's own default value
-  if(configPage4.ADCFILTER_TPS  > 240U) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   savePage(ignSetPage); }
-  if(configPage4.ADCFILTER_CLT  > 240U) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   savePage(ignSetPage); }
-  if(configPage4.ADCFILTER_IAT  > 240U) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   savePage(ignSetPage); }
-  if(configPage4.ADCFILTER_O2   > 240U) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    savePage(ignSetPage); }
-  if(configPage4.ADCFILTER_BAT  > 240U) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   savePage(ignSetPage); }
-  if(configPage4.ADCFILTER_MAP  > 240U) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   savePage(ignSetPage); }
-  if(configPage4.ADCFILTER_BARO > 240U) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  savePage(ignSetPage); }
-  if(configPage4.FILTER_FLEX    > 240U) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     savePage(ignSetPage); }
+  if(configPage4.ADCFILTER_TPS  > 240U) { configPage4.ADCFILTER_TPS   = ADCFILTER_TPS_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_CLT  > 240U) { configPage4.ADCFILTER_CLT   = ADCFILTER_CLT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_IAT  > 240U) { configPage4.ADCFILTER_IAT   = ADCFILTER_IAT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_O2   > 240U) { configPage4.ADCFILTER_O2    = ADCFILTER_O2_DEFAULT;    writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BAT  > 240U) { configPage4.ADCFILTER_BAT   = ADCFILTER_BAT_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_MAP  > 240U) { configPage4.ADCFILTER_MAP   = ADCFILTER_MAP_DEFAULT;   writeConfig(ignSetPage); }
+  if(configPage4.ADCFILTER_BARO > 240U) { configPage4.ADCFILTER_BARO  = ADCFILTER_BARO_DEFAULT;  writeConfig(ignSetPage); }
+  if(configPage4.CURVEFACTOR_TPS > 240U) { configPage4.CURVEFACTOR_TPS  = CURVEFACTOR_TPS_DEFAULT;  writeConfig(ignSetPage); }
+  if(configPage4.FILTER_FLEX    > 240U) { configPage4.FILTER_FLEX     = FILTER_FLEX_DEFAULT;     writeConfig(ignSetPage); }
 
   flexStartTime = micros();
 
@@ -573,19 +568,50 @@ static inline bool isCTPSSensorActive(void) {
 
 static inline void readTPS(uint8_t tpsADC)
 {
+  
   currentStatus.TPSlast = currentStatus.TPS;
-  currentStatus.tpsADC = tpsADC;
+  uint16_t tempTPS = (uint16_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 1023U); //Get the current raw TPS ADC value and map it into a uint8_t
 
-  uint8_t tempTPSMax = configPage2.tpsMax;
-  uint8_t tempTPSMin = configPage2.tpsMin;
-  if(configPage2.tpsMin > configPage2.tpsMax)
+  //The use of the filter can be overridden if required. This is used on startup to disable priming pulse if flood clear is wanted
+  if(useFilter == true) { currentStatus.tpsADC = (uint16_t)LOW_PASS_FILTER((uint16_t)tempTPS, configPage4.ADCFILTER_TPS, (uint16_t)currentStatus.tpsADC); }
+  else { currentStatus.tpsADC = tempTPS; }
+  uint16_t tempADC = currentStatus.tpsADC; //The tempADC value is used in order to allow TunerStudio to recover and redo the TPS calibration if this somehow gets corrupted
+
+  if(configPage2.tpsMax > configPage2.tpsMin)
+  {
+    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+    tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
+    // 1. Compute safe denominator
+    float scaleRange = max(1.0f, configPage2.tpsMax - configPage2.tpsMin);
+
+    // 2. Normalize ADC input to 0.0–1.0
+    float linear = (tempADC - configPage2.tpsMin) / scaleRange;
+
+    // 3. Constrain normalized value in case of noise
+    linear = constrain(linear, 0.0f, 1.0f);  
+
+    // 4. Apply curve factor for non-linear response
+    float curved = pow(linear, configPage4.CURVEFACTOR_TPS * 0.1f);
+
+    //5. Scale to  0-200
+    currentStatus.TPS = uint16_t(curved * 200.0f);
+  }
+  else
   {
     //This case occurs when the TPS +5v and gnd are wired backwards, but the user wishes to retain this configuration.
     //In such a case, tpsMin will be greater then tpsMax and hence checks and mapping needs to be reversed
 
-    tpsADC = UINT8_MAX - tpsADC; //Reverse the ADC values
-    tempTPSMax = UINT8_MAX - configPage2.tpsMax;
-    tempTPSMin = UINT8_MAX - configPage2.tpsMin;
+    tempADC = UINT16_MAX - tempADC; //Reverse the ADC values
+    uint16_t tempTPSMax = UINT16_MAX - configPage2.tpsMax;
+    uint16_t tempTPSMin = UINT16_MAX - configPage2.tpsMin;
+
+    //All checks below are reversed from the standard case above
+    //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).
+    tempADC = clamp(tempADC, configPage2.tpsMin, configPage2.tpsMax);
+    // Apply curve factor using pow for non-linear TPS response
+    float tpsNorm = float(tempADC - tempTPSMin) / float(tempTPSMax - tempTPSMin);
+    float tpsCurve = pow(tpsNorm, configPage4.CURVEFACTOR_TPS); // CURVEFACTOR_TPS: 1.0 = linear, >1.0 = convex, <1.0 = concave
+    currentStatus.TPS = uint16_t(tpsCurve * 1000.0f);
   }
 
   //Check that the ADC values fall within the min and max ranges (Should always be the case, but noise can cause these to fluctuate outside the defined range).

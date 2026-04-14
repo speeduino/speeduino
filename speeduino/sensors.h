@@ -12,6 +12,7 @@
 #define ADCFILTER_BAT_DEFAULT  128U
 #define ADCFILTER_MAP_DEFAULT   20U //This is only used on Instantaneous MAP readings and is intentionally very weak to allow for faster response
 #define ADCFILTER_BARO_DEFAULT  64U
+#define CURVEFACTOR_TPS_DEFAULT  1U
 
 #define ADCFILTER_PSI_DEFAULT  150U //not currently configurable at runtime, used for misc pressure sensors, oil, fuel, etc.
 
