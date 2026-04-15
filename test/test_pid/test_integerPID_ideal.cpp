@@ -170,14 +170,14 @@ static String createIterationMsg(int16_t iteration, uint16_t input, uint16_t out
 }
 
 // Run the PID for 50 and confirm it hits the setpoint
-static void assert_pid_complete(integerPID_ideal &pid, long *pInput, uint16_t *pOutput, uint16_t setpoint, uint8_t sampleTime)
+static void assert_pid_complete(integerPID_ideal &pid, long *pInput, uint16_t *pOutput, uint16_t setpoint, uint8_t sampleTime, uint16_t feedForwardTerm = 0U)
 {
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
     UnityPrint(createIterationMsg(-1, *pInput, setpoint).c_str()); UNITY_PRINT_EOL();
 
     for (uint16_t iteration=0; iteration<50U; ++iteration)
     {
-        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime), 0));
+        TEST_ASSERT_TRUE(pid.Compute(NOW+(iteration*sampleTime), feedForwardTerm));
         UnityPrint(createIterationMsg(iteration, *pInput, *pOutput).c_str()); UNITY_PRINT_EOL();
         *pInput = *pOutput;
     }
@@ -197,7 +197,7 @@ static void test_end_to_end_positive_positive_up(void)
     pid.SetOutputLimits(0, 255);
     pid.Initialize();
 
-    assert_pid_complete(pid, &input, &output, setpoint, sampleTime);
+    assert_pid_complete(pid, &input, &output, setpoint, sampleTime, 7);
 }
 
 static void test_end_to_end_positive_positive_down(void) 
@@ -212,7 +212,7 @@ static void test_end_to_end_positive_positive_down(void)
     pid.SetOutputLimits(0, 255);
     pid.Initialize();
 
-    assert_pid_complete(pid, &input, &output, setpoint, sampleTime);
+    assert_pid_complete(pid, &input, &output, setpoint, sampleTime, 11);
 }
 
 void testIntegerPID_ideal(void)
