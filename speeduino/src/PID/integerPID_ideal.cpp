@@ -28,7 +28,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
     integerPID_ideal::SetTunings(Kp, Ki, Kd);
 
     lastTime = millis()- *mySampleTime;
-    lastError = 0;
 }
 
 
@@ -54,16 +53,16 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
       ITerm += error;
 
       /*Compute PID Output*/
-      long output = scaledFeedForward + (kp * error) + (ki * ITerm) + (kd * (error - lastError));
+      long output = scaledFeedForward + (kp * error) + (ki * ITerm) + (kd * (lastInput - *myInput));
       
       if(output > outMax)
       {
-         output  = outMax;
+         output = outMax;
          ITerm -= error;
       }
-      if(output < outMin)
+      else if(output < outMin)
       {
-         output  = outMin;
+         output = outMin;
          ITerm -= error;
       }
 
@@ -72,7 +71,7 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 
       /*Remember some variables for next time*/
       lastTime = now;
-      lastError = error;
+      lastInput = *myInput;
 
       return true;
    }
@@ -135,7 +134,6 @@ void integerPID_ideal::Initialize()
 {
    ITerm = 0;
    lastInput = *myInput;
-   lastError = 0;
 }
 
 /* SetControllerDirection(...)*************************************************
