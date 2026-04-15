@@ -40,8 +40,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
  **********************************************************************************/
 bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 {
-   constexpr uint16_t limitMultiplier = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
-
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= *mySampleTime)
    {
@@ -58,14 +56,14 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 
       if(ki != 0)
       {
-        output = ((outMax * limitMultiplier * 100) - FeedForward) / (long)ki;
+        output = ((outMax * 100) - FeedForward) / (long)ki;
         if (output < 0) { output = 0; }
       }
       if (ITerm > output) { ITerm = output; }
 
       if(ki != 0)
       {
-        output = (FeedForward - (-outMin * limitMultiplier * 100)) / (long)ki;
+        output = (FeedForward - (-outMin * 100)) / (long)ki;
         if (output < 0) { output = 0; }
       }
       else { output = 0; }
@@ -75,14 +73,14 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
       output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
       output = FeedForward + (output / 10); //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
-      if(output > (outMax * limitMultiplier))
+      if(output > outMax)
       {
-         output  = (outMax * limitMultiplier);
+         output  = outMax;
          ITerm -= error;
       }
-      if(output < (outMin * limitMultiplier))
+      if(output < outMin)
       {
-         output  = (outMin * limitMultiplier);
+         output  = outMin;
          ITerm -= error;
       }
 
@@ -138,8 +136,10 @@ void integerPID_ideal::SetOutputLimits(long Min, long Max)
 {
    if(Min < Max)
    {
-     outMin = Min;
-     outMax = Max;
+     constexpr uint16_t LIMIT_FACTOR = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+
+     outMin = Min * LIMIT_FACTOR;
+     outMax = Max * LIMIT_FACTOR;
    }
 }
 
