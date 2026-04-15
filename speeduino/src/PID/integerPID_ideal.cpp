@@ -51,26 +51,8 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 
       ITerm += error;
 
-      // uint16_t bias = 50; //Base target DC%
-      long output = 0;
-
-      if(ki != 0)
-      {
-        output = ((outMax * 100) - FeedForward) / (long)ki;
-        if (output < 0) { output = 0; }
-      }
-      if (ITerm > output) { ITerm = output; }
-
-      if(ki != 0)
-      {
-        output = (FeedForward - (-outMin * 100)) / (long)ki;
-        if (output < 0) { output = 0; }
-      }
-      else { output = 0; }
-      if (ITerm < -output) { ITerm = -output; }
-
       /*Compute PID Output*/
-      output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
+      long output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
       output = FeedForward + (output / 10); //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
 
       if(output > outMax)
