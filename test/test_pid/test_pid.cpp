@@ -208,19 +208,25 @@ static void test_pid_set_controller_direction_runtime_manual(void)
     TEST_ASSERT_GREATER_THAN(0, output); // Reverse direction normally produces negative output
 }
 
+static String createIterationMsg(int16_t iteration, long input, long output)
+{
+    char szMsg[64];
+    snprintf(szMsg, _countof(szMsg)-1, "%" PRId16 ", %" PRId32 ", %" PRId32, iteration, (int32_t)input, (int32_t)output);
+    return szMsg;
+}
+
 // Run the PID for maxIterations and confirm it hits the setpoint
 static void assert_pid_complete(PID &pid, long *pInput, long *pOutput, long setpoint, uint16_t maxIterations)
 {
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
+    UnityPrint(createIterationMsg(-1, *pInput, setpoint).c_str()); UNITY_PRINT_EOL();
 
-    char szMsg[64];
     for (uint16_t iteration=0; iteration<maxIterations; ++iteration)
     {
         TEST_ASSERT_TRUE(pid.Compute());
         *pInput += *pOutput;
 
-        snprintf(szMsg, _countof(szMsg)-1, "%" PRIu16 ", %" PRId32 ", %" PRId32, iteration, (int32_t)*pInput, (int32_t)*pOutput);
-        UnityPrint(szMsg); UNITY_PRINT_EOL();
+        UnityPrint(createIterationMsg(iteration, *pInput, *pOutput).c_str()); UNITY_PRINT_EOL();
     }
     // Tolerance of 1%
     TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
