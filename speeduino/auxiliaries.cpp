@@ -16,6 +16,7 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "src/pins/fastInputPin.h"
 #include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
 constexpr uint8_t SIMPLE_BOOST_P = 1U;
 constexpr uint8_t SIMPLE_BOOST_I = 1U;
@@ -39,7 +40,7 @@ static byte vvtCounter;
 
 static fastInputPin_t n2o_arming_pin;
 
-static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
+static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
   if(page10.n2o_pin_polarity == 1U) 
   { 
@@ -47,7 +48,7 @@ static inline uint8_t getN2oArmPinPolarity(const config10 &page10)
   }
   return INPUT;
 }
-static void initialiseN2oArmPin(const config10 &page10)
+static __attribute__((optimize("Os"))) void initialiseN2oArmPin(const config10 &page10)
 {
   if(configPage10.n2o_enable!=0U && !pinIsReserved(page10.n2o_arming_pin))
   {
@@ -59,7 +60,7 @@ static void initialiseN2oArmPin(const config10 &page10)
 
 static fastInputPin_t aircon_req_pin;
 
-static uint8_t getAirConRequestPinMode(const config15 &page15)
+static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const config15 &page15)
 {
   if(page15.airConReqPol)
   {
@@ -75,94 +76,84 @@ static uint8_t getAirConRequestPinMode(const config15 &page15)
   }
 }
 
-static void initAirConRequestPin(const config15 &page15, uint8_t pin)
-{
-  aircon_req_pin.setPin(pin, getAirConRequestPinMode(page15));
-}
+static boardOutputPin_t boost_pin;
+static boardOutputPin_t n2o_stage1_pin;
+static boardOutputPin_t n2o_stage2_pin;
+static boardOutputPin_t aircon_comp_pin;
+static boardOutputPin_t aircon_fan_pin;
 
-#if defined(CORE_TEENSY) || defined(CORE_STM32)
-
-#define BOOST_PIN_LOW()         (digitalWrite(pinBoost, LOW))
-#define BOOST_PIN_HIGH()        (digitalWrite(pinBoost, HIGH))
-static void initializeBoostPin(uint8_t pin)
-{
-  pinMode(pin, OUTPUT);
-}
-#define N2O_STAGE1_PIN_LOW()    (digitalWrite(configPage10.n2o_stage1_pin, LOW))
-#define N2O_STAGE1_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage1_pin, HIGH))
-#define N2O_STAGE2_PIN_LOW()    (digitalWrite(configPage10.n2o_stage2_pin, LOW))
-#define N2O_STAGE2_PIN_HIGH()   (digitalWrite(configPage10.n2o_stage2_pin, HIGH))
-static void initialiseN2oPins(const config10 &page10)
-{
-  pinMode(page10.n2o_stage1_pin, OUTPUT);
-  pinMode(page10.n2o_stage2_pin, OUTPUT);
-  initialiseN2oArmPin(page10);
-}
-#define AIRCON_PIN_LOW()        (digitalWrite(pinAirConComp, LOW))
-#define AIRCON_PIN_HIGH()       (digitalWrite(pinAirConComp, HIGH))
-#define AIRCON_FAN_PIN_LOW()    (digitalWrite(pinAirConFan, LOW))
-#define AIRCON_FAN_PIN_HIGH()   (digitalWrite(pinAirConFan, HIGH))
-
-static void initAirConCompressorPin(uint8_t pin)
-{
-  pinMode(pin, OUTPUT);
-}
-static void initAirConFanPin(uint8_t pin)
-{
-  pinMode(pin, OUTPUT);
-}
-
-#else
-
-static fastOutputPin_t boost_pin;
-#define BOOST_PIN_LOW()         ATOMIC() { boost_pin.setPinLow(); }
-#define BOOST_PIN_HIGH()        ATOMIC() { boost_pin.setPinHigh(); }
-static void initializeBoostPin(uint8_t pin)
-{
-  boost_pin.setPin(pin, OUTPUT);
-}
-
-static fastOutputPin_t n2o_stage1_pin;
-static fastOutputPin_t n2o_stage2_pin;
-
-#define N2O_STAGE1_PIN_LOW()    ATOMIC() { n2o_stage1_pin.setPinLow(); }
-#define N2O_STAGE1_PIN_HIGH()   ATOMIC() { n2o_stage1_pin.setPinHigh(); }
-#define N2O_STAGE2_PIN_LOW()    ATOMIC() { n2o_stage2_pin.setPinLow(); }
-#define N2O_STAGE2_PIN_HIGH()   ATOMIC() { n2o_stage2_pin.setPinHigh(); }
-static void initialiseN2oPins(const config10 &page10)
+static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
 {
   n2o_stage1_pin.setPin(page10.n2o_stage1_pin, OUTPUT);
   n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
 }
-static fastOutputPin_t aircon_comp_pin;
-static fastOutputPin_t aircon_fan_pin;
 
-// Note the below macros cannot use ATOMIC() as they are called from within ternary operators. 
-// The ATOMIC is instead placed around the ternary call below
-#define AIRCON_PIN_LOW()        aircon_comp_pin.setPinLow()
-#define AIRCON_PIN_HIGH()       aircon_comp_pin.setPinHigh()
-#define AIRCON_FAN_PIN_LOW()    aircon_fan_pin.setPinLow()
-#define AIRCON_FAN_PIN_HIGH()   aircon_fan_pin.setPinHigh()
-
-static void initAirConCompressorPin(uint8_t pin)
+static void airConOn(void)
 {
-  aircon_comp_pin.setPin(pin, OUTPUT);
+  ATOMIC() { 
+    if (configPage15.airConCompPol)
+    {
+      aircon_comp_pin.setPinLow();
+    }
+    else
+    {
+      aircon_comp_pin.setPinHigh();
+    }
+    currentStatus.airconCompressorOn = true; 
+  }  
 }
-static void initAirConFanPin(uint8_t pin)
+static void airConOff(void)
 {
-  aircon_fan_pin.setPin(pin, OUTPUT);
+  ATOMIC() { 
+    if (configPage15.airConCompPol)
+    {
+      aircon_comp_pin.setPinHigh();
+    }
+    else
+    {
+      aircon_comp_pin.setPinLow();
+    }
+    currentStatus.airconCompressorOn = false; 
+  }
 }
-#endif
+static void airConFanOn(void)
+{
+  ATOMIC() { 
+    if (configPage15.airConFanPol)
+    {
+      aircon_fan_pin.setPinLow();
+    }
+    else
+    {
+      aircon_fan_pin.setPinHigh();
+    }
+    currentStatus.airconFanOn = true; 
+  }
+}
+static void airConFanOff(void)
+{
+  ATOMIC() { 
+    if (configPage15.airConFanPol)
+    {
+      aircon_fan_pin.setPinHigh();
+    }
+    else
+    {
+      aircon_fan_pin.setPinLow();
+    }
+    currentStatus.airconFanOn = false; 
+  }
+}
 
-#define AIRCON_ON()             ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_LOW() : AIRCON_PIN_HIGH()); currentStatus.airconCompressorOn = true; }
-#define AIRCON_OFF()            ATOMIC() { ((((configPage15.airConCompPol)==1)) ? AIRCON_PIN_HIGH() : AIRCON_PIN_LOW()); currentStatus.airconCompressorOn = false; }
-#define AIRCON_FAN_ON()         ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_LOW() : AIRCON_FAN_PIN_HIGH()); currentStatus.airconFanOn = true; }
-#define AIRCON_FAN_OFF()        ATOMIC() { ((((configPage15.airConFanPol)==1)) ? AIRCON_FAN_PIN_HIGH() : AIRCON_FAN_PIN_LOW()); currentStatus.airconFanOn = false; }
-
-#define VVT_TIME_DELAY_MULTIPLIER  50
-
-#define WMI_TANK_IS_EMPTY() ((configPage10.wmiEmptyEnabled) ? ((configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty)) : 1)
+static bool isWmiTankEmpty(void)
+{
+  if (configPage10.wmiEmptyEnabled) 
+  {
+    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty);
+  }
+  return true;
+}
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
@@ -204,7 +195,7 @@ static inline void checkAirConRPMLockout(void);
 /*
 Air Conditioning Control
 */
-void initialiseAirCon(void)
+void __attribute__((optimize("Os"))) initialiseAirCon(void)
 {
   if( (configPage15.airConEnable) &&
       !pinIsReserved(pinAirConRequest) &&
@@ -226,15 +217,15 @@ void initialiseAirCon(void)
     currentStatus.airconTurningOn = false;
     currentStatus.airconCltLockout = false;
     currentStatus.airconFanOn = false;
-    initAirConRequestPin(configPage15, pinAirConRequest);
-    initAirConCompressorPin(pinAirConComp);
+    aircon_req_pin.setPin(pinAirConRequest, getAirConRequestPinMode(configPage15));
+    aircon_comp_pin.setPin(pinAirConComp, OUTPUT);
   
-    AIRCON_OFF();
+    airConOff();
 
     if((configPage15.airConFanEnabled) && (pinIsReserved(pinAirConFan)))
     {
-      initAirConFanPin(pinAirConFan);
-      AIRCON_FAN_OFF();
+      aircon_fan_pin.setPin(pinAirConFan, OUTPUT);
+      airConFanOff();
       acStandAloneFanIsEnabled = true;
     }
     else
@@ -309,13 +300,13 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        AIRCON_FAN_ON();
+        airConFanOn();
       }
 
       // Start the A/C compressor after the "Compressor On" delay period
       if(acStartDelay >= configPage15.airConCompOnDelay)
       {
-        AIRCON_ON();
+        airConOn();
       }
       else
       {
@@ -329,10 +320,10 @@ void airConControl(void)
       // Stand-alone fan operation
       if(acStandAloneFanIsEnabled == true)
       {
-        AIRCON_FAN_OFF();
+        airConFanOff();
       }
 
-      AIRCON_OFF();
+      airConOff();
       acStartDelay = 0;
     }
   }
@@ -426,45 +417,26 @@ static inline void checkAirConRPMLockout(void)
  * Fuel pump control
  */
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
-#define FUEL_PUMP_PIN_HIGH()  digitalWrite(pinFuelPump, HIGH)
-#define FUEL_PUMP_PIN_LOW()   digitalWrite(pinFuelPump, LOW) 
-static inline void initialisePumpPin(uint8_t pin) 
-{ 
-  pinMode(pin, OUTPUT);
-}
-#else
-
-static fastOutputPin_t pump_pin;
-
-static inline void initialisePumpPin(uint8_t pin) 
-{ 
-  pump_pin.setPin(pin, OUTPUT);
-}
-
-#define FUEL_PUMP_PIN_HIGH() pump_pin.setPinHigh()
-#define FUEL_PUMP_PIN_LOW()  pump_pin.setPinLow()
-
-#endif
+static boardOutputPin_t pump_pin;
 
 void fuelPumpOn(void)
 {
   ATOMIC() { 
-    FUEL_PUMP_PIN_HIGH();
+    pump_pin.setPinHigh();
     currentStatus.fuelPumpOn = true;
   }
 }
 void fuelPumpOff(void)
 {
   ATOMIC() { 
-    FUEL_PUMP_PIN_LOW();
+    pump_pin.setPinLow();
     currentStatus.fuelPumpOn = false;
   }
 }
 
-bool initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
+bool __attribute__((optimize("Os"))) initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
 {
-  initialisePumpPin(pumpPin);
+  pump_pin.setPin(pumpPin, OUTPUT);
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
   //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
@@ -482,41 +454,24 @@ bool initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
 Fan control
 */
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
-#define FAN_PIN_LOW()           (digitalWrite(pinFan, LOW))
-#define FAN_PIN_HIGH()          (digitalWrite(pinFan, HIGH))
-static void initialiseFanPin(uint8_t pin) { UNUSED(pin); /* Do nothing */}
-#else
-
-static fastOutputPin_t fan_pin;
-
-#define FAN_PIN_LOW()           fan_pin.setPinLow()
-#define FAN_PIN_HIGH()          fan_pin.setPinHigh()
-
-static void initialiseFanPin(uint8_t pin) 
-{ 
-  fan_pin.setPin(pin, OUTPUT);
-}
-
-#endif
+static boardOutputPin_t fan_pin;
 
 void fanOn(void) 
 {
   ATOMIC() { 
-    ((configPage6.fanInv) ? FAN_PIN_LOW() : FAN_PIN_HIGH()); 
+    ((configPage6.fanInv) ? fan_pin.setPinLow() : fan_pin.setPinHigh()); 
   }
 }
 void fanOff(void)
 {
   ATOMIC() { 
-    ((configPage6.fanInv) ? FAN_PIN_HIGH() : FAN_PIN_LOW()); 
+    ((configPage6.fanInv) ? fan_pin.setPinHigh() : fan_pin.setPinLow()); 
   }
 }
 
-void initialiseFan(uint8_t fanPin)
+void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 {
-  pinMode(pinFan, OUTPUT);
-  initialiseFanPin(fanPin);
+  fan_pin.setPin(fanPin, OUTPUT);
   fanOff();  //Initialise program with the fan in the off state
   currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
@@ -646,39 +601,18 @@ void fanControl(void)
   }
 }
 
-#if(defined(CORE_TEENSY) || defined(CORE_STM32))
+static boardOutputPin_t vvt1_pin;
+static boardOutputPin_t vvt2_pin;
 
-#define VVT1_PIN_LOW()          (digitalWrite(pinVVT_1, LOW))
-#define VVT1_PIN_HIGH()         (digitalWrite(pinVVT_1, HIGH))
-#define VVT2_PIN_LOW()          (digitalWrite(pinVVT_2, LOW))
-#define VVT2_PIN_HIGH()         (digitalWrite(pinVVT_2, HIGH))
-
-static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
-{ 
-  pinMode(pin1, OUTPUT);
-  pinMode(pin2, OUTPUT);
-}
-#else
-
-static fastOutputPin_t vvt1_pin;
-static fastOutputPin_t vvt2_pin;
-
-#define VVT1_PIN_LOW()          ATOMIC() { vvt1_pin.setPinLow(); }
-#define VVT1_PIN_HIGH()         ATOMIC() { vvt1_pin.setPinHigh(); }
-#define VVT2_PIN_LOW()          ATOMIC() { vvt2_pin.setPinLow(); }
-#define VVT2_PIN_HIGH()         ATOMIC() { vvt2_pin.setPinHigh(); }
-
-static inline void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
+static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 
   vvt1_pin.setPin(pin1, OUTPUT);
   vvt2_pin.setPin(pin2, OUTPUT);
 }
 
-#endif
-
-void initialiseAuxPWM(void)
+void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
-  initializeBoostPin(pinBoost);
+  boost_pin.setPin(pinBoost, OUTPUT);
   initialiseVvtPins(pinVVT_1, pinVVT_2);
   initialiseN2oPins(configPage10);
 
@@ -904,7 +838,7 @@ void boostControl(void)
       else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) * 2 * 100; }
 
       if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
       else
       {
         boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
@@ -944,7 +878,7 @@ void boostControl(void)
           }
 
           bool PIDcomputed = boostPID.Compute(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2); //Compute() returns false if the required interval has not yet passed.
-          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); BOOST_PIN_LOW(); } //If boost duty is 0, shut everything down
+          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
           else
           {
             if(PIDcomputed == true)
@@ -974,7 +908,7 @@ void boostControl(void)
     if(currentStatus.boostDuty >= 10000)
     {
       DISABLE_BOOST_TIMER(); //Turn off the compare unit (ie turn off the interrupt) if boost duty is 100%
-      BOOST_PIN_HIGH(); //Turn on boost pin if duty is 100%
+      boost_pin.setPinHigh(); //Turn on boost pin if duty is 100%
     }
     else if(currentStatus.boostDuty > 0)
     {
@@ -992,19 +926,19 @@ void boostControl(void)
 
 void vvt1On(void)
 {
-  VVT1_PIN_HIGH();
+  vvt1_pin.setPinHigh();
 }
 void vvt1Off(void)
 {
-  VVT1_PIN_LOW();
+  vvt1_pin.setPinLow();
 }
 void vvt2On(void)
 {
-  VVT2_PIN_HIGH();
+  vvt2_pin.setPinHigh();
 }
 void vvt2Off(void)
 {
-  VVT2_PIN_LOW();
+  vvt2_pin.setPinLow();
 }
 
 void vvtControl(void)
@@ -1020,6 +954,7 @@ void vvtControl(void)
     //Calculate the current cam angle for miata trigger
     if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
 
+    constexpr uint32_t VVT_TIME_DELAY_MULTIPLIER = 50;
     if( (vvtIsHot == true) || ((runSecsX10 - vvtWarmTime) >= (configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER)) ) 
     {
       vvtIsHot = true;
@@ -1230,7 +1165,7 @@ void nitrousControl(void)
       {
         currentStatus.nitrous_status += NITROUS_STAGE1;
         currentStatus.nitrousActive = true;
-        N2O_STAGE1_PIN_HIGH();
+        n2o_stage1_pin.setPinHigh();
       }
       if(configPage10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
       {
@@ -1238,7 +1173,7 @@ void nitrousControl(void)
         {
           currentStatus.nitrous_status += NITROUS_STAGE2;
           currentStatus.nitrousActive = true;
-          N2O_STAGE2_PIN_HIGH();
+          n2o_stage2_pin.setPinHigh();
         }
       }
     }
@@ -1248,8 +1183,8 @@ void nitrousControl(void)
   {
     if(configPage10.n2o_enable > 0)
     {
-      N2O_STAGE1_PIN_LOW();
-      N2O_STAGE2_PIN_LOW();
+      n2o_stage1_pin.setPinLow();
+      n2o_stage2_pin.setPinLow();
     }
   }
 }
@@ -1262,7 +1197,7 @@ void wmiControl(void)
   // wmi can only work when vvt2 is disabled 
   if( (configPage10.vvt2Enabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
-    if( WMI_TANK_IS_EMPTY() )
+    if( isWmiTankEmpty() )
     {
      currentStatus.wmiTankEmpty = false;
       if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2) >= configPage10.wmiMAP) && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
@@ -1332,7 +1267,7 @@ void boostDisable(void)
   boostPID.Initialize(); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
   DISABLE_BOOST_TIMER(); //Turn off timer
-  BOOST_PIN_LOW(); //Make sure solenoid is off (0% duty)
+  boost_pin.setPinLow(); //Make sure solenoid is off (0% duty)
 }
 
 //The interrupt to control the Boost PWM
@@ -1341,9 +1276,9 @@ void boostInterrupt(void)
   if (boost_pwm_state == true)
   {
     #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    BOOST_PIN_HIGH();
+    boost_pin.setPinHigh();
     #else
-    BOOST_PIN_LOW();  // Switch pin to low
+    boost_pin.setPinLow();  // Switch pin to low
     #endif
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
     boost_pwm_state = false;
@@ -1351,9 +1286,9 @@ void boostInterrupt(void)
   else
   {
     #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    BOOST_PIN_LOW();
+    boost_pin.setPinLow();
     #else
-    BOOST_PIN_HIGH();  // Switch pin high
+    boost_pin.setPinHigh();  // Switch pin high
     #endif
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
     boost_pwm_cur_value = boost_pwm_target_value;

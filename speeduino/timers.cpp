@@ -21,6 +21,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduledIO_ign.h"
 #include "scheduledIO_inj.h"
 #include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
@@ -40,7 +41,7 @@ volatile uint16_t tachoSweepAccum;
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
-void initialiseTimers(void)
+void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
   lastRPM_100ms = 0;
   loop5ms = 0;
@@ -50,37 +51,24 @@ void initialiseTimers(void)
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
-  tachoOutputFlag = TACHO_INACTIVE;
 }
 
-#if defined(CORE_TEENSY) || defined(CORE_STM32)
-  #define TACHO_PULSE_LOW()         (digitalWrite(pinTachOut, LOW))
-  #define TACHO_PULSE_HIGH()        (digitalWrite(pinTachOut, HIGH))
-  static void initTachoPin(uint8_t pin) { UNUSED(pin); /* Do nothing*/}
- #else
-  #define TACHO_PULSE_HIGH()        (tach_pin.setPinHigh())
-  #define TACHO_PULSE_LOW()         (tach_pin.setPinLow())
-  static fastOutputPin_t tach_pin;
-  static void initTachoPin(uint8_t pin) 
-  { 
-    tach_pin.setPin(pin, OUTPUT);
-  }
-#endif
+static boardOutputPin_t tach_pin;
 
-void initTacho(uint8_t tachoPin)
+void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
 {
-  pinMode(tachoPin, OUTPUT);
-  initTachoPin(tachoPin);
+  tach_pin.setPin(tachoPin, OUTPUT);
+  tachoOutputFlag = TACHO_INACTIVE;
 }
 
 void tachoPulseHigh(void)
 {
-  TACHO_PULSE_HIGH();
+  tach_pin.setPinHigh();
 }
 
 void tachoPulseLow(void)
 {
-  TACHO_PULSE_LOW();
+  tach_pin.setPinLow();
 }
 
 static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
@@ -160,7 +148,7 @@ void oneMSInterval(void)
     //Check for half speed tacho
     if( (configPage2.tachoDiv == 0) || (currentStatus.tachoAlt == true) ) 
     { 
-      TACHO_PULSE_LOW();
+      tach_pin.setPinLow();
       //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
       tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
       tachoOutputFlag = ACTIVE;
@@ -177,7 +165,7 @@ void oneMSInterval(void)
     //If the tacho output is already active, check whether it's reached it's end time
     if((uint8_t)ms_counter == tachoEndTime)
     {
-      TACHO_PULSE_HIGH();
+      tach_pin.setPinHigh();
       tachoOutputFlag = TACHO_INACTIVE;
     }
   }

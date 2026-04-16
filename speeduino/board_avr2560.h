@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include "src/pins/fastInputPin.h"
+#include "src/pins/fastOutputPin.h"
 
 /*
 ***********************************************************************************************************
@@ -170,3 +172,6 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 * CAN / Second serial
 */
 #define SECONDARY_SERIAL_T HardwareSerial
+
+using boardInputPin_t = fastInputPin_t;
+using boardOutputPin_t = fastOutputPin_t;

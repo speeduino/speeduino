@@ -6,6 +6,8 @@
 #include <limits>
 #include <USBAPI.h>
 #include "../lib/ArduinoFake/SoftwareTimer.h"
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
 /*
 ***********************************************************************************************************
@@ -152,5 +154,8 @@ constexpr const _Tp& min(const _Tp& __a, const _Tp& __b) {
 #define SECONDARY_SERIAL_T decltype(Serial)
 
 #define RTC_LIB_H <time.h>
+
+using boardInputPin_t = inputPin_t;
+using boardOutputPin_t = outputPin_t;
 
 #endif // NATIVE_BOARD

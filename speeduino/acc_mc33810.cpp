@@ -29,7 +29,7 @@ void setMC33810_1_INACTIVE(void) { mc33810_1_pin.setPinLow(); }
 void setMC33810_2_ACTIVE(void) { mc33810_2_pin.setPinHigh(); }
 void setMC33810_2_INACTIVE(void) { mc33810_2_pin.setPinLow(); }
 
-void initMC33810(void)
+void __attribute__((optimize("Os"))) initMC33810(void)
 {
     //Set pin port/masks
     mc33810_1_pin.setPin(pinMC33810_1_CS, OUTPUT);
