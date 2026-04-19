@@ -48,9 +48,6 @@ volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents o
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_Pulsed = 0; 
 
-//This needs to be here because using the config page directly can prevent burning the setting
-byte resetControl = RESET_CONTROL_DISABLED;
-
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 

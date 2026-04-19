@@ -2657,8 +2657,7 @@ void setPinMapping(byte boardID)
     if (configPage4.resetControlPin!=0U) {
       pinResetControl = pinTranslate(configPage4.resetControlPin);
     }
-    resetControl = configPage4.resetControlConfig;
-    setResetControlPinState();
+    setResetControlPinState(configPage4.resetControlConfig);
     pinMode(pinResetControl, OUTPUT);
   }
   

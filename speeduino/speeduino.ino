@@ -53,6 +53,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "dwell.h"
 #include "decoder_init.h"
 #include "src/pins/pinMapping.h"
+#include "resetControl.h"
 
 #define CRANK_RUN_HYSTER    15
 
@@ -900,14 +901,14 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
       setIgnitionChannels(ignitionLimits(currentStatus.decoder.getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, currentStatus.schedulerCutState.ignitionChannels);
 
-      if ( (!currentStatus.resetPreventActive) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
+      if ( (!currentStatus.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
       {
         //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
         digitalWrite(pinResetControl, HIGH);
         currentStatus.resetPreventActive = true;
       }
     } //Has sync and RPM
-    else if ( (currentStatus.resetPreventActive) && (resetControl == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
+    else if ( (currentStatus.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
     {
       digitalWrite(pinResetControl, LOW);
       currentStatus.resetPreventActive = false;

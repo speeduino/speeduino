@@ -1,7 +1,16 @@
 #include "globals.h"
 
-void __attribute__((optimize("Os"))) setResetControlPinState(void)
+//This needs to be here because using the config page directly can prevent burning the setting
+static uint8_t _resetControl = RESET_CONTROL_DISABLED;
+
+uint8_t getResetControl(void)
 {
+    return _resetControl;
+}
+
+void __attribute__((optimize("Os"))) setResetControlPinState(uint8_t resetControl)
+{
+  _resetControl = resetControl;
   currentStatus.resetPreventActive = false;
 
   /* Setup reset control initial state */

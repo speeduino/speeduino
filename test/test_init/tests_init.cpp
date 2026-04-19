@@ -3,6 +3,7 @@
 #include "init.h"
 #include "../test_utils.h"
 #include "storage.h"
+#include "resetControl.h"
 
 void prepareForInitialiseAll(uint8_t boardId);
 
@@ -250,7 +251,7 @@ void test_initialisation_outputs_reset_control_use_board_default(void)
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_NOT_EQUAL(0, pinResetControl); 
-  TEST_ASSERT_EQUAL(resetControl, RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(getResetControl(), RESET_CONTROL_PREVENT_WHEN_RUNNING);
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));  
 #endif
 }
@@ -266,7 +267,7 @@ void test_initialisation_outputs_reset_control_override_board_default(void)
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_EQUAL(45, pinResetControl);  
-  TEST_ASSERT_EQUAL(resetControl, RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(getResetControl(), RESET_CONTROL_PREVENT_WHEN_RUNNING);
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));
 #endif
 }

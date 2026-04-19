@@ -24,6 +24,7 @@ A full copy of the license may be found in the projects root directory
 #endif
 #include "units.h"
 #include "sensors.h"
+#include "resetControl.h"
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
@@ -393,7 +394,7 @@ void legacySerialCommand(void)
       break;
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
-      if (resetControl != RESET_CONTROL_DISABLED)
+      if (getResetControl() != RESET_CONTROL_DISABLED)
       {
       #ifndef SMALL_FLASH_MODE
         if (serialStatusFlag == SERIAL_INACTIVE) { primarySerial.println(F("Comms halted. Next byte will reset the Arduino.")); }
