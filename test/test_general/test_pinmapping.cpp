@@ -11,21 +11,12 @@ static void test_pinTranslate(void)
 
 static void test_pinTranslateAnalog(void)
 {
-    constexpr uint8_t ANALOG_PINS[] = {
-        A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, 
-#if BOARD_MAX_ADC_PINS >= 14
-        A14, 
-#endif
-#if BOARD_MAX_ADC_PINS >= 15
-        A15, 
-#endif
-    };
     for (uint8_t loop=0; loop<_countof(ANALOG_PINS); ++loop)
     {
         TEST_ASSERT_EQUAL(ANALOG_PINS[loop], pinTranslateAnalog(loop));
     }
 
-    TEST_ASSERT_EQUAL(BOARD_MAX_ADC_PINS+1, pinTranslateAnalog(BOARD_MAX_ADC_PINS+1));
+    TEST_ASSERT_EQUAL(_countof(ANALOG_PINS)+1, pinTranslateAnalog(_countof(ANALOG_PINS)+1));
 }
 
 void testPinMapping(void) 

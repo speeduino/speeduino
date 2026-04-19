@@ -43,6 +43,12 @@ uint8_t getSystemTemp(void);
 /** @brief Get the storage API for the board */
 storage_api_t getBoardStorageApi(void);
 
+///@cond 
+// Shared building blocks for the board headers
+#define _ANALOG_PINS_A0_A8  A0, A1, A2, A3, A4, A5, A6, A7, A8
+#define _ANALOG_PINS_A0_A14  _ANALOG_PINS_A0_A8, A9, A10, A11, A12, A13, A14
+///@endcond 
+
 // Include a specific header for a board.
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
   #include "board_avr2560.h"

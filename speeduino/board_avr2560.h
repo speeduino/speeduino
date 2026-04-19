@@ -16,7 +16,6 @@
 */
 #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
 #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
-#define BOARD_MAX_ADC_PINS  15 //Number of analog pins
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 13
 #endif
@@ -175,3 +174,6 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 
 using boardInputPin_t = fastInputPin_t;
 using boardOutputPin_t = fastOutputPin_t;
+
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14 };

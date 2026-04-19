@@ -69,7 +69,6 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define BOARD_MAX_DIGITAL_PINS 54
 #define BOARD_MAX_IO_PINS 54
-#define BOARD_MAX_ADC_PINS  17 //Number of analog pins
 #define RTC_ENABLED
 #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
 #define RTC_LIB_H "TimeLib.h"
@@ -222,3 +221,6 @@ static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
 
 using boardInputPin_t = inputPin_t;
 using boardOutputPin_t = outputPin_t;
+
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16 };

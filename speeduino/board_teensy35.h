@@ -46,7 +46,6 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
 #define BOARD_MAX_DIGITAL_PINS 57
 #define BOARD_MAX_IO_PINS 57
-#define BOARD_MAX_ADC_PINS  26 //Number of analog pins
 #define RTC_ENABLED
 #define RTC_LIB_H "TimeLib.h"
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
@@ -182,3 +181,6 @@ static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
 using boardInputPin_t = inputPin_t;
 using boardOutputPin_t = outputPin_t;
+
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25  };
