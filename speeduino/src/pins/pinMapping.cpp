@@ -1,6 +1,6 @@
 #include "pinMapping.h"
-#include "board_definition.h"
-#include "preprocessor.h"
+#include "../../board_definition.h"
+#include "../../preprocessor.h"
 
 uint8_t pinTranslate(uint8_t rawPin)
 {
