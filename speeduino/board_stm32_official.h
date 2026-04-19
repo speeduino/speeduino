@@ -171,7 +171,6 @@ extern STM32RTC& rtc;
 #endif
 
 #define PWM_FAN_AVAILABLE
-#define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
@@ -343,3 +342,10 @@ extern STM32_CAN Can0;
 
 using boardInputPin_t = inputPin_t;
 using boardOutputPin_t = outputPin_t;
+
+/** @brief Analog pin mapping */
+#if NUM_ANALOG_INPUTS==10
+constexpr uint8_t ANALOG_PINS[NUM_ANALOG_INPUTS-1] = { _ANALOG_PINS_A0_A8  };
+#else
+constexpr uint8_t ANALOG_PINS[NUM_ANALOG_INPUTS-1] = { _ANALOG_PINS_A0_A14  };
+#endif

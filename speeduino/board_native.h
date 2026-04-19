@@ -158,4 +158,7 @@ constexpr const _Tp& min(const _Tp& __a, const _Tp& __b) {
 using boardInputPin_t = inputPin_t;
 using boardOutputPin_t = outputPin_t;
 
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14 };
+
 #endif // NATIVE_BOARD

@@ -1,3 +1,5 @@
+#include "board_definition.h"
+
 #if defined(NATIVE_BOARD)
 #include <EEPROM.h>
 #include "board_native.h"
