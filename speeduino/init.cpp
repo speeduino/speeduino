@@ -31,6 +31,7 @@
 #include "scheduledIO_inj.h"
 #include "scheduledIO_direct_ign.h"
 #include "scheduledIO_direct_inj.h"
+#include "src/pins/pinMapping.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options

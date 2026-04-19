@@ -52,6 +52,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "preprocessor.h"
 #include "dwell.h"
 #include "decoder_init.h"
+#include "src/pins/pinMapping.h"
 
 #define CRANK_RUN_HYSTER    15
 
