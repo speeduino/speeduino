@@ -10,8 +10,10 @@ enum class ResetControlMode : uint8_t
     SerialCommand = 3U
 };
 
-void initialiseResetControl(statuses &current, ResetControlMode resetControlMode, uint8_t resetPin);
-
 ResetControlMode getResetControlMode(void);
 
-void matchResetControlToEngineState(statuses &current);
+bool isResetPreventActive(void);
+
+void initialiseResetControl(ResetControlMode resetControlMode, uint8_t resetPin);
+
+void matchResetControlToEngineState(const statuses &current);
