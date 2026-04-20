@@ -246,12 +246,12 @@ void test_initialisation_outputs_reset_control_use_board_default(void)
   TEST_IGNORE_MESSAGE("Test only works for Mega2560");
 #else
   prepareForInitialiseAll(9);
-  configPage4.resetControlConfig = RESET_CONTROL_PREVENT_WHEN_RUNNING;
+  configPage4.resetControlConfig = (byte)ResetControlMode::PreventWhenRunning;
   configPage4.resetControlPin = 0; // Flags to use board default
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_NOT_EQUAL(0, pinResetControl); 
-  TEST_ASSERT_EQUAL(getResetControl(), RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(ResetControlMode::PreventWhenRunning, getResetControlMode());
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));  
 #endif
 }
@@ -262,12 +262,12 @@ void test_initialisation_outputs_reset_control_override_board_default(void)
   TEST_IGNORE_MESSAGE("Test only works for Mega2560");
 #else
   prepareForInitialiseAll(9);
-  configPage4.resetControlConfig = RESET_CONTROL_PREVENT_WHEN_RUNNING;
+  configPage4.resetControlConfig = (byte)ResetControlMode::PreventWhenRunning;
   configPage4.resetControlPin = 45; // Use a different pin
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_EQUAL(45, pinResetControl);  
-  TEST_ASSERT_EQUAL(getResetControl(), RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(ResetControlMode::PreventWhenRunning, getResetControlMode());
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));
 #endif
 }

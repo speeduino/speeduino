@@ -928,7 +928,7 @@ void processSerialCommand(void)
     }
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
-      if (getResetControl() != RESET_CONTROL_DISABLED)
+      if (getResetControlMode() != ResetControlMode::Disabled)
       {
       #ifndef SMALL_FLASH_MODE
         if (serialStatusFlag == SERIAL_INACTIVE) { primarySerial.println(F("Comms halted. Next byte will reset the Arduino.")); }

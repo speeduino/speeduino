@@ -2,13 +2,16 @@
 
 #include "statuses.h"
 
-constexpr uint8_t RESET_CONTROL_DISABLED             = 0U;
-constexpr uint8_t RESET_CONTROL_PREVENT_WHEN_RUNNING = 1U;
-constexpr uint8_t RESET_CONTROL_PREVENT_ALWAYS       = 2U;
-constexpr uint8_t RESET_CONTROL_SERIAL_COMMAND       = 3U;
+enum class ResetControlMode : uint8_t
+{
+    Disabled = 0U,
+    PreventWhenRunning = 1U,
+    PreventAlways = 2U,
+    SerialCommand = 3U
+};
 
-void initialiseResetControl(statuses &current, uint8_t resetControlMode, uint8_t resetPin);
+void initialiseResetControl(statuses &current, ResetControlMode resetControlMode, uint8_t resetPin);
 
-uint8_t getResetControl(void);
+ResetControlMode getResetControlMode(void);
 
 void matchResetControlToEngineState(statuses &current);
