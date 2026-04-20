@@ -50,9 +50,9 @@ static void test_matchResetControlToEngineState_PreventWhenRunning(void)
     constexpr uint8_t resetPin = 42;
     statuses current{};
 
-    initialiseResetControl(current, RESET_CONTROL_PREVENT_WHEN_RUNNING, resetPin);
+    initialiseResetControl(current, ResetControlMode::PreventWhenRunning, resetPin);
 
-    TEST_ASSERT_EQUAL(RESET_CONTROL_PREVENT_WHEN_RUNNING, getResetControl());
+    TEST_ASSERT_EQUAL(ResetControlMode::PreventWhenRunning, getResetControlMode());
     TEST_ASSERT_EQUAL(LOW, digitalRead(resetPin));
     TEST_ASSERT_FALSE(current.resetPreventActive);
 
@@ -74,9 +74,9 @@ static void test_matchResetControlToEngineState_PreventAlways(void)
     constexpr uint8_t resetPin = 42;
     statuses current{};
 
-    initialiseResetControl(current, RESET_CONTROL_PREVENT_ALWAYS, resetPin);
+    initialiseResetControl(current, ResetControlMode::PreventAlways, resetPin);
 
-    TEST_ASSERT_EQUAL(RESET_CONTROL_PREVENT_ALWAYS, getResetControl());
+    TEST_ASSERT_EQUAL(ResetControlMode::PreventAlways, getResetControlMode());
     TEST_ASSERT_EQUAL(HIGH, digitalRead(resetPin));
     TEST_ASSERT_TRUE(current.resetPreventActive);
 

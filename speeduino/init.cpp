@@ -2500,7 +2500,7 @@ void setPinMapping(byte boardID)
     if (configPage4.resetControlPin!=0U) {
       pinResetControl = pinTranslate(configPage4.resetControlPin);
     }
-    initialiseResetControl(currentStatus, configPage4.resetControlConfig, pinResetControl);
+    initialiseResetControl(currentStatus, (ResetControlMode)configPage4.resetControlConfig, pinResetControl);
   }
   
 
