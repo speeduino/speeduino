@@ -2,6 +2,7 @@
 
 //This needs to be here because using the config page directly can prevent burning the setting
 static uint8_t _resetControl = RESET_CONTROL_DISABLED;
+static uint8_t _resetPin;
 
 uint8_t getResetControl(void)
 {
@@ -11,6 +12,7 @@ uint8_t getResetControl(void)
 void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, uint8_t resetControlMode, uint8_t resetPin)
 {
   _resetControl = resetControlMode;
+  _resetPin = resetPin;
   current.resetPreventActive = false;
 
   /* Setup reset control initial state */
@@ -41,4 +43,25 @@ void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, u
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
      because the control pin will go low as soon as the pinMode is set to OUTPUT. */
   pinMode(resetPin, OUTPUT);
+}
+
+void matchResetControlToEngineState(statuses &current)
+{
+  if ((current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.RPM > 0))
+  {
+    if ( (!current.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
+    {
+      //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
+      digitalWrite(_resetPin, HIGH);
+      current.resetPreventActive = true;
+    }
+  } 
+  else
+  {
+    if ( (current.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
+    {
+      digitalWrite(_resetPin, LOW);
+      current.resetPreventActive = false;
+    }
+  }
 }

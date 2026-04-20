@@ -901,18 +901,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
       setIgnitionChannels(ignitionLimits(currentStatus.decoder.getCrankAngle()), currentStatus.dwell + fixedCrankingOverride, currentStatus.schedulerCutState.ignitionChannels);
 
-      if ( (!currentStatus.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
-      {
-        //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
-        digitalWrite(pinResetControl, HIGH);
-        currentStatus.resetPreventActive = true;
-      }
     } //Has sync and RPM
-    else if ( (currentStatus.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
-    {
-      digitalWrite(pinResetControl, LOW);
-      currentStatus.resetPreventActive = false;
-    }
+    matchResetControlToEngineState(currentStatus);
 } //loop()
 END_LTO_INLINE()
 
