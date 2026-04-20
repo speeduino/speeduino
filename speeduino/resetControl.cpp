@@ -48,21 +48,25 @@ void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, R
 
 void matchResetControlToEngineState(statuses &current)
 {
-  if ((current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.RPM > 0))
+  if (getResetControlMode() == ResetControlMode::PreventWhenRunning)
   {
-    if ( (!current.resetPreventActive) && (getResetControlMode() == ResetControlMode::PreventWhenRunning) ) 
+    // TODO: consolidate this check with status.isEngineRunning, which is based on the same conditions? 
+    if ((current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.RPM > 0))
     {
-      //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
-      digitalWrite(_resetPin, HIGH);
-      current.resetPreventActive = true;
-    }
-  } 
-  else
-  {
-    if ( (current.resetPreventActive) && (getResetControlMode() == ResetControlMode::PreventWhenRunning) )
+      if ( (!current.resetPreventActive)) 
+      {
+        //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
+        digitalWrite(_resetPin, HIGH);
+        current.resetPreventActive = true;
+      }
+    } 
+    else
     {
-      digitalWrite(_resetPin, LOW);
-      current.resetPreventActive = false;
+      if (current.resetPreventActive)
+      {
+        digitalWrite(_resetPin, LOW);
+        current.resetPreventActive = false;
+      }
     }
   }
 }
