@@ -11,7 +11,6 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 
 #if defined(NATIVE_CAN_AVAILABLE)
 #include "comms_CAN.h"
-#include "utilities.h"
 #include "maths.h"
 #include "units.h"
 

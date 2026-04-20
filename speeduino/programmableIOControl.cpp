@@ -9,7 +9,7 @@
  */
 #include <avr/pgmspace.h>
 #include "globals.h"
-#include "utilities.h"
+#include "programmableIOControl.h"
 #include "decoders.h"
 #include "comms.h"
 #include "logger.h"

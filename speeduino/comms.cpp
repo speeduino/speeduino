@@ -11,7 +11,6 @@ A full copy of the license may be found in the projects root directory
 #include "comms_secondary.h"
 #include "storage.h"
 #include "maths.h"
-#include "utilities.h"
 #include "decoders.h"
 #include "TS_CommandButtonHandler.h"
 #include "pages.h"
