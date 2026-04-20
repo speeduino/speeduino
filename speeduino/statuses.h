@@ -118,8 +118,6 @@ struct statuses {
   bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
 
   // Status3 fields as defined in the INI.   
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool resetPreventActive : 1; ///< Reset prevent on (true) or off (false) 
   // TODO: resolve duplication with nitrous_status
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool nitrousActive : 1; ///< Nitrous on (true) or off (false)

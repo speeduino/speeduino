@@ -1,20 +1,25 @@
 #include "resetControl.h"
 #include "unit_testing.h"
 
-//This needs to be here because using the config page directly can prevent burning the setting
 static ResetControlMode _resetControl = ResetControlMode::Disabled;
 static uint8_t _resetPin;
+static bool _resetPreventActive = false;
 
 ResetControlMode getResetControlMode(void)
 {
     return _resetControl;
 }
 
-void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, ResetControlMode resetControlMode, uint8_t resetPin)
+bool isResetPreventActive(void)
+{
+  return _resetPreventActive;
+}
+
+void __attribute__((optimize("Os"))) initialiseResetControl(ResetControlMode resetControlMode, uint8_t resetPin)
 {
   _resetControl = resetControlMode;
   _resetPin = resetPin;
-  current.resetPreventActive = false;
+  _resetPreventActive = false;
 
   /* Setup reset control initial state */
   switch (resetControlMode)
@@ -22,18 +27,18 @@ void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, R
     case ResetControlMode::PreventWhenRunning:
       /* Set the reset control pin LOW and change it to HIGH later when we get sync. */
       digitalWrite(resetPin, LOW);
-      current.resetPreventActive = false;
+      _resetPreventActive = false;
       break;
     case ResetControlMode::PreventAlways:
       /* Set the reset control pin HIGH and never touch it again. */
       digitalWrite(resetPin, HIGH);
-      current.resetPreventActive = true;
+      _resetPreventActive = true;
       break;
     case ResetControlMode::SerialCommand:
       /* Set the reset control pin HIGH. There currently isn't any practical difference
          between this and PREVENT_ALWAYS but it doesn't hurt anything to have them separate. */
       digitalWrite(resetPin, HIGH);
-      current.resetPreventActive = false;
+      _resetPreventActive = false;
       break;
     default:
       // Do nothing - keep MISRA happy
@@ -46,26 +51,26 @@ void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, R
   pinMode(resetPin, OUTPUT);
 }
 
-void matchResetControlToEngineState(statuses &current)
+void matchResetControlToEngineState(const statuses &current)
 {
   if (getResetControlMode() == ResetControlMode::PreventWhenRunning)
   {
     // TODO: consolidate this check with status.isEngineRunning, which is based on the same conditions? 
     if ((current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.RPM > 0))
     {
-      if ( (!current.resetPreventActive)) 
+      if ( (!_resetPreventActive)) 
       {
         //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
         digitalWrite(_resetPin, HIGH);
-        current.resetPreventActive = true;
+        _resetPreventActive = true;
       }
     } 
     else
     {
-      if (current.resetPreventActive)
+      if (_resetPreventActive)
       {
         digitalWrite(_resetPin, LOW);
-        current.resetPreventActive = false;
+        _resetPreventActive = false;
       }
     }
   }

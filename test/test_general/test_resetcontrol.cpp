@@ -7,8 +7,9 @@ static decoder_status_t fakeGetStatus(void)
     return fakeDecoderStatus;
 }
 
-static void assert_matchResetControlToEngineState_On(statuses &current,uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin)
+static void assert_matchResetControlToEngineState_On(uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin)
 {
+    statuses current = {};
     setRpm(current, rpm);
 
     current.decoder.getStatus = fakeGetStatus;
@@ -16,11 +17,12 @@ static void assert_matchResetControlToEngineState_On(statuses &current,uint16_t 
 
     matchResetControlToEngineState(current);
     TEST_ASSERT_EQUAL(HIGH, digitalRead(resetPin));
-    TEST_ASSERT_TRUE(current.resetPreventActive);
+    TEST_ASSERT_TRUE(isResetPreventActive());
 }
 
-static void assert_matchResetControlToEngineState_Off(statuses &current, uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin)
+static void assert_matchResetControlToEngineState_Off(uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin)
 {
+    statuses current = {};
     setRpm(current, rpm);
 
     current.decoder.getStatus = fakeGetStatus;
@@ -28,12 +30,13 @@ static void assert_matchResetControlToEngineState_Off(statuses &current, uint16_
 
     matchResetControlToEngineState(current);
     TEST_ASSERT_EQUAL(LOW, digitalRead(resetPin));
-    TEST_ASSERT_FALSE(current.resetPreventActive);
+    TEST_ASSERT_FALSE(isResetPreventActive());
 }
 
-static void assert_matchResetControlToEngineState_NoChange(statuses &current, uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin, uint8_t expectedState)
+static void assert_matchResetControlToEngineState_NoChange(uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin, uint8_t expectedState)
 {
-    bool oldState = current.resetPreventActive;
+    bool oldState = isResetPreventActive();
+    statuses current = {};
     setRpm(current, rpm);
 
     current.decoder.getStatus = fakeGetStatus;
@@ -41,70 +44,62 @@ static void assert_matchResetControlToEngineState_NoChange(statuses &current, ui
 
     matchResetControlToEngineState(current);
     TEST_ASSERT_EQUAL(expectedState, digitalRead(resetPin));
-    TEST_ASSERT_EQUAL(oldState, current.resetPreventActive);
+    TEST_ASSERT_EQUAL(oldState, isResetPreventActive());
 }
 
 
 static void test_matchResetControlToEngineState_PreventWhenRunning(void)
 {
     constexpr uint8_t resetPin = 42;
-    statuses current{};
 
-    initialiseResetControl(current, ResetControlMode::PreventWhenRunning, resetPin);
+    initialiseResetControl(ResetControlMode::PreventWhenRunning, resetPin);
 
     TEST_ASSERT_EQUAL(ResetControlMode::PreventWhenRunning, getResetControlMode());
     TEST_ASSERT_EQUAL(LOW, digitalRead(resetPin));
-    TEST_ASSERT_FALSE(current.resetPreventActive);
+    TEST_ASSERT_FALSE(isResetPreventActive());
 
-    assert_matchResetControlToEngineState_On(current, 900, SyncStatus::Full, resetPin);
-    current.resetPreventActive = true; // Simulate that the reset prevention is now active
-    assert_matchResetControlToEngineState_Off(current, 0, SyncStatus::Full, resetPin);
-    current.resetPreventActive = true; // Simulate that the reset prevention is now active
-    assert_matchResetControlToEngineState_Off(current, 900, SyncStatus::None, resetPin);
-    current.resetPreventActive = true; // Simulate that the reset prevention is now active
-    assert_matchResetControlToEngineState_Off(current, 0, SyncStatus::None, resetPin);
-    current.resetPreventActive = false; // Simulate that the reset prevention is off
-    assert_matchResetControlToEngineState_On(current, 900, SyncStatus::Partial, resetPin);
-    current.resetPreventActive = true; // Simulate that the reset prevention is now active
-    assert_matchResetControlToEngineState_Off(current, 0, SyncStatus::Partial, resetPin);
+    assert_matchResetControlToEngineState_On(900, SyncStatus::Full, resetPin);
+    assert_matchResetControlToEngineState_Off(0, SyncStatus::Full, resetPin);
+    assert_matchResetControlToEngineState_Off(900, SyncStatus::None, resetPin);
+    assert_matchResetControlToEngineState_Off(0, SyncStatus::None, resetPin);
+    assert_matchResetControlToEngineState_On(900, SyncStatus::Partial, resetPin);
+    assert_matchResetControlToEngineState_Off(0, SyncStatus::Partial, resetPin);
 }
 
 static void test_matchResetControlToEngineState_PreventAlways(void)
 {
     constexpr uint8_t resetPin = 42;
-    statuses current{};
 
-    initialiseResetControl(current, ResetControlMode::PreventAlways, resetPin);
+    initialiseResetControl(ResetControlMode::PreventAlways, resetPin);
 
     TEST_ASSERT_EQUAL(ResetControlMode::PreventAlways, getResetControlMode());
     TEST_ASSERT_EQUAL(HIGH, digitalRead(resetPin));
-    TEST_ASSERT_TRUE(current.resetPreventActive);
+    TEST_ASSERT_TRUE(isResetPreventActive());
 
-    assert_matchResetControlToEngineState_NoChange(current, 0, SyncStatus::None, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 900, SyncStatus::None, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 0, SyncStatus::Full, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 900, SyncStatus::Full, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 0, SyncStatus::Partial, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 900, SyncStatus::Partial, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(0, SyncStatus::None, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(900, SyncStatus::None, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(0, SyncStatus::Full, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(900, SyncStatus::Full, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(0, SyncStatus::Partial, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(900, SyncStatus::Partial, resetPin, HIGH);
 }
 
 static void test_matchResetControlToEngineState_SerialCommand(void)
 {
     constexpr uint8_t resetPin = 42;
-    statuses current{};
 
-    initialiseResetControl(current, RESET_CONTROL_SERIAL_COMMAND, resetPin);
+    initialiseResetControl(ResetControlMode::SerialCommand, resetPin);
 
-    TEST_ASSERT_EQUAL(RESET_CONTROL_SERIAL_COMMAND, getResetControl());
+    TEST_ASSERT_EQUAL(ResetControlMode::SerialCommand, getResetControlMode());
     TEST_ASSERT_EQUAL(HIGH, digitalRead(resetPin));
-    TEST_ASSERT_FALSE(current.resetPreventActive);
+    TEST_ASSERT_FALSE(isResetPreventActive());
 
-    assert_matchResetControlToEngineState_NoChange(current, 0, SyncStatus::None, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 900, SyncStatus::None, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 0, SyncStatus::Full, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 900, SyncStatus::Full, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 0, SyncStatus::Partial, resetPin, HIGH);
-    assert_matchResetControlToEngineState_NoChange(current, 900, SyncStatus::Partial, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(0, SyncStatus::None, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(900, SyncStatus::None, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(0, SyncStatus::Full, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(900, SyncStatus::Full, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(0, SyncStatus::Partial, resetPin, HIGH);
+    assert_matchResetControlToEngineState_NoChange(900, SyncStatus::Partial, resetPin, HIGH);
 }
 
 void testResetControl(void) 
