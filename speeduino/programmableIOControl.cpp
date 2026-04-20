@@ -10,11 +10,12 @@
 #include "programmableIOControl.h"
 #include "logger.h"
 #include "units.h"
+#include "unit_testing.h"
 
-static uint8_t ioDelay[_countof(config13::outputPin)];
-static uint8_t ioOutDelay[_countof(config13::outputPin)];
-static uint8_t pinIsValid = 0;
-static uint8_t currentRuleStatus = 0;
+TESTABLE_STATIC uint8_t ioDelay[_countof(config13::outputPin)];
+TESTABLE_STATIC uint8_t ioOutDelay[_countof(config13::outputPin)];
+TESTABLE_STATIC uint8_t pinIsValid = 0;
+TESTABLE_STATIC uint8_t currentRuleStatus = 0;
 
 constexpr uint8_t COMPARATOR_EQUAL = 0;
 constexpr uint8_t COMPARATOR_NOT_EQUAL = 1;
@@ -65,7 +66,7 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-void checkProgrammableIO(statuses& current, const config13& page13)
+TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
 {
   int16_t data, data2;
   uint8_t dataRequested;
@@ -84,7 +85,7 @@ void checkProgrammableIO(statuses& current, const config13& page13)
         if ( dataRequested <= sizeof(page13.outputPin) ) { data = BIT_CHECK(currentRuleStatus, dataRequested); }
         else { data = 0; }
       }
-      else { data = ProgrammableIOGetData(dataRequested); }
+      else { data = getData(dataRequested); }
       data2 = page13.firstTarget[y];
 
       if ( (page13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
@@ -106,7 +107,7 @@ void checkProgrammableIO(statuses& current, const config13& page13)
             dataRequested -= REUSE_RULES;
             data = BIT_CHECK(currentRuleStatus, dataRequested);
           }
-          else { data = ProgrammableIOGetData(dataRequested); }
+          else { data = getData(dataRequested); }
           data2 = page13.secondTarget[y];
           
           if ( (page13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
@@ -168,6 +169,14 @@ void checkProgrammableIO(statuses& current, const config13& page13)
     }
   }
 }
+
+// LCOV_EXCL_START
+void checkProgrammableIO(statuses& current, const config13& page13)
+{
+  checkProgrammableIO(current, page13, ProgrammableIOGetData);
+}
+// LCOV_EXCL_STOP
+
 /** Get single I/O data var (from current) for comparison.
  * @param index - Field index/number (?)
  * @return 16 bit (int) result
