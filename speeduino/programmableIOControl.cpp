@@ -52,6 +52,21 @@ TESTABLE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(ui
   return data;
 }
 
+TESTABLE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs)
+{
+  switch (compType) {
+    case COMPARATOR_EQUAL: return lhs == rhs;
+    case COMPARATOR_NOT_EQUAL: return lhs != rhs;
+    case COMPARATOR_GREATER: return lhs > rhs;
+    case COMPARATOR_GREATER_EQUAL: return lhs >= rhs;
+    case COMPARATOR_LESS: return lhs < rhs;
+    case COMPARATOR_LESS_EQUAL: return lhs <= rhs;
+    case COMPARATOR_AND: return (lhs & rhs) != 0;
+    case COMPARATOR_XOR: return (lhs ^ rhs) != 0;
+    default: return false; // Invalid comparator type
+  }
+}
+
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
@@ -64,33 +79,11 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
     if ( channels[y].pinIsValid )
     {
       programmableOutputRule rule(page13, y);
-      bool firstCheck = false;
-      bool secondCheck = false;
-      int16_t data = getComparisonData(rule.firstDataIn, getData);
-      int16_t data2 = rule.firstTarget;
+      bool firstCheck = evaluateComparisonOp(rule.operation.firstCompType, getComparisonData(rule.firstDataIn, getData), rule.firstTarget);
 
-      if ( (page13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { firstCheck = true; }
-
-      if ((rule.operation.bitwise != BITWISE_DISABLED) && (  rule.secondDataIn <= (REUSE_RULES + _countof(channels)) ) ) //Failsafe check
+      if ((rule.operation.bitwise != BITWISE_DISABLED) && (rule.secondDataIn <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
       {
-        data = getComparisonData(rule.secondDataIn, getData);
-        data2 = rule.secondTarget;
-          
-        if ( (page13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { secondCheck = true; }
-        else if ( (page13.operation[y].secondCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { secondCheck = true; }
+        bool secondCheck = evaluateComparisonOp(rule.operation.secondCompType, getComparisonData(rule.secondDataIn, getData), rule.secondTarget);
 
         if (page13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
         if (page13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
