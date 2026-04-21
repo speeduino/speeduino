@@ -33,6 +33,25 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
   }
 }
 
+TESTABLE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
+{
+  int16_t data = 0;
+  if ( request >= REUSE_RULES )
+  {
+    request -= REUSE_RULES;
+    if ( request <= _countof(channels) ) 
+    { 
+      data = channels[request].currentRuleStatus; 
+    }
+  }
+  else 
+  { 
+    data = getData(request); 
+  }
+
+  return data;
+}
+
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
@@ -40,25 +59,15 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
  */
 TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
 {
-  int16_t data, data2;
-  uint8_t dataRequested;
-  bool firstCheck, secondCheck;
-
   for (uint8_t y = 0; y < _countof(channels); y++)
   {
-    firstCheck = false;
-    secondCheck = false;
     if ( channels[y].pinIsValid )
     {
-      dataRequested = page13.firstDataIn[y];
-      if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
-      {
-        dataRequested -= REUSE_RULES;
-        if ( dataRequested <= _countof(channels) ) { data = channels[dataRequested].currentRuleStatus; }
-        else { data = 0; }
-      }
-      else { data = getData(dataRequested); }
-      data2 = page13.firstTarget[y];
+      programmableOutputRule rule(page13, y);
+      bool firstCheck = false;
+      bool secondCheck = false;
+      int16_t data = getComparisonData(rule.firstDataIn, getData);
+      int16_t data2 = rule.firstTarget;
 
       if ( (page13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
       else if ( (page13.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
@@ -69,32 +78,23 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       else if ( (page13.operation[y].firstCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { firstCheck = true; }
       else if ( (page13.operation[y].firstCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { firstCheck = true; }
 
-      if (page13.operation[y].bitwise != BITWISE_DISABLED)
+      if ((rule.operation.bitwise != BITWISE_DISABLED) && (  rule.secondDataIn <= (REUSE_RULES + _countof(channels)) ) ) //Failsafe check
       {
-        dataRequested = page13.secondDataIn[y];
-        if ( dataRequested <= (REUSE_RULES + _countof(channels)) ) //Failsafe check
-        {
-          if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
-          {
-            dataRequested -= REUSE_RULES;
-            if ( dataRequested <= _countof(channels) ) { data = channels[dataRequested].currentRuleStatus; }
-          }
-          else { data = getData(dataRequested); }
-          data2 = page13.secondTarget[y];
+        data = getComparisonData(rule.secondDataIn, getData);
+        data2 = rule.secondTarget;
           
-          if ( (page13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { secondCheck = true; }
+        if ( (page13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { secondCheck = true; }
+        else if ( (page13.operation[y].secondCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { secondCheck = true; }
 
-          if (page13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
-          if (page13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
-          if (page13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
-        }
+        if (page13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
+        if (page13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
+        if (page13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
       }
 
       //If the limiting time is active(>0) and using maximum time
