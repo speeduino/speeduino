@@ -15,6 +15,7 @@ extern programmableio_channel_t channels[_countof(config13::outputPin)];
 extern void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index));
 extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
 extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index));
+extern bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -794,6 +795,43 @@ static void test_getData(void)
     TEST_ASSERT_EQUAL_INT16(0, getComparisonData(254, mockGetData));
 }
 
+static void test_evaluateComparisonOp(void)
+{
+    // Test EQUAL
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_EQUAL, 5, 5));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_EQUAL, 5, 6));
+
+    // Test NOT_EQUAL
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_NOT_EQUAL, 5, 6));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_NOT_EQUAL, 5, 5));
+
+    // Test GREATER
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_GREATER, 6, 5));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_GREATER, 5, 6));
+
+    // Test GREATER_EQUAL
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_GREATER_EQUAL, 6, 5));
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_GREATER_EQUAL, 5, 5));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_GREATER_EQUAL, 4, 5));
+
+    // Test LESS
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_LESS, 4, 5));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_LESS, 5, 4));
+
+    // Test LESS_EQUAL
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_LESS_EQUAL, 4, 5));
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_LESS_EQUAL, 5, 5));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_LESS_EQUAL, 6, 5));
+
+    // Test AND
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_AND, 5, 3));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_AND, 5, 2));
+
+    // Test XOR
+    TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_XOR, 5, 3));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_XOR, 5, 5));
+}
+
 void testProgrammableIOControl(void) 
 {
     SET_UNITY_FILENAME() {
@@ -821,5 +859,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
         RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
         RUN_TEST_P(test_getData);
+        RUN_TEST_P(test_evaluateComparisonOp);
     }
 }
