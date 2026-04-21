@@ -1,8 +1,3 @@
-/*
-  Speeduino - Simple engine management for the Arduino Mega 2560 platform
-  Copyright (C) Josh Stewart
-  A full copy of the license may be found in the projects root directory
-*/
 /** @file
  * Custom Programmable I/O.
  * The config related to Programmable I/O is found on page13 (of type @ref config13).
@@ -181,13 +176,13 @@ void checkProgrammableIO(statuses& current, const config13& page13)
  * @param index - Field index/number (?)
  * @return 16 bit (int) result
  */
-int16_t ProgrammableIOGetData(uint16_t index)
+TESTABLE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
 {
   int16_t result;
   if ( index < LOG_ENTRY_SIZE )
   {
-    if(is2ByteEntry(index)) { result = word(getTSLogEntry(index+1), getTSLogEntry(index)); }
-    else { result = getTSLogEntry(index); }
+    if(is2ByteEntry(index)) { result = word(pGetLogEntry(index+1), pGetLogEntry(index)); }
+    else { result = pGetLogEntry(index); }
     
     //Special cases for temperatures
     if( (index == 6) || (index == 7) ) { result = temperatureRemoveOffset(result); }
@@ -196,3 +191,10 @@ int16_t ProgrammableIOGetData(uint16_t index)
   else { result = -1; } //Index is bigger than fullStatus array
   return result;
 }
+
+// LCOV_EXCL_START
+int16_t ProgrammableIOGetData(uint16_t index)
+{
+  return ProgrammableIOGetData(index, getTSLogEntry);
+}
+// LCOV_EXCL_STOP

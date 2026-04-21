@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include "../test_utils.h"
 #include "programmableIOControl.h"
+#include "units.h"
+#include "logger.h"
 #include "globals.h"
 
 // Forward declare the TESTABLE_STATIC variables
@@ -11,6 +13,7 @@ extern uint8_t currentRuleStatus;
 
 // Forward declare the testable function
 extern void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index));
+extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -42,6 +45,42 @@ static void setupMockData(void)
 static int16_t mockGetData(uint16_t index)
 {
     return mockDataValues[index];
+}
+
+static const byte *mockLogEntryData = nullptr;
+static byte mockGetLogEntry(uint16_t byteNum)
+{
+    return mockLogEntryData[byteNum];
+}
+
+static void test_ProgrammableIOGetData_single_byte_entry(void)
+{
+    static const byte logData[] = { 0x22, 0xAA, 0xBB, 0xCC };
+    mockLogEntryData = logData;
+    TEST_ASSERT_EQUAL_INT16(0x22, ProgrammableIOGetData(0, mockGetLogEntry));
+}
+
+static void test_ProgrammableIOGetData_two_byte_entry(void)
+{
+    static const byte logData[] = { 0, 0, 0, 0, 0x34, 0x12 }; // Little-endian representation of 0x1234
+    mockLogEntryData = logData;
+    TEST_ASSERT_EQUAL_INT16(0x1234, ProgrammableIOGetData(4, mockGetLogEntry));
+}
+
+static void test_ProgrammableIOGetData_special_indices(void)
+{
+    runSecsX10 = 1000U;
+    TEST_ASSERT_EQUAL_INT16(32768, ProgrammableIOGetData(239U, mockGetLogEntry));
+
+    runSecsX10 = 40000U;
+    TEST_ASSERT_EQUAL_INT16(40000, ProgrammableIOGetData(239U, mockGetLogEntry));
+
+    static const byte logData[] = { 0, 0, 0, 0, 0, 0, 12, 18 }; // Little-endian representation of 0x1234
+    mockLogEntryData = logData;
+    TEST_ASSERT_EQUAL_INT16(temperatureRemoveOffset(logData[6]), ProgrammableIOGetData(6, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(temperatureRemoveOffset(logData[7]), ProgrammableIOGetData(7, mockGetLogEntry));
+
+    TEST_ASSERT_EQUAL_INT16(-1, ProgrammableIOGetData(LOG_ENTRY_SIZE, mockGetLogEntry));
 }
 
 static void test_initialiseProgrammableIO_disabled(void)
@@ -547,5 +586,8 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse);
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds);
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_second_comparison);
+        RUN_TEST_P(test_ProgrammableIOGetData_single_byte_entry);
+        RUN_TEST_P(test_ProgrammableIOGetData_two_byte_entry);
+        RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
     }
 }
