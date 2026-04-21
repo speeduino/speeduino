@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
-#include "utilities.h"
+#include "programmableIOControl.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
 #include "comms_CAN.h"
@@ -408,7 +408,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
-      checkProgrammableIO();
+      checkProgrammableIO(currentStatus, configPage13);
       idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
       
       // Air conditioning control

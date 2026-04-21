@@ -9,7 +9,7 @@
 #include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
-#include "utilities.h"
+#include "programmableIOControl.h"
 #include "scheduler.h"
 #include "schedule_calcs.h"
 #include "auxiliaries.h"
@@ -206,7 +206,7 @@ void initialiseAll(void)
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseMAPBaro();
-    initialiseProgrammableIO();
+    initialiseProgrammableIO(currentStatus, configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinFlex);
 
     //Same as above, but for the VSS input
