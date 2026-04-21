@@ -399,7 +399,8 @@ static void test_checkProgrammableIO_all_comparators(void)
         {4, 1, 4, 1, 1, 2, 1}, // LESS
         {5, 1, 5, 3, 3, 3, 2}, // LESS_EQUAL
         {6, 1, 6, 3, 3, 1, 0}, // AND 
-        // {7, 1, 7, 3, 3, 1, 0}, // XOR
+        {0, 2, 0, 5, 5, 6, 4}, // OR false
+        {0, 3, 0, 5, 5, 5, 5}, // XOR false
     };
     for (uint8_t operation = 0; operation < _countof(negativeTestOps); operation++) {
         context = programmableIOTestContext_t();
@@ -445,6 +446,36 @@ static void test_checkProgrammableIO_output_delay_time(void)
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
     TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+
+    currentRuleStatus = 0;
+    context.page13.outputPin[0] = 1;
+    context.current.outputsStatus = 1;
+    constexpr testOperation equalityOp = {0, 0, 0, 5, 0, 5, 0};
+    setupTestOp(equalityOp, context.page13, 0);
+    context.page13.kindOfLimiting = 1; // Switch to time limit mode
+    context.page13.outputTimeLimit[0] = 3;
+    ioDelay[0] = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
+    ioOutDelay[0] = context.page13.outputTimeLimit[0]-1;
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_BIT_HIGH(0, context.current.outputsStatus);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+1, ioDelay[0]);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], ioOutDelay[0]);
+
+    currentRuleStatus = 0;
+    context.page13.outputPin[0] = 1;
+    context.current.outputsStatus = 1;
+    constexpr testOperation negativeEqualityOp = {0, 0, 0, 5, 0, 6, 0};
+    setupTestOp(negativeEqualityOp, context.page13, 0);
+    context.page13.kindOfLimiting = 1; // Switch to time limit mode
+    context.page13.outputTimeLimit[0] = 3;
+    ioDelay[0] = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
+    ioOutDelay[0] = context.page13.outputTimeLimit[0]-1;
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
+    TEST_ASSERT_EQUAL(0, ioDelay[0]);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], ioOutDelay[0]);
 }
 
 static void test_checkProgrammableIO_time_limit_disables_output(void)
@@ -567,6 +598,72 @@ static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
     TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
 }
 
+static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    context.page13.outputPin[0] = 128;
+    BIT_SET(pinIsValid, 0);
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 5;
+    context.page13.firstTarget[0] = 5;
+
+    context.page13.operation[0].bitwise = 1; // BITWISE_AND
+    context.page13.operation[0].secondCompType = 0; // EQUAL
+    context.page13.secondDataIn[0] = 249; // Out-of-range reuse index, skip second comparator
+    context.page13.secondTarget[0] = 1;
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+}
+
+static void test_checkProgrammableIO_kindOfLimiting_false_resets_ioOutDelay(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    context.page13.outputPin[0] = 128;
+    BIT_SET(pinIsValid, 0);
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 5;
+    context.page13.firstTarget[0] = 6; // Will be false
+    context.page13.outputDelay[0] = 0;
+    context.page13.outputTimeLimit[0] = 1;
+    context.page13.kindOfLimiting = 0;
+
+    context.current.outputsStatus = 0;
+    ioOutDelay[0] = 1;
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_EQUAL(0, context.current.outputsStatus);
+    TEST_ASSERT_EQUAL(0, ioOutDelay[0]);
+}
+
+static void test_checkProgrammableIO_physical_pin_outputTimeLimit_expiry(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    context.page13.outputPin[0] = 1;
+    BIT_SET(pinIsValid, 0);
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 5;
+    context.page13.firstTarget[0] = 6; // Will be false
+    context.page13.outputDelay[0] = 0;
+    context.page13.outputTimeLimit[0] = 1;
+    context.page13.kindOfLimiting = 0;
+
+    context.current.outputsStatus = 0;
+    ioOutDelay[0] = 1;
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
+    TEST_ASSERT_EQUAL(0, ioOutDelay[0]);
+}
+
 void testProgrammableIOControl(void) 
 {
     SET_UNITY_FILENAME() {
@@ -586,6 +683,9 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse);
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds);
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_second_comparison);
+        RUN_TEST_P(test_checkProgrammableIO_second_comparator_failsafe_skip);
+        RUN_TEST_P(test_checkProgrammableIO_kindOfLimiting_false_resets_ioOutDelay);
+        RUN_TEST_P(test_checkProgrammableIO_physical_pin_outputTimeLimit_expiry);
         RUN_TEST_P(test_ProgrammableIOGetData_single_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_two_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
