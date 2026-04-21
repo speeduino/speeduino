@@ -110,12 +110,12 @@ static void test_initialiseProgrammableIO_cascade_rules(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Cascade rules should set pinIsValid bits
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 0));
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 1));
+    TEST_ASSERT_BIT_HIGH(0, pinIsValid);
+    TEST_ASSERT_BIT_HIGH(1, pinIsValid);
 
     // Output status should match inverted config
-    TEST_ASSERT_TRUE(BIT_CHECK(context.current.outputsStatus, 0));
-    TEST_ASSERT_TRUE(BIT_CHECK(context.current.outputsStatus, 1));
+    TEST_ASSERT_BIT_HIGH(0, context.current.outputsStatus);
+    TEST_ASSERT_BIT_HIGH(1, context.current.outputsStatus);
 }
 
 static void test_initialiseProgrammableIO_delay_initialization(void)
@@ -147,16 +147,16 @@ static void test_initialiseProgrammableIO_mixed_configuration(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Check pinIsValid bits - only cascade rules should be valid
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 0)); // Disabled
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 1));  // Cascade
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 2));  // Cascade
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 3)); // Disabled
+    TEST_ASSERT_BIT_LOW(0, pinIsValid); // Disabled
+    TEST_ASSERT_BIT_HIGH(1, pinIsValid);  // Cascade
+    TEST_ASSERT_BIT_HIGH(2, pinIsValid);  // Cascade
+    TEST_ASSERT_BIT_LOW(3, pinIsValid); // Disabled
 
     // Remaining pins should not be valid
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 4));
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 5));
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 6));
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 7));
+    TEST_ASSERT_BIT_LOW(4, pinIsValid);
+    TEST_ASSERT_BIT_LOW(5, pinIsValid);
+    TEST_ASSERT_BIT_LOW(6, pinIsValid);
+    TEST_ASSERT_BIT_LOW(7, pinIsValid);
 }
 
 static void test_initialiseProgrammableIO_physical_pins(void)
@@ -171,12 +171,12 @@ static void test_initialiseProgrammableIO_physical_pins(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Physical pins should set pinIsValid bits if not already used
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 0)); // Pin 10 should be valid
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 1)); // Pin 11 should be valid
+    TEST_ASSERT_BIT_HIGH(0, pinIsValid); // Pin 10 should be valid
+    TEST_ASSERT_BIT_HIGH(1, pinIsValid); // Pin 11 should be valid
 
     // Output status should match inverted config
-    TEST_ASSERT_FALSE(BIT_CHECK(context.current.outputsStatus, 0)); // Not inverted
-    TEST_ASSERT_TRUE(BIT_CHECK(context.current.outputsStatus, 1));  // Inverted
+    TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus); // Not inverted
+    TEST_ASSERT_BIT_HIGH(1, context.current.outputsStatus);  // Inverted
 }
 
 static void test_initialiseProgrammableIO_used_physical_pin(void)
@@ -191,8 +191,8 @@ static void test_initialiseProgrammableIO_used_physical_pin(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Pin 0 should be invalid if used, pin 10 should be valid
-    TEST_ASSERT_FALSE(BIT_CHECK(pinIsValid, 0)); // Should be invalid if used
-    TEST_ASSERT_TRUE(BIT_CHECK(pinIsValid, 1));  // Should be valid
+    TEST_ASSERT_BIT_LOW(0, pinIsValid); // Should be invalid if used
+    TEST_ASSERT_BIT_HIGH(1, pinIsValid);  // Should be valid
 }
 
 static void test_checkProgrammableIO_disabled_pin(void)
@@ -238,9 +238,9 @@ static void test_checkProgrammableIO_skips_invalid_pins(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Only valid pins should have outputs set
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0)); // Pin 0 should be set
-    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 1)); // Pin 1 invalid, should not be set
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 2)); // Pin 2 should be set
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus); // Pin 0 should be set
+    TEST_ASSERT_BIT_LOW(1, currentRuleStatus); // Pin 1 invalid, should not be set
+    TEST_ASSERT_BIT_HIGH(2, currentRuleStatus); // Pin 2 should be set
 }
 
 static void test_checkProgrammableIO_all_cascade_rules(void)
@@ -264,7 +264,7 @@ static void test_checkProgrammableIO_all_cascade_rules(void)
 
     // All cascade rules should be triggered
     for (uint8_t i = 0; i < 8; i++) {
-        TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, i));
+        TEST_ASSERT_BIT_HIGH(i, currentRuleStatus);
     }
 }
 
@@ -378,7 +378,7 @@ static void test_checkProgrammableIO_all_comparators(void)
         context.page13.operation[0].bitwise, 
         context.page13.operation[0].firstCompType, 
         context.page13.operation[0].secondCompType);
-        TEST_ASSERT_TRUE_MESSAGE(BIT_CHECK(currentRuleStatus, 0), szMsg);
+        TEST_ASSERT_BIT_HIGH_MESSAGE(0, currentRuleStatus, szMsg);
     }
 
     constexpr testOperation negativeTestOps[] = {
@@ -417,7 +417,7 @@ static void test_checkProgrammableIO_all_comparators(void)
         context.page13.operation[0].bitwise, 
         context.page13.operation[0].firstCompType, 
         context.page13.operation[0].secondCompType);
-        TEST_ASSERT_FALSE_MESSAGE(BIT_CHECK(currentRuleStatus, 0), szMsg);
+        TEST_ASSERT_BIT_LOW_MESSAGE(0, currentRuleStatus, szMsg);
     }
 }
 
@@ -436,15 +436,15 @@ static void test_checkProgrammableIO_output_delay_time(void)
     context.page13.kindOfLimiting = 0;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
     TEST_ASSERT_EQUAL(1, ioDelay[0]);
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
     TEST_ASSERT_EQUAL(2, ioDelay[0]);
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_time_limit_disables_output(void)
@@ -467,8 +467,8 @@ static void test_checkProgrammableIO_time_limit_disables_output(void)
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
-    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 0));
-    TEST_ASSERT_FALSE(BIT_CHECK(context.current.outputsStatus, 0));
+    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
     TEST_ASSERT_EQUAL(1, ioOutDelay[0]);
 }
 
@@ -499,7 +499,7 @@ static void test_checkProgrammableIO_cascade_rule_reuse(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // After processing pin 0, currentRuleStatus bit 0 should be set (because comparison passed)
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
 
     // Now test pin 1 which references bit 0 of currentRuleStatus
     // We need to call again or manually set the bit for testing
@@ -510,7 +510,7 @@ static void test_checkProgrammableIO_cascade_rule_reuse(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Pin 1 should now be set because it compared cascaded rule 0 (which is 1) == target 1
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 1));
+    TEST_ASSERT_BIT_HIGH(1, currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds(void)
@@ -534,7 +534,7 @@ static void test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds(void)
 
     // When out of bounds, data should be 0, so comparison 0 == 0 should pass
     // Pin should be set
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
@@ -564,7 +564,7 @@ static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Both comparisons pass and are AND'd together, so result should be true
-    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
 }
 
 void testProgrammableIOControl(void) 
