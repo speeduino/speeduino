@@ -10,35 +10,25 @@
 
 using namespace programmableIOControl_details;
 
-TESTABLE_STATIC uint8_t ioDelay[_countof(config13::outputPin)];
-TESTABLE_STATIC uint8_t ioOutDelay[_countof(config13::outputPin)];
-TESTABLE_STATIC uint8_t pinIsValid = 0;
-TESTABLE_STATIC uint8_t currentRuleStatus = 0;
+TESTABLE_STATIC programmableio_channel_t channels[_countof(config13::outputPin)];
 
-//*********************************************************************************************************************************************************************************
+static programmableio_channel_t toChannel(const programmableOutputRule& rule) {
+  programmableio_channel_t channel;
+  channel.pinIsValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
+  return channel;
+}
+
 void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current, const config13& page13)
 {
-  uint8_t outputPin;
-  for (uint8_t y = 0; y < _countof(ioDelay); y++)
+  for (uint8_t y = 0; y < _countof(channels); y++)
   {
-    ioDelay[y] = 0;
-    ioOutDelay[y] = 0;
-    outputPin = page13.outputPin[y];
-    if (outputPin > 0)
+    programmableOutputRule rule(page13, y);
+    channels[y] = toChannel(rule);
+    BIT_WRITE(current.outputsStatus, y, channels[y].pinIsValid && rule.outputInverted); 
+    if (channels[y].pinIsValid && rule.isPhysicalPin()) 
     {
-      if ( outputPin >= 128 ) //Cascate rule usage
-      {
-        BIT_WRITE(current.outputsStatus, y, BIT_CHECK(page13.outputInverted, y));
-        BIT_SET(pinIsValid, y);
-      }
-      else if ( !pinIsUsed(outputPin) )
-      {
-        pinMode(outputPin, OUTPUT);
-        digitalWrite(outputPin, BIT_CHECK(page13.outputInverted, y));
-        BIT_WRITE(current.outputsStatus, y, BIT_CHECK(page13.outputInverted, y));
-        BIT_SET(pinIsValid, y);
-      }
-      else { BIT_CLEAR(pinIsValid, y); }
+      pinMode(rule.outputPin, OUTPUT);
+      digitalWrite(rule.outputPin, rule.outputInverted);
     }
   }
 }
@@ -54,17 +44,17 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
   uint8_t dataRequested;
   bool firstCheck, secondCheck;
 
-  for (uint8_t y = 0; y < _countof(ioDelay); y++)
+  for (uint8_t y = 0; y < _countof(channels); y++)
   {
     firstCheck = false;
     secondCheck = false;
-    if ( BIT_CHECK(pinIsValid, y) ) //if outputPin == 0 it is disabled
+    if ( channels[y].pinIsValid )
     {
       dataRequested = page13.firstDataIn[y];
       if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
       {
         dataRequested -= REUSE_RULES;
-        if ( dataRequested <= sizeof(page13.outputPin) ) { data = BIT_CHECK(currentRuleStatus, dataRequested); }
+        if ( dataRequested <= _countof(channels) ) { data = channels[dataRequested].currentRuleStatus; }
         else { data = 0; }
       }
       else { data = getData(dataRequested); }
@@ -82,12 +72,12 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       if (page13.operation[y].bitwise != BITWISE_DISABLED)
       {
         dataRequested = page13.secondDataIn[y];
-        if ( dataRequested <= (REUSE_RULES + sizeof(page13.outputPin)) ) //Failsafe check
+        if ( dataRequested <= (REUSE_RULES + _countof(channels)) ) //Failsafe check
         {
           if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
           {
             dataRequested -= REUSE_RULES;
-            data = BIT_CHECK(currentRuleStatus, dataRequested);
+            if ( dataRequested <= _countof(channels) ) { data = channels[dataRequested].currentRuleStatus; }
           }
           else { data = getData(dataRequested); }
           data2 = page13.secondTarget[y];
@@ -112,41 +102,41 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       {
         if(firstCheck)
         {
-          if ((page13.outputTimeLimit[y] != 0) && (ioOutDelay[y] >= page13.outputTimeLimit[y])) { firstCheck = false; } //Time has counted, disable the output
+          if ((page13.outputTimeLimit[y] != 0) && (channels[y].ioOutDelay >= page13.outputTimeLimit[y])) { firstCheck = false; } //Time has counted, disable the output
         }
         else
         {
           //Released before Maximum time, set delay to maximum to flip the output next
-          if(BIT_CHECK(current.outputsStatus, y)) { ioOutDelay[y] = page13.outputTimeLimit[y]; }
-          else { ioOutDelay[y] = 0; } //Reset the counter for next time
+          if(BIT_CHECK(current.outputsStatus, y)) { channels[y].ioOutDelay = page13.outputTimeLimit[y]; }
+          else { channels[y].ioOutDelay = 0; } //Reset the counter for next time
         }
       }
 
       if (firstCheck == true)
       {
-        if (ioDelay[y] >= page13.outputDelay[y])
+        if (channels[y].ioDelay >= page13.outputDelay[y])
         {
           bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ firstCheck;
-          if (BIT_CHECK(current.outputsStatus, y) && (ioOutDelay[y] < page13.outputTimeLimit[y])) { ioOutDelay[y]++; }
+          if (BIT_CHECK(current.outputsStatus, y) && (channels[y].ioOutDelay < page13.outputTimeLimit[y])) { channels[y].ioOutDelay++; }
           if (page13.outputPin[y] < 128) { digitalWrite(page13.outputPin[y], bitStatus); }
-          else { BIT_WRITE(currentRuleStatus, y, bitStatus); }
+          else { channels[y].currentRuleStatus = bitStatus; }
           BIT_WRITE(current.outputsStatus, y, bitStatus);
         }
-        else { ioDelay[y]++; }
+        else { channels[y].ioDelay++; }
       }
       else
       {
-        if (ioOutDelay[y] >= page13.outputTimeLimit[y])
+        if (channels[y].ioOutDelay >= page13.outputTimeLimit[y])
         {
           bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ firstCheck;
           if (page13.outputPin[y] < 128) { digitalWrite(page13.outputPin[y], bitStatus); }
-          else { BIT_WRITE(currentRuleStatus, y, bitStatus); }
+          else { channels[y].currentRuleStatus = bitStatus; }
           BIT_WRITE(current.outputsStatus, y, bitStatus);
-          if(!BIT_CHECK(page13.kindOfLimiting, y)) { ioOutDelay[y] = 0; }
+          if(!BIT_CHECK(page13.kindOfLimiting, y)) { channels[y].ioOutDelay = 0; }
         }
-        else { ioOutDelay[y]++; }
+        else { channels[y].ioOutDelay++; }
 
-        ioDelay[y] = 0;
+        channels[y].ioDelay = 0;
       }
     }
   }
