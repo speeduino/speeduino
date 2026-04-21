@@ -9,10 +9,7 @@
 using namespace programmableIOControl_details;
 
 // Forward declare the TESTABLE_STATIC variables
-extern uint8_t ioDelay[_countof(config13::outputPin)];
-extern uint8_t ioOutDelay[_countof(config13::outputPin)];
-extern uint8_t pinIsValid;
-extern uint8_t currentRuleStatus;
+extern programmableio_channel_t channels[_countof(config13::outputPin)];
 
 // Forward declare the testable function
 extern void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index));
@@ -24,11 +21,8 @@ struct programmableIOTestContext_t {
 
     programmableIOTestContext_t() {
         // Reset state for each test
-        pinIsValid = 0;
-        currentRuleStatus = 0;
-        for (uint8_t i = 0; i < _countof(ioDelay); i++) {
-            ioDelay[i] = 0;
-            ioOutDelay[i] = 0;
+        for (auto &channel : channels) {
+            channel = programmableio_channel_t();
         }
     }
 };
@@ -98,7 +92,9 @@ static void test_initialiseProgrammableIO_disabled(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // pinIsValid should be all zeros since no pins are configured
-    TEST_ASSERT_EQUAL(0, pinIsValid);
+    for (auto &channel : channels) {
+        TEST_ASSERT_FALSE(channel.pinIsValid);
+    }
 }
 
 static void test_initialiseProgrammableIO_cascade_rules(void)
@@ -113,8 +109,8 @@ static void test_initialiseProgrammableIO_cascade_rules(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Cascade rules should set pinIsValid bits
-    TEST_ASSERT_BIT_HIGH(0, pinIsValid);
-    TEST_ASSERT_BIT_HIGH(1, pinIsValid);
+    TEST_ASSERT_TRUE(channels[0].pinIsValid);
+    TEST_ASSERT_TRUE(channels[1].pinIsValid);
 
     // Output status should match inverted config
     TEST_ASSERT_BIT_HIGH(0, context.current.outputsStatus);
@@ -131,9 +127,9 @@ static void test_initialiseProgrammableIO_delay_initialization(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // All delays should be initialized to 0
-    for (uint8_t i = 0; i < _countof(ioDelay); i++) {
-        TEST_ASSERT_EQUAL(0, ioDelay[i]);
-        TEST_ASSERT_EQUAL(0, ioOutDelay[i]);
+    for (auto &channel : channels) {
+        TEST_ASSERT_EQUAL(0, channel.ioDelay);
+        TEST_ASSERT_EQUAL(0, channel.ioOutDelay);
     }
 }
 
@@ -150,16 +146,16 @@ static void test_initialiseProgrammableIO_mixed_configuration(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Check pinIsValid bits - only cascade rules should be valid
-    TEST_ASSERT_BIT_LOW(0, pinIsValid); // Disabled
-    TEST_ASSERT_BIT_HIGH(1, pinIsValid);  // Cascade
-    TEST_ASSERT_BIT_HIGH(2, pinIsValid);  // Cascade
-    TEST_ASSERT_BIT_LOW(3, pinIsValid); // Disabled
+    TEST_ASSERT_FALSE(channels[0].pinIsValid); // Disabled
+    TEST_ASSERT_TRUE(channels[1].pinIsValid);  // Cascade
+    TEST_ASSERT_TRUE(channels[2].pinIsValid);  // Cascade
+    TEST_ASSERT_FALSE(channels[3].pinIsValid); // Disabled
 
     // Remaining pins should not be valid
-    TEST_ASSERT_BIT_LOW(4, pinIsValid);
-    TEST_ASSERT_BIT_LOW(5, pinIsValid);
-    TEST_ASSERT_BIT_LOW(6, pinIsValid);
-    TEST_ASSERT_BIT_LOW(7, pinIsValid);
+    TEST_ASSERT_FALSE(channels[4].pinIsValid);
+    TEST_ASSERT_FALSE(channels[5].pinIsValid);
+    TEST_ASSERT_FALSE(channels[6].pinIsValid);
+    TEST_ASSERT_FALSE(channels[7].pinIsValid);
 }
 
 static void test_initialiseProgrammableIO_physical_pins(void)
@@ -174,8 +170,8 @@ static void test_initialiseProgrammableIO_physical_pins(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Physical pins should set pinIsValid bits if not already used
-    TEST_ASSERT_BIT_HIGH(0, pinIsValid); // Pin 10 should be valid
-    TEST_ASSERT_BIT_HIGH(1, pinIsValid); // Pin 11 should be valid
+    TEST_ASSERT_TRUE(channels[0].pinIsValid); // Pin 10 should be valid
+    TEST_ASSERT_TRUE(channels[1].pinIsValid); // Pin 11 should be valid
 
     // Output status should match inverted config
     TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus); // Not inverted
@@ -194,8 +190,8 @@ static void test_initialiseProgrammableIO_used_physical_pin(void)
     initialiseProgrammableIO(context.current, context.page13);
 
     // Pin 0 should be invalid if used, pin 10 should be valid
-    TEST_ASSERT_BIT_LOW(0, pinIsValid); // Should be invalid if used
-    TEST_ASSERT_BIT_HIGH(1, pinIsValid);  // Should be valid
+    TEST_ASSERT_FALSE(channels[0].pinIsValid); // Should be invalid if used
+    TEST_ASSERT_TRUE(channels[1].pinIsValid);  // Should be valid
 }
 
 static void test_checkProgrammableIO_disabled_pin(void)
@@ -203,15 +199,14 @@ static void test_checkProgrammableIO_disabled_pin(void)
     programmableIOTestContext_t context;
     setupMockData();
 
-    // No pins valid
-    pinIsValid = 0;
-
     // Call checkProgrammableIO
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // No changes should occur since no pins are valid
     TEST_ASSERT_EQUAL(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(0, currentRuleStatus);
+    for (auto &channel : channels) {
+        TEST_ASSERT_FALSE(channel.currentRuleStatus);
+    }
 }
 
 static void test_checkProgrammableIO_skips_invalid_pins(void)
@@ -224,8 +219,8 @@ static void test_checkProgrammableIO_skips_invalid_pins(void)
     context.page13.outputPin[2] = 130; // Cascade rule
 
     // Set pinIsValid: only pin 0 and 2 valid
-    BIT_SET(pinIsValid, 0);
-    BIT_SET(pinIsValid, 2);
+    channels[0].pinIsValid = true;
+    channels[2].pinIsValid = true;
 
     // Configure comparison for pin 0: EQUAL, data index 5, target 5 (should match)
     context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
@@ -241,9 +236,9 @@ static void test_checkProgrammableIO_skips_invalid_pins(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Only valid pins should have outputs set
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus); // Pin 0 should be set
-    TEST_ASSERT_BIT_LOW(1, currentRuleStatus); // Pin 1 invalid, should not be set
-    TEST_ASSERT_BIT_HIGH(2, currentRuleStatus); // Pin 2 should be set
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus); // Pin 0 should be set
+    TEST_ASSERT_FALSE(channels[1].currentRuleStatus); // Pin 1 invalid, should not be set
+    TEST_ASSERT_TRUE(channels[2].currentRuleStatus); // Pin 2 should be set
 }
 
 static void test_checkProgrammableIO_all_cascade_rules(void)
@@ -252,9 +247,9 @@ static void test_checkProgrammableIO_all_cascade_rules(void)
     setupMockData();
 
     // Set all pins as cascade rules
-    for (uint8_t i = 0; i < 8; i++) {
+    for (uint8_t i = 0; i < _countof(channels); i++) {
         context.page13.outputPin[i] = 128 + i; // Cascade rules 128-135
-        BIT_SET(pinIsValid, i);
+        channels[i].pinIsValid = true;
 
         // Configure simple EQUAL comparison that will pass
         context.page13.operation[i].firstCompType = COMPARATOR_EQUAL; // EQUAL
@@ -266,8 +261,8 @@ static void test_checkProgrammableIO_all_cascade_rules(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // All cascade rules should be triggered
-    for (uint8_t i = 0; i < 8; i++) {
-        TEST_ASSERT_BIT_HIGH(i, currentRuleStatus);
+    for (auto &channel : channels) {
+        TEST_ASSERT_TRUE(channel.currentRuleStatus);
     }
 }
 
@@ -277,9 +272,9 @@ static void test_checkProgrammableIO_processes_all_eight_pins(void)
     setupMockData();
 
     // Set all pins as cascade rules and valid
-    for (uint8_t i = 0; i < 8; i++) {
-        context.page13.outputPin[i] = 128 + i;
-        BIT_SET(pinIsValid, i);
+    for (uint8_t i = 0; i < _countof(channels); i++) {
+        context.page13.outputPin[i] = 128 + i; // Cascade rules 128-135
+        channels[i].pinIsValid = true;
 
         // Configure comparison that will pass
         context.page13.operation[i].firstCompType = COMPARATOR_EQUAL; // EQUAL
@@ -291,7 +286,9 @@ static void test_checkProgrammableIO_processes_all_eight_pins(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Verify all 8 pins were processed (all bits set in currentRuleStatus)
-    TEST_ASSERT_EQUAL(0xFF, currentRuleStatus);
+    for (auto &channel : channels) {
+        TEST_ASSERT_TRUE(channel.currentRuleStatus);
+    }
 }
 struct testOperation {
     uint8_t firstCompType;
@@ -306,7 +303,7 @@ struct testOperation {
 static void setupTestOp(const testOperation &op, config13 &page13, uint8_t opIndex)
 {
     page13.outputPin[opIndex] = 128; // Cascade rule
-    BIT_SET(pinIsValid, opIndex);
+    channels[opIndex].pinIsValid = true;
     page13.outputDelay[opIndex] = 0;
     page13.outputTimeLimit[opIndex] = 0;
     page13.kindOfLimiting = 0;
@@ -365,14 +362,12 @@ static void test_checkProgrammableIO_all_comparators(void)
         {COMPARATOR_XOR,           BITWISE_XOR, COMPARATOR_XOR,                3, 7, 1, 7}, // XOR
     };
 
-    for (uint8_t operation = 0; operation < _countof(positiveTestOps); operation++) {
+    for (auto &operation : positiveTestOps) {
         context = programmableIOTestContext_t();
         setupMockData();
-        pinIsValid = 0;
-        currentRuleStatus = 0;
         context.current.outputsStatus = 0;
 
-        setupTestOp(positiveTestOps[operation], context.page13, 0);
+        setupTestOp(operation, context.page13, 0);
 
         checkProgrammableIO(context.current, context.page13, mockGetData);
         
@@ -381,7 +376,7 @@ static void test_checkProgrammableIO_all_comparators(void)
         context.page13.operation[0].bitwise, 
         context.page13.operation[0].firstCompType, 
         context.page13.operation[0].secondCompType);
-        TEST_ASSERT_BIT_HIGH_MESSAGE(0, currentRuleStatus, szMsg);
+        TEST_ASSERT_TRUE_MESSAGE(channels[0].currentRuleStatus, szMsg);
     }
 
     constexpr testOperation negativeTestOps[] = {
@@ -405,14 +400,13 @@ static void test_checkProgrammableIO_all_comparators(void)
         {COMPARATOR_EQUAL,         BITWISE_OR,  COMPARATOR_EQUAL,              5, 5, 6, 4}, // OR false
         {COMPARATOR_EQUAL,         BITWISE_XOR, COMPARATOR_EQUAL,              5, 5, 5, 5}, // XOR false
     };
-    for (uint8_t operation = 0; operation < _countof(negativeTestOps); operation++) {
+    for (auto &operation : negativeTestOps) {
         context = programmableIOTestContext_t();
         setupMockData();
-        pinIsValid = 0;
-        BIT_SET(currentRuleStatus, 0);
+        channels[0].currentRuleStatus = true;
         context.current.outputsStatus = 0;
 
-        setupTestOp(negativeTestOps[operation], context.page13, 0);
+        setupTestOp(operation, context.page13, 0);
 
         checkProgrammableIO(context.current, context.page13, mockGetData);
         
@@ -421,7 +415,7 @@ static void test_checkProgrammableIO_all_comparators(void)
         context.page13.operation[0].bitwise, 
         context.page13.operation[0].firstCompType, 
         context.page13.operation[0].secondCompType);
-        TEST_ASSERT_BIT_LOW_MESSAGE(0, currentRuleStatus, szMsg);
+        TEST_ASSERT_FALSE_MESSAGE(channels[0].currentRuleStatus, szMsg);
     }
 }
 
@@ -431,7 +425,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
     setupMockData();
 
     context.page13.outputPin[0] = 128; // Cascade rule
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
     context.page13.operation[0].firstCompType = 0; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
@@ -440,45 +434,49 @@ static void test_checkProgrammableIO_output_delay_time(void)
     context.page13.kindOfLimiting = 0;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
-    TEST_ASSERT_EQUAL(1, ioDelay[0]);
+    TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
+    TEST_ASSERT_EQUAL(1, channels[0].ioDelay);
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
-    TEST_ASSERT_EQUAL(2, ioDelay[0]);
+    TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
+    TEST_ASSERT_EQUAL(2, channels[0].ioDelay);
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
 
-    currentRuleStatus = 0;
+    for (auto &channel : channels) {
+        channel.currentRuleStatus = false;
+    }
     context.page13.outputPin[0] = 1;
     context.current.outputsStatus = 1;
     constexpr testOperation equalityOp = {0, 0, 0, 5, 0, 5, 0};
     setupTestOp(equalityOp, context.page13, 0);
     context.page13.kindOfLimiting = 1; // Switch to time limit mode
     context.page13.outputTimeLimit[0] = 3;
-    ioDelay[0] = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
-    ioOutDelay[0] = context.page13.outputTimeLimit[0]-1;
+    channels[0].ioDelay = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
+    channels[0].ioOutDelay = context.page13.outputTimeLimit[0]-1;
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_HIGH(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+1, ioDelay[0]);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], ioOutDelay[0]);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+1, channels[0].ioDelay);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], channels[0].ioOutDelay);
 
-    currentRuleStatus = 0;
+    for (auto &channel : channels) {
+        channel.currentRuleStatus = false;
+    }
     context.page13.outputPin[0] = 1;
     context.current.outputsStatus = 1;
     constexpr testOperation negativeEqualityOp = {0, 0, 0, 5, 0, 6, 0};
     setupTestOp(negativeEqualityOp, context.page13, 0);
     context.page13.kindOfLimiting = 1; // Switch to time limit mode
     context.page13.outputTimeLimit[0] = 3;
-    ioDelay[0] = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
-    ioOutDelay[0] = context.page13.outputTimeLimit[0]-1;
+    channels[0].ioDelay = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
+    channels[0].ioOutDelay = context.page13.outputTimeLimit[0]-1;
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(0, ioDelay[0]);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], ioOutDelay[0]);
+    TEST_ASSERT_EQUAL(0, channels[0].ioDelay);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], channels[0].ioOutDelay);
 }
 
 static void test_checkProgrammableIO_time_limit_disables_output(void)
@@ -487,7 +485,7 @@ static void test_checkProgrammableIO_time_limit_disables_output(void)
     setupMockData();
 
     context.page13.outputPin[0] = 128; // Cascade rule
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
     context.page13.operation[0].firstCompType = 0; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
@@ -496,14 +494,14 @@ static void test_checkProgrammableIO_time_limit_disables_output(void)
     context.page13.kindOfLimiting = 1;
 
     BIT_SET(context.current.outputsStatus, 0);
-    BIT_SET(currentRuleStatus, 0);
-    ioOutDelay[0] = 1;
+    channels[0].currentRuleStatus = false;
+    channels[0].ioOutDelay = 1;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
-    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(1, ioOutDelay[0]);
+    TEST_ASSERT_EQUAL(1, channels[0].ioOutDelay);
 }
 
 static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
@@ -514,8 +512,8 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
     // Set up two cascade rule pins: pin 0 and pin 1
     context.page13.outputPin[0] = 128; // Cascade rule (will be output)
     context.page13.outputPin[1] = 129; // Cascade rule (will use pin 0's output)
-    BIT_SET(pinIsValid, 0);
-    BIT_SET(pinIsValid, 1);
+    channels[0].pinIsValid = true;
+    channels[1].pinIsValid = true;
 
     // Pin 0: Simple EQUAL comparison that will pass (data=0, target=0)
     context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
@@ -533,18 +531,18 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // After processing pin 0, currentRuleStatus bit 0 should be set (because comparison passed)
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
 
     // Now test pin 1 which references bit 0 of currentRuleStatus
     // We need to call again or manually set the bit for testing
     // Let's manually set currentRuleStatus bit 0 to 1 (true) and verify pin 1 sees it
-    BIT_SET(currentRuleStatus, 0);
+    channels[0].currentRuleStatus = true; // Reset to false to test the cascade rule reuse properly
 
     // Process pin 1 with cascade rule reference
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Pin 1 should now be set because it compared cascaded rule 0 (which is 1) == target 1
-    TEST_ASSERT_BIT_HIGH(1, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[1].currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds(void)
@@ -554,7 +552,7 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds(void)
 
     // Set up a cascade rule pin that references an out-of-bounds rule
     context.page13.outputPin[0] = 128; // Cascade rule
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
 
     // Configure with firstDataIn > 239 that results in out-of-bounds after subtraction
     // firstDataIn = 240 + 10 = 250
@@ -568,7 +566,7 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds(void)
 
     // When out of bounds, data should be 0, so comparison 0 == 0 should pass
     // Pin should be set
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
@@ -578,7 +576,7 @@ static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
 
     // Set up a cascade rule pin with second comparison using cascade rule reuse
     context.page13.outputPin[0] = 128; // Cascade rule
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
 
     // First comparison: simple EQUAL that passes
     context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
@@ -592,13 +590,13 @@ static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
     context.page13.secondTarget[0] = 1;
 
     // Set currentRuleStatus bit 0 to 1 so second comparison passes
-    BIT_SET(currentRuleStatus, 0);
+    channels[0].currentRuleStatus = true;
 
     // Call checkProgrammableIO
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     // Both comparisons pass and are AND'd together, so result should be true
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
@@ -607,7 +605,7 @@ static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
     setupMockData();
 
     context.page13.outputPin[0] = 128;
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
     context.page13.operation[0].firstCompType = 0; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
@@ -618,7 +616,7 @@ static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
     context.page13.secondTarget[0] = 1;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_HIGH(0, currentRuleStatus);
+    TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
 }
 
 static void test_checkProgrammableIO_kindOfLimiting_false_resets_ioOutDelay(void)
@@ -627,7 +625,7 @@ static void test_checkProgrammableIO_kindOfLimiting_false_resets_ioOutDelay(void
     setupMockData();
 
     context.page13.outputPin[0] = 128;
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
     context.page13.operation[0].firstCompType = 0; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 6; // Will be false
@@ -636,12 +634,12 @@ static void test_checkProgrammableIO_kindOfLimiting_false_resets_ioOutDelay(void
     context.page13.kindOfLimiting = 0;
 
     context.current.outputsStatus = 0;
-    ioOutDelay[0] = 1;
+    channels[0].ioOutDelay = 1;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
     TEST_ASSERT_EQUAL(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(0, ioOutDelay[0]);
+    TEST_ASSERT_EQUAL(0, channels[0].ioOutDelay);
 }
 
 static void test_checkProgrammableIO_physical_pin_outputTimeLimit_expiry(void)
@@ -650,7 +648,7 @@ static void test_checkProgrammableIO_physical_pin_outputTimeLimit_expiry(void)
     setupMockData();
 
     context.page13.outputPin[0] = 1;
-    BIT_SET(pinIsValid, 0);
+    channels[0].pinIsValid = true;
     context.page13.operation[0].firstCompType = 0; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 6; // Will be false
@@ -659,19 +657,21 @@ static void test_checkProgrammableIO_physical_pin_outputTimeLimit_expiry(void)
     context.page13.kindOfLimiting = 0;
 
     context.current.outputsStatus = 0;
-    ioOutDelay[0] = 1;
+    channels[0].ioOutDelay = 1;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
-    TEST_ASSERT_BIT_LOW(0, currentRuleStatus);
+    TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(0, ioOutDelay[0]);
+    TEST_ASSERT_EQUAL(0, channels[0].ioOutDelay);
 }
 
 static void assert_checkProgrammableIO(programmableIOTestContext_t &context, uint8_t iterations, uint8_t expectedRuleStatus, uint8_t expectedOutputsStatus)
 {
     for (uint8_t i = 0; i < iterations; i++) {
         checkProgrammableIO(context.current, context.page13, mockGetData);
-        TEST_ASSERT_EQUAL(expectedRuleStatus, currentRuleStatus);
+        for (uint8_t channelIndex = 0; channelIndex < _countof(channels); channelIndex++) {
+            TEST_ASSERT_EQUAL(BIT_CHECK(expectedRuleStatus, channelIndex), channels[channelIndex].currentRuleStatus);
+        }
         TEST_ASSERT_EQUAL(expectedOutputsStatus, context.current.outputsStatus);
     }
 }
@@ -741,7 +741,14 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
 
     initialiseProgrammableIO(context.current, context.page13);
     // Rules 2, 3, and 4 are active
-    TEST_ASSERT_EQUAL(0b00011100, pinIsValid);
+    TEST_ASSERT_FALSE(channels[0].pinIsValid);
+    TEST_ASSERT_FALSE(channels[1].pinIsValid);
+    TEST_ASSERT_TRUE(channels[2].pinIsValid);
+    TEST_ASSERT_TRUE(channels[3].pinIsValid);
+    TEST_ASSERT_TRUE(channels[4].pinIsValid);
+    TEST_ASSERT_FALSE(channels[5].pinIsValid);
+    TEST_ASSERT_FALSE(channels[6].pinIsValid);
+    TEST_ASSERT_FALSE(channels[7].pinIsValid);
 
     mockDataValues[RPM_INDEX] = RPM_THRESHOLD - 100;
     mockDataValues[MAP_INDEX] = MAP_THRESHOLD - 10;
