@@ -135,7 +135,7 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
         }
       }
 
-      if ( (firstCheck == true) && (page13.outputDelay[y] < UINT8_MAX) )
+      if (firstCheck == true)
       {
         if (ioDelay[y] >= page13.outputDelay[y])
         {
