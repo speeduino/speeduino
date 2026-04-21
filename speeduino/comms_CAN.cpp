@@ -13,6 +13,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #include "comms_CAN.h"
 #include "maths.h"
 #include "units.h"
+#include "programmableIOControl.h"
 
 CAN_message_t inMsg;
 CAN_message_t outMsg;
