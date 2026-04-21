@@ -11,9 +11,10 @@ using namespace programmableIOControl_details;
 // Forward declare the TESTABLE_STATIC variables
 extern programmableio_channel_t channels[_countof(config13::outputPin)];
 
-// Forward declare the testable function
+// Forward declare the testable functions
 extern void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index));
 extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
+extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index));
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -773,6 +774,26 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     assert_checkProgrammableIO(context, 13 /* Arbitrary number */, 0, 0);
 }
 
+static void test_getData(void)
+{
+    setupMockData();
+
+    // Test valid index
+    TEST_ASSERT_EQUAL_INT16(5, getComparisonData(5, mockGetData)); // Should return mockDataValues[0] = 0
+
+    // Test another valid index
+    TEST_ASSERT_EQUAL_INT16(10, getComparisonData(10, mockGetData)); // Should return mockDataValues[1] = 1
+
+    // Rule result reuse tests
+    channels[2].currentRuleStatus = 0;
+    TEST_ASSERT_EQUAL_INT16(0, getComparisonData(242, mockGetData));
+    channels[3].currentRuleStatus = 1;
+    TEST_ASSERT_EQUAL_INT16(1, getComparisonData(243, mockGetData));
+
+    // Out of bounds index should return 0
+    TEST_ASSERT_EQUAL_INT16(0, getComparisonData(254, mockGetData));
+}
+
 void testProgrammableIOControl(void) 
 {
     SET_UNITY_FILENAME() {
@@ -799,5 +820,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_ProgrammableIOGetData_two_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
         RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
+        RUN_TEST_P(test_getData);
     }
 }
