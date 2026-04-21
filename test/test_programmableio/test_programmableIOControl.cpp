@@ -16,6 +16,7 @@ extern void checkProgrammableIO(statuses& current, const config13& page13, int16
 extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
 extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index));
 extern bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs);
+extern bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -832,6 +833,24 @@ static void test_evaluateComparisonOp(void)
     TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_XOR, 5, 5));
 }
 
+static void test_evaluateBitwiseOp(void)
+{
+    // Test no bitwise operation
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(0, true, true));
+
+    // Test bitwise AND
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(BITWISE_AND, false, true));
+    TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_AND, true, true));
+
+    // Test bitwise OR
+    TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_OR, false, true));
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(BITWISE_OR, false, false));
+
+    // Test bitwise XOR
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(BITWISE_XOR, true, true));
+    TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_XOR, true, false));
+}
+
 void testProgrammableIOControl(void) 
 {
     SET_UNITY_FILENAME() {
@@ -860,5 +879,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
         RUN_TEST_P(test_getData);
         RUN_TEST_P(test_evaluateComparisonOp);
+        RUN_TEST_P(test_evaluateBitwiseOp);
     }
 }

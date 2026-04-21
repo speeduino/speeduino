@@ -67,6 +67,16 @@ TESTABLE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t
   }
 }
 
+TESTABLE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
+{
+  switch (compType) {
+    case BITWISE_AND: return (lhs & rhs) != 0;
+    case BITWISE_OR: return (lhs | rhs) != 0;
+    case BITWISE_XOR: return (lhs ^ rhs) != 0;
+    default: return false; // Invalid bitwise operator type
+  }
+}
+
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
@@ -84,10 +94,7 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       if ((rule.operation.bitwise != BITWISE_DISABLED) && (rule.secondDataIn <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
       {
         bool secondCheck = evaluateComparisonOp(rule.operation.secondCompType, getComparisonData(rule.secondDataIn, getData), rule.secondTarget);
-
-        if (page13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
-        if (page13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
-        if (page13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
+        firstCheck = evaluateBitwiseOp(rule.operation.bitwise, firstCheck, secondCheck);
       }
 
       //If the limiting time is active(>0) and using maximum time
