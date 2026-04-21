@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "../test_utils.h"
 #include "programmableIOControl.h"
 #include "globals.h"
@@ -250,6 +251,282 @@ static void test_checkProgrammableIO_processes_all_eight_pins(void)
     // Verify all 8 pins were processed (all bits set in currentRuleStatus)
     TEST_ASSERT_EQUAL(0xFF, currentRuleStatus);
 }
+struct testOperation {
+    uint8_t firstCompType;
+    uint8_t bitwise;
+    uint8_t secondCompType;
+    uint16_t data1Index;
+    uint16_t data2Index;
+    int16_t target1;
+    int16_t target2;
+};
+
+static void setupTestOp(const testOperation &op, config13 &page13, uint8_t opIndex)
+{
+    page13.outputPin[opIndex] = 128; // Cascade rule
+    BIT_SET(pinIsValid, opIndex);
+    page13.outputDelay[opIndex] = 0;
+    page13.outputTimeLimit[opIndex] = 0;
+    page13.kindOfLimiting = 0;
+
+    page13.operation[opIndex].firstCompType = op.firstCompType;
+    page13.firstDataIn[opIndex] = op.data1Index;
+    page13.firstTarget[opIndex] = op.target1;
+
+    page13.operation[opIndex].bitwise = op.bitwise;
+    page13.operation[opIndex].secondCompType = op.secondCompType;
+    page13.secondDataIn[opIndex] = op.data2Index; // 
+    page13.secondTarget[opIndex] = op.target2;
+}
+
+static void test_checkProgrammableIO_all_comparators(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    constexpr testOperation positiveTestOps[] = {
+        // Positive conditions for all comparators without bitwise
+        {0, 0, 0, 5, 0, 5, 0}, // EQUAL
+        {1, 0, 1, 5, 0, 6, 0}, // NOT_EQUAL
+        {2, 0, 2, 7, 0, 6, 0}, // GREATER
+        {3, 0, 3, 7, 0, 7, 0}, // GREATER_EQUAL
+        {4, 0, 4, 1, 0, 2, 0}, // LESS
+        {5, 0, 5, 3, 0, 3, 0}, // LESS_EQUAL
+        {6, 0, 6, 3, 0, 1, 0}, // AND 
+        {7, 0, 7, 3, 0, 1, 0}, // XOR 
+        // Same but bitwise AND
+        {0, 1, 0, 5, 5, 5, 5}, // EQUAL
+        {1, 1, 1, 5, 5, 6, 6}, // NOT_EQUAL
+        {2, 1, 2, 7, 7, 6, 6}, // GREATER
+        {3, 1, 3, 7, 7, 7, 7}, // GREATER_EQUAL
+        {4, 1, 4, 1, 1, 2, 2}, // LESS
+        {5, 1, 5, 3, 3, 3, 3}, // LESS_EQUAL
+        {6, 1, 6, 3, 3, 1, 1}, // AND 
+        {7, 1, 7, 3, 3, 1, 1}, // XOR
+        // Same but bitwise OR
+        {0, 2, 0, 5, 5, 5, 5}, // EQUAL
+        {1, 2, 1, 5, 5, 6, 6}, // NOT_EQUAL
+        {2, 2, 2, 7, 7, 6, 6}, // GREATER
+        {3, 2, 3, 7, 7, 7, 7}, // GREATER_EQUAL
+        {4, 2, 4, 1, 1, 2, 2}, // LESS
+        {5, 2, 5, 3, 3, 3, 3}, // LESS_EQUAL
+        {6, 2, 6, 3, 3, 1, 1}, // AND 
+        {7, 2, 7, 3, 3, 1, 1}, // XOR
+        // Same but bitwise XOR
+        {0, 3, 0, 5, 4, 6, 4}, // EQUAL
+        {1, 3, 1, 5, 4, 5, 6}, // NOT_EQUAL
+        {2, 3, 2, 7, 5, 6, 5}, // GREATER
+        {3, 3, 3, 7, 7, 7, 8}, // GREATER_EQUAL
+        {4, 3, 4, 1, 3, 2, 3}, // LESS
+        {5, 3, 5, 3, 3, 3, 2}, // LESS_EQUAL
+        {6, 3, 6, 3, 3, 3, 0}, // AND 
+        {7, 3, 7, 3, 7, 1, 7}, // XOR
+    };
+
+    for (uint8_t operation = 0; operation < _countof(positiveTestOps); operation++) {
+        context = programmableIOTestContext_t();
+        setupMockData();
+        pinIsValid = 0;
+        currentRuleStatus = 0;
+        context.current.outputsStatus = 0;
+
+        setupTestOp(positiveTestOps[operation], context.page13, 0);
+
+        checkProgrammableIO(context.current, context.page13, mockGetData);
+        
+        char szMsg[128];
+        snprintf(szMsg, sizeof(szMsg), "Combiner %" PRIu8 ", Compare1 %" PRIu8 ", Compare2 %" PRIu8, 
+        context.page13.operation[0].bitwise, 
+        context.page13.operation[0].firstCompType, 
+        context.page13.operation[0].secondCompType);
+        TEST_ASSERT_TRUE_MESSAGE(BIT_CHECK(currentRuleStatus, 0), szMsg);
+    }
+
+    constexpr testOperation negativeTestOps[] = {
+        // Negative conditions for all comparators without bitwise
+        {0, 0, 0, 5, 0, 4, 0}, // EQUAL
+        {1, 0, 1, 5, 0, 5, 0}, // NOT_EQUAL
+        {2, 0, 2, 7, 0, 8, 0}, // GREATER
+        {3, 0, 3, 7, 0, 8, 0}, // GREATER_EQUAL
+        {4, 0, 4, 1, 0, 1, 0}, // LESS
+        {5, 0, 5, 3, 0, 2, 0}, // LESS_EQUAL
+        {6, 0, 6, 3, 0, 0, 0}, // AND 
+        {7, 0, 7, 3, 0, 3, 0}, // XOR 
+        // Negative conditions for 2nd comparator with bitwise AND
+        {0, 1, 0, 5, 5, 5, 4}, // EQUAL
+        {1, 1, 1, 5, 5, 6, 5}, // NOT_EQUAL
+        {2, 1, 2, 7, 7, 6, 7}, // GREATER
+        {3, 1, 3, 7, 7, 7, 8}, // GREATER_EQUAL
+        {4, 1, 4, 1, 1, 2, 1}, // LESS
+        {5, 1, 5, 3, 3, 3, 2}, // LESS_EQUAL
+        {6, 1, 6, 3, 3, 1, 0}, // AND 
+        // {7, 1, 7, 3, 3, 1, 0}, // XOR
+    };
+    for (uint8_t operation = 0; operation < _countof(negativeTestOps); operation++) {
+        context = programmableIOTestContext_t();
+        setupMockData();
+        pinIsValid = 0;
+        BIT_SET(currentRuleStatus, 0);
+        context.current.outputsStatus = 0;
+
+        setupTestOp(negativeTestOps[operation], context.page13, 0);
+
+        checkProgrammableIO(context.current, context.page13, mockGetData);
+        
+        char szMsg[128];
+        snprintf(szMsg, sizeof(szMsg), "Combiner %" PRIu8 ", Compare1 %" PRIu8 ", Compare2 %" PRIu8, 
+        context.page13.operation[0].bitwise, 
+        context.page13.operation[0].firstCompType, 
+        context.page13.operation[0].secondCompType);
+        TEST_ASSERT_FALSE_MESSAGE(BIT_CHECK(currentRuleStatus, 0), szMsg);
+    }
+}
+
+static void test_checkProgrammableIO_output_delay_time(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    context.page13.outputPin[0] = 128; // Cascade rule
+    BIT_SET(pinIsValid, 0);
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 5;
+    context.page13.firstTarget[0] = 5;
+    context.page13.outputDelay[0] = 2;
+    context.page13.outputTimeLimit[0] = 0;
+    context.page13.kindOfLimiting = 0;
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_EQUAL(1, ioDelay[0]);
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_EQUAL(2, ioDelay[0]);
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+}
+
+static void test_checkProgrammableIO_time_limit_disables_output(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    context.page13.outputPin[0] = 128; // Cascade rule
+    BIT_SET(pinIsValid, 0);
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 5;
+    context.page13.firstTarget[0] = 5;
+    context.page13.outputDelay[0] = 0;
+    context.page13.outputTimeLimit[0] = 1;
+    context.page13.kindOfLimiting = 1;
+
+    BIT_SET(context.current.outputsStatus, 0);
+    BIT_SET(currentRuleStatus, 0);
+    ioOutDelay[0] = 1;
+
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+
+    TEST_ASSERT_FALSE(BIT_CHECK(currentRuleStatus, 0));
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.outputsStatus, 0));
+    TEST_ASSERT_EQUAL(1, ioOutDelay[0]);
+}
+
+static void test_checkProgrammableIO_cascade_rule_reuse(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    // Set up two cascade rule pins: pin 0 and pin 1
+    context.page13.outputPin[0] = 128; // Cascade rule (will be output)
+    context.page13.outputPin[1] = 129; // Cascade rule (will use pin 0's output)
+    BIT_SET(pinIsValid, 0);
+    BIT_SET(pinIsValid, 1);
+
+    // Pin 0: Simple EQUAL comparison that will pass (data=0, target=0)
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 0; // Use getData(0) = 0
+    context.page13.firstTarget[0] = 0; // Target = 0, will match
+
+    // Pin 1: Use cascade rule reuse (firstDataIn = 240 + rule_index 0 = 240)
+    // This means: dataRequested = 240, after subtracting REUSE_RULES(240) = 0
+    // So it checks BIT_CHECK(currentRuleStatus, 0)
+    context.page13.operation[1].firstCompType = 0; // EQUAL (compare with target)
+    context.page13.firstDataIn[1] = 240; // REUSE_RULES + rule_index 0
+    context.page13.firstTarget[1] = 1;   // Target = 1 (true)
+
+    // First call to process pin 0
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+
+    // After processing pin 0, currentRuleStatus bit 0 should be set (because comparison passed)
+    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+
+    // Now test pin 1 which references bit 0 of currentRuleStatus
+    // We need to call again or manually set the bit for testing
+    // Let's manually set currentRuleStatus bit 0 to 1 (true) and verify pin 1 sees it
+    BIT_SET(currentRuleStatus, 0);
+
+    // Process pin 1 with cascade rule reference
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+
+    // Pin 1 should now be set because it compared cascaded rule 0 (which is 1) == target 1
+    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 1));
+}
+
+static void test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    // Set up a cascade rule pin that references an out-of-bounds rule
+    context.page13.outputPin[0] = 128; // Cascade rule
+    BIT_SET(pinIsValid, 0);
+
+    // Configure with firstDataIn > 239 that results in out-of-bounds after subtraction
+    // firstDataIn = 240 + 10 = 250
+    // After subtraction: 250 - 240 = 10, which is > sizeof(page13.outputPin) (8)
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 250; // REUSE_RULES + 10 (out of bounds)
+    context.page13.firstTarget[0] = 0;   // Target = 0
+
+    // Call checkProgrammableIO
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+
+    // When out of bounds, data should be 0, so comparison 0 == 0 should pass
+    // Pin should be set
+    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+}
+
+static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
+{
+    programmableIOTestContext_t context;
+    setupMockData();
+
+    // Set up a cascade rule pin with second comparison using cascade rule reuse
+    context.page13.outputPin[0] = 128; // Cascade rule
+    BIT_SET(pinIsValid, 0);
+
+    // First comparison: simple EQUAL that passes
+    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.firstDataIn[0] = 5;
+    context.page13.firstTarget[0] = 5; // Will match
+
+    // Second comparison: use cascade rule reuse
+    context.page13.operation[0].bitwise = 1; // BITWISE_AND
+    context.page13.operation[0].secondCompType = 0; // EQUAL
+    context.page13.secondDataIn[0] = 240; // REUSE_RULES + rule 0
+    context.page13.secondTarget[0] = 1;
+
+    // Set currentRuleStatus bit 0 to 1 so second comparison passes
+    BIT_SET(currentRuleStatus, 0);
+
+    // Call checkProgrammableIO
+    checkProgrammableIO(context.current, context.page13, mockGetData);
+
+    // Both comparisons pass and are AND'd together, so result should be true
+    TEST_ASSERT_TRUE(BIT_CHECK(currentRuleStatus, 0));
+}
 
 void testProgrammableIOControl(void) 
 {
@@ -264,5 +541,11 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_checkProgrammableIO_skips_invalid_pins);
         RUN_TEST_P(test_checkProgrammableIO_all_cascade_rules);
         RUN_TEST_P(test_checkProgrammableIO_processes_all_eight_pins);
+        RUN_TEST_P(test_checkProgrammableIO_all_comparators);
+        RUN_TEST_P(test_checkProgrammableIO_output_delay_time);
+        RUN_TEST_P(test_checkProgrammableIO_time_limit_disables_output);
+        RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse);
+        RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds);
+        RUN_TEST_P(test_checkProgrammableIO_cascade_rule_second_comparison);
     }
 }
