@@ -32,6 +32,7 @@
 #include "scheduledIO_direct_ign.h"
 #include "scheduledIO_direct_inj.h"
 #include "src/pins/pinMapping.h"
+#include "resetControl.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -2656,9 +2657,7 @@ void setPinMapping(byte boardID)
     if (configPage4.resetControlPin!=0U) {
       pinResetControl = pinTranslate(configPage4.resetControlPin);
     }
-    resetControl = configPage4.resetControlConfig;
-    setResetControlPinState();
-    pinMode(pinResetControl, OUTPUT);
+    initialiseResetControl(currentStatus, configPage4.resetControlConfig, pinResetControl);
   }
   
 

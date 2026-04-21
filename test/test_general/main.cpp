@@ -5,8 +5,10 @@
 void runAllTests(void)
 {
     extern void testPinMapping(void);
+    extern void testResetControl(void);
 
     testPinMapping();
+    testResetControl();
 }
 
 TEST_HARNESS(runAllTests)

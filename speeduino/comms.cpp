@@ -28,6 +28,7 @@ A full copy of the license may be found in the projects root directory
 #endif
 #include "units.h"
 #include "sensors.h"
+#include "resetControl.h"
 
 /** @defgroup group-serial-comms-impl Serial comms implementation
  * @{
@@ -927,7 +928,7 @@ void processSerialCommand(void)
     }
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
-      if (resetControl != RESET_CONTROL_DISABLED)
+      if (getResetControl() != RESET_CONTROL_DISABLED)
       {
       #ifndef SMALL_FLASH_MODE
         if (serialStatusFlag == SERIAL_INACTIVE) { primarySerial.println(F("Comms halted. Next byte will reset the Arduino.")); }

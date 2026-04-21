@@ -117,11 +117,6 @@ constexpr uint8_t SPARK2_CONDITION_MAP = 1U;
 constexpr uint8_t SPARK2_CONDITION_TPS = 2U;
 constexpr uint8_t SPARK2_CONDITION_ETH = 3U;
 
-constexpr uint8_t RESET_CONTROL_DISABLED             = 0U;
-constexpr uint8_t RESET_CONTROL_PREVENT_WHEN_RUNNING = 1U;
-constexpr uint8_t RESET_CONTROL_PREVENT_ALWAYS       = 2U;
-constexpr uint8_t RESET_CONTROL_SERIAL_COMMAND       = 3U;
-
 constexpr uint8_t OPEN_LOOP_BOOST     = 0U;
 constexpr uint8_t CLOSED_LOOP_BOOST   = 1U;
 
