@@ -67,6 +67,11 @@ TESTABLE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t
   }
 }
 
+static bool evaluateComparisonOp(const compOperation& operation, int16_t (*getData)(uint16_t index))
+{
+  return evaluateComparisonOp(operation.opType, getComparisonData(operation.dataIndex, getData), operation.target);
+}
+
 TESTABLE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
 {
   switch (compType) {
@@ -79,12 +84,12 @@ TESTABLE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
 
 static bool isRuleActive(const programmableOutputRule& rule, int16_t (*getData)(uint16_t index))
 {
-  bool firstCheck = evaluateComparisonOp(rule.operation.firstCompType, getComparisonData(rule.firstDataIn, getData), rule.firstTarget);
+  bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
 
-  if ((rule.operation.bitwise != BITWISE_DISABLED) && (rule.secondDataIn <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
+  if ((rule.opCompare != BITWISE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
   {
-    bool secondCheck = evaluateComparisonOp(rule.operation.secondCompType, getComparisonData(rule.secondDataIn, getData), rule.secondTarget);
-    firstCheck = evaluateBitwiseOp(rule.operation.bitwise, firstCheck, secondCheck);
+    bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
+    firstCheck = evaluateBitwiseOp(rule.opCompare, firstCheck, secondCheck);
   }
 
   return firstCheck;

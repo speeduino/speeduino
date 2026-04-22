@@ -33,6 +33,12 @@ constexpr uint8_t BITWISE_XOR = 3;
 
 constexpr uint8_t REUSE_RULES = 240;
 
+struct compOperation {
+  uint8_t opType;
+  uint8_t dataIndex;
+  int16_t target;
+};
+
 // It's much easier to work with a struct that represents the rule in a more direct way, so we convert the config13 struct into this for processing
 // Ideally the tune would also be able to use this struct directly, but that would require some refactoring of how the config pages are stored and accessed, 
 // so for now we keep using config13 for the tune and convert to programmableOutputRule for processing
@@ -41,24 +47,20 @@ struct programmableOutputRule {
   bool kindOfLimiting; ///< Select which kind of output limiting are active (0 - minimum | 1 - maximum)
   uint8_t outputPin;   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
   uint8_t outputDelay; ///< Output write delay for each programmable I/O (Unit: 0.1S)
-  uint8_t firstDataIn; ///< Set of first I/O vars to compare
-  uint8_t secondDataIn;///< Set of second I/O vars to compare
   uint8_t outputTimeLimit; ///< Output delay for each programmable I/O, kindOfLimiting bit dependent(Unit: 0.1S)
-  int16_t firstTarget; ///< first  target value to compare with numeric comp
-  int16_t secondTarget;///< second target value to compare with bitwise op
-  cmpOperation operation; ///< I/O variable comparison operations
+  uint8_t opCompare;
+  compOperation firstOp; ///< First operand for comparison
+  compOperation secondOp; ///< Second operand for comparison, used if bitwise operation is enabled
 
   programmableOutputRule(const config13& page13, uint8_t index) 
    : outputInverted(BIT_CHECK(page13.outputInverted, index)),
      kindOfLimiting(BIT_CHECK(page13.kindOfLimiting, index)),
      outputPin(page13.outputPin[index]),
      outputDelay(page13.outputDelay[index]),
-     firstDataIn(page13.firstDataIn[index]),
-     secondDataIn(page13.secondDataIn[index]),
      outputTimeLimit(page13.outputTimeLimit[index]),
-     firstTarget(page13.firstTarget[index]),
-     secondTarget(page13.secondTarget[index]),
-     operation(page13.operation[index])
+     opCompare(page13.operation[index].bitwise),
+     firstOp({page13.operation[index].firstCompType, page13.firstDataIn[index], page13.firstTarget[index]}),
+     secondOp({page13.operation[index].secondCompType, page13.secondDataIn[index], page13.secondTarget[index]})
   {
   }
 
