@@ -1,9 +1,12 @@
 #include <stdlib.h>
 #include "../test_utils.h"
 #include "programmableIOControl.h"
+#include "programmableIOControl_internals.h"
 #include "units.h"
 #include "logger.h"
 #include "globals.h"
+
+using namespace programmableIOControl_details;
 
 // Forward declare the TESTABLE_STATIC variables
 extern uint8_t ioDelay[_countof(config13::outputPin)];
@@ -225,12 +228,12 @@ static void test_checkProgrammableIO_skips_invalid_pins(void)
     BIT_SET(pinIsValid, 2);
 
     // Configure comparison for pin 0: EQUAL, data index 5, target 5 (should match)
-    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
 
     // Configure comparison for pin 2: EQUAL, data index 10, target 10 (should match)
-    context.page13.operation[2].firstCompType = 0; // EQUAL
+    context.page13.operation[2].firstCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.firstDataIn[2] = 10;
     context.page13.firstTarget[2] = 10;
 
@@ -254,7 +257,7 @@ static void test_checkProgrammableIO_all_cascade_rules(void)
         BIT_SET(pinIsValid, i);
 
         // Configure simple EQUAL comparison that will pass
-        context.page13.operation[i].firstCompType = 0; // EQUAL
+        context.page13.operation[i].firstCompType = COMPARATOR_EQUAL; // EQUAL
         context.page13.firstDataIn[i] = i; // Use index i
         context.page13.firstTarget[i] = i; // Match the data
     }
@@ -279,7 +282,7 @@ static void test_checkProgrammableIO_processes_all_eight_pins(void)
         BIT_SET(pinIsValid, i);
 
         // Configure comparison that will pass
-        context.page13.operation[i].firstCompType = 0; // EQUAL
+        context.page13.operation[i].firstCompType = COMPARATOR_EQUAL; // EQUAL
         context.page13.firstDataIn[i] = i;
         context.page13.firstTarget[i] = i;
     }
@@ -325,41 +328,41 @@ static void test_checkProgrammableIO_all_comparators(void)
 
     constexpr testOperation positiveTestOps[] = {
         // Positive conditions for all comparators without bitwise
-        {0, 0, 0, 5, 0, 5, 0}, // EQUAL
-        {1, 0, 1, 5, 0, 6, 0}, // NOT_EQUAL
-        {2, 0, 2, 7, 0, 6, 0}, // GREATER
-        {3, 0, 3, 7, 0, 7, 0}, // GREATER_EQUAL
-        {4, 0, 4, 1, 0, 2, 0}, // LESS
-        {5, 0, 5, 3, 0, 3, 0}, // LESS_EQUAL
-        {6, 0, 6, 3, 0, 1, 0}, // AND 
-        {7, 0, 7, 3, 0, 1, 0}, // XOR 
+        {COMPARATOR_EQUAL,         BITWISE_DISABLED, COMPARATOR_EQUAL,         5, 0, 5, 0}, // EQUAL
+        {COMPARATOR_NOT_EQUAL,     BITWISE_DISABLED, COMPARATOR_NOT_EQUAL,     5, 0, 6, 0}, // NOT_EQUAL
+        {COMPARATOR_GREATER,       BITWISE_DISABLED, COMPARATOR_GREATER,       7, 0, 6, 0}, // GREATER
+        {COMPARATOR_GREATER_EQUAL, BITWISE_DISABLED, COMPARATOR_GREATER_EQUAL, 7, 0, 7, 0}, // GREATER_EQUAL
+        {COMPARATOR_LESS,          BITWISE_DISABLED, COMPARATOR_LESS,          1, 0, 2, 0}, // LESS
+        {COMPARATOR_LESS_EQUAL,    BITWISE_DISABLED, COMPARATOR_LESS_EQUAL,    3, 0, 3, 0}, // LESS_EQUAL
+        {COMPARATOR_AND,           BITWISE_DISABLED, COMPARATOR_AND,           3, 0, 1, 0}, // AND
+        {COMPARATOR_XOR,           BITWISE_DISABLED, COMPARATOR_XOR,           3, 0, 1, 0}, // XOR
         // Same but bitwise AND
-        {0, 1, 0, 5, 5, 5, 5}, // EQUAL
-        {1, 1, 1, 5, 5, 6, 6}, // NOT_EQUAL
-        {2, 1, 2, 7, 7, 6, 6}, // GREATER
-        {3, 1, 3, 7, 7, 7, 7}, // GREATER_EQUAL
-        {4, 1, 4, 1, 1, 2, 2}, // LESS
-        {5, 1, 5, 3, 3, 3, 3}, // LESS_EQUAL
-        {6, 1, 6, 3, 3, 1, 1}, // AND 
-        {7, 1, 7, 3, 3, 1, 1}, // XOR
+        {COMPARATOR_EQUAL,         BITWISE_AND, COMPARATOR_EQUAL,              5, 5, 5, 5}, // EQUAL
+        {COMPARATOR_NOT_EQUAL,     BITWISE_AND, COMPARATOR_NOT_EQUAL,          5, 5, 6, 6}, // NOT_EQUAL
+        {COMPARATOR_GREATER,       BITWISE_AND, COMPARATOR_GREATER,            7, 7, 6, 6}, // GREATER
+        {COMPARATOR_GREATER_EQUAL, BITWISE_AND, COMPARATOR_GREATER_EQUAL,      7, 7, 7, 7}, // GREATER_EQUAL
+        {COMPARATOR_LESS,          BITWISE_AND, COMPARATOR_LESS,               1, 1, 2, 2}, // LESS
+        {COMPARATOR_LESS_EQUAL,    BITWISE_AND, COMPARATOR_LESS_EQUAL,         3, 3, 3, 3}, // LESS_EQUAL
+        {COMPARATOR_AND,           BITWISE_AND, COMPARATOR_AND,                3, 3, 1, 1}, // AND
+        {COMPARATOR_XOR,           BITWISE_AND, COMPARATOR_XOR,                3, 3, 1, 1}, // XOR
         // Same but bitwise OR
-        {0, 2, 0, 5, 5, 5, 5}, // EQUAL
-        {1, 2, 1, 5, 5, 6, 6}, // NOT_EQUAL
-        {2, 2, 2, 7, 7, 6, 6}, // GREATER
-        {3, 2, 3, 7, 7, 7, 7}, // GREATER_EQUAL
-        {4, 2, 4, 1, 1, 2, 2}, // LESS
-        {5, 2, 5, 3, 3, 3, 3}, // LESS_EQUAL
-        {6, 2, 6, 3, 3, 1, 1}, // AND 
-        {7, 2, 7, 3, 3, 1, 1}, // XOR
+        {COMPARATOR_EQUAL,         BITWISE_OR, COMPARATOR_EQUAL,               5, 5, 5, 5}, // EQUAL
+        {COMPARATOR_NOT_EQUAL,     BITWISE_OR, COMPARATOR_NOT_EQUAL,           5, 5, 6, 6}, // NOT_EQUAL
+        {COMPARATOR_GREATER,       BITWISE_OR, COMPARATOR_GREATER,             7, 7, 6, 6}, // GREATER
+        {COMPARATOR_GREATER_EQUAL, BITWISE_OR, COMPARATOR_GREATER_EQUAL,       7, 7, 7, 7}, // GREATER_EQUAL
+        {COMPARATOR_LESS,          BITWISE_OR, COMPARATOR_LESS,                1, 1, 2, 2}, // LESS
+        {COMPARATOR_LESS_EQUAL,    BITWISE_OR, COMPARATOR_LESS_EQUAL,          3, 3, 3, 3}, // LESS_EQUAL
+        {COMPARATOR_AND,           BITWISE_OR, COMPARATOR_AND,                 3, 3, 1, 1}, // AND
+        {COMPARATOR_XOR,           BITWISE_OR, COMPARATOR_XOR,                 3, 3, 1, 1}, // XOR
         // Same but bitwise XOR
-        {0, 3, 0, 5, 4, 6, 4}, // EQUAL
-        {1, 3, 1, 5, 4, 5, 6}, // NOT_EQUAL
-        {2, 3, 2, 7, 5, 6, 5}, // GREATER
-        {3, 3, 3, 7, 7, 7, 8}, // GREATER_EQUAL
-        {4, 3, 4, 1, 3, 2, 3}, // LESS
-        {5, 3, 5, 3, 3, 3, 2}, // LESS_EQUAL
-        {6, 3, 6, 3, 3, 3, 0}, // AND 
-        {7, 3, 7, 3, 7, 1, 7}, // XOR
+        {COMPARATOR_EQUAL,         BITWISE_XOR, COMPARATOR_EQUAL,              5, 4, 6, 4}, // EQUAL
+        {COMPARATOR_NOT_EQUAL,     BITWISE_XOR, COMPARATOR_NOT_EQUAL,          5, 4, 5, 6}, // NOT_EQUAL
+        {COMPARATOR_GREATER,       BITWISE_XOR, COMPARATOR_GREATER,            7, 5, 6, 5}, // GREATER
+        {COMPARATOR_GREATER_EQUAL, BITWISE_XOR, COMPARATOR_GREATER_EQUAL,      7, 7, 7, 8}, // GREATER_EQUAL
+        {COMPARATOR_LESS,          BITWISE_XOR, COMPARATOR_LESS,               1, 3, 2, 3}, // LESS
+        {COMPARATOR_LESS_EQUAL,    BITWISE_XOR, COMPARATOR_LESS_EQUAL,         3, 3, 3, 2}, // LESS_EQUAL
+        {COMPARATOR_AND,           BITWISE_XOR, COMPARATOR_AND,                3, 3, 3, 0}, // AND
+        {COMPARATOR_XOR,           BITWISE_XOR, COMPARATOR_XOR,                3, 7, 1, 7}, // XOR
     };
 
     for (uint8_t operation = 0; operation < _countof(positiveTestOps); operation++) {
@@ -383,24 +386,24 @@ static void test_checkProgrammableIO_all_comparators(void)
 
     constexpr testOperation negativeTestOps[] = {
         // Negative conditions for all comparators without bitwise
-        {0, 0, 0, 5, 0, 4, 0}, // EQUAL
-        {1, 0, 1, 5, 0, 5, 0}, // NOT_EQUAL
-        {2, 0, 2, 7, 0, 8, 0}, // GREATER
-        {3, 0, 3, 7, 0, 8, 0}, // GREATER_EQUAL
-        {4, 0, 4, 1, 0, 1, 0}, // LESS
-        {5, 0, 5, 3, 0, 2, 0}, // LESS_EQUAL
-        {6, 0, 6, 3, 0, 0, 0}, // AND 
-        {7, 0, 7, 3, 0, 3, 0}, // XOR 
+        {COMPARATOR_EQUAL,         BITWISE_DISABLED, COMPARATOR_EQUAL,         5, 0, 4, 0}, // EQUAL
+        {COMPARATOR_NOT_EQUAL,     BITWISE_DISABLED, COMPARATOR_NOT_EQUAL,     5, 0, 5, 0}, // NOT_EQUAL
+        {COMPARATOR_GREATER,       BITWISE_DISABLED, COMPARATOR_GREATER,       7, 0, 8, 0}, // GREATER
+        {COMPARATOR_GREATER_EQUAL, BITWISE_DISABLED, COMPARATOR_GREATER_EQUAL, 7, 0, 8, 0}, // GREATER_EQUAL
+        {COMPARATOR_LESS,          BITWISE_DISABLED, COMPARATOR_LESS,          1, 0, 1, 0}, // LESS
+        {COMPARATOR_LESS_EQUAL,    BITWISE_DISABLED, COMPARATOR_LESS_EQUAL,    3, 0, 2, 0}, // LESS_EQUAL
+        {COMPARATOR_AND,           BITWISE_DISABLED, COMPARATOR_AND,           3, 0, 0, 0}, // AND
+        {COMPARATOR_XOR,           BITWISE_DISABLED, COMPARATOR_XOR,           3, 0, 3, 0}, // XOR
         // Negative conditions for 2nd comparator with bitwise AND
-        {0, 1, 0, 5, 5, 5, 4}, // EQUAL
-        {1, 1, 1, 5, 5, 6, 5}, // NOT_EQUAL
-        {2, 1, 2, 7, 7, 6, 7}, // GREATER
-        {3, 1, 3, 7, 7, 7, 8}, // GREATER_EQUAL
-        {4, 1, 4, 1, 1, 2, 1}, // LESS
-        {5, 1, 5, 3, 3, 3, 2}, // LESS_EQUAL
-        {6, 1, 6, 3, 3, 1, 0}, // AND 
-        {0, 2, 0, 5, 5, 6, 4}, // OR false
-        {0, 3, 0, 5, 5, 5, 5}, // XOR false
+        {COMPARATOR_EQUAL,         BITWISE_AND, COMPARATOR_EQUAL,              5, 5, 5, 4}, // EQUAL
+        {COMPARATOR_NOT_EQUAL,     BITWISE_AND, COMPARATOR_NOT_EQUAL,          5, 5, 6, 5}, // NOT_EQUAL
+        {COMPARATOR_GREATER,       BITWISE_AND, COMPARATOR_GREATER,            7, 7, 6, 7}, // GREATER
+        {COMPARATOR_GREATER_EQUAL, BITWISE_AND, COMPARATOR_GREATER_EQUAL,      7, 7, 7, 8}, // GREATER_EQUAL
+        {COMPARATOR_LESS,          BITWISE_AND, COMPARATOR_LESS,               1, 1, 2, 1}, // LESS
+        {COMPARATOR_LESS_EQUAL,    BITWISE_AND, COMPARATOR_LESS_EQUAL,         3, 3, 3, 2}, // LESS_EQUAL
+        {COMPARATOR_AND,           BITWISE_AND, COMPARATOR_AND,                3, 3, 1, 0}, // AND 
+        {COMPARATOR_EQUAL,         BITWISE_OR,  COMPARATOR_EQUAL,              5, 5, 6, 4}, // OR false
+        {COMPARATOR_EQUAL,         BITWISE_XOR, COMPARATOR_EQUAL,              5, 5, 5, 5}, // XOR false
     };
     for (uint8_t operation = 0; operation < _countof(negativeTestOps); operation++) {
         context = programmableIOTestContext_t();
@@ -515,15 +518,15 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
     BIT_SET(pinIsValid, 1);
 
     // Pin 0: Simple EQUAL comparison that will pass (data=0, target=0)
-    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.firstDataIn[0] = 0; // Use getData(0) = 0
     context.page13.firstTarget[0] = 0; // Target = 0, will match
 
     // Pin 1: Use cascade rule reuse (firstDataIn = 240 + rule_index 0 = 240)
     // This means: dataRequested = 240, after subtracting REUSE_RULES(240) = 0
     // So it checks BIT_CHECK(currentRuleStatus, 0)
-    context.page13.operation[1].firstCompType = 0; // EQUAL (compare with target)
-    context.page13.firstDataIn[1] = 240; // REUSE_RULES + rule_index 0
+    context.page13.operation[1].firstCompType = COMPARATOR_EQUAL; // EQUAL (compare with target)
+    context.page13.firstDataIn[1] = REUSE_RULES; // REUSE_RULES + rule_index 0
     context.page13.firstTarget[1] = 1;   // Target = 1 (true)
 
     // First call to process pin 0
@@ -556,8 +559,8 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds(void)
     // Configure with firstDataIn > 239 that results in out-of-bounds after subtraction
     // firstDataIn = 240 + 10 = 250
     // After subtraction: 250 - 240 = 10, which is > sizeof(page13.outputPin) (8)
-    context.page13.operation[0].firstCompType = 0; // EQUAL
-    context.page13.firstDataIn[0] = 250; // REUSE_RULES + 10 (out of bounds)
+    context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
+    context.page13.firstDataIn[0] = REUSE_RULES + 10; // REUSE_RULES + 10 (out of bounds)
     context.page13.firstTarget[0] = 0;   // Target = 0
 
     // Call checkProgrammableIO
@@ -578,14 +581,14 @@ static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
     BIT_SET(pinIsValid, 0);
 
     // First comparison: simple EQUAL that passes
-    context.page13.operation[0].firstCompType = 0; // EQUAL
+    context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5; // Will match
 
     // Second comparison: use cascade rule reuse
-    context.page13.operation[0].bitwise = 1; // BITWISE_AND
-    context.page13.operation[0].secondCompType = 0; // EQUAL
-    context.page13.secondDataIn[0] = 240; // REUSE_RULES + rule 0
+    context.page13.operation[0].bitwise = BITWISE_AND; // BITWISE_AND
+    context.page13.operation[0].secondCompType = COMPARATOR_EQUAL; // EQUAL
+    context.page13.secondDataIn[0] = REUSE_RULES; // REUSE_RULES + rule 0
     context.page13.secondTarget[0] = 1;
 
     // Set currentRuleStatus bit 0 to 1 so second comparison passes
@@ -609,9 +612,9 @@ static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
 
-    context.page13.operation[0].bitwise = 1; // BITWISE_AND
-    context.page13.operation[0].secondCompType = 0; // EQUAL
-    context.page13.secondDataIn[0] = 249; // Out-of-range reuse index, skip second comparator
+    context.page13.operation[0].bitwise = BITWISE_AND; // BITWISE_AND
+    context.page13.operation[0].secondCompType = COMPARATOR_EQUAL; // EQUAL
+    context.page13.secondDataIn[0] = REUSE_RULES + 9; // Out-of-range reuse index, skip second comparator
     context.page13.secondTarget[0] = 1;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
