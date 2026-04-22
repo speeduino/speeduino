@@ -155,7 +155,7 @@ struct statuses {
   bool commCompat : 1; ///< 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool allowLegacyComms : 1; ///< 
-
+ 
   // Status5 fields as defined in the INI. 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool flatShiftSoftCut : 1; ///< Is the flat shift soft cut active (true) or not (false) 

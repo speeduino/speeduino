@@ -75,6 +75,7 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
 constexpr uint16_t BLOCKING_FACTOR = 251;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 256;
+constexpr uint16_t SCATTER_ARRAY_SIZE = 21;
 
 //#define PWM_FAN_AVAILABLE
 static inline bool pinIsReserved(uint8_t pin) { 

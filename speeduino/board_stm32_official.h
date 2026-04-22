@@ -66,6 +66,7 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
+constexpr uint16_t SCATTER_ARRAY_SIZE = 21;
 
 #ifndef word
   #define word(h, l) (((h) << 8) | (l)) //word() function not defined for this platform in the main library

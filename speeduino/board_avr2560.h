@@ -61,6 +61,7 @@ static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
 #endif
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
+constexpr uint16_t SCATTER_ARRAY_SIZE = 21;
 static inline bool pinIsReserved(uint8_t pin) { return pin==0U; } //Forbidden pins like USB on other boards
 
 /*

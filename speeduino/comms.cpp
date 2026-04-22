@@ -28,6 +28,7 @@ A full copy of the license may be found in the projects root directory
 #endif
 #include "units.h"
 #include "sensors.h"
+#include "unit_testing.h"
 
 /** @defgroup group-serial-comms-impl Serial comms implementation
  * @{
@@ -55,6 +56,7 @@ static constexpr byte SERIAL_RC_CRC_ERR    = 0x82U; //!< CRC mismatch
 static constexpr byte SERIAL_RC_UKWN_ERR   = 0x83U; //!< Unknown command
 static constexpr byte SERIAL_RC_RANGE_ERR  = 0x84U; //!< Incorrect range. TS will not retry command
 static constexpr byte SERIAL_RC_BUSY_ERR   = 0x85U; //!< TS will wait and retry
+static constexpr byte SERIAL_RC_SCATTER_RESET = 0x93U; //!< Scatter array not set or empty; TS will re-initialise scatteredOffsetArray
 ///@}
 
 static constexpr uint8_t SEND_OUTPUT_CHANNELS = 48U; //!< Code for the "send output channels command"
@@ -100,8 +102,8 @@ static uint32_t SDreadStartSector;
 static uint32_t SDreadNumSectors;
 static uint32_t SDreadCompletedSectors = 0;
 #endif
-static uint8_t serialPayload[TS_SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
-static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
+TESTABLE_STATIC uint8_t serialPayload[TS_SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
+TESTABLE_STATIC uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 Stream* pPrimarySerial;
 static uint32_t deferEEPROMWritesUntil = 0; //!< Point in time that we can resume writing pages
 static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
@@ -371,6 +373,76 @@ static void generateLiveValues(uint16_t offset, uint16_t packetLength)
   }
   // Reset any flags that are being used to trigger page refreshes
   currentStatus.vssUiRefresh = false;
+}
+
+/**
+ * @brief Build the scatter output channels payload into serialPayload[].
+ *
+ * Each entry in scatterOffsetArray is a U16 encoding:
+ *   bits [15:13] = data size (1=byte, 2=word, 3=dword, 4=qword)
+ *   bits [12:0]  = byte offset into the output channel log
+ * A zero entry signals end of list.
+ *
+ * @return false  if a SERIAL_RC_SCATTER_RESET response should be sent (empty or overflow).
+ * @return true if serialPayload[] was filled and serialPayloadLength was set.
+ *
+ * TunerStudio/VETuner will then re-populate scatterOffsetArray and retry on false.
+ */
+TESTABLE_STATIC bool buildScatterPayload(void)
+{
+  // Empty array: signal to re-initialise
+  if(configPage16.entries[0] == 0U) { return false; }
+
+  // Pre-scan to calculate total response bytes before touching serialPayload
+  uint16_t totalBytes = 0U;
+  for(uint16_t i = 0U; i < SCATTER_ARRAY_SIZE; i++)
+  {
+    const uint16_t entry = configPage16.entries[i];
+    if(entry == 0U) { break; }
+    const uint8_t sizeField = (uint8_t)((entry >> 13U) & 0x07U);
+    if(sizeField >= 1U && sizeField <= 4U)
+    {
+      totalBytes += (uint16_t)(1U << (sizeField - 1U));
+    }
+  }
+
+  // Guard: 1 byte status + data must fit in the payload buffer
+  if((1U + totalBytes) > (uint16_t)TS_SERIAL_BUFFER_SIZE) { return false; }
+
+  // Build response
+  serialPayload[0] = SERIAL_RC_OK;
+  uint16_t pos = 1U;
+  for(uint16_t i = 0U; i < SCATTER_ARRAY_SIZE; i++)
+  {
+    const uint16_t entry = configPage16.entries[i];
+    if(entry == 0U) { break; }
+    const uint8_t sizeField = (uint8_t)((entry >> 13U) & 0x07U);
+    const uint16_t offset   = entry & 0x1FFFU;
+    if(sizeField >= 1U && sizeField <= 4U)
+    {
+      const uint8_t numBytes = (uint8_t)(1U << (sizeField - 1U));
+      for(uint8_t b = 0U; b < numBytes; b++)
+      {
+        serialPayload[pos] = getTSLogEntry(offset + b);
+        pos++;
+      }
+    }
+  }
+  serialPayloadLength = pos;
+  return true;
+}
+
+/** @brief Send a scatter output channels response (Full Optimized High-Speed mode). */
+static void generateScatterValues(void)
+{
+  if(!buildScatterPayload())
+  {
+    sendReturnCodeMsg(SERIAL_RC_SCATTER_RESET);
+  }
+  else
+  {
+    sendSerialPayloadNonBlocking(serialPayloadLength);
+  }
 }
 
 // Abstract the FastCrC32 functions 
@@ -651,6 +723,10 @@ void processSerialCommand(void)
     case 'F': // send serial protocol version
       (void)memcpy_P(serialPayload, serialVersion, sizeof(serialVersion) );
       sendSerialPayloadNonBlocking(sizeof(serialVersion));
+      break;
+
+    case 'g': // Scatter output channels - Full Optimized High-Speed mode
+      generateScatterValues();
       break;
 
     case 'H': //Start the tooth logger

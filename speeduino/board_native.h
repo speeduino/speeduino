@@ -29,6 +29,7 @@ constexpr auto ticksToMicros = software_timer_t::ticksToMicros;
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
+constexpr uint16_t SCATTER_ARRAY_SIZE = 21;
 #define IGN_CHANNELS 8
 #define INJ_CHANNELS 8
 #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)

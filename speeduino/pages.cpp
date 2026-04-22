@@ -351,6 +351,14 @@ static page_map_t getPageMap(uint8_t pageNumber)
     makeEntity(&boostTableLookupDuty),
     makeEntity(&configPage15, sizeof(configPage15)),
   };
+  // Page 16: RAM-only scatter offset array written by TunerStudio (no burn command).
+  // Declared as NoEntity so EEPROM storage tests skip it (it has no EEPROM footprint).
+  // getPageValue/setPageValue below are overridden to bypass the entity system for
+  // page 16 and directly access scatterOffsetPage, so TS reads/writes still work.
+  // Size matches the INI page 16 declaration ([64] U16 entries = 128 bytes).
+  static constexpr entity_t scatterPageMap[] PROGMEM = {
+    entity_t(EntityType::NoEntity, (uint16_t)(64U * sizeof(uint16_t))),
+  };
 
   static constexpr page_map_t pageMaps[MAX_PAGE_NUM] PROGMEM = {
     { pageZeroMap, _countof(pageZeroMap) },
@@ -369,6 +377,7 @@ static page_map_t getPageMap(uint8_t pageNumber)
     { progOutsPageMap, _countof(progOutsPageMap) },    
     { ign2PageMap, _countof(ign2PageMap) },
     { boostVvt2PageMap, _countof(boostVvt2PageMap) },
+    { scatterPageMap, _countof(scatterPageMap) },
   };
 
   if (pageNumber>=MAX_PAGE_NUM)
@@ -484,6 +493,17 @@ static inline uint16_t pageOffsetToEntityOffset(const page_iterator_t &iter, uin
 
 bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
 {
+  if (pageNum == scatterPage)
+  {
+    // Direct raw byte access: bypass entity system (scatter page is RAM-only, NoEntity in map).
+    // Bound matches INI page 16 size: [64] U16 entries = 128 bytes.
+    if (pageOffset < (uint16_t)(SCATTER_ARRAY_SIZE * sizeof(uint16_t)))
+    {
+      ((byte*)&configPage16.entries)[pageOffset] = value;
+      return true;
+    }
+    return false;
+  }
   page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
   return setEntityValue(iter.entity, pageOffsetToEntityOffset(iter, pageOffset), value);
@@ -491,6 +511,16 @@ bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
 
 byte getPageValue(uint8_t pageNum, uint16_t pageOffset)
 {
+  if (pageNum == scatterPage)
+  {
+    // Direct raw byte access: bypass entity system (scatter page is RAM-only, NoEntity in map).
+    // Bound matches INI page 16 size: [64] U16 entries = 128 bytes.
+    if (pageOffset < (uint16_t)(SCATTER_ARRAY_SIZE * sizeof(uint16_t)))
+    {
+      return ((byte*)&configPage16.entries)[pageOffset];
+    }
+    return 0U;
+  }
   page_iterator_t iter = map_page_offset_to_entity(pageNum, pageOffset);
 
   return getEntityValue(iter.entity, pageOffsetToEntityOffset(iter, pageOffset));

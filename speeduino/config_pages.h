@@ -921,3 +921,9 @@ struct config15 : public config_page_t {
   byte Unused15_106_255[150];
 
 } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
+
+/// Page 16: RAM-only scatter channel offset array written by TunerStudio/VETuner.
+struct config16 : public config_page_t {
+    uint16_t entries[SCATTER_ARRAY_SIZE]; //!< bits[15:13]=size, bits[12:0]=log offset; 0 = end of list
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type ;
+

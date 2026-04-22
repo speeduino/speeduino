@@ -24,6 +24,7 @@ trimTable3d trim6Table; ///< 6x6 Fuel trim 6 map
 trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
+struct config16 configPage16 = {}; ///< Page 16 scatter array. Zero-initialised; zero entry signals end of list.
 
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
