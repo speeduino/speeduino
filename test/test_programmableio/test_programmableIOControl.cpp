@@ -294,13 +294,9 @@ static void test_checkProgrammableIO_processes_all_eight_pins(void)
     }
 }
 struct testOperation {
-    uint8_t firstCompType;
-    uint8_t bitwise;
-    uint8_t secondCompType;
-    uint16_t data1Index;
-    uint16_t data2Index;
-    int16_t target1;
-    int16_t target2;
+    uint8_t bitwiseCombiner;
+    compOperation firstOperand;
+    compOperation secondOperand;
 };
 
 static void setupTestOp(const testOperation &op, config13 &page13, uint8_t opIndex)
@@ -311,14 +307,14 @@ static void setupTestOp(const testOperation &op, config13 &page13, uint8_t opInd
     page13.outputTimeLimit[opIndex] = 0;
     page13.kindOfLimiting = 0;
 
-    page13.operation[opIndex].firstCompType = op.firstCompType;
-    page13.firstDataIn[opIndex] = op.data1Index;
-    page13.firstTarget[opIndex] = op.target1;
+    page13.operation[opIndex].firstCompType = op.firstOperand.opType;
+    page13.firstDataIn[opIndex] = op.firstOperand.dataIndex;
+    page13.firstTarget[opIndex] = op.firstOperand.target;
 
-    page13.operation[opIndex].bitwise = op.bitwise;
-    page13.operation[opIndex].secondCompType = op.secondCompType;
-    page13.secondDataIn[opIndex] = op.data2Index; // 
-    page13.secondTarget[opIndex] = op.target2;
+    page13.operation[opIndex].bitwise = op.bitwiseCombiner;
+    page13.operation[opIndex].secondCompType = op.secondOperand.opType;
+    page13.secondDataIn[opIndex] = op.secondOperand.dataIndex;
+    page13.secondTarget[opIndex] = op.secondOperand.target;
 }
 
 static void test_checkProgrammableIO_all_comparators(void)
@@ -328,41 +324,41 @@ static void test_checkProgrammableIO_all_comparators(void)
 
     constexpr testOperation positiveTestOps[] = {
         // Positive conditions for all comparators without bitwise
-        {COMPARATOR_EQUAL,         BITWISE_DISABLED, COMPARATOR_EQUAL,         5, 0, 5, 0}, // EQUAL
-        {COMPARATOR_NOT_EQUAL,     BITWISE_DISABLED, COMPARATOR_NOT_EQUAL,     5, 0, 6, 0}, // NOT_EQUAL
-        {COMPARATOR_GREATER,       BITWISE_DISABLED, COMPARATOR_GREATER,       7, 0, 6, 0}, // GREATER
-        {COMPARATOR_GREATER_EQUAL, BITWISE_DISABLED, COMPARATOR_GREATER_EQUAL, 7, 0, 7, 0}, // GREATER_EQUAL
-        {COMPARATOR_LESS,          BITWISE_DISABLED, COMPARATOR_LESS,          1, 0, 2, 0}, // LESS
-        {COMPARATOR_LESS_EQUAL,    BITWISE_DISABLED, COMPARATOR_LESS_EQUAL,    3, 0, 3, 0}, // LESS_EQUAL
-        {COMPARATOR_AND,           BITWISE_DISABLED, COMPARATOR_AND,           3, 0, 1, 0}, // AND
-        {COMPARATOR_XOR,           BITWISE_DISABLED, COMPARATOR_XOR,           3, 0, 1, 0}, // XOR
+        { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 0, 0 } }, // EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 0, 0 } }, // NOT_EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 0, 0 } }, // GREATER
+        { BITWISE_DISABLED, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 0, 0 } }, // GREATER_EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 0, 0 } }, // LESS
+        { BITWISE_DISABLED, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 0, 0 } }, // LESS_EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 0, 0 } }, // AND
+        { BITWISE_DISABLED, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 0, 0 } }, // XOR
         // Same but bitwise AND
-        {COMPARATOR_EQUAL,         BITWISE_AND, COMPARATOR_EQUAL,              5, 5, 5, 5}, // EQUAL
-        {COMPARATOR_NOT_EQUAL,     BITWISE_AND, COMPARATOR_NOT_EQUAL,          5, 5, 6, 6}, // NOT_EQUAL
-        {COMPARATOR_GREATER,       BITWISE_AND, COMPARATOR_GREATER,            7, 7, 6, 6}, // GREATER
-        {COMPARATOR_GREATER_EQUAL, BITWISE_AND, COMPARATOR_GREATER_EQUAL,      7, 7, 7, 7}, // GREATER_EQUAL
-        {COMPARATOR_LESS,          BITWISE_AND, COMPARATOR_LESS,               1, 1, 2, 2}, // LESS
-        {COMPARATOR_LESS_EQUAL,    BITWISE_AND, COMPARATOR_LESS_EQUAL,         3, 3, 3, 3}, // LESS_EQUAL
-        {COMPARATOR_AND,           BITWISE_AND, COMPARATOR_AND,                3, 3, 1, 1}, // AND
-        {COMPARATOR_XOR,           BITWISE_AND, COMPARATOR_XOR,                3, 3, 1, 1}, // XOR
+        { BITWISE_AND, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // EQUAL
+        { BITWISE_AND, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 6 } }, // NOT_EQUAL
+        { BITWISE_AND, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 6 } }, // GREATER
+        { BITWISE_AND, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 7 } }, // GREATER_EQUAL
+        { BITWISE_AND, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 2 } }, // LESS
+        { BITWISE_AND, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 3 } }, // LESS_EQUAL
+        { BITWISE_AND, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 1 } }, // AND
+        { BITWISE_AND, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 3, 1 } }, // XOR
         // Same but bitwise OR
-        {COMPARATOR_EQUAL,         BITWISE_OR, COMPARATOR_EQUAL,               5, 5, 5, 5}, // EQUAL
-        {COMPARATOR_NOT_EQUAL,     BITWISE_OR, COMPARATOR_NOT_EQUAL,           5, 5, 6, 6}, // NOT_EQUAL
-        {COMPARATOR_GREATER,       BITWISE_OR, COMPARATOR_GREATER,             7, 7, 6, 6}, // GREATER
-        {COMPARATOR_GREATER_EQUAL, BITWISE_OR, COMPARATOR_GREATER_EQUAL,       7, 7, 7, 7}, // GREATER_EQUAL
-        {COMPARATOR_LESS,          BITWISE_OR, COMPARATOR_LESS,                1, 1, 2, 2}, // LESS
-        {COMPARATOR_LESS_EQUAL,    BITWISE_OR, COMPARATOR_LESS_EQUAL,          3, 3, 3, 3}, // LESS_EQUAL
-        {COMPARATOR_AND,           BITWISE_OR, COMPARATOR_AND,                 3, 3, 1, 1}, // AND
-        {COMPARATOR_XOR,           BITWISE_OR, COMPARATOR_XOR,                 3, 3, 1, 1}, // XOR
+        { BITWISE_OR, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // EQUAL
+        { BITWISE_OR, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 6 } }, // NOT_EQUAL
+        { BITWISE_OR, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 6 } }, // GREATER
+        { BITWISE_OR, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 7 } }, // GREATER_EQUAL
+        { BITWISE_OR, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 2 } }, // LESS
+        { BITWISE_OR, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 3 } }, // LESS_EQUAL
+        { BITWISE_OR, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 1 } }, // AND
+        { BITWISE_OR, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 3, 1 } }, // XOR
         // Same but bitwise XOR
-        {COMPARATOR_EQUAL,         BITWISE_XOR, COMPARATOR_EQUAL,              5, 4, 6, 4}, // EQUAL
-        {COMPARATOR_NOT_EQUAL,     BITWISE_XOR, COMPARATOR_NOT_EQUAL,          5, 4, 5, 6}, // NOT_EQUAL
-        {COMPARATOR_GREATER,       BITWISE_XOR, COMPARATOR_GREATER,            7, 5, 6, 5}, // GREATER
-        {COMPARATOR_GREATER_EQUAL, BITWISE_XOR, COMPARATOR_GREATER_EQUAL,      7, 7, 7, 8}, // GREATER_EQUAL
-        {COMPARATOR_LESS,          BITWISE_XOR, COMPARATOR_LESS,               1, 3, 2, 3}, // LESS
-        {COMPARATOR_LESS_EQUAL,    BITWISE_XOR, COMPARATOR_LESS_EQUAL,         3, 3, 3, 2}, // LESS_EQUAL
-        {COMPARATOR_AND,           BITWISE_XOR, COMPARATOR_AND,                3, 3, 3, 0}, // AND
-        {COMPARATOR_XOR,           BITWISE_XOR, COMPARATOR_XOR,                3, 7, 1, 7}, // XOR
+        { BITWISE_XOR, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 4, 4 } }, // EQUAL
+        { BITWISE_XOR, { COMPARATOR_NOT_EQUAL, 5, 5 }, { COMPARATOR_NOT_EQUAL, 4, 6 } }, // NOT_EQUAL
+        { BITWISE_XOR, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 5, 5 } }, // GREATER
+        { BITWISE_XOR, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 8 } }, // GREATER_EQUAL
+        { BITWISE_XOR, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 3, 3 } }, // LESS
+        { BITWISE_XOR, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 2 } }, // LESS_EQUAL
+        { BITWISE_XOR, { COMPARATOR_AND, 3, 3 }, { COMPARATOR_AND, 3, 0 } }, // AND
+        { BITWISE_XOR, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 7, 7 } }, // XOR
     };
 
     for (auto &operation : positiveTestOps) {
@@ -384,24 +380,26 @@ static void test_checkProgrammableIO_all_comparators(void)
 
     constexpr testOperation negativeTestOps[] = {
         // Negative conditions for all comparators without bitwise
-        {COMPARATOR_EQUAL,         BITWISE_DISABLED, COMPARATOR_EQUAL,         5, 0, 4, 0}, // EQUAL
-        {COMPARATOR_NOT_EQUAL,     BITWISE_DISABLED, COMPARATOR_NOT_EQUAL,     5, 0, 5, 0}, // NOT_EQUAL
-        {COMPARATOR_GREATER,       BITWISE_DISABLED, COMPARATOR_GREATER,       7, 0, 8, 0}, // GREATER
-        {COMPARATOR_GREATER_EQUAL, BITWISE_DISABLED, COMPARATOR_GREATER_EQUAL, 7, 0, 8, 0}, // GREATER_EQUAL
-        {COMPARATOR_LESS,          BITWISE_DISABLED, COMPARATOR_LESS,          1, 0, 1, 0}, // LESS
-        {COMPARATOR_LESS_EQUAL,    BITWISE_DISABLED, COMPARATOR_LESS_EQUAL,    3, 0, 2, 0}, // LESS_EQUAL
-        {COMPARATOR_AND,           BITWISE_DISABLED, COMPARATOR_AND,           3, 0, 0, 0}, // AND
-        {COMPARATOR_XOR,           BITWISE_DISABLED, COMPARATOR_XOR,           3, 0, 3, 0}, // XOR
+        { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 4 }, { COMPARATOR_EQUAL, 0, 0 } }, // EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_NOT_EQUAL, 5, 5 }, { COMPARATOR_NOT_EQUAL, 0, 0 } }, // NOT_EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_GREATER, 7, 8 }, { COMPARATOR_GREATER, 0, 0 } }, // GREATER
+        { BITWISE_DISABLED, { COMPARATOR_GREATER_EQUAL, 7, 8 }, { COMPARATOR_GREATER_EQUAL, 0, 0 } }, // GREATER_EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_LESS, 1, 1 }, { COMPARATOR_LESS, 0, 0 } }, // LESS
+        { BITWISE_DISABLED, { COMPARATOR_LESS_EQUAL, 3, 2 }, { COMPARATOR_LESS_EQUAL, 0, 0 } }, // LESS_EQUAL
+        { BITWISE_DISABLED, { COMPARATOR_AND, 3, 0 }, { COMPARATOR_AND, 0, 0 } }, // AND
+        { BITWISE_DISABLED, { COMPARATOR_XOR, 3, 3 }, { COMPARATOR_XOR, 0, 0 } }, // XOR
         // Negative conditions for 2nd comparator with bitwise AND
-        {COMPARATOR_EQUAL,         BITWISE_AND, COMPARATOR_EQUAL,              5, 5, 5, 4}, // EQUAL
-        {COMPARATOR_NOT_EQUAL,     BITWISE_AND, COMPARATOR_NOT_EQUAL,          5, 5, 6, 5}, // NOT_EQUAL
-        {COMPARATOR_GREATER,       BITWISE_AND, COMPARATOR_GREATER,            7, 7, 6, 7}, // GREATER
-        {COMPARATOR_GREATER_EQUAL, BITWISE_AND, COMPARATOR_GREATER_EQUAL,      7, 7, 7, 8}, // GREATER_EQUAL
-        {COMPARATOR_LESS,          BITWISE_AND, COMPARATOR_LESS,               1, 1, 2, 1}, // LESS
-        {COMPARATOR_LESS_EQUAL,    BITWISE_AND, COMPARATOR_LESS_EQUAL,         3, 3, 3, 2}, // LESS_EQUAL
-        {COMPARATOR_AND,           BITWISE_AND, COMPARATOR_AND,                3, 3, 1, 0}, // AND 
-        {COMPARATOR_EQUAL,         BITWISE_OR,  COMPARATOR_EQUAL,              5, 5, 6, 4}, // OR false
-        {COMPARATOR_EQUAL,         BITWISE_XOR, COMPARATOR_EQUAL,              5, 5, 5, 5}, // XOR false
+        { BITWISE_AND, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 4 } }, // EQUAL
+        { BITWISE_AND, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 5 } }, // NOT_EQUAL
+        { BITWISE_AND, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 7 } }, // GREATER
+        { BITWISE_AND, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 8 } }, // GREATER_EQUAL
+        { BITWISE_AND, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 1 } }, // LESS
+        { BITWISE_AND, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 2 } }, // LESS_EQUAL
+        { BITWISE_AND, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 0 } }, // AND
+         // Negative conditions for 2nd comparator with bitwise OR
+        { BITWISE_OR, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 5, 4 } }, // OR false
+         // Negative conditions for 2nd comparator with bitwise XOR
+        { BITWISE_XOR, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // XOR false
     };
     for (auto &operation : negativeTestOps) {
         context = programmableIOTestContext_t();
@@ -452,7 +450,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
     }
     context.page13.outputPin[0] = 1;
     context.current.outputsStatus = 1;
-    constexpr testOperation equalityOp = {0, 0, 0, 5, 0, 5, 0};
+    constexpr testOperation equalityOp = { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } };
     setupTestOp(equalityOp, context.page13, 0);
     context.page13.kindOfLimiting = 1; // Switch to time limit mode
     context.page13.outputTimeLimit[0] = 3;
@@ -469,7 +467,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
     }
     context.page13.outputPin[0] = 1;
     context.current.outputsStatus = 1;
-    constexpr testOperation negativeEqualityOp = {0, 0, 0, 5, 0, 6, 0};
+    constexpr testOperation negativeEqualityOp = { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 5, 5 } };
     setupTestOp(negativeEqualityOp, context.page13, 0);
     context.page13.kindOfLimiting = 1; // Switch to time limit mode
     context.page13.outputTimeLimit[0] = 3;
