@@ -3,9 +3,12 @@
  * The config related to Programmable I/O is found on page13 (of type @ref config13).
  */
 #include "programmableIOControl.h"
+#include "programmableIOControl_internals.h"
 #include "logger.h"
 #include "units.h"
 #include "unit_testing.h"
+
+using namespace programmableIOControl_details;
 
 TESTABLE_STATIC uint8_t ioDelay[_countof(config13::outputPin)];
 TESTABLE_STATIC uint8_t ioOutDelay[_countof(config13::outputPin)];
