@@ -355,9 +355,9 @@ static page_map_t getPageMap(uint8_t pageNumber)
   // Declared as NoEntity so EEPROM storage tests skip it (it has no EEPROM footprint).
   // getPageValue/setPageValue below are overridden to bypass the entity system for
   // page 16 and directly access scatterOffsetPage, so TS reads/writes still work.
-  // Size matches the INI page 16 declaration ([64] U16 entries = 128 bytes).
+  // Size matches the INI page 16 declaration ([32] U16 entries = 64 bytes).
   static constexpr entity_t scatterPageMap[] PROGMEM = {
-    entity_t(EntityType::NoEntity, (uint16_t)(64U * sizeof(uint16_t))),
+    entity_t(EntityType::NoEntity, (uint16_t)(SCATTER_ARRAY_SIZE * sizeof(uint16_t))),
   };
 
   static constexpr page_map_t pageMaps[MAX_PAGE_NUM] PROGMEM = {
@@ -496,7 +496,7 @@ bool setPageValue(uint8_t pageNum, uint16_t pageOffset, byte value)
   if (pageNum == scatterPage)
   {
     // Direct raw byte access: bypass entity system (scatter page is RAM-only, NoEntity in map).
-    // Bound matches INI page 16 size: [64] U16 entries = 128 bytes.
+    // Bound matches INI page 16 size: [32] U16 entries = 64 bytes.
     if (pageOffset < (uint16_t)(SCATTER_ARRAY_SIZE * sizeof(uint16_t)))
     {
       ((byte*)&configPage16.entries)[pageOffset] = value;
@@ -514,7 +514,7 @@ byte getPageValue(uint8_t pageNum, uint16_t pageOffset)
   if (pageNum == scatterPage)
   {
     // Direct raw byte access: bypass entity system (scatter page is RAM-only, NoEntity in map).
-    // Bound matches INI page 16 size: [64] U16 entries = 128 bytes.
+    // Bound matches INI page 16 size: [32] U16 entries = 64 bytes.
     if (pageOffset < (uint16_t)(SCATTER_ARRAY_SIZE * sizeof(uint16_t)))
     {
       return ((byte*)&configPage16.entries)[pageOffset];
