@@ -18,6 +18,7 @@ extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t in
 extern bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs);
 extern bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs);
 extern bool applyOutputTimeLimit(const programmableOutputRule& rule, const programmableio_channel_t& channel, bool ruleActive);
+extern uint8_t nextOutDelay(const statuses& current, uint8_t y, const programmableio_channel_t& channel, const programmableOutputRule& rule);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -883,6 +884,25 @@ static void test_applyOutputTimeLimit(void) {
     TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, true));     
 }
 
+static void test_nextOutDelay(void)
+{
+    programmableio_channel_t channel;
+    programmableOutputRule rule;
+    statuses current = {};
+
+    rule.kindOfLimiting = false;
+
+    TEST_ASSERT_EQUAL_UINT8(0, nextOutDelay(current, 0, channel, rule));
+    channel.ioOutDelay = 5;
+    TEST_ASSERT_EQUAL_UINT8(5, nextOutDelay(current, 0, channel, rule));
+
+    rule.kindOfLimiting = true;
+    rule.outputTimeLimit = 6;
+    BIT_SET(current.outputsStatus, 0);
+    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(current, 0, channel, rule));
+    BIT_CLEAR(current.outputsStatus, 0);
+    TEST_ASSERT_EQUAL_UINT8(0, nextOutDelay(current, 0, channel, rule));
+}
 
 void testProgrammableIOControl(void) 
 {
@@ -914,5 +934,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_evaluateComparisonOp);
         RUN_TEST_P(test_evaluateBitwiseOp);
         RUN_TEST_P(test_applyOutputTimeLimit);
+        RUN_TEST_P(test_nextOutDelay);
     }
 }
