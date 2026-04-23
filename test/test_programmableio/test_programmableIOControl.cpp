@@ -36,8 +36,8 @@ static int16_t mockDataValues[256];
 // Helper to setup mock data
 static void setupMockData(void)
 {
-    for (int i = 0; i < 256; i++) {
-        mockDataValues[i] = i; // Simple pattern: index = value
+    for (size_t i = 0; i < _countof(mockDataValues); i++) {
+        mockDataValues[i] = (int16_t)i; // Simple pattern: index = value
     }
 }
 
@@ -503,7 +503,7 @@ static void test_checkProgrammableIO_time_limit_disables_output(void)
     TEST_ASSERT_EQUAL(1, ioOutDelay[0]);
 }
 
-static void test_checkProgrammableIO_cascade_rule_reuse(void)
+static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
 {
     programmableIOTestContext_t context;
     setupMockData();
@@ -544,7 +544,7 @@ static void test_checkProgrammableIO_cascade_rule_reuse(void)
     TEST_ASSERT_BIT_HIGH(1, currentRuleStatus);
 }
 
-static void test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds(void)
+static void test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds(void)
 {
     programmableIOTestContext_t context;
     setupMockData();
@@ -664,6 +664,105 @@ static void test_checkProgrammableIO_physical_pin_outputTimeLimit_expiry(void)
     TEST_ASSERT_EQUAL(0, ioOutDelay[0]);
 }
 
+static void assert_checkProgrammableIO(programmableIOTestContext_t &context, uint8_t iterations, uint8_t expectedRuleStatus, uint8_t expectedOutputsStatus)
+{
+    for (uint8_t i = 0; i < iterations; i++) {
+        checkProgrammableIO(context.current, context.page13, mockGetData);
+        TEST_ASSERT_EQUAL(expectedRuleStatus, currentRuleStatus);
+        TEST_ASSERT_EQUAL(expectedOutputsStatus, context.current.outputsStatus);
+    }
+}
+
+static void test_FlatShiftBlink_EveryHalfSecond(void)
+{
+    // Based the wiki example: https://wiki.speeduino.com/en/configuration/Programmable_Outputs
+    programmableIOTestContext_t context;
+
+    context.page13.outputPin[0] = 0;
+    context.page13.outputPin[1] = 0;
+    context.page13.outputPin[3] = 0;
+    context.page13.outputPin[4] = 0;
+    context.page13.outputPin[5] = 0;
+    context.page13.outputPin[6] = 0;
+    context.page13.outputPin[7] = 0;
+
+    constexpr uint8_t VIRTUAL_PIN = 129;
+    constexpr uint8_t RPM_INDEX = 5;
+    constexpr int16_t RPM_THRESHOLD = 5600;
+    constexpr uint8_t MAP_INDEX = 1;
+    constexpr int16_t MAP_THRESHOLD = 80;
+
+    // Rule 2: Flat Shift
+    context.page13.outputPin[2] = VIRTUAL_PIN;
+    BIT_CLEAR(context.page13.outputInverted, 2);    // Activate on high
+    context.page13.outputDelay[2] = 2;
+    // Flat shift above 5600 RPM and 80 kPa, with bitwise AND to combine conditions
+    context.page13.operation[2].bitwise = BITWISE_AND;
+    context.page13.operation[2].firstCompType = COMPARATOR_GREATER_EQUAL;
+    context.page13.firstDataIn[2] = RPM_INDEX;
+    context.page13.firstTarget[2] = RPM_THRESHOLD; 
+    context.page13.operation[2].secondCompType = COMPARATOR_GREATER_EQUAL;
+    context.page13.secondDataIn[2] = MAP_INDEX;
+    context.page13.secondTarget[2] = MAP_THRESHOLD;
+    // No time limit, output should stay active as long as conditions are met
+    BIT_SET(context.page13.kindOfLimiting, 2);
+    context.page13.outputTimeLimit[2] = 0;
+
+    // Rule 3: Flat shift timer
+    context.page13.outputPin[3] = VIRTUAL_PIN;
+    BIT_CLEAR(context.page13.outputInverted, 3);    // Activate on high
+    context.page13.outputDelay[3] = 5;
+    // Flat shift active if rule 2 is active and rule 4 is NOT active
+    context.page13.operation[3].bitwise = BITWISE_AND;
+    context.page13.operation[3].firstCompType = COMPARATOR_EQUAL;
+    context.page13.firstDataIn[3] = REUSE_RULES + 2; // Reuse 2nd rule
+    context.page13.firstTarget[3] = 1; 
+    context.page13.operation[3].secondCompType = COMPARATOR_EQUAL;
+    context.page13.secondDataIn[3] = REUSE_RULES + 4; // Reuse 4th rule
+    context.page13.secondTarget[3] = 0;
+    // Once activated, rule 3 should keep the output active for 0.5 seconds 
+    BIT_CLEAR(context.page13.kindOfLimiting, 3);
+    context.page13.outputTimeLimit[3] = 5;
+
+    // Rule 4: Shift light
+    context.page13.outputPin[4] = 5; // Physical pin 5
+    BIT_CLEAR(context.page13.outputInverted, 4);    // Activate on high
+    context.page13.outputDelay[4] = 0;  // No activation delay
+    context.page13.operation[4].bitwise = BITWISE_AND;
+    context.page13.operation[4].firstCompType = COMPARATOR_EQUAL;
+    context.page13.firstDataIn[4] = REUSE_RULES + 2; // Reuse 2nd rule
+    context.page13.firstTarget[4] = 1; 
+    context.page13.operation[4].secondCompType = COMPARATOR_EQUAL;
+    context.page13.secondDataIn[4] = REUSE_RULES + 3; // Reuse 3rd rule
+    context.page13.secondTarget[4] = 0;
+
+    initialiseProgrammableIO(context.current, context.page13);
+    // Rules 2, 3, and 4 are active
+    TEST_ASSERT_EQUAL(0b00011100, pinIsValid);
+
+    mockDataValues[RPM_INDEX] = RPM_THRESHOLD - 100;
+    mockDataValues[MAP_INDEX] = MAP_THRESHOLD - 10;
+    assert_checkProgrammableIO(context, 13 /* Arbitrary number */, 0, 0);
+
+    // Activate rule 2 by meeting conditions...
+    mockDataValues[RPM_INDEX] = RPM_THRESHOLD + 100;
+    mockDataValues[MAP_INDEX] = MAP_THRESHOLD + 10;
+    // ...after 2 iterations (0.2 seconds, the rule 2 delay)...
+    assert_checkProgrammableIO(context, context.page13.outputDelay[2], 0, 0);
+     // ..until the rule 3 output delay activates...
+    assert_checkProgrammableIO(context, context.page13.outputDelay[3], 0b00000100, 0b00010100);
+    // ...which turns the shift light off after it's output delay expires...
+    assert_checkProgrammableIO(context, context.page13.outputTimeLimit[3], 0b00001100, 0b00001100);
+    // ...this continues as long as rule 2 conditions are met    
+    for (uint8_t i = 0; i < 7 /* Arbitrary */; i++) {
+        assert_checkProgrammableIO(context, context.page13.outputDelay[3], 0b00001100, 0b00001100);
+        assert_checkProgrammableIO(context, context.page13.outputTimeLimit[3], 0b00001100, 0b00001100);
+    }
+    mockDataValues[RPM_INDEX] = RPM_THRESHOLD - 100;
+    mockDataValues[MAP_INDEX] = MAP_THRESHOLD - 10;
+    assert_checkProgrammableIO(context, 13 /* Arbitrary number */, 0, 0);
+}
+
 void testProgrammableIOControl(void) 
 {
     SET_UNITY_FILENAME() {
@@ -680,8 +779,8 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_checkProgrammableIO_all_comparators);
         RUN_TEST_P(test_checkProgrammableIO_output_delay_time);
         RUN_TEST_P(test_checkProgrammableIO_time_limit_disables_output);
-        RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse);
-        RUN_TEST_P(test_checkProgrammableIO_cascade_rule_reuse_out_of_bounds);
+        RUN_TEST_P(test_checkProgrammableIO_cascade_REUSE_RULES);
+        RUN_TEST_P(test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds);
         RUN_TEST_P(test_checkProgrammableIO_cascade_rule_second_comparison);
         RUN_TEST_P(test_checkProgrammableIO_second_comparator_failsafe_skip);
         RUN_TEST_P(test_checkProgrammableIO_kindOfLimiting_false_resets_ioOutDelay);
@@ -689,5 +788,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_ProgrammableIOGetData_single_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_two_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
+        RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
     }
 }
