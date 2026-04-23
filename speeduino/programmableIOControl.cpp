@@ -97,7 +97,7 @@ static bool isRuleActive(const programmableOutputRule& rule, int16_t (*getData)(
 
 static bool outputDelayExpired(const programmableOutputRule& rule, const programmableio_channel_t& channel)
 {
-  return (rule.outputTimeLimit==0) || (channel.ioOutDelay >= rule.outputTimeLimit);
+  return (rule.outputTimeLimit==0) || (channel.ioOutDelay > rule.outputTimeLimit);
 }
 
 TESTABLE_STATIC bool applyOutputTimeLimit(const programmableOutputRule& rule, const programmableio_channel_t& channel, bool ruleActive)
@@ -123,12 +123,12 @@ TESTABLE_STATIC uint8_t nextOutDelay(const statuses& current, uint8_t y, const p
     //Released before Maximum time, set delay to maximum to flip the output next
     if (BIT_CHECK(current.outputsStatus, y))
     {
-      return rule.outputTimeLimit; 
+      return rule.outputTimeLimit + 1; 
     }
   
-    return 0; //Reset the counter for next time
+    return 1; //Reset the counter for next time
   }
-  return channel.ioOutDelay;
+  return channel.ioOutDelay + 1;
 }
 
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
@@ -161,7 +161,6 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
           if(!BIT_CHECK(page13.kindOfLimiting, y)) { channels[y].ioOutDelay = 0; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, false));
         }
-        else { channels[y].ioOutDelay++; }
 
         channels[y].ioDelay = 0;
       }
