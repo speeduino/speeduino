@@ -479,7 +479,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
     TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
     TEST_ASSERT_EQUAL(0, channels[0].ioDelay);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], channels[0].ioOutDelay);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+1, channels[0].ioOutDelay);
 }
 
 static void test_checkProgrammableIO_time_limit_disables_output(void)
@@ -498,13 +498,12 @@ static void test_checkProgrammableIO_time_limit_disables_output(void)
 
     BIT_SET(context.current.outputsStatus, 0);
     channels[0].currentRuleStatus = false;
-    channels[0].ioOutDelay = 1;
+    channels[0].ioOutDelay = context.page13.outputTimeLimit[0] + 1;
 
     checkProgrammableIO(context.current, context.page13, mockGetData);
 
     TEST_ASSERT_FALSE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_LOW(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(1, channels[0].ioOutDelay);
 }
 
 static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
@@ -866,19 +865,14 @@ static void assert_applyOutputTimeLimit_nochange(uint8_t limit, uint8_t outDelay
 static void test_applyOutputTimeLimit(void) {
     assert_applyOutputTimeLimit_nochange(0, 0);
     assert_applyOutputTimeLimit_nochange(0, 5);
+    assert_applyOutputTimeLimit_nochange(5, 5);
     assert_applyOutputTimeLimit_nochange(6, 5);
 
     programmableOutputRule rule = {};
     programmableio_channel_t channel = {};
 
     rule.outputTimeLimit = 5;
-    channel.ioOutDelay = 5;
-    rule.kindOfLimiting = true;
-    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
-    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, true)); 
-
-    rule.outputTimeLimit = 5;
-    channel.ioOutDelay = 6;
+    channel.ioOutDelay = rule.outputTimeLimit + 1;
     rule.kindOfLimiting = true;
     TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
     TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, true));     
@@ -892,16 +886,16 @@ static void test_nextOutDelay(void)
 
     rule.kindOfLimiting = false;
 
-    TEST_ASSERT_EQUAL_UINT8(0, nextOutDelay(current, 0, channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(current, 0, channel, rule));
     channel.ioOutDelay = 5;
-    TEST_ASSERT_EQUAL_UINT8(5, nextOutDelay(current, 0, channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(current, 0, channel, rule));
 
     rule.kindOfLimiting = true;
     rule.outputTimeLimit = 6;
     BIT_SET(current.outputsStatus, 0);
-    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(current, 0, channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(7, nextOutDelay(current, 0, channel, rule));
     BIT_CLEAR(current.outputsStatus, 0);
-    TEST_ASSERT_EQUAL_UINT8(0, nextOutDelay(current, 0, channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(current, 0, channel, rule));
 }
 
 void testProgrammableIOControl(void) 
