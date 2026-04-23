@@ -95,6 +95,16 @@ static bool isRuleActive(const programmableOutputRule& rule, int16_t (*getData)(
   return firstCheck;
 }
 
+static bool outputDelayExpired(const programmableOutputRule& rule, const programmableio_channel_t& channel)
+{
+  return (rule.outputTimeLimit==0) || (channel.ioOutDelay >= rule.outputTimeLimit);
+}
+
+TESTABLE_STATIC bool applyOutputTimeLimit(const programmableOutputRule& rule, const programmableio_channel_t& channel, bool ruleActive)
+{
+  return ruleActive && !(rule.kindOfLimiting && (rule.outputTimeLimit != 0) && outputDelayExpired(rule, channel));
+}
+
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
@@ -104,24 +114,18 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
 {
   for (uint8_t y = 0; y < _countof(channels); y++)
   {
-    if ( channels[y].pinIsValid )
+    auto& channel = channels[y];
+    if ( channel.pinIsValid )
     {
       programmableOutputRule rule(page13, y);
-      bool ruleActive = isRuleActive(rule, getData);
+      bool ruleActive = applyOutputTimeLimit(rule, channel, isRuleActive(rule, getData));
 
       //If the limiting time is active(>0) and using maximum time
-      if (BIT_CHECK(page13.kindOfLimiting, y))
+      if (BIT_CHECK(page13.kindOfLimiting, y) && !ruleActive)
       {
-        if(ruleActive)
-        {
-          if ((page13.outputTimeLimit[y] != 0) && (channels[y].ioOutDelay >= page13.outputTimeLimit[y])) { ruleActive = false; } //Time has counted, disable the output
-        }
-        else
-        {
-          //Released before Maximum time, set delay to maximum to flip the output next
-          if(BIT_CHECK(current.outputsStatus, y)) { channels[y].ioOutDelay = page13.outputTimeLimit[y]; }
-          else { channels[y].ioOutDelay = 0; } //Reset the counter for next time
-        }
+        //Released before Maximum time, set delay to maximum to flip the output next
+        if(BIT_CHECK(current.outputsStatus, y)) { channels[y].ioOutDelay = page13.outputTimeLimit[y]; }
+        else { channels[y].ioOutDelay = 0; } //Reset the counter for next time
       }
 
       if (ruleActive == true)

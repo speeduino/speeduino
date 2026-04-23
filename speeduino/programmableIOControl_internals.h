@@ -52,6 +52,7 @@ struct programmableOutputRule {
   compOperation firstOp; ///< First operand for comparison
   compOperation secondOp; ///< Second operand for comparison, used if bitwise operation is enabled
 
+  programmableOutputRule() = default;
   programmableOutputRule(const config13& page13, uint8_t index) 
    : outputInverted(BIT_CHECK(page13.outputInverted, index)),
      kindOfLimiting(BIT_CHECK(page13.kindOfLimiting, index)),
