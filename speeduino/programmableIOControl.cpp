@@ -146,23 +146,23 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       programmableOutputRule rule(page13, y);
       if (applyOutputTimeLimit(rule, channel, isRuleActive(rule, getData)))
       {
-        if (channels[y].ioDelay >= page13.outputDelay[y])
+        ++channel.ioDelay;
+        if (channel.ioDelay > rule.outputDelay)
         {
-          if (BIT_CHECK(current.outputsStatus, y) && !outputDelayExpired(rule, channel)) { channels[y].ioOutDelay++; }
+          if (BIT_CHECK(current.outputsStatus, y) && !outputDelayExpired(rule, channel)) { ++channel.ioOutDelay; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, true));
         }
-        else { channels[y].ioDelay++; }
       }
       else
       {
         channel.ioOutDelay = nextOutDelay(current, y, channel, rule);
         if (outputDelayExpired(rule, channel))
         {
-          if(!BIT_CHECK(page13.kindOfLimiting, y)) { channels[y].ioOutDelay = 0; }
+          if(!rule.kindOfLimiting) { channel.ioOutDelay = 0; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, false));
         }
 
-        channels[y].ioDelay = 0;
+        channel.ioDelay = 0;
       }
     }
   }
