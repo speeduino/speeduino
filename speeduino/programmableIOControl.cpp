@@ -118,21 +118,11 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
     if ( channel.pinIsValid )
     {
       programmableOutputRule rule(page13, y);
-      bool ruleActive = applyOutputTimeLimit(rule, channel, isRuleActive(rule, getData));
-
-      //If the limiting time is active(>0) and using maximum time
-      if (BIT_CHECK(page13.kindOfLimiting, y) && !ruleActive)
-      {
-        //Released before Maximum time, set delay to maximum to flip the output next
-        if(BIT_CHECK(current.outputsStatus, y)) { channels[y].ioOutDelay = page13.outputTimeLimit[y]; }
-        else { channels[y].ioOutDelay = 0; } //Reset the counter for next time
-      }
-
-      if (ruleActive == true)
+      if (applyOutputTimeLimit(rule, channel, isRuleActive(rule, getData)))
       {
         if (channels[y].ioDelay >= page13.outputDelay[y])
         {
-          bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ ruleActive;
+          bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ true;
           if (BIT_CHECK(current.outputsStatus, y) && (channels[y].ioOutDelay < page13.outputTimeLimit[y])) { channels[y].ioOutDelay++; }
           if (page13.outputPin[y] < 128) { digitalWrite(page13.outputPin[y], bitStatus); }
           else { channels[y].currentRuleStatus = bitStatus; }
@@ -142,9 +132,16 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       }
       else
       {
+        //If the limiting time is active(>0) and using maximum time
+        if (BIT_CHECK(page13.kindOfLimiting, y))
+        {
+          //Released before Maximum time, set delay to maximum to flip the output next
+          if(BIT_CHECK(current.outputsStatus, y)) { channels[y].ioOutDelay = page13.outputTimeLimit[y]; }
+          else { channels[y].ioOutDelay = 0; } //Reset the counter for next time
+        }
         if (channels[y].ioOutDelay >= page13.outputTimeLimit[y])
         {
-          bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ ruleActive;
+          bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ false;
           if (page13.outputPin[y] < 128) { digitalWrite(page13.outputPin[y], bitStatus); }
           else { channels[y].currentRuleStatus = bitStatus; }
           BIT_WRITE(current.outputsStatus, y, bitStatus);
