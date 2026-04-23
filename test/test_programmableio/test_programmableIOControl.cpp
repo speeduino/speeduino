@@ -17,6 +17,7 @@ extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16
 extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index));
 extern bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs);
 extern bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs);
+extern bool applyOutputTimeLimit(const programmableOutputRule& rule, const programmableio_channel_t& channel, bool ruleActive);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -849,6 +850,40 @@ static void test_evaluateBitwiseOp(void)
     TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_XOR, true, false));
 }
 
+static void assert_applyOutputTimeLimit_nochange(uint8_t limit, uint8_t outDelay) {
+    programmableOutputRule rule = {};
+    programmableio_channel_t channel = {};
+    rule.outputTimeLimit = limit;
+    channel.ioOutDelay = outDelay;
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
+    TEST_ASSERT_TRUE(applyOutputTimeLimit(rule, channel, true)); 
+    rule.kindOfLimiting = true;
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
+    TEST_ASSERT_TRUE(applyOutputTimeLimit(rule, channel, true)); 
+}
+
+static void test_applyOutputTimeLimit(void) {
+    assert_applyOutputTimeLimit_nochange(0, 0);
+    assert_applyOutputTimeLimit_nochange(0, 5);
+    assert_applyOutputTimeLimit_nochange(6, 5);
+
+    programmableOutputRule rule = {};
+    programmableio_channel_t channel = {};
+
+    rule.outputTimeLimit = 5;
+    channel.ioOutDelay = 5;
+    rule.kindOfLimiting = true;
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, true)); 
+
+    rule.outputTimeLimit = 5;
+    channel.ioOutDelay = 6;
+    rule.kindOfLimiting = true;
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, true));     
+}
+
+
 void testProgrammableIOControl(void) 
 {
     SET_UNITY_FILENAME() {
@@ -878,5 +913,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_getData);
         RUN_TEST_P(test_evaluateComparisonOp);
         RUN_TEST_P(test_evaluateBitwiseOp);
+        RUN_TEST_P(test_applyOutputTimeLimit);
     }
 }
