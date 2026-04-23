@@ -209,7 +209,7 @@ byte correctionASE(void)
   //2) Make sure we're not still cranking
   if( BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK) != true )
   {
-    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue == 0) )
+    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) || (currentStatus.ASEValue <= 1) )
     {
       if ( (currentStatus.runSecs < (table2D_getValue(&ASECountTable, currentStatus.coolant + CALIBRATION_TEMPERATURE_OFFSET))) && !(BIT_CHECK(currentStatus.engine, BIT_ENGINE_CRANK)) )
       {
@@ -235,7 +235,7 @@ byte correctionASE(void)
       //Safety checks
       if(ASEValue > UINT8_MAX) { ASEValue = UINT8_MAX; }
       
-      if(ASEValue < 0) { ASEValue = 0; }
+      if(ASEValue < 1) { ASEValue = 1; } //Must be at least 1 to prevent divide by 0 issues
       ASEValue = (byte)ASEValue;
     }
   }
