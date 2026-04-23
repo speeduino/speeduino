@@ -461,7 +461,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
     checkProgrammableIO(context.current, context.page13, mockGetData);
     TEST_ASSERT_TRUE(channels[0].currentRuleStatus);
     TEST_ASSERT_BIT_HIGH(0, context.current.outputsStatus);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+1, channels[0].ioDelay);
+    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+2, channels[0].ioDelay);
     TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], channels[0].ioOutDelay);
 
     for (auto &channel : channels) {
