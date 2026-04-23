@@ -116,6 +116,21 @@ static bool updateChannelStatus(programmableio_channel_t& channel, const program
   return outputStatus;
 }
 
+TESTABLE_STATIC uint8_t nextOutDelay(const statuses& current, uint8_t y, const programmableio_channel_t& channel, const programmableOutputRule& rule)
+{
+  if (rule.kindOfLimiting)
+  {
+    //Released before Maximum time, set delay to maximum to flip the output next
+    if (BIT_CHECK(current.outputsStatus, y))
+    {
+      return rule.outputTimeLimit; 
+    }
+  
+    return 0; //Reset the counter for next time
+  }
+  return channel.ioOutDelay;
+}
+
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
@@ -133,21 +148,15 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       {
         if (channels[y].ioDelay >= page13.outputDelay[y])
         {
-          if (BIT_CHECK(current.outputsStatus, y) && (channels[y].ioOutDelay < page13.outputTimeLimit[y])) { channels[y].ioOutDelay++; }
+          if (BIT_CHECK(current.outputsStatus, y) && !outputDelayExpired(rule, channel)) { channels[y].ioOutDelay++; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, true));
         }
         else { channels[y].ioDelay++; }
       }
       else
       {
-        //If the limiting time is active(>0) and using maximum time
-        if (BIT_CHECK(page13.kindOfLimiting, y))
-        {
-          //Released before Maximum time, set delay to maximum to flip the output next
-          if(BIT_CHECK(current.outputsStatus, y)) { channels[y].ioOutDelay = page13.outputTimeLimit[y]; }
-          else { channels[y].ioOutDelay = 0; } //Reset the counter for next time
-        }
-        if (channels[y].ioOutDelay >= page13.outputTimeLimit[y])
+        channel.ioOutDelay = nextOutDelay(current, y, channel, rule);
+        if (outputDelayExpired(rule, channel))
         {
           if(!BIT_CHECK(page13.kindOfLimiting, y)) { channels[y].ioOutDelay = 0; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, false));
