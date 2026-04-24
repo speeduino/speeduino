@@ -830,6 +830,10 @@ static void test_evaluateComparisonOp(void)
     // Test XOR
     TEST_ASSERT_TRUE(evaluateComparisonOp(COMPARATOR_XOR, 5, 3));
     TEST_ASSERT_FALSE(evaluateComparisonOp(COMPARATOR_XOR, 5, 5));
+
+    // Test invalid comparator type should return false
+    TEST_ASSERT_FALSE(evaluateComparisonOp(211, 5, 3));
+    TEST_ASSERT_FALSE(evaluateComparisonOp(123, 5, 5));
 }
 
 static void test_evaluateBitwiseOp(void)
