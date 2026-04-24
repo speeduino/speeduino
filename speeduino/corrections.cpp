@@ -929,7 +929,7 @@ uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
     //Calculate how many recovery steps have occurred since the 
     uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
     uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
-    int8_t recoveryTimingAdj = 0;
+    int16_t recoveryTimingAdj = 0;
     if(recoverySteps > knockLastRecoveryStep) 
     { 
       recoveryTimingAdj = (recoverySteps - knockLastRecoveryStep) * configPage10.knock_recoveryStep;
