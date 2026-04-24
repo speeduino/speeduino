@@ -65,6 +65,7 @@ jobs:
                 version: 1.2.0
               - name: SdFat
               - name: SimplyAtomic
+              - name: elapsedMillis
 
     steps:
       - name: Checkout repository
