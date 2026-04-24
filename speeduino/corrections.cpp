@@ -1001,6 +1001,9 @@ int8_t correctionKnockTiming(int8_t advance)
   {
     if(BIT_CHECK(currentStatus.status5, BIT_STATUS5_KNOCK_ACTIVE))
     {
+      //Knock retard is currently active already.
+      tmpKnockRetard = currentStatus.knockRetard;
+
       //Check if additional knock events occurred
       //Additional knock events are when the step time has passed and the voltage remains above the threshold
       if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
