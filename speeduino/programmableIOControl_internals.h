@@ -4,22 +4,11 @@
  */
 
 #include <stdint.h>
+#include "config_pages.h"
+#include "preprocessor.h"
+
 namespace programmableIOControl_details
 {
-
-// The struct representing the state of each programmable I/O channel, used for processing the 
-// rules and keeping track of delays and active status.
-struct channel_t
-{
-  bool isPinValid : 1;
-  bool isRuleActive : 1;
-  uint8_t activationDelayCount = 0;
-  uint8_t outputDelayCount = 0;
-
-  channel_t()
-  : isPinValid(false), isRuleActive(false), activationDelayCount(0), outputDelayCount(0)
-  {}
-};
 
 // Defined here for unit testing, but only used in programmableIOControl.cpp
 constexpr uint8_t COMPARATOR_EQUAL = 0;
@@ -93,6 +82,28 @@ struct rule_t {
   bool isPhysicalPin(void) const {
     return !isCascadeRule();
   }
+};
+
+// The struct representing the state of each programmable I/O channel, used for processing the 
+// rules and keeping track of delays and active status.
+struct channel_t
+{
+  bool isPinValid : 1;
+  bool isRuleActive : 1;
+  uint8_t activationDelayCount = 0;
+  uint8_t outputDelayCount = 0;
+
+  channel_t()
+  : isPinValid(false), isRuleActive(false), activationDelayCount(0), outputDelayCount(0)
+  {}
+
+  void initialize(const rule_t& rule);
+};
+
+// The struct representing the current state of the programmable I/O system
+struct state_t
+{
+  channel_t channels[_countof(config13::outputPin)];
 };
 
 }
