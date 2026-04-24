@@ -10,11 +10,11 @@
 
 using namespace programmableIOControl_details;
 
-TESTABLE_STATIC programmableio_channel_t channels[_countof(config13::outputPin)];
+TESTABLE_STATIC channel_t channels[_countof(config13::outputPin)];
 
-static programmableio_channel_t toChannel(const programmableOutputRule& rule) {
-  programmableio_channel_t channel;
-  channel.pinIsValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
+static channel_t toChannel(const rule_t& rule) {
+  channel_t channel;
+  channel.isPinValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
   return channel;
 }
 
@@ -22,13 +22,13 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
 {
   for (uint8_t y = 0; y < _countof(channels); y++)
   {
-    programmableOutputRule rule(page13, y);
+    rule_t rule(page13, y);
     channels[y] = toChannel(rule);
-    BIT_WRITE(current.outputsStatus, y, channels[y].pinIsValid && rule.outputInverted); 
-    if (channels[y].pinIsValid && rule.isPhysicalPin()) 
+    BIT_WRITE(current.outputsStatus, y, channels[y].isPinValid && rule.isOutputInverted); 
+    if (channels[y].isPinValid && rule.isPhysicalPin()) 
     {
       pinMode(rule.outputPin, OUTPUT);
-      digitalWrite(rule.outputPin, rule.outputInverted);
+      digitalWrite(rule.outputPin, rule.isOutputInverted);
     }
   }
 }
@@ -41,7 +41,7 @@ TESTABLE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(ui
     request -= REUSE_RULES;
     if ( request <= _countof(channels) ) 
     { 
-      data = channels[request].currentRuleStatus; 
+      data = channels[request].isRuleActive; 
     }
   }
   else 
@@ -67,7 +67,7 @@ TESTABLE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t
   }
 }
 
-static bool evaluateComparisonOp(const compOperation& operation, int16_t (*getData)(uint16_t index))
+static bool evaluateComparisonOp(const compOperation_t& operation, int16_t (*getData)(uint16_t index))
 {
   return evaluateComparisonOp(operation.opType, getComparisonData(operation.dataIndex, getData), operation.target);
 }
@@ -82,53 +82,53 @@ TESTABLE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
   }
 }
 
-static bool isRuleActive(const programmableOutputRule& rule, int16_t (*getData)(uint16_t index))
+static bool isRuleActive(const rule_t& rule, int16_t (*getData)(uint16_t index))
 {
   bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
 
-  if ((rule.opCompare != BITWISE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
+  if ((rule.combineOpType != BITWISE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
   {
     bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
-    firstCheck = evaluateBitwiseOp(rule.opCompare, firstCheck, secondCheck);
+    firstCheck = evaluateBitwiseOp(rule.combineOpType, firstCheck, secondCheck);
   }
 
   return firstCheck;
 }
 
-static bool outputDelayExpired(const programmableOutputRule& rule, const programmableio_channel_t& channel)
+static inline bool outputDelayExpired(const rule_t& rule, const channel_t& channel)
 {
-  return (rule.outputTimeLimit==0) || (channel.ioOutDelay > rule.outputTimeLimit);
+  return (rule.outputTimeLimit==0) || (channel.outputDelayCount > rule.outputTimeLimit);
 }
 
-TESTABLE_STATIC bool applyOutputTimeLimit(const programmableOutputRule& rule, const programmableio_channel_t& channel, bool ruleActive)
+TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive)
 {
-  return ruleActive && !(rule.kindOfLimiting && (rule.outputTimeLimit != 0) && outputDelayExpired(rule, channel));
+  return ruleActive && !((rule.limitType==LimitingType::Max) && (rule.outputTimeLimit != 0) && outputDelayExpired(rule, channel));
 }
 
-static bool updateChannelStatus(programmableio_channel_t& channel, const programmableOutputRule& rule, bool ruleActive)
+static inline bool updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive)
 {
-  bool outputStatus = rule.outputInverted ^ ruleActive;
+  bool outputStatus = rule.isOutputInverted ^ ruleActive;
   if (rule.isPhysicalPin()) { 
     digitalWrite(rule.outputPin, outputStatus); 
   } else {
-    channel.currentRuleStatus = outputStatus;
+    channel.isRuleActive = outputStatus;
   }
   return outputStatus;
 }
 
-TESTABLE_STATIC uint8_t nextOutDelay(const statuses& current, uint8_t y, const programmableio_channel_t& channel, const programmableOutputRule& rule)
+TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const statuses& current, const channel_t& channel, const rule_t& rule)
 {
-  if (rule.kindOfLimiting)
+  if (rule.limitType==LimitingType::Max)
   {
     //Released before Maximum time, set delay to maximum to flip the output next
-    if (BIT_CHECK(current.outputsStatus, y))
+    if (BIT_CHECK(current.outputsStatus, rule._index))
     {
       return rule.outputTimeLimit + 1; 
     }
   
     return 1; //Reset the counter for next time
   }
-  return channel.ioOutDelay + 1;
+  return channel.outputDelayCount + 1;
 }
 
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
@@ -141,28 +141,28 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
   for (uint8_t y = 0; y < _countof(channels); y++)
   {
     auto& channel = channels[y];
-    if ( channel.pinIsValid )
+    if ( channel.isPinValid )
     {
-      programmableOutputRule rule(page13, y);
+      rule_t rule(page13, y);
       if (applyOutputTimeLimit(rule, channel, isRuleActive(rule, getData)))
       {
-        ++channel.ioDelay;
-        if (channel.ioDelay > rule.outputDelay)
+        ++channel.activationDelayCount;
+        if (channel.activationDelayCount > rule.activationDelay)
         {
-          if (BIT_CHECK(current.outputsStatus, y) && !outputDelayExpired(rule, channel)) { ++channel.ioOutDelay; }
+          if (BIT_CHECK(current.outputsStatus, y) && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, true));
         }
       }
       else
       {
-        channel.ioOutDelay = nextOutDelay(current, y, channel, rule);
+        channel.outputDelayCount = nextOutDelay(current, channel, rule);
         if (outputDelayExpired(rule, channel))
         {
-          if(!rule.kindOfLimiting) { channel.ioOutDelay = 0; }
+          if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
           BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, false));
         }
 
-        channel.ioDelay = 0;
+        channel.activationDelayCount = 0;
       }
     }
   }
