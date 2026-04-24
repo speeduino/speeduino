@@ -27,7 +27,7 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
   }
 }
 
-TESTABLE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
 {
   int16_t data = 0;
   if ( request >= REUSE_RULES )
@@ -46,7 +46,7 @@ TESTABLE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(ui
   return data;
 }
 
-TESTABLE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs)
+TESTABLE_INLINE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs)
 {
   switch (compType) {
     case COMPARATOR_EQUAL: return lhs == rhs;
@@ -61,12 +61,12 @@ TESTABLE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t
   }
 }
 
-static bool evaluateComparisonOp(const compOperation_t& operation, int16_t (*getData)(uint16_t index))
+static inline bool evaluateComparisonOp(const compOperation_t& operation, int16_t (*getData)(uint16_t index))
 {
   return evaluateComparisonOp(operation.opType, getComparisonData(operation.dataIndex, getData), operation.target);
 }
 
-TESTABLE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
+TESTABLE_INLINE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
 {
   switch (compType) {
     case BITWISE_AND: return (lhs & rhs) != 0;
@@ -76,7 +76,7 @@ TESTABLE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
   }
 }
 
-static bool isRuleActive(const rule_t& rule, int16_t (*getData)(uint16_t index))
+static inline bool isRuleActive(const rule_t& rule, int16_t (*getData)(uint16_t index))
 {
   bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
 
@@ -130,7 +130,7 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const statuses& current, const chann
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
 {
   for (uint8_t y = 0; y < _countof(state.channels); y++)
   {
@@ -173,7 +173,7 @@ void checkProgrammableIO(statuses& current, const config13& page13)
  * @param index - Field index/number (?)
  * @return 16 bit (int) result
  */
-TESTABLE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
+TESTABLE_INLINE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
 {
   int16_t result;
   if ( index < LOG_ENTRY_SIZE )
