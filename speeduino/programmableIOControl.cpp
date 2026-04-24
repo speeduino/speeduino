@@ -10,22 +10,16 @@
 
 using namespace programmableIOControl_details;
 
-TESTABLE_STATIC channel_t channels[_countof(config13::outputPin)];
-
-static channel_t toChannel(const rule_t& rule) {
-  channel_t channel;
-  channel.isPinValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
-  return channel;
-}
+TESTABLE_STATIC state_t state; // The current state of the programmable I/O system, including the status of each channel and its timers
 
 void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current, const config13& page13)
 {
-  for (uint8_t y = 0; y < _countof(channels); y++)
+  for (uint8_t y = 0; y < _countof(state.channels); y++)
   {
     rule_t rule(page13, y);
-    channels[y] = toChannel(rule);
-    BIT_WRITE(current.outputsStatus, y, channels[y].isPinValid && rule.isOutputInverted); 
-    if (channels[y].isPinValid && rule.isPhysicalPin()) 
+    state.channels[y].initialize(rule);
+    BIT_WRITE(current.outputsStatus, y, state.channels[y].isPinValid && rule.isOutputInverted); 
+    if (state.channels[y].isPinValid && rule.isPhysicalPin()) 
     {
       pinMode(rule.outputPin, OUTPUT);
       digitalWrite(rule.outputPin, rule.isOutputInverted);
@@ -39,9 +33,9 @@ TESTABLE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(ui
   if ( request >= REUSE_RULES )
   {
     request -= REUSE_RULES;
-    if ( request <= _countof(channels) ) 
+    if ( request <= _countof(state.channels) ) 
     { 
-      data = channels[request].isRuleActive; 
+      data = state.channels[request].isRuleActive; 
     }
   }
   else 
@@ -86,7 +80,7 @@ static bool isRuleActive(const rule_t& rule, int16_t (*getData)(uint16_t index))
 {
   bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
 
-  if ((rule.combineOpType != BITWISE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(channels))) ) //Failsafe check
+  if ((rule.combineOpType != BITWISE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
     bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
     firstCheck = evaluateBitwiseOp(rule.combineOpType, firstCheck, secondCheck);
@@ -138,9 +132,9 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const statuses& current, const chann
  */
 TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
 {
-  for (uint8_t y = 0; y < _countof(channels); y++)
+  for (uint8_t y = 0; y < _countof(state.channels); y++)
   {
-    auto& channel = channels[y];
+    auto& channel = state.channels[y];
     if ( channel.isPinValid )
     {
       rule_t rule(page13, y);
