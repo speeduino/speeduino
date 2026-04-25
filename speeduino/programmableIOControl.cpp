@@ -109,15 +109,14 @@ TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const chann
   return ruleActive && !((rule.limitType==LimitingType::Max) && (rule.outputTimeLimit != 0) && outputDelayExpired(rule, channel));
 }
 
-static inline bool updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive)
+static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive) noexcept
 {
-  bool outputStatus = rule.isOutputInverted ^ ruleActive;
+  channel.isOutputActive = rule.isOutputInverted ^ ruleActive;
   if (rule.isPhysicalPin()) { 
-    digitalWrite(rule.outputPin, outputStatus); 
+    digitalWrite(rule.outputPin, channel.isOutputActive); 
   } else {
-    channel.isRuleActive = outputStatus;
+    channel.isRuleActive = channel.isOutputActive;
   }
-  return outputStatus;
 }
 
 TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule)
@@ -140,7 +139,7 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-TESTABLE_INLINE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC uint8_t checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index))
 {
   for (uint8_t y = 0; y < _countof(state.channels); y++)
   {
@@ -154,7 +153,7 @@ TESTABLE_INLINE_STATIC void checkProgrammableIO(statuses& current, const config1
         if (channel.activationDelayCount > rule.activationDelay)
         {
           if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
-          channel.isOutputActive = updateChannelStatus(channel, rule, true);
+          updateChannelStatus(channel, rule, true);
         }
       }
       else
@@ -163,7 +162,7 @@ TESTABLE_INLINE_STATIC void checkProgrammableIO(statuses& current, const config1
         if (outputDelayExpired(rule, channel))
         {
           if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
-          channel.isOutputActive = updateChannelStatus(channel, rule, false);
+          updateChannelStatus(channel, rule, false);
         }
 
         channel.activationDelayCount = 0;
@@ -171,13 +170,13 @@ TESTABLE_INLINE_STATIC void checkProgrammableIO(statuses& current, const config1
     }
   }
 
-  current.outputsStatus = compressedOuputStatus(state);
+  return compressedOuputStatus(state);
 }
 
 // LCOV_EXCL_START
-void checkProgrammableIO(statuses& current, const config13& page13)
+uint8_t checkProgrammableIO(const config13& page13)
 {
-  checkProgrammableIO(current, page13, ProgrammableIOGetData);
+  return checkProgrammableIO(page13, ProgrammableIOGetData);
 }
 // LCOV_EXCL_STOP
 
