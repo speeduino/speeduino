@@ -90,11 +90,12 @@ struct channel_t
 {
   bool isPinValid : 1;
   bool isRuleActive : 1;
+  bool isOutputActive : 1;
   uint8_t activationDelayCount = 0;
   uint8_t outputDelayCount = 0;
 
   channel_t()
-  : isPinValid(false), isRuleActive(false), activationDelayCount(0), outputDelayCount(0)
+  : isPinValid(false), isRuleActive(false), isOutputActive(false)
   {}
 
   void initialize(const rule_t& rule);
