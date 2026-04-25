@@ -18,7 +18,7 @@ extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t in
 extern bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs);
 extern bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs);
 extern bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive);
-extern uint8_t nextOutDelay(const statuses& current, const channel_t& channel, const rule_t& rule);
+extern uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -886,21 +886,20 @@ static void test_nextOutDelay(void)
 {
     channel_t channel;
     rule_t rule;
-    statuses current = {};
 
     rule.limitType = LimitingType::Min;
     rule._index = 0;
 
-    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(current, channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel, rule));
     channel.outputDelayCount = 5;
-    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(current, channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(channel, rule));
 
     rule.limitType = LimitingType::Max;
     rule.outputTimeLimit = 6;
-    BIT_SET(current.outputsStatus, 0);
-    TEST_ASSERT_EQUAL_UINT8(7, nextOutDelay(current, channel, rule));
-    BIT_CLEAR(current.outputsStatus, 0);
-    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(current, channel, rule));
+    channel.isOutputActive = true;
+    TEST_ASSERT_EQUAL_UINT8(7, nextOutDelay(channel, rule));
+    channel.isOutputActive = false;
+    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel, rule));
 }
 
 void testProgrammableIOControl(void) 

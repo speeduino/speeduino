@@ -9,6 +9,7 @@ void channel_t::initialize(const rule_t& rule)
     isRuleActive = false;
     activationDelayCount = 0;
     outputDelayCount = 0;
+    isOutputActive = isPinValid && rule.isOutputInverted;
 }
 
 }
