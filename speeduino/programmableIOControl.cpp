@@ -12,19 +12,29 @@ using namespace programmableIOControl_details;
 
 TESTABLE_STATIC state_t state; // The current state of the programmable I/O system, including the status of each channel and its timers
 
+TESTABLE_INLINE_STATIC uint8_t compressedOuputStatus(const state_t &state)
+{
+  uint8_t status = 0;
+  for (uint8_t i = 0; i < _countof(state.channels); i++)
+  {
+    BIT_WRITE(status, i, state.channels[i].isOutputActive);
+  }
+  return status;
+}
+
 void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current, const config13& page13)
 {
   for (uint8_t y = 0; y < _countof(state.channels); y++)
   {
     rule_t rule(page13, y);
     state.channels[y].initialize(rule);
-    BIT_WRITE(current.outputsStatus, y, state.channels[y].isPinValid && rule.isOutputInverted); 
     if (state.channels[y].isPinValid && rule.isPhysicalPin()) 
     {
       pinMode(rule.outputPin, OUTPUT);
       digitalWrite(rule.outputPin, rule.isOutputInverted);
     }
   }
+  current.outputsStatus = compressedOuputStatus(state);
 }
 
 TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
@@ -110,12 +120,12 @@ static inline bool updateChannelStatus(channel_t& channel, const rule_t& rule, b
   return outputStatus;
 }
 
-TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const statuses& current, const channel_t& channel, const rule_t& rule)
+TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule)
 {
   if (rule.limitType==LimitingType::Max)
   {
     //Released before Maximum time, set delay to maximum to flip the output next
-    if (BIT_CHECK(current.outputsStatus, rule._index))
+    if (channel.isOutputActive)
     {
       return rule.outputTimeLimit + 1; 
     }
@@ -143,23 +153,25 @@ TESTABLE_INLINE_STATIC void checkProgrammableIO(statuses& current, const config1
         ++channel.activationDelayCount;
         if (channel.activationDelayCount > rule.activationDelay)
         {
-          if (BIT_CHECK(current.outputsStatus, y) && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
-          BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, true));
+          if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
+          channel.isOutputActive = updateChannelStatus(channel, rule, true);
         }
       }
       else
       {
-        channel.outputDelayCount = nextOutDelay(current, channel, rule);
+        channel.outputDelayCount = nextOutDelay(channel, rule);
         if (outputDelayExpired(rule, channel))
         {
           if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
-          BIT_WRITE(current.outputsStatus, y, updateChannelStatus(channel, rule, false));
+          channel.isOutputActive = updateChannelStatus(channel, rule, false);
         }
 
         channel.activationDelayCount = 0;
       }
     }
   }
+
+  current.outputsStatus = compressedOuputStatus(state);
 }
 
 // LCOV_EXCL_START
