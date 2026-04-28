@@ -5,8 +5,10 @@
 void runAllTests(void)
 {
     extern void testProgrammableIOControl(void);
+    extern void testProgrammableIOControlStateT(void);
 
     testProgrammableIOControl();
+    testProgrammableIOControlStateT();
 }
 
 TEST_HARNESS(runAllTests)

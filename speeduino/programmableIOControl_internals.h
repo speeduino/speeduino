@@ -108,6 +108,8 @@ struct channel_t
 struct state_t
 {
   channel_t channels[_countof(config13::outputPin)];
+
+  uint8_t compressedOutputStatus(void) const;
 };
 
 }
