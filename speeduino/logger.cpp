@@ -9,6 +9,7 @@
 #include "decoder_init.h"
 #include "scheduledIO_inj.h"
 #include "resetControl.h"
+#include "programmableIOControl.h"
 
 static byte setStatusBit(byte status, uint8_t index, bool bit)
 {
@@ -321,7 +322,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 112: statusValue = highByte(currentStatus.vvt2Angle); break;
     case 113: statusValue = currentStatus.vvt2TargetAngle; break;
     case 114: statusValue = lowByte(currentStatus.vvt2Duty); break;
-    case 115: statusValue = currentStatus.outputsStatus; break;
+    case 115: statusValue = getProgrammableIOOutputStatus(); break;
     case 116: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 117: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 118: statusValue = currentStatus.advance1; break; //advance 1 (%)
@@ -461,7 +462,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 78: statusValue = currentStatus.vvt2Angle; break; //2 bytes for vvt2Angle
     case 79: statusValue = currentStatus.vvt2TargetAngle; break;
     case 80: statusValue = currentStatus.vvt2Duty; break;
-    case 81: statusValue = currentStatus.outputsStatus; break;
+    case 81: statusValue = getProgrammableIOOutputStatus(); break;
     case 82: statusValue = currentStatus.fuelTemp; break; //Fuel temperature from flex sensor
     case 83: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 84: statusValue = currentStatus.advance1; break; //advance 1 (%)
@@ -638,7 +639,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 107: statusValue = (int8_t)currentStatus.vvt2Angle; break;
     case 108: statusValue = currentStatus.vvt2TargetAngle; break;
     case 109: statusValue = currentStatus.vvt2Duty; break;
-    case 110: statusValue = currentStatus.outputsStatus; break;
+    case 110: statusValue = getProgrammableIOOutputStatus(); break;
     case 111: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 112: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
     case 113: statusValue = currentStatus.VE1; break; //VE 1 (%)

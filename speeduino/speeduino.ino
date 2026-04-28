@@ -313,7 +313,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
-      currentStatus.outputsStatus = checkProgrammableIO(configPage13);
+      checkProgrammableIO(configPage13);
       
       // Air conditioning control
       airConControl();
