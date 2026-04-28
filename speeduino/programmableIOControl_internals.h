@@ -20,10 +20,10 @@ constexpr uint8_t COMPARATOR_LESS_EQUAL = 5;
 constexpr uint8_t COMPARATOR_AND = 6;
 constexpr uint8_t COMPARATOR_XOR = 7;
 
-constexpr uint8_t BITWISE_DISABLED = 0;
-constexpr uint8_t BITWISE_AND = 1;
-constexpr uint8_t BITWISE_OR = 2;
-constexpr uint8_t BITWISE_XOR = 3;
+constexpr uint8_t COMBINE_DISABLED = 0;
+constexpr uint8_t COMBINE_AND = 1;
+constexpr uint8_t COMBINE_OR = 2;
+constexpr uint8_t COMBINE_XOR = 3;
 
 constexpr uint8_t REUSE_RULES = 240;
 
