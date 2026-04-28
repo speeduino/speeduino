@@ -12,19 +12,9 @@ using namespace programmableIOControl_details;
 
 TESTABLE_STATIC state_t state; // The current state of the programmable I/O system, including the status of each channel and its timers
 
-TESTABLE_INLINE_STATIC uint8_t compressedOuputStatus(const state_t &state)
-{
-  uint8_t status = 0;
-  for (uint8_t i = 0; i < _countof(state.channels); i++)
-  {
-    BIT_WRITE(status, i, state.channels[i].isOutputActive);
-  }
-  return status;
-}
-
 void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current, const config13& page13)
 {
-  for (uint8_t y = 0; y < _countof(state.channels); y++)
+  for (uint8_t y = 0; y < _countof(state_t::channels); y++)
   {
     rule_t rule(page13, y);
     state.channels[y].initialize(rule);
@@ -34,7 +24,7 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
       digitalWrite(rule.outputPin, rule.isOutputInverted);
     }
   }
-  current.outputsStatus = compressedOuputStatus(state);
+  current.outputsStatus = state.compressedOutputStatus();
 }
 
 TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
@@ -139,9 +129,9 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-TESTABLE_INLINE_STATIC uint8_t checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index))
 {
-  for (uint8_t y = 0; y < _countof(state.channels); y++)
+  for (uint8_t y = 0; y < _countof(state_t::channels); y++)
   {
     auto& channel = state.channels[y];
     if ( channel.isPinValid )
@@ -169,14 +159,13 @@ TESTABLE_INLINE_STATIC uint8_t checkProgrammableIO(const config13& page13, int16
       }
     }
   }
-
-  return compressedOuputStatus(state);
 }
 
 // LCOV_EXCL_START
 uint8_t checkProgrammableIO(const config13& page13)
 {
-  return checkProgrammableIO(page13, ProgrammableIOGetData);
+  checkProgrammableIO(page13, ProgrammableIOGetData);
+  return state.compressedOutputStatus();
 }
 // LCOV_EXCL_STOP
 
