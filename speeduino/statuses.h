@@ -275,7 +275,6 @@ struct statuses {
   int16_t vvt2Angle; 
   uint8_t vvt2TargetAngle;
   uint8_t vvt2Duty; 
-  byte outputsStatus;
 
   // SD card status fields.
   // TODO: conditional compile on SD_LOGGING once board definition is separated from globals.h

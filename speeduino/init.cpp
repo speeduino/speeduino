@@ -202,7 +202,7 @@ void initialiseAll(void)
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseMAPBaro();
-    initialiseProgrammableIO(currentStatus, configPage13);
+    initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
 
     //Same as above, but for the VSS input
