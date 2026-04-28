@@ -94,7 +94,7 @@ static void test_initialiseProgrammableIO_disabled(void)
         context.page13.outputPin[i] = 0;
     }
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
 
     // pinIsValid should be all zeros since no pins are configured
     for (auto &channel : state.channels) {
@@ -111,7 +111,7 @@ static void test_initialiseProgrammableIO_cascade_rules(void)
     context.page13.outputPin[1] = 129; // Cascade rule
     context.page13.outputInverted = 0x03; // Invert bits 0 and 1
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
 
     // Cascade rules should set pinIsValid bits
     TEST_ASSERT_TRUE(state.channels[0].isPinValid);
@@ -129,7 +129,7 @@ static void test_initialiseProgrammableIO_delay_initialization(void)
     // Enable a cascade rule pin to trigger initialization
     context.page13.outputPin[0] = 128;
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
 
     // All delays should be initialized to 0
     for (auto &channel : state.channels) {
@@ -148,7 +148,7 @@ static void test_initialiseProgrammableIO_mixed_configuration(void)
     context.page13.outputPin[2] = 131;   // Cascade rule
     context.page13.outputPin[3] = 0;     // Disabled
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
 
     // Check pinIsValid bits - only cascade rules should be valid
     TEST_ASSERT_FALSE(state.channels[0].isPinValid); // Disabled
@@ -172,7 +172,7 @@ static void test_initialiseProgrammableIO_physical_pins(void)
     context.page13.outputPin[1] = 11; // Physical pin
     context.page13.outputInverted = 0x02; // Invert bit 1
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
 
     // Physical pins should set pinIsValid bits if not already used
     TEST_ASSERT_TRUE(state.channels[0].isPinValid); // Pin 10 should be valid
@@ -192,7 +192,7 @@ static void test_initialiseProgrammableIO_used_physical_pin(void)
     context.page13.outputPin[0] = pinCLT; // Physical pin (used)
     context.page13.outputPin[1] = 11; // Pin 11 - should be available
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
 
     // Pin 0 should be invalid if used, pin 10 should be valid
     TEST_ASSERT_FALSE(state.channels[0].isPinValid); // Should be invalid if used
@@ -734,7 +734,7 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     context.page13.secondDataIn[4] = REUSE_RULES + 3; // Reuse 3rd rule
     context.page13.secondTarget[4] = 0;
 
-    initialiseProgrammableIO(context.current, context.page13);
+    initialiseProgrammableIO(context.page13);
     // Rules 2, 3, and 4 are active
     TEST_ASSERT_FALSE(state.channels[0].isPinValid);
     TEST_ASSERT_FALSE(state.channels[1].isPinValid);
