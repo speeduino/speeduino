@@ -17,7 +17,7 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& pa
   for (uint8_t y = 0; y < _countof(state_t::channels); y++)
   {
     rule_t rule(page13, y);
-    state.channels[y].initialize(rule);
+    state.channels[y].initialize(rule, y);
     if (state.channels[y].isPinValid && rule.isPhysicalPin()) 
     {
       pinMode(rule.outputPin, OUTPUT);
@@ -108,6 +108,16 @@ static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, b
   }
 }
 
+static inline void processChannelActive(channel_t &channel, const rule_t &rule)
+{
+  ++channel.activationDelayCount;
+  if (channel.activationDelayCount > rule.activationDelay)
+  {
+    if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
+    updateChannelStatus(channel, rule, true);
+  }
+}
+
 TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule)
 {
   if (rule.limitType==LimitingType::Max)
@@ -123,6 +133,34 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule
   return channel.outputDelayCount + 1;
 }
 
+static inline void processChannelInactive(channel_t &channel, const rule_t &rule)
+{
+  channel.outputDelayCount = nextOutDelay(channel, rule);
+  if (outputDelayExpired(rule, channel))
+  {
+    if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
+    updateChannelStatus(channel, rule, false);
+  }
+
+  channel.activationDelayCount = 0;
+}
+
+static inline void processChannel(channel_t &channel, const config13& page13, int16_t (*getData)(uint16_t index))
+{
+  if ( channel.isPinValid )
+  {
+    rule_t rule(page13, channel._index);
+    if (isRuleActive(rule, channel, getData))
+    {
+      processChannelActive(channel, rule);
+    }
+    else
+    {
+      processChannelInactive(channel, rule);
+    }
+  }
+}
+
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
  * Use ProgrammableIOGetData() to get 2 vars to compare.
@@ -130,33 +168,9 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule
  */
 TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index))
 {
-  for (uint8_t y = 0; y < _countof(state_t::channels); y++)
+  for (auto& channel: state.channels)
   {
-    auto& channel = state.channels[y];
-    if ( channel.isPinValid )
-    {
-      rule_t rule(page13, y);
-      if (isRuleActive(rule, channel, getData))
-      {
-        ++channel.activationDelayCount;
-        if (channel.activationDelayCount > rule.activationDelay)
-        {
-          if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
-          updateChannelStatus(channel, rule, true);
-        }
-      }
-      else
-      {
-        channel.outputDelayCount = nextOutDelay(channel, rule);
-        if (outputDelayExpired(rule, channel))
-        {
-          if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
-          updateChannelStatus(channel, rule, false);
-        }
-
-        channel.activationDelayCount = 0;
-      }
-    }
+    processChannel(channel, page13, getData);
   }
 }
 
