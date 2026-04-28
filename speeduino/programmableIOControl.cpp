@@ -86,7 +86,17 @@ TESTABLE_INLINE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool r
   }
 }
 
-static inline bool isRuleActive(const rule_t& rule, int16_t (*getData)(uint16_t index))
+static inline bool outputDelayExpired(const rule_t& rule, const channel_t& channel)
+{
+  return (channel.outputDelayCount > rule.outputTimeLimit);
+}
+
+TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive)
+{
+  return ruleActive && !(rule.hasMaxLimit() && outputDelayExpired(rule, channel));
+}
+
+TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &channel, int16_t (*getData)(uint16_t index)) noexcept
 {
   bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
 
@@ -96,17 +106,7 @@ static inline bool isRuleActive(const rule_t& rule, int16_t (*getData)(uint16_t 
     firstCheck = evaluateBitwiseOp(rule.combineOpType, firstCheck, secondCheck);
   }
 
-  return firstCheck;
-}
-
-static inline bool outputDelayExpired(const rule_t& rule, const channel_t& channel)
-{
-  return (rule.outputTimeLimit==0) || (channel.outputDelayCount > rule.outputTimeLimit);
-}
-
-TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive)
-{
-  return ruleActive && !((rule.limitType==LimitingType::Max) && (rule.outputTimeLimit != 0) && outputDelayExpired(rule, channel));
+  return applyOutputTimeLimit(rule, channel, firstCheck);
 }
 
 static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive) noexcept
@@ -147,7 +147,7 @@ TESTABLE_INLINE_STATIC uint8_t checkProgrammableIO(const config13& page13, int16
     if ( channel.isPinValid )
     {
       rule_t rule(page13, y);
-      if (applyOutputTimeLimit(rule, channel, isRuleActive(rule, getData)))
+      if (isRuleActive(rule, channel, getData))
       {
         ++channel.activationDelayCount;
         if (channel.activationDelayCount > rule.activationDelay)
