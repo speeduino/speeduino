@@ -68,9 +68,9 @@ static inline bool evaluateComparisonOp(const compOperation_t& operation, int16_
 TESTABLE_INLINE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
 {
   switch (compType) {
-    case BITWISE_AND: return (lhs & rhs) != 0;
-    case BITWISE_OR: return (lhs | rhs) != 0;
-    case BITWISE_XOR: return (lhs ^ rhs) != 0;
+    case COMBINE_AND: return lhs && rhs;
+    case COMBINE_OR: return lhs || rhs;
+    case COMBINE_XOR: return lhs != rhs;
     default: return false; // Invalid bitwise operator type
   }
 }
@@ -89,7 +89,7 @@ TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &ch
 {
   bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
 
-  if ((rule.combineOpType != BITWISE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
+  if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
     bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
     firstCheck = evaluateBitwiseOp(rule.combineOpType, firstCheck, secondCheck);

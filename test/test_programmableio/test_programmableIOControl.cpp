@@ -326,41 +326,41 @@ static void test_checkProgrammableIO_all_comparators(void)
 
     constexpr testOperation positiveTestOps[] = {
         // Positive conditions for all comparators without bitwise
-        { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 0, 0 } }, // EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 0, 0 } }, // NOT_EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 0, 0 } }, // GREATER
-        { BITWISE_DISABLED, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 0, 0 } }, // GREATER_EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 0, 0 } }, // LESS
-        { BITWISE_DISABLED, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 0, 0 } }, // LESS_EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 0, 0 } }, // AND
-        { BITWISE_DISABLED, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 0, 0 } }, // XOR
+        { COMBINE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 0, 0 } }, // EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 0, 0 } }, // NOT_EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 0, 0 } }, // GREATER
+        { COMBINE_DISABLED, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 0, 0 } }, // GREATER_EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 0, 0 } }, // LESS
+        { COMBINE_DISABLED, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 0, 0 } }, // LESS_EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 0, 0 } }, // AND
+        { COMBINE_DISABLED, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 0, 0 } }, // XOR
         // Same but bitwise AND
-        { BITWISE_AND, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // EQUAL
-        { BITWISE_AND, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 6 } }, // NOT_EQUAL
-        { BITWISE_AND, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 6 } }, // GREATER
-        { BITWISE_AND, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 7 } }, // GREATER_EQUAL
-        { BITWISE_AND, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 2 } }, // LESS
-        { BITWISE_AND, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 3 } }, // LESS_EQUAL
-        { BITWISE_AND, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 1 } }, // AND
-        { BITWISE_AND, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 3, 1 } }, // XOR
+        { COMBINE_AND, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // EQUAL
+        { COMBINE_AND, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 6 } }, // NOT_EQUAL
+        { COMBINE_AND, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 6 } }, // GREATER
+        { COMBINE_AND, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 7 } }, // GREATER_EQUAL
+        { COMBINE_AND, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 2 } }, // LESS
+        { COMBINE_AND, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 3 } }, // LESS_EQUAL
+        { COMBINE_AND, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 1 } }, // AND
+        { COMBINE_AND, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 3, 1 } }, // XOR
         // Same but bitwise OR
-        { BITWISE_OR, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // EQUAL
-        { BITWISE_OR, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 6 } }, // NOT_EQUAL
-        { BITWISE_OR, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 6 } }, // GREATER
-        { BITWISE_OR, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 7 } }, // GREATER_EQUAL
-        { BITWISE_OR, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 2 } }, // LESS
-        { BITWISE_OR, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 3 } }, // LESS_EQUAL
-        { BITWISE_OR, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 1 } }, // AND
-        { BITWISE_OR, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 3, 1 } }, // XOR
+        { COMBINE_OR, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // EQUAL
+        { COMBINE_OR, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 6 } }, // NOT_EQUAL
+        { COMBINE_OR, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 6 } }, // GREATER
+        { COMBINE_OR, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 7 } }, // GREATER_EQUAL
+        { COMBINE_OR, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 2 } }, // LESS
+        { COMBINE_OR, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 3 } }, // LESS_EQUAL
+        { COMBINE_OR, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 1 } }, // AND
+        { COMBINE_OR, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 3, 1 } }, // XOR
         // Same but bitwise XOR
-        { BITWISE_XOR, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 4, 4 } }, // EQUAL
-        { BITWISE_XOR, { COMPARATOR_NOT_EQUAL, 5, 5 }, { COMPARATOR_NOT_EQUAL, 4, 6 } }, // NOT_EQUAL
-        { BITWISE_XOR, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 5, 5 } }, // GREATER
-        { BITWISE_XOR, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 8 } }, // GREATER_EQUAL
-        { BITWISE_XOR, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 3, 3 } }, // LESS
-        { BITWISE_XOR, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 2 } }, // LESS_EQUAL
-        { BITWISE_XOR, { COMPARATOR_AND, 3, 3 }, { COMPARATOR_AND, 3, 0 } }, // AND
-        { BITWISE_XOR, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 7, 7 } }, // XOR
+        { COMBINE_XOR, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 4, 4 } }, // EQUAL
+        { COMBINE_XOR, { COMPARATOR_NOT_EQUAL, 5, 5 }, { COMPARATOR_NOT_EQUAL, 4, 6 } }, // NOT_EQUAL
+        { COMBINE_XOR, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 5, 5 } }, // GREATER
+        { COMBINE_XOR, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 8 } }, // GREATER_EQUAL
+        { COMBINE_XOR, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 3, 3 } }, // LESS
+        { COMBINE_XOR, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 2 } }, // LESS_EQUAL
+        { COMBINE_XOR, { COMPARATOR_AND, 3, 3 }, { COMPARATOR_AND, 3, 0 } }, // AND
+        { COMBINE_XOR, { COMPARATOR_XOR, 3, 1 }, { COMPARATOR_XOR, 7, 7 } }, // XOR
     };
 
     for (auto &operation : positiveTestOps) {
@@ -381,26 +381,26 @@ static void test_checkProgrammableIO_all_comparators(void)
 
     constexpr testOperation negativeTestOps[] = {
         // Negative conditions for all comparators without bitwise
-        { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 4 }, { COMPARATOR_EQUAL, 0, 0 } }, // EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_NOT_EQUAL, 5, 5 }, { COMPARATOR_NOT_EQUAL, 0, 0 } }, // NOT_EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_GREATER, 7, 8 }, { COMPARATOR_GREATER, 0, 0 } }, // GREATER
-        { BITWISE_DISABLED, { COMPARATOR_GREATER_EQUAL, 7, 8 }, { COMPARATOR_GREATER_EQUAL, 0, 0 } }, // GREATER_EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_LESS, 1, 1 }, { COMPARATOR_LESS, 0, 0 } }, // LESS
-        { BITWISE_DISABLED, { COMPARATOR_LESS_EQUAL, 3, 2 }, { COMPARATOR_LESS_EQUAL, 0, 0 } }, // LESS_EQUAL
-        { BITWISE_DISABLED, { COMPARATOR_AND, 3, 0 }, { COMPARATOR_AND, 0, 0 } }, // AND
-        { BITWISE_DISABLED, { COMPARATOR_XOR, 3, 3 }, { COMPARATOR_XOR, 0, 0 } }, // XOR
+        { COMBINE_DISABLED, { COMPARATOR_EQUAL, 5, 4 }, { COMPARATOR_EQUAL, 0, 0 } }, // EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_NOT_EQUAL, 5, 5 }, { COMPARATOR_NOT_EQUAL, 0, 0 } }, // NOT_EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_GREATER, 7, 8 }, { COMPARATOR_GREATER, 0, 0 } }, // GREATER
+        { COMBINE_DISABLED, { COMPARATOR_GREATER_EQUAL, 7, 8 }, { COMPARATOR_GREATER_EQUAL, 0, 0 } }, // GREATER_EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_LESS, 1, 1 }, { COMPARATOR_LESS, 0, 0 } }, // LESS
+        { COMBINE_DISABLED, { COMPARATOR_LESS_EQUAL, 3, 2 }, { COMPARATOR_LESS_EQUAL, 0, 0 } }, // LESS_EQUAL
+        { COMBINE_DISABLED, { COMPARATOR_AND, 3, 0 }, { COMPARATOR_AND, 0, 0 } }, // AND
+        { COMBINE_DISABLED, { COMPARATOR_XOR, 3, 3 }, { COMPARATOR_XOR, 0, 0 } }, // XOR
         // Negative conditions for 2nd comparator with bitwise AND
-        { BITWISE_AND, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 4 } }, // EQUAL
-        { BITWISE_AND, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 5 } }, // NOT_EQUAL
-        { BITWISE_AND, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 7 } }, // GREATER
-        { BITWISE_AND, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 8 } }, // GREATER_EQUAL
-        { BITWISE_AND, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 1 } }, // LESS
-        { BITWISE_AND, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 2 } }, // LESS_EQUAL
-        { BITWISE_AND, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 0 } }, // AND
+        { COMBINE_AND, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 4 } }, // EQUAL
+        { COMBINE_AND, { COMPARATOR_NOT_EQUAL, 5, 6 }, { COMPARATOR_NOT_EQUAL, 5, 5 } }, // NOT_EQUAL
+        { COMBINE_AND, { COMPARATOR_GREATER, 7, 6 }, { COMPARATOR_GREATER, 7, 7 } }, // GREATER
+        { COMBINE_AND, { COMPARATOR_GREATER_EQUAL, 7, 7 }, { COMPARATOR_GREATER_EQUAL, 7, 8 } }, // GREATER_EQUAL
+        { COMBINE_AND, { COMPARATOR_LESS, 1, 2 }, { COMPARATOR_LESS, 1, 1 } }, // LESS
+        { COMBINE_AND, { COMPARATOR_LESS_EQUAL, 3, 3 }, { COMPARATOR_LESS_EQUAL, 3, 2 } }, // LESS_EQUAL
+        { COMBINE_AND, { COMPARATOR_AND, 3, 1 }, { COMPARATOR_AND, 3, 0 } }, // AND
          // Negative conditions for 2nd comparator with bitwise OR
-        { BITWISE_OR, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 5, 4 } }, // OR false
+        { COMBINE_OR, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 5, 4 } }, // OR false
          // Negative conditions for 2nd comparator with bitwise XOR
-        { BITWISE_XOR, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // XOR false
+        { COMBINE_XOR, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } }, // XOR false
     };
     for (auto &operation : negativeTestOps) {
         context = programmableIOTestContext_t();
@@ -449,7 +449,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
         channel.isRuleActive = false;
     }
     context.page13.outputPin[0] = 1;
-    constexpr testOperation equalityOp = { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } };
+    constexpr testOperation equalityOp = { COMBINE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } };
     setupTestOp(equalityOp, context.page13, 0);
     context.page13.kindOfLimiting = 1; // Switch to time limit mode
     context.page13.outputTimeLimit[0] = 3;
@@ -465,7 +465,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
         channel.isRuleActive = false;
     }
     context.page13.outputPin[0] = 1;
-    constexpr testOperation negativeEqualityOp = { BITWISE_DISABLED, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 5, 5 } };
+    constexpr testOperation negativeEqualityOp = { COMBINE_DISABLED, { COMPARATOR_EQUAL, 5, 6 }, { COMPARATOR_EQUAL, 5, 5 } };
     setupTestOp(negativeEqualityOp, context.page13, 0);
     context.page13.kindOfLimiting = 1; // Switch to time limit mode
     context.page13.outputTimeLimit[0] = 3;
@@ -581,7 +581,7 @@ static void test_checkProgrammableIO_cascade_rule_second_comparison(void)
     context.page13.firstTarget[0] = 5; // Will match
 
     // Second comparison: use cascade rule reuse
-    context.page13.operation[0].bitwise = BITWISE_AND; // BITWISE_AND
+    context.page13.operation[0].bitwise = COMBINE_AND; // COMBINE_AND
     context.page13.operation[0].secondCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.secondDataIn[0] = REUSE_RULES; // REUSE_RULES + rule 0
     context.page13.secondTarget[0] = 1;
@@ -607,7 +607,7 @@ static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
 
-    context.page13.operation[0].bitwise = BITWISE_AND; // BITWISE_AND
+    context.page13.operation[0].bitwise = COMBINE_AND; // COMBINE_AND
     context.page13.operation[0].secondCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.secondDataIn[0] = REUSE_RULES + 9; // Out-of-range reuse index, skip second comparator
     context.page13.secondTarget[0] = 1;
@@ -695,7 +695,7 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     BIT_CLEAR(context.page13.outputInverted, 2);    // Activate on high
     context.page13.outputDelay[2] = 2;
     // Flat shift above 5600 RPM and 80 kPa, with bitwise AND to combine conditions
-    context.page13.operation[2].bitwise = BITWISE_AND;
+    context.page13.operation[2].bitwise = COMBINE_AND;
     context.page13.operation[2].firstCompType = COMPARATOR_GREATER_EQUAL;
     context.page13.firstDataIn[2] = RPM_INDEX;
     context.page13.firstTarget[2] = RPM_THRESHOLD; 
@@ -711,7 +711,7 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     BIT_CLEAR(context.page13.outputInverted, 3);    // Activate on high
     context.page13.outputDelay[3] = 5;
     // Flat shift active if rule 2 is active and rule 4 is NOT active
-    context.page13.operation[3].bitwise = BITWISE_AND;
+    context.page13.operation[3].bitwise = COMBINE_AND;
     context.page13.operation[3].firstCompType = COMPARATOR_EQUAL;
     context.page13.firstDataIn[3] = REUSE_RULES + 2; // Reuse 2nd rule
     context.page13.firstTarget[3] = 1; 
@@ -726,7 +726,7 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     context.page13.outputPin[4] = 5; // Physical pin 5
     BIT_CLEAR(context.page13.outputInverted, 4);    // Activate on high
     context.page13.outputDelay[4] = 0;  // No activation delay
-    context.page13.operation[4].bitwise = BITWISE_AND;
+    context.page13.operation[4].bitwise = COMBINE_AND;
     context.page13.operation[4].firstCompType = COMPARATOR_EQUAL;
     context.page13.firstDataIn[4] = REUSE_RULES + 2; // Reuse 2nd rule
     context.page13.firstTarget[4] = 1; 
@@ -835,16 +835,16 @@ static void test_evaluateBitwiseOp(void)
     TEST_ASSERT_FALSE(evaluateBitwiseOp(0, true, true));
 
     // Test bitwise AND
-    TEST_ASSERT_FALSE(evaluateBitwiseOp(BITWISE_AND, false, true));
-    TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_AND, true, true));
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(COMBINE_AND, false, true));
+    TEST_ASSERT_TRUE(evaluateBitwiseOp(COMBINE_AND, true, true));
 
     // Test bitwise OR
-    TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_OR, false, true));
-    TEST_ASSERT_FALSE(evaluateBitwiseOp(BITWISE_OR, false, false));
+    TEST_ASSERT_TRUE(evaluateBitwiseOp(COMBINE_OR, false, true));
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(COMBINE_OR, false, false));
 
     // Test bitwise XOR
-    TEST_ASSERT_FALSE(evaluateBitwiseOp(BITWISE_XOR, true, true));
-    TEST_ASSERT_TRUE(evaluateBitwiseOp(BITWISE_XOR, true, false));
+    TEST_ASSERT_FALSE(evaluateBitwiseOp(COMBINE_XOR, true, true));
+    TEST_ASSERT_TRUE(evaluateBitwiseOp(COMBINE_XOR, true, false));
 }
 
 static void assert_applyOutputTimeLimit_nochange(uint8_t limit, uint8_t outDelay) {
