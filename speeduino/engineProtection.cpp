@@ -444,23 +444,27 @@ BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelC
   }
   else if (page6.engineProtectType!=PROTECT_CUT_OFF)
   {
-  // Determine the absolute max RPM
-  uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
+    // Determine the absolute max RPM
+    uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
 
-  // Full cut is always applied if RPM exceeds max allowed
-  // regardless of page2.hardCutType
-  if (current.RPM >= maxAllowedRPM)
-  {
-      cutState = applyFullCut(page6);
-  }
-  else if (useRollingCut(current, page2, maxAllowedRPM))
-  { 
-      cutState = applyRollingCut(current, page2, page4, page6, maxAllowedRPM);
+    // Full cut is always applied if RPM exceeds max allowed
+    // regardless of page2.hardCutType
+    if (current.RPM >= maxAllowedRPM)
+    {
+        cutState = applyFullCut(page6);
+    }
+    else if (useRollingCut(current, page2, maxAllowedRPM))
+    { 
+        cutState = applyRollingCut(current, page2, page4, page6, maxAllowedRPM);
+    }
+    else
+    {
+      // Nothing to do - default CUT_NONE will apply no cuts
+    }
   }
   else
   {
-      // Nothing to do - default CUT_NONE will apply no cuts
-    }
+    // Nothing to do - default CUT_NONE will apply no cuts
   }
 
   return maskUnusedChannels(cutState, current);
