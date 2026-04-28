@@ -881,7 +881,7 @@ static void test_nextOutDelay(void)
     rule_t rule;
 
     rule.limitType = LimitingType::Min;
-    rule._index = 0;
+
 
     TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel, rule));
     channel.outputDelayCount = 5;
