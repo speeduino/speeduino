@@ -4,13 +4,14 @@
 
 namespace programmableIOControl_details {
 
-void channel_t::initialize(const rule_t& rule) 
+void channel_t::initialize(const rule_t& rule, uint8_t index) 
 {
     isPinValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
     isRuleActive = false;
     activationDelayCount = 0;
     outputDelayCount = 0;
     isOutputActive = isPinValid && rule.isOutputInverted;
+    _index = index;
 }
 
 uint8_t state_t::compressedOutputStatus(void) const

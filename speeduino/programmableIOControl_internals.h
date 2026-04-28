@@ -60,7 +60,6 @@ struct rule_t {
   uint8_t combineOpType;
   compOperation_t firstOp; ///< First operand for comparison
   compOperation_t secondOp; ///< Second operand for comparison, used if bitwise operation is enabled
-  uint8_t _index; // Index of the rule
 
   rule_t() = default;
   rule_t(const config13& page13, uint8_t index) 
@@ -71,8 +70,7 @@ struct rule_t {
      outputTimeLimit(page13.outputTimeLimit[index]),
      combineOpType(page13.operation[index].bitwise),
      firstOp({page13.operation[index].firstCompType, page13.firstDataIn[index], page13.firstTarget[index]}),
-     secondOp({page13.operation[index].secondCompType, page13.secondDataIn[index], page13.secondTarget[index]}),
-     _index(index)
+     secondOp({page13.operation[index].secondCompType, page13.secondDataIn[index], page13.secondTarget[index]})
   {
   }
 
@@ -94,14 +92,15 @@ struct channel_t
   bool isPinValid : 1;
   bool isRuleActive : 1;
   bool isOutputActive : 1;
+  uint8_t _index : 3;
   uint8_t activationDelayCount = 0;
   uint8_t outputDelayCount = 0;
 
   channel_t()
-  : isPinValid(false), isRuleActive(false), isOutputActive(false)
+  : isPinValid(false), isRuleActive(false), isOutputActive(false), _index(0U)
   {}
 
-  void initialize(const rule_t& rule);
+  void initialize(const rule_t& rule, uint8_t index);
 };
 
 // The struct representing the current state of the programmable I/O system
