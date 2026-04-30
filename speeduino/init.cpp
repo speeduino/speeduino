@@ -197,7 +197,7 @@ void initialiseAll(void)
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
     initialiseFuelSchedulers();
-    resetIgnitionSchedulers();
+    initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
     //initialiseDisplay();
     initialiseIdle(true);
     initialiseFan(pinFan);
@@ -874,8 +874,6 @@ void initialiseAll(void)
 #endif
         break;
     }
-
-    initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
     
     currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
 

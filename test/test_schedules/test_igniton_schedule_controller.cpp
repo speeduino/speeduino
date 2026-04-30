@@ -9,6 +9,7 @@ extern void SetRevolutionTime(uint32_t revTime);
 extern void changeIgnitionToFullSequential(const config2 &page2, statuses &current);
 extern void changeIgnitionToHalfSync(const config2 &page2, statuses &current);
 extern bool isAnyIgnScheduleRunning(void);
+extern void resetIgnitionSchedulers(void);
 
 struct ignition_test_context_t
 {
@@ -298,35 +299,27 @@ static void assert_singlechannel_callbacks(void)
 
 static void test_initialize_singlechannel_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 1, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 2, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 3, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 4, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 5, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 6, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 7, 0U);
     assert_singlechannel_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SINGLE, 8, 0U);
     assert_singlechannel_callbacks();
 }
@@ -345,28 +338,24 @@ static void assert_wastedCOP_1_to_3_callbacks(void)
 
 static void test_initialize_wastedCOP1_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 1, 0U);
     assert_wastedCOP_1_to_3_callbacks();
 }
     
 static void test_initialize_wastedCOP2_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 2, 0U);
     assert_wastedCOP_1_to_3_callbacks();
 }
 
 static void test_initialize_wastedCOP3_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 3, 0U);
     assert_wastedCOP_1_to_3_callbacks();
 }
 
 static void test_initialize_wastedCOP4_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 4, 0U);
 
     RUNIF_IGNCHANNEL1( { assert_callbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge); }, {});
@@ -381,14 +370,12 @@ static void test_initialize_wastedCOP4_callbacks(void)
 
 static void test_initialize_wastedCOP5_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 5, 0U);
     assert_wastedCOP_1_to_3_callbacks();
 }
 
 static void test_initialize_wastedCOP6_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 6, 0U);
 
     RUNIF_IGNCHANNEL1( { assert_callbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge); }, {});
@@ -403,7 +390,6 @@ static void test_initialize_wastedCOP6_callbacks(void)
 
 static void test_initialize_wastedCOP8_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_WASTEDCOP, 8, 0U);
 
     RUNIF_IGNCHANNEL1( { assert_callbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge); }, {});
@@ -430,42 +416,33 @@ static void assert_sequential_callbacks(void)
 
 static void test_initialize_sequential_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 1, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 2, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 3, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 4, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 5, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 6, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 7, 0U);
     assert_sequential_callbacks();
 
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_SEQUENTIAL, 8, 0U);
     assert_sequential_callbacks();
 }
 
 static void test_initialize_rotary_fc_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_ROTARY, 0U, ROTARY_IGN_FC);
 
     RUNIF_IGNCHANNEL1( { assert_callbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge); }, {});
@@ -480,7 +457,6 @@ static void test_initialize_rotary_fc_callbacks(void)
 
 static void test_initialize_rotary_fd_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_ROTARY, 0U, ROTARY_IGN_FD);
 
     RUNIF_IGNCHANNEL1( { assert_callbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge); }, {});
@@ -495,7 +471,6 @@ static void test_initialize_rotary_fd_callbacks(void)
 
 static void test_initialize_rotary_rx8_callbacks(void)
 {
-    resetIgnitionSchedulers();
     initialiseIgnitionSchedules(IGN_MODE_ROTARY, 0U, ROTARY_IGN_RX8);
 
     RUNIF_IGNCHANNEL1( { assert_callbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge); }, {});

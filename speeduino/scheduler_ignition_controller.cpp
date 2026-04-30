@@ -186,8 +186,29 @@ static void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkMode, uint
   }
 }
 
+TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(void)
+{
+  ignitionSchedule1.reset();
+  ignitionSchedule2.reset();
+  ignitionSchedule3.reset();
+  ignitionSchedule4.reset();
+#if (IGN_CHANNELS >= 5)
+  ignitionSchedule5.reset();
+#endif
+#if IGN_CHANNELS >= 6
+  ignitionSchedule6.reset();
+#endif
+#if IGN_CHANNELS >= 7
+  ignitionSchedule7.reset();
+#endif
+#if IGN_CHANNELS >= 8
+  ignitionSchedule8.reset();
+#endif
+}
+
 void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
 {
+  resetIgnitionSchedulers();
   setCallbacks(sparkMode, numCylinders, rotaryMode);
 }
 
@@ -451,26 +472,6 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
   }
 }
 // LCOV_EXCL_STOP
-
-void resetIgnitionSchedulers(void)
-{
-    ignitionSchedule1.reset();
-    ignitionSchedule2.reset();
-    ignitionSchedule3.reset();
-    ignitionSchedule4.reset();
-#if (IGN_CHANNELS >= 5)
-    ignitionSchedule5.reset();
-#endif
-#if IGN_CHANNELS >= 6
-    ignitionSchedule6.reset();
-#endif
-#if IGN_CHANNELS >= 7
-    ignitionSchedule7.reset();
-#endif
-#if IGN_CHANNELS >= 8
-    ignitionSchedule8.reset();
-#endif
-}
 
 void startIgnitionSchedulers(void)
 {
