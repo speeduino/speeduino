@@ -336,7 +336,7 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
 }
 // LCOV_EXCL_STOP
 
-void initialiseIgnitionSchedulers(void)
+void resetIgnitionSchedulers(void)
 {
     ignitionSchedule1.reset();
     ignitionSchedule2.reset();

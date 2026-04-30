@@ -197,7 +197,7 @@ void initialiseAll(void)
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
     initialiseFuelSchedulers();
-    initialiseIgnitionSchedulers();
+    resetIgnitionSchedulers();
     //initialiseDisplay();
     initialiseIdle(true);
     initialiseFan(pinFan);

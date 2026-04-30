@@ -179,7 +179,7 @@ static void test_changeIgnitionToFullSequential_notapplied(uint8_t numCylinders)
 
 static void test_changeIgnitionToFullSequential(void)
 {
-    initialiseIgnitionSchedulers();
+    resetIgnitionSchedulers();
     test_changeIgnitionToFullSequential_notapplied(1U);
     test_changeIgnitionToFullSequential_notapplied(2U);
     test_changeIgnitionToFullSequential_notapplied(3U);
@@ -191,7 +191,7 @@ static void test_changeIgnitionToFullSequential(void)
 
 static void test_changeIgnitionToFullSequential_running_schedule(void)
 {
-    initialiseIgnitionSchedulers();
+    resetIgnitionSchedulers();
     ignitionSchedule1.Status = ScheduleStatus::RUNNING;
     test_changeIgnitionToFullSequential_notapplied(1U);
     test_changeIgnitionToFullSequential_notapplied(2U);
@@ -230,7 +230,7 @@ static void test_changeIgnitionToHalfSync_notapplied(uint8_t numCylinders)
 
 static void test_changeIgnitionToHalfSync(void)
 {
-    initialiseIgnitionSchedulers();
+    resetIgnitionSchedulers();
     test_changeIgnitionToHalfSync_notapplied(1U);
     test_changeIgnitionToHalfSync_notapplied(2U);
     test_changeIgnitionToHalfSync_notapplied(3U);
@@ -243,7 +243,7 @@ static void test_changeIgnitionToHalfSync(void)
 
 static void test_changeIgnitionToHalfSync_runningschedule(void)
 {
-    initialiseIgnitionSchedulers();
+    resetIgnitionSchedulers();
     ignitionSchedule1.Status = ScheduleStatus::RUNNING;
     test_changeIgnitionToHalfSync_notapplied(1U);
     test_changeIgnitionToHalfSync_notapplied(2U);
@@ -266,7 +266,7 @@ static void assert_isAnyIgnScheduleRunning(IgnitionSchedule & schedule)
 static void test_isAnyIgnScheduleRunning(void)
 {
     stopIgnitionSchedulers();
-    initialiseIgnitionSchedulers();
+    resetIgnitionSchedulers();
     RUNIF_IGNCHANNEL1( { assert_isAnyIgnScheduleRunning(ignitionSchedule1); }, {});
     RUNIF_IGNCHANNEL2( { assert_isAnyIgnScheduleRunning(ignitionSchedule2); }, {});
     RUNIF_IGNCHANNEL3( { assert_isAnyIgnScheduleRunning(ignitionSchedule3); }, {});
