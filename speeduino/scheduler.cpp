@@ -52,6 +52,8 @@ FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress mi
 FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
+void nullCallback(void) { return; }
+
 void Schedule::reset(void)
 {
     Status = OFF;

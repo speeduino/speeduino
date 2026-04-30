@@ -23,6 +23,174 @@ IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppr
 
 constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
+static void __attribute__((optimize("Os"))) setSequentialCallbacks(uint8_t numChannels)
+{
+  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+#if IGN_CHANNELS >= 2
+  if (numChannels>=2)
+  {
+    setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+  }
+#endif
+#if IGN_CHANNELS >= 3
+  if (numChannels>=3)
+  {
+    setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
+  }
+#endif
+#if IGN_CHANNELS >= 4
+  if (numChannels>=4)
+  {
+    setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
+  }
+#endif
+#if IGN_CHANNELS >= 5
+  if (numChannels>=5)
+  {
+    setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
+  }
+#endif
+#if IGN_CHANNELS >= 6
+  if (numChannels>=6)
+  {
+    setCallbacks(ignitionSchedule6, beginCoil6Charge, endCoil6Charge);
+  }
+#endif
+#if IGN_CHANNELS >= 7
+  if (numChannels>=7)
+  {
+    setCallbacks(ignitionSchedule7, beginCoil7Charge, endCoil7Charge);
+  }
+#endif
+#if IGN_CHANNELS >= 8
+  if (numChannels>=8)
+  {
+    setCallbacks(ignitionSchedule8, beginCoil8Charge, endCoil8Charge);
+  }
+#endif
+}
+
+static void __attribute__((optimize("Os"))) setWastedSparkCallbacks(void)
+{
+  setSequentialCallbacks(min((uint8_t)5U, (uint8_t)IGN_CHANNELS));
+}
+
+static void __attribute__((optimize("Os"))) setSingleChannelCallbacks(void)
+{
+  //Single channel mode. All ignition pulses are on channel 1
+  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+#if IGN_CHANNELS >= 2
+  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 3
+  setCallbacks(ignitionSchedule3, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 4
+  setCallbacks(ignitionSchedule4, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 5
+  setCallbacks(ignitionSchedule5, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 6
+  setCallbacks(ignitionSchedule6, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 7
+  setCallbacks(ignitionSchedule7, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 8
+  setCallbacks(ignitionSchedule8, beginCoil1Charge, endCoil1Charge);
+#endif
+}
+
+static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCylinders)
+{
+  //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
+  switch (numCylinders)
+  {
+  //If the person has inadvertently selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
+  default:
+  //1-3 cylinder wasted COP is the same as regular wasted mode
+  case 1:
+  case 2:
+  case 3:
+    setWastedSparkCallbacks();
+    break;
+
+  case 4:
+    //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
+    setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
+    setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+    break;
+  
+  case 6:
+    //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
+    setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
+    setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
+    setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+    break;
+  
+  case 8:
+    //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
+    setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
+    setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
+    setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
+    setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+  }
+}
+
+static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryType)
+{
+  switch (rotaryType)
+  {
+  case ROTARY_IGN_FC:
+    //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
+    setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+    setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+    setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
+    setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
+    break;
+
+    case ROTARY_IGN_FD:
+    //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
+    setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+    setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+
+    //Trailing coils have their own channel each
+    //IGN2 = front rotor trailing spark
+    setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
+    //IGN3 = rear rotor trailing spark
+    setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
+    break;
+  
+  case ROTARY_IGN_RX8:
+    //RX8 outputs are simply 1 coil and 1 output per plug
+    setSequentialCallbacks(4U);
+
+  default:
+    //No action for other RX ignition modes (Future expansion / MISRA compliant). 
+    break;
+  }
+}
+
+static void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
+{
+  switch(sparkMode)
+  {
+  case IGN_MODE_SINGLE: setSingleChannelCallbacks(); break;
+  case IGN_MODE_WASTEDCOP: setWastedCOPCallbacks(numCylinders); break;
+  case IGN_MODE_SEQUENTIAL: setSequentialCallbacks(IGN_CHANNELS); break;
+  case IGN_MODE_ROTARY: setRotaryCallbacks(rotaryMode); break;
+  case IGN_MODE_WASTED:
+  default:
+    setWastedSparkCallbacks(); break;
+  }
+}
+
+void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
+{
+  setCallbacks(sparkMode, numCylinders, rotaryMode);
+}
+
 TESTABLE_INLINE_STATIC bool isAnyIgnScheduleRunning(void) {
   return isRunning(ignitionSchedule1)      
 #if IGN_CHANNELS >= 2 

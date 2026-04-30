@@ -73,7 +73,7 @@ enum ScheduleStatus {
 }; 
 
 /** @brief A scheduler callback that does nothing */
-static inline void nullCallback(void) { return; }
+void nullCallback(void);
 
 /**
  * @brief A schedule for a single output channel. 

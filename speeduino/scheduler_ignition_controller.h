@@ -55,3 +55,6 @@ void startIgnitionSchedulers(void);
 
 /** @brief Stop the timers that drive schedulers  */
 void stopIgnitionSchedulers(void);
+
+/** @brief Initialise all ignition schedules */
+void initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode);
