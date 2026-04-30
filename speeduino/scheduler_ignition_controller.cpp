@@ -473,7 +473,7 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
 }
 // LCOV_EXCL_STOP
 
-void startIgnitionSchedulers(void)
+void __attribute__((optimize("Os"))) startIgnitionSchedulers(void)
 {
   IGN1_TIMER_ENABLE();
 #if IGN_CHANNELS >= 2
@@ -499,7 +499,7 @@ void startIgnitionSchedulers(void)
 #endif  
 }
 
-void stopIgnitionSchedulers(void)
+void __attribute__((optimize("Os"))) stopIgnitionSchedulers(void)
 {
   IGN1_TIMER_DISABLE();
 #if IGN_CHANNELS >= 2
