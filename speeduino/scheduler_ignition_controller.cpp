@@ -245,33 +245,7 @@ TESTABLE_STATIC void changeIgnitionToHalfSync(const config2 &page2, statuses &cu
     if (!isAnyIgnScheduleRunning() && isSwitchableCylinderCount(page2)) {
       CRANK_ANGLE_MAX_IGN = 360;
       current.maxIgnOutputs = page2.nCylinders/2U;
-      // LCOV_EXCL_BR_START (default case is untestable)
-      switch (page2.nCylinders)
-      // LCOV_EXCL_BR_STOP
-      {
-        case 4:
-          setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-          break;
-              
-        case 6:
-          setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
-          setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-          break;
-
-        case 8:
-          setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
-          setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
-          setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-          break;
-
-        // LCOV_EXCL_START (default case is untestable)
-        default:
-          break; //No actions required for other cylinder counts 
-        // LCOV_EXCL_STOP
-      }
+      setCallbacks(IGN_MODE_WASTEDCOP, page2.nCylinders, 0U);
     }
   }
 }
@@ -283,33 +257,7 @@ TESTABLE_STATIC void changeIgnitionToFullSequential(const config2 &page2, status
     if (!isAnyIgnScheduleRunning() && isSwitchableCylinderCount(page2)) {
       CRANK_ANGLE_MAX_IGN = 720;
       current.maxIgnOutputs = min((uint8_t)IGN_CHANNELS, page2.nCylinders);
-      // LCOV_EXCL_BR_START (default case is untestable)
-      switch (page2.nCylinders)
-      // LCOV_EXCL_BR_STOP
-      {
-      case 4:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        break;
-
-      case 6:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        break;
-
-      case 8:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-        break;
-      
-      // LCOV_EXCL_START (default case is untestable)
-      default:
-        break; //No actions required for other cylinder counts 
-      // LCOV_EXCL_STOP
-      }
+      setCallbacks(IGN_MODE_SEQUENTIAL, page2.nCylinders, 0U);
     }
   }
 }
