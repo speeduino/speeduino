@@ -193,7 +193,7 @@ static inline void addToothLogEntry(unsigned long toothTime, byte whichTooth)
     //If there has been a value logged above, update the indexes
     if(valueLogged == true)
     {
-      currentStatus.isToothLog1Full = toothHistoryIndex < (TOOTH_LOG_SIZE-1);
+      currentStatus.isToothLog1Full = toothHistoryIndex >= (TOOTH_LOG_SIZE-1);
       if (!currentStatus.isToothLog1Full) { ++toothHistoryIndex; }
     }
 
