@@ -7,7 +7,15 @@
 #include "maths.h"
 #include "timers.h"
 
-static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t injChannelDegrees, uint16_t injAngle)
+/**
+ * @brief Compute the injector open angle for an injection channel
+ * 
+ * @param pwDegrees How many crank degrees the calculated PW will take at the current speed
+ * @param tdcOffset The number of crank degrees until cylinder is at TDC (at rest)
+ * @param injAngle The requested injection angle
+ * @return uint16_t 
+ */
+static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, uint16_t channelDegrees, uint16_t injAngle)
 {
   // 0<=injAngle<=720°
   // 0<=injChannelDegrees<=720°
@@ -15,7 +23,7 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
   // 45<=CRANK_ANGLE_MAX_INJ<=720
   // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
 
-  uint16_t startAngle = (uint16_t)injAngle + (uint16_t)injChannelDegrees;
+  uint16_t startAngle = injAngle + channelDegrees;
   
   while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
   startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
@@ -74,7 +82,7 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
 }
 
 static inline int16_t _calculateSparkAngle(const IgnitionSchedule &schedule, int8_t advance) {
-  int16_t angle = (schedule.channelDegrees==0 ? CRANK_ANGLE_MAX_IGN : schedule.channelDegrees) - advance;
+  int16_t angle = (int16_t)(schedule.channelDegrees==0U ? CRANK_ANGLE_MAX_IGN : schedule.channelDegrees) - advance;
   if(angle > CRANK_ANGLE_MAX_IGN) {angle -= CRANK_ANGLE_MAX_IGN;}
   return angle;
 }
