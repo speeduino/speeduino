@@ -93,58 +93,6 @@ static inline int8_t getAdvance1(void)
   return correctionsIgn(IGNITION_ADVANCE_LARGE.toUser(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM))); //As above, but for ignition advance
 }
 
-static inline void setFuelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte fuelChannelsOn)
-{
-  if( (schedule.pw != 0U) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT+channel-1U)) )
-  {
-    uint32_t timeOut = calculateInjectorTimeout(schedule, crankAngle);
-    if (timeOut>0U)
-    {
-      setFuelScheduleDuration(schedule, timeOut, schedule.pw);
-    }
-  }
-}
-
-static inline void setFuelSchedules(uint16_t crankAngle, byte fuelChannelsOn)
-{
-#define SET_FUEL_CHANNEL(channel) \
-  setFuelSchedule(fuelSchedule ##channel, UINT8_C(channel), crankAngle, fuelChannelsOn);
-
-#if INJ_CHANNELS >= 1
-  SET_FUEL_CHANNEL(1)
-#endif
-
-#if INJ_CHANNELS >= 2
-  SET_FUEL_CHANNEL(2)
-#endif
-
-#if INJ_CHANNELS >= 3
-  SET_FUEL_CHANNEL(3)
-#endif
-
-#if INJ_CHANNELS >= 4
-  SET_FUEL_CHANNEL(4)
-#endif
-
-#if INJ_CHANNELS >= 5
-  SET_FUEL_CHANNEL(5)
-#endif
-
-#if INJ_CHANNELS >= 6
-  SET_FUEL_CHANNEL(6)
-#endif
-
-#if INJ_CHANNELS >= 7
-  SET_FUEL_CHANNEL(7)
-#endif
-
-#if INJ_CHANNELS >= 8
-  SET_FUEL_CHANNEL(8)
-#endif
-
-#undef SET_FUEL_CHANNEL
-}
-
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -555,7 +503,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         currentStatus.engineProtect.reset();
       }
       
-      setFuelSchedules(injectorLimits(currentStatus.decoder.getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
+      setFuelChannelSchedules(injectorLimits(currentStatus.decoder.getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
     
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
