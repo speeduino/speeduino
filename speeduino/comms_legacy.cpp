@@ -1133,7 +1133,7 @@ void sendPageASCII(void)
 
     case seqFuelPage:
       primarySerial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(&trim1Table, trim1Table.type_key);
+      serial_print_3dtable(&trimTables[0], trimTable3d::type_key);
       break;
 
     case canbusPage:

@@ -14,6 +14,7 @@
 #include "updates.h"
 #include "pages.h"
 #include "comms_CAN.h"
+#include "scheduler.h"
 #include "units.h"
 #include "unit_testing.h"
 
@@ -596,14 +597,22 @@ void doUpdates(void)
     {
       multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
       multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
-      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
-      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
-      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
-      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
-      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
-      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
-      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
-      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+      multiplyTableLoad(&trimTables[0], trimTable3d::type_key, 4);
+      multiplyTableLoad(&trimTables[1], trimTable3d::type_key, 4);
+      multiplyTableLoad(&trimTables[2], trimTable3d::type_key, 4);
+      multiplyTableLoad(&trimTables[3], trimTable3d::type_key, 4);
+#if INJ_CHANNELS >= 5
+      multiplyTableLoad(&trimTables[4], trimTable3d::type_key, 4);
+#endif
+#if INJ_CHANNELS >= 5
+      multiplyTableLoad(&trimTables[5], trimTable3d::type_key, 4);
+#endif
+#if INJ_CHANNELS >= 5
+      multiplyTableLoad(&trimTables[6], trimTable3d::type_key, 4);
+#endif
+#if INJ_CHANNELS >= 5
+      multiplyTableLoad(&trimTables[7], trimTable3d::type_key, 4);
+#endif
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
       { 
         for(uint8_t x = 0; x < 8; x++)

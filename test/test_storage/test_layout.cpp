@@ -4,7 +4,7 @@
 #include "storage.h"
 #include "pages.h"
 #include "config_pages.h"
-#include "globals.h"
+#include "scheduler.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
 extern const uint16_t MAX_PAGE_ADDRESS;
@@ -119,14 +119,28 @@ const char *getEntityName(const page_iterator_t &it) {
     { &boostTable, GET_VARIABLE_NAME(boostTable) },
     { &vvtTable, GET_VARIABLE_NAME(vvtTable) },
     { &stagingTable, GET_VARIABLE_NAME(stagingTable) },
-    { &trim1Table, GET_VARIABLE_NAME(trim1Table) },
-    { &trim2Table, GET_VARIABLE_NAME(trim2Table) },
-    { &trim3Table, GET_VARIABLE_NAME(trim3Table) },
-    { &trim4Table, GET_VARIABLE_NAME(trim4Table) },
-    { &trim5Table, GET_VARIABLE_NAME(trim5Table) },
-    { &trim6Table, GET_VARIABLE_NAME(trim6Table) },
-    { &trim7Table, GET_VARIABLE_NAME(trim7Table) },
-    { &trim8Table, GET_VARIABLE_NAME(trim8Table) },
+    { &trimTables[0], GET_VARIABLE_NAME(trimTables[0]) },
+#if INJ_CHANNELS >= 2
+    { &trimTables[1], GET_VARIABLE_NAME(trimTables[1]) },
+#endif
+#if INJ_CHANNELS >= 3
+    { &trimTables[2], GET_VARIABLE_NAME(trimTables[2]) },
+#endif
+#if INJ_CHANNELS >= 4
+    { &trimTables[3], GET_VARIABLE_NAME(trimTables[3]) },
+#endif
+#if INJ_CHANNELS >= 5
+    { &trimTables[4], GET_VARIABLE_NAME(trimTables[4]) },
+#endif
+#if INJ_CHANNELS >= 6
+    { &trimTables[5], GET_VARIABLE_NAME(trimTables[5]) },
+#endif
+#if INJ_CHANNELS >= 7
+    { &trimTables[6], GET_VARIABLE_NAME(trimTables[6]) },
+#endif
+#if INJ_CHANNELS >= 8
+    { &trimTables[7], GET_VARIABLE_NAME(trimTables[7]) },
+#endif
     { &configPage9, GET_VARIABLE_NAME(configPage9) },
     { &configPage10, GET_VARIABLE_NAME(configPage10) },
     { &fuelTable2, GET_VARIABLE_NAME(fuelTable2) },

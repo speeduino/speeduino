@@ -308,15 +308,29 @@ static page_map_t getPageMap(uint8_t pageNumber)
     makeEntity(&stagingTable),
   };
   static constexpr entity_t sequentialPageMap[] PROGMEM = {
-    makeEntity(&trim1Table), 
-    makeEntity(&trim2Table), 
-    makeEntity(&trim3Table),
-    makeEntity(&trim4Table),
-    makeEntity(&trim5Table),
-    makeEntity(&trim6Table),
-    makeEntity(&trim7Table),
-    makeEntity(&trim8Table),
-  };
+    makeEntity(&trimTables[0]), 
+#if INJ_CHANNELS >= 2
+    makeEntity(&trimTables[1]), 
+#endif
+#if INJ_CHANNELS >= 3
+    makeEntity(&trimTables[2]),
+#endif
+#if INJ_CHANNELS >= 4
+    makeEntity(&trimTables[3]),
+#endif
+#if INJ_CHANNELS >= 5
+    makeEntity(&trimTables[4]),
+#endif
+#if INJ_CHANNELS >= 6
+    makeEntity(&trimTables[5]),
+#endif
+#if INJ_CHANNELS >= 7
+    makeEntity(&trimTables[6]),
+#endif
+#if INJ_CHANNELS >= 8
+    makeEntity(&trimTables[7]),
+#endif
+  }; 
   static constexpr entity_t fuel2PageMap[] PROGMEM = {
     makeEntity(&fuelTable2)
   };
@@ -474,6 +488,13 @@ void __attribute__((noinline)) setTuneToEmpty(void) {
 uint16_t getPageSize(byte pageNum)
 {
   page_iterator_t iter = map_page_offset_to_entity(pageNum, UINT16_MAX);
+  // Page 8 contains the trim tables: we do not store all 8 in memory to save space
+  // since we only need 1 per injection channel. But the INI (& therefore TS) still 
+  // define all 8
+  if (pageNum==8U)
+  {
+    return (iter.entity.start/INJ_CHANNELS)*8U;
+  }
   return iter.entity.start;
 }
 

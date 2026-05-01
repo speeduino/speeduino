@@ -220,8 +220,8 @@ struct FuelSchedule : public Schedule {
 
   using Schedule::Schedule;
 
-  int16_t channelDegrees;
-  uint16_t pw;
+  int16_t channelDegrees;      ///< The number of crank degrees until cylinder is at TDC  
+  uint16_t pw;                 ///< Pulse width in uS
 
   void reset(void) override;
 };

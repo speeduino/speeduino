@@ -13,6 +13,7 @@ A full copy of the license may be found in the projects root directory
 #include "sensors.h"
 #include "preprocessor.h"
 #include "unit_testing.h"
+#include "scheduler.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -115,14 +116,28 @@ TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t iter) {
     { &boostTable, EEPROM_CONFIG7_MAP1 }, 
     { &vvtTable, EEPROM_CONFIG7_MAP2 }, 
     { &stagingTable, EEPROM_CONFIG7_MAP3 },
-    { &trim1Table, EEPROM_CONFIG8_MAP1 },
-    { &trim2Table, EEPROM_CONFIG8_MAP2 },
-    { &trim3Table, EEPROM_CONFIG8_MAP3 },
-    { &trim4Table, EEPROM_CONFIG8_MAP4 },
-    { &trim5Table, EEPROM_CONFIG8_MAP5 },
-    { &trim6Table, EEPROM_CONFIG8_MAP6 },
-    { &trim7Table, EEPROM_CONFIG8_MAP7 },
-    { &trim8Table, EEPROM_CONFIG8_MAP8 },
+    { &trimTables[0], EEPROM_CONFIG8_MAP1 },
+#if INJ_CHANNELS >= 2
+    { &trimTables[1], EEPROM_CONFIG8_MAP2 },
+#endif
+#if INJ_CHANNELS >= 3
+    { &trimTables[2], EEPROM_CONFIG8_MAP3 },
+#endif
+#if INJ_CHANNELS >= 4
+    { &trimTables[3], EEPROM_CONFIG8_MAP4 },
+#endif
+#if INJ_CHANNELS >= 5
+    { &trimTables[4], EEPROM_CONFIG8_MAP5 },
+#endif
+#if INJ_CHANNELS >= 6
+    { &trimTables[5], EEPROM_CONFIG8_MAP6 },
+#endif
+#if INJ_CHANNELS >= 7
+    { &trimTables[6], EEPROM_CONFIG8_MAP7 },
+#endif
+#if INJ_CHANNELS >= 8
+    { &trimTables[7], EEPROM_CONFIG8_MAP8 },
+#endif
     { &configPage9, EEPROM_CONFIG9_START },
     { &configPage10, EEPROM_CONFIG10_START },
     { &fuelTable2, EEPROM_CONFIG11_MAP },
@@ -291,14 +306,29 @@ void savePage(uint8_t pageNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&trim1Table, decltype(trim1Table)::type_key, EEPROM_CONFIG8_MAP1, writesRemaining);
-      writesRemaining = writeTable(&trim2Table, decltype(trim2Table)::type_key, EEPROM_CONFIG8_MAP2, writesRemaining);
-      writesRemaining = writeTable(&trim3Table, decltype(trim3Table)::type_key, EEPROM_CONFIG8_MAP3, writesRemaining);
-      writesRemaining = writeTable(&trim4Table, decltype(trim4Table)::type_key, EEPROM_CONFIG8_MAP4, writesRemaining);
-      writesRemaining = writeTable(&trim5Table, decltype(trim5Table)::type_key, EEPROM_CONFIG8_MAP5, writesRemaining);
-      writesRemaining = writeTable(&trim6Table, decltype(trim6Table)::type_key, EEPROM_CONFIG8_MAP6, writesRemaining);
-      writesRemaining = writeTable(&trim7Table, decltype(trim7Table)::type_key, EEPROM_CONFIG8_MAP7, writesRemaining);
-      writesRemaining = writeTable(&trim8Table, decltype(trim8Table)::type_key, EEPROM_CONFIG8_MAP8, writesRemaining);
+#define WRITE_TRIM_TABLE(index) writeTable(&trimTables[index-1U], trimTable3d::type_key, EEPROM_CONFIG8_MAP ## index, writesRemaining)
+      writesRemaining = WRITE_TRIM_TABLE(1);
+#if INJ_CHANNELS >= 2
+      writesRemaining = WRITE_TRIM_TABLE(2);
+#endif
+#if INJ_CHANNELS >= 3
+      writesRemaining = WRITE_TRIM_TABLE(3);
+#endif
+#if INJ_CHANNELS >= 4
+      writesRemaining = WRITE_TRIM_TABLE(4);
+#endif
+#if INJ_CHANNELS >= 5
+      writesRemaining = WRITE_TRIM_TABLE(5);
+#endif
+#if INJ_CHANNELS >= 6
+      writesRemaining = WRITE_TRIM_TABLE(6);
+#endif
+#if INJ_CHANNELS >= 7
+      writesRemaining = WRITE_TRIM_TABLE(7);
+#endif
+#if INJ_CHANNELS >= 8
+      writesRemaining = WRITE_TRIM_TABLE(8);
+#endif
       break;
 
     case canbusPage:
@@ -445,14 +475,29 @@ void loadAllPages(void)
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
-  (void)loadTable(&trim1Table, decltype(trim1Table)::type_key, EEPROM_CONFIG8_MAP1);
-  (void)loadTable(&trim2Table, decltype(trim2Table)::type_key, EEPROM_CONFIG8_MAP2);
-  (void)loadTable(&trim3Table, decltype(trim3Table)::type_key, EEPROM_CONFIG8_MAP3);
-  (void)loadTable(&trim4Table, decltype(trim4Table)::type_key, EEPROM_CONFIG8_MAP4);
-  (void)loadTable(&trim5Table, decltype(trim5Table)::type_key, EEPROM_CONFIG8_MAP5);
-  (void)loadTable(&trim6Table, decltype(trim6Table)::type_key, EEPROM_CONFIG8_MAP6);
-  (void)loadTable(&trim7Table, decltype(trim7Table)::type_key, EEPROM_CONFIG8_MAP7);
-  (void)loadTable(&trim8Table, decltype(trim8Table)::type_key, EEPROM_CONFIG8_MAP8);
+#define LOAD_TRIM_TABLE(index) (void)loadTable(&trimTables[index-1U], trimTable3d::type_key, EEPROM_CONFIG8_MAP ## index)
+  LOAD_TRIM_TABLE(1);
+#if INJ_CHANNELS >= 2
+  LOAD_TRIM_TABLE(2);
+#endif
+#if INJ_CHANNELS >= 3
+  LOAD_TRIM_TABLE(3);
+#endif
+#if INJ_CHANNELS >= 4
+  LOAD_TRIM_TABLE(4);
+#endif
+#if INJ_CHANNELS >= 5
+  LOAD_TRIM_TABLE(5);
+#endif
+#if INJ_CHANNELS >= 6
+  LOAD_TRIM_TABLE(6);
+#endif
+#if INJ_CHANNELS >= 7
+  LOAD_TRIM_TABLE(7);
+#endif
+#if INJ_CHANNELS >= 8
+  LOAD_TRIM_TABLE(8);
+#endif
 
   //*********************************************************************************************************************************************************************************
   //canbus control page load

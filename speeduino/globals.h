@@ -73,14 +73,7 @@ extern struct table3d8RpmLoad wmiTable; //8x8 wmi map
 
 using trimTable3d = table3d6RpmLoad; 
 
-extern trimTable3d trim1Table; //6x6 Fuel trim 1 map
-extern trimTable3d trim2Table; //6x6 Fuel trim 2 map
-extern trimTable3d trim3Table; //6x6 Fuel trim 3 map
-extern trimTable3d trim4Table; //6x6 Fuel trim 4 map
-extern trimTable3d trim5Table; //6x6 Fuel trim 5 map
-extern trimTable3d trim6Table; //6x6 Fuel trim 6 map
-extern trimTable3d trim7Table; //6x6 Fuel trim 7 map
-extern trimTable3d trim8Table; //6x6 Fuel trim 8 map
+extern trimTable3d trimTables[INJ_CHANNELS]; //6x6 Fuel trim maps
 
 extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 
