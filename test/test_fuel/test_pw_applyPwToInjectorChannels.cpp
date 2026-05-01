@@ -1,7 +1,7 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "fuel_calcs.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "units.h"
 
 static statuses getRandomPW(void) {

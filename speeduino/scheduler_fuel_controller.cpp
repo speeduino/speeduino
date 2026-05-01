@@ -1,5 +1,6 @@
 #include "scheduler_fuel_controller.h"
 #include "scheduledIO_inj.h"
+#include "units.h"
 
 static inline bool isSwitchableCylinderCount(const config2 &page2)
 {
@@ -220,4 +221,290 @@ void __attribute__((flatten)) setFuelChannelSchedules(uint16_t crankAngle, byte 
 #endif
 
 #undef SET_FUEL_CHANNEL
+}
+
+static inline void zeroAllPulseWidths(void) {
+  fuelSchedule1.pw = 0U;
+#if INJ_CHANNELS >= 2
+  fuelSchedule2.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 3
+  fuelSchedule3.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 4
+  fuelSchedule4.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 5
+  fuelSchedule5.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 6
+  fuelSchedule6.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 7
+  fuelSchedule7.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 8
+  fuelSchedule8.pw = 0U;
+#endif
+}
+
+static inline uint16_t applyFuelTrim(const trimTable3d &trimTable, uint16_t pw, const config6 &page6, const statuses &current)
+{
+  if (pw!=0U && (page6.fuelTrimEnabled))
+  {
+    int8_t trimPct = FUEL_TRIM.toUser(get3DTableValue(&trimTable, current.fuelLoad, current.RPM));
+    if (trimPct != 0) 
+    { 
+      pw = percentageApprox((uint8_t)(100+trimPct), pw); 
+    }
+  }
+
+  return pw;
+}
+
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config6 &page6, const statuses &current) {
+  zeroAllPulseWidths();
+
+  #define PULSEWIDTH_OR_ZERO(index, pulseWidth) (((current.maxInjOutputs) >= (uint8_t)(index)) ? (pulseWidth) : 0U)
+
+  #define ASSIGN_PRIMARY_PW(index, pulseWidth) \
+    fuelSchedule ## index .pw = applyFuelTrim(trimTables[index-1U], \
+                                              PULSEWIDTH_OR_ZERO(index, pulseWidth), \
+                                              page6, \
+                                              current \
+                                              );
+  #define ASSIGN_SECONDARY_PW(index, pulseWidth) \
+    fuelSchedule ## index .pw = PULSEWIDTH_OR_ZERO(index, pulseWidth);
+
+  // The PW calcs already applied the logic to enable staging or not. If there is a valid
+  // secondary PW, staging is enabled 
+  if (pulse_widths.secondary!=0U) {
+    //Allocate the primary and secondary pulse widths based on the fuel configuration
+    switch (page2.nCylinders) {
+      case 1:
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_SECONDARY_PW(2, pulse_widths.secondary);
+#endif
+        break;
+
+      case 2:
+        //Primary pulsewidth on channels 1 and 2, secondary on channels 3 and 4
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_SECONDARY_PW(3, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 4
+        ASSIGN_SECONDARY_PW(4, pulse_widths.secondary);
+#endif
+        break;
+
+      case 3:
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PRIMARY_PW(3, pulse_widths.primary);
+#endif
+        //6 channels required for 'normal' 3 cylinder staging support
+#if INJ_CHANNELS >= 4
+        ASSIGN_SECONDARY_PW(4, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 5
+        ASSIGN_SECONDARY_PW(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+        ASSIGN_SECONDARY_PW(6, pulse_widths.secondary);
+#endif
+        break;
+
+      case 4:
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+        if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
+        {
+#if INJ_CHANNELS >= 3
+          ASSIGN_PRIMARY_PW(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+          ASSIGN_PRIMARY_PW(4, pulse_widths.primary);
+#endif
+        // Staging with 4 cylinders semi/sequential requires 8 total channels
+#if INJ_CHANNELS >= 5
+          ASSIGN_SECONDARY_PW(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+          ASSIGN_SECONDARY_PW(6, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 7
+          ASSIGN_SECONDARY_PW(7, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 8
+          ASSIGN_SECONDARY_PW(8, pulse_widths.secondary);
+#endif
+        } else {
+#if INJ_CHANNELS >= 3
+          ASSIGN_SECONDARY_PW(3, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 4
+          ASSIGN_SECONDARY_PW(4, pulse_widths.secondary);
+#endif
+        }
+        break;
+        
+      case 5:
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PRIMARY_PW(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+        ASSIGN_PRIMARY_PW(4, pulse_widths.primary);
+#endif
+        //No easily supportable 5 cylinder staging option unless there are at least 5 channels
+          if (page2.injLayout != INJ_SEQUENTIAL) {
+#if INJ_CHANNELS >= 5
+        ASSIGN_SECONDARY_PW(5, pulse_widths.secondary);
+#endif
+          } else {
+#if INJ_CHANNELS >= 5
+        ASSIGN_SECONDARY_PW(5, pulse_widths.primary);
+#endif
+          }
+#if INJ_CHANNELS >= 6
+        ASSIGN_SECONDARY_PW(6, pulse_widths.secondary);
+#endif
+        break;
+
+      case 6:
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PRIMARY_PW(3, pulse_widths.primary);
+#endif
+        // 6 cylinder staging only if not sequential
+        if (page2.injLayout != INJ_SEQUENTIAL) {
+#if INJ_CHANNELS >= 4
+        ASSIGN_SECONDARY_PW(4, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 5
+        ASSIGN_SECONDARY_PW(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+        ASSIGN_SECONDARY_PW(6, pulse_widths.secondary);
+#endif
+        } else {
+#if INJ_CHANNELS >= 4
+          ASSIGN_PRIMARY_PW(4, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 5
+          ASSIGN_PRIMARY_PW(5, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 6
+          ASSIGN_PRIMARY_PW(6, pulse_widths.primary);
+#endif
+          //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
+#if INJ_CHANNELS >= 7
+          ASSIGN_SECONDARY_PW(7, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 8
+          ASSIGN_SECONDARY_PW(8, pulse_widths.secondary);
+#endif
+        }
+        break;
+
+      case 8:
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+        ASSIGN_PRIMARY_PW(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+        ASSIGN_PRIMARY_PW(4, pulse_widths.primary);
+#endif
+        //8 cylinder staging only if not sequential
+        if (page2.injLayout != INJ_SEQUENTIAL)
+        {
+#if INJ_CHANNELS >= 5
+          ASSIGN_SECONDARY_PW(5, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 6
+          ASSIGN_SECONDARY_PW(6, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 7
+          ASSIGN_SECONDARY_PW(7, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 8
+          ASSIGN_SECONDARY_PW(8, pulse_widths.secondary);
+#endif
+        } else {
+#if INJ_CHANNELS >= 5
+        ASSIGN_PRIMARY_PW(5, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 6
+        ASSIGN_PRIMARY_PW(6, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 7
+        ASSIGN_PRIMARY_PW(7, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 8
+        ASSIGN_PRIMARY_PW(8, pulse_widths.primary);
+#endif          
+        }
+        break;
+
+      default:
+        //Assume 4 cylinder non-seq for default
+        ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+        ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+          ASSIGN_SECONDARY_PW(3, pulse_widths.secondary);
+#endif
+#if INJ_CHANNELS >= 4
+          ASSIGN_SECONDARY_PW(4, pulse_widths.secondary);
+#endif
+       break;
+    }
+  }
+  else if (pulse_widths.primary!=0U)
+  { 
+    ASSIGN_PRIMARY_PW(1, pulse_widths.primary);
+#if INJ_CHANNELS >= 2
+    ASSIGN_PRIMARY_PW(2, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 3
+    ASSIGN_PRIMARY_PW(3, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 4
+    ASSIGN_PRIMARY_PW(4, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 5
+    ASSIGN_PRIMARY_PW(5, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 6
+    ASSIGN_PRIMARY_PW(6, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 7
+    ASSIGN_PRIMARY_PW(7, pulse_widths.primary);
+#endif
+#if INJ_CHANNELS >= 8
+    ASSIGN_PRIMARY_PW(8, pulse_widths.primary);
+#endif
+  } else {
+    //No pulse widths to apply
+  } 
 }

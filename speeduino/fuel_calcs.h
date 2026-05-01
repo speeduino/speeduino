@@ -34,13 +34,3 @@ struct pulseWidths {
  * @return pulseWidths The primary and secondary injector pulse width in uS
  */
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current);
-
-/**
- * @brief Apply the calculated pulse widths to the current system state
- * 
- * @param pulseWidths Result of computePulseWidths()
- * @param page2 Tune settings
- * @param current Current system state
- */
-// TODO: move to fuel scheduler cpp
-void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config6 &page6, const statuses &current);
