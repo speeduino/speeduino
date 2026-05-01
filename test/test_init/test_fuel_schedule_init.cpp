@@ -26,9 +26,8 @@ static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t
     UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, assertLineNum, msg);
     sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), cmdBit+1);
     UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, assertLineNum, msg);
-    // Should be the case, but this doesn't pass!!
-    // sprintf_P(msg, PSTR("injAngle"));
-    // UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ, angle, assertLineNum, msg);
+    sprintf_P(msg, PSTR("injAngle"));
+    UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ, angle, assertLineNum, msg);
   }
 }
 
@@ -440,7 +439,7 @@ static void cylinder3_stroke2_semiseq_nostage_tb(void)
   configPage2.injType = INJ_TYPE_TBODY;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
+	const uint16_t angle[] = {0,80,40,0,0,0,0,0};
   assert_fuel_schedules(360U/3U, enabled, angle, __LINE__);
 }
 
@@ -451,7 +450,7 @@ static void cylinder3_stroke2_semiseq_nostage_port(void)
   configPage2.injType = INJ_TYPE_PORT;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
+	const uint16_t angle[] = {0,120,60,0,0,0,0,0};
   assert_fuel_schedules(360U/2U, enabled, angle, __LINE__);
 }
 
@@ -482,7 +481,7 @@ static void cylinder3_stroke2_semiseq_staged_tb(void)
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
   TEST_IGNORE_MESSAGE("Fix code so test passes :-()");
 #else
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
+	const uint16_t angle[] = {0,80,40,0,0,0,0,0};
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 #endif
   assert_fuel_schedules(360U/3U, enabled, angle, __LINE__);
@@ -495,11 +494,11 @@ static void cylinder3_stroke2_semiseq_staged_port(void)
   configPage2.injType = INJ_TYPE_PORT;
   initialiseAll(); //Run the main initialise function
 #if INJ_CHANNELS>=6
-	const uint16_t angle[] = {0,120,240,0,120,240,0,0};
+	const uint16_t angle[] = {0,120,60,0,120,240,0,0};
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
   TEST_IGNORE_MESSAGE("Fix code so test passes :-()");
 #else
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
+	const uint16_t angle[] = {0,120,60,0,0,0,0,0};
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 #endif
   assert_fuel_schedules(360U/2U, enabled, angle, __LINE__);

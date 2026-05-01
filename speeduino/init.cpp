@@ -85,6 +85,33 @@ static void processResetStorageRequest(void) {
 }
 #endif
 
+/** @brief Limit all injection schedule channel angles to 0-CRANK_ANGLE_MAX_INJ */
+static void clampInjectionChannelAngles(void)
+{
+  fuelSchedule1.channelDegrees = injectorLimits(fuelSchedule1.channelDegrees);
+#if INJ_CHANNELS>=2
+  fuelSchedule2.channelDegrees = injectorLimits(fuelSchedule2.channelDegrees);
+#endif
+#if INJ_CHANNELS>=3
+  fuelSchedule3.channelDegrees = injectorLimits(fuelSchedule3.channelDegrees);
+#endif
+#if INJ_CHANNELS>=4
+  fuelSchedule4.channelDegrees = injectorLimits(fuelSchedule4.channelDegrees);
+#endif
+#if INJ_CHANNELS>=5
+  fuelSchedule5.channelDegrees = injectorLimits(fuelSchedule5.channelDegrees);
+#endif
+#if INJ_CHANNELS>=6
+  fuelSchedule6.channelDegrees = injectorLimits(fuelSchedule6.channelDegrees);
+#endif
+#if INJ_CHANNELS>=7
+  fuelSchedule7.channelDegrees = injectorLimits(fuelSchedule7.channelDegrees);
+#endif
+#if INJ_CHANNELS>=8
+  fuelSchedule8.channelDegrees = injectorLimits(fuelSchedule8.channelDegrees);
+#endif
+}
+
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
  * - Initialise and set sizes of 3D tables
@@ -786,6 +813,7 @@ void initialiseAll(void)
       fuelSchedule4.channelDegrees = fuelSchedule3.channelDegrees + (uint16_t)(CRANK_ANGLE_MAX_INJ / 2U); 
       if (fuelSchedule4.channelDegrees>=(uint16_t)CRANK_ANGLE_MAX_INJ) { fuelSchedule4.channelDegrees -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
     }
+    clampInjectionChannelAngles();
     
     switch(configPage2.injLayout)
     {
