@@ -3,6 +3,7 @@
 #include "unit_testing.h"
 #include "globals.h"
 #include "decoders.h"
+#include "scheduler.h"
 
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const decoder_status_t &decoderStatus) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
@@ -237,12 +238,36 @@ TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint
   return { primaryPw, 0U };
 }
 
+static inline void zeroAllPulseWidths(void) {
+  fuelSchedule1.pw = 0U;
+#if INJ_CHANNELS >= 2
+  fuelSchedule2.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 3
+  fuelSchedule3.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 4
+  fuelSchedule4.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 5
+  fuelSchedule5.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 6
+  fuelSchedule6.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 7
+  fuelSchedule7.pw = 0U;
+#endif
+#if INJ_CHANNELS >= 8
+  fuelSchedule8.pw = 0U;
+#endif
+}
 
-void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current) {
-  current.PW1 = current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const statuses &current) {
+  zeroAllPulseWidths();
 
-  #define ASSIGN_PULSEWIDTH_OR_ZERO(index, pw) \
-    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? (pw) : 0U
+  #define ASSIGN_PULSEWIDTH_OR_ZERO(index, pulseWidth) \
+    fuelSchedule ## index .pw = ((current.maxInjOutputs) >= (uint8_t)(index)) ? (pulseWidth) : 0U
 
   // The PW calcs already applied the logic to enable staging or not. If there is a valid
   // secondary PW, staging is enabled 

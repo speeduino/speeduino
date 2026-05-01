@@ -221,6 +221,7 @@ struct FuelSchedule : public Schedule {
   using Schedule::Schedule;
 
   int16_t channelDegrees;
+  uint16_t pw;
 
   void reset(void) override;
 };

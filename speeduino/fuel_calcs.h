@@ -42,4 +42,5 @@ pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const
  * @param page2 Tune settings
  * @param current Current system state
  */
-void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current);
+// TODO: move to fuel scheduler cpp
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const statuses &current);
