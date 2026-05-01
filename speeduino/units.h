@@ -138,7 +138,7 @@ static constexpr conversionFactor<int8_t, uint8_t> IGNITION_ADVANCE_SMALL = { .s
 static constexpr conversionFactor<int16_t, uint8_t> TEMPERATURE = { .scale=1U, .translate=-40 };
 
 /** @brief The fuel trim tables are offset by 128 to allow for -50% to +50% values */
-static constexpr conversionFactor<int16_t, uint8_t> FUEL_TRIM = { .scale=1U, .translate=-127 };
+static constexpr conversionFactor<int8_t, uint8_t> FUEL_TRIM = { .scale=1U, .translate=-127 };
 
 ///@}
 
