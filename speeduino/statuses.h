@@ -186,15 +186,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool isDeceleratingTPS : 1; ///< Are we decelerating (true) or not (false), based on TPS
   
-  // TODO: make all pulse widths uint16_t
-  unsigned int PW1; ///< In uS
-  unsigned int PW2; ///< In uS
-  unsigned int PW3; ///< In uS
-  unsigned int PW4; ///< In uS
-  unsigned int PW5; ///< In uS
-  unsigned int PW6; ///< In uS
-  unsigned int PW7; ///< In uS
-  unsigned int PW8; ///< In uS
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 

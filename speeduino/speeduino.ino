@@ -100,22 +100,22 @@ static inline int8_t getAdvance1(void)
   return correctionsIgn(IGNITION_ADVANCE_LARGE.toUser(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM))); //As above, but for ignition advance
 }
 
-static inline void setFuelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t pw, uint16_t startAngle, uint16_t crankAngle, byte fuelChannelsOn)
+static inline void setFuelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t startAngle, uint16_t crankAngle, byte fuelChannelsOn)
 {
-  if( (pw != 0U) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT+channel-1U)) )
+  if( (schedule.pw != 0U) && (BIT_CHECK(fuelChannelsOn, INJ1_CMD_BIT+channel-1U)) )
   {
     uint32_t timeOut = calculateInjectorTimeout(schedule, startAngle, crankAngle);
     if (timeOut>0U)
     {
-      setFuelSchedule(schedule, timeOut, pw);
+      setFuelSchedule(schedule, timeOut, schedule.pw);
     }
   }
 }
 
-static inline void setFuelSchedules(const statuses &current, const uint16_t (&injectionStartAngles)[INJ_CHANNELS], uint16_t crankAngle, byte fuelChannelsOn)
+static inline void setFuelSchedules(const uint16_t (&injectionStartAngles)[INJ_CHANNELS], uint16_t crankAngle, byte fuelChannelsOn)
 {
 #define SET_FUEL_CHANNEL(channel) \
-  setFuelSchedule(fuelSchedule ##channel, UINT8_C(channel), current.PW ##channel, injectionStartAngles[(channel)-1U], crankAngle, fuelChannelsOn);
+  setFuelSchedule(fuelSchedule ##channel, UINT8_C(channel), injectionStartAngles[(channel)-1U], crankAngle, fuelChannelsOn);
 
 #if INJ_CHANNELS >= 1
   SET_FUEL_CHANNEL(1)
@@ -232,7 +232,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       setRpm(currentStatus, 0);
-      currentStatus.PW1 = 0;
+      fuelSchedule1.pw = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
       currentStatus.decoder.reset();
@@ -526,7 +526,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
       if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
 
-      unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW1); //How many crank degrees the calculated PW will take at the current speed
+      unsigned int PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule1.pw); //How many crank degrees the calculated PW will take at the current speed
 
       uint16_t injectionStartAngles[INJ_CHANNELS];
       injectionStartAngles[0] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
@@ -539,7 +539,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           //The only thing that needs to be done for single cylinder is to check for staging. 
           if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
           {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW2); //Need to redo this for PW2 as it will be dramatically different to PW1 when staging
+            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule2.pw); //Need to redo this for PW2 as it will be dramatically different to PW1 when staging
             injectionStartAngles[1] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
           }
           break;
@@ -549,12 +549,12 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           
           if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
           {
-            currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1);
-            currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2);
+            fuelSchedule1.pw = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
+            fuelSchedule2.pw = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
           }
           else if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
           {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW3);  //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule3.pw);  //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injectionStartAngles[2] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
             // injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
 
@@ -569,14 +569,14 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           
           if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
           {
-            currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1);
-            currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2);
-            currentStatus.PW3 = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW3);
+            fuelSchedule1.pw = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
+            fuelSchedule2.pw = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
+            fuelSchedule3.pw = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
 
             #if INJ_CHANNELS >= 6
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
+                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule6.pw);
                 injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[4] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[5] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule3.channelDegrees, currentStatus.injAngle);
@@ -585,7 +585,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           }
           else if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
           {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW4); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule4.pw); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
             #if INJ_CHANNELS >= 6
               injectionStartAngles[4] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
@@ -606,7 +606,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             #if INJ_CHANNELS >= 8
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW5); //Need to redo this for PW5 as it will be dramatically different to PW1 when staging
+                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule5.pw); //Need to redo this for PW5 as it will be dramatically different to PW1 when staging
                 injectionStartAngles[4] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[5] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[6] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule3.channelDegrees, currentStatus.injAngle);
@@ -616,15 +616,15 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
             if(configPage6.fuelTrimEnabled > 0)
             {
-              currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1);
-              currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2);
-              currentStatus.PW3 = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW3);
-              currentStatus.PW4 = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW4);
+              fuelSchedule1.pw = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
+              fuelSchedule2.pw = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
+              fuelSchedule3.pw = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
+              fuelSchedule4.pw = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule4.pw);
             }
           }
           else if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
           {
-            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW3); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
+            PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule3.pw); //Need to redo this for PW3 as it will be dramatically different to PW1 when staging
             injectionStartAngles[2] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
             injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
           }
@@ -646,7 +646,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           #if INJ_CHANNELS >= 6
             if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
             {
-              PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
+              PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule6.pw);
               injectionStartAngles[5] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule6.channelDegrees, currentStatus.injAngle);
             }
           #endif
@@ -668,19 +668,19 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
               if(configPage6.fuelTrimEnabled > 0)
               {
-                currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1);
-                currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2);
-                currentStatus.PW3 = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW3);
-                currentStatus.PW4 = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW4);
-                currentStatus.PW5 = applyFuelTrimToPW(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW5);
-                currentStatus.PW6 = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW6);
+                fuelSchedule1.pw = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
+                fuelSchedule2.pw = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
+                fuelSchedule3.pw = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
+                fuelSchedule4.pw = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule4.pw);
+                fuelSchedule5.pw = applyFuelTrimToPW(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule5.pw);
+                fuelSchedule6.pw = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule6.pw);
               }
 
               //Staging is possible with sequential on 8 channel boards by using outputs 7 + 8 for the staged injectors
               #if INJ_CHANNELS >= 8
                 if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
                 {
-                  PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
+                  PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule6.pw);
                   injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
                   injectionStartAngles[4] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
                   injectionStartAngles[5] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule3.channelDegrees, currentStatus.injAngle);
@@ -693,7 +693,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
+                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule6.pw);
                 injectionStartAngles[3] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[4] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[5] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule3.channelDegrees, currentStatus.injAngle); 
@@ -719,14 +719,14 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
               if(configPage6.fuelTrimEnabled > 0)
               {
-                currentStatus.PW1 = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW1);
-                currentStatus.PW2 = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW2);
-                currentStatus.PW3 = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW3);
-                currentStatus.PW4 = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW4);
-                currentStatus.PW5 = applyFuelTrimToPW(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW5);
-                currentStatus.PW6 = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW6);
-                currentStatus.PW7 = applyFuelTrimToPW(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW7);
-                currentStatus.PW8 = applyFuelTrimToPW(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM, currentStatus.PW8);
+                fuelSchedule1.pw = applyFuelTrimToPW(&trim1Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
+                fuelSchedule2.pw = applyFuelTrimToPW(&trim2Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
+                fuelSchedule3.pw = applyFuelTrimToPW(&trim3Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
+                fuelSchedule4.pw = applyFuelTrimToPW(&trim4Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule4.pw);
+                fuelSchedule5.pw = applyFuelTrimToPW(&trim5Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule5.pw);
+                fuelSchedule6.pw = applyFuelTrimToPW(&trim6Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule6.pw);
+                fuelSchedule7.pw = applyFuelTrimToPW(&trim7Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule7.pw);
+                fuelSchedule8.pw = applyFuelTrimToPW(&trim8Table, currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule8.pw);
               }
             }
             else
@@ -735,7 +735,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
-                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(currentStatus.PW6);
+                PWdivTimerPerDegree = timeToAngleDegPerMicroSec(fuelSchedule6.pw);
                 injectionStartAngles[4] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule1.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[5] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule2.channelDegrees, currentStatus.injAngle);
                 injectionStartAngles[6] = calculateInjectorStartAngle(PWdivTimerPerDegree, fuelSchedule3.channelDegrees, currentStatus.injAngle);
@@ -789,7 +789,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         currentStatus.engineProtect.reset();
       }
       
-      setFuelSchedules(currentStatus, injectionStartAngles, injectorLimits(currentStatus.decoder.getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
+      setFuelSchedules(injectionStartAngles, injectorLimits(currentStatus.decoder.getCrankAngle()), currentStatus.schedulerCutState.fuelChannels);
     
       //***********************************************************************************************
       //| BEGIN IGNITION SCHEDULES
