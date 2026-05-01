@@ -4,6 +4,7 @@
 #include "maths.h"
 #include "unit_testing.h"
 #include "globals.h"
+#include "units.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
@@ -85,7 +86,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
 // The bounds of the spark table vary depending on the mode (see the INI file).
 // int16_t is wide enough to capture the full range of the table.
 static inline int16_t lookupSpark2(const config10 &page10, const table3d16RpmLoad &sparkLookupTable, const statuses &current) {
-  return (int16_t)get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM) - INT16_C(OFFSET_IGNITION);  
+  return IGNITION_ADVANCE_LARGE.toUser(get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM));  
 }
 
 static inline int8_t constrainAdvance(int16_t advance)

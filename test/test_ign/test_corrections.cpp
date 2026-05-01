@@ -119,12 +119,12 @@ static void test_correctionFlexTiming_inactive(void) {
 static void test_correctionFlexTiming_table_lookup(void) {
     setup_flexAdv();
 
-    TEST_ASSERT_EQUAL(8 + 18 - OFFSET_IGNITION, correctionFlexTiming(8));
-    TEST_ASSERT_EQUAL(18 - OFFSET_IGNITION, currentStatus.flexIgnCorrection);    
+    TEST_ASSERT_EQUAL(IGNITION_ADVANCE_LARGE.toUser(8 + 18), correctionFlexTiming(8));
+    TEST_ASSERT_EQUAL(IGNITION_ADVANCE_LARGE.toUser(18), currentStatus.flexIgnCorrection);    
 
     currentStatus.ethanolPct = 35;
-    TEST_ASSERT_EQUAL(-4 + 28 - OFFSET_IGNITION, correctionFlexTiming(-4));
-    TEST_ASSERT_EQUAL(28 - OFFSET_IGNITION, currentStatus.flexIgnCorrection);    
+    TEST_ASSERT_EQUAL(IGNITION_ADVANCE_LARGE.toUser(-4 + 28), correctionFlexTiming(-4));
+    TEST_ASSERT_EQUAL(IGNITION_ADVANCE_LARGE.toUser(28), currentStatus.flexIgnCorrection);    
 }
 
 static void test_correctionFlexTiming(void) {
@@ -159,10 +159,10 @@ static void test_correctionWMITiming_table_lookup(void) {
     setup_WMIAdv();
 
     currentStatus.MAP = (55*2U)+1U;
-    TEST_ASSERT_EQUAL(8 + 18 - OFFSET_IGNITION, correctionWMITiming(8));
+    TEST_ASSERT_EQUAL(IGNITION_ADVANCE_LARGE.toUser(8 + 18), correctionWMITiming(8));
 
     currentStatus.MAP = (35*2U)+1U;
-    TEST_ASSERT_EQUAL(-4 + 28 - OFFSET_IGNITION, correctionWMITiming(-4));
+    TEST_ASSERT_EQUAL(IGNITION_ADVANCE_LARGE.toUser(-4 + 28), correctionWMITiming(-4));
 }
 
 static void test_correctionWMITiming_wmidisabled_inactive(void) {

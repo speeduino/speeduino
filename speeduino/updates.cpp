@@ -466,7 +466,7 @@ void doUpdates(void)
     for(int i=0; i<6; i++)
     {
       configPage10.wmiAdvBins[i] = i*100/2;
-      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+      configPage10.wmiAdvAdj[i] = IGNITION_ADVANCE_LARGE.toRaw(0);
     }
 
     //Programmable outputs added. Set all to disabled
