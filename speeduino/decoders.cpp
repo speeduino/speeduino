@@ -120,6 +120,14 @@ static boardInputPin_t triggerThird_pin;
 #define SKIP_TOOTH3 3
 #define SKIP_TOOTH4 4
 
+// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
+constexpr uint8_t COMPOSITE_LOG_PRI = 0;
+constexpr uint8_t COMPOSITE_LOG_SEC = 1;
+constexpr uint8_t COMPOSITE_LOG_THIRD = 2;
+constexpr uint8_t COMPOSITE_LOG_TRIG = 3;
+constexpr uint8_t COMPOSITE_LOG_SYNC = 4;
+constexpr uint8_t COMPOSITE_ENGINE_CYCLE = 5;
+
 /** Universal (shared between decoders) decoder routines.
 *
 * @defgroup dec_uni Universal Decoder Routines

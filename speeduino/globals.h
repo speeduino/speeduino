@@ -38,14 +38,6 @@ constexpr uint8_t TOOTH_LOG_SIZE = 127U;
 constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #endif
 
-// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
-#define COMPOSITE_LOG_PRI   0
-#define COMPOSITE_LOG_SEC   1
-#define COMPOSITE_LOG_THIRD 2 
-#define COMPOSITE_LOG_TRIG 3
-#define COMPOSITE_LOG_SYNC 4
-#define COMPOSITE_ENGINE_CYCLE 5
-
 #define OUTPUT_CONTROL_DIRECT   0
 #define OUTPUT_CONTROL_MC33810  10
 
