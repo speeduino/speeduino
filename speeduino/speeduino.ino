@@ -515,7 +515,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
       matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
       applyPwToInjectorChannels(pulse_widths, configPage2, configPage6, currentStatus);
-      setInjectionAngles(configPage2, currentStatus);
+      currentStatus.injAngle = setInjectionAngles(currentStatus);
 
       //***********************************************************************************************
       //| BEGIN IGNITION CALCULATIONS

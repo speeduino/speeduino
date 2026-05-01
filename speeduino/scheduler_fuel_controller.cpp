@@ -138,38 +138,33 @@ static inline uint16_t lookupInjectorAngle(const statuses &current)
   return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
 }
 
-void setInjectionAngles(const config2 &page2, statuses &current)
+uint16_t setInjectionAngles(const statuses &current)
 {
-  current.injAngle = lookupInjectorAngle(current);
+  uint16_t injAngle = lookupInjectorAngle(current);
 
   injectorAngleCalcCache angleCalcCache;
-  setOpenAngle(fuelSchedule1, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule1, injAngle, &angleCalcCache);
 #if INJ_CHANNELS>=2
-  setOpenAngle(fuelSchedule2, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule2, injAngle, &angleCalcCache);
 #endif
 #if INJ_CHANNELS>=3
-  setOpenAngle(fuelSchedule3, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule3, injAngle, &angleCalcCache);
 #endif
 #if INJ_CHANNELS>=4
-  // TODO: move to fuel schedule setup: set fuelSchedule3.channelDegrees correctly
-  if (page2.nCylinders==2U) {
-    //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-    fuelSchedule4.openAngle = fuelSchedule3.openAngle + (CRANK_ANGLE_MAX_INJ / 2); 
-    if(fuelSchedule4.openAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { fuelSchedule4.openAngle -= CRANK_ANGLE_MAX_INJ; }
-  } else {
-    setOpenAngle(fuelSchedule4, currentStatus.injAngle, &angleCalcCache);
-  }
+  setOpenAngle(fuelSchedule4, injAngle, &angleCalcCache);
 #endif
 #if INJ_CHANNELS>=5
-  setOpenAngle(fuelSchedule5, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule5, injAngle, &angleCalcCache);
 #endif
 #if INJ_CHANNELS>=6
-  setOpenAngle(fuelSchedule6, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule6, injAngle, &angleCalcCache);
 #endif
 #if INJ_CHANNELS>=7
-  setOpenAngle(fuelSchedule7, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule7, injAngle, &angleCalcCache);
 #endif
 #if INJ_CHANNELS>=8
-  setOpenAngle(fuelSchedule8, currentStatus.injAngle, &angleCalcCache);
+  setOpenAngle(fuelSchedule8, injAngle, &angleCalcCache);
 #endif
+
+  return injAngle;
 }
