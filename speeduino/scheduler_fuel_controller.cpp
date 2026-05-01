@@ -128,3 +128,48 @@ void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, 
     }
   }
 }
+
+static table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
+
+static inline uint16_t lookupInjectorAngle(const statuses &current)
+{
+  uint16_t injAngle = table2D_getValue(&injectorAngleTable, current.RPMdiv100);
+  // Do not combine min() & table2D_getValue() - if min() is a macro, we could call table2D_getValue twice
+  return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
+}
+
+void setInjectionAngles(const config2 &page2, statuses &current)
+{
+  current.injAngle = lookupInjectorAngle(current);
+
+  injectorAngleCalcCache angleCalcCache;
+  setOpenAngle(fuelSchedule1, currentStatus.injAngle, &angleCalcCache);
+#if INJ_CHANNELS>=2
+  setOpenAngle(fuelSchedule2, currentStatus.injAngle, &angleCalcCache);
+#endif
+#if INJ_CHANNELS>=3
+  setOpenAngle(fuelSchedule3, currentStatus.injAngle, &angleCalcCache);
+#endif
+#if INJ_CHANNELS>=4
+  // TODO: move to fuel schedule setup: set fuelSchedule3.channelDegrees correctly
+  if (page2.nCylinders==2U) {
+    //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+    fuelSchedule4.openAngle = fuelSchedule3.openAngle + (CRANK_ANGLE_MAX_INJ / 2); 
+    if(fuelSchedule4.openAngle > (uint16_t)CRANK_ANGLE_MAX_INJ) { fuelSchedule4.openAngle -= CRANK_ANGLE_MAX_INJ; }
+  } else {
+    setOpenAngle(fuelSchedule4, currentStatus.injAngle, &angleCalcCache);
+  }
+#endif
+#if INJ_CHANNELS>=5
+  setOpenAngle(fuelSchedule5, currentStatus.injAngle, &angleCalcCache);
+#endif
+#if INJ_CHANNELS>=6
+  setOpenAngle(fuelSchedule6, currentStatus.injAngle, &angleCalcCache);
+#endif
+#if INJ_CHANNELS>=7
+  setOpenAngle(fuelSchedule7, currentStatus.injAngle, &angleCalcCache);
+#endif
+#if INJ_CHANNELS>=8
+  setOpenAngle(fuelSchedule8, currentStatus.injAngle, &angleCalcCache);
+#endif
+}
