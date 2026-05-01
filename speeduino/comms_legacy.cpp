@@ -35,11 +35,10 @@ static uint16_t chunkSize = 0; /**< The complete size of the requested chunk wri
 static int valueOffset; /**< The memory offset within a given page for a value to be read from or written to. Note that we cannot use 'offset' as a variable name, it is a reserved word for several teensy libraries */
 byte logItemsTransmitted;
 byte inProgressLength;
-SerialStatus serialStatusFlag;
-SerialStatus serialSecondaryStatusFlag;
 
-static bool isMap(void) {
-    // Detecting if the current page is a table/map
+static bool isMap(void) 
+{
+  // Detecting if the current page is a table/map
   return (currentPage == veMapPage) || (currentPage == ignMapPage) || (currentPage == afrMapPage) || (currentPage == fuelMap2Page) || (currentPage == ignMap2Page);
 }
 
@@ -66,9 +65,11 @@ Can be either data for a new command or a continuation of data for command that 
 
 Commands are single byte (letter symbol) commands.
 */
-void legacySerialCommand(void)
+void legacySerialCommand(commsInterface *comms)
 {
-  serialReceiveStartTime = millis();
+  comms->serialReceiveStartTime = millis();
+  auto serialStatusFlag = comms->serialStatusFlag;
+
   if ( serialStatusFlag == SERIAL_INACTIVE )  { currentCommand = primarySerial.read(); }
 
   switch (currentCommand)
@@ -160,7 +161,7 @@ void legacySerialCommand(void)
     {
       serialStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
       //Format is similar to the above command. 2 bytes for the EEPROM size that is about to be transmitted, a comma and then a raw dump of the EEPROM values
-      while( (primarySerial.available() < 3) && (!isRxTimeout()) ) { delay(1); }
+      while( (primarySerial.available() < 3) && (!comms->isRxTimeout()) ) { delay(1); }
       if(primarySerial.available() >= 3)
       {
         uint16_t eepromSize = word(primarySerial.read(), primarySerial.read());
@@ -174,8 +175,8 @@ void legacySerialCommand(void)
         {
           for(uint16_t x = 0; x < eepromSize; x++)
           {
-            while( (primarySerial.available() == 0) && (!isRxTimeout()) ) { delay(1); }
-            if(primarySerial.available()>0) 
+            while( (primarySerial.available() == 0) && (!comms->isRxTimeout()) ) { delay(1); }
+            if(primarySerial.available()) 
             { 
               (void)update(getStorageAPI(), x, primarySerial.read());
             }
@@ -340,8 +341,7 @@ void legacySerialCommand(void)
       break;
 
     case 'S': // send code version
-      if( (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_MSDROID) || (configPage9.secondarySerialProtocol == SECONDARY_SERIAL_PROTO_TUNERSTUDIO) ) { legacySerialHandler('Q', primarySerial, serialSecondaryStatusFlag); } //Note 'Q', this is a workaround for msDroid
-      else { legacySerialHandler(currentCommand, primarySerial, serialStatusFlag); } //Send the bootloader capabilities
+      legacySerialHandler(currentCommand, primarySerial, serialStatusFlag); //Send the bootloader capabilities
       currentStatus.secl = 0; //This is required in TS3 due to its stricter timings
       break;
 
@@ -360,8 +360,8 @@ void legacySerialCommand(void)
         primarySerial.read(); // First byte of the page identifier can be ignored. It's always 0
         primarySerial.read(); // First byte of the page identifier can be ignored. It's always 0
 
-        if(currentStatus.toothLogEnabled == true) { sendToothLog_legacy(0); } //Sends tooth log values as ints
-        else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog_legacy(0); }
+        if(currentStatus.toothLogEnabled == true) { sendToothLog_legacy(comms, 0); } //Sends tooth log values as ints
+        else if (currentStatus.compositeTriggerUsed > 0) { sendCompositeLog_legacy(comms, 0); }
         serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -477,7 +477,7 @@ void legacySerialCommand(void)
       break;
 
     case 'z': //Send 256 tooth log entries to a terminal emulator
-      sendToothLog_legacy(0); //Sends tooth log values as chars
+      sendToothLog_legacy(comms, 0); //Sends tooth log values as chars
       break;
 
     case '`': //Custom 16u2 firmware is making its presence known
@@ -1170,12 +1170,12 @@ void sendPageASCII(void)
  * if useChar is true, the values are sent as chars to be printed out by a terminal emulator
  * if useChar is false, the values are sent as a 2 byte integer which is readable by TunerStudios tooth logger
 */
-void sendToothLog_legacy(byte startOffset) /* Blocking */
+void sendToothLog_legacy(commsInterface *comms, byte startOffset) /* Blocking */
 {
   //We need TOOTH_LOG_SIZE number of records to send to TunerStudio. If there aren't that many in the buffer then we just return and wait for the next call
   if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
-      serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
+      comms->serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
       for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; ++x)
       {
         primarySerial.write(toothHistory[x] >> 24);
@@ -1183,8 +1183,8 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
         primarySerial.write(toothHistory[x] >> 8);
         primarySerial.write(toothHistory[x]);
       }
+      comms->serialStatusFlag = SERIAL_INACTIVE; 
       currentStatus.isToothLog1Full = false;
-      serialStatusFlag = SERIAL_INACTIVE; 
       toothHistoryIndex = 0;
   }
   else 
@@ -1194,15 +1194,15 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
     {
       primarySerial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
-    serialStatusFlag = SERIAL_INACTIVE; 
+    comms->serialStatusFlag = SERIAL_INACTIVE; 
   } 
 }
 
-void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
+void sendCompositeLog_legacy(commsInterface *comms, byte startOffset) /* Non-blocking */
 {
   if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
-      serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
+      comms->serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
 
       for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; ++x)
       {
@@ -1225,7 +1225,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
       }
       currentStatus.isToothLog1Full = false;
       toothHistoryIndex = 0;
-      serialStatusFlag = SERIAL_INACTIVE; 
+      comms->serialStatusFlag = SERIAL_INACTIVE; 
   }
   else 
   { 
@@ -1234,7 +1234,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
     {
       primarySerial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
-    serialStatusFlag = SERIAL_INACTIVE; 
+    comms->serialStatusFlag = SERIAL_INACTIVE; 
   } 
 }
 

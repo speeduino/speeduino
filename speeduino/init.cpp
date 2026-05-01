@@ -139,8 +139,7 @@ void initialiseAll(void)
     if(configPage13.onboard_log_file_style) { initSD(); }
   #endif
 
-    pPrimarySerial = &Serial; //Default to standard Serial interface
-    currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup
+    currentStatus.allowLegacyComms = true; //Flag legacy comms as being allowed on startup 
 
     //Set the pin mappings
     if((configPage2.pinMapping == 255) || (configPage2.pinMapping == 0)) //255 = EEPROM value in a blank AVR; 0 = EEPROM value in new FRAM

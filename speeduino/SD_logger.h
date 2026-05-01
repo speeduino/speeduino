@@ -22,7 +22,18 @@
 #define SD_STATUS_ERROR_WRITE_FAIL  7 /**< Log file created and opened, but a sector write failed during logging */
 #define SD_STATUS_ERROR_FORMAT_FAIL 8 /**< Attempted formatting of SD card failed */
 
-#define SD_SECTOR_SIZE              512 // Standard SD sector size
+#define SD_STATUS_CARD_PRESENT      0 //0=no card, 1=card present
+#define SD_STATUS_CARD_TYPE         1 //0=SD, 1=SDHC
+#define SD_STATUS_CARD_READY        2 //0=not ready, 1=ready
+#define SD_STATUS_CARD_LOGGING      3 //0=not logging, 1=logging
+#define SD_STATUS_CARD_ERROR        4 //0=no error, 1=error
+#define SD_STATUS_CARD_VERSION      5 //0=1.x, 1=2.x
+#define SD_STATUS_CARD_FS           6 //0=no FAT16, 1=FAT32
+#define SD_STATUS_CARD_UNUSED       7 //0=normal, 1=unused
+
+
+#define SD_SECTOR_SIZE              512U // Standard SD sector size
+#define SD_SERIAL_BUFFER_SIZE       ((SD_SECTOR_SIZE * 4) + 3)
 
 #if defined CORE_TEENSY
     #define SD_CS_PIN BUILTIN_SDCARD
