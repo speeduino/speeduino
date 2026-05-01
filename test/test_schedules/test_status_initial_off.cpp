@@ -8,7 +8,7 @@
 static void test_status_initial_off_inj(FuelSchedule &schedule)
 {
     initialiseFuelSchedulers();
-    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+    TEST_ASSERT_EQUAL(OFF, schedule._status);
 }
 
 static void test_status_initial_off_inj1(void)
@@ -54,7 +54,7 @@ static void test_status_initial_off_inj8(void)
 static void test_status_initial_off_ign(IgnitionSchedule &schedule)
 {
     schedule.reset();
-    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+    TEST_ASSERT_EQUAL(OFF, schedule._status);
 }
 
 static void test_status_initial_off_ign1(void)

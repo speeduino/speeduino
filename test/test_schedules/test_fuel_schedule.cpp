@@ -27,7 +27,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
 
     setFuelSchedule(schedule, TIMEOUT, DURATION);
 
-    schedule.Status = RUNNING;
+    schedule._status = RUNNING;
     CRANK_ANGLE_MAX_INJ = 360;
 
     // Negative test
@@ -38,9 +38,9 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     setFuelSchedule(schedule, TIMEOUT, DURATION);
     // Should not have changed
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
-    TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
-    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule.duration);
-    TEST_ASSERT_EQUAL(0, schedule.nextStartCompare);
+    TEST_ASSERT_EQUAL(RUNNING, schedule._status);
+    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule._duration);
+    TEST_ASSERT_EQUAL(0, schedule._nextStartCompare);
 
     // Positive test
     setAngleConverterRevolutionTime(revTime/2U);
@@ -49,9 +49,9 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     // Should not have changed
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
     // These should have changed
-    TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
-    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule.duration);
-    TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule.nextStartCompare);
+    TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule._status);
+    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule._duration);
+    TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule._nextStartCompare);
 }
 
 

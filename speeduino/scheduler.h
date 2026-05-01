@@ -125,11 +125,11 @@ struct Schedule {
    *  * Status==PENDING: this is the duration that will be used when the schedule moves to the RUNNING state 
    *  * Status==RUNNING_WITHNEXT: this is the duration that will be used after the current schedule finishes and the queued up scheduled starts 
    */
-  volatile COMPARE_TYPE duration = 0U;
-  volatile ScheduleStatus Status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  callback pStartCallback = &nullCallback; ///< Start Callback function for schedule
-  callback pEndCallback = &nullCallback;   ///< End Callback function for schedule
-  COMPARE_TYPE nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
+  volatile COMPARE_TYPE _duration = 0U;
+  volatile ScheduleStatus _status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
+  callback _pStartCallback = &nullCallback; ///< Start Callback function for schedule
+  callback _pEndCallback = &nullCallback;   ///< End Callback function for schedule
+  COMPARE_TYPE _nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
@@ -146,7 +146,7 @@ static inline bool isRunning(const Schedule &schedule) {
   // Using flags and bitwise AND (&) to check multiple states is much quicker
   // than a logical or (||) (one less branch & 30% less instructions)
   static constexpr uint8_t flags = RUNNING | RUNNING_WITHNEXT;
-  return ((uint8_t)schedule.Status & flags)!=0U;
+  return ((uint8_t)schedule._status & flags)!=0U;
 }
 
 /**

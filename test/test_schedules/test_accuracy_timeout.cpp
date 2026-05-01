@@ -19,8 +19,8 @@ static void test_accuracy_timeout(Schedule &schedule)
     setCallbacks(schedule, startCallback, endCallback);
     start_time = micros();
     setSchedule(schedule, TIMEOUT, DURATION, true);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    while(schedule.Status != OFF) /*Wait*/ ;
+    while(schedule._status == PENDING) /*Wait*/ ;
+    while(schedule._status != OFF) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 

@@ -12,9 +12,9 @@
 static void test_status_pending_to_running(Schedule &schedule)
 {
     setSchedule(schedule, TIMEOUT, DURATION, true);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    while(schedule._status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(RUNNING, schedule._status);
+    while(schedule._status != OFF) /*Wait*/ ;
 }
 
 static void test_status_pending_to_running_inj(FuelSchedule &schedule)
