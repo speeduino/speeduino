@@ -73,12 +73,6 @@ void setup(void)
   initialiseAll();
 }
 
-static inline uint16_t applyFuelTrimToPW(table3d6RpmLoad *pTrimTable, uint16_t fuelLoad, int16_t RPM, uint16_t currentPW)
-{
-    uint8_t pw1percent = (uint8_t)(100 + FUEL_TRIM.toUser(get3DTableValue(pTrimTable, fuelLoad, RPM)));
-    return percentageApprox(pw1percent, currentPW);
-}
-
 /** Lookup the current VE value from the primary 3D fuel map.
  * The Y axis value used for this lookup varies based on the fuel algorithm selected (speed density, alpha-n etc).
  * 
@@ -520,12 +514,13 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
                                     currentStatus.decoder.getStatus(),
                                     currentStatus);
       currentStatus.stagingActive = pulse_widths.secondary!=0U;
-      applyPwToInjectorChannels(pulse_widths, configPage2, currentStatus);
+      applyPwToInjectorChannels(pulse_widths, configPage2, configPage6, currentStatus);
 
       //***********************************************************************************************
       //BEGIN INJECTION TIMING
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
-      if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
+      // Do not combine min() & table2D_getValue() - if min() is a macro, we could call table2D_getValue twice
+      currentStatus.injAngle = min(uint16_t(CRANK_ANGLE_MAX_INJ), currentStatus.injAngle);
 
       matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
 
@@ -547,12 +542,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         case 2:
           setOpenAngle(fuelSchedule2, currentStatus.injAngle, &angleCalcCache);
           
-          if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
-          {
-            fuelSchedule1.pw = applyFuelTrimToPW(&trimTables[0], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
-            fuelSchedule2.pw = applyFuelTrimToPW(&trimTables[1], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
-          }
-          else if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
+          if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
           {
             setOpenAngle(fuelSchedule3, currentStatus.injAngle, &angleCalcCache);
             // setOpenAngle(fuelSchedule4, currentStatus.injAngle, &angleCalcCache);
@@ -568,10 +558,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           
           if ( (configPage2.injLayout == INJ_SEQUENTIAL) && (configPage6.fuelTrimEnabled > 0) )
           {
-            fuelSchedule1.pw = applyFuelTrimToPW(&trimTables[0], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
-            fuelSchedule2.pw = applyFuelTrimToPW(&trimTables[1], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
-            fuelSchedule3.pw = applyFuelTrimToPW(&trimTables[2], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
-
             #if INJ_CHANNELS >= 6
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
@@ -607,14 +593,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
                 setOpenAngle(fuelSchedule8, currentStatus.injAngle, &angleCalcCache);
               }
             #endif
-
-            if(configPage6.fuelTrimEnabled > 0)
-            {
-              fuelSchedule1.pw = applyFuelTrimToPW(&trimTables[0], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
-              fuelSchedule2.pw = applyFuelTrimToPW(&trimTables[1], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
-              fuelSchedule3.pw = applyFuelTrimToPW(&trimTables[2], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
-              fuelSchedule4.pw = applyFuelTrimToPW(&trimTables[3], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule4.pw);
-            }
           }
           else if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
           {
@@ -655,16 +633,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
               setOpenAngle(fuelSchedule5, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule6, currentStatus.injAngle, &angleCalcCache);
 
-              if(configPage6.fuelTrimEnabled > 0)
-              {
-                fuelSchedule1.pw = applyFuelTrimToPW(&trimTables[0], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
-                fuelSchedule2.pw = applyFuelTrimToPW(&trimTables[1], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
-                fuelSchedule3.pw = applyFuelTrimToPW(&trimTables[2], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
-                fuelSchedule4.pw = applyFuelTrimToPW(&trimTables[3], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule4.pw);
-                fuelSchedule5.pw = applyFuelTrimToPW(&trimTables[4], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule5.pw);
-                fuelSchedule6.pw = applyFuelTrimToPW(&trimTables[5], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule6.pw);
-              }
-
               //Staging is possible with sequential on 8 channel boards by using outputs 7 + 8 for the staged injectors
               #if INJ_CHANNELS >= 8
                 if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
@@ -699,18 +667,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
               setOpenAngle(fuelSchedule6, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule7, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule8, currentStatus.injAngle, &angleCalcCache);
-
-              if(configPage6.fuelTrimEnabled > 0)
-              {
-                fuelSchedule1.pw = applyFuelTrimToPW(&trimTables[0], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule1.pw);
-                fuelSchedule2.pw = applyFuelTrimToPW(&trimTables[1], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule2.pw);
-                fuelSchedule3.pw = applyFuelTrimToPW(&trimTables[2], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule3.pw);
-                fuelSchedule4.pw = applyFuelTrimToPW(&trimTables[3], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule4.pw);
-                fuelSchedule5.pw = applyFuelTrimToPW(&trimTables[4], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule5.pw);
-                fuelSchedule6.pw = applyFuelTrimToPW(&trimTables[5], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule6.pw);
-                fuelSchedule7.pw = applyFuelTrimToPW(&trimTables[6], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule7.pw);
-                fuelSchedule8.pw = applyFuelTrimToPW(&trimTables[7], currentStatus.fuelLoad, currentStatus.RPM, fuelSchedule8.pw);
-              }
             }
             else
             {
