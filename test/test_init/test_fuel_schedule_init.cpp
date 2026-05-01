@@ -13,16 +13,19 @@ void prepareForInitialiseAll(uint8_t boardId);
 
 static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, const FuelSchedule &schedule, int assertLineNum)
 {
+  if (enabled)
+  {
   char msg[64];
 
   sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, currentStatus.maxInjOutputs);
-  UNITY_TEST_ASSERT(!enabled || (cmdBit+1)<=currentStatus.maxInjOutputs, assertLineNum, msg);
+    UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT8(currentStatus.maxInjOutputs, cmdBit+1U, assertLineNum, msg);
   sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), cmdBit+1);
   UNITY_TEST_ASSERT_EQUAL_INT(angle, schedule.channelDegrees, assertLineNum, msg);
   sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), cmdBit+1);
-  UNITY_TEST_ASSERT(!enabled || (schedule._pStartCallback!=nullCallback), assertLineNum, msg);
+  UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, assertLineNum, msg);
   sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), cmdBit+1);
-  UNITY_TEST_ASSERT(!enabled || (schedule._pEndCallback!=nullCallback), assertLineNum, msg);
+  UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, assertLineNum, msg);
+  }
 }
 
 static void __attribute__((noinline)) assert_num_inj_channels(const bool (&enabled)[8], int assertLineNum)
