@@ -27,7 +27,7 @@ static inline uint16_t _calculateOpenAngle(FuelSchedule &schedule, uint16_t pwDe
   
   while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
   startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
-  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
+  while (startAngle>=(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
 
   return startAngle;
 }
