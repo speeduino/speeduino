@@ -220,8 +220,9 @@ struct FuelSchedule : public Schedule {
 
   using Schedule::Schedule;
 
-  uint16_t channelDegrees;      ///< The number of crank degrees until cylinder is at TDC  
-  uint16_t pw;                 ///< Pulse width in uS
+  uint16_t channelDegrees;    ///< The number of crank degrees until cylinder is at TDC  
+  uint16_t pw;                ///< Pulse width in uS
+  uint16_t openAngle;         ///< Future crank angle at which this injector will be opened
 
   void reset(void) override;
 };
@@ -233,7 +234,7 @@ struct FuelSchedule : public Schedule {
  * @param delay Delay until the injector opens (µS)
  * @param duration Injector open time (µS)
  */
-static inline void setFuelSchedule(FuelSchedule &schedule, uint32_t delay, uint16_t duration) 
+static inline void setFuelScheduleDuration(FuelSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
   // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
   setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);

@@ -204,27 +204,27 @@ void beginInjectorPriming(void)
     constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
 
     primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
-    if ( currentStatus.maxInjOutputs >= 1U ) { setFuelSchedule(fuelSchedule1, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 1U ) { setFuelScheduleDuration(fuelSchedule1, PRIMING_DELAY, primingValue); }
 #if (INJ_CHANNELS >= 2)
-    if ( currentStatus.maxInjOutputs >= 2U ) { setFuelSchedule(fuelSchedule2, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 2U ) { setFuelScheduleDuration(fuelSchedule2, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( currentStatus.maxInjOutputs >= 3U ) { setFuelSchedule(fuelSchedule3, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 3U ) { setFuelScheduleDuration(fuelSchedule3, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( currentStatus.maxInjOutputs >= 4U ) { setFuelSchedule(fuelSchedule4, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 4U ) { setFuelScheduleDuration(fuelSchedule4, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( currentStatus.maxInjOutputs >= 5U ) { setFuelSchedule(fuelSchedule5, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 5U ) { setFuelScheduleDuration(fuelSchedule5, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( currentStatus.maxInjOutputs >= 6U ) { setFuelSchedule(fuelSchedule6, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 6U ) { setFuelScheduleDuration(fuelSchedule6, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( currentStatus.maxInjOutputs >= 7U) { setFuelSchedule(fuelSchedule7, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 7U) { setFuelScheduleDuration(fuelSchedule7, PRIMING_DELAY, primingValue); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( currentStatus.maxInjOutputs >= 8U ) { setFuelSchedule(fuelSchedule8, PRIMING_DELAY, primingValue); }
+    if ( currentStatus.maxInjOutputs >= 8U ) { setFuelScheduleDuration(fuelSchedule8, PRIMING_DELAY, primingValue); }
 #endif
   }
 }

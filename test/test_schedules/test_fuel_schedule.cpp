@@ -25,7 +25,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     raw_compare_t compare = {0};
     FuelSchedule schedule(counter, compare);
 
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
+    setFuelScheduleDuration(schedule, TIMEOUT, DURATION);
 
     schedule._status = RUNNING;
     CRANK_ANGLE_MAX_INJ = 360;
@@ -35,7 +35,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     uint32_t revTime = (uint32_t)MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_INJ);
     setAngleConverterRevolutionTime(revTime);
     TEST_ASSERT_GREATER_THAN(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ));
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
+    setFuelScheduleDuration(schedule, TIMEOUT, DURATION);
     // Should not have changed
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
     TEST_ASSERT_EQUAL(RUNNING, schedule._status);
@@ -45,7 +45,7 @@ static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
     // Positive test
     setAngleConverterRevolutionTime(revTime/2U);
     TEST_ASSERT_LESS_THAN(MAX_TIMER_PERIOD, angleToTimeMicroSecPerDegree((uint32_t)CRANK_ANGLE_MAX_INJ));    
-    setFuelSchedule(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET);
+    setFuelScheduleDuration(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET);
     // Should not have changed
     TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
     // These should have changed
