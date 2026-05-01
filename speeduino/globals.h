@@ -59,8 +59,6 @@ constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #define IGN7_CMD_BIT      6
 #define IGN8_CMD_BIT      7
 
-#define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
-
 #define OFFSET_FUELTRIM 127U ///< The fuel trim tables are offset by 128 to allow for -128 to +128 values
 #define OFFSET_IGNITION 40 ///< Ignition values from the main spark table are offset 40 degrees downwards to allow for negative spark timing
 
