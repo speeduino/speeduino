@@ -206,13 +206,21 @@ struct IgnitionSchedule : public Schedule {
  */
 void moveToNextState(IgnitionSchedule &schedule) noexcept;
 
-/** Fuel injection schedule.
-* Fuel schedules don't use the callback pointers, or the _startTime/endScheduleSetByDecoder variables.
-* They are removed in this struct to save RAM.
-*/
+/** @brief A fuel injection schedule.
+ *
+ * Goal is to open & close the injector as accurately as possible.
+ * 
+ * \code 
+ *   <--------------- Delay ---------------><---- Injecting ---->
+ *                                          ^                   ^
+ *                                        Open                Close
+ * \endcode
+ */
 struct FuelSchedule : public Schedule {
 
   using Schedule::Schedule;
+
+  int16_t channelDegrees;
 
   void reset(void) override;
 };

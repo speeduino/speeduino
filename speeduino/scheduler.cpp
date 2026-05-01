@@ -71,6 +71,7 @@ void IgnitionSchedule::reset(void)
 void FuelSchedule::reset(void) 
 {
     Schedule::reset();
+    channelDegrees = 0;
 }
 
 void initialiseFuelSchedulers(void)
@@ -90,23 +91,6 @@ void initialiseFuelSchedulers(void)
 #endif
 #if INJ_CHANNELS >= 8
     fuelSchedule8.reset();
-#endif
-
-	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-	channel2InjDegrees = 0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-	channel3InjDegrees = 0; /**< The number of crank degrees until cylinder 3 (and 5/6/7/8) is at TDC */
-	channel4InjDegrees = 0; /**< The number of crank degrees until cylinder 4 (and 5/6/7/8) is at TDC */
-#if (INJ_CHANNELS >= 5)
-	channel5InjDegrees = 0; /**< The number of crank degrees until cylinder 5 is at TDC */
-#endif
-#if (INJ_CHANNELS >= 6)
-	channel6InjDegrees = 0; /**< The number of crank degrees until cylinder 6 is at TDC */
-#endif
-#if (INJ_CHANNELS >= 7)
-	channel7InjDegrees = 0; /**< The number of crank degrees until cylinder 7 is at TDC */
-#endif
-#if (INJ_CHANNELS >= 8)
-	channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
 #endif
 }
 
