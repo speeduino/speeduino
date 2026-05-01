@@ -195,13 +195,10 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       
       //Check for any secondary comms requiring action. Note that AVR runs this at a fixed 30Hz. 
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      if ((configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      && (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD))
       {
-        #ifndef CORE_AVR
-          if (secondarySerial.available() > 0)  { secondserial_Command(); }
-        #else
-          if (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) { secondserial_Command(); } //Special case for AVR units. This prevents potential overflow of the receive buffer
-        #endif
+        secondserial_Command();
       }
       #if defined (NATIVE_CAN_AVAILABLE)
         if (configPage9.enable_intcan == 1) // use internal can module

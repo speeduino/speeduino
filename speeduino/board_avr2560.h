@@ -177,3 +177,9 @@ using boardOutputPin_t = fastOutputPin_t;
 
 /** @brief Analog pin mapping */
 constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14 };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 32U;

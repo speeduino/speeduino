@@ -59,8 +59,6 @@ constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #define IGN7_CMD_BIT      6
 #define IGN8_CMD_BIT      7
 
-#define SERIAL_BUFFER_THRESHOLD 32 ///< When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
-
 #define LOGGER_CSV_SEPARATOR_SEMICOLON  0
 #define LOGGER_CSV_SEPARATOR_COMMA      1
 #define LOGGER_CSV_SEPARATOR_TAB        2
