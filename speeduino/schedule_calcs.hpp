@@ -15,7 +15,7 @@
  * @param injAngle The requested injection angle
  * @return uint16_t 
  */
-static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, uint16_t channelDegrees, uint16_t injAngle)
+static inline void setOpenAngle(FuelSchedule &schedule, uint16_t pwDegrees, uint16_t injAngle)
 {
   // 0<=injAngle<=720°
   // 0<=injChannelDegrees<=720°
@@ -23,13 +23,13 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, uint16_t 
   // 45<=CRANK_ANGLE_MAX_INJ<=720
   // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
 
-  uint16_t startAngle = injAngle + channelDegrees;
+  uint16_t startAngle = injAngle + schedule.channelDegrees;
   
   while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
   startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
   while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
 
-  return startAngle;
+  schedule.openAngle = startAngle;
 }
 
 static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
@@ -63,9 +63,17 @@ static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(cons
             maxAngle);
 }
 
-static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t openAngle, int16_t crankAngle)
+/**
+ * @brief Calculate the time in uS from now to when the injector should be opened.
+ * 
+ * @param schedule The ignition channel
+ * @param openAngle The angle at which to open the injector
+ * @param crankAngle The current crank angle
+ * @return uint32_t 
+ */
+static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t crankAngle)
 {
-  int16_t delta = openAngle - crankAngle;
+  int16_t delta = schedule.openAngle - crankAngle;
 
   if (delta<0)
   {

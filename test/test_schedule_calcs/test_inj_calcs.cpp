@@ -30,14 +30,14 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
     schedule.channelDegrees = parameters.channelAngle;
 
     schedule._status = PENDING;
-    uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle, injAngle);
-    sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, startAngle, parameters.crankAngle), msg);
+    setOpenAngle(schedule, PWdivTimerPerDegree, injAngle);
+    sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, schedule.openAngle);
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, parameters.crankAngle), msg);
     
     schedule._status = RUNNING;
-    startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
-    sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.running, calculateInjectorTimeout(schedule, startAngle, parameters.crankAngle), msg);
+    setOpenAngle(schedule, PWdivTimerPerDegree, injAngle);
+    sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, schedule.openAngle);
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.running, calculateInjectorTimeout(schedule, parameters.crankAngle), msg);
 }
 
 static void test_calc_inj_timeout(const inj_test_parameters *pStart, const inj_test_parameters *pEnd)
@@ -282,20 +282,28 @@ static void test_calculateInjectorTimeout(void)
   setEngineSpeed(4000, 360);
 
   schedule._status = OFF;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule.openAngle = 351U;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U));
+  schedule.openAngle = 123U;
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 351U));
 
   schedule._status = PENDING;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(0, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule.openAngle = 351U;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U));
+  schedule.openAngle = 123U;
+  TEST_ASSERT_EQUAL(0, calculateInjectorTimeout(schedule, 351U));
 
   schedule._status = RUNNING_WITHNEXT;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule.openAngle = 351U;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U));
+  schedule.openAngle = 123U;
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 351U));
 
   schedule._status = RUNNING;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule.openAngle = 351U;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U));
+  schedule.openAngle = 123U;
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 351U));
 }
 
 // 
