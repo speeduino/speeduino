@@ -32,9 +32,6 @@
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
-#define SERIAL_PORT_PRIMARY   0
-#define SERIAL_PORT_SECONDARY 3
-
 #define BIT_TIMER_1HZ             0
 #define BIT_TIMER_4HZ             1
 #define BIT_TIMER_10HZ            2
