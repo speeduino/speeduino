@@ -30,8 +30,6 @@ uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that th
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
-bool clutchTrigger;
-bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
 volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 // Some code relies on tooth log containing less than UINT8_MAX items.
