@@ -32,15 +32,6 @@
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
-#define BIT_TIMER_1HZ             0
-#define BIT_TIMER_4HZ             1
-#define BIT_TIMER_10HZ            2
-#define BIT_TIMER_15HZ            3
-#define BIT_TIMER_30HZ            4
-#define BIT_TIMER_50HZ            5
-#define BIT_TIMER_200HZ           6
-#define BIT_TIMER_1KHZ            7
-
 #ifndef UNIT_TEST 
 #define TOOTH_LOG_SIZE      127U
 #else
