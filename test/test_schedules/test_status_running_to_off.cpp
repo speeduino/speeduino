@@ -12,8 +12,8 @@
 static void test_status_running_to_off(Schedule &schedule)
 {
     setSchedule(schedule, TIMEOUT, DURATION, true);
-    while( (schedule.Status == PENDING) || (schedule.Status == RUNNING) ) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(OFF, schedule.Status);
+    while( (schedule._status == PENDING) || (schedule._status == RUNNING) ) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(OFF, schedule._status);
 }
 
 static void test_status_running_to_off_inj(FuelSchedule &schedule)

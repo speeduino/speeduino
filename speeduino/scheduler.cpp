@@ -55,7 +55,7 @@ void nullCallback(void) { return; }
 
 void Schedule::reset(void)
 {
-    Status = OFF;
+    _status = OFF;
     setCallbacks(*this, nullCallback, nullCallback);
 }
 
@@ -135,8 +135,8 @@ void stopFuelSchedulers(void)
 
 void __attribute__((optimize("Os"))) setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept
 {
-  schedule.pStartCallback = pStartCallback;
-  schedule.pEndCallback = pEndCallback;
+  schedule._pStartCallback = pStartCallback;
+  schedule._pEndCallback = pEndCallback;
 }
 
 // Event duration cannot be longer than the maximum timer period
@@ -152,18 +152,18 @@ static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t 
 {
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
-  schedule.duration = uS_TO_TIMER_COMPARE(clipDuration(duration));
-  schedule.nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(delay);
-  schedule.Status = RUNNING_WITHNEXT;
+  schedule._duration = uS_TO_TIMER_COMPARE(clipDuration(duration));
+  schedule._nextStartCompare = schedule._counter + uS_TO_TIMER_COMPARE(delay);
+  schedule._status = RUNNING_WITHNEXT;
 }
 
 static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration) noexcept
 {
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
-  schedule.duration = uS_TO_TIMER_COMPARE(clipDuration(duration));
+  schedule._duration = uS_TO_TIMER_COMPARE(clipDuration(duration));
   SET_COMPARE(schedule._compare, schedule._counter + uS_TO_TIMER_COMPARE(delay));
-  schedule.Status = PENDING; //Turn this schedule on
+  schedule._status = PENDING; //Turn this schedule on
 }
 
 void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool allowQueuedSchedule)

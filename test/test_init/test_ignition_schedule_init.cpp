@@ -19,9 +19,9 @@ static void assert_ignition_channel(uint16_t angle, uint8_t channel, const Ignit
   sprintf_P(msg, PSTR("channe%" PRIu8 "Degrees"), channel+1);
   TEST_ASSERT_EQUAL_MESSAGE(angle, schedule.channelDegrees, msg);
   sprintf_P(msg, PSTR("ign%" PRIu8 "StartFunction"), channel+1);
-  TEST_ASSERT_TRUE_MESSAGE(channel>=current.maxIgnOutputs || (schedule.pStartCallback!=nullCallback), msg);
+  TEST_ASSERT_TRUE_MESSAGE(channel>=current.maxIgnOutputs || (schedule._pStartCallback!=nullCallback), msg);
   sprintf_P(msg, PSTR("ign%" PRIu8 "EndFunction"), channel+1);
-  TEST_ASSERT_TRUE_MESSAGE(channel>=current.maxIgnOutputs || (schedule.pEndCallback!=nullCallback), msg);
+  TEST_ASSERT_TRUE_MESSAGE(channel>=current.maxIgnOutputs || (schedule._pEndCallback!=nullCallback), msg);
 }
 
 static void assert_ignition_schedules(uint16_t crankAngle, uint16_t expectedOutputs, const uint16_t (&angle)[8], const statuses &current)

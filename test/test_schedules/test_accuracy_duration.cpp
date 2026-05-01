@@ -18,7 +18,7 @@ static void test_accuracy_duration(Schedule &schedule)
 {
     setCallbacks(schedule, startCallback, endCallback);
     setSchedule(schedule, TIMEOUT, DURATION, true);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    while(schedule._status != OFF) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
 

@@ -26,7 +26,7 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
 
 static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
   int16_t delta = eventAngle - crankAngle;
-  if ( (isRunning(schedule)) || (schedule.Status == OFF)) {
+  if ( (isRunning(schedule)) || (schedule._status == OFF)) {
     while(delta < 0) { delta += (int16_t)maxAngle; }
   } 
 
@@ -61,7 +61,7 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
 
   if (delta<0)
   {
-    if (schedule.Status != PENDING)
+    if (schedule._status != PENDING)
     {
       while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
     }
@@ -104,11 +104,16 @@ static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedul
   return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
 }
 
-// The concept here is that we have a more accurate crank angle.
-// Ignition timing is driven by target spark angle relative to crank position.
-// So the timing to begin & end charging the coil is based on crank angle.
-// With a more accurate crank angle, we can increase the precision of the
-// spark timing.
+/**
+ * @brief Adjust the crank angle used to originally set the schedule.
+ * 
+ * The assumption here is that we have a more accurate crank angle than
+ * was originally passed to calculateIgnitionTimeout. So we can increase the
+ * spark accuracy
+ * 
+ * @param schedule The schedule to modify 
+ * @param crankAngle The new crank angle in degrees
+ */
 static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAngle) {
   constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
 
@@ -123,7 +128,7 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
         SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.dischargeAngle-crankAngle )); 
       } 
     }
-    else if( (schedule.Status==PENDING) ) {
+    else if( (schedule._status==PENDING) ) {
       if ((currentStatus.startRevolutions > MIN_CYCLES_FOR_CORRECTION) && (schedule.chargeAngle>crankAngle)) {
         // We are waiting for the timer to fire & start charging the coil.
         // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
