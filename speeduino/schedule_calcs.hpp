@@ -1,3 +1,4 @@
+#pragma once
 // Note that all functions with an underscore prefix are NOT part 
 // of the public API. They are only here so we can inline them.
 

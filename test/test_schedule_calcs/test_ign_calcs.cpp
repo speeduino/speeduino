@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "test_calcs_common.h"
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "crankMaths.h"
 #include "decoders.h"
 #include "../test_utils.h"

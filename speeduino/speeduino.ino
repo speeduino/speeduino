@@ -41,7 +41,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "secondaryTables.h"
 #include "comms_CAN.h"
 #include "SD_logger.h"
-#include "schedule_calcs.h"
 #include "auxiliaries.h"
 #include "load_source.h"
 #include "board_definition.h"

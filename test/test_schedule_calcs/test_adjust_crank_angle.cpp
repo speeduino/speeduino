@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <unity.h>
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "../test_utils.h"
 #include "type_traits.h"
 
