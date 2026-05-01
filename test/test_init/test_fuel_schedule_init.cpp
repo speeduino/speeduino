@@ -7,6 +7,7 @@
 #include "../test_schedules/channel_test_helpers.h"
 #include "decoders.h"
 #include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 
 extern decoder_status_t decoderStatus;
 void prepareForInitialiseAll(uint8_t boardId);
@@ -1031,15 +1032,12 @@ static void test_partial_sync_1_cylinder(void)
   assert_1cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, false, false, false, false, false, false, false};
-	  const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+  // Confirm no change
+  assert_1cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_1cylinder_4stroke_seq_nostage(__LINE__);
 }
 
@@ -1051,15 +1049,12 @@ static void test_partial_sync_2_cylinder(void)
   assert_2cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, true, false, false, false, false, false, false};
-	  const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+  // Confirm no change
+  assert_2cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_2cylinder_4stroke_seq_nostage(__LINE__);
 }
 
@@ -1072,15 +1067,12 @@ static void test_partial_sync_3_cylinder(void)
   assert_3cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, true, true, false, false, false, false, false};
-	  const uint16_t angle[] = {0,240,480,0,0,0,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+  // Confirm no change
+  assert_3cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_3cylinder_4stroke_seq_nostage(__LINE__);
 }
 
@@ -1092,11 +1084,11 @@ static void test_partial_sync_4_cylinder(void)
   assert_4cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_semiseq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_seq_nostage(__LINE__);
 }
 
@@ -1109,15 +1101,13 @@ static void test_partial_sync_5_cylinder(void)
   assert_5cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, true, true, true, true, false, false, false};
-	  const uint16_t angle[] = {0,144,288,432,576,0,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+  // Confirm no change
+  assert_5cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+  // Confirm no change
   assert_5cylinder_4stroke_seq_nostage(__LINE__);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
@@ -1133,11 +1123,11 @@ static void test_partial_sync_6_cylinder(void)
   assert_6cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_3cylinder_semiseq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_6cylinder_4stroke_seq_nostage(__LINE__);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
@@ -1153,11 +1143,11 @@ static void test_partial_sync_8_cylinder(void)
   assert_8cylinder_4stroke_seq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  changeFullToHalfSync(configPage2, configPage4, currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_8cylinder_4stroke_paired_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
-  changeHalfToFullSync(configPage2,  currentStatus);
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_8cylinder_4stroke_seq_nostage(__LINE__);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");

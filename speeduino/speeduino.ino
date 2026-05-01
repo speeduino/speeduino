@@ -56,6 +56,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "scheduler_ignition_controller.h"
 #include "src/controllers/launch/launchController.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
+#include "scheduler_fuel_controller.h"
 
 #define CRANK_RUN_HYSTER    15
 
@@ -527,6 +528,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.injAngle = table2D_getValue(&injectorAngleTable, currentStatus.RPMdiv100);
       if(currentStatus.injAngle > uint16_t(CRANK_ANGLE_MAX_INJ)) { currentStatus.injAngle = uint16_t(CRANK_ANGLE_MAX_INJ); }
 
+      matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+
       injectorAngleCalcCache angleCalcCache;
       setOpenAngle(fuelSchedule1, currentStatus.injAngle, &angleCalcCache);
 
@@ -594,8 +597,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
           if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.decoder.getStatus().syncStatus==SyncStatus::Full)
           {
-            if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(configPage2, currentStatus); }
-
             setOpenAngle(fuelSchedule3, currentStatus.injAngle, &angleCalcCache);
             setOpenAngle(fuelSchedule4, currentStatus.injAngle, &angleCalcCache);
             #if INJ_CHANNELS >= 8
@@ -623,7 +624,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           }
           else
           {
-            if( currentStatus.decoder.getStatus().syncStatus==SyncStatus::Partial && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
           }
           break;
         //5 cylinders
@@ -652,8 +652,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           #if INJ_CHANNELS >= 6
             if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.decoder.getStatus().syncStatus==SyncStatus::Full)
             {
-              if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(configPage2, currentStatus); }
-
               setOpenAngle(fuelSchedule4, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule5, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule6, currentStatus.injAngle, &angleCalcCache);
@@ -680,8 +678,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             }
             else
             {
-              if( currentStatus.decoder.getStatus().syncStatus==SyncStatus::Partial && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
-
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
                 setOpenAngle(fuelSchedule4, currentStatus.injAngle, &angleCalcCache);
@@ -700,8 +696,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           #if INJ_CHANNELS >= 8
             if((configPage2.injLayout == INJ_SEQUENTIAL) && currentStatus.decoder.getStatus().syncStatus==SyncStatus::Full)
             {
-              if( CRANK_ANGLE_MAX_INJ != 720 ) { changeHalfToFullSync(configPage2, currentStatus); }
-
               setOpenAngle(fuelSchedule5, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule6, currentStatus.injAngle, &angleCalcCache);
               setOpenAngle(fuelSchedule7, currentStatus.injAngle, &angleCalcCache);
@@ -721,8 +715,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             }
             else
             {
-              if( currentStatus.decoder.getStatus().syncStatus==SyncStatus::Partial && (CRANK_ANGLE_MAX_INJ != 360) ) { changeFullToHalfSync(configPage2, configPage4, currentStatus); }
-
               if( (configPage10.stagingEnabled == true) && (currentStatus.stagingActive == true) )
               {
                 setOpenAngle(fuelSchedule5, currentStatus.injAngle, &angleCalcCache);

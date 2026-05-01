@@ -265,9 +265,6 @@ extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 #endif
 
-void changeHalfToFullSync(const config2 &page2, statuses &current);
-void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current);
-
 #include "schedule_calcs.hpp"
 
 #endif // SCHEDULER_H
