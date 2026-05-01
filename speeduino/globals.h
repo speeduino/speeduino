@@ -149,8 +149,8 @@ extern volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
 extern volatile unsigned int toothHistoryIndex;
 extern unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 extern volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-extern int CRANK_ANGLE_MAX_IGN;
-extern int CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
+extern int16_t CRANK_ANGLE_MAX_IGN;
+extern int16_t CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10;  /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile uint32_t seclx10;     /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
 extern volatile byte HWTest_INJ;      /**< Each bit in this variable represents one of the injector channels and it's HW test status */

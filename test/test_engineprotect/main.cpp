@@ -5,12 +5,7 @@
 #include "decoder_builder.h"
 #include "decoder_init.h"
 #include "units.h"
-
-static decoder_status_t decoderStatus;
-static decoder_status_t getDecoderStatus(void)
-{
-    return decoderStatus;
-}
+#include "../fake_decoder_status.h"
 
 extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
 extern table2D_u8_u8_4 oilPressureProtectTable;
@@ -112,14 +107,14 @@ struct engineProtection_test_context_t
 
     engineProtection_test_context_t(void)
     {
-        current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+        current.decoder = decoder_builder_t().setGetStatus(getFakeDecoderStatus).build();
         current.maxIgnOutputs = 8;
         current.maxInjOutputs = 8;
     }
 
     void setSyncStatus(SyncStatus syncStatus)
     {
-        decoderStatus.syncStatus = syncStatus;
+        fakeDecoderStatus.syncStatus = syncStatus;
     }
 
     void setOilPressureActive(void)

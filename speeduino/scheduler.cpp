@@ -31,6 +31,9 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "units.h"
 #include "schedule_state_machine.h"
+#include "unit_testing.h"
+#include "decoders.h"
+#include "scheduledIO_inj.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
@@ -49,54 +52,44 @@ FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress mi
 FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
-IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
-IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE); //cppcheck-suppress misra-c2012-8.4
-IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE); //cppcheck-suppress misra-c2012-8.4
-IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE); //cppcheck-suppress misra-c2012-8.4
-IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#if IGN_CHANNELS >= 6
-IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if IGN_CHANNELS >= 7
-IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if IGN_CHANNELS >= 8
-IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
+void nullCallback(void) { return; }
 
-static void reset(Schedule &schedule)
+void Schedule::reset(void)
 {
-    schedule.Status = OFF;
-    setCallbacks(schedule, nullCallback, nullCallback);
+    Status = OFF;
+    setCallbacks(*this, nullCallback, nullCallback);
 }
 
-static inline void reset(FuelSchedule &schedule) 
+void IgnitionSchedule::reset(void) 
 {
-    reset((Schedule&)schedule);
+    Schedule::reset();
+    chargeAngle = 0;
+    dischargeAngle = 0;
+    channelDegrees = 0;
 }
 
-static inline void reset(IgnitionSchedule &schedule) 
+void FuelSchedule::reset(void) 
 {
-    reset((Schedule&)schedule);
+    Schedule::reset();
 }
 
 void initialiseFuelSchedulers(void)
 {
-    reset(fuelSchedule1);
-    reset(fuelSchedule2);
-    reset(fuelSchedule3);
-    reset(fuelSchedule4);
+    fuelSchedule1.reset();
+    fuelSchedule2.reset();
+    fuelSchedule3.reset();
+    fuelSchedule4.reset();
 #if INJ_CHANNELS >= 5
-    reset(fuelSchedule5);
+    fuelSchedule5.reset();
 #endif
 #if INJ_CHANNELS >= 6
-    reset(fuelSchedule6);
+    fuelSchedule6.reset();
 #endif
 #if INJ_CHANNELS >= 7
-    reset(fuelSchedule7);
+    fuelSchedule7.reset();
 #endif
 #if INJ_CHANNELS >= 8
-    reset(fuelSchedule8);
+    fuelSchedule8.reset();
 #endif
 
 	channel1InjDegrees = 0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
@@ -115,116 +108,6 @@ void initialiseFuelSchedulers(void)
 #if (INJ_CHANNELS >= 8)
 	channel8InjDegrees = 0; /**< The number of crank degrees until cylinder 8 is at TDC */
 #endif
-}
-
-void initialiseIgnitionSchedulers(void)
-{
-    reset(ignitionSchedule1);
-    reset(ignitionSchedule2);
-    reset(ignitionSchedule3);
-    reset(ignitionSchedule4);
-#if (IGN_CHANNELS >= 5)
-    reset(ignitionSchedule5);
-#endif
-#if IGN_CHANNELS >= 6
-    reset(ignitionSchedule6);
-#endif
-#if IGN_CHANNELS >= 7
-    reset(ignitionSchedule7);
-#endif
-#if IGN_CHANNELS >= 8
-    reset(ignitionSchedule8);
-#endif
-
-  ignition1StartAngle=0;
-  ignition1EndAngle=0;
-  channel1IgnDegrees=0; /**< The number of crank degrees until cylinder 1 is at TDC (This is obviously 0 for virtually ALL engines, but there's some weird ones) */
-
-  ignition2StartAngle=0;
-  ignition2EndAngle=0;
-  channel2IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-
-  ignition3StartAngle=0;
-  ignition3EndAngle=0;
-  channel3IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-
-  ignition4StartAngle=0;
-  ignition4EndAngle=0;
-  channel4IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-
-#if (IGN_CHANNELS >= 5)
-  ignition5StartAngle=0;
-  ignition5EndAngle=0;
-  channel5IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-#if (IGN_CHANNELS >= 6)
-  ignition6StartAngle=0;
-  ignition6EndAngle=0;
-  channel6IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-#if (IGN_CHANNELS >= 7)
-  ignition7StartAngle=0;
-  ignition7EndAngle=0;
-  channel7IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-#if (IGN_CHANNELS >= 8)
-  ignition8StartAngle=0;
-  ignition8EndAngle=0;
-  channel8IgnDegrees=0; /**< The number of crank degrees until cylinder 2 (and 5/6/7/8) is at TDC */
-#endif
-}
-
-void startIgnitionSchedulers(void)
-{
-  IGN1_TIMER_ENABLE();
-#if IGN_CHANNELS >= 2
-  IGN2_TIMER_ENABLE();
-#endif
-#if IGN_CHANNELS >= 3
-  IGN3_TIMER_ENABLE();
-#endif
-#if IGN_CHANNELS >= 4
-  IGN4_TIMER_ENABLE();
-#endif
-#if IGN_CHANNELS >= 5
-  IGN5_TIMER_ENABLE();
-#endif
-#if IGN_CHANNELS >= 6
-  IGN6_TIMER_ENABLE();
-#endif
-#if IGN_CHANNELS >= 7
-  IGN7_TIMER_ENABLE();
-#endif
-#if IGN_CHANNELS >= 8
-  IGN8_TIMER_ENABLE();
-#endif  
-}
-
-void stopIgnitionSchedulers(void)
-{
-  IGN1_TIMER_DISABLE();
-#if IGN_CHANNELS >= 2
-  IGN2_TIMER_DISABLE();
-#endif
-#if IGN_CHANNELS >= 3
-  IGN3_TIMER_DISABLE();
-#endif
-#if IGN_CHANNELS >= 4
-  IGN4_TIMER_DISABLE();
-#endif
-#if IGN_CHANNELS >= 5
-  IGN5_TIMER_DISABLE();
-#endif
-#if IGN_CHANNELS >= 6
-  IGN6_TIMER_DISABLE();
-#endif
-#if IGN_CHANNELS >= 7
-  IGN7_TIMER_DISABLE();
-#endif
-#if IGN_CHANNELS >= 8
-  IGN8_TIMER_DISABLE();
-#endif  
-
 }
 
 void startFuelSchedulers(void)
@@ -267,7 +150,7 @@ void stopFuelSchedulers(void)
 #endif  
 }
 
-void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback)
+void __attribute__((optimize("Os"))) setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept
 {
   schedule.pStartCallback = pStartCallback;
   schedule.pEndCallback = pEndCallback;
@@ -282,7 +165,7 @@ static inline uint16_t clipDuration(uint16_t duration) {
   return duration;
 }
 
-static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration)
+static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t duration) noexcept
 {
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
   //Duration can safely be set here as the schedule is already running at the previous duration value already used
@@ -291,7 +174,7 @@ static inline void setScheduleNext(Schedule &schedule, uint32_t delay, uint16_t 
   schedule.Status = RUNNING_WITHNEXT;
 }
 
-static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration)
+static inline void setScheduleRunning(Schedule &schedule, uint32_t delay, uint16_t duration) noexcept
 {
   //The following must be enclosed in the noInterupts block to avoid contention caused if the relevant interrupt fires before the state is fully set
   //The duration of the pulsewidth cannot be longer than the maximum timer period. This is unlikely as pulse widths should never get that long, but it's here for safety
@@ -320,18 +203,6 @@ void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool all
       }
     }
   }  
-}
-
-void refreshIgnitionSchedule1(unsigned long timeToEnd)
-{
-  if( (isRunning(ignitionSchedule1)) && (uS_TO_TIMER_COMPARE(timeToEnd) < ignitionSchedule1.duration) )
-  //Must have the threshold check here otherwise it can cause a condition where the compare fires twice, once after the other, both for the end
-  {
-    ATOMIC() {
-      ignitionSchedule1.endCompare = IGN1_COUNTER + uS_TO_TIMER_COMPARE(timeToEnd);
-      SET_COMPARE(IGN1_COMPARE, ignitionSchedule1.endCompare);
-    }
-  }
 }
 
 constexpr table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.primePulse);
@@ -381,7 +252,7 @@ void beginInjectorPriming(void)
  * @{
  */
 
-void moveToNextState(FuelSchedule &schedule)
+void moveToNextState(FuelSchedule &schedule) noexcept
 {
   movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
@@ -394,23 +265,25 @@ void moveToNextState(FuelSchedule &schedule)
  * @{
  */
 
-///@cond
-// Dwell smoothing macros. They are split up like this for MISRA compliance.
-#define DWELL_AVERAGE_ALPHA 30
-#define DWELL_AVERAGE(input) LOW_PASS_FILTER((input), DWELL_AVERAGE_ALPHA, currentStatus.actualDwell)
-//#define DWELL_AVERAGE(input) (currentStatus.dwell) //Can be use to disable the above for testing
-///@endcond
+ /** @brief Increment a volatile variable correctly */
+ template <typename T>
+ static inline void increment_volatile(volatile T& value) {
+  T next = value;
+  ++next;
+  value = next;
+ }
 
 /**
  * @brief Called when an ignition event ends. I.e. a spark fires
  * 
  * @param pSchedule Pointer to the schedule that fired the spark
  */
-static inline void onEndIgnitionEvent(IgnitionSchedule *pSchedule) {
-  pSchedule->endScheduleSetByDecoder = false;
-  ignitionCount = ignitionCount + 1U; //Increment the ignition counter
-  int32_t elapsed = (int32_t)(micros() - pSchedule->startTime);
-  currentStatus.actualDwell = DWELL_AVERAGE( elapsed );
+static inline void onEndIgnitionEvent(const IgnitionSchedule *pSchedule) {
+  increment_volatile(ignitionCount); //Increment the ignition counter
+
+  int32_t elapsed = (int32_t)(micros() - pSchedule->_startTime);
+  constexpr uint8_t DWELL_AVERAGE_ALPHA = 30U; // ~10% smoothing (30/255)
+  currentStatus.actualDwell = LOW_PASS_FILTER(elapsed, DWELL_AVERAGE_ALPHA, currentStatus.actualDwell);
 }
 
 /** @brief Called when the supplied schedule transitions from a PENDING state to RUNNING */
@@ -419,8 +292,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) static ignitionPendingToRunning(Schedule *pSchedul
 
   // cppcheck-suppress misra-c2012-11.3 ; A cast from pointer to base to pointer to derived must point to the same location
   IgnitionSchedule *pIgnition = (IgnitionSchedule *)pSchedule;
-  pIgnition->startTime = micros();
-  if(pIgnition->endScheduleSetByDecoder) { SET_COMPARE(pIgnition->_compare, pIgnition->endCompare); }
+  pIgnition->_startTime = micros();
 }
 END_LTO_INLINE()
 
@@ -440,7 +312,121 @@ BEGIN_LTO_ALWAYS_INLINE(void) static ignitionRunningToPending(Schedule *pSchedul
 }
 END_LTO_INLINE()
 
-void moveToNextState(IgnitionSchedule &schedule)
+void moveToNextState(IgnitionSchedule &schedule)  noexcept
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
+}
+
+static inline bool isAnyFuelScheduleRunning(void) {
+  ATOMIC() {
+    return isRunning(fuelSchedule1)
+        || isRunning(fuelSchedule2)
+        || isRunning(fuelSchedule3)
+        || isRunning(fuelSchedule4)
+  #if INJ_CHANNELS >= 5      
+        || isRunning(fuelSchedule5)
+  #endif
+  #if INJ_CHANNELS >= 6
+        || isRunning(fuelSchedule6)
+  #endif
+  #if INJ_CHANNELS >= 7
+        || isRunning(fuelSchedule7)
+  #endif
+  #if INJ_CHANNELS >= 8
+        || isRunning(fuelSchedule8)
+  #endif
+        ;
+  }
+  return false;// Avoid compiler warning, but optimized out
+}
+
+static inline void changeFuellingToFullSequential(const config2 &page2, statuses &current)
+{
+  if( (page2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
+  {
+    ATOMIC() {
+      CRANK_ANGLE_MAX_INJ = 720;
+      current.maxInjOutputs = page2.nCylinders;
+      
+      setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
+      setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
+      setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
+      setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
+  #if INJ_CHANNELS >= 5
+      setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
+  #endif
+  #if INJ_CHANNELS >= 6
+      setCallbacks(fuelSchedule6, openInjector6, closeInjector6);
+  #endif
+  #if INJ_CHANNELS >= 7
+      setCallbacks(fuelSchedule7, openInjector7, closeInjector7);
+  #endif
+  #if INJ_CHANNELS >= 8
+      setCallbacks(fuelSchedule8, openInjector8, closeInjector8);
+  #endif
+    }
+  }
+}
+
+/** Change injectors or/and ignition angles to 720deg.
+ * Roll back req_fuel size and set number of outputs equal to cylinder count.
+* */
+void changeHalfToFullSync(const config2 &page2, statuses &current)
+{
+  changeFuellingToFullSequential(page2, current);
+}
+
+
+static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+{
+  if((page2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 360))
+  {
+    ATOMIC()
+    {
+      CRANK_ANGLE_MAX_INJ = 360;
+      switch (page2.nCylinders)
+      {
+        case 4:
+          if(page4.inj4cylPairing == INJ_PAIR_13_24)
+          {
+            setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
+            setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
+          }
+          else
+          {
+            setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+            setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
+          }
+          current.maxInjOutputs = 2U;
+          break;
+              
+        case 6:
+          setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+          setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
+          setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
+          current.maxInjOutputs = 3U;
+          break;
+
+        case 8:
+          setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
+          setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
+          setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
+          setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
+          current.maxInjOutputs = 4U;
+          break;
+
+        default:
+          break; //No actions required for other cylinder counts 
+      }
+    }
+  }
+}
+
+/** Change injectors or/and ignition angles to 360deg.
+ * In semi sequentiol mode req_fuel size is half.
+ * Set number of outputs equal to half cylinder count.
+* */
+void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+{
+  changeFuellingtoHalfSync(page2, page4, current);
 }

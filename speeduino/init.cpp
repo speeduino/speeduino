@@ -33,6 +33,7 @@
 #include "scheduledIO_direct_inj.h"
 #include "src/pins/pinMapping.h"
 #include "resetControl.h"
+#include "scheduler_ignition_controller.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -196,7 +197,7 @@ void initialiseAll(void)
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
     initialiseFuelSchedulers();
-    initialiseIgnitionSchedulers();
+    initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
     //initialiseDisplay();
     initialiseIdle(true);
     initialiseFan(pinFan);
@@ -248,7 +249,6 @@ void initialiseAll(void)
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
     currentStatus.engineProtect.reset();
-    dwellLimit_uS = (1000 * configPage4.dwellLimit);
     fpPrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;
@@ -281,29 +281,12 @@ void initialiseAll(void)
 
     currentStatus.maxInjOutputs = 1; // Disable all injectors expect channel 1
 
-    ignition1EndAngle = 0;
-    ignition2EndAngle = 0;
-    ignition3EndAngle = 0;
-    ignition4EndAngle = 0;
-#if IGN_CHANNELS >= 5
-    ignition5EndAngle = 0;
-#endif
-#if IGN_CHANNELS >= 6
-    ignition6EndAngle = 0;
-#endif
-#if IGN_CHANNELS >= 7
-    ignition7EndAngle = 0;
-#endif
-#if IGN_CHANNELS >= 8
-    ignition8EndAngle = 0;
-#endif
-
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
     switch (configPage2.nCylinders) {
     case 1:
-        channel1IgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         channel1InjDegrees = 0;
         currentStatus.maxIgnOutputs= 1;
         currentStatus.maxInjOutputs = 1;
@@ -326,12 +309,12 @@ void initialiseAll(void)
         break;
 
     case 2:
-        channel1IgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         channel1InjDegrees = 0;
         currentStatus.maxIgnOutputs= 2;
         currentStatus.maxInjOutputs = 2;
-        if (configPage2.engineType == EVEN_FIRE ) { channel2IgnDegrees = 180; }
-        else { channel2IgnDegrees = configPage2.oddfire2; }
+        if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
+        else { ignitionSchedule2.channelDegrees = configPage2.oddfire2; }
 
         //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -363,7 +346,7 @@ void initialiseAll(void)
         break;
 
     case 3:
-        channel1IgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         currentStatus.maxIgnOutputs= 3;
         currentStatus.maxInjOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
@@ -371,21 +354,21 @@ void initialiseAll(void)
           //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
           if( ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE) ) && (configPage2.strokes == FOUR_STROKE) )
           {
-            channel2IgnDegrees = 240;
-            channel3IgnDegrees = 480;
+            ignitionSchedule2.channelDegrees = 240;
+            ignitionSchedule3.channelDegrees = 480;
 
             CRANK_ANGLE_MAX_IGN = 720;
           }
           else
           {
-            channel2IgnDegrees = 120;
-            channel3IgnDegrees = 240;
+            ignitionSchedule2.channelDegrees = 120;
+            ignitionSchedule3.channelDegrees = 240;
           }
         }
         else
         {
-          channel2IgnDegrees = configPage2.oddfire2;
-          channel3IgnDegrees = configPage2.oddfire3;
+          ignitionSchedule2.channelDegrees = configPage2.oddfire2;
+          ignitionSchedule3.channelDegrees = configPage2.oddfire3;
         }
 
         //For alternating injection, the squirt occurs at different times for each channel
@@ -462,18 +445,18 @@ void initialiseAll(void)
         }
         break;
     case 4:
-        channel1IgnDegrees = 0;
+        ignitionSchedule1.channelDegrees = 0;
         channel1InjDegrees = 0;
         currentStatus.maxIgnOutputs= 2; //Default value for 4 cylinder, may be changed below
         currentStatus.maxInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE )
         {
-          channel2IgnDegrees = 180;
+          ignitionSchedule2.channelDegrees = 180;
 
           if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) )
           {
-            channel3IgnDegrees = 360;
-            channel4IgnDegrees = 540;
+            ignitionSchedule3.channelDegrees = 360;
+            ignitionSchedule4.channelDegrees = 540;
 
             CRANK_ANGLE_MAX_IGN = 720;
             currentStatus.maxIgnOutputs= 4;
@@ -481,8 +464,8 @@ void initialiseAll(void)
           if(configPage4.sparkMode == IGN_MODE_ROTARY)
           {
             //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
-            channel3IgnDegrees = 0;
-            channel4IgnDegrees = 180;
+            ignitionSchedule3.channelDegrees = 0;
+            ignitionSchedule4.channelDegrees = 180;
             currentStatus.maxIgnOutputs= 4;
 
             configPage4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
@@ -490,9 +473,9 @@ void initialiseAll(void)
         }
         else
         {
-          channel2IgnDegrees = configPage2.oddfire2;
-          channel3IgnDegrees = configPage2.oddfire3;
-          channel4IgnDegrees = configPage2.oddfire4;
+          ignitionSchedule2.channelDegrees = configPage2.oddfire2;
+          ignitionSchedule3.channelDegrees = configPage2.oddfire3;
+          ignitionSchedule4.channelDegrees = configPage2.oddfire4;
           currentStatus.maxIgnOutputs= 4;
         }
 
@@ -564,23 +547,23 @@ void initialiseAll(void)
 
         break;
     case 5:
-        channel1IgnDegrees = 0;
-        channel2IgnDegrees = 72;
-        channel3IgnDegrees = 144;
-        channel4IgnDegrees = 216;
+        ignitionSchedule1.channelDegrees = 0;
+        ignitionSchedule2.channelDegrees = 72;
+        ignitionSchedule3.channelDegrees = 144;
+        ignitionSchedule4.channelDegrees = 216;
 #if (IGN_CHANNELS >= 5)
-        channel5IgnDegrees = 288;
+        ignitionSchedule5.channelDegrees = 288;
 #endif
         currentStatus.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
         currentStatus.maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
-          channel2IgnDegrees = 144;
-          channel3IgnDegrees = 288;
-          channel4IgnDegrees = 432;
+          ignitionSchedule2.channelDegrees = 144;
+          ignitionSchedule3.channelDegrees = 288;
+          ignitionSchedule4.channelDegrees = 432;
 #if (IGN_CHANNELS >= 5)
-          channel5IgnDegrees = 576;
+          ignitionSchedule5.channelDegrees = 576;
 #endif
 
           CRANK_ANGLE_MAX_IGN = 720;
@@ -634,18 +617,18 @@ void initialiseAll(void)
     #endif
         break;
     case 6:
-        channel1IgnDegrees = 0;
-        channel2IgnDegrees = 120;
-        channel3IgnDegrees = 240;
+        ignitionSchedule1.channelDegrees = 0;
+        ignitionSchedule2.channelDegrees = 120;
+        ignitionSchedule3.channelDegrees = 240;
         currentStatus.maxIgnOutputs= 3;
         currentStatus.maxInjOutputs = 3;
 
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        channel4IgnDegrees = 360;
-        channel5IgnDegrees = 480;
-        channel6IgnDegrees = 600;
+        ignitionSchedule4.channelDegrees = 360;
+        ignitionSchedule5.channelDegrees = 480;
+        ignitionSchedule6.channelDegrees = 600;
         CRANK_ANGLE_MAX_IGN = 720;
         currentStatus.maxIgnOutputs= 6;
         }
@@ -711,10 +694,10 @@ void initialiseAll(void)
     #endif
         break;
     case 8:
-        channel1IgnDegrees = 0;
-        channel2IgnDegrees = 90;
-        channel3IgnDegrees = 180;
-        channel4IgnDegrees = 270;
+        ignitionSchedule1.channelDegrees = 0;
+        ignitionSchedule2.channelDegrees = 90;
+        ignitionSchedule3.channelDegrees = 180;
+        ignitionSchedule4.channelDegrees = 270;
         currentStatus.maxIgnOutputs= 4;
         currentStatus.maxInjOutputs = 4;
 
@@ -729,10 +712,10 @@ void initialiseAll(void)
     #if IGN_CHANNELS >= 8
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
         {
-        channel5IgnDegrees = 360;
-        channel6IgnDegrees = 450;
-        channel7IgnDegrees = 540;
-        channel8IgnDegrees = 630;
+        ignitionSchedule5.channelDegrees = 360;
+        ignitionSchedule6.channelDegrees = 450;
+        ignitionSchedule7.channelDegrees = 540;
+        ignitionSchedule8.channelDegrees = 630;
         currentStatus.maxIgnOutputs= 8;
         CRANK_ANGLE_MAX_IGN = 720;
         }
@@ -891,147 +874,7 @@ void initialiseAll(void)
 #endif
         break;
     }
-
-    switch(configPage4.sparkMode)
-    {
-    case IGN_MODE_WASTED:
-        //Wasted Spark (Normal mode)
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-        setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
-        break;
-
-    case IGN_MODE_SINGLE:
-        //Single channel mode. All ignition pulses are on channel 1
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule3, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule4, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 5
-        setCallbacks(ignitionSchedule5, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 6
-        setCallbacks(ignitionSchedule6, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 7
-        setCallbacks(ignitionSchedule7, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 8
-        setCallbacks(ignitionSchedule8, beginCoil1Charge, endCoil1Charge);
-#endif
-        break;
-
-    case IGN_MODE_WASTEDCOP:
-        //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
-        if( configPage2.nCylinders <= 3)
-        {
-            //1-3 cylinder wasted COP is the same as regular wasted mode
-          setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-          setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-          setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);          
-        }
-        else if( configPage2.nCylinders == 4 )
-        {
-          //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-          setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-        }
-        else if( configPage2.nCylinders == 6 )
-        {
-          //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
-          setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
-          setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-        }
-        else if( configPage2.nCylinders == 8 )
-        {
-          //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
-          setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
-          setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
-          setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-        }
-        else
-        {
-          //If the person has inadvertently selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
-          setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-          setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-          setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-          setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-          setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
-        }
-        break;
-
-    case IGN_MODE_SEQUENTIAL:
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-        setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
-#if IGN_CHANNELS >= 6
-        setCallbacks(ignitionSchedule6, beginCoil6Charge, endCoil6Charge);
-#endif
-#if IGN_CHANNELS >= 7
-        setCallbacks(ignitionSchedule7, beginCoil7Charge, endCoil7Charge);
-#endif
-#if IGN_CHANNELS >= 8
-        setCallbacks(ignitionSchedule8, beginCoil8Charge, endCoil8Charge);
-#endif
-        break;
-
-    case IGN_MODE_ROTARY:
-        if(configPage10.rotaryType == ROTARY_IGN_FC)
-        {
-          //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-          setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-
-          setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
-          setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
-        }
-        else if(configPage10.rotaryType == ROTARY_IGN_FD)
-        {
-          //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-          setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-          setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-
-          //Trailing coils have their own channel each
-          //IGN2 = front rotor trailing spark
-          setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
-          //IGN3 = rear rotor trailing spark
-          setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
-
-          //IGN4 not used
-        }
-        else if(configPage10.rotaryType == ROTARY_IGN_RX8)
-        {
-          //RX8 outputs are simply 1 coil and 1 output per plug
-
-          //IGN1 is front rotor, leading spark
-          setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-          //IGN2 is rear rotor, leading spark
-          setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-          //IGN3 = front rotor trailing spark
-          setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-          //IGN4 = rear rotor trailing spark
-          setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-        }
-        else { } //No action for other RX ignition modes (Future expansion / MISRA compliant). 
-        break;
-
-    default:
-        //Wasted spark (Shouldn't ever happen anyway)
-        setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-        setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-        setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
-        break;
-    }
-
+    
     currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
 
     interrupts();
@@ -2842,205 +2685,6 @@ void setPinMapping(byte boardID)
  * 
  * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
  */
-
-static inline bool isAnyFuelScheduleRunning(void) {
-  return isRunning(fuelSchedule1)
-      || isRunning(fuelSchedule2)
-      || isRunning(fuelSchedule3)
-      || isRunning(fuelSchedule4)
-#if INJ_CHANNELS >= 5      
-      || isRunning(fuelSchedule5)
-#endif
-#if INJ_CHANNELS >= 6
-      || isRunning(fuelSchedule6)
-#endif
-#if INJ_CHANNELS >= 7
-      || isRunning(fuelSchedule7)
-#endif
-#if INJ_CHANNELS >= 8
-      || isRunning(fuelSchedule8)
-#endif
-      ;
-}
-
-static inline bool isAnyIgnScheduleRunning(void) {
-  return isRunning(ignitionSchedule1)      
-#if IGN_CHANNELS >= 2 
-      || isRunning(ignitionSchedule2)
-#endif      
-#if IGN_CHANNELS >= 3 
-      || isRunning(ignitionSchedule3)
-#endif      
-#if IGN_CHANNELS >= 4       
-      || isRunning(ignitionSchedule4)
-#endif      
-#if IGN_CHANNELS >= 5      
-      || isRunning(ignitionSchedule5)
-#endif
-#if IGN_CHANNELS >= 6
-      || isRunning(ignitionSchedule6)
-#endif
-#if IGN_CHANNELS >= 7
-      || isRunning(ignitionSchedule7)
-#endif
-#if IGN_CHANNELS >= 8
-      || isRunning(ignitionSchedule8)
-#endif
-      ;
-}
-
-/** Change injectors or/and ignition angles to 720deg.
- * Roll back req_fuel size and set number of outputs equal to cylinder count.
-* */
-void changeHalfToFullSync(const config2 &page2, const config4 &page4, statuses &current)
-{
-  //Need to do another check for injLayout as this function can be called from ignition
-  noInterrupts();
-  if( (page2.injLayout == INJ_SEQUENTIAL) && (CRANK_ANGLE_MAX_INJ != 720) && (!isAnyFuelScheduleRunning()))
-  {
-    CRANK_ANGLE_MAX_INJ = 720;
-    
-    setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-    setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-    setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-    setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-    setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-#if INJ_CHANNELS >= 6
-    setCallbacks(fuelSchedule6, openInjector6, closeInjector6);
-#endif
-#if INJ_CHANNELS >= 7
-    setCallbacks(fuelSchedule7, openInjector7, closeInjector7);
-#endif
-#if INJ_CHANNELS >= 8
-    setCallbacks(fuelSchedule8, openInjector8, closeInjector8);
-#endif
-
-    switch (page2.nCylinders)
-    {
-      case 4:
-        current.maxInjOutputs = 4;
-        break;
-            
-      case 6:
-        current.maxInjOutputs = 6;
-        break;
-
-      case 8:
-        current.maxInjOutputs = 8;
-        break;
-
-      default:
-        break; //No actions required for other cylinder counts
-    }
-  }
-  interrupts();
-
-  //Need to do another check for sparkMode as this function can be called from injection
-  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (CRANK_ANGLE_MAX_IGN != 720) && (!isAnyIgnScheduleRunning()) )
-  {
-    CRANK_ANGLE_MAX_IGN = 720;
-    switch (page2.nCylinders)
-    {
-    case 4:
-      current.maxIgnOutputs = 4U;
-      setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-      setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-      break;
-
-    case 6:
-      current.maxIgnOutputs = 6U;
-      setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-      setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-      setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-      break;
-
-    case 8:
-      current.maxIgnOutputs = 8U;
-      setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-      setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-      setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-      setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-      break;
-
-    default:
-      break; //No actions required for other cylinder counts
-      
-    }
-  }
-}
-
-/** Change injectors or/and ignition angles to 360deg.
- * In semi sequentiol mode req_fuel size is half.
- * Set number of outputs equal to half cylinder count.
-* */
-void changeFullToHalfSync(const config2 &page2, const config4 &page4, statuses &current)
-{
-  if(page2.injLayout == INJ_SEQUENTIAL)
-  {
-    CRANK_ANGLE_MAX_INJ = 360;
-    switch (page2.nCylinders)
-    {
-      case 4:
-        if(page4.inj4cylPairing == INJ_PAIR_13_24)
-        {
-          setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
-          setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
-        }
-        else
-        {
-          setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
-          setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
-        }
-        current.maxInjOutputs = 2U;
-        break;
-            
-      case 6:
-        setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
-        setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
-        setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
-        current.maxInjOutputs = 3U;
-        break;
-
-      case 8:
-        setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
-        setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
-        setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
-        setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
-        current.maxInjOutputs = 4U;
-        break;
-    }
-  }
-
-  if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
-  {
-    CRANK_ANGLE_MAX_IGN = 360;
-    switch (page2.nCylinders)
-    {
-      case 4:
-        setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-        current.maxIgnOutputs = 2U;
-        break;
-            
-      case 6:
-        setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-        current.maxIgnOutputs = 3U;
-        break;
-
-      case 8:
-        setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
-        setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
-        setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
-        setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-        current.maxIgnOutputs = 4U;
-        break;
-    }
-  }
-}
 
 #if defined(CORE_AVR)
 #pragma GCC pop_options
