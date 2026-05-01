@@ -34,7 +34,9 @@ uint16_t fixedCrankingOverride = 0;
 bool clutchTrigger;
 bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
-volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
+volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
+// Some code relies on tooth log containing less than UINT8_MAX items.
+static_assert(_countof(toothHistory)<UINT8_MAX, "Check all uses of toothHistory/toothHistoryIndex etc.");
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */

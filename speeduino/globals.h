@@ -33,12 +33,10 @@
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
 #ifndef UNIT_TEST 
-#define TOOTH_LOG_SIZE      127U
+constexpr uint8_t TOOTH_LOG_SIZE = 127U;
 #else
-#define TOOTH_LOG_SIZE      1U
+constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #endif
-// Some code relies on TOOTH_LOG_SIZE being uint8_t.
-static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 
 // note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 #define COMPOSITE_LOG_PRI   0

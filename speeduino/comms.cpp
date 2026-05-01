@@ -1092,7 +1092,7 @@ void sendToothLog(void)
   if (currentStatus.isToothLog1Full == false) 
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
-    while(toothHistoryIndex < TOOTH_LOG_SIZE)
+    while(toothHistoryIndex < _countof(toothHistory))
     {
       toothHistory[toothHistoryIndex] = 0;
       toothHistoryIndex++;
@@ -1112,7 +1112,7 @@ void sendToothLog(void)
     writeByteReliableBlocking(returnCode);
   }
   
-  for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
+  for (; logItemsTransmitted < _countof(toothHistory); logItemsTransmitted++)
   {
     //Check whether the tx buffer still has space
     if(primarySerial.availableForWrite() < 4) 
@@ -1140,7 +1140,7 @@ void sendCompositeLog(void)
   if ( currentStatus.isToothLog1Full == false )
   {
     //If the buffer is not yet full but TS has timed out, pad the rest of the buffer with 0s
-    while(toothHistoryIndex < TOOTH_LOG_SIZE)
+    while(toothHistoryIndex < _countof(toothHistory))
     {
       toothHistory[toothHistoryIndex] = toothHistory[toothHistoryIndex-1U]; //Composite logger needs a realistic time value to display correctly. Copy the last value
       compositeLogHistory[toothHistoryIndex] = 0U;
@@ -1162,7 +1162,7 @@ void sendCompositeLog(void)
     writeByteReliableBlocking(returnCode);
   }
 
-  for (; logItemsTransmitted < TOOTH_LOG_SIZE; logItemsTransmitted++)
+  for (; logItemsTransmitted < _countof(toothHistory); logItemsTransmitted++)
   {
     //Check whether the tx buffer still has space
     if((uint16_t)primarySerial.availableForWrite() < sizeof(toothHistory[logItemsTransmitted])+sizeof(compositeLogHistory[logItemsTransmitted])) 
