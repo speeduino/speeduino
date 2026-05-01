@@ -22,20 +22,21 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
     static constexpr uint16_t injAngle = 355;
     char msg[150];
-    uint16_t PWdivTimerPerDegree = timeToAngleDegPerMicroSec(parameters.pw);
 
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     FuelSchedule schedule(counter, compare);
     schedule.channelDegrees = parameters.channelAngle;
+    schedule.pw = parameters.pw;
+    injectorAngleCalcCache angleCalcCache;
 
     schedule._status = PENDING;
-    setOpenAngle(schedule, PWdivTimerPerDegree, injAngle);
+    setOpenAngle(schedule, injAngle, &angleCalcCache);
     sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, schedule.openAngle);
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, parameters.crankAngle), msg);
     
     schedule._status = RUNNING;
-    setOpenAngle(schedule, PWdivTimerPerDegree, injAngle);
+    setOpenAngle(schedule, injAngle, &angleCalcCache);
     sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, schedule.openAngle);
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.running, calculateInjectorTimeout(schedule, parameters.crankAngle), msg);
 }
