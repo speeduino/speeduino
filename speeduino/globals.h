@@ -59,11 +59,6 @@ constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #define IGN7_CMD_BIT      6
 #define IGN8_CMD_BIT      7
 
-#define LOGGER_RATE_1HZ                 0
-#define LOGGER_RATE_4HZ                 1
-#define LOGGER_RATE_10HZ                2
-#define LOGGER_RATE_30HZ                3
-
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
 extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map

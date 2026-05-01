@@ -299,7 +299,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       #endif
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif
 
       //AVR units process secondary serial requests at a fixed 30Hz
@@ -348,7 +348,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       #endif
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -364,7 +364,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  
            
       if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
@@ -444,7 +444,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_1HZ) { writeSDLogEntry(); }
         //SD log sync can take up to 8ms on slow SD cards. To prevent potential issues we only perform this if the RPM is under a safe speed so that there will always be sufficient time for a main loop to run. 
         //A sync will be forced if it hasn't taken place within a max period
         if( (currentStatus.RPM < SD_SYNC_RPM_THRESHOLD) || (msSinceLastSDSync > SD_SYNC_MAX_TIME_PERIOD) )
