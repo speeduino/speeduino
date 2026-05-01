@@ -2,11 +2,11 @@
 #include <unity.h>
 #include "globals.h"
 #include "init.h"
-#include "schedule_calcs.h"
 #include "../test_utils.h"
 #include "storage.h"
 #include "../test_schedules/channel_test_helpers.h"
 #include "decoders.h"
+#include "scheduler.h"
 
 extern decoder_status_t decoderStatus;
 void prepareForInitialiseAll(uint8_t boardId);

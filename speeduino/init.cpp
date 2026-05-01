@@ -11,7 +11,6 @@
 #include "comms_CAN.h"
 #include "programmableIOControl.h"
 #include "scheduler.h"
-#include "schedule_calcs.h"
 #include "auxiliaries.h"
 #include "sensors.h"
 #include "decoders.h"

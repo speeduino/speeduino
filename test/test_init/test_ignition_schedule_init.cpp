@@ -2,7 +2,6 @@
 #include <unity.h>
 #include "globals.h"
 #include "init.h"
-#include "schedule_calcs.h"
 #include "../test_utils.h"
 #include "storage.h"
 #include "../test_schedules/channel_test_helpers.h"
