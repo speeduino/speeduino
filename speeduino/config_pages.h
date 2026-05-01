@@ -822,6 +822,11 @@ struct cmpOperation {
   uint8_t bitwise : 2; ///< BITWISE_AND, BITWISE_OR, BITWISE_XOR
 };
 
+constexpr uint8_t SD_LOGGER_RATE_1HZ = 0;
+constexpr uint8_t SD_LOGGER_RATE_4HZ = 1;
+constexpr uint8_t SD_LOGGER_RATE_10HZ = 2;
+constexpr uint8_t SD_LOGGER_RATE_30HZ = 3;
+
 /**
 Page 13 - Programmable outputs logic rules.
 128 bytes long. Rules implemented in utilities.ino @ref checkProgrammableIO().

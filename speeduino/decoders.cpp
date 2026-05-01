@@ -120,6 +120,14 @@ static boardInputPin_t triggerThird_pin;
 #define SKIP_TOOTH3 3
 #define SKIP_TOOTH4 4
 
+// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
+constexpr uint8_t COMPOSITE_LOG_PRI = 0;
+constexpr uint8_t COMPOSITE_LOG_SEC = 1;
+constexpr uint8_t COMPOSITE_LOG_THIRD = 2;
+constexpr uint8_t COMPOSITE_LOG_TRIG = 3;
+constexpr uint8_t COMPOSITE_LOG_SYNC = 4;
+constexpr uint8_t COMPOSITE_ENGINE_CYCLE = 5;
+
 /** Universal (shared between decoders) decoder routines.
 *
 * @defgroup dec_uni Universal Decoder Routines
@@ -193,7 +201,7 @@ static inline void addToothLogEntry(unsigned long toothTime, byte whichTooth)
     //If there has been a value logged above, update the indexes
     if(valueLogged == true)
     {
-      currentStatus.isToothLog1Full = toothHistoryIndex >= (TOOTH_LOG_SIZE-1);
+      currentStatus.isToothLog1Full = toothHistoryIndex >= (_countof(toothHistory)-1);
       if (!currentStatus.isToothLog1Full) { ++toothHistoryIndex; }
     }
 
@@ -394,7 +402,7 @@ static bool UpdateRevolutionTimeFromTeeth(bool isCamTeeth) {
 }
 
 static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
-  return clamp(fast_div_closest((uint32_t)MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
+  return clamp(fast_div_closest(MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
 }
 
 /** Compute RPM.

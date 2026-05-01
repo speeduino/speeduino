@@ -129,13 +129,16 @@ static constexpr conversionFactor<int16_t, uint8_t> TPS_DOT = { .scale=10U, .tra
 static constexpr conversionFactor<uint16_t, uint8_t> CRANKING_ENRICHMENT = { .scale=5U, .translate=0U };
 
 /** @brief Ignition values from the main spark table are offset 40 degrees downwards to allow for negative spark timing */
-static constexpr conversionFactor<int8_t, uint8_t> IGNITION_ADVANCE_LARGE = { .scale=1U, .translate=-40 };
+static constexpr conversionFactor<int16_t, uint8_t> IGNITION_ADVANCE_LARGE = { .scale=1U, .translate=-40 };
 
 /** @brief Ignition advance adjustments can use a smaller offset */
 static constexpr conversionFactor<int8_t, uint8_t> IGNITION_ADVANCE_SMALL = { .scale=1U, .translate=-15 };
 
 /** @brief All temperature measurements are stored offset by 40 degrees, to represent temperature ranges from -40 to 215 */
 static constexpr conversionFactor<int16_t, uint8_t> TEMPERATURE = { .scale=1U, .translate=-40 };
+
+/** @brief The fuel trim tables are offset by 128 to allow for -50% to +50% values */
+static constexpr conversionFactor<int16_t, uint8_t> FUEL_TRIM = { .scale=1U, .translate=-127 };
 
 ///@}
 

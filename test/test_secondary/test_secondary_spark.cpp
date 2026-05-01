@@ -4,8 +4,8 @@
 #include "globals.h"
 #include "../test_utils.h"
 #include "storage.h"
-// #include "corrections.h"
 #include "maths.h"
+#include "units.h"
 
 TEST_DATA_P table3d_axis_t tempXAxis[] = {500U/100U, 700U/100U, 900U/100U, 1200U/100U, 1600U/100U, 2000U/100U, 2500U/100U, 3100U/100U, 3500U/100U, 4100U/100U, 4700U/100U, 5300U/100U, 5900U/100U, 6500U/100U, 6750U/100U, 7000U/100U};
 TEST_DATA_P table3d_axis_t tempYAxis[] = {16U/2U, 26U/2U, 30U/2U, 36U/2U, 40U/2U, 46U/2U, 50U/2U, 56U/2U, 60U/2U, 66U/2U, 70U/2U, 76U/2U, 86U/2U, 90U/2U, 96U/2U, 100U/2U};
@@ -42,7 +42,7 @@ static void __attribute__((noinline)) test_mode_off_no_secondary_spark(void) {
 
 static constexpr int8_t CAP_ADVANCE1 = INT8_MAX - 1;
 static constexpr int16_t CAP_LOAD_LOOKUP_RESULT = 150;
-static constexpr int16_t CAP_LOAD_VALUE = CAP_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
+static constexpr int16_t CAP_LOAD_VALUE = IGNITION_ADVANCE_LARGE.toUser(CAP_LOAD_LOOKUP_RESULT);
 
 static void __attribute__((noinline)) setup_test_mode_cap_INT8_MAX(config2 &, config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t mode) {
     page10.spark2Mode = mode;    
@@ -71,7 +71,7 @@ static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode, int8_
 
 static constexpr int8_t SIMPLE_ADVANCE1 = 35;
 static constexpr int16_t SIMPLE_LOAD_LOOKUP_RESULT = 68;
-static constexpr int16_t SIMPLE_LOAD_VALUE = SIMPLE_LOAD_LOOKUP_RESULT-INT16_C(OFFSET_IGNITION);
+static constexpr int16_t SIMPLE_LOAD_VALUE = IGNITION_ADVANCE_LARGE.toUser(SIMPLE_LOAD_LOOKUP_RESULT);
 
 static void __attribute__((noinline)) setup_test_mode_simple(config2 &, config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t mode) {
     page10.spark2Mode = mode;    
@@ -107,7 +107,7 @@ static void __attribute__((noinline)) test_sparkmode_multiply(uint8_t multiplier
     table3d16RpmLoad lookupTable;
 
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_MULTIPLY);
-    fill_table_values(lookupTable, multiplier+INT16_C(OFFSET_IGNITION));
+    fill_table_values(lookupTable, IGNITION_ADVANCE_LARGE.toRaw(multiplier));
     calculateSecondarySpark(page2, page10, lookupTable, current);
     assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, multiplier-INT8_MAX, DIV_ROUND_CLOSEST((SIMPLE_ADVANCE1*multiplier), 100, int16_t));
 }
@@ -165,7 +165,7 @@ static void __attribute__((noinline)) test_sparkmode_add(void) {
 }
 
 static void __attribute__((noinline)) test_sparkmode_add_cap_INT8_MAX(void) {
-    test_mode_cap_INT8_MAX(SPARK2_MODE_ADD, (int16_t)150-INT16_C(OFFSET_IGNITION));
+    test_mode_cap_INT8_MAX(SPARK2_MODE_ADD, IGNITION_ADVANCE_LARGE.toUser(150));
 }
 
 static void __attribute__((noinline)) setup_test_mode_cond_switch(config2 &page2, config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t cond, uint16_t trigger) {

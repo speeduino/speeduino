@@ -32,40 +32,11 @@
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
-#define MICROS_PER_SEC INT32_C(1000000)
-#define MICROS_PER_MIN INT32_C(MICROS_PER_SEC*60U)
-#define MICROS_PER_HOUR INT32_C(MICROS_PER_MIN*60U)
-#define MILLI_PER_SEC INT32_C(MICROS_PER_SEC/1000)
-
-#define UINT16_HALF_RANGE     0x8000
-
-#define SERIAL_PORT_PRIMARY   0
-#define SERIAL_PORT_SECONDARY 3
-
-#define BIT_TIMER_1HZ             0
-#define BIT_TIMER_4HZ             1
-#define BIT_TIMER_10HZ            2
-#define BIT_TIMER_15HZ            3
-#define BIT_TIMER_30HZ            4
-#define BIT_TIMER_50HZ            5
-#define BIT_TIMER_200HZ           6
-#define BIT_TIMER_1KHZ            7
-
 #ifndef UNIT_TEST 
-#define TOOTH_LOG_SIZE      127U
+constexpr uint8_t TOOTH_LOG_SIZE = 127U;
 #else
-#define TOOTH_LOG_SIZE      1U
+constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #endif
-// Some code relies on TOOTH_LOG_SIZE being uint8_t.
-static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
-
-// note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
-#define COMPOSITE_LOG_PRI   0
-#define COMPOSITE_LOG_SEC   1
-#define COMPOSITE_LOG_THIRD 2 
-#define COMPOSITE_LOG_TRIG 3
-#define COMPOSITE_LOG_SYNC 4
-#define COMPOSITE_ENGINE_CYCLE 5
 
 #define OUTPUT_CONTROL_DIRECT   0
 #define OUTPUT_CONTROL_MC33810  10
@@ -87,31 +58,6 @@ static_assert(TOOTH_LOG_SIZE<UINT8_MAX, "Check all uses of TOOTH_LOG_SIZE");
 #define IGN6_CMD_BIT      5
 #define IGN7_CMD_BIT      6
 #define IGN8_CMD_BIT      7
-
-#define CALIBRATION_TABLE_SIZE 512 ///< Calibration table size for CLT, IAT, O2
-
-#define OFFSET_FUELTRIM 127U ///< The fuel trim tables are offset by 128 to allow for -128 to +128 values
-#define OFFSET_IGNITION 40 ///< Ignition values from the main spark table are offset 40 degrees downwards to allow for negative spark timing
-
-#define SERIAL_BUFFER_THRESHOLD 32 ///< When the serial buffer is filled to greater than this threshold value, the serial processing operations will be performed more urgently in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure
-
-#define LOGGER_CSV_SEPARATOR_SEMICOLON  0
-#define LOGGER_CSV_SEPARATOR_COMMA      1
-#define LOGGER_CSV_SEPARATOR_TAB        2
-#define LOGGER_CSV_SEPARATOR_SPACE      3
-
-#define LOGGER_DISABLED                 0
-#define LOGGER_CSV                      1
-#define LOGGER_BINARY                   2
-
-#define LOGGER_RATE_1HZ                 0
-#define LOGGER_RATE_4HZ                 1
-#define LOGGER_RATE_10HZ                2
-#define LOGGER_RATE_30HZ                3
-
-#define LOGGER_FILENAMING_OVERWRITE     0
-#define LOGGER_FILENAMING_DATETIME      1
-#define LOGGER_FILENAMING_SEQENTIAL     2
 
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
@@ -141,7 +87,6 @@ extern struct table3d4RpmLoad dwellTable; //4x4 Dwell map
 extern byte fpPrimeTime; //The time (in seconds, based on currentStatus.secl) that the fuel pump started priming
 extern uint8_t softLimitTime; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 extern volatile uint16_t mainLoopCount;
-extern volatile unsigned long timer5_overflow_count; //Increments every time counter 5 overflows. Used for the fast version of micros()
 extern volatile unsigned long ms_counter; //A counter that increments once per ms
 extern uint16_t fixedCrankingOverride;
 extern volatile uint32_t toothHistory[TOOTH_LOG_SIZE];

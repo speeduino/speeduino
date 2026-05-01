@@ -75,7 +75,7 @@ void setup(void)
 
 static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, uint16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
-    uint8_t pw1percent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
+    uint8_t pw1percent = (uint8_t)(100 + FUEL_TRIM.toUser(get3DTableValue(pTrimTable, fuelLoad, RPM)));
     return percentageApprox(pw1percent, currentPW);
 }
 
@@ -98,7 +98,7 @@ static inline uint8_t getVE1(void)
 static inline int8_t getAdvance1(void)
 {
   currentStatus.ignLoad = getLoad(configPage2.ignAlgorithm, currentStatus);
-  return correctionsIgn((int16_t)get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM) - INT16_C(OFFSET_IGNITION)); //As above, but for ignition advance
+  return correctionsIgn(IGNITION_ADVANCE_LARGE.toUser(get3DTableValue(&ignitionTable, currentStatus.ignLoad, currentStatus.RPM))); //As above, but for ignition advance
 }
 
 static inline void setFuelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t pw, uint16_t startAngle, uint16_t crankAngle, byte fuelChannelsOn)
@@ -195,13 +195,10 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       
       //Check for any secondary comms requiring action. Note that AVR runs this at a fixed 30Hz. 
-      if (configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      if ((configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      && (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD))
       {
-        #ifndef CORE_AVR
-          if (secondarySerial.available() > 0)  { secondserial_Command(); }
-        #else
-          if (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD) { secondserial_Command(); } //Special case for AVR units. This prevents potential overflow of the receive buffer
-        #endif
+        secondserial_Command();
       }
       #if defined (NATIVE_CAN_AVAILABLE)
         if (configPage9.enable_intcan == 1) // use internal can module
@@ -302,7 +299,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       #endif
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_30HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_30HZ) { writeSDLogEntry(); }
       #endif
 
       //AVR units process secondary serial requests at a fixed 30Hz
@@ -334,7 +331,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       #endif
 
       //And check whether the tooth log buffer is ready
-      if(toothHistoryIndex > TOOTH_LOG_SIZE) { currentStatus.isToothLog1Full = true; }
+      if(toothHistoryIndex > _countof(toothHistory)) { currentStatus.isToothLog1Full = true; }
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
@@ -351,7 +348,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       #endif
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_10HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
@@ -367,7 +364,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_4HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  
            
       if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
@@ -447,7 +444,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
 
       #ifdef SD_LOGGING
-        if(configPage13.onboard_log_file_rate == LOGGER_RATE_1HZ) { writeSDLogEntry(); }
+        if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_1HZ) { writeSDLogEntry(); }
         //SD log sync can take up to 8ms on slow SD cards. To prevent potential issues we only perform this if the RPM is under a safe speed so that there will always be sufficient time for a main loop to run. 
         //A sync will be forced if it hasn't taken place within a max period
         if( (currentStatus.RPM < SD_SYNC_RPM_THRESHOLD) || (msSinceLastSDSync > SD_SYNC_MAX_TIME_PERIOD) )

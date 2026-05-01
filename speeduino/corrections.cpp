@@ -722,7 +722,7 @@ static inline bool nextAfrCycleHasStarted(void) {
   //Check whether ignitionCount has exceeded AFRnextCycle.
   //This method prevents any issues when AFRnextCycle overflows but these variables 
   //cannot be more than UINT16_HALF_RANGE apart
-  return (((uint16_t)(ignitionCount - AFRnextCycle)) < UINT16_HALF_RANGE);
+  return (((uint16_t)(ignitionCount - AFRnextCycle)) < (UINT16_MAX/2U));
 }
 
 static inline void setNextAfrCycle(void) {

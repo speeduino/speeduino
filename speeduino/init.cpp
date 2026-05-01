@@ -34,6 +34,7 @@
 #include "src/pins/pinMapping.h"
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
+#include "maths.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -252,7 +253,6 @@ void initialiseAll(void)
     fpPrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;
-    timer5_overflow_count = 0;
     toothHistoryIndex = 0;
     
     noInterrupts();

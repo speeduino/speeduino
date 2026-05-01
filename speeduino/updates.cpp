@@ -435,7 +435,7 @@ void doUpdates(void)
     constexpr uint16_t EEPROM_CALIBRATION_IAT_OLD = 3071U;
     constexpr uint16_t EEPROM_CALIBRATION_CLT_OLD = 3583U;
 
-    for(uint16_t x=0U; x<((uint16_t)CALIBRATION_TABLE_SIZE/16U); ++x) //Each calibration table is 512 bytes long
+    for(uint16_t x=0U; x<decltype(cltCalibrationTable)::size(); ++x) //Each calibration table is 512 bytes long
     {
       uint16_t y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
       cltCalibrationTable.values[x] = getStorageAPI().read(y);
@@ -466,7 +466,7 @@ void doUpdates(void)
     for(int i=0; i<6; i++)
     {
       configPage10.wmiAdvBins[i] = i*100/2;
-      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+      configPage10.wmiAdvAdj[i] = IGNITION_ADVANCE_LARGE.toRaw(0);
     }
 
     //Programmable outputs added. Set all to disabled

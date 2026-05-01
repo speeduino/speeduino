@@ -224,3 +224,9 @@ using boardOutputPin_t = outputPin_t;
 
 /** @brief Analog pin mapping */
 constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16 };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 0U;
