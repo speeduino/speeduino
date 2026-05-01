@@ -75,7 +75,7 @@ void setup(void)
 
 static inline uint16_t applyFuelTrimToPW(trimTable3d *pTrimTable, uint16_t fuelLoad, int16_t RPM, uint16_t currentPW)
 {
-    uint8_t pw1percent = 100U + get3DTableValue(pTrimTable, fuelLoad, RPM) - OFFSET_FUELTRIM;
+    uint8_t pw1percent = (uint8_t)(100 + FUEL_TRIM.toUser(get3DTableValue(pTrimTable, fuelLoad, RPM)));
     return percentageApprox(pw1percent, currentPW);
 }
 

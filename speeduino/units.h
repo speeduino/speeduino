@@ -137,6 +137,9 @@ static constexpr conversionFactor<int8_t, uint8_t> IGNITION_ADVANCE_SMALL = { .s
 /** @brief All temperature measurements are stored offset by 40 degrees, to represent temperature ranges from -40 to 215 */
 static constexpr conversionFactor<int16_t, uint8_t> TEMPERATURE = { .scale=1U, .translate=-40 };
 
+/** @brief The fuel trim tables are offset by 128 to allow for -50% to +50% values */
+static constexpr conversionFactor<int16_t, uint8_t> FUEL_TRIM = { .scale=1U, .translate=-127 };
+
 ///@}
 
 /**
