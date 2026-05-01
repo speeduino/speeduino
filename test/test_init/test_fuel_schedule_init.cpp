@@ -834,6 +834,22 @@ static void cylinder8_stroke4_seq_nostage(void)
   assert_8cylinder_4stroke_seq_nostage(__LINE__);
 }
 
+static void assert_8cylinder_4stroke_paired_nostage(int assertLineNum)
+{
+	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
+	const bool enabled[] = {true, true, true, true, false, false, false, false};
+  assert_fuel_schedules(360U, enabled, angle, assertLineNum);
+}
+
+static void cylinder8_stroke4_paired_nostage(void)
+{
+  configPage2.divider = configPage2.nCylinders/2U;
+  configPage2.injLayout = INJ_PAIRED;
+  configPage10.stagingEnabled = false;
+  initialiseAll(); //Run the main initialise function
+  assert_8cylinder_4stroke_paired_nostage(__LINE__);
+}
+
 void run_8_cylinder_4stroke_tests(void)
 {
   prepareForInitialiseAll(3U);
@@ -846,6 +862,7 @@ void run_8_cylinder_4stroke_tests(void)
   // Staging not supported on 8 cylinders
 
   RUN_TEST_P(cylinder8_stroke4_seq_nostage);
+  RUN_TEST_P(cylinder8_stroke4_paired_nostage);
 }
 
 static constexpr uint16_t zeroAngles[] = {0,0,0,0,0,0,0,0};
@@ -1137,11 +1154,7 @@ static void test_partial_sync_8_cylinder(void)
 
   decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, true, true, true, false, false, false, false};
-	  const uint16_t angle[] = {0,90,180,270,0,0,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  assert_8cylinder_4stroke_paired_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
   changeHalfToFullSync(configPage2,  currentStatus);
