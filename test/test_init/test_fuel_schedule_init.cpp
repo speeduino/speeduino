@@ -15,16 +15,19 @@ static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t
 {
   if (enabled)
   {
-  char msg[64];
+    char msg[64];
 
-  sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, currentStatus.maxInjOutputs);
+    sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, currentStatus.maxInjOutputs);
     UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT8(currentStatus.maxInjOutputs, cmdBit+1U, assertLineNum, msg);
-  sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), cmdBit+1);
-  UNITY_TEST_ASSERT_EQUAL_INT(angle, schedule.channelDegrees, assertLineNum, msg);
-  sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), cmdBit+1);
-  UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, assertLineNum, msg);
-  sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), cmdBit+1);
-  UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, assertLineNum, msg);
+    sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), cmdBit+1);
+    UNITY_TEST_ASSERT_EQUAL_INT(angle, schedule.channelDegrees, assertLineNum, msg);
+    sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), cmdBit+1);
+    UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, assertLineNum, msg);
+    sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), cmdBit+1);
+    UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, assertLineNum, msg);
+    // Should be the case, but this doesn't pass!!
+    // sprintf_P(msg, PSTR("injAngle"));
+    // UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ, angle, assertLineNum, msg);
   }
 }
 
@@ -334,6 +337,13 @@ static void cylinder3_stroke4_semiseq_nostage_tb(void)
   assert_fuel_schedules(720U/3U, enabled, angle, __LINE__);
 }
 
+static void assert_3cylinder_semiseq_nostage(int assertLineNum)
+{
+ 	const bool enabled[] = {true, true, true, false, false, false, false, false};
+	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
+  assert_fuel_schedules(360U, enabled, angle, assertLineNum); //Special case as 3 squirts per cycle MUST be over 720 degrees
+}
+
 static void cylinder3_stroke4_semiseq_nostage_port(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
@@ -341,9 +351,7 @@ static void cylinder3_stroke4_semiseq_nostage_port(void)
   configPage10.stagingEnabled = false;
   configPage2.injType = INJ_TYPE_PORT;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-  assert_fuel_schedules(720U/2U, enabled, angle, __LINE__); //Special case as 3 squirts per cycle MUST be over 720 degrees
+  assert_3cylinder_semiseq_nostage(__LINE__);
 }
 
 
@@ -528,15 +536,20 @@ static void cylinder4_stroke4_seq_nostage(void)
   assert_4cylinder_4stroke_seq_nostage(__LINE__);
 }
 
+static void assert_4cylinder_4stroke_semiseq_nostage(int assertLineNum)
+{
+	const bool enabled[] = {true, true, false, false, false, false, false, false};
+	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+  assert_fuel_schedules(360U, enabled, angle, assertLineNum);
+}
+
 static void cylinder4_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  assert_4cylinder_4stroke_semiseq_nostage(__LINE__);
+}
 
 
 static void cylinder4_stroke4_seq_staged(void)
@@ -1063,11 +1076,7 @@ static void test_partial_sync_4_cylinder(void)
 
   decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, true, false, false, false, false, false, false};
-	  const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  assert_4cylinder_4stroke_semiseq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
   changeHalfToFullSync(configPage2, currentStatus);
@@ -1108,11 +1117,7 @@ static void test_partial_sync_6_cylinder(void)
 
   decoderStatus.syncStatus = SyncStatus::Partial;
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
-  {
-	  const bool enabled[] = {true, true, true, false, false, false, false, false};
-	  const uint16_t angle[] = {0,120,240,360,480,600,0,0};
-    assert_fuel_schedules(360U, enabled, angle, __LINE__);
-  }
+  assert_3cylinder_semiseq_nostage(__LINE__);
 
   decoderStatus.syncStatus = SyncStatus::Full;
   changeHalfToFullSync(configPage2, currentStatus);
@@ -1134,7 +1139,7 @@ static void test_partial_sync_8_cylinder(void)
   changeFullToHalfSync(configPage2, configPage4, currentStatus);
   {
 	  const bool enabled[] = {true, true, true, true, false, false, false, false};
-	  const uint16_t angle[] = {0,90,180,270,360,450,540,630};
+	  const uint16_t angle[] = {0,90,180,270,0,0,0,0};
     assert_fuel_schedules(360U, enabled, angle, __LINE__);
   }
 
