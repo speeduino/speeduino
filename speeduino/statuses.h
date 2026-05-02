@@ -314,8 +314,9 @@ struct statuses {
   uint8_t systemTemp;
   uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
-  uint8_t maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
-  uint8_t maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
+  uint8_t maxIgnOutputs; /**< Number of ignition outputs being used by the current tune configuration */
+  uint8_t numPrimaryInjOutputs : 4; /**< Number of primary injection outputs */
+  uint8_t numSecondaryInjOutputs : 4; /**< Number of secondary injection outputs (staged injection only)*/
 
   /** @brief Fuel and ignition scheduler cut state. @see calculateFuelIgnitionChannelCut */
   struct scheduler_cut_t
@@ -333,3 +334,8 @@ struct statuses {
 
   uint8_t LOOP_TIMER; ///< The timer flags currently in effect
 };
+
+static inline uint8_t getTotalInjChannelCount(const statuses &current)
+{
+  return current.numPrimaryInjOutputs + current.numSecondaryInjOutputs;
+}

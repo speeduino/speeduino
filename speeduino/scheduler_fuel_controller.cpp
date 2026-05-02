@@ -50,7 +50,7 @@ static inline void changeFuellingToFullSequential(const config2 &page2, statuses
     if( !isAnyFuelScheduleRunning() )
     {
       CRANK_ANGLE_MAX_INJ = 720;
-      current.maxInjOutputs = page2.nCylinders;
+      current.numPrimaryInjOutputs = page2.nCylinders;
       
       setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
       setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
@@ -79,7 +79,7 @@ static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 
     if( !isAnyFuelScheduleRunning() )
     {
       CRANK_ANGLE_MAX_INJ = 360;
-      current.maxInjOutputs = page2.nCylinders/2U;
+      current.numPrimaryInjOutputs = page2.nCylinders/2U;
       switch (page2.nCylinders)
       {
         case 4:
@@ -265,7 +265,7 @@ static inline uint16_t applyFuelTrim(const trimTable3d &trimTable, uint16_t pw, 
 void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config6 &page6, const statuses &current) {
   zeroAllPulseWidths();
 
-  #define PULSEWIDTH_OR_ZERO(index, pulseWidth) (((current.maxInjOutputs) >= (uint8_t)(index)) ? (pulseWidth) : 0U)
+  #define PULSEWIDTH_OR_ZERO(index, pulseWidth) ((getTotalInjChannelCount(current) >= (uint8_t)(index)) ? (pulseWidth) : 0U)
 
   #define ASSIGN_PRIMARY_PW(index, pulseWidth) \
     fuelSchedule ## index .pw = applyFuelTrim(trimTables[index-1U], \
