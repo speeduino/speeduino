@@ -462,7 +462,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.stagingActive = pulse_widths.secondary!=0U;
 
       matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
-      applyPwToInjectorChannels(pulse_widths, configPage2, configPage6, currentStatus);
+      applyPwToInjectorChannels(pulse_widths, configPage6, currentStatus);
       currentStatus.injAngle = setInjectionAngles(currentStatus);
 
       //***********************************************************************************************

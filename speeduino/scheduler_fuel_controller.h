@@ -16,4 +16,4 @@ void setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask);
  * @param page2 Tune settings
  * @param current Current system state
  */
-void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config6 &page6, const statuses &current);
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config6 &page6, const statuses &current);
