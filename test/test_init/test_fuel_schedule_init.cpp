@@ -18,8 +18,8 @@ static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t
   {
     char msg[64];
 
-    sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, currentStatus.maxInjOutputs);
-    UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT8(currentStatus.maxInjOutputs, cmdBit+1U, assertLineNum, msg);
+    sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, getTotalInjChannelCount(currentStatus));
+    UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT8(getTotalInjChannelCount(currentStatus), cmdBit+1U, assertLineNum, msg);
     sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), cmdBit+1);
     UNITY_TEST_ASSERT_EQUAL_INT(angle, schedule.channelDegrees, assertLineNum, msg);
     sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), cmdBit+1);
@@ -39,7 +39,7 @@ static void __attribute__((noinline)) assert_num_inj_channels(const bool (&enabl
       ++expectedOutputs;
     }
   }
-  UNITY_TEST_ASSERT_EQUAL_UINT8(expectedOutputs, currentStatus.maxInjOutputs, assertLineNum, nullptr);
+  UNITY_TEST_ASSERT_EQUAL_UINT8(expectedOutputs, getTotalInjChannelCount(currentStatus), assertLineNum, nullptr);
 }
 
 static void __attribute__((noinline)) assert_fuel_schedules(uint16_t crankAngle, const bool (&enabled)[8], const uint16_t (&angle)[8], int assertLineNum)

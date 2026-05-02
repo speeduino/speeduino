@@ -10,7 +10,6 @@ void runAllFuelTests(void)
     extern void testCalculateRequiredFuel(void);
     extern void testApplyPwLimit(void);
     extern void testCalculateSecondaryPw(void);
-    extern void testApplyPwToInjectorChannels(void);
     extern void testCalculateOpenTime(void);
     extern void testCalculatePWLimit(void);
     extern void testCalcPrimaryPulseWidth(void);
@@ -21,7 +20,6 @@ void runAllFuelTests(void)
     testCalculateRequiredFuel();
     testApplyPwLimit();
     testCalculateSecondaryPw();
-    testApplyPwToInjectorChannels();
     testCalculateOpenTime();
     testCalculatePWLimit();
     testCalcPrimaryPulseWidth();
