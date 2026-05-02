@@ -108,8 +108,9 @@ struct engineProtection_test_context_t
     engineProtection_test_context_t(void)
     {
         current.decoder = decoder_builder_t().setGetStatus(getFakeDecoderStatus).build();
+        current.numPrimaryInjOutputs = 4;
+        current.numSecondaryInjOutputs = 4;
         current.maxIgnOutputs = 8;
-        current.maxInjOutputs = 8;
     }
 
     void setSyncStatus(SyncStatus syncStatus)
@@ -858,7 +859,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)
     context.setHardCutRolling();
 
     context.current.maxIgnOutputs = 1;
-    context.current.maxInjOutputs = 1;
+    context.current.numPrimaryInjOutputs = 1;
+    context.current.numSecondaryInjOutputs = 0;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
@@ -874,7 +876,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
     context.setHardCutRolling();
 
     context.current.maxIgnOutputs = 1;
-    context.current.maxInjOutputs = 1;
+    context.current.numPrimaryInjOutputs = 1;
+    context.current.numSecondaryInjOutputs = 0;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -892,7 +895,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullc
 
     setRpm(context.current, context.current.RPM * 2U); // ensure rpmDelta >= 0 for full cut
     context.current.maxIgnOutputs = 4;
-    context.current.maxInjOutputs = 4;
+    context.current.numPrimaryInjOutputs = 2;
+    context.current.numSecondaryInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -926,7 +930,8 @@ static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_determi
     context.page2.strokes = FOUR_STROKE;
     setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim-1U)); // between (maxAllowed + axis[0]*10) and maxAllowed
     context.current.maxIgnOutputs = 2;
-    context.current.maxInjOutputs = 2;
+    context.current.numPrimaryInjOutputs = 1;
+    context.current.numSecondaryInjOutputs = 1;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Prepare a schedulerCutState where ignition channels are pending
@@ -1278,7 +1283,8 @@ static void test_applyRollingCut_no_revolutions_elapsed(void)
     resetInternalState();
     rollingCutLastRev = 100U;
     context.current.maxIgnOutputs = 8;
-    context.current.maxInjOutputs = 8;
+    context.current.numPrimaryInjOutputs = 8;
+    context.current.numSecondaryInjOutputs = 0;
     context.current.startRevolutions = 100U;
     context.current.schedulerCutState.fuelChannels = 0xAA;
     context.current.schedulerCutState.ignitionChannels = 0x55;
@@ -1343,7 +1349,7 @@ static void test_applyRollingCut_revolutions_elapsed_forced_no_cuts(void)
     auto result = applyRollingCut(context.current, context.page2, context.page4, context.page6, maxAllowedRPM);
 
     // All channels should be turned on (masked to configured counts)
-    TEST_ASSERT_EQUAL_HEX8((1U << context.current.maxInjOutputs) - 1U, result.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8((1U << getTotalInjChannelCount(context.current)) - 1U, result.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8((1U << context.current.maxIgnOutputs) - 1U, result.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, result.status);
     TEST_ASSERT_EQUAL_UINT32(context.current.startRevolutions, rollingCutLastRev);
@@ -1358,7 +1364,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels
 
     setRpm(context.current, context.current.RPM * 2U); // ensure full-cut condition if rpmDelta >= 0
     context.current.maxIgnOutputs = 4;
-    context.current.maxInjOutputs = 4;
+    context.current.numPrimaryInjOutputs = 2;
+    context.current.numSecondaryInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Inject deterministic RNG that always triggers cuts
@@ -1376,8 +1383,6 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_c
     engineProtection_test_context_t context;
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
-    context.current.maxIgnOutputs = 8;
-    context.current.maxInjOutputs = 8;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Ensure rpm sits in table-driven partial-cut zone (not full 100%)
@@ -1488,15 +1493,14 @@ static void test_FullCut_masks_unused(void)
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
 
     context.page6.engineProtectType = PROTECT_CUT_IGN;
-    context.current.maxInjOutputs = 8;
-    context.current.maxIgnOutputs = 8;
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 
     context.page6.engineProtectType = PROTECT_CUT_IGN;
-    context.current.maxInjOutputs = 5;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 0;
     context.current.maxIgnOutputs = 3;
     onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0x1F, onOff.fuelChannels);
@@ -1504,7 +1508,8 @@ static void test_FullCut_masks_unused(void)
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 
     context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    context.current.maxInjOutputs = 8;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 3;
     context.current.maxIgnOutputs = 8;
     onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
@@ -1512,7 +1517,8 @@ static void test_FullCut_masks_unused(void)
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
 
     context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    context.current.maxInjOutputs = 5;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 0;
     context.current.maxIgnOutputs = 3;
     onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
@@ -1528,14 +1534,16 @@ static void test_NoCut_masks_unused(void)
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
     
-    context.current.maxInjOutputs = 8;
+    context.current.numPrimaryInjOutputs = 4;
+    context.current.numSecondaryInjOutputs = 4;
     context.current.maxIgnOutputs = 8;
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::None, onOff.status);
 
-    context.current.maxInjOutputs = 5;
+    context.current.numPrimaryInjOutputs = 4;
+    context.current.numSecondaryInjOutputs = 1;
     context.current.maxIgnOutputs = 3;
     onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0x1F, onOff.fuelChannels);
@@ -1563,7 +1571,8 @@ static void test_RollingCut_masks_unused(void)
 
     // Ensure rollingCutLastRev is 5 revolutions earlier so rolling cut is applied
     rollingCutLastRev = context.current.startRevolutions - 5;
-    context.current.maxInjOutputs = 5;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 0;
     context.current.maxIgnOutputs = 3;
     cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_HEX8(0b00001010, cut.fuelChannels);

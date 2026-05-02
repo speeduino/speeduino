@@ -204,27 +204,27 @@ void beginInjectorPriming(void)
     constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
 
     primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
-    if ( getTotalInjChannelCount(currentStatus) >= 1U ) { setFuelScheduleDuration(fuelSchedule1, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
 #if (INJ_CHANNELS >= 2)
-    if ( getTotalInjChannelCount(currentStatus) >= 2U ) { setFuelScheduleDuration(fuelSchedule2, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( getTotalInjChannelCount(currentStatus) >= 3U ) { setFuelScheduleDuration(fuelSchedule3, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( getTotalInjChannelCount(currentStatus) >= 4U ) { setFuelScheduleDuration(fuelSchedule4, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( getTotalInjChannelCount(currentStatus) >= 5U ) { setFuelScheduleDuration(fuelSchedule5, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( getTotalInjChannelCount(currentStatus) >= 6U ) { setFuelScheduleDuration(fuelSchedule6, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( getTotalInjChannelCount(currentStatus) >= 7U) { setFuelScheduleDuration(fuelSchedule7, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( getTotalInjChannelCount(currentStatus) >= 8U ) { setFuelScheduleDuration(fuelSchedule8, PRIMING_DELAY, primingValue); }
+    if ( getTotalInjChannelCount(currentStatus) >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
 #endif
   }
 }

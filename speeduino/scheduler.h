@@ -228,19 +228,6 @@ struct FuelSchedule : public Schedule {
 };
 
 /**
- * @brief Set the fuel schedule action (open & close an injector) to run for a certain duration in the future
- * 
- * @param schedule Schedule to modify
- * @param delay Delay until the injector opens (µS)
- * @param duration Injector open time (µS)
- */
-static inline void setFuelScheduleDuration(FuelSchedule &schedule, uint32_t delay, uint16_t duration) 
-{
-  // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
-  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
-}
-
-/**
  * @brief Shared fuel schedule timer ISR implementation. Should be called by the actual timer ISRs
  * (as timed interrupts) when either the start time or the duration time are reached. See @ref schedule-state-machine
  * 

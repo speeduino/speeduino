@@ -178,7 +178,8 @@ static inline void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channe
     uint32_t timeOut = calculateInjectorTimeout(schedule, crankAngle);
     if (timeOut>0U)
     {
-      setFuelScheduleDuration(schedule, timeOut, schedule.pw);
+      // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
+      setSchedule(schedule, timeOut, schedule.pw, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
     }
   }
 }
