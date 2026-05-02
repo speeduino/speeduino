@@ -35,312 +35,58 @@ static statuses getRandomPW(void) {
   return current;
 }
 
-#define TEST_PW(index, current, expected, isIndexValid) \
+static statuses setPrimarySecondaryChannels(statuses current, uint8_t primary, uint8_t secondary) {
+  current.numPrimaryInjOutputs = INJ_CHANNELS>=primary ? primary : INJ_CHANNELS;
+  current.numSecondaryInjOutputs = INJ_CHANNELS>=(primary+secondary) ? secondary : (INJ_CHANNELS>primary ? INJ_CHANNELS-primary : 0U);
+  return current;
+}
+
+#define TEST_PW(index, expected, isIndexValid) \
   if ((isIndexValid)) { \
     TEST_ASSERT_UINT16_WITHIN(1, expected, fuelSchedule##index.pw); \
   } else { \
     TEST_ASSERT_EQUAL_UINT16(0, fuelSchedule##index.pw); \
   }
 #if INJ_CHANNELS >= 2
-  #define TEST_PW2(current, expected, isIndexValid) TEST_PW(2, current, expected, isIndexValid)
+  #define TEST_PW2(expected, isIndexValid) TEST_PW(2, expected, isIndexValid)
 #else
-  #define TEST_PW2(current, expected, isIndexValid)
+  #define TEST_PW2(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 3
-  #define TEST_PW3(current, expected, isIndexValid) TEST_PW(3, current, expected, isIndexValid)
+  #define TEST_PW3(expected, isIndexValid) TEST_PW(3, expected, isIndexValid)
 #else
-  #define TEST_PW3(current, expected, isIndexValid)
+  #define TEST_PW3(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 4
-  #define TEST_PW4(current, expected, isIndexValid) TEST_PW(4, current, expected, isIndexValid)
+  #define TEST_PW4(expected, isIndexValid) TEST_PW(4, expected, isIndexValid)
 #else
-  #define TEST_PW4(current, expected, isIndexValid)
+  #define TEST_PW4(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 4
-  #define TEST_PW4(current, expected, isIndexValid) TEST_PW(4, current, expected, isIndexValid)
+  #define TEST_PW4(expected, isIndexValid) TEST_PW(4, expected, isIndexValid)
 #else
-  #define TEST_PW4(current, expected, isIndexValid)
+  #define TEST_PW4(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 5
-  #define TEST_PW5(current, expected, isIndexValid) TEST_PW(5, current, expected, isIndexValid)
+  #define TEST_PW5(expected, isIndexValid) TEST_PW(5, expected, isIndexValid)
 #else
-  #define TEST_PW5(current, expected, isIndexValid)
+  #define TEST_PW5(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 6
-  #define TEST_PW6(current, expected, isIndexValid) TEST_PW(6, current, expected, isIndexValid)
+  #define TEST_PW6(expected, isIndexValid) TEST_PW(6, expected, isIndexValid)
 #else
-  #define TEST_PW6(current, expected, isIndexValid)
+  #define TEST_PW6(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 7
-  #define TEST_PW7(current, expected, isIndexValid) TEST_PW(7, current, expected, isIndexValid)
+  #define TEST_PW7(expected, isIndexValid) TEST_PW(7, expected, isIndexValid)
 #else
-  #define TEST_PW7(current, expected, isIndexValid)
+  #define TEST_PW7(expected, isIndexValid)
 #endif
 #if INJ_CHANNELS >= 8
-  #define TEST_PW8(current, expected, isIndexValid) TEST_PW(8, current, expected, isIndexValid)
+  #define TEST_PW8(expected, isIndexValid) TEST_PW(8, expected, isIndexValid)
 #else
-  #define TEST_PW8(current, expected, isIndexValid)
+  #define TEST_PW8(expected, isIndexValid)
 #endif
-
-static void test_No_Secondary_PW(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 100, 0 /* Zero signal no staging */};
-  page2.nCylinders = 2;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.primary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.primary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.primary, INJ_CHANNELS >= 7);
-  TEST_PW8(current, pulseWidths.primary, INJ_CHANNELS >= 8);
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS/2;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS/2 >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS/2 >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS/2 >= 4);
-  TEST_PW5(current, pulseWidths.primary, INJ_CHANNELS/2 >= 5);
-  TEST_PW6(current, pulseWidths.primary, INJ_CHANNELS/2 >= 6);
-  TEST_PW7(current, pulseWidths.primary, INJ_CHANNELS/2 >= 7);
-  TEST_PW8(current, pulseWidths.primary, INJ_CHANNELS/2 >= 8);
-}
-
-static void test_Cylinders_1(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 1;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.secondary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.secondary, false);
-  TEST_PW4(current, pulseWidths.secondary, false);
-  TEST_PW5(current, pulseWidths.secondary, false);
-  TEST_PW6(current, pulseWidths.secondary, false);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-static void test_Cylinders_2(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 2;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.secondary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.secondary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, false);
-  TEST_PW6(current, pulseWidths.secondary, false);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-
-static void test_Cylinders_3(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 3;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.secondary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.secondary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-static void test_Cylinders_4_paired(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 4;
-  page2.injLayout = INJ_PAIRED;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.secondary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.secondary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, false);
-  TEST_PW6(current, pulseWidths.secondary, false);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-static void test_Cylinders_4_sequential(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 4;
-  page2.injLayout = INJ_SEQUENTIAL;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.secondary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, INJ_CHANNELS >= 7);
-  TEST_PW8(current, pulseWidths.secondary, INJ_CHANNELS >= 8);
-}
-
-static void test_Cylinders_5_paired(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 5;
-  page2.injLayout = INJ_PAIRED;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.secondary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-
-static void test_Cylinders_5_sequential(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 5;
-  page2.injLayout = INJ_SEQUENTIAL;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.primary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.secondary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-static void test_Cylinders_6_paired(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 6;
-  page2.injLayout = INJ_PAIRED;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.secondary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.secondary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
-}
-
-static void test_Cylinders_6_sequential(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 6;
-  page2.injLayout = INJ_SEQUENTIAL;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.primary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.primary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, INJ_CHANNELS >= 7);
-  TEST_PW8(current, pulseWidths.secondary, INJ_CHANNELS >= 8);
-}
-
-static void test_Cylinders_8_paired(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 8;
-  page2.injLayout = INJ_PAIRED;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.secondary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.secondary, INJ_CHANNELS >= 7);
-  TEST_PW8(current, pulseWidths.secondary, INJ_CHANNELS >= 8);
-}
-
-static void test_Cylinders_8_sequential(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 8;
-  page2.injLayout = INJ_SEQUENTIAL;
-
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, pulseWidths.primary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.primary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.primary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.primary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.primary, INJ_CHANNELS >= 7);
-  TEST_PW8(current, pulseWidths.primary, INJ_CHANNELS >= 8);
-}
 
 static void setupTrimTable(trimTable3d &trimTable, int8_t percent)
 {
@@ -355,77 +101,87 @@ static void zeroTrimTables(void)
   }
 }
 
-static void test_Cylinders_2_sequential_trimmed(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
-  config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 2;
-  page2.injLayout = INJ_SEQUENTIAL;
-
-  page6.fuelTrimEnabled = 1U;
-  zeroTrimTables();
-  setupTrimTable(trimTables[0], -50);
-  setupTrimTable(trimTables[1], 50);
-  setupTrimTable(trimTables[2], 33);
-  setupTrimTable(trimTables[3], -33);
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
-
-  TEST_PW(1, current, pulseWidths.primary/2U, true);
-  TEST_PW2(current, (pulseWidths.primary*3U)/2U, INJ_CHANNELS >= 3);
-  // Secondary channels do NOT have trims applied
-  TEST_PW3(current, pulseWidths.secondary, INJ_CHANNELS >= 3);
-  TEST_PW4(current, pulseWidths.secondary, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.secondary, false);
-  TEST_PW6(current, pulseWidths.secondary, false);
-  TEST_PW7(current, pulseWidths.secondary, false);
-  TEST_PW8(current, pulseWidths.secondary, false);
+static inline uint16_t getExpectedChannelPw(const statuses &current, const pulseWidths &widths, uint8_t channel, uint8_t trimPct)
+{
+  if (channel<=current.numPrimaryInjOutputs) {
+    return percentageApprox((uint8_t)(100U+trimPct), widths.primary);
+  }
+  if (channel<=getTotalInjChannelCount(current)) {
+    // Secondary channels do NOT have trims applied
+    return widths.secondary;
+  }
+  return 0U;
 }
 
-static void test_Cylinders_8_sequential_trimmed(void) {
-  statuses current = getRandomPW();
-  config2 page2 = {};
+static uint8_t primaries;
+static uint8_t secondaries;
+
+static void test_noTrim_inner(void)
+{
+  statuses current = setPrimarySecondaryChannels(getRandomPW(), primaries, secondaries);
   config6 page6 = {};
   pulseWidths pulseWidths = { 333, 777 };
-  page2.nCylinders = 8;
-  page2.injLayout = INJ_SEQUENTIAL;
-  
-  page6.fuelTrimEnabled = 1U;
+
+  char szMsg[128];
+  sprintf(szMsg, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
+  TEST_MESSAGE(szMsg);
+  applyPwToInjectorChannels(pulseWidths, page6, current);
+  TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, 0U), true);
+  TEST_PW2(getExpectedChannelPw(current, pulseWidths, 2, 0U), true);
+  TEST_PW3(getExpectedChannelPw(current, pulseWidths, 3, 0U), true);
+  TEST_PW4(getExpectedChannelPw(current, pulseWidths, 4, 0U), true);
+  TEST_PW5(getExpectedChannelPw(current, pulseWidths, 5, 0U), true);
+  TEST_PW6(getExpectedChannelPw(current, pulseWidths, 6, 0U), true);
+  TEST_PW7(getExpectedChannelPw(current, pulseWidths, 7, 0U), true);
+  TEST_PW8(getExpectedChannelPw(current, pulseWidths, 8, 0U), true); 
+}
+
+static void test_withTrim_inner(void)
+{
+  statuses current = setPrimarySecondaryChannels(getRandomPW(), primaries, secondaries);
+  config6 page6 = {};
+  pulseWidths pulseWidths = { 333, 777 };
+  page6.fuelTrimEnabled = true;
   zeroTrimTables();
   setupTrimTable(trimTables[0], -50);
-  setupTrimTable(trimTables[1], 0);
-  setupTrimTable(trimTables[2], 50);
+#if INJ_CHANNELS >= 2
+  setupTrimTable(trimTables[1], 50);
+#endif
+#if INJ_CHANNELS >= 3
+  setupTrimTable(trimTables[2], 33);
+#endif
+#if INJ_CHANNELS >= 4
   setupTrimTable(trimTables[3], -33);
-  current.numPrimaryInjOutputs = INJ_CHANNELS;
-  applyPwToInjectorChannels(pulseWidths, page2, page6, current);
+#endif
 
-  TEST_PW(1, current, pulseWidths.primary/2U, true);
-  TEST_PW2(current, pulseWidths.primary, INJ_CHANNELS >= 2);
-  TEST_PW3(current, (pulseWidths.primary*3U)/2U, INJ_CHANNELS >= 3);
-  TEST_PW4(current, (pulseWidths.primary*2U)/3U, INJ_CHANNELS >= 4);
-  TEST_PW5(current, pulseWidths.primary, INJ_CHANNELS >= 5);
-  TEST_PW6(current, pulseWidths.primary, INJ_CHANNELS >= 6);
-  TEST_PW7(current, pulseWidths.primary, INJ_CHANNELS >= 7);
-  TEST_PW8(current, pulseWidths.primary, INJ_CHANNELS >= 8);
+  char szMsg[128];
+  sprintf(szMsg, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
+  TEST_MESSAGE(szMsg);
+  applyPwToInjectorChannels(pulseWidths, page6, current);
+  TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, -50), true);
+  TEST_PW2(getExpectedChannelPw(current, pulseWidths, 2, 50), true);
+  TEST_PW3(getExpectedChannelPw(current, pulseWidths, 3, 33), true);
+  TEST_PW4(getExpectedChannelPw(current, pulseWidths, 4, -33), true);
+  TEST_PW5(getExpectedChannelPw(current, pulseWidths, 5, 0U), true);
+  TEST_PW6(getExpectedChannelPw(current, pulseWidths, 6, 0U), true);
+  TEST_PW7(getExpectedChannelPw(current, pulseWidths, 7, 0U), true);
+  TEST_PW8(getExpectedChannelPw(current, pulseWidths, 8, 0U), true); 
 }
 
 void testApplyPwToInjectorChannels(void)
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST_P(test_No_Secondary_PW);
-    RUN_TEST_P(test_Cylinders_1);
-    RUN_TEST_P(test_Cylinders_2);
-    RUN_TEST_P(test_Cylinders_3);
-    RUN_TEST_P(test_Cylinders_4_paired);
-    RUN_TEST_P(test_Cylinders_4_sequential);
-    RUN_TEST_P(test_Cylinders_5_paired);
-    RUN_TEST_P(test_Cylinders_5_sequential);
-    RUN_TEST_P(test_Cylinders_6_paired);
-    RUN_TEST_P(test_Cylinders_6_sequential);
-    RUN_TEST_P(test_Cylinders_8_paired);
-    RUN_TEST_P(test_Cylinders_8_sequential);
-    RUN_TEST_P(test_Cylinders_2_sequential_trimmed);
-    RUN_TEST_P(test_Cylinders_8_sequential_trimmed);
+    for (primaries=1; primaries<=INJ_CHANNELS; ++primaries)
+    {
+      for (secondaries=0; secondaries<=INJ_CHANNELS; ++secondaries)
+      {    
+        char szName[128];
+        sprintf(szName, "test_noTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
+        UnityDefaultTestRun(test_noTrim_inner, szName, __LINE__);
+
+        sprintf(szName, "test_withTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
+        UnityDefaultTestRun(test_withTrim_inner, szName, __LINE__);
+      }
+    }
   }
 }
