@@ -40,10 +40,10 @@
   #define CORE_AVR
   #define BOARD_H "board_avr2560.h"
   #ifndef INJ_CHANNELS
-    #define INJ_CHANNELS 4
+    #define INJ_CHANNELS 6  //must change from 5 if using 6 sequential injectors
   #endif
   #ifndef IGN_CHANNELS
-    #define IGN_CHANNELS 5
+    #define IGN_CHANNELS 3  //must change from 4 if using 6 sequential injectors
   #endif
 
   #if defined(__AVR_ATmega2561__)
