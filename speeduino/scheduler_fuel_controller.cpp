@@ -139,43 +139,12 @@ static inline uint16_t lookupInjectorAngle(const statuses &current)
   return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
 }
 
-uint16_t setInjectionAngles(const statuses &current)
-{
-  uint16_t injAngle = lookupInjectorAngle(current);
-
-  injectorAngleCalcCache angleCalcCache;
-  setOpenAngle(fuelSchedule1, injAngle, &angleCalcCache);
-#if INJ_CHANNELS>=2
-  setOpenAngle(fuelSchedule2, injAngle, &angleCalcCache);
-#endif
-#if INJ_CHANNELS>=3
-  setOpenAngle(fuelSchedule3, injAngle, &angleCalcCache);
-#endif
-#if INJ_CHANNELS>=4
-  setOpenAngle(fuelSchedule4, injAngle, &angleCalcCache);
-#endif
-#if INJ_CHANNELS>=5
-  setOpenAngle(fuelSchedule5, injAngle, &angleCalcCache);
-#endif
-#if INJ_CHANNELS>=6
-  setOpenAngle(fuelSchedule6, injAngle, &angleCalcCache);
-#endif
-#if INJ_CHANNELS>=7
-  setOpenAngle(fuelSchedule7, injAngle, &angleCalcCache);
-#endif
-#if INJ_CHANNELS>=8
-  setOpenAngle(fuelSchedule8, injAngle, &angleCalcCache);
-#endif
-
-  return injAngle;
-}
-
-
-static inline void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask)
+static inline void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache)
 {
   if( (schedule.pw != 0U) && (BIT_CHECK(injChannelMask, INJ1_CMD_BIT+channel-1U)) )
   {
-    uint32_t timeOut = calculateInjectorTimeout(schedule, crankAngle);
+    uint32_t timeOut = calculateInjectorTimeout(schedule, crankAngle, 
+                                                _calculateOpenAngle(schedule, updatePwAngleCache(schedule.pw, pCache), injAngle));
     if (timeOut>0U)
     {
       // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
@@ -184,10 +153,15 @@ static inline void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channe
   }
 }
 
-void __attribute__((flatten)) setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask)
+BEGIN_LTO_ALWAYS_INLINE(uint16_t) __attribute__((flatten)) setFuelChannelSchedules(const statuses &current)
 {
+  uint16_t crankAngle = injectorLimits(current.decoder.getCrankAngle());
+  byte injChannelMask = currentStatus.schedulerCutState.fuelChannels;
+  uint16_t injAngle = lookupInjectorAngle(current);
+
+  injectorAngleCalcCache angleCalcCache;
 #define SET_FUEL_CHANNEL(channel) \
-  setFuelChannelSchedule(fuelSchedule ##channel, UINT8_C(channel), crankAngle, injChannelMask);
+  setFuelChannelSchedule(fuelSchedule ##channel, UINT8_C(channel), crankAngle, injChannelMask, injAngle, &angleCalcCache);
 
 #if INJ_CHANNELS >= 1
   SET_FUEL_CHANNEL(1)
@@ -222,6 +196,8 @@ void __attribute__((flatten)) setFuelChannelSchedules(uint16_t crankAngle, byte 
 #endif
 
 #undef SET_FUEL_CHANNEL
+
+  return injAngle;
 }
 
 static inline uint16_t applyFuelTrim(const table3d6RpmLoad &trimTable, uint16_t pw, const config6 &page6, const statuses &current)

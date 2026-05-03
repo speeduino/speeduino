@@ -222,7 +222,6 @@ struct FuelSchedule : public Schedule {
 
   uint16_t channelDegrees;    ///< The number of crank degrees until cylinder is at TDC  
   uint16_t pw;                ///< Pulse width in uS
-  uint16_t openAngle;         ///< Future crank angle at which this injector will be opened
 
   void reset(void) override;
 };
