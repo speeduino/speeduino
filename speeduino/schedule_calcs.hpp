@@ -50,12 +50,6 @@ static inline uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *p
   return pCache->pwDegrees;
 }
 
-static inline void setOpenAngle(FuelSchedule &schedule, uint16_t injAngle, injectorAngleCalcCache *pCache) {
-  if (schedule.pw!=0U) {
-    schedule.openAngle = _calculateOpenAngle(schedule, updatePwAngleCache(schedule.pw, pCache), injAngle);
-  }
-}
-
 static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
   int16_t delta = eventAngle - crankAngle;
   if ( (isRunning(schedule)) || (schedule._status == OFF)) {
@@ -95,9 +89,9 @@ static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(cons
  * @param crankAngle The current crank angle
  * @return uint32_t 
  */
-static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t crankAngle)
+static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t crankAngle, uint16_t openAngle)
 {
-  int16_t delta = schedule.openAngle - crankAngle;
+  int16_t delta = openAngle - crankAngle;
 
   if (delta<0)
   {
@@ -108,6 +102,7 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
     else
     {
       delta = 0;
+      return 0U;
     }
   }
   return angleToTimeMicroSecPerDegree((uint16_t)delta);
