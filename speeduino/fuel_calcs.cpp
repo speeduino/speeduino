@@ -176,10 +176,10 @@ static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime
   return ((uint32_t)primaryPW)*totalInjector;
 }
 
-static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) {
+static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) noexcept {
   return fast_div(totalPw, page10.stagedInjSizePri);
 }
-static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) {
+static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) noexcept {
   return fast_div(totalPw, page10.stagedInjSizeSec);
 }
 

@@ -291,7 +291,7 @@ static inline uint32_t percentageApprox(uint16_t percent, uint32_t value) {
 /**
  * @brief Slightly faster version of percentageApprox(uint16_t, uint32_t), since we know percent<256.
  */
-static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) {
+static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) noexcept {
     if (percent<(UINT8_C(1)<<UINT8_C(7))) {
         return _percentageApprox<9U>(percent, value);
     }
