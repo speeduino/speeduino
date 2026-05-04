@@ -1,43 +1,28 @@
 #include "resetControl.h"
+#include "unit_testing.h"
 
-//This needs to be here because using the config page directly can prevent burning the setting
-static uint8_t _resetControl = RESET_CONTROL_DISABLED;
+static ResetControlMode _resetControl = ResetControlMode::Disabled;
 static uint8_t _resetPin;
+static bool _resetPreventActive = false;
 
-uint8_t getResetControl(void)
+ResetControlMode getResetControlMode(void)
 {
     return _resetControl;
 }
 
-void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, uint8_t resetControlMode, uint8_t resetPin)
+bool isResetPreventActive(void)
+{
+  return _resetPreventActive;
+}
+
+void __attribute__((optimize("Os"))) initialiseResetControl(ResetControlMode resetControlMode, uint8_t resetPin)
 {
   _resetControl = resetControlMode;
   _resetPin = resetPin;
-  current.resetPreventActive = false;
-
-  /* Setup reset control initial state */
-  switch (resetControlMode)
-  {
-    case RESET_CONTROL_PREVENT_WHEN_RUNNING:
-      /* Set the reset control pin LOW and change it to HIGH later when we get sync. */
-      digitalWrite(resetPin, LOW);
-      current.resetPreventActive = false;
-      break;
-    case RESET_CONTROL_PREVENT_ALWAYS:
-      /* Set the reset control pin HIGH and never touch it again. */
-      digitalWrite(resetPin, HIGH);
-      current.resetPreventActive = true;
-      break;
-    case RESET_CONTROL_SERIAL_COMMAND:
-      /* Set the reset control pin HIGH. There currently isn't any practical difference
-         between this and PREVENT_ALWAYS but it doesn't hurt anything to have them separate. */
-      digitalWrite(resetPin, HIGH);
-      current.resetPreventActive = false;
-      break;
-    default:
-      // Do nothing - keep MISRA happy
-      break;
-  }
+  // We are assuming the engine is not running at the point of initialisation, so reset prevent 
+  // should only be active if the mode is "Prevent Always"
+  _resetPreventActive = resetControlMode == ResetControlMode::PreventAlways;
+  digitalWrite(resetPin, resetControlMode == ResetControlMode::PreventWhenRunning ? LOW : HIGH);
 
   /* Reset control is a special case. If reset control is enabled, it needs its initial state set BEFORE its pinMode.
      If that doesn't happen and reset control is in "Serial Command" mode, the Arduino will end up in a reset loop
@@ -45,23 +30,12 @@ void __attribute__((optimize("Os"))) initialiseResetControl(statuses &current, u
   pinMode(resetPin, OUTPUT);
 }
 
-void matchResetControlToEngineState(statuses &current)
+void matchResetControlToEngineState(const statuses &current)
 {
-  if ((current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.RPM > 0))
+  if (getResetControlMode() == ResetControlMode::PreventWhenRunning)
   {
-    if ( (!current.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) ) 
-    {
-      //Reset prevention is supposed to be on while the engine is running but isn't. Fix that.
-      digitalWrite(_resetPin, HIGH);
-      current.resetPreventActive = true;
-    }
-  } 
-  else
-  {
-    if ( (current.resetPreventActive) && (getResetControl() == RESET_CONTROL_PREVENT_WHEN_RUNNING) )
-    {
-      digitalWrite(_resetPin, LOW);
-      current.resetPreventActive = false;
-    }
+    // TODO: consolidate this check with status.isEngineRunning, which is based on the same conditions? 
+    _resetPreventActive = (current.decoder.getStatus().syncStatus!=SyncStatus::None) && (current.RPM > 0);
+    digitalWrite(_resetPin, _resetPreventActive ? HIGH : LOW);
   }
 }

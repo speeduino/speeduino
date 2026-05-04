@@ -7,6 +7,7 @@
 #include "units.h"
 #include "board_definition.h" 
 #include "decoder_init.h"
+#include "resetControl.h"
 
 static byte setStatusBit(byte status, uint8_t index, bool bit)
 {
@@ -62,7 +63,7 @@ static byte buildStatus2(const statuses &current)
 static byte buildStatus3(const statuses &current)
 {
   bool bits[] = {
-    current.resetPreventActive,
+    isResetPreventActive(),
     current.nitrousActive,
     current.secondFuelTableActive,
     current.vssUiRefresh,
