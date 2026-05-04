@@ -11,6 +11,7 @@
 
 extern decoder_status_t decoderStatus;
 void prepareForInitialiseAll(uint8_t boardId);
+extern void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
 
 static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, const FuelSchedule &schedule, int assertLineNum)
 {
