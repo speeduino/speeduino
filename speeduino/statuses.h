@@ -282,7 +282,6 @@ struct statuses {
   int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
   byte vvt2TargetAngle;
   long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
-  byte outputsStatus;
 
   // SD card status fields.
   // TODO: conditional compile on SD_LOGGING once board definition is separated from globals.h

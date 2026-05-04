@@ -337,7 +337,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     {
       BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
       //updateFullStatus();
-      checkProgrammableIO(currentStatus, configPage13);
+      checkProgrammableIO(configPage13);
       idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
       
       // Air conditioning control

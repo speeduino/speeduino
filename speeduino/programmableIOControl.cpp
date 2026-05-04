@@ -3,39 +3,160 @@
  * The config related to Programmable I/O is found on page13 (of type @ref config13).
  */
 #include "programmableIOControl.h"
+#include "programmableIOControl_internals.h"
 #include "logger.h"
 #include "units.h"
 #include "unit_testing.h"
 
-TESTABLE_STATIC uint8_t ioDelay[_countof(config13::outputPin)];
-TESTABLE_STATIC uint8_t ioOutDelay[_countof(config13::outputPin)];
-TESTABLE_STATIC uint8_t pinIsValid = 0;
-TESTABLE_STATIC uint8_t currentRuleStatus = 0;
+using namespace programmableIOControl_details;
 
-//*********************************************************************************************************************************************************************************
-void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current, const config13& page13)
+TESTABLE_STATIC state_t state; // The current state of the programmable I/O system, including the status of each channel and its timers
+
+void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& page13)
 {
-  uint8_t outputPin;
-  for (uint8_t y = 0; y < _countof(ioDelay); y++)
+  for (uint8_t y = 0; y < _countof(state_t::channels); y++)
   {
-    ioDelay[y] = 0;
-    ioOutDelay[y] = 0;
-    outputPin = page13.outputPin[y];
-    if (outputPin > 0)
+    rule_t rule(page13, y);
+    state.channels[y].initialize(rule, y);
+    if (state.channels[y].isPinValid && rule.isPhysicalPin()) 
     {
-      if ( outputPin >= 128 ) //Cascate rule usage
-      {
-        BIT_WRITE(current.outputsStatus, y, BIT_CHECK(page13.outputInverted, y));
-        BIT_SET(pinIsValid, y);
-      }
-      else if ( !pinIsUsed(outputPin) )
-      {
-        pinMode(outputPin, OUTPUT);
-        digitalWrite(outputPin, BIT_CHECK(page13.outputInverted, y));
-        BIT_WRITE(current.outputsStatus, y, BIT_CHECK(page13.outputInverted, y));
-        BIT_SET(pinIsValid, y);
-      }
-      else { BIT_CLEAR(pinIsValid, y); }
+      pinMode(rule.outputPin, OUTPUT);
+      digitalWrite(rule.outputPin, rule.isOutputInverted);
+    }
+  }
+}
+
+TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
+{
+  int16_t data = 0;
+  if ( request >= REUSE_RULES )
+  {
+    request -= REUSE_RULES;
+    if ( request <= _countof(state.channels) ) 
+    { 
+      data = state.channels[request].isRuleActive; 
+    }
+  }
+  else 
+  { 
+    data = getData(request); 
+  }
+
+  return data;
+}
+
+TESTABLE_INLINE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs)
+{
+  switch (compType) {
+    case COMPARATOR_EQUAL: return lhs == rhs;
+    case COMPARATOR_NOT_EQUAL: return lhs != rhs;
+    case COMPARATOR_GREATER: return lhs > rhs;
+    case COMPARATOR_GREATER_EQUAL: return lhs >= rhs;
+    case COMPARATOR_LESS: return lhs < rhs;
+    case COMPARATOR_LESS_EQUAL: return lhs <= rhs;
+    case COMPARATOR_AND: return (lhs & rhs) != 0;
+    case COMPARATOR_XOR: return (lhs ^ rhs) != 0;
+    default: return false; // Invalid comparator type
+  }
+}
+
+static inline bool evaluateComparisonOp(const compOperation_t& operation, int16_t (*getData)(uint16_t index))
+{
+  return evaluateComparisonOp(operation.opType, getComparisonData(operation.dataIndex, getData), operation.target);
+}
+
+TESTABLE_INLINE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
+{
+  switch (compType) {
+    case COMBINE_AND: return lhs && rhs;
+    case COMBINE_OR: return lhs || rhs;
+    case COMBINE_XOR: return lhs != rhs;
+    default: return false; // Invalid bitwise operator type
+  }
+}
+
+static inline bool outputDelayExpired(const rule_t& rule, const channel_t& channel)
+{
+  return (channel.outputDelayCount > rule.outputTimeLimit);
+}
+
+TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive)
+{
+  return ruleActive && !(rule.hasMaxLimit() && outputDelayExpired(rule, channel));
+}
+
+TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &channel, int16_t (*getData)(uint16_t index)) noexcept
+{
+  bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
+
+  if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
+  {
+    bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
+    firstCheck = evaluateBitwiseOp(rule.combineOpType, firstCheck, secondCheck);
+  }
+
+  return applyOutputTimeLimit(rule, channel, firstCheck);
+}
+
+static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive) noexcept
+{
+  channel.isOutputActive = rule.isOutputInverted ^ ruleActive;
+  if (rule.isPhysicalPin()) { 
+    digitalWrite(rule.outputPin, channel.isOutputActive); 
+  } else {
+    channel.isRuleActive = channel.isOutputActive;
+  }
+}
+
+static inline void processChannelActive(channel_t &channel, const rule_t &rule)
+{
+  ++channel.activationDelayCount;
+  if (channel.activationDelayCount > rule.activationDelay)
+  {
+    if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
+    updateChannelStatus(channel, rule, true);
+  }
+}
+
+TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule)
+{
+  if (rule.limitType==LimitingType::Max)
+  {
+    //Released before Maximum time, set delay to maximum to flip the output next
+    if (channel.isOutputActive)
+    {
+      return rule.outputTimeLimit + 1; 
+    }
+  
+    return 1; //Reset the counter for next time
+  }
+  return channel.outputDelayCount + 1;
+}
+
+static inline void processChannelInactive(channel_t &channel, const rule_t &rule)
+{
+  channel.outputDelayCount = nextOutDelay(channel, rule);
+  if (outputDelayExpired(rule, channel))
+  {
+    if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
+    updateChannelStatus(channel, rule, false);
+  }
+
+  channel.activationDelayCount = 0;
+}
+
+static inline void processChannel(channel_t &channel, const config13& page13, int16_t (*getData)(uint16_t index))
+{
+  if ( channel.isPinValid )
+  {
+    rule_t rule(page13, channel._index);
+    if (isRuleActive(rule, channel, getData))
+    {
+      processChannelActive(channel, rule);
+    }
+    else
+    {
+      processChannelInactive(channel, rule);
     }
   }
 }
@@ -45,114 +166,18 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(statuses& current,
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page13, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index))
 {
-  int16_t data, data2;
-  uint8_t dataRequested;
-  bool firstCheck, secondCheck;
-
-  for (uint8_t y = 0; y < _countof(ioDelay); y++)
+  for (auto& channel: state.channels)
   {
-    firstCheck = false;
-    secondCheck = false;
-    if ( BIT_CHECK(pinIsValid, y) ) //if outputPin == 0 it is disabled
-    {
-      dataRequested = page13.firstDataIn[y];
-      if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
-      {
-        dataRequested -= REUSE_RULES;
-        if ( dataRequested <= sizeof(page13.outputPin) ) { data = BIT_CHECK(currentRuleStatus, dataRequested); }
-        else { data = 0; }
-      }
-      else { data = getData(dataRequested); }
-      data2 = page13.firstTarget[y];
-
-      if ( (page13.operation[y].firstCompType == COMPARATOR_EQUAL) && (data == data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_GREATER) && (data > data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_LESS) && (data < data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { firstCheck = true; }
-      else if ( (page13.operation[y].firstCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { firstCheck = true; }
-
-      if (page13.operation[y].bitwise != BITWISE_DISABLED)
-      {
-        dataRequested = page13.secondDataIn[y];
-        if ( dataRequested <= (REUSE_RULES + sizeof(page13.outputPin)) ) //Failsafe check
-        {
-          if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
-          {
-            dataRequested -= REUSE_RULES;
-            data = BIT_CHECK(currentRuleStatus, dataRequested);
-          }
-          else { data = getData(dataRequested); }
-          data2 = page13.secondTarget[y];
-          
-          if ( (page13.operation[y].secondCompType == COMPARATOR_EQUAL) && (data == data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_NOT_EQUAL) && (data != data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER) && (data > data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_GREATER_EQUAL) && (data >= data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS) && (data < data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_LESS_EQUAL) && (data <= data2) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_AND) && ((data & data2) != 0) ) { secondCheck = true; }
-          else if ( (page13.operation[y].secondCompType == COMPARATOR_XOR) && ((data ^ data2) != 0) ) { secondCheck = true; }
-
-          if (page13.operation[y].bitwise == BITWISE_AND) { firstCheck &= secondCheck; }
-          if (page13.operation[y].bitwise == BITWISE_OR) { firstCheck |= secondCheck; }
-          if (page13.operation[y].bitwise == BITWISE_XOR) { firstCheck ^= secondCheck; }
-        }
-      }
-
-      //If the limiting time is active(>0) and using maximum time
-      if (BIT_CHECK(page13.kindOfLimiting, y))
-      {
-        if(firstCheck)
-        {
-          if ((page13.outputTimeLimit[y] != 0) && (ioOutDelay[y] >= page13.outputTimeLimit[y])) { firstCheck = false; } //Time has counted, disable the output
-        }
-        else
-        {
-          //Released before Maximum time, set delay to maximum to flip the output next
-          if(BIT_CHECK(current.outputsStatus, y)) { ioOutDelay[y] = page13.outputTimeLimit[y]; }
-          else { ioOutDelay[y] = 0; } //Reset the counter for next time
-        }
-      }
-
-      if (firstCheck == true)
-      {
-        if (ioDelay[y] >= page13.outputDelay[y])
-        {
-          bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ firstCheck;
-          if (BIT_CHECK(current.outputsStatus, y) && (ioOutDelay[y] < page13.outputTimeLimit[y])) { ioOutDelay[y]++; }
-          if (page13.outputPin[y] < 128) { digitalWrite(page13.outputPin[y], bitStatus); }
-          else { BIT_WRITE(currentRuleStatus, y, bitStatus); }
-          BIT_WRITE(current.outputsStatus, y, bitStatus);
-        }
-        else { ioDelay[y]++; }
-      }
-      else
-      {
-        if (ioOutDelay[y] >= page13.outputTimeLimit[y])
-        {
-          bool bitStatus = BIT_CHECK(page13.outputInverted, y) ^ firstCheck;
-          if (page13.outputPin[y] < 128) { digitalWrite(page13.outputPin[y], bitStatus); }
-          else { BIT_WRITE(currentRuleStatus, y, bitStatus); }
-          BIT_WRITE(current.outputsStatus, y, bitStatus);
-          if(!BIT_CHECK(page13.kindOfLimiting, y)) { ioOutDelay[y] = 0; }
-        }
-        else { ioOutDelay[y]++; }
-
-        ioDelay[y] = 0;
-      }
-    }
+    processChannel(channel, page13, getData);
   }
 }
 
 // LCOV_EXCL_START
-void checkProgrammableIO(statuses& current, const config13& page13)
+void checkProgrammableIO(const config13& page13)
 {
-  checkProgrammableIO(current, page13, ProgrammableIOGetData);
+  checkProgrammableIO(page13, ProgrammableIOGetData);
 }
 // LCOV_EXCL_STOP
 
@@ -160,7 +185,7 @@ void checkProgrammableIO(statuses& current, const config13& page13)
  * @param index - Field index/number (?)
  * @return 16 bit (int) result
  */
-TESTABLE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
+TESTABLE_INLINE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
 {
   int16_t result;
   if ( index < LOG_ENTRY_SIZE )
@@ -181,4 +206,11 @@ int16_t ProgrammableIOGetData(uint16_t index)
 {
   return ProgrammableIOGetData(index, getTSLogEntry);
 }
+
+uint8_t getProgrammableIOOutputStatus(void)
+{
+    return state.compressedOutputStatus();
+}
+
 // LCOV_EXCL_STOP
+

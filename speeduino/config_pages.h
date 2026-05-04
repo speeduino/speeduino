@@ -819,7 +819,7 @@ struct config10 : public config_page_t {
 struct cmpOperation {
   uint8_t firstCompType : 3;  ///< First cmp. op (COMPARATOR_* ops, see below)
   uint8_t secondCompType : 3; ///< Second cmp. op (0=COMPARATOR_EQUAL, 1=COMPARATOR_NOT_EQUAL,2=COMPARATOR_GREATER,3=COMPARATOR_GREATER_EQUAL,4=COMPARATOR_LESS,5=COMPARATOR_LESS_EQUAL,6=COMPARATOR_CHANGE)
-  uint8_t bitwise : 2; ///< BITWISE_AND, BITWISE_OR, BITWISE_XOR
+  uint8_t bitwise : 2; ///< COMBINE_AND, COMBINE_OR, COMBINE_XOR
 };
 
 constexpr uint8_t SD_LOGGER_RATE_1HZ = 0;
