@@ -5,18 +5,18 @@
 #include "../test_utils.h"
 #include "storage.h"
 
-TEST_DATA_P table3d_axis_t tempXAxis[] = {500, 700, 900, 1200, 1600, 2000, 2500, 3100, 3500, 4100, 4700, 5300, 5900, 6500, 6750, 7000};
-TEST_DATA_P table3d_axis_t tempYAxis[] = {16, 26, 30, 36, 40, 46, 50, 56, 60, 66, 70, 76, 86, 90, 96, 100};
+TEST_DATA_P table3d_axis_t tempXAxis[] = {500U/100U, 700U/100U, 900U/100U, 1200U/100U, 1600U/100U, 2000U/100U, 2500U/100U, 3100U/100U, 3500U/100U, 4100U/100U, 4700U/100U, 5300U/100U, 5900U/100U, 6500U/100U, 6750U/100U, 7000U/100U};
+TEST_DATA_P table3d_axis_t tempYAxis[] = {16U/2U, 26U/2U, 30U/2U, 36U/2U, 40U/2U, 46U/2U, 50U/2U, 56U/2U, 60U/2U, 66U/2U, 70U/2U, 76U/2U, 86U/2U, 90U/2U, 96U/2U, 100U/2U};
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_off(const statuses &current, uint8_t expectedVE) {
-    TEST_ASSERT_BIT_LOW(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
+    TEST_ASSERT_FALSE(current.secondFuelTableActive);
     TEST_ASSERT_EQUAL(expectedVE, current.VE1);
     TEST_ASSERT_EQUAL(0, current.VE2);
     TEST_ASSERT_EQUAL(current.VE1, current.VE);
 } 
 
 static void __attribute__((noinline)) assert_2nd_fuel_is_on(const statuses &current, uint8_t expectedVE1, uint8_t expectedVE2, uint8_t expectedVE) {
-    TEST_ASSERT_BIT_HIGH(BIT_STATUS3_FUEL2_ACTIVE, current.status3);
+    TEST_ASSERT_TRUE(current.secondFuelTableActive);
     TEST_ASSERT_EQUAL(expectedVE1, current.VE1);
     TEST_ASSERT_EQUAL(expectedVE2, current.VE2);
     TEST_ASSERT_EQUAL(expectedVE, current.VE);
@@ -53,7 +53,7 @@ static void __attribute__((noinline)) test_fuel_mode_cap_UINT8_MAX(uint8_t mode)
     current.VE1 = 200;
     current.VE = current.VE1;
     current.MAP = 100; //Load source value
-    current.RPM = 7000;
+    setRpm(current, 7000U);
 
     calculateSecondaryFuel(page10, lookupTable, current);
 
@@ -72,7 +72,7 @@ static void __attribute__((noinline)) setup_test_fuel_mode_simple(config10 &page
     current.VE1 = SIMPLE_VE1;
     current.VE = current.VE1;
     current.MAP = tempYAxis[0]; //Load source value
-    current.RPM = tempXAxis[0];
+    setRpm(current, tempXAxis[0]);
 }
 static void __attribute__((noinline)) test_fuel_mode_simple(uint8_t mode, uint8_t expectedVE) {
     config10 page10 = {};
@@ -112,7 +112,7 @@ static void __attribute__((noinline)) setup_test_fuel_mode_cond_switch(config10 
     page10.fuel2SwitchValue = trigger;
 
     current.MAP = SWITCHED_LOAD; //Load source value
-    current.RPM = 3500;
+    setRpm(current, 3500U);
     current.TPS = 50;
     current.ethanolPct = 50;
 }

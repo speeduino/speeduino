@@ -1,5 +1,4 @@
-#include "board_stm32_official.h"
-#include "globals.h"
+#include "board_definition.h"
 
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include "auxiliaries.h"
@@ -8,6 +7,53 @@
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include "scheduler_ignition_controller.h"
+
+#if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
+  #include "src/BackupSram/BackupSramAsEEPROM.h"
+  BackupSramAsEEPROM EEPROM;
+#elif defined(USE_SPI_EEPROM) // Use M25Qxx SPI flash on BlackF407VE
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+    #if defined(STM32F407xx)
+      SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    #else //Blue/Black Pills
+      SPIClass SPI_for_flash(PB15, PB14, PB13);
+    #endif
+ 
+    //winbond W25Q16 SPI flash EEPROM emulation
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
+    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
+    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
+#elif defined(FRAM_AS_EEPROM) // Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible
+  #include "src/FRAM/Fram.h"
+  #if defined(STM32F407xx)
+    SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    FramClass EEPROM(PB0, SPI_for_FRAM);
+  #else //Blue/Black Pills
+    SPIClass SPI_for_FRAM(PB15, PB14, PB13);
+    FramClass EEPROM(PB12, SPI_for_FRAM);
+  #endif
+#else //default case, internal flash as EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+  #if defined(STM32F7xx)
+    #if defined(DUAL_BANK)
+      EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
+    #else
+      EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
+    #endif
+    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #elif defined(STM32F401xC)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #elif defined(STM32F411xE)
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #else //default case, internal flash as EEPROM for STM32F4
+    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
+    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
+  #endif
+#endif
+#include "board_eeprom_adapter.hpp"
 
 #if HAL_CAN_MODULE_ENABLED
 //This activates CAN1 interface on STM32, but it's named as Can0, because that's how Teensy implementation is done
@@ -23,46 +69,6 @@ Default CAN3 pins are PA8 & PA15. Alternative (ALT) pins are PB3 & PB4.
 #if defined SD_LOGGING
     SPIClass SD_SPI(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK
 #endif
-
-#if defined(SRAM_AS_EEPROM)
-    BackupSramAsEEPROM EEPROM;
-#elif defined(USE_SPI_EEPROM)
-    #if defined(STM32F407xx)
-      SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-    #else //Blue/Black Pills
-      SPIClass SPI_for_flash(PB15, PB14, PB13);
-    #endif
- 
-    //winbond W25Q16 SPI flash EEPROM emulation
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{255UL, 4096UL, 31, 0x00100000UL};
-    Flash_SPI_Config SPIconfig{USE_SPI_EEPROM, SPI_for_flash};
-    SPI_EEPROM_Class EEPROM(EmulatedEEPROMMconfig, SPIconfig);
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #if defined(STM32F407xx)
-      SPIClass SPI_for_FRAM(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
-      FramClass EEPROM(PB0, SPI_for_FRAM);
-    #else //Blue/Black Pills
-      SPIClass SPI_for_FRAM(PB15, PB14, PB13);
-      FramClass EEPROM(PB12, SPI_for_FRAM);
-    #endif
-#elif defined(STM32F7xx)
-  #if defined(DUAL_BANK)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08120000UL};
-  #else
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 262144UL, 4095UL, 0x08180000UL};
-  #endif
-    InternalSTM32F7_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F401xC)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{1UL, 131072UL, 4095UL, 0x08020000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#elif defined(STM32F411xE)
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{2UL, 131072UL, 4095UL, 0x08040000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#else //default case, internal flash as EEPROM for STM32F4
-    EEPROM_Emulation_Config EmulatedEEPROMMconfig{4UL, 131072UL, 2047UL, 0x08080000UL};
-    InternalSTM32F4_EEPROM_Class EEPROM(EmulatedEEPROMMconfig);
-#endif
-
 
 HardwareTimer Timer1(TIM1);
 HardwareTimer Timer2(TIM2);
@@ -81,15 +87,68 @@ HardwareTimer Timer11(TIM7);
 STM32RTC& rtc = STM32RTC::getInstance();
 #endif
 
-  void initBoard()
+  /*
+  ***********************************************************************************************************
+  * Interrupt callback functions
+  */
+  #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
+  #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
+
+
+  #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
+  void oneMSInterval(HardwareTimer*){oneMSInterval();}
+  void boostInterrupt(HardwareTimer*){boostInterrupt();}
+  void idleInterrupt(HardwareTimer*){idleInterrupt();}
+  void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
+  void fanInterrupt(HardwareTimer*){fanInterrupt();}
+  #define STM_FUEL_INTERRUPT(index) void FUEL_INTERRUPT_NAME(index)(HardwareTimer*) {moveToNextState(fuelSchedule ## index);}
+  #define STM_IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(HardwareTimer*) {moveToNextState(ignitionSchedule ## index);}
+  #else //End core<=1.8
+  #define STM_FUEL_INTERRUPT(index) void FUEL_INTERRUPT_NAME(index)(void) {moveToNextState(fuelSchedule ## index);}
+  #define STM_IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(void) {moveToNextState(ignitionSchedule ## index);}
+  #endif
+
+  STM_FUEL_INTERRUPT(1)
+  STM_FUEL_INTERRUPT(2)
+  STM_FUEL_INTERRUPT(3)
+  STM_FUEL_INTERRUPT(4)
+  #if (INJ_CHANNELS >= 5)
+  STM_FUEL_INTERRUPT(5)
+  #endif
+  #if (INJ_CHANNELS >= 6)
+  STM_FUEL_INTERRUPT(6)
+  #endif
+  #if (INJ_CHANNELS >= 7)
+  STM_FUEL_INTERRUPT(7)
+  #endif
+  #if (INJ_CHANNELS >= 8)
+  STM_FUEL_INTERRUPT(8)
+  #endif
+
+  STM_IGNITION_INTERRUPT(1)
+  STM_IGNITION_INTERRUPT(2)
+  STM_IGNITION_INTERRUPT(3)
+  STM_IGNITION_INTERRUPT(4)
+  #if (IGN_CHANNELS >= 5)
+  STM_IGNITION_INTERRUPT(5)
+  #endif
+  #if (IGN_CHANNELS >= 6)
+  STM_IGNITION_INTERRUPT(6)
+  #endif
+  #if (IGN_CHANNELS >= 7)
+  STM_IGNITION_INTERRUPT(7)
+  #endif
+  #if (IGN_CHANNELS >= 8)
+  STM_IGNITION_INTERRUPT(8)
+  #endif
+
+
+  void initBoard(uint32_t baudRate)
   {
     /*
     ***********************************************************************************************************
     * General
     */
-    #ifndef FLASH_LENGTH
-      #define FLASH_LENGTH 8192
-    #endif
     delay(10);
 
     #ifndef HAVE_HWSERIAL2 //Hack to get the code to compile on BlackPills
@@ -178,9 +237,9 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Schedules
     */
-    Timer1.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer2.setOverflow(0xFFFF, TICK_FORMAT);
-    Timer3.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer1.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
+    Timer2.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
+    Timer3.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
 
     Timer1.setPrescaleFactor(((Timer1.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     Timer2.setPrescaleFactor(((Timer2.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
@@ -209,19 +268,19 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #endif
     //Attach interrupt functions
     //Injection
-    Timer3.attachInterrupt(1, fuelSchedule1Interrupt);
-    Timer3.attachInterrupt(2, fuelSchedule2Interrupt);
-    Timer3.attachInterrupt(3, fuelSchedule3Interrupt);
-    Timer3.attachInterrupt(4, fuelSchedule4Interrupt);
+    Timer3.attachInterrupt(1, FUEL_INTERRUPT_NAME(1));
+    Timer3.attachInterrupt(2, FUEL_INTERRUPT_NAME(2));
+    Timer3.attachInterrupt(3, FUEL_INTERRUPT_NAME(3));
+    Timer3.attachInterrupt(4, FUEL_INTERRUPT_NAME(4));
     #if (INJ_CHANNELS >= 5)
-    Timer5.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer5.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(1, fuelSchedule5Interrupt);
+    Timer5.attachInterrupt(1, FUEL_INTERRUPT_NAME(5));
     #endif
     #if (INJ_CHANNELS >= 6)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -229,7 +288,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(2, fuelSchedule6Interrupt);
+    Timer5.attachInterrupt(2, FUEL_INTERRUPT_NAME(6));
     #endif
     #if (INJ_CHANNELS >= 7)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -237,7 +296,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(3, fuelSchedule7Interrupt);
+    Timer5.attachInterrupt(3, FUEL_INTERRUPT_NAME(7));
     #endif
     #if (INJ_CHANNELS >= 8)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -245,23 +304,23 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(4, fuelSchedule8Interrupt);
+    Timer5.attachInterrupt(4, FUEL_INTERRUPT_NAME(8));
     #endif
 
     //Ignition
-    Timer2.attachInterrupt(1, ignitionSchedule1Interrupt); 
-    Timer2.attachInterrupt(2, ignitionSchedule2Interrupt);
-    Timer2.attachInterrupt(3, ignitionSchedule3Interrupt);
-    Timer2.attachInterrupt(4, ignitionSchedule4Interrupt);
+    Timer2.attachInterrupt(1, IGNITION_INTERRUPT_NAME(1)); 
+    Timer2.attachInterrupt(2, IGNITION_INTERRUPT_NAME(2));
+    Timer2.attachInterrupt(3, IGNITION_INTERRUPT_NAME(3));
+    Timer2.attachInterrupt(4, IGNITION_INTERRUPT_NAME(4));
     #if (IGN_CHANNELS >= 5)
-    Timer4.setOverflow(0xFFFF, TICK_FORMAT);
+    Timer4.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE);
     #else //2.0 forward
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(1, ignitionSchedule5Interrupt);
+    Timer4.attachInterrupt(1, IGNITION_INTERRUPT_NAME(5));
     #endif
     #if (IGN_CHANNELS >= 6)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -269,7 +328,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(2, ignitionSchedule6Interrupt);
+    Timer4.attachInterrupt(2, IGNITION_INTERRUPT_NAME(6));
     #endif
     #if (IGN_CHANNELS >= 7)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -277,7 +336,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(3, ignitionSchedule7Interrupt);
+    Timer4.attachInterrupt(3, IGNITION_INTERRUPT_NAME(7));
     #endif
     #if (IGN_CHANNELS >= 8)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -285,17 +344,17 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(4, ignitionSchedule8Interrupt);
+    Timer4.attachInterrupt(4, IGNITION_INTERRUPT_NAME(8));
     #endif
 
-
+    Serial.begin(baudRate);
   }
 
   uint16_t freeRam()
   {
-    uint32_t freeRam;
-    uint32_t stackTop;
-    uint32_t heapTop;
+    uint32_t freeRam = 0;
+    uint32_t stackTop = 0;
+    uint32_t heapTop = 0;
 
     // current position of the stack.
     stackTop = (uint32_t)&stackTop;
@@ -306,8 +365,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     free(hTop);
     freeRam = stackTop - heapTop;
 
-    if(freeRam>0xFFFF){return 0xFFFF;}
-    else{return freeRam;}
+    return min((uint32_t)(numeric_limits<uint16_t>::max)(), freeRam);
   }
 
   void doSystemReset( void )
@@ -346,47 +404,46 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #endif
   }
 
-  /*
-  ***********************************************************************************************************
-  * Interrupt callback functions
-  */
-  #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
-  void oneMSInterval(HardwareTimer*){oneMSInterval();}
-  void boostInterrupt(HardwareTimer*){boostInterrupt();}
-  void fuelSchedule1Interrupt(HardwareTimer*){fuelSchedule1Interrupt();}
-  void fuelSchedule2Interrupt(HardwareTimer*){fuelSchedule2Interrupt();}
-  void fuelSchedule3Interrupt(HardwareTimer*){fuelSchedule3Interrupt();}
-  void fuelSchedule4Interrupt(HardwareTimer*){fuelSchedule4Interrupt();}
-  #if (INJ_CHANNELS >= 5)
-  void fuelSchedule5Interrupt(HardwareTimer*){fuelSchedule5Interrupt();}
-  #endif
-  #if (INJ_CHANNELS >= 6)
-  void fuelSchedule6Interrupt(HardwareTimer*){fuelSchedule6Interrupt();}
-  #endif
-  #if (INJ_CHANNELS >= 7)
-  void fuelSchedule7Interrupt(HardwareTimer*){fuelSchedule7Interrupt();}
-  #endif
-  #if (INJ_CHANNELS >= 8)
-  void fuelSchedule8Interrupt(HardwareTimer*){fuelSchedule8Interrupt();}
-  #endif
-  void idleInterrupt(HardwareTimer*){idleInterrupt();}
-  void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
-  void fanInterrupt(HardwareTimer*){fanInterrupt();}
-  void ignitionSchedule1Interrupt(HardwareTimer*){ignitionSchedule1Interrupt();}
-  void ignitionSchedule2Interrupt(HardwareTimer*){ignitionSchedule2Interrupt();}
-  void ignitionSchedule3Interrupt(HardwareTimer*){ignitionSchedule3Interrupt();}
-  void ignitionSchedule4Interrupt(HardwareTimer*){ignitionSchedule4Interrupt();}
-  #if (IGN_CHANNELS >= 5)
-  void ignitionSchedule5Interrupt(HardwareTimer*){ignitionSchedule5Interrupt();}
-  #endif
-  #if (IGN_CHANNELS >= 6)
-  void ignitionSchedule6Interrupt(HardwareTimer*){ignitionSchedule6Interrupt();}
-  #endif
-  #if (IGN_CHANNELS >= 7)
-  void ignitionSchedule7Interrupt(HardwareTimer*){ignitionSchedule7Interrupt();}
-  #endif
-  #if (IGN_CHANNELS >= 8)
-  void ignitionSchedule8Interrupt(HardwareTimer*){ignitionSchedule8Interrupt();}
-  #endif
-  #endif //End core<=1.8
+
+uint8_t getSystemTemp(void)
+{
+  //stm32F4xx does have an internal temperature sensor, but needs to be implemented
+  return 0;
+}
+
+void boardInitRTC(void)
+{
+  // Do nothing
+}
+
+
+void boardInitPins(void)
+{
+  // Do nothing
+}
+
+static uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint16_t maxWrite = 20; //This needs tuning
+#else
+  uint16_t maxWrite = 64;
+#endif
+
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
+
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
+{
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
+}
+
 #endif

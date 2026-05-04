@@ -1,24 +1,32 @@
-#include "globals.h"
+#include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
-#include "board_teensy35.h"
+#ifdef USE_SPI_EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#else
+  #include <EEPROM.h>
+#endif
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include <InternalTemperature.h>
+#include RTC_LIB_H
+#include "board_eeprom_adapter.hpp"
+#include "scheduler_ignition_controller.h"
 
-/*
-  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
-#if defined(__MK64FX512__)         // use for Teensy 3.5 only 
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-#elif defined(__MK66FX1M0__)         // use for Teensy 3.6 only
-  FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
-  FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
-#endif
-*/
+ //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
+// #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
+//   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+// #elif defined(__MK66FX1M0__)         // use for Teensy 3.6 only
+//   FlexCAN_T4<CAN0, RX_SIZE_256, TX_SIZE_16> Can0;
+//   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
+// #endif
 
-void initBoard()
+static IntervalTimer lowResTimer;
+
+void initBoard(uint32_t baudRate)
 {
     /*
     ***********************************************************************************************************
@@ -89,6 +97,8 @@ void initBoard()
 
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM2);
+
+        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 32uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*
@@ -302,6 +312,9 @@ void initBoard()
     // enable IRQ Interrupt
     NVIC_ENABLE_IRQ(IRQ_FTM0);
     NVIC_ENABLE_IRQ(IRQ_FTM3);
+
+    Serial.begin(baudRate);
+
 }
 
 void ftm0_isr(void)
@@ -316,14 +329,14 @@ void ftm0_isr(void)
   bool interrupt7 = (FTM0_C6SC & FTM_CSC_CHF);
   bool interrupt8 = (FTM0_C7SC & FTM_CSC_CHF);
 
-  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; fuelSchedule1Interrupt(); }
-  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; fuelSchedule2Interrupt(); }
-  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; fuelSchedule3Interrupt(); }
-  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; fuelSchedule4Interrupt(); }
-  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; ignitionSchedule1Interrupt(); }
-  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; ignitionSchedule2Interrupt(); }
-  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; ignitionSchedule3Interrupt(); }
-  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; ignitionSchedule4Interrupt(); }
+  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule1); }
+  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule2); }
+  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule3); }
+  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule4); }
+  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule1); }
+  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule2); }
+  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule3); }
+  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule4); }
 
 }
 void ftm3_isr(void)
@@ -331,35 +344,35 @@ void ftm3_isr(void)
 
 #if (INJ_CHANNELS >= 5)
   bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
-  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
+  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule5); }
 #endif
 #if (INJ_CHANNELS >= 6)
   bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
+  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule6); }
 #endif
 #if (INJ_CHANNELS >= 7)
   bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
+  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule7); }
 #endif
 #if (INJ_CHANNELS >= 8)
   bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
+  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule8); }
 #endif
 #if (IGN_CHANNELS >= 5)
   bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
-  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
+  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule5); }
 #endif
 #if (IGN_CHANNELS >= 6)
   bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
-  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
+  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule6); }
 #endif
 #if (IGN_CHANNELS >= 7)
   bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
-  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
+  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule7); }
 #endif
 #if (IGN_CHANNELS >= 8)
   bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
-  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
+  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule8); }
 #endif
 
 }
@@ -409,12 +422,51 @@ uint16_t freeRam()
 }
 
 //This function is used for attempting to set the RTC time during compile
-time_t getTeensy3Time()
+static time_t getTeensy3Time()
 {
   return Teensy3Clock.get();
 }
 
 void doSystemReset() { return; }
 void jumpToBootloader() { return; }
+
+uint8_t getSystemTemp(void)
+{
+  return trunc(InternalTemperature.readTemperatureC());
+}
+
+void boardInitRTC(void)
+{
+  setSyncProvider(getTeensy3Time);
+}
+
+
+void boardInitPins(void)
+{
+  // Do nothing
+}
+
+static uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint16_t maxWrite = 20; //This needs tuning
+#else
+  uint16_t maxWrite = 64;
+#endif
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
+
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
+{
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
+}
 
 #endif

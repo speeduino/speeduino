@@ -4,48 +4,211 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
-#include "globals.h"
+#include <stdint.h>
+#include <Arduino.h>
 
-#define SIZE_SIGNED_BYTE    4
-#define SIZE_BYTE           8
-#define SIZE_INT            16
+/// @cond
+// private to table2D implementation
 
-/*
-The 2D table can contain either 8-bit (byte) or 16-bit (int) values
-The valueSize variable should be set to either 8 or 16 to indicate this BEFORE the table is used
-*/
-struct table2D {
-  //Used 5414 RAM with original version
-  byte valueSize;
-  byte axisSize;
-  byte xSize;
+namespace _table2d_detail {
 
-  void *values;
-  void *axisX;
-
-  //int16_t *values16;
-  //int16_t *axisX16;
-
-  //Store the last X and Y coordinates in the table. This is used to make the next check faster
-  int16_t lastXMax;
-  int16_t lastXMin;
+// The 2D table cache
+template <typename axis_t, typename value_t>
+struct Table2DCache 
+{
+  // Store the upper index of the bin we last found. This is used to make the next check faster
+  // Since this is the *upper* index, it can never be 0.
+  uint8_t lastBinUpperIndex = 1U; // The axis bin search algo relies on this being 1 initially
 
   //Store the last input and output for caching
-  int16_t lastInput;
-  int16_t lastOutput;
-  byte cacheTime; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+  axis_t lastInput = 0;
+  value_t lastOutput = 0;
+  uint8_t cacheTime = 0U; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
+
+  constexpr Table2DCache(void) = default;
 };
 
-void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint8_t *bins);
-void construct2dTable(table2D &table, uint8_t length, uint8_t *values, int8_t *bins);
-void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint16_t *bins);
-void construct2dTable(table2D &table, uint8_t length, uint8_t *values, uint16_t *bins);
-void construct2dTable(table2D &table, uint8_t length, uint16_t *values, uint8_t *bins);
-void construct2dTable(table2D &table, uint8_t length, int16_t *values, uint8_t *bins);
+extern uint8_t getCacheTime(void);
 
-int16_t table2D_getAxisValue(struct table2D *fromTable, byte X_in);
-int16_t table2D_getRawValue(struct table2D *fromTable, byte X_index);
+// LCOV_EXCL_START
+template <typename axis_t, typename value_t>
+static inline bool cacheExpired(const Table2DCache<axis_t, value_t> &cache) {
+  return (cache.cacheTime != getCacheTime());
+}
+// LCOV_EXCL_STOP
 
-int table2D_getValue(struct table2D *fromTable, int X_in);
+template <typename T>
+struct Bin {
+  constexpr Bin(const T *array, uint8_t binUpperIndex)
+  : upperIndex(binUpperIndex)
+  , _upperValue(array[binUpperIndex])
+  , _lowerValue(array[binUpperIndex-1U])
+  {
+  } 
+  constexpr Bin(uint8_t binUpperIndex, const T upperValue, const T lowerValue)
+  : upperIndex(binUpperIndex)
+  , _upperValue(upperValue)
+  , _lowerValue(lowerValue)
+  {
+  } 
+
+  const T upperValue(void) const noexcept { return _upperValue; }
+  const T lowerValue(void) const noexcept { return _lowerValue; }
+
+  static bool withinBin(const T &value, const T &min, const T&max) noexcept {
+    return (value <= max) && (value > min);
+  }
+  bool withinBin(const T value) const noexcept {
+    return withinBin(value, lowerValue(), upperValue());
+  }
+
+  uint8_t upperIndex;
+  T _upperValue;
+  T _lowerValue;
+};
+
+template <typename T, uint8_t sizeT>
+static inline Bin<T> findBin(const T *const array, const T value) 
+{
+  // Loop from the upper end of the axis back down to the 1st bin [0,1]
+  // Assume array is ordered [min...max]
+  const T *binLower = array+sizeT-2U;
+  while ( (*binLower >= value) && (binLower != array) ) { --binLower; }
+  return Bin<T>(binLower-array+1U, *(binLower+1U), *binLower);
+}
+
+// Generic interpolation
+// Exclude from code coverage - it's just a wrapper around map()
+// LCOV_EXCL_START
+template <typename axis_t, typename value_t>
+static inline value_t interpolate(const axis_t axisValue, const Bin<axis_t> &axisBin, const Bin<value_t> &valueBin) 
+{
+  return map(axisValue, axisBin.lowerValue(), axisBin.upperValue(), valueBin.lowerValue(), valueBin.upperValue());
+}
+// LCOV_EXCL_STOP
+
+// Specialized interpolation of uint8_t for performance
+uint8_t interpolate(const uint8_t axisValue, const Bin<uint8_t> &axisBin, const Bin<uint8_t> &valueBin);
+
+} // _table2d_detail
+/// @endcond
+
+/**
+ * @brief A 2D table.
+ * 
+ * The table is designed to be used with the table2D_getValue function to interpolate values from a 2D table.
+ *  * Construct by calling one of the constructors below
+ *    * The table is defined by providing the axis and value arrays 
+ *    * The axis and value arrays must be the same length
+ *    * The axis array **must** be sorted
+ *    * The axis and values can be any integral type up to 16-bits wide.
+ *    * Signed or unsigned.
+ */
+template <typename axis_t, typename value_t, uint8_t sizeT>
+struct table2D
+{
+  using size_type = uint8_t;
+
+  value_t (&values)[sizeT];
+  axis_t (&axis)[sizeT];
+
+  mutable _table2d_detail::Table2DCache<axis_t, value_t> cache;
+
+  constexpr table2D(axis_t (*pAxisBin)[sizeT], value_t (*pCurve)[sizeT])
+    : values(*pCurve) //cppcheck-suppress misra-c2012-10.4
+    , axis(*pAxisBin) 
+  {
+  }
+  
+  static constexpr size_type size(void) { return sizeT; }  
+
+  value_t getValue(const axis_t axisValue) const {
+// Turn off caching during unit tests
+#if !defined(UNIT_TEST)
+    // LCOV_EXCL_START
+    // Check whether the X input is the same as last time this ran
+    if( (axisValue == cache.lastInput) && (!cacheExpired(cache)) ) 
+    { 
+      return cache.lastOutput; 
+    }
+    // LCOV_EXCL_STOP
+#endif
+
+    // Test if above the max axis value, clip to max data value
+    if(axisValue >= axis[sizeT-1U]) 
+    {
+      cache.lastOutput = values[sizeT-1U];
+      cache.lastBinUpperIndex = sizeT-1U;
+    } 
+    // Test if below the min axis value, clip to min data value
+    else if (axisValue <= axis[0]) 
+    {
+      cache.lastOutput = values[0];
+      cache.lastBinUpperIndex = 1U;
+    } 
+    else 
+    {
+      // None of the cached or last values match, so we need to find the new value
+      // 1st check is whether we're still in the same X bin as last time
+      _table2d_detail::Bin<axis_t> xBin = _table2d_detail::Bin<axis_t>(axis, cache.lastBinUpperIndex);
+      if (!xBin.withinBin(axisValue))
+      {
+        // LCOV_EXCL_BR_START
+        //If we're not in the same bin, search 
+        xBin = _table2d_detail::findBin<axis_t, sizeT>(axis, axisValue);
+        // LCOV_EXCL_BR_STOP
+      }
+
+      // We are exactly at the bin upper bound, so no need to interpolate
+      if (axisValue==xBin.upperValue()) 
+      {
+        cache.lastOutput = values[xBin.upperIndex];
+        cache.lastBinUpperIndex = xBin.upperIndex;
+      } 
+      else // Must be within the bin, interpolate
+      {
+        // LCOV_EXCL_BR_START
+        cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(values, xBin.upperIndex));
+        // LCOV_EXCL_BR_STOP
+        cache.lastBinUpperIndex = xBin.upperIndex;
+      }
+      // Note: we cannot be at the bin lower bound here, as that would violate the bin definition of a non-inclusive lower bound
+    }
+    cache.cacheTime = _table2d_detail::getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
+    cache.lastInput = axisValue;
+
+    return cache.lastOutput;  
+  }
+};
+
+/**
+ * @brief Interpolate a value from a 2d table.
+ * 
+ * @tparam axis_t The type of the table axis
+ * @tparam value_t The type of the table values
+ * @tparam sizeT  The size of the table (number of axis and value elements)
+ * @param fromTable the table to get the value from
+ * @param axisValue the value to look up in the table axis
+ * @return value_t table value corresponding to the axis value (possibly interpolated)
+ */
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) 
+{
+  // LCOV_EXCL_START
+  return fromTable->getValue(axisValue);
+  // LCOV_EXCL_STOP
+}
+
+// Hide use of template in the header file
+using table2D_i8_u8_4 = table2D<int8_t, uint8_t, 4U>;
+using table2D_u8_u8_4 = table2D<uint8_t, uint8_t, 4U>;
+using table2D_u8_u8_6 = table2D<uint8_t, uint8_t, 6U>;
+using table2D_u8_u8_8 = table2D<uint8_t, uint8_t, 8U>;
+using table2D_u8_u8_9 = table2D<uint8_t, uint8_t, 9U>;
+using table2D_u8_u8_10 = table2D<uint8_t, uint8_t, 10U>;
+using table2D_u16_u8_32 = table2D<uint16_t, uint8_t, 32U>;
+using table2D_u16_u16_32 = table2D<uint16_t, uint16_t, 32U>;
+using table2D_u8_u16_4 = table2D<uint8_t, uint16_t, 4U>;
+using table2D_u8_s16_6 = table2D<uint8_t, int16_t, 6U>;
 
 #endif // TABLE_H

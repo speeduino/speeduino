@@ -4,15 +4,10 @@
 #include "schedule_calcs.h"
 #include "crankMaths.h"
 #include "../test_utils.h"
+#include "type_traits.h"
 
-#define _countof(x) (sizeof(x) / sizeof (x[0]))
-
-// void printFreeRam()
-// {
-//     char msg[128];
-//     sprintf(msg, "freeRam: %u", freeRam());
-//     TEST_MESSAGE(msg);
-// }
+using raw_counter_t = type_traits::remove_reference<FuelSchedule::counter_t>::type;
+using raw_compare_t = type_traits::remove_reference<FuelSchedule::compare_t>::type;
 
 struct inj_test_parameters
 {
@@ -23,23 +18,20 @@ struct inj_test_parameters
     uint32_t running;       // Expected delay when channel status is RUNNING
 };
 
-static void nullInjCallback(void) { }
-
 static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
     static constexpr uint16_t injAngle = 355;
     char msg[150];
     uint16_t PWdivTimerPerDegree = timeToAngleDegPerMicroSec(parameters.pw);
 
-    FuelSchedule schedule(FUEL2_COUNTER, FUEL2_COMPARE, nullInjCallback, nullInjCallback);
-    uint16_t startAngle = 0;
-    /*
-    //Pending schedules are no longer tested as will always return 0;
+    raw_counter_t counter = {0};
+    raw_compare_t compare = {0};
+    FuelSchedule schedule(counter, compare);
+
     schedule.Status = PENDING;
-    startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle, injAngle);
+    uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle, injAngle);
     sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, startAngle, parameters.crankAngle), msg);
-    */
     
     schedule.Status = RUNNING;
     startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
@@ -90,55 +82,55 @@ static void test_calc_inj_timeout_360()
     { 80                 , 3000   , 90         , 0                    , 11375 },
     { 80                 , 3000   , 135        , 0                    , 9500 },
     { 80                 , 3000   , 180        , 0                    , 7625 },
-    { 80                 , 3000   , 215        , 6167                 , 6167 },
-    { 80                 , 3000   , 270        , 3875                 , 3875 },
-    { 80                 , 3000   , 315        , 2000                 , 2000 },
-    { 80                 , 3000   , 360        , 125                  , 125 },
+    { 80                 , 3000   , 215        , 0                    , 6167 },
+    { 80                 , 3000   , 270        , 0                    , 3875 },
+    { 80                 , 3000   , 315        , 0                    , 2000 },
+    { 80                 , 3000   , 360        , 0                   , 125 },
     { 90                 , 3000   , 0          , 542                  , 542 },
     { 90                 , 3000   , 45         , 0                    , 13667 },
-    { 90                 , 3000   , 90         , 11792                , 11792 },
-    { 90                 , 3000   , 135        , 9917                 , 9917 },
-    { 90                 , 3000   , 180        , 8042                 , 8042 },
-    { 90                 , 3000   , 215        , 6583                 , 6583 },
-    { 90                 , 3000   , 270        , 4292                 , 4292 },
-    { 90                 , 3000   , 315        , 2417                 , 2417 },
-    { 90                 , 3000   , 360        , 542                  , 542 },
+    { 90                 , 3000   , 90         , 0                    , 11792 },
+    { 90                 , 3000   , 135        , 0                    , 9917 },
+    { 90                 , 3000   , 180        , 0                    , 8042 },
+    { 90                 , 3000   , 215        , 0                    , 6583 },
+    { 90                 , 3000   , 270        , 0                    , 4292 },
+    { 90                 , 3000   , 315        , 0                    , 2417 },
+    { 90                 , 3000   , 360        , 0                    , 542 },
     { 144                , 3000   , 0          , 2792                 , 2792 },
     { 144                , 3000   , 45         , 917                  , 917 },
     { 144                , 3000   , 90         , 0                    , 14042 },
     { 144                , 3000   , 135        , 0                    , 12167 },
-    { 144                , 3000   , 180        , 10292                , 10292 },
-    { 144                , 3000   , 215        , 8833                 , 8833 },
-    { 144                , 3000   , 270        , 6542                 , 6542 },
-    { 144                , 3000   , 315        , 4667                 , 4667 },
-    { 144                , 3000   , 360        , 2792                 , 2792 },
+    { 144                , 3000   , 180        , 0                    , 10292 },
+    { 144                , 3000   , 215        , 0                    , 8833 },
+    { 144                , 3000   , 270        , 0                    , 6542 },
+    { 144                , 3000   , 315        , 0                    , 4667 },
+    { 144                , 3000   , 360        , 0                    , 2792 },
     { 180                , 3000   , 0          , 4292                 , 4292 },
     { 180                , 3000   , 45         , 2417                 , 2417 },
     { 180                , 3000   , 90         , 542                  , 542 },
     { 180                , 3000   , 135        , 0                    , 13667 },
-    { 180                , 3000   , 180        , 11792                , 11792 },
-    { 180                , 3000   , 215        , 10333                , 10333 },
-    { 180                , 3000   , 270        , 8042                 , 8042 },
-    { 180                , 3000   , 315        , 6167                 , 6167 },
-    { 180                , 3000   , 360        , 4292                 , 4292 },
+    { 180                , 3000   , 180        , 0                    , 11792 },
+    { 180                , 3000   , 215        , 0                    , 10333 },
+    { 180                , 3000   , 270        , 0                    , 8042 },
+    { 180                , 3000   , 315        , 0                    , 6167 },
+    { 180                , 3000   , 360        , 0                    , 4292 },
     { 240                , 3000   , 0          , 6792                 , 6792 },
     { 240                , 3000   , 45         , 4917                 , 4917 },
     { 240                , 3000   , 90         , 3042                 , 3042 },
     { 240                , 3000   , 135        , 1167                 , 1167 },
     { 240                , 3000   , 180        , 0                    , 14292 },
     { 240                , 3000   , 215        , 0                    , 12833 },
-    { 240                , 3000   , 270        , 10542                , 10542 },
-    { 240                , 3000   , 315        , 8667                 , 8667 },
-    { 240                , 3000   , 360        , 6792                 , 6792 },
+    { 240                , 3000   , 270        , 0                    , 10542 },
+    { 240                , 3000   , 315        , 0                    , 8667 },
+    { 240                , 3000   , 360        , 0                    , 6792 },
     { 270                , 3000   , 0          , 8042                 , 8042 },
     { 270                , 3000   , 45         , 6167                 , 6167 },
     { 270                , 3000   , 90         , 4292                 , 4292 },
     { 270                , 3000   , 135        , 2417                 , 2417 },
     { 270                , 3000   , 180        , 542                  , 542 },
     { 270                , 3000   , 215        , 0                    , 14083 },
-    { 270                , 3000   , 270        , 11792                , 11792 },
-    { 270                , 3000   , 315        , 9917                 , 9917 },
-    { 270                , 3000   , 360        , 8042                 , 8042 },
+    { 270                , 3000   , 270        , 0                    , 11792 },
+    { 270                , 3000   , 315        , 0                    , 9917 },
+    { 270                , 3000   , 360        , 0                    , 8042 },
     { 360                , 3000   , 0          , 11792                , 11792 },
     { 360                , 3000   , 45         , 9917                 , 9917 },
     { 360                , 3000   , 90         , 8042                 , 8042 },
@@ -147,7 +139,7 @@ static void test_calc_inj_timeout_360()
     { 360                , 3000   , 215        , 2833                 , 2833 },
     { 360                , 3000   , 270        , 542                  , 542 },
     { 360                , 3000   , 315        , 0                    , 13667 },
-    { 360                , 3000   , 360        , 11792                , 11792 },
+    { 360                , 3000   , 360        , 0                    , 11792 },
   };
 
   test_calc_inj_timeout(&test_data[0], &test_data[0]+_countof(test_data));
@@ -188,7 +180,7 @@ static void test_calc_inj_timeout_720()
     { 80                 , 3000   , 315        , 2000                 , 2000 },
     { 80                 , 3000   , 360        , 125                  , 125 },
     { 90                 , 3000   , 0          , 15542                , 15542 },
-    { 90                 , 3000   , 45         , 0                    , 13667 },
+    { 90                 , 3000   , 45         , 13667                , 13667 },
     { 90                 , 3000   , 90         , 11792                , 11792 },
     { 90                 , 3000   , 135        , 9917                 , 9917 },
     { 90                 , 3000   , 180        , 8042                 , 8042 },
@@ -196,50 +188,50 @@ static void test_calc_inj_timeout_720()
     { 90                 , 3000   , 270        , 4292                 , 4292 },
     { 90                 , 3000   , 315        , 2417                 , 2417 },
     { 90                 , 3000   , 360        , 542                  , 542 },
-    { 144                , 3000   , 0          , 0                    , 17792 },
-    { 144                , 3000   , 45         , 0                    , 15917 },
-    { 144                , 3000   , 90         , 0                    , 14042 },
-    { 144                , 3000   , 135        , 0                    , 12167 },
+    { 144                , 3000   , 0          , 17792                , 17792 },
+    { 144                , 3000   , 45         , 15917                , 15917 },
+    { 144                , 3000   , 90         , 14042                , 14042 },
+    { 144                , 3000   , 135        , 12167                , 12167 },
     { 144                , 3000   , 180        , 10292                , 10292 },
     { 144                , 3000   , 215        , 8833                 , 8833 },
     { 144                , 3000   , 270        , 6542                 , 6542 },
     { 144                , 3000   , 315        , 4667                 , 4667 },
     { 144                , 3000   , 360        , 2792                 , 2792 },
-    { 180                , 3000   , 0          , 0                    , 19292 },
-    { 180                , 3000   , 45         , 0                    , 17417 },
-    { 180                , 3000   , 90         , 0                    , 15542 },
-    { 180                , 3000   , 135        , 0                    , 13667 },
+    { 180                , 3000   , 0          , 19292                , 19292 },
+    { 180                , 3000   , 45         , 17417                , 17417 },
+    { 180                , 3000   , 90         , 15542                , 15542 },
+    { 180                , 3000   , 135        , 13667                , 13667 },
     { 180                , 3000   , 180        , 11792                , 11792 },
     { 180                , 3000   , 215        , 10333                , 10333 },
     { 180                , 3000   , 270        , 8042                 , 8042 },
     { 180                , 3000   , 315        , 6167                 , 6167 },
     { 180                , 3000   , 360        , 4292                 , 4292 },
-    { 240                , 3000   , 0          , 0                    , 21792 },
-    { 240                , 3000   , 45         , 0                    , 19917 },
-    { 240                , 3000   , 90         , 0                    , 18042 },
-    { 240                , 3000   , 135        , 0                    , 16167 },
-    { 240                , 3000   , 180        , 0                    , 14292 },
-    { 240                , 3000   , 215        , 0                    , 12833 },
+    { 240                , 3000   , 0          , 21792                , 21792 },
+    { 240                , 3000   , 45         , 19917                , 19917 },
+    { 240                , 3000   , 90         , 18042                , 18042 },
+    { 240                , 3000   , 135        , 16167                , 16167 },
+    { 240                , 3000   , 180        , 14292                , 14292 },
+    { 240                , 3000   , 215        , 12833                , 12833 },
     { 240                , 3000   , 270        , 10542                , 10542 },
     { 240                , 3000   , 315        , 8667                 , 8667 },
     { 240                , 3000   , 360        , 6792                 , 6792 },
-    { 270                , 3000   , 0          , 0                    , 23042 },
-    { 270                , 3000   , 45         , 0                    , 21167 },
-    { 270                , 3000   , 90         , 0                    , 19292 },
-    { 270                , 3000   , 135        , 0                    , 17417 },
-    { 270                , 3000   , 180        , 0                    , 15542 },
-    { 270                , 3000   , 215        , 0                    , 14083 },
+    { 270                , 3000   , 0          , 23042                , 23042 },
+    { 270                , 3000   , 45         , 21167                , 21167 },
+    { 270                , 3000   , 90         , 19292                , 19292 },
+    { 270                , 3000   , 135        , 17417                , 17417 },
+    { 270                , 3000   , 180        , 15542                , 15542 },
+    { 270                , 3000   , 215        , 14083                , 14083 },
     { 270                , 3000   , 270        , 11792                , 11792 },
     { 270                , 3000   , 315        , 9917                 , 9917 },
     { 270                , 3000   , 360        , 8042                 , 8042 },
-    { 360                , 3000   , 0          , 0                    , 26792 },
-    { 360                , 3000   , 45         , 0                    , 24917 },
-    { 360                , 3000   , 90         , 0                    , 23042 },
-    { 360                , 3000   , 135        , 0                    , 21167 },
-    { 360                , 3000   , 180        , 0                    , 19292 },
-    { 360                , 3000   , 215        , 0                    , 17833 },
-    { 360                , 3000   , 270        , 0                    , 15542 },
-    { 360                , 3000   , 315        , 0                    , 13667 },
+    { 360                , 3000   , 0          , 26792                , 26792 },
+    { 360                , 3000   , 45         , 24917                , 24917 },
+    { 360                , 3000   , 90         , 23042                , 23042 },
+    { 360                , 3000   , 135        , 21167                , 21167 },
+    { 360                , 3000   , 180        , 19292                , 19292 },
+    { 360                , 3000   , 215        , 17833                , 17833 },
+    { 360                , 3000   , 270        , 15542                , 15542 },
+    { 360                , 3000   , 315        , 13667                , 13667 },
     { 360                , 3000   , 360        , 11792                , 11792 },
     { 480                , 3000   , 0          , 1792                 , 1792 },
     { 480                , 3000   , 45         , 0                    , 29917 },
@@ -282,6 +274,30 @@ static void test_calc_inj_timeout_720()
   test_calc_inj_timeout(&test_data[0], &test_data[0]+_countof(test_data));
 }
 
+static void test_calculateInjectorTimeout(void)
+{
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+  setEngineSpeed(4000, 360);
+
+  schedule.Status = OFF;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+
+  schedule.Status = PENDING;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(0, calculateInjectorTimeout(schedule, 123U, 351U));
+
+  schedule.Status = RUNNING_WITHNEXT;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+
+  schedule.Status = RUNNING;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+}
+
 // 
 void test_calc_inj_timeout(void)
 {
@@ -289,5 +305,6 @@ void test_calc_inj_timeout(void)
 
     RUN_TEST(test_calc_inj_timeout_360);
     RUN_TEST(test_calc_inj_timeout_720);
+    RUN_TEST(test_calculateInjectorTimeout);
   }
 }

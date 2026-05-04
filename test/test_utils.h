@@ -8,7 +8,8 @@
 #include <unity.h>
 #include "table2d.h"
 #include "table3d.h"
-
+#include "maths.h"
+#
 template<size_t MAX_LEN, size_t N>
 constexpr void STR_LEN_CHECK(char const (&)[N]) 
 {
@@ -87,6 +88,15 @@ static inline void fill_table_values(table3d_t &table, table3d_value_t value) {
   invalidate_cache(&table.get_value_cache);
 }
 
+static inline void populate_table_axis(table_axis_iterator it, 
+                                       table3d_axis_t value) {
+  while (!it.at_end())
+  {
+    *it = value;
+    ++it;
+  }
+}
+
 static inline void populate_table_axis_P(table_axis_iterator it, 
                                          const table3d_axis_t *pXValues) {   // PROGMEM if available
   while (!it.at_end())
@@ -132,32 +142,40 @@ static inline void populate_table_P(table3d_t &table,
 }
 
 // Populate a 2d table with constant values
-static inline void populate_2dtable(table2D *pTable, uint8_t value, uint8_t bin) {
-  for (uint8_t index=0; index<pTable->xSize; ++index) {
-    ((uint8_t*)pTable->values)[index] = value;
-    ((uint8_t*)pTable->axisX)[index] = bin;
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, value_t value, axis_t bin) {
+  for (uint8_t index=0; index<sizeT; ++index) {
+    (value_t&)(pTable->values[index]) = value;
+    (axis_t&)(pTable->axis[index]) = bin;
   }
-  pTable->cacheTime = UINT8_MAX;
+  pTable->cache.cacheTime = UINT8_MAX;
 }
 
-template <typename TValue, typename TBin>
-static inline void populate_2dtable(table2D *pTable, const TValue values[], const TBin bins[]) {
-  memcpy(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
-  memcpy(pTable->values, values, pTable->xSize * sizeof(TValue));
-  pTable->cacheTime = UINT8_MAX;
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline void populate_2dtable(table2D<axis_t, value_t, sizeT> *pTable, const value_t (&values)[sizeT], const axis_t (&bins)[sizeT]) {
+  memcpy((void*)pTable->axis, bins, sizeT * sizeof(axis_t));
+  memcpy((void*)pTable->values, values, sizeT * sizeof(value_t));
+  pTable->cache.cacheTime = UINT8_MAX;
 }
 
 // Populate a 2d table (from PROGMEM if available)
 // You would typically declare the 2 source arrays using TEST_DATA_P
-template <typename TValue, typename TBin>
-static inline void populate_2dtable_P(table2D *pTable, const TValue values[], const TBin bins[]) {
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline void populate_2dtable_P(table2D<axis_t, value_t, sizeT> *pTable, const value_t (&values)[sizeT], const axis_t (&bins)[sizeT]) {
 #if defined(PROGMEM)
-  memcpy_P(pTable->axisX, bins, pTable->xSize * sizeof(TBin));
-  memcpy_P(pTable->values, values, pTable->xSize * sizeof(TValue));
-  pTable->cacheTime = UINT8_MAX;
+  memcpy_P((void*)pTable->axis, bins, sizeT * sizeof(axis_t));
+  memcpy_P((void*)pTable->values, values, sizeT * sizeof(value_t));
+  pTable->cache.cacheTime = UINT8_MAX;
 #else
   populate_2dtable(pTable, values, bins)
 #endif
 }
 
-void populateTable(table3d16RpmLoad &table, const table3d_value_t values[], const table3d_axis_t xAxis[], const table3d_axis_t yAxis[]);
+template <typename T>
+T intermediate(T const& min, T const& max, uint8_t const& frac)
+{
+  if (max<min) {
+    return min - percentage(frac, (min - max));
+  }
+  return min + percentage(frac, (max - min));
+}

@@ -1,41 +1,45 @@
 #include <decoders.h>
 #include <globals.h>
 #include <unity.h>
-#include "renix.h"
 #include "schedule_calcs.h"
 #include "../../test_utils.h"
+#include "decoder_init.h"
+#include "scheduler_ignition_controller.h"
 
-void test_setup_renix44()
+extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+
+static decoder_t test_setup_renix44(void)
 {
     //Setup a renix 44 tooth wheel
     configPage4.TrigPattern = DECODER_RENIX;
     configPage2.nCylinders = 4;
 
-    triggerSetup_Renix();
+    return triggerSetup_Renix();
 }
 
-void test_setup_renix66()
+static decoder_t test_setup_renix66()
 {
     //Setup a renix 66 tooth wheel
     configPage4.TrigPattern = DECODER_RENIX;
     configPage2.nCylinders = 6;
 
-    triggerSetup_Renix();
+    return triggerSetup_Renix();
 }
 
-//************************************** Begin the new ignition setEndTooth tests **************************************
+//************************************** Begin the new ignition setEndTooth tests *************************************/
+
 void test_Renix_newIgn_44_trig0_1()
 {
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=0
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 0; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(2, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(2, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trig90_1()
@@ -44,13 +48,13 @@ void test_Renix_newIgn_44_trig90_1()
 
     //Advance: 10
     //triggerAngle=90
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 90; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(1, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trig180_1()
@@ -58,13 +62,13 @@ void test_Renix_newIgn_44_trig180_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=180
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 180; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(4, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(4, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trig270_1()
@@ -72,13 +76,13 @@ void test_Renix_newIgn_44_trig270_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=270
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 270; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(3, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trig360_1()
@@ -86,13 +90,13 @@ void test_Renix_newIgn_44_trig360_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=360
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 360; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(3, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trigNeg90_1()
@@ -100,13 +104,13 @@ void test_Renix_newIgn_44_trigNeg90_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-90
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -90; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(3, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trigNeg180_1()
@@ -114,13 +118,13 @@ void test_Renix_newIgn_44_trigNeg180_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-180
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -180; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(4, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(4, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trigNeg270_1()
@@ -128,13 +132,13 @@ void test_Renix_newIgn_44_trigNeg270_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-270
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -270; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(1, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[0]);
 }
 
 void test_Renix_newIgn_44_trigNeg360_1()
@@ -142,13 +146,13 @@ void test_Renix_newIgn_44_trigNeg360_1()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-360
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition1EndAngle = 360 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -360; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(2, ignition1EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(2, ignitionEndTeeth[0]);
 }
 
 // ******* CHannel 2 *******
@@ -157,13 +161,13 @@ void test_Renix_newIgn_44_trig0_2()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=0
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 0; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(4, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(4, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trig90_2()
@@ -171,13 +175,13 @@ void test_Renix_newIgn_44_trig90_2()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=90
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 90; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(3, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trig180_2()
@@ -185,13 +189,13 @@ void test_Renix_newIgn_44_trig180_2()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=180
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 180; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(3, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trig270_2()
@@ -199,13 +203,13 @@ void test_Renix_newIgn_44_trig270_2()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=270
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 270; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(2, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(2, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trig366()
@@ -213,13 +217,13 @@ void test_Renix_newIgn_44_trig366()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=360
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 360; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(1, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trigNeg90_2()
@@ -227,13 +231,13 @@ void test_Renix_newIgn_44_trigNeg90_2()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-90
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -90; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(1, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trigNeg180_2()
@@ -241,13 +245,13 @@ void test_Renix_newIgn_44_trigNeg180_2()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-180
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -180; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(2, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(2, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trigNeg270_2()
@@ -255,13 +259,13 @@ void test_Renix_newIgn_44_trigNeg270_2()
     //Test the set end tooth function. Conditions:
      //Advance: 10
     //triggerAngle=-270
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -270; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(3, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_44_trigNeg366()
@@ -269,13 +273,13 @@ void test_Renix_newIgn_44_trigNeg366()
     //Test the set end tooth function. Conditions:
     //Advance: 10
     //triggerAngle=-360
-    test_setup_renix44();
+    auto decoder = test_setup_renix44();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = -360; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(4, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(4, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_66_trig0_2()
@@ -284,13 +288,13 @@ void test_Renix_newIgn_66_trig0_2()
 
     //Advance: 10
     //triggerAngle=300
-    test_setup_renix66();
+    auto decoder = test_setup_renix66();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 0; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(1, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
 }
 
 void test_Renix_newIgn_66_trig181_2()
@@ -299,13 +303,13 @@ void test_Renix_newIgn_66_trig181_2()
 
     //Advance: 10
     //triggerAngle=300
-    test_setup_renix66();
+    auto decoder = test_setup_renix66();
     configPage4.sparkMode = IGN_MODE_SINGLE;
-    ignition2EndAngle = 180 - 10; //Set 10 degrees advance
+    calculateIgnitionAngles(ignitionSchedule1, 0, 10); //Set 10 degrees advance
     configPage4.triggerAngle = 181; //No trigger offset
     
-    triggerSetEndTeeth_Renix();
-    TEST_ASSERT_EQUAL(5, ignition2EndTooth);
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(5, ignitionEndTeeth[1]);
 }
 
 

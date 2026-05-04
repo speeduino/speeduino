@@ -23,122 +23,28 @@ trimTable3d trim6Table; ///< 6x6 Fuel trim 6 map
 trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
-struct table2D taeTable; ///< 4 bin TPS Acceleration Enrichment map (2D)
-struct table2D maeTable;
-struct table2D WUETable; ///< 10 bin Warm Up Enrichment map (2D)
-struct table2D ASETable; ///< 4 bin After Start Enrichment map (2D)
-struct table2D ASECountTable; ///< 4 bin After Start duration map (2D)
-struct table2D PrimingPulseTable; ///< 4 bin Priming pulsewidth map (2D)
-struct table2D crankingEnrichTable; ///< 4 bin cranking Enrichment map (2D)
-struct table2D dwellVCorrectionTable; ///< 6 bin dwell voltage correction (2D)
-struct table2D injectorVCorrectionTable; ///< 6 bin injector voltage correction (2D)
-struct table2D injectorAngleTable; ///< 4 bin injector angle curve (2D)
-struct table2D IATDensityCorrectionTable; ///< 9 bin inlet air temperature density correction (2D)
-struct table2D baroFuelTable; ///< 8 bin baro correction curve (2D)
-struct table2D IATRetardTable; ///< 6 bin ignition adjustment based on inlet air temperature  (2D)
-struct table2D idleTargetTable; ///< 10 bin idle target table for idle timing (2D)
-struct table2D idleAdvanceTable; ///< 6 bin idle advance adjustment table based on RPM difference  (2D)
-struct table2D CLTAdvanceTable; ///< 6 bin ignition adjustment based on coolant temperature  (2D)
-struct table2D rotarySplitTable; ///< 8 bin ignition split curve for rotary leading/trailing  (2D)
-struct table2D flexFuelTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
-struct table2D flexAdvTable;   ///< 6 bin flex fuel correction table for timing advance (2D)
-struct table2D flexBoostTable; ///< 6 bin flex fuel correction table for boost adjustments (2D)
-struct table2D fuelTempTable;  ///< 6 bin flex fuel correction table for fuel adjustments (2D)
-struct table2D knockWindowStartTable;
-struct table2D knockWindowDurationTable;
-struct table2D oilPressureProtectTable;
-struct table2D wmiAdvTable; //6 bin wmi correction table for timing advance (2D)
-struct table2D coolantProtectTable;
-struct table2D fanPWMTable;
-struct table2D rollingCutTable;
-
-/// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
-volatile PORT_TYPE *inj1_pin_port;
-volatile PINMASK_TYPE inj1_pin_mask;
-volatile PORT_TYPE *inj2_pin_port;
-volatile PINMASK_TYPE inj2_pin_mask;
-volatile PORT_TYPE *inj3_pin_port;
-volatile PINMASK_TYPE inj3_pin_mask;
-volatile PORT_TYPE *inj4_pin_port;
-volatile PINMASK_TYPE inj4_pin_mask;
-volatile PORT_TYPE *inj5_pin_port;
-volatile PINMASK_TYPE inj5_pin_mask;
-volatile PORT_TYPE *inj6_pin_port;
-volatile PINMASK_TYPE inj6_pin_mask;
-volatile PORT_TYPE *inj7_pin_port;
-volatile PINMASK_TYPE inj7_pin_mask;
-volatile PORT_TYPE *inj8_pin_port;
-volatile PINMASK_TYPE inj8_pin_mask;
-
-volatile PORT_TYPE *ign1_pin_port;
-volatile PINMASK_TYPE ign1_pin_mask;
-volatile PORT_TYPE *ign2_pin_port;
-volatile PINMASK_TYPE ign2_pin_mask;
-volatile PORT_TYPE *ign3_pin_port;
-volatile PINMASK_TYPE ign3_pin_mask;
-volatile PORT_TYPE *ign4_pin_port;
-volatile PINMASK_TYPE ign4_pin_mask;
-volatile PORT_TYPE *ign5_pin_port;
-volatile PINMASK_TYPE ign5_pin_mask;
-volatile PORT_TYPE *ign6_pin_port;
-volatile PINMASK_TYPE ign6_pin_mask;
-volatile PORT_TYPE *ign7_pin_port;
-volatile PINMASK_TYPE ign7_pin_mask;
-volatile PORT_TYPE *ign8_pin_port;
-volatile PINMASK_TYPE ign8_pin_mask;
-
-volatile PORT_TYPE *tach_pin_port;
-volatile PINMASK_TYPE tach_pin_mask;
-volatile PORT_TYPE *pump_pin_port;
-volatile PINMASK_TYPE pump_pin_mask;
-
-volatile PORT_TYPE *flex_pin_port;
-volatile PINMASK_TYPE flex_pin_mask;
-
-volatile PORT_TYPE *triggerPri_pin_port;
-volatile PINMASK_TYPE triggerPri_pin_mask;
-volatile PORT_TYPE *triggerSec_pin_port;
-volatile PINMASK_TYPE triggerSec_pin_mask;
-volatile PORT_TYPE *triggerThird_pin_port;
-volatile PINMASK_TYPE triggerThird_pin_mask;
 
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
-uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
-bool clutchTrigger;
-bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
-volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
+volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
+// Some code relies on tooth log containing less than UINT8_MAX items.
+static_assert(_countof(toothHistory)<UINT8_MAX, "Check all uses of toothHistory/toothHistoryIndex etc.");
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-#if defined(CORE_SAMD21)
-  PinStatus primaryTriggerEdge;
-  PinStatus secondaryTriggerEdge;
-  PinStatus tertiaryTriggerEdge;
-#else
-  byte primaryTriggerEdge;
-  byte secondaryTriggerEdge;
-  byte tertiaryTriggerEdge;
-#endif
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. Typically 720 divided by the number of squirts per cycle (Eg 360 for wasted 2 squirt and 720 for sequential single squirt)
+int16_t CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. Typically 720 divided by the number of squirts per cycle (Eg 360 for wasted 2 squirt and 720 for sequential single squirt)
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents one of the injector channels and it's pulsed HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_Pulsed = 0; 
-byte maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
-byte maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
-
-//This needs to be here because using the config page directly can prevent burning the setting
-byte resetControl = RESET_CONTROL_DISABLED;
 
 volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
@@ -238,20 +144,6 @@ struct config10 configPage10;
 struct config13 configPage13;
 struct config15 configPage15;
 
-//byte cltCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the coolant sensor calibration values */
-//byte iatCalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the inlet air temperature sensor calibration values */
-//byte o2CalibrationTable[CALIBRATION_TABLE_SIZE]; /**< An array containing the O2 sensor calibration values */
-
-uint16_t cltCalibration_bins[32];
-uint16_t cltCalibration_values[32];
-struct table2D cltCalibrationTable;
-uint16_t iatCalibration_bins[32];
-uint16_t iatCalibration_values[32];
-struct table2D iatCalibrationTable;
-uint16_t o2Calibration_bins[32];
-uint8_t o2Calibration_values[32];
-struct table2D o2CalibrationTable; 
-
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
 bool pinIsOutput(byte pin)
 {
@@ -272,13 +164,13 @@ bool pinIsOutput(byte pin)
   }
   //Ignition?
   if ((pin == pinCoil1)
-  || ((pin == pinCoil2) && (maxIgnOutputs > 1))
-  || ((pin == pinCoil3) && (maxIgnOutputs > 2))
-  || ((pin == pinCoil4) && (maxIgnOutputs > 3))
-  || ((pin == pinCoil5) && (maxIgnOutputs > 4))
-  || ((pin == pinCoil6) && (maxIgnOutputs > 5))
-  || ((pin == pinCoil7) && (maxIgnOutputs > 6))
-  || ((pin == pinCoil8) && (maxIgnOutputs > 7)))
+  || ((pin == pinCoil2) && (currentStatus.maxIgnOutputs > 1))
+  || ((pin == pinCoil3) && (currentStatus.maxIgnOutputs > 2))
+  || ((pin == pinCoil4) && (currentStatus.maxIgnOutputs > 3))
+  || ((pin == pinCoil5) && (currentStatus.maxIgnOutputs > 4))
+  || ((pin == pinCoil6) && (currentStatus.maxIgnOutputs > 5))
+  || ((pin == pinCoil7) && (currentStatus.maxIgnOutputs > 6))
+  || ((pin == pinCoil8) && (currentStatus.maxIgnOutputs > 7)))
   {
     used = true;
   }

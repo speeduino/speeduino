@@ -1,5 +1,5 @@
 #include "globals.h"
-#include BOARD_H
+#include "board_definition.h"
 
 #ifdef SD_LOGGING
 #include <SPI.h>
@@ -12,6 +12,7 @@
 #include "logger.h"
 #include "rtc_common.h"
 #include "maths.h"
+#include <elapsedMillis.h>
 
 //List of logger field names. This must be in the same order and length as logger_updateLogdataCSV()
 constexpr char header_0[] PROGMEM = "secl";
@@ -105,15 +106,15 @@ constexpr char header_87[] PROGMEM = "EMAP";
 constexpr char header_88[] PROGMEM = "Fan Duty";
 constexpr char header_89[] PROGMEM = "AirConStatus";
 constexpr char header_90[] PROGMEM = "Dwell Actual";
+constexpr char header_91[] PROGMEM = "status5";
+constexpr char header_92[] PROGMEM = "Knock Count";
+constexpr char header_93[] PROGMEM = "Knock Retard";
+constexpr char header_94[] PROGMEM = "PW5";
+constexpr char header_95[] PROGMEM = "PW6";
+constexpr char header_96[] PROGMEM = "PW7";
+constexpr char header_97[] PROGMEM = "PW8";
+constexpr char header_98[] PROGMEM = "System Temp";
 /*
-constexpr char header_91[] PROGMEM = "";
-constexpr char header_92[] PROGMEM = "";
-constexpr char header_93[] PROGMEM = "";
-constexpr char header_94[] PROGMEM = "";
-constexpr char header_95[] PROGMEM = "";
-constexpr char header_96[] PROGMEM = "";
-constexpr char header_97[] PROGMEM = "";
-constexpr char header_98[] PROGMEM = "";
 constexpr char header_99[] PROGMEM = "";
 constexpr char header_100[] PROGMEM = "";
 constexpr char header_101[] PROGMEM = "";
@@ -230,7 +231,6 @@ constexpr const char* header_table[] PROGMEM = {  header_0,\
                                               header_88,\
                                               header_89,\
                                               header_90,\
-                                              /*
                                               header_91,\
                                               header_92,\
                                               header_93,\
@@ -239,6 +239,7 @@ constexpr const char* header_table[] PROGMEM = {  header_0,\
                                               header_96,\
                                               header_97,\
                                               header_98,\
+                                              /*
                                               header_99,\
                                               header_100,\
                                               header_101,\
@@ -274,6 +275,7 @@ uint8_t SD_status = SD_STATUS_OFF;
 uint16_t currentLogFileNumber;
 bool manualLogActive = false;
 uint32_t logStartTime = 0; //In ms
+elapsedMillis msSinceLastSDSync;
 
 void initSD()
 {
@@ -520,7 +522,12 @@ void writeSDLogEntry()
       {
         #if FPU_MAX_SIZE >= 32
           float entryValue = getReadableFloatLogEntry(x);
-          if(IS_INTEGER(entryValue)) { rb.print((uint16_t)entryValue); }
+          if(IS_INTEGER(entryValue)) 
+          { 
+            uint16_t entryValueInt = (uint16_t)entryValue;
+            if(entryValueInt <= UCHAR_MAX) { rb.print((uint8_t)entryValueInt); }
+            else { rb.print(entryValueInt); }
+          }
           else { rb.print(entryValue); }
         #else
           rb.print(getReadableLogEntry(x));
@@ -532,9 +539,10 @@ void writeSDLogEntry()
 
     //Check if write to SD from ringbuffer is needed
     //We write to SD when there is more than 1 sector worth of data in the ringbuffer and there is not already a write being performed
-    if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy() )
+    if( (rb.bytesUsed() >= SD_SECTOR_SIZE) && !logFile.isBusy())
     {
       uint16_t bytesWritten = rb.writeOut(SD_SECTOR_SIZE); 
+      
       //Make sure that the entire sector was written successfully
       if (SD_SECTOR_SIZE != bytesWritten) 
       {
@@ -580,21 +588,13 @@ void writeSDLogHeader()
 //Sets the status variable for TunerStudio
 void setTS_SD_status()
 {
-  if( SD_status == SD_STATUS_ERROR_NO_CARD ) { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD is not present
-  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_PRESENT); } // CARD present
-
-  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_TYPE); // CARD is SDHC
-  
-  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); // CARD is ready
-  
-  if( SD_status == SD_STATUS_ACTIVE ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is logging
-  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_LOGGING); }// CARD is not logging
-
-  if( (SD_status >= SD_STATUS_ERROR_NO_FS) ) { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has an error
-  else { BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_ERROR); }// CARD has no error
-
-  BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_FS); // CARD has a FAT32 filesystem (Though this will be exFAT)
-  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_UNUSED); //Unused bit is always 0
+  currentStatus.sdCardPresent = (SD_status != SD_STATUS_ERROR_NO_CARD);
+  currentStatus.sdCardType = 1U; // CARD is SDHC
+  currentStatus.sdCardReady = true;
+  currentStatus.sdCardLogging = (SD_status == SD_STATUS_ACTIVE);
+  currentStatus.sdCardError = (SD_status >= SD_STATUS_ERROR_NO_FS);
+  currentStatus.sdCardFS = 1U; // CARD has a FAT32 filesystem (Though this will be exFAT)
+  currentStatus.sdCardUnused = false; //Unused bit is always 0
 }
 
 /** 
@@ -629,7 +629,7 @@ void checkForSDStart()
     //Check for engine protection based enable
     if((configPage13.onboard_log_trigger_prot) && (SD_status == SD_STATUS_READY) )
     {
-      if(currentStatus.engineProtectStatus > 0)
+      if(currentStatus.engineProtect.isActive())
       {
         beginSDLogging(); //Setup the log file, preallocation, header row
       }
@@ -683,7 +683,7 @@ void checkForSDStop()
     }
     if(configPage13.onboard_log_trigger_prot)
     {
-      if(currentStatus.engineProtectStatus > 0)
+      if(currentStatus.engineProtect.isActive())
       {
         log_prot = true;
       }
@@ -714,12 +714,14 @@ void checkForSDStop()
   
 }
 
-void syncSDLog()
+bool syncSDLog()
 {     
   if( (SD_status == SD_STATUS_ACTIVE) && (!logFile.isBusy()) && (!sd.isBusy()) )
   {
     logFile.sync();
+    return true;
   }
+  return false;
 }
 
 /** 
@@ -732,7 +734,7 @@ void formatExFat()
   bool result = false;
 
   //Set the SD status to busy
-  BIT_CLEAR(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY);
+  currentStatus.sdCardReady = false;
 
   logFile.close();
 
@@ -748,7 +750,7 @@ void formatExFat()
   }
 
   if(result == false) { SD_status = SD_STATUS_ERROR_FORMAT_FAIL; }
-  else { BIT_SET(currentStatus.TS_SD_Status, SD_STATUS_CARD_READY); }
+  else { currentStatus.sdCardReady = true; }
 }
 
 /**

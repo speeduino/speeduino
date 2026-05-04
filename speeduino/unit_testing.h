@@ -31,3 +31,29 @@
 #else
 #define TESTABLE_INLINE_STATIC
 #endif
+
+#if !defined(UNIT_TEST) 
+/** 
+ * @brief Mark an entity with constexpr (giving it internal linkage), unless a unit
+ * test is in progress - then the entity is given external linkage so the test can access it.
+ * 
+ * Most useful for translation unit scoped variables. I.e. constexpr within a CPP file 
+ * 
+ */
+#define TESTABLE_CONSTEXPR constexpr 
+#else
+#define TESTABLE_CONSTEXPR
+#endif
+
+#if !defined(UNIT_TEST) 
+/** 
+ * @brief Mark a function with constexpr, unless a unit test is in progress - 
+ * then the entity is inlined.
+ * 
+ * Useful for constexpr functions that need to be included in test coverage
+ * 
+ */
+#define TESTABLE_STATIC_CONSTEXPR static constexpr 
+#else
+#define TESTABLE_STATIC_CONSTEXPR static inline
+#endif
