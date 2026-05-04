@@ -10,7 +10,7 @@
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "programmableIOControl.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "auxiliaries.h"
 #include "sensors.h"
 #include "decoders.h"

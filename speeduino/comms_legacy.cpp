@@ -19,7 +19,7 @@ A full copy of the license may be found in the projects root directory
 #include "page_crc.h"
 #include "logger.h"
 #include "board_definition.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif

@@ -7,7 +7,7 @@
 #include "units.h"
 #include "board_definition.h" 
 #include "decoder_init.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 
 static byte setStatusBit(byte status, uint8_t index, bool bit)
 {

@@ -14,7 +14,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #include "maths.h"
 #include "units.h"
 #include "programmableIOControl.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 
 CAN_message_t inMsg;
 CAN_message_t outMsg;

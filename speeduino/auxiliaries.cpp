@@ -17,7 +17,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/fastInputPin.h"
 #include "src/pins/fastOutputPin.h"
 #include "src/pins/outputPin.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 
 constexpr uint8_t SIMPLE_BOOST_P = 1U;
 constexpr uint8_t SIMPLE_BOOST_I = 1U;
