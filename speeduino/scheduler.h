@@ -44,17 +44,6 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #include "globals.h"
 #include "crankMaths.h"
 
-/** @brief Initialize all schedulers to the OFF state */
-void initialiseFuelSchedulers(void);
-
-/** @brief Start the timers that drive schedulers  */
-void startFuelSchedulers(void);
-
-/** @brief Stop the timers that drive schedulers  */
-void stopFuelSchedulers(void);
-
-/** @brief Start fuel system priming the fuel */
-void beginInjectorPriming(void);
 
 /** \enum ScheduleStatus
  * @brief The current state of a schedule
@@ -233,23 +222,6 @@ struct FuelSchedule : public Schedule {
  * @param schedule The fuel schedule to move to the next state
  */
 void moveToNextState(FuelSchedule &schedule) noexcept;
-
-extern FuelSchedule fuelSchedule1;
-extern FuelSchedule fuelSchedule2;
-extern FuelSchedule fuelSchedule3;
-extern FuelSchedule fuelSchedule4;
-#if INJ_CHANNELS >= 5
-extern FuelSchedule fuelSchedule5;
-#endif
-#if INJ_CHANNELS >= 6
-extern FuelSchedule fuelSchedule6;
-#endif
-#if INJ_CHANNELS >= 7
-extern FuelSchedule fuelSchedule7;
-#endif
-#if INJ_CHANNELS >= 8
-extern FuelSchedule fuelSchedule8;
-#endif
 
 #include "schedule_calcs.hpp"
 

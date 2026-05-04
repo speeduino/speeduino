@@ -13,7 +13,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "scheduler_ignition_controller.h"
 #include "auxiliaries.h"
 #include "comms.h"

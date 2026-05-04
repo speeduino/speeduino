@@ -34,23 +34,6 @@ A full copy of the license may be found in the projects root directory
 #include "decoders.h"
 #include "scheduledIO_inj.h"
 
-FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
-FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
-FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE); //cppcheck-suppress misra-c2012-8.4
-FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#if (INJ_CHANNELS >= 5)
-FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 6)
-FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 7)
-FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 8)
-FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-
 void nullCallback(void) { return; }
 
 void Schedule::reset(void)
@@ -71,66 +54,6 @@ void FuelSchedule::reset(void)
 {
     Schedule::reset();
     channelDegrees = 0;
-}
-
-void initialiseFuelSchedulers(void)
-{
-    fuelSchedule1.reset();
-    fuelSchedule2.reset();
-    fuelSchedule3.reset();
-    fuelSchedule4.reset();
-#if INJ_CHANNELS >= 5
-    fuelSchedule5.reset();
-#endif
-#if INJ_CHANNELS >= 6
-    fuelSchedule6.reset();
-#endif
-#if INJ_CHANNELS >= 7
-    fuelSchedule7.reset();
-#endif
-#if INJ_CHANNELS >= 8
-    fuelSchedule8.reset();
-#endif
-}
-
-void startFuelSchedulers(void)
-{
-  FUEL1_TIMER_ENABLE();
-  FUEL2_TIMER_ENABLE();
-  FUEL3_TIMER_ENABLE();
-  FUEL4_TIMER_ENABLE();
-#if INJ_CHANNELS >= 5
-  FUEL5_TIMER_ENABLE();
-#endif
-#if INJ_CHANNELS >= 6
-  FUEL6_TIMER_ENABLE();
-#endif
-#if INJ_CHANNELS >= 7
-  FUEL7_TIMER_ENABLE();
-#endif
-#if INJ_CHANNELS >= 8
-  FUEL8_TIMER_ENABLE();
-#endif
-}
-
-void stopFuelSchedulers(void)
-{
-  FUEL1_TIMER_DISABLE();
-  FUEL2_TIMER_DISABLE();
-  FUEL3_TIMER_DISABLE();
-  FUEL4_TIMER_DISABLE();
-#if INJ_CHANNELS >= 5
-  FUEL5_TIMER_DISABLE();
-#endif
-#if INJ_CHANNELS >= 6
-  FUEL6_TIMER_DISABLE();
-#endif
-#if INJ_CHANNELS >= 7
-  FUEL7_TIMER_DISABLE();
-#endif
-#if INJ_CHANNELS >= 8
-  FUEL8_TIMER_DISABLE();
-#endif  
 }
 
 void __attribute__((optimize("Os"))) setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept
@@ -186,47 +109,6 @@ void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool all
       }
     }
   }  
-}
-
-constexpr table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.primePulse);
-
-/** Perform the injector priming pulses.
- * Set these to run at an arbitrary time in the future (100us).
- * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
- */
-void beginInjectorPriming(void)
-{
-  uint16_t primingValue = (uint16_t)table2D_getValue(&PrimingPulseTable, temperatureAddOffset(currentStatus.coolant));
-  if( (primingValue > 0U) && (currentStatus.TPS <= configPage4.floodClear) )
-  {
-    constexpr uint32_t PRIMING_DELAY = 100U; // 100us
-    // The prime pulse value is in ms*2, so need to multiply by 500 to get to µS
-    constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
-
-    primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
-    if ( getTotalInjChannelCount(currentStatus) >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
-#if (INJ_CHANNELS >= 2)
-    if ( getTotalInjChannelCount(currentStatus) >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
-#endif
-#if (INJ_CHANNELS >= 3)
-    if ( getTotalInjChannelCount(currentStatus) >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
-#endif
-#if (INJ_CHANNELS >= 4)
-    if ( getTotalInjChannelCount(currentStatus) >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
-#endif
-#if (INJ_CHANNELS >= 5)
-    if ( getTotalInjChannelCount(currentStatus) >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
-#endif
-#if (INJ_CHANNELS >= 6)
-    if ( getTotalInjChannelCount(currentStatus) >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
-#endif
-#if (INJ_CHANNELS >= 7)
-    if ( getTotalInjChannelCount(currentStatus) >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
-#endif
-#if (INJ_CHANNELS >= 8)
-    if ( getTotalInjChannelCount(currentStatus) >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
-#endif
-  }
 }
 
 /**
