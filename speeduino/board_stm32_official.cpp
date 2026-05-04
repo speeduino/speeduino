@@ -348,6 +348,13 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #endif
 
     Serial.begin(baudRate);
+
+    #if defined(STM32F407xx)
+	  uint32_t usbStart = millis();
+      while (!Serial && (millis() - usbStart < 2000)) {
+        yield();
+      }
+	#endif
   }
 
   uint16_t freeRam()
