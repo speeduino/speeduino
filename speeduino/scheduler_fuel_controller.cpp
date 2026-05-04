@@ -139,7 +139,7 @@ TESTABLE_INLINE_STATIC uint16_t lookupInjectorAngle(const statuses &current)
   return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
 }
 
-static inline void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache)
+TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache)
 {
   if( (schedule.pw != 0U) && (BIT_CHECK(injChannelMask, INJ1_CMD_BIT+channel-1U)) )
   {
