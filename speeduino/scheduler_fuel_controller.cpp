@@ -117,7 +117,7 @@ static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 
   }
 }
 
-void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current) {
+TESTABLE_STATIC void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current) {
   if (isSwitchableCylinderCount(page2))
   {
     if (isFullSequentialInjection(page2, current.decoder.getStatus()) && ( CRANK_ANGLE_MAX_INJ != 720 )) {
@@ -334,7 +334,8 @@ static inline void zeroAllChannels(void)
 #undef ASSIGN_ZERO_PW
 }
 
-BEGIN_LTO_ALWAYS_INLINE(void) applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config6 &page6, const statuses &current) {
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, statuses &current) {
+  matchFuelSchedulersToSyncState(page2, page4, current);
   zeroAllChannels();
   assignPrimaryPws(pulse_widths, page6, current);
   assignSecondaryPws(pulse_widths, current);
