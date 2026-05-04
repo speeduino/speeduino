@@ -2,8 +2,11 @@
 #include "../test_utils.h"
 #include "scheduler.h"
 #include "channel_test_helpers.h"
+#include "units.h"
 
 extern bool isAnyFuelScheduleRunning(void);
+extern uint16_t lookupInjectorAngle(const statuses &current);
+extern table2D_u8_u16_4 injectorAngleTable;
 
 static void set_all_schedules_off(void)
 {
@@ -55,9 +58,22 @@ static void test_isAnyFuelScheduleRunning(void)
   RUNIF_INJCHANNEL8( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 }
 
+static void test_lookupInjectorAngle_clamp_max_inj(void)
+{
+  statuses current = {};
+  populate_2dtable(&injectorAngleTable, (uint16_t)720, RPM_COARSE.toRaw(1000));
+
+  setRpm(current, 1000);
+  CRANK_ANGLE_MAX_INJ = injectorAngleTable.values[0]/2U;
+
+  TEST_ASSERT_LESS_THAN(injectorAngleTable.values[0], CRANK_ANGLE_MAX_INJ);
+  TEST_ASSERT_EQUAL(CRANK_ANGLE_MAX_INJ, lookupInjectorAngle(current));
+}
+
 void test_fuel_controller(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_isAnyFuelScheduleRunning);
+    RUN_TEST_P(test_lookupInjectorAngle_clamp_max_inj);
   }
 }

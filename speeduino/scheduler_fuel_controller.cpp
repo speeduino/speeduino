@@ -130,9 +130,9 @@ TESTABLE_STATIC void matchFuelSchedulersToSyncState(const config2 &page2, const 
   }
 }
 
-static table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
+TESTABLE_STATIC table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
 
-static inline uint16_t lookupInjectorAngle(const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t lookupInjectorAngle(const statuses &current)
 {
   uint16_t injAngle = table2D_getValue(&injectorAngleTable, current.RPMdiv100);
   // Do not combine min() & table2D_getValue() - if min() is a macro, we could call table2D_getValue twice
