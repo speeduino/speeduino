@@ -190,10 +190,10 @@ struct IgnitionSchedule : public Schedule {
 
   using Schedule::Schedule;
 
-  volatile uint32_t _startTime;///< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino
-  int16_t chargeAngle;        ///< Angle the coil should begin charging.
-  int16_t dischargeAngle;     ///< Angle the coil should discharge at. I.e. spark.
-  uint16_t channelDegrees;     ///< The number of crank degrees until cylinder is at TDC  
+  volatile uint32_t _startTime = 0U;///< The system time (in uS) that the schedule started, used by the overdwell protection in timers.ino
+  int16_t chargeAngle = 0U;         ///< Angle the coil should begin charging.
+  int16_t dischargeAngle = 0U;      ///< Angle the coil should discharge at. I.e. spark.
+  uint16_t channelDegrees = 0U;     ///< The number of crank degrees until cylinder is at TDC  
 
   void reset(void) override;
 };
@@ -220,8 +220,8 @@ struct FuelSchedule : public Schedule {
 
   using Schedule::Schedule;
 
-  uint16_t channelDegrees;    ///< The number of crank degrees until cylinder is at TDC  
-  uint16_t pw;                ///< Pulse width in uS
+  uint16_t channelDegrees = 0U;    ///< The number of crank degrees until cylinder is at TDC  
+  uint16_t pw = 0U;                ///< Pulse width in uS
 
   void reset(void) override;
 };
