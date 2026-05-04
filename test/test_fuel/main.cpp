@@ -12,6 +12,8 @@ void runAllFuelTests(void)
     extern void testCalculateSecondaryPw(void);
     extern void testApplyPwToInjectorChannels(void);
     extern void testCalculateOpenTime(void);
+    extern void testCalculatePWLimit(void);
+    extern void testCalcPrimaryPulseWidth(void);
 
     testCorrections();
     testComputePulseWidths();
@@ -21,6 +23,8 @@ void runAllFuelTests(void)
     testCalculateSecondaryPw();
     testApplyPwToInjectorChannels();
     testCalculateOpenTime();
+    testCalculatePWLimit();
+    testCalcPrimaryPulseWidth();
 }
 
 TEST_HARNESS(runAllFuelTests)

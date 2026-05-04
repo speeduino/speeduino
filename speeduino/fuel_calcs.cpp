@@ -131,7 +131,7 @@ static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const
   return intermediate;
 }
 
-TESTABLE_INLINE_STATIC __attribute__((always_inline)) uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
   uint16_t REQ_FUEL = calculateRequiredFuel(page2, decoderStatus);
 
   //Standard float version of the calculation
@@ -176,10 +176,10 @@ static inline uint32_t calcTotalStagePw(uint16_t primaryPW, uint16_t injOpenTime
   return ((uint32_t)primaryPW)*totalInjector;
 }
 
-static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) {
+static inline uint32_t calcStagePrimaryPw(uint32_t totalPw, const config10 &page10) noexcept {
   return fast_div(totalPw, page10.stagedInjSizePri);
 }
-static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) {
+static inline uint32_t calcStageSecondaryPw(uint32_t totalPw, const config10 &page10) noexcept {
   return fast_div(totalPw, page10.stagedInjSizeSec);
 }
 

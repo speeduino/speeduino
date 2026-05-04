@@ -122,7 +122,7 @@ struct table2D
   
   static constexpr size_type size(void) { return sizeT; }  
 
-  value_t getValue(const axis_t axisValue) const {
+  value_t getValue(const axis_t axisValue) const noexcept {
 // Turn off caching during unit tests
 #if !defined(UNIT_TEST)
     // LCOV_EXCL_START
@@ -192,7 +192,7 @@ struct table2D
  * @return value_t table value corresponding to the axis value (possibly interpolated)
  */
 template <typename axis_t, typename value_t, uint8_t sizeT>
-static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) 
+static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) noexcept 
 {
   // LCOV_EXCL_START
   return fromTable->getValue(axisValue);

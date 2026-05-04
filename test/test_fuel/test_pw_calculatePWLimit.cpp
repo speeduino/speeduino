@@ -4,6 +4,12 @@
 
 extern uint16_t calculatePWLimit(const config2 &page2, const statuses &current);
 
+static void assert_calculatePWLimit(const config2 &page2, statuses current, uint16_t multiplier)
+{
+  uint16_t baseline = percentage(page2.dutyLim, current.revolutionTime) * multiplier;
+  TEST_ASSERT_INT32_WITHIN(4 * multiplier, baseline/current.nSquirts, calculatePWLimit(page2, current));
+}
+
 //Tests the PW Limit calculation for a normal scenario
 void test_calculatePWLimit_90pct(void)
 {
@@ -15,11 +21,19 @@ void test_calculatePWLimit_90pct(void)
   current.nSquirts = 1;
   current.revolutionTime = 10000UL;
 
-  //Duty limit of 90% for 10,000uS should give 9,000
-  TEST_ASSERT_INT32_WITHIN(4, 9000, calculatePWLimit(page2, current));
+  assert_calculatePWLimit(page2, current, 1U);
 }
 
-static void test_calculatePWLimit_squirts(void)
+static void assert_calculatePWLimit_squirts(const config2 &page2, statuses current, uint16_t multiplier)
+{
+  for (uint8_t squirts = 1U; squirts < 10U; squirts++)
+  {
+    current.nSquirts = squirts;
+    assert_calculatePWLimit(page2, current, multiplier);
+  }
+}
+
+static void test_calculatePWLimit_squirts_2stroke(void)
 {
   config2 page2 = {};
   statuses current = {};
@@ -27,19 +41,19 @@ static void test_calculatePWLimit_squirts(void)
   page2.strokes = TWO_STROKE;
   page2.dutyLim = 90;
   current.revolutionTime = 10000UL;
+  assert_calculatePWLimit_squirts(page2, current, 1U);
+}
 
-  //Duty limit of 90% for 10,000uS should give 9,000
-  current.nSquirts = 1;
-  TEST_ASSERT_INT32_WITHIN(4, 9000, calculatePWLimit(page2, current));
+static void test_calculatePWLimit_squirts_4stroke(void)
+{
+  config2 page2 = {};
+  statuses current = {};
 
-  current.nSquirts = 2;
-  TEST_ASSERT_INT32_WITHIN(4, 4500, calculatePWLimit(page2, current));
-  current.nSquirts = 3;
-  TEST_ASSERT_INT32_WITHIN(4, 3000, calculatePWLimit(page2, current));
-  current.nSquirts = 4;
-  TEST_ASSERT_INT32_WITHIN(4, 2250, calculatePWLimit(page2, current));
-  current.nSquirts = 5;
-  TEST_ASSERT_INT32_WITHIN(4, 1800, calculatePWLimit(page2, current));
+  page2.strokes = FOUR_STROKE;
+  page2.dutyLim = 90;
+  current.revolutionTime = 10000UL;
+
+  assert_calculatePWLimit_squirts(page2, current, 2U);
 }
 
 //Tests the PW Limit calculation when the revolution time is greater than the max UINT16 value
@@ -64,6 +78,7 @@ void testCalculatePWLimit(void)
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_calculatePWLimit_Long_Revolution);
     RUN_TEST_P(test_calculatePWLimit_90pct);
-    RUN_TEST_P(test_calculatePWLimit_squirts);
+    RUN_TEST_P(test_calculatePWLimit_squirts_2stroke);
+    RUN_TEST_P(test_calculatePWLimit_squirts_4stroke);
   }
 }

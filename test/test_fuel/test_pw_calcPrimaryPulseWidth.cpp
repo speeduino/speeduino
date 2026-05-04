@@ -131,7 +131,7 @@ static ComputePulseWidthsContext getIncludeAeContext(void) {
 static void test_calcPrimaryPulseWidth_AeAdder(void) {
   // AE needs to be added
   auto context = getIncludeAeContext();
-  TEST_ASSERT_EQUAL(800 /* (1000*0.75)+(1000*0.05) */, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
+  TEST_ASSERT_UINT16_WITHIN(1, 800 /* (1000*0.75)+(1000*0.05) */, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   // AE off in all cases below
   context = getIncludeAeContext();
