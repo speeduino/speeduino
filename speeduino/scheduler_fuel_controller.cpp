@@ -194,7 +194,7 @@ TESTABLE_INLINE_STATIC uint16_t lookupInjectorAngle(const statuses &current)
   return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
 }
 
-TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache)
+TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache) noexcept
 {
   if( (schedule.pw != 0U) && (BIT_CHECK(injChannelMask, INJ1_CMD_BIT+channel-1U)) )
   {
@@ -208,44 +208,31 @@ TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8
   }
 }
 
-BEGIN_LTO_ALWAYS_INLINE(uint16_t) __attribute__((flatten)) setFuelChannelSchedules(const statuses &current)
+TESTABLE_INLINE_STATIC uint16_t setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask, uint16_t injAngle)
 {
-  uint16_t crankAngle = injectorLimits(current.decoder.getCrankAngle());
-  byte injChannelMask = current.schedulerCutState.fuelChannels;
-  uint16_t injAngle = lookupInjectorAngle(current);
-
   injectorAngleCalcCache angleCalcCache;
 #define SET_FUEL_CHANNEL(channel) \
   setFuelChannelSchedule(fuelSchedule ##channel, UINT8_C(channel), crankAngle, injChannelMask, injAngle, &angleCalcCache);
 
-#if INJ_CHANNELS >= 1
   SET_FUEL_CHANNEL(1)
-#endif
-
 #if INJ_CHANNELS >= 2
   SET_FUEL_CHANNEL(2)
 #endif
-
 #if INJ_CHANNELS >= 3
   SET_FUEL_CHANNEL(3)
 #endif
-
 #if INJ_CHANNELS >= 4
   SET_FUEL_CHANNEL(4)
 #endif
-
 #if INJ_CHANNELS >= 5
   SET_FUEL_CHANNEL(5)
 #endif
-
 #if INJ_CHANNELS >= 6
   SET_FUEL_CHANNEL(6)
 #endif
-
 #if INJ_CHANNELS >= 7
   SET_FUEL_CHANNEL(7)
 #endif
-
 #if INJ_CHANNELS >= 8
   SET_FUEL_CHANNEL(8)
 #endif
@@ -254,6 +241,16 @@ BEGIN_LTO_ALWAYS_INLINE(uint16_t) __attribute__((flatten)) setFuelChannelSchedul
 
   return injAngle;
 }
+
+// LCOV_EXCL_START
+BEGIN_LTO_ALWAYS_INLINE(uint16_t) __attribute__((flatten)) setFuelChannelSchedules(const statuses &current)
+{
+  return setFuelChannelSchedules(
+    injectorLimits(current.decoder.getCrankAngle()),
+    current.schedulerCutState.fuelChannels,
+    lookupInjectorAngle(current));
+}
+// LCOV_EXCL_STOP
 
 static inline uint16_t applyFuelTrim(const table3d6RpmLoad &trimTable, uint16_t pw, const config6 &page6, const statuses &current)
 {

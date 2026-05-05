@@ -11,6 +11,7 @@ extern uint16_t lookupInjectorAngle(const statuses &current);
 extern table2D_u8_u16_4 injectorAngleTable;
 extern void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache);
 extern table2D_u8_u8_4 PrimingPulseTable;
+extern uint16_t setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask, uint16_t injAngle);
 
 static void set_all_schedules_off(void)
 {
@@ -218,6 +219,11 @@ static void test_beginInjectorPriming(void)
   }
 }
 
+static void test_setFuelChannelSchedules_returnsInjectionAngle(void)
+{
+  TEST_ASSERT_EQUAL(355U, setFuelChannelSchedules(0, 0, 355));
+}
+
 void test_fuel_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -229,5 +235,6 @@ void test_fuel_controller(void)
     RUN_TEST_P(test_lookupInjectorAngle_clamp_max_inj);
     RUN_TEST_P(test_beginInjectorPriming_floodclear);
     RUN_TEST_P(test_beginInjectorPriming);
+    RUN_TEST_P(test_setFuelChannelSchedules_returnsInjectionAngle);
   }
 }
