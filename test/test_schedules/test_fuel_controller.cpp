@@ -13,6 +13,7 @@ extern void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint
 extern table2D_u8_u8_4 PrimingPulseTable;
 extern uint16_t setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask, uint16_t injAngle);
 extern bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
+extern bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
 
 static void set_all_schedules_off(void)
 {
@@ -253,6 +254,47 @@ static void test_changeToFullSequentialInjection(void)
   TEST_ASSERT_FALSE(changeToFullSequentialInjection(page2, decoderStatus));
 }
 
+static void setup_changeToSemiSequentialInjection(config2 &page2, decoder_status_t &decoderStatus)
+{
+  page2.injLayout = INJ_SEQUENTIAL;
+  page2.nCylinders = 4;
+  decoderStatus.syncStatus=SyncStatus::Partial;
+  CRANK_ANGLE_MAX_INJ = 720U;
+}
+
+static void test_changeToSemiSequentialInjection(void)
+{
+  config2 page2 = {};
+  decoder_status_t decoderStatus = {};
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(page2, decoderStatus));
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  page2.nCylinders = 6;
+  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(page2, decoderStatus));
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  page2.nCylinders = 8;
+  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(page2, decoderStatus));
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  page2.nCylinders = 1;
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  page2.injLayout = INJ_SEMISEQUENTIAL;
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  decoderStatus.syncStatus=SyncStatus::Full;
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+
+  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  CRANK_ANGLE_MAX_INJ = 360U;
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+}
+
 void test_fuel_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -266,5 +308,6 @@ void test_fuel_controller(void)
     RUN_TEST_P(test_beginInjectorPriming);
     RUN_TEST_P(test_setFuelChannelSchedules_returnsInjectionAngle);
     RUN_TEST_P(test_changeToFullSequentialInjection);
+    RUN_TEST_P(test_changeToSemiSequentialInjection);
   }
 }

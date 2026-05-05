@@ -114,7 +114,7 @@ static inline bool isSwitchableCylinderCount(const config2 &page2)
       ;
 }
 
-static inline bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
+TESTABLE_INLINE_STATIC bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
 {
   return (page2.injLayout == INJ_SEQUENTIAL) 
       && isSwitchableCylinderCount(page2)
