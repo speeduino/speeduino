@@ -19,7 +19,7 @@ static void test_status_pending_to_running(Schedule &schedule)
 
 static void test_status_pending_to_running_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    resetFuelSchedules();
     startFuelSchedulers();
     test_status_pending_to_running(schedule);
     stopFuelSchedulers();

@@ -18,7 +18,7 @@ static void test_status_running_to_off(Schedule &schedule)
 
 static void test_status_running_to_off_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    resetFuelSchedules();
     startFuelSchedulers();
     test_status_running_to_off(schedule);
     stopFuelSchedulers();
