@@ -457,7 +457,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
                                     configPage2,
                                     configPage6,
                                     configPage10, 
-                                    currentStatus.decoder.getStatus(),
                                     currentStatus);
       currentStatus.stagingActive = pulse_widths.secondary!=0U;
 

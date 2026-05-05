@@ -114,17 +114,19 @@ static inline bool isSwitchableCylinderCount(const config2 &page2)
       ;
 }
 
-bool isSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
+static inline bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
 {
   return (page2.injLayout == INJ_SEQUENTIAL) 
       && isSwitchableCylinderCount(page2)
-      && decoderStatus.syncStatus==SyncStatus::Partial;
+      && (decoderStatus.syncStatus==SyncStatus::Partial)
+      && (CRANK_ANGLE_MAX_INJ != 360U);
 }
 
-static inline bool isFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
+static inline bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
 {
   return (page2.injLayout == INJ_SEQUENTIAL) 
-      && decoderStatus.syncStatus==SyncStatus::Full;
+      && (decoderStatus.syncStatus==SyncStatus::Full)
+      && (CRANK_ANGLE_MAX_INJ!=720U);
 }
 
 TESTABLE_INLINE_STATIC bool isAnyFuelScheduleRunning(void) {
@@ -154,12 +156,13 @@ static inline void changeFuellingToFullSequential(const config2 &page2, statuses
     {
       CRANK_ANGLE_MAX_INJ = 720;
       current.numPrimaryInjOutputs = page2.nCylinders;
+      current.injLayout = INJ_SEQUENTIAL;
       setupCallbacks(INJ_SEQUENTIAL, page2.nCylinders, 0U);
     }
   }
 }
 
-static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 &page4, statuses &current)
+static inline void changeFuellingToSemiSequential(const config2 &page2, const config4 &page4, statuses &current)
 {
   ATOMIC()
   {
@@ -167,20 +170,28 @@ static inline void changeFuellingtoHalfSync(const config2 &page2, const config4 
     {
       CRANK_ANGLE_MAX_INJ = 360;
       current.numPrimaryInjOutputs = page2.nCylinders/2U;
+      current.injLayout = INJ_SEMISEQUENTIAL;
       setupCallbacks(INJ_SEMISEQUENTIAL, page2.nCylinders, page4.inj4cylPairing);
     }
   }
 }
 
+// If:
+// 1. The users has chosen sequential injection; and
+// 2. We have an even number of cylinders; and
+// 3. Thue engine only has half sync; 
+// Then
+//  change to semi-sequential fuelling *and* change back once sync is restored
 TESTABLE_STATIC void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current) {
   if (isSwitchableCylinderCount(page2))
   {
-    if (isFullSequentialInjection(page2, current.decoder.getStatus()) && ( CRANK_ANGLE_MAX_INJ != 720 )) {
+    if (changeToFullSequentialInjection(page2, current.decoder.getStatus())) {
       changeFuellingToFullSequential(page2, current);
-    } else if(isSemiSequentialInjection(page2, current.decoder.getStatus()) && (CRANK_ANGLE_MAX_INJ != 360) ) { 
-      changeFuellingtoHalfSync(page2, page4, current);
+    } else if(changeToSemiSequentialInjection(page2, current.decoder.getStatus())) { 
+      changeFuellingToSemiSequential(page2, page4, current);
     } else {
-      // Injection layout matches current sync - nothing to do but keep MISRA checker happy
+      // Injection layout matches current sync
+      current.injLayout = page2.injLayout;
     }
   }
 }
@@ -499,4 +510,5 @@ void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, 
 {
   resetFuelSchedules();
   setupCallbacks(page2.injLayout, page2.nCylinders, page4.inj4cylPairing);
+  current.injLayout = page2.injLayout;
 }

@@ -21,7 +21,6 @@ extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 #endif
 
-bool isSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
 uint16_t setFuelChannelSchedules(const statuses &current);
 
 /**

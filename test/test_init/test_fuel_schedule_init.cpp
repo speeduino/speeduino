@@ -67,6 +67,7 @@ static void assert_1cylinder_4stroke_seq_nostage(int assertLineNum)
 	const bool enabled[] = {true, false, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder1_stroke4_seq_nostage(void)
@@ -87,6 +88,7 @@ static void cylinder1_stroke4_semiseq_nostage(void)
 	const bool enabled[] = {true, false, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 }
 
 static void enableStaging(void)
@@ -105,7 +107,8 @@ static void cylinder1_stroke4_seq_staged(void)
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
-  }
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
+}
 
 static void cylinder1_stroke4_semiseq_staged(void)
 {
@@ -116,6 +119,7 @@ static void cylinder1_stroke4_semiseq_staged(void)
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 }
 
 static void run_1_cylinder_4stroke_tests(void)
@@ -141,6 +145,7 @@ static void cylinder1_stroke2_seq_nostage(void)
   const bool enabled[] = {true, false, false, false, false, false, false, false};
   const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, enabled, angle, __LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder1_stroke2_semiseq_nostage(void)
@@ -152,6 +157,7 @@ static void cylinder1_stroke2_semiseq_nostage(void)
 	const bool enabled[] = {true, false, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, enabled, angle, __LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder1_stroke2_seq_staged(void)
@@ -163,6 +169,7 @@ static void cylinder1_stroke2_seq_staged(void)
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, enabled, angle, __LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder1_stroke2_semiseq_staged(void)
@@ -174,6 +181,7 @@ static void cylinder1_stroke2_semiseq_staged(void)
   const bool enabled[] = {true, true, false, false, false, false, false, false};
   const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(360U, enabled, angle, __LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 }
 
 static void run_1_cylinder_2stroke_tests(void)
@@ -195,6 +203,7 @@ static void assert_2cylinder_4stroke_seq_nostage(int assertLineNum)
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
 	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder2_stroke4_seq_nostage(void)
@@ -319,6 +328,7 @@ static void assert_3cylinder_4stroke_seq_nostage(int assertLineNum)
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
 	const uint16_t angle[] = {0,240,480,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder3_stroke4_seq_nostage(void)
@@ -348,6 +358,7 @@ static void assert_3cylinder_semiseq_nostage(int assertLineNum)
  	const bool enabled[] = {true, true, true, false, false, false, false, false};
 	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
   assert_fuel_schedules(360U, enabled, angle, assertLineNum); //Special case as 3 squirts per cycle MUST be over 720 degrees
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder3_stroke4_semiseq_nostage_port(void)
@@ -529,9 +540,10 @@ static void run_3_cylinder_2stroke_tests(void)
 
 static void assert_4cylinder_4stroke_seq_nostage(int assertLineNum)
 {
-    const bool enabled[] = {true, true, true, true, false, false, false, false};
-    const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-    assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  const bool enabled[] = {true, true, true, true, false, false, false, false};
+  const uint16_t angle[] = {0,180,360,540,0,0,0,0};
+  assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void assert_4cylinder_4stroke_paired_nostage(int assertLineNum)
@@ -723,6 +735,7 @@ static void assert_5cylinder_4stroke_seq_nostage(int assertLineNum)
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder5_stroke4_seq_nostage(void)
@@ -800,6 +813,7 @@ static void assert_6cylinder_4stroke_seq_nostage(int assertLineNum)
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder6_stroke4_seq_nostage(void)
@@ -877,6 +891,7 @@ static void assert_8cylinder_4stroke_seq_nostage(int assertLineNum)
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder8_stroke4_seq_nostage(void)
@@ -1138,10 +1153,12 @@ static void test_partial_sync_4_cylinder(void)
   decoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_semiseq_nostage(__LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 
   decoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_4cylinder_4stroke_seq_nostage(__LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void test_partial_sync_5_cylinder(void)
@@ -1197,8 +1214,12 @@ static void test_partial_sync_8_cylinder(void)
   decoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_8cylinder_4stroke_paired_nostage(__LINE__);
+  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, currentStatus.injLayout);
 
   decoderStatus.syncStatus = SyncStatus::Full;
+  matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
+  assert_8cylinder_4stroke_seq_nostage(__LINE__);
+  // Deliberate repeat
   matchFuelSchedulersToSyncState(configPage2, configPage4, currentStatus);
   assert_8cylinder_4stroke_seq_nostage(__LINE__);
 #else

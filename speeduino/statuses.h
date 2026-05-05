@@ -314,6 +314,7 @@ struct statuses {
   uint8_t maxIgnOutputs; /**< Number of ignition outputs being used by the current tune configuration */
   uint8_t numPrimaryInjOutputs : 4; /**< Number of primary injection outputs */
   uint8_t numSecondaryInjOutputs : 4; /**< Number of secondary injection outputs (staged injection only)*/
+  uint8_t injLayout : 3; ///< Normally the same value as config2::injLayout, but under some situations will change to one of the other INJ_* constants
 
   /** @brief Fuel and ignition scheduler cut state. @see calculateFuelIgnitionChannelCut */
   struct scheduler_cut_t
