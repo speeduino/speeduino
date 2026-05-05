@@ -24,7 +24,7 @@ static void test_accuracy_duration(Schedule &schedule)
 
 static void test_accuracy_duration_inj(FuelSchedule &schedule)
 {
-    resetFuelSchedules();
+    schedule.reset();
     startFuelSchedulers();
     test_accuracy_duration(schedule);
     stopFuelSchedulers();
