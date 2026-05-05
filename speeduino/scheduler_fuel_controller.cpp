@@ -122,7 +122,7 @@ static inline bool changeToSemiSequentialInjection(const config2 &page2, const d
       && (CRANK_ANGLE_MAX_INJ != 360U);
 }
 
-static inline bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
+TESTABLE_INLINE_STATIC bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
 {
   return (page2.injLayout == INJ_SEQUENTIAL) 
       && (decoderStatus.syncStatus==SyncStatus::Full)
