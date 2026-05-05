@@ -22,7 +22,7 @@ static void test_status_running_to_pending(Schedule &schedule)
 
 static void test_status_running_to_pending_inj(FuelSchedule &schedule)
 {
-    resetFuelSchedules();
+    schedule.reset();
     startFuelSchedulers();
     test_status_running_to_pending(schedule);
     stopFuelSchedulers();

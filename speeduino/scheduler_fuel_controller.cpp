@@ -397,23 +397,23 @@ BEGIN_LTO_ALWAYS_INLINE(void) applyPwToInjectorChannels(const pulseWidths &pulse
 }
 END_LTO_INLINE()
 
-void resetFuelSchedules(void)
+static void resetFuelSchedules(void)
 {
-    fuelSchedule1.reset();
-    fuelSchedule2.reset();
-    fuelSchedule3.reset();
-    fuelSchedule4.reset();
+  fuelSchedule1.reset();
+  fuelSchedule2.reset();
+  fuelSchedule3.reset();
+  fuelSchedule4.reset();
 #if INJ_CHANNELS >= 5
-    fuelSchedule5.reset();
+  fuelSchedule5.reset();
 #endif
 #if INJ_CHANNELS >= 6
-    fuelSchedule6.reset();
+  fuelSchedule6.reset();
 #endif
 #if INJ_CHANNELS >= 7
-    fuelSchedule7.reset();
+  fuelSchedule7.reset();
 #endif
 #if INJ_CHANNELS >= 8
-    fuelSchedule8.reset();
+  fuelSchedule8.reset();
 #endif
 }
 
@@ -456,7 +456,6 @@ void stopFuelSchedulers(void)
   FUEL8_TIMER_DISABLE();
 #endif  
 }
-
 
 constexpr table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.primePulse);
 

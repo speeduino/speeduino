@@ -18,7 +18,7 @@ void test_status_off_to_pending(Schedule &schedule)
 
 void test_status_off_to_pending_inj(FuelSchedule &schedule)
 {
-    resetFuelSchedules();
+    schedule.reset();
     startFuelSchedulers();
     test_status_off_to_pending(schedule);
     stopFuelSchedulers();
