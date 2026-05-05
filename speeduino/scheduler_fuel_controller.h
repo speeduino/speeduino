@@ -1,3 +1,10 @@
+/**
+ * @file
+ * @brief The fuel schedule controller: manages the timing of opening and closing up to 8 injectors 
+ * 
+ * Anything related to controlling the fuel schedules should be done within this controller.
+ */
+
 #pragma once
 #include "scheduler.h"
 #include "config_pages.h"
@@ -21,10 +28,16 @@ extern FuelSchedule fuelSchedule7;
 extern FuelSchedule fuelSchedule8;
 #endif
 
+/**
+ * @brief Schedule all fuel channels
+ * 
+ * @param current Current system state
+ * @return The injector angle used.
+ */
 uint16_t setFuelChannelSchedules(const statuses &current);
 
 /**
- * @brief Apply the calculated pulse widths to the current system state
+ * @brief Apply the calculated pulse widths to the fuel schedules
  * 
  * @param pulseWidths Result of computePulseWidths()
  * @param page2 Tune settings
@@ -34,14 +47,14 @@ uint16_t setFuelChannelSchedules(const statuses &current);
  */
 void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, statuses &current);
 
-/** @brief Start the timers that drive schedulers  */
+/** @brief Start the timers that drive schedulers */
 void startFuelSchedulers(void);
 
-/** @brief Stop the timers that drive schedulers  */
+/** @brief Stop the timers that drive schedulers */
 void stopFuelSchedulers(void);
 
-/** @brief Start fuel system priming the fuel */
+/** @brief Start priming the fuel system */
 void beginInjectorPriming(const statuses &current, const config4 &page4);
 
-/** @brief Initialise all fuel schedules */
+/** @brief Initialise this module */
 void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4);
