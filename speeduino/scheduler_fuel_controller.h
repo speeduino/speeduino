@@ -46,3 +46,6 @@ void stopFuelSchedulers(void);
 
 /** @brief Start fuel system priming the fuel */
 void beginInjectorPriming(void);
+
+/** @brief Initialise all fuel schedules */
+void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4);

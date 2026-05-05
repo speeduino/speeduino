@@ -225,15 +225,20 @@ static void cylinder2_stroke4_seq_staged(void)
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
 }
 
+static void assert_4channel_over360_staged(int assertLineNum)
+{
+	const bool enabled[] = {true, true, true, true, false, false, false, false};
+	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
+  assert_fuel_schedules(360U, enabled, angle, assertLineNum);
+}
+
 static void cylinder2_stroke4_semiseq_staged(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage2.injTiming = true;
   enableStaging();
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
-  assert_fuel_schedules(360U, enabled, angle, __LINE__);
+  assert_4channel_over360_staged(__LINE__);
 }
 
 static void run_2_cylinder_4stroke_tests(void)
@@ -529,6 +534,13 @@ static void assert_4cylinder_4stroke_seq_nostage(int assertLineNum)
     assert_fuel_schedules(720U, enabled, angle, assertLineNum);
 }
 
+static void assert_4cylinder_4stroke_paired_nostage(int assertLineNum)
+{
+	const bool enabled[] = {true, true, false, false, false, false, false, false};
+	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+  assert_fuel_schedules(360U, enabled, angle, assertLineNum);
+}
+
 static void cylinder4_stroke4_seq_nostage(void)
 {
   configPage2.injLayout = INJ_SEQUENTIAL;
@@ -543,15 +555,6 @@ static void assert_4cylinder_4stroke_semiseq_nostage(int assertLineNum)
 	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
   assert_fuel_schedules(360U, enabled, angle, assertLineNum);
 }
-
-static void cylinder4_stroke4_semiseq_nostage(void)
-{
-  configPage2.injLayout = INJ_SEMISEQUENTIAL;
-  configPage10.stagingEnabled = false;
-  initialiseAll(); //Run the main initialise function
-  assert_4cylinder_4stroke_semiseq_nostage(__LINE__);
-}
-
 
 static void cylinder4_stroke4_seq_staged(void)
 {
@@ -571,14 +574,59 @@ static void cylinder4_stroke4_seq_staged(void)
 #endif
 }
 
-static void cylinder4_stroke4_semiseq_staged(void)
+static void cylinder4_stroke4_paired_nostage(void)  
+{
+  configPage2.injLayout = INJ_PAIRED;
+  configPage10.stagingEnabled = false;
+  initialiseAll(); //Run the main initialise function
+  assert_4cylinder_4stroke_paired_nostage(__LINE__);
+}
+
+static void cylinder4_stroke4_paired_staged(void)  
 {
   configPage2.injLayout = INJ_PAIRED;
   enableStaging();
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
-  assert_fuel_schedules(360U, enabled, angle, __LINE__);
+  assert_4channel_over360_staged(__LINE__);
+}
+
+static void cylinder4_stroke4_semiseq_nostage(uint8_t pairMode)
+{
+  configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage4.inj4cylPairing = pairMode;
+  configPage10.stagingEnabled = false;
+  initialiseAll(); //Run the main initialise function
+  assert_4cylinder_4stroke_paired_nostage(__LINE__);
+}
+
+static void cylinder4_stroke4_semiseq_pair1324_nostage(void)
+{
+  cylinder4_stroke4_semiseq_nostage(INJ_PAIR_13_24);
+}
+
+static void cylinder4_stroke4_semiseq_pair1423_nostage(void)
+{
+  cylinder4_stroke4_semiseq_nostage(INJ_PAIR_14_23);
+}
+
+static void cylinder4_stroke4_semiseq_staged(uint8_t pairMode)
+{
+  configPage2.injLayout = INJ_SEMISEQUENTIAL;
+  configPage4.inj4cylPairing = pairMode;
+  enableStaging();
+  initialiseAll(); //Run the main initialise function
+  // TODO: enable this configuration
+  // assert_4channel_over360_staged();
+}
+
+static void cylinder4_stroke4_semiseq_pair1324_staged(void)
+{
+  cylinder4_stroke4_semiseq_staged(INJ_PAIR_13_24);
+}
+
+static void cylinder4_stroke4_semiseq_pair1423_staged(void)
+{
+  cylinder4_stroke4_semiseq_staged(INJ_PAIR_14_23);
 }
 
 void run_4_cylinder_4stroke_tests(void)
@@ -591,9 +639,13 @@ void run_4_cylinder_4stroke_tests(void)
   configPage2.divider = 2;
 
   RUN_TEST_P(cylinder4_stroke4_seq_nostage);
-  RUN_TEST_P(cylinder4_stroke4_semiseq_nostage);
+  RUN_TEST_P(cylinder4_stroke4_paired_nostage);
+  RUN_TEST_P(cylinder4_stroke4_semiseq_pair1324_nostage);
+  RUN_TEST_P(cylinder4_stroke4_semiseq_pair1423_nostage);
   RUN_TEST_P(cylinder4_stroke4_seq_staged);
-  RUN_TEST_P(cylinder4_stroke4_semiseq_staged);
+  RUN_TEST_P(cylinder4_stroke4_paired_staged);
+  RUN_TEST_P(cylinder4_stroke4_semiseq_pair1324_staged);
+  RUN_TEST_P(cylinder4_stroke4_semiseq_pair1423_staged);
 }
 
 static void cylinder4_stroke2_seq_nostage(void)
