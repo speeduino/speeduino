@@ -225,7 +225,7 @@ void initialiseAll(void)
     //Perform all initialisations
     resetFuelSchedules();
     initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
-    //initialiseDisplay();
+    initialiseFuelSchedules(currentStatus, configPage2, configPage4);
     initialiseIdle(true);
     initialiseFan(pinFan);
     initialiseAirCon();
@@ -815,100 +815,7 @@ void initialiseAll(void)
       if (fuelSchedule4.channelDegrees>=(uint16_t)CRANK_ANGLE_MAX_INJ) { fuelSchedule4.channelDegrees -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
     }
     clampInjectionChannelAngles();
-    
-    switch(configPage2.injLayout)
-    {
-    case INJ_PAIRED:
-        //Paired injection
-        setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-        setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-        setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-        setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-        setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-        break;
-
-    case INJ_SEMISEQUENTIAL:
-        //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
-        if( configPage2.nCylinders == 4 )
-        {
-          if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
-          {
-            setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
-            setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
-          }
-          else
-          {
-            setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
-            setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
-          }
-        }
-        else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
-        {
-          setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-          setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-          setCallbacks(fuelSchedule3, openInjector3and5, closeInjector3and5);
-          setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-        }
-        else if( configPage2.nCylinders == 6 )
-        {
-          setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
-          setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
-          setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
-        }
-        else if( configPage2.nCylinders == 8 )
-        {
-          setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
-          setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
-          setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
-          setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
-        }
-        else
-        {
-          //Fall back to paired injection
-          setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-          setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-          setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-          setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-          setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-        }
-        break;
-
-    case INJ_SEQUENTIAL:
-        //Sequential injection
-        setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-        setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-        setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-        setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-        setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-#if INJ_CHANNELS >= 6
-        setCallbacks(fuelSchedule6, openInjector6, closeInjector6);
-#endif
-#if INJ_CHANNELS >= 7
-        setCallbacks(fuelSchedule7, openInjector7, closeInjector7);
-#endif
-#if INJ_CHANNELS >= 8
-        setCallbacks(fuelSchedule8, openInjector8, closeInjector8);
-#endif
-        break;
-
-    default:
-        //Paired injection
-        setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-        setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-        setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-        setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-        setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-        break;
-    }
-    
+       
     currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
 
     interrupts();

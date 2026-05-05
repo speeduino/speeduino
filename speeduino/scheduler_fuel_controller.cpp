@@ -19,6 +19,93 @@ FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress mi
 FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
+
+static __attribute__((optimize("Os"))) void setupSequentialCallbacks(void)
+{
+  #define SET_CALLBACKS(index) setCallbacks(fuelSchedule ## index, openInjector ## index, closeInjector ## index);\
+  
+  SET_CALLBACKS(1)
+#if INJ_CHANNELS >= 2
+  SET_CALLBACKS(2)
+#endif
+#if INJ_CHANNELS >= 3
+  SET_CALLBACKS(3)
+#endif
+#if INJ_CHANNELS >= 4
+  SET_CALLBACKS(4)
+#endif
+#if INJ_CHANNELS >= 5
+  SET_CALLBACKS(5)
+#endif
+#if INJ_CHANNELS >= 6
+  SET_CALLBACKS(6)
+#endif
+#if INJ_CHANNELS >= 7
+  SET_CALLBACKS(7)
+#endif
+#if INJ_CHANNELS >= 8
+  SET_CALLBACKS(8)
+#endif
+}
+
+static __attribute__((optimize("Os"))) void setupPairedCallbacks(void)
+{
+  setupSequentialCallbacks();
+}
+
+static __attribute__((optimize("Os"))) void setupSemiSequentialCallbacks(uint8_t nCylinders, uint8_t inj4cylPairing)
+{
+  //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
+  if( nCylinders == 4 )
+  {
+    if(inj4cylPairing == INJ_PAIR_13_24)
+    {
+      setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
+      setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
+    }
+    else
+    {
+      setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+      setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
+    }
+  }
+  else if( nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
+  {
+    setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
+    setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
+    setCallbacks(fuelSchedule3, openInjector3and5, closeInjector3and5);
+    setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
+  }
+  else if( nCylinders == 6 )
+  {
+    setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+    setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
+    setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
+  }
+  else if( nCylinders == 8 )
+  {
+    setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
+    setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
+    setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
+    setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
+  }
+  else
+  {
+    setupPairedCallbacks();
+  }
+}
+
+static __attribute__((optimize("Os"))) void setupCallbacks(uint8_t injLayout, uint8_t nCylinders, uint8_t inj4cylPairing)
+{
+  switch(injLayout)
+  {
+  default:
+  case INJ_PAIRED: setupPairedCallbacks(); break;
+  case INJ_SEMISEQUENTIAL: setupSemiSequentialCallbacks(nCylinders, inj4cylPairing); break;
+  case INJ_SEQUENTIAL: setupSequentialCallbacks(); break;
+  }
+}
+
 static inline bool isSwitchableCylinderCount(const config2 &page2)
 {
   return (page2.nCylinders==4U)
@@ -459,4 +546,10 @@ void beginInjectorPriming(void)
     if ( getTotalInjChannelCount(currentStatus) >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
 #endif
   }
+}
+
+void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4)
+{
+  resetFuelSchedules();
+  setupCallbacks(page2.injLayout, page2.nCylinders, page4.inj4cylPairing);
 }
