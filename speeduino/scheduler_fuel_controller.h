@@ -35,8 +35,8 @@ uint16_t setFuelChannelSchedules(const statuses &current);
  */
 void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, statuses &current);
 
-/** @brief Initialize all schedulers to the OFF state */
-void initialiseFuelSchedulers(void);
+/** @brief Reset all fuel scheduler to construction state */
+void resetFuelSchedules(void);
 
 /** @brief Start the timers that drive schedulers  */
 void startFuelSchedulers(void);

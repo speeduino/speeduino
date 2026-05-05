@@ -359,7 +359,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) applyPwToInjectorChannels(const pulseWidths &pulse
 }
 END_LTO_INLINE()
 
-void initialiseFuelSchedulers(void)
+void resetFuelSchedules(void)
 {
     fuelSchedule1.reset();
     fuelSchedule2.reset();

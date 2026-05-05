@@ -26,7 +26,7 @@ static void test_accuracy_timeout(Schedule &schedule)
 
 static void test_accuracy_timeout_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    resetFuelSchedules();
     startFuelSchedulers();
     test_accuracy_timeout(schedule);
     stopFuelSchedulers();

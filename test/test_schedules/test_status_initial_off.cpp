@@ -7,7 +7,7 @@
 
 static void test_status_initial_off_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    resetFuelSchedules();
     TEST_ASSERT_EQUAL(OFF, schedule._status);
 }
 

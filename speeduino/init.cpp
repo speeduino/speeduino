@@ -223,7 +223,7 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseFuelSchedulers();
+    resetFuelSchedules();
     initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
     //initialiseDisplay();
     initialiseIdle(true);
