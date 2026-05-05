@@ -211,7 +211,7 @@ TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8
 BEGIN_LTO_ALWAYS_INLINE(uint16_t) __attribute__((flatten)) setFuelChannelSchedules(const statuses &current)
 {
   uint16_t crankAngle = injectorLimits(current.decoder.getCrankAngle());
-  byte injChannelMask = currentStatus.schedulerCutState.fuelChannels;
+  byte injChannelMask = current.schedulerCutState.fuelChannels;
   uint16_t injAngle = lookupInjectorAngle(current);
 
   injectorAngleCalcCache angleCalcCache;
@@ -457,43 +457,43 @@ void stopFuelSchedulers(void)
 #endif  
 }
 
-constexpr table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.primePulse);
+TESTABLE_CONSTEXPR table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &configPage2.primePulse);
 
 /** Perform the injector priming pulses.
  * Set these to run at an arbitrary time in the future (100us).
  * The prime pulse value is in ms*10, so need to multiple by 100 to get to uS
  */
-void beginInjectorPriming(void)
+void beginInjectorPriming(const statuses &current, const config4 &page4)
 {
-  uint16_t primingValue = (uint16_t)table2D_getValue(&PrimingPulseTable, temperatureAddOffset(currentStatus.coolant));
-  if( (primingValue > 0U) && (currentStatus.TPS <= configPage4.floodClear) )
+  uint16_t primingValue = (uint16_t)table2D_getValue(&PrimingPulseTable, temperatureAddOffset(current.coolant));
+  if( (primingValue > 0U) && (current.TPS <= page4.floodClear) )
   {
     constexpr uint32_t PRIMING_DELAY = 100U; // 100us
     // The prime pulse value is in ms*2, so need to multiply by 500 to get to µS
     constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
 
     primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
-    if ( getTotalInjChannelCount(currentStatus) >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
 #if (INJ_CHANNELS >= 2)
-    if ( getTotalInjChannelCount(currentStatus) >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( getTotalInjChannelCount(currentStatus) >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( getTotalInjChannelCount(currentStatus) >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( getTotalInjChannelCount(currentStatus) >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( getTotalInjChannelCount(currentStatus) >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( getTotalInjChannelCount(currentStatus) >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( getTotalInjChannelCount(currentStatus) >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
+    if ( getTotalInjChannelCount(current) >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
 #endif
   }
 }

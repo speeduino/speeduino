@@ -203,7 +203,7 @@ void oneMSInterval(void)
 
     if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
     { 
-      beginInjectorPriming(); 
+      beginInjectorPriming(currentStatus, configPage4); 
       currentStatus.injPrimed = true; 
     }
     seclx10++;

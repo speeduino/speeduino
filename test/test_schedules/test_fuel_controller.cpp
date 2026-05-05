@@ -10,6 +10,7 @@ extern bool isAnyFuelScheduleRunning(void);
 extern uint16_t lookupInjectorAngle(const statuses &current);
 extern table2D_u8_u16_4 injectorAngleTable;
 extern void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache);
+extern table2D_u8_u8_4 PrimingPulseTable;
 
 static void set_all_schedules_off(void)
 {
@@ -147,6 +148,76 @@ static void test_lookupInjectorAngle_clamp_max_inj(void)
   TEST_ASSERT_EQUAL(CRANK_ANGLE_MAX_INJ, lookupInjectorAngle(current));
 }
 
+constexpr uint8_t PRIMING_PULSE_WIDTH = 5;
+
+static void assert_isPriming(FuelSchedule &schedule, bool priming)
+{
+  if (priming)
+  {
+    TEST_ASSERT_EQUAL(PENDING, schedule._status);
+    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(PRIMING_PULSE_WIDTH*500U), schedule._duration);
+  }
+  else
+  {
+    TEST_ASSERT_EQUAL(OFF, schedule._status);
+  }
+}
+
+static void test_beginInjectorPriming_floodclear(void)
+{
+  stopFuelSchedulers();
+
+  for (uint8_t channel = 0; channel<INJ_CHANNELS; ++channel)
+  {
+    statuses current = {};
+    config4 page4 = {};
+    page4.floodClear = 90;
+    current.TPS = page4.floodClear+1;
+    set_all_schedules_off();
+
+    current.numPrimaryInjOutputs = channel;
+    beginInjectorPriming(current, page4);
+
+    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, false); }, {});
+    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedule2, false); }, {});
+    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedule3, false); }, {});
+    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedule4, false); }, {});
+    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedule5, false); }, {});
+    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedule6, false); }, {});
+    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, false); }, {});
+    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, false); }, {});
+  }
+}
+
+static void test_beginInjectorPriming(void)
+{
+  constexpr int16_t COOLANT_TEMP = 200;
+  stopFuelSchedulers();
+  populate_2dtable(&PrimingPulseTable, PRIMING_PULSE_WIDTH, temperatureAddOffset(COOLANT_TEMP));
+
+  for (uint8_t channel = 0; channel<INJ_CHANNELS; ++channel)
+  {
+    statuses current = {};
+    config4 page4 = {};
+    page4.floodClear = 100;
+    current.TPS = page4.floodClear/2;
+    current.coolant = COOLANT_TEMP;
+    set_all_schedules_off();
+
+    current.numPrimaryInjOutputs = channel;
+    beginInjectorPriming(current, page4);
+
+    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, channel>=1); }, {});
+    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedule2, channel>=2); }, {});
+    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedule3, channel>=3); }, {});
+    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedule4, channel>=4); }, {});
+    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedule5, channel>=5); }, {});
+    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedule6, channel>=6); }, {});
+    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, channel>=7); }, {});
+    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, channel>=8); }, {});
+  }
+}
+
 void test_fuel_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -156,5 +227,7 @@ void test_fuel_controller(void)
     RUN_TEST_P(test_setFuelChannelSchedule_starts_pending_when_enabled);
     RUN_TEST_P(test_setFuelChannelSchedule_ignores_zero_timeout);
     RUN_TEST_P(test_lookupInjectorAngle_clamp_max_inj);
+    RUN_TEST_P(test_beginInjectorPriming_floodclear);
+    RUN_TEST_P(test_beginInjectorPriming);
   }
 }
