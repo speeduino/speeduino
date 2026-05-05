@@ -6,9 +6,9 @@
 #include "units.h"
 #include "scheduler_fuel_controller.h"
 
-TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const decoder_status_t &decoderStatus) {
+TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
-  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (isSemiSequentialInjection(page2, decoderStatus))))
+  if ((page2.strokes == FOUR_STROKE) && (current.injLayout != INJ_SEQUENTIAL))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
     //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
@@ -133,8 +133,8 @@ static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const
   return intermediate;
 }
 
-TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
-  uint16_t REQ_FUEL = calculateRequiredFuel(page2, decoderStatus);
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
+  uint16_t REQ_FUEL = calculateRequiredFuel(page2, current);
 
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
@@ -244,7 +244,7 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
   return page2.injOpen * current.batCorrection; 
 }
 
-pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
   if (current.corrections!=0U) {
     uint16_t pwLimit = calculatePWLimit(page2, current);
     uint16_t injOpenTime = calculateOpenTime(page2, current);
@@ -252,7 +252,6 @@ pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const
                                                               page2,
                                                               page6,
                                                               page10, 
-                                                              decoderStatus,
                                                               current),
                                         pwLimit,
                                         page10,
