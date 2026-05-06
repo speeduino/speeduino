@@ -73,7 +73,7 @@ static byte buildStatus3(const statuses &current)
     current.decoder.getStatus().syncStatus==SyncStatus::Partial,
   };
   byte status3 = setStatusBits(0U, bits);
-  status3 |= (current.nSquirtsStatus << 5U); // Uses bits 5-7
+  status3 |= (current.nSquirts << 5U); // Uses bits 5-7
   return status3;
 }
 
