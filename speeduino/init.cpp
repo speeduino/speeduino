@@ -481,156 +481,6 @@ static void initFuelScheduleAngles(statuses &current, const config2 &page2, cons
   }
 }
 
-static void initIgnitionScheduleAngles(statuses &current, const config2 &page2, config4 &page4)
-{
-  CRANK_ANGLE_MAX_IGN = 360;
-
-  switch (page2.nCylinders) {
-  case 1:
-      ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs = 1;
-
-      //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
-      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
-      break;
-
-  case 2:
-      ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs = 2;
-      if (page2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
-      else { ignitionSchedule2.channelDegrees = page2.oddfire2; }
-
-      //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
-      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
-      break;
-
-  case 3:
-      ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs= 3;
-      if (page2.engineType == EVEN_FIRE )
-      {
-        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
-        if( ( (page4.sparkMode == IGN_MODE_SEQUENTIAL) || (page4.sparkMode == IGN_MODE_SINGLE) ) && (page2.strokes == FOUR_STROKE) )
-        {
-          ignitionSchedule2.channelDegrees = 240;
-          ignitionSchedule3.channelDegrees = 480;
-
-          CRANK_ANGLE_MAX_IGN = 720;
-        }
-        else
-        {
-          ignitionSchedule2.channelDegrees = 120;
-          ignitionSchedule3.channelDegrees = 240;
-        }
-      }
-      else
-      {
-        ignitionSchedule2.channelDegrees = page2.oddfire2;
-        ignitionSchedule3.channelDegrees = page2.oddfire3;
-      }
-      break;
-  case 4:
-      ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
-      if (page2.engineType == EVEN_FIRE )
-      {
-        ignitionSchedule2.channelDegrees = 180;
-
-        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
-        {
-          ignitionSchedule3.channelDegrees = 360;
-          ignitionSchedule4.channelDegrees = 540;
-
-          CRANK_ANGLE_MAX_IGN = 720;
-          current.maxIgnOutputs= 4;
-        }
-        if(page4.sparkMode == IGN_MODE_ROTARY)
-        {
-          //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
-          ignitionSchedule3.channelDegrees = 0;
-          ignitionSchedule4.channelDegrees = 180;
-          current.maxIgnOutputs= 4;
-
-          page4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
-        }
-      }
-      else
-      {
-        ignitionSchedule2.channelDegrees = page2.oddfire2;
-        ignitionSchedule3.channelDegrees = page2.oddfire3;
-        ignitionSchedule4.channelDegrees = page2.oddfire4;
-        current.maxIgnOutputs= 4;
-      }
-      break;
-  case 5:
-      ignitionSchedule1.channelDegrees = 0;
-      ignitionSchedule2.channelDegrees = 72;
-      ignitionSchedule3.channelDegrees = 144;
-      ignitionSchedule4.channelDegrees = 216;
-#if (IGN_CHANNELS >= 5)
-      ignitionSchedule5.channelDegrees = 288;
-#endif
-      current.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
-
-      if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
-      {
-        ignitionSchedule2.channelDegrees = 144;
-        ignitionSchedule3.channelDegrees = 288;
-        ignitionSchedule4.channelDegrees = 432;
-#if (IGN_CHANNELS >= 5)
-        ignitionSchedule5.channelDegrees = 576;
-#endif
-
-        CRANK_ANGLE_MAX_IGN = 720;
-      }
-      break;
-  case 6:
-      ignitionSchedule1.channelDegrees = 0;
-      ignitionSchedule2.channelDegrees = 120;
-      ignitionSchedule3.channelDegrees = 240;
-      current.maxIgnOutputs= 3;
-
-  #if IGN_CHANNELS >= 6
-      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL))
-      {
-      ignitionSchedule4.channelDegrees = 360;
-      ignitionSchedule5.channelDegrees = 480;
-      ignitionSchedule6.channelDegrees = 600;
-      CRANK_ANGLE_MAX_IGN = 720;
-      current.maxIgnOutputs= 6;
-      }
-  #endif
-      break;
-  case 8:
-      ignitionSchedule1.channelDegrees = 0;
-      ignitionSchedule2.channelDegrees = 90;
-      ignitionSchedule3.channelDegrees = 180;
-      ignitionSchedule4.channelDegrees = 270;
-      current.maxIgnOutputs= 4;
-
-      if( (page4.sparkMode == IGN_MODE_SINGLE))
-      {
-        current.maxIgnOutputs= 4;
-        CRANK_ANGLE_MAX_IGN = 360;
-      }
-  
-  #if IGN_CHANNELS >= 8
-      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL))
-      {
-      ignitionSchedule5.channelDegrees = 360;
-      ignitionSchedule6.channelDegrees = 450;
-      ignitionSchedule7.channelDegrees = 540;
-      ignitionSchedule8.channelDegrees = 630;
-      current.maxIgnOutputs= 8;
-      CRANK_ANGLE_MAX_IGN = 720;
-      }
-  #endif
-      break;
-  default: //Handle this better!!!
-    break;
-  }
-}
-
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
  * - Initialise and set sizes of 3D tables
@@ -709,7 +559,7 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinNumbers.pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
+    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10);
     initialiseFuelSchedules(currentStatus, configPage2, configPage4);
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);
@@ -791,9 +641,7 @@ void initialiseAll(void)
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
 
   initFuelScheduleAngles(currentStatus, configPage2, configPage10);
-  initIgnitionScheduleAngles(currentStatus, configPage2, configPage4);
-
-   
+     
     //Special case:
     //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
     //This is ONLY the case on 4 stroke systems
