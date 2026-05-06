@@ -62,4 +62,4 @@ void startIgnitionSchedulers(void);
 void stopIgnitionSchedulers(void);
 
 /** @brief Initialise all ignition schedules */
-void initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode);
+void initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10);
