@@ -15,11 +15,11 @@ static void test_timeout_TooLarge(void) {
   raw_compare_t compare = {0};
   Schedule schedule(counter, compare);
 
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
   setSchedule(schedule, MAX_TIMER_PERIOD, DURATION, true);
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
 }
 
 static void test_timeout_TooSmall(void) {
@@ -27,11 +27,11 @@ static void test_timeout_TooSmall(void) {
   raw_compare_t compare = {0};
   Schedule schedule(counter, compare);
 
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
   setSchedule(schedule, 0U, DURATION, true);
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
 }
 
 static void test_duration_TooLarge(void) {
@@ -41,11 +41,11 @@ static void test_duration_TooLarge(void) {
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
 
-    TEST_ASSERT_EQUAL(OFF, schedule.Status);
-    TEST_ASSERT_EQUAL(0, schedule.duration);
+    TEST_ASSERT_EQUAL(OFF, schedule._status);
+    TEST_ASSERT_EQUAL(0, schedule._duration);
     setSchedule(schedule, TIMEOUT, (uint16_t)MAX_TIMER_PERIOD+1U, true);
-    TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(MAX_TIMER_PERIOD - 1U), schedule.duration);
+    TEST_ASSERT_EQUAL(PENDING, schedule._status);
+    TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(MAX_TIMER_PERIOD - 1U), schedule._duration);
   }
   else
   {
@@ -58,11 +58,11 @@ static void test_duration_TooSmall(void) {
   raw_compare_t compare = {0};
   Schedule schedule(counter, compare);
 
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
   setSchedule(schedule, TIMEOUT, 0U, true);
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
 }
 
 static void test_schedule_OFF_to_PENDING(void) {
@@ -70,14 +70,14 @@ static void test_schedule_OFF_to_PENDING(void) {
   raw_compare_t compare = {0};
   Schedule schedule(counter, compare);
 
-  TEST_ASSERT_EQUAL(OFF, schedule.Status);
-  TEST_ASSERT_EQUAL(0, schedule.duration);
-  TEST_ASSERT_EQUAL(0, schedule.nextStartCompare);
+  TEST_ASSERT_EQUAL(OFF, schedule._status);
+  TEST_ASSERT_EQUAL(0, schedule._duration);
+  TEST_ASSERT_EQUAL(0, schedule._nextStartCompare);
   TEST_ASSERT_EQUAL(0, schedule._compare);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER, schedule._counter);
   setSchedule(schedule, TIMEOUT, DURATION, true);
-  TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule.duration);
+  TEST_ASSERT_EQUAL(PENDING, schedule._status);
+  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule._duration);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
 }
 
@@ -88,8 +88,8 @@ static void test_schedule_PENDING_to_PENDING(void) {
 
   // setSchedule(schedule, TIMEOUT, DURATION, true);
   setSchedule(schedule, TIMEOUT+1000, DURATION+500, true);
-  TEST_ASSERT_EQUAL(PENDING, schedule.Status);
-  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+500), schedule.duration);
+  TEST_ASSERT_EQUAL(PENDING, schedule._status);
+  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+500), schedule._duration);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+1000), schedule._compare);
 }
 
@@ -105,14 +105,14 @@ static void test_schedule_RUNNING_to_RUNNINGWITHNEXT(void) {
   setSchedule(schedule, TIMEOUT, DURATION, true);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
 
-  schedule.Status = RUNNING;
+  schedule._status = RUNNING;
   setSchedule(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET, true);
   // Should not have changed
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
   // These should have changed
-  TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
-  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule.duration);
-  TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule.nextStartCompare);
+  TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule._status);
+  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule._duration);
+  TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule._nextStartCompare);
 }
 
 static void test_schedule_RUNNINGWITHNEXT_to_RUNNINGWITHNEXT(void) 
@@ -128,14 +128,14 @@ static void test_schedule_RUNNINGWITHNEXT_to_RUNNINGWITHNEXT(void)
   setSchedule(schedule, TIMEOUT, DURATION, true);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
 
-  schedule.Status = RUNNING_WITHNEXT;
+  schedule._status = RUNNING_WITHNEXT;
   setSchedule(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET, true);
   // Should not have changed
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
-  TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule.Status);
+  TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule._status);
   // These should have changed
-  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule.duration);
-  TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule.nextStartCompare);
+  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule._duration);
+  TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule._nextStartCompare);
 }
 
 static void test_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
@@ -146,13 +146,13 @@ static void test_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
   setSchedule(schedule, TIMEOUT, DURATION, true);
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
 
-  schedule.Status = RUNNING;
+  schedule._status = RUNNING;
   setSchedule(schedule, TIMEOUT+77U, DURATION+66U, false /* This should prevent the schedule being queued*/);
   // Should not have changed
   TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
-  TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
-  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule.duration);
-  TEST_ASSERT_EQUAL(0, schedule.nextStartCompare);
+  TEST_ASSERT_EQUAL(RUNNING, schedule._status);
+  TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule._duration);
+  TEST_ASSERT_EQUAL(0, schedule._nextStartCompare);
 }
 
 void test_schedule(void)

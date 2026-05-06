@@ -2,7 +2,7 @@
 #include "decoders.h"
 #include "globals.h"
 #include "../../test_utils.h"
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "decoder_init.h"
 #include "scheduler_ignition_controller.h"
 

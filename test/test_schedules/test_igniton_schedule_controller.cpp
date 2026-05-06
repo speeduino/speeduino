@@ -142,14 +142,14 @@ static void test_setIgnitionChannels_mask_enables_and_disables_channels(void)
         setIgnitionChannels(context.current, 0U, context.current.dwell);
 
         // Enabled channels should be pending, disabled should remain OFF
-        RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule1.Status); } }, {});
-        RUNIF_IGNCHANNEL2( { if (context.current.maxIgnOutputs>=2) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule2.Status); } }, {});
-        RUNIF_IGNCHANNEL3( { if (context.current.maxIgnOutputs>=3) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule3.Status); } }, {});
-        RUNIF_IGNCHANNEL4( { if (context.current.maxIgnOutputs>=4) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule4.Status); } }, {});
-        RUNIF_IGNCHANNEL5( { if (context.current.maxIgnOutputs>=5) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule5.Status); } }, {});
-        RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule6.Status); } }, {});
-        RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule7.Status); } }, {});
-        RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule8.Status); } }, {});
+        RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule1._status); } }, {});
+        RUNIF_IGNCHANNEL2( { if (context.current.maxIgnOutputs>=2) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule2._status); } }, {});
+        RUNIF_IGNCHANNEL3( { if (context.current.maxIgnOutputs>=3) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule3._status); } }, {});
+        RUNIF_IGNCHANNEL4( { if (context.current.maxIgnOutputs>=4) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule4._status); } }, {});
+        RUNIF_IGNCHANNEL5( { if (context.current.maxIgnOutputs>=5) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule5._status); } }, {});
+        RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule6._status); } }, {});
+        RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule7._status); } }, {});
+        RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule8._status); } }, {});
     }
 }
 
@@ -194,7 +194,7 @@ static void test_changeIgnitionToFullSequential(void)
 static void test_changeIgnitionToFullSequential_running_schedule(void)
 {
     resetIgnitionSchedulers();
-    ignitionSchedule1.Status = ScheduleStatus::RUNNING;
+    ignitionSchedule1._status = ScheduleStatus::RUNNING;
     test_changeIgnitionToFullSequential_notapplied(1U);
     test_changeIgnitionToFullSequential_notapplied(2U);
     test_changeIgnitionToFullSequential_notapplied(3U);
@@ -246,7 +246,7 @@ static void test_changeIgnitionToHalfSync(void)
 static void test_changeIgnitionToHalfSync_runningschedule(void)
 {
     resetIgnitionSchedulers();
-    ignitionSchedule1.Status = ScheduleStatus::RUNNING;
+    ignitionSchedule1._status = ScheduleStatus::RUNNING;
     test_changeIgnitionToHalfSync_notapplied(1U);
     test_changeIgnitionToHalfSync_notapplied(2U);
     test_changeIgnitionToHalfSync_notapplied(3U);
@@ -260,9 +260,9 @@ static void test_changeIgnitionToHalfSync_runningschedule(void)
 static void assert_isAnyIgnScheduleRunning(IgnitionSchedule & schedule)
 {
     TEST_ASSERT_FALSE(isAnyIgnScheduleRunning());
-    schedule.Status = RUNNING;
+    schedule._status = RUNNING;
     TEST_ASSERT_TRUE(isAnyIgnScheduleRunning());
-    schedule.Status = OFF;
+    schedule._status = OFF;
 }
 
 static void test_isAnyIgnScheduleRunning(void)
@@ -281,8 +281,8 @@ static void test_isAnyIgnScheduleRunning(void)
 
 static void assert_callbacks(IgnitionSchedule &schedule, IgnitionSchedule::callback start, IgnitionSchedule::callback end)
 {
-    TEST_ASSERT_EQUAL_PTR (start, schedule.pStartCallback);
-    TEST_ASSERT_EQUAL_PTR (end, schedule.pEndCallback);
+    TEST_ASSERT_EQUAL_PTR (start, schedule._pStartCallback);
+    TEST_ASSERT_EQUAL_PTR (end, schedule._pEndCallback);
 }
 
 static void assert_singlechannel_callbacks(void)
@@ -486,27 +486,27 @@ static void test_initialize_rotary_rx8_callbacks(void)
 void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST(test_calculateIgnitionAngles_nonrotary);
-    RUN_TEST(test_calculateIgnitionAngles_rotary);
-    RUN_TEST(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
-    RUN_TEST(test_calculateIgnitionAngles_sync_state_transitions);
-    RUN_TEST(test_setIgnitionChannels_mask_enables_and_disables_channels);
-    RUN_TEST(test_changeIgnitionToFullSequential);
-    RUN_TEST(test_changeIgnitionToFullSequential_running_schedule);
-    RUN_TEST(test_changeIgnitionToHalfSync);
-    RUN_TEST(test_changeIgnitionToHalfSync_runningschedule);
-    RUN_TEST(test_isAnyIgnScheduleRunning);
-    RUN_TEST(test_initialize_singlechannel_callbacks);
-    RUN_TEST(test_initialize_wastedCOP1_callbacks);
-    RUN_TEST(test_initialize_wastedCOP2_callbacks);
-    RUN_TEST(test_initialize_wastedCOP3_callbacks);
-    RUN_TEST(test_initialize_wastedCOP4_callbacks);
-    RUN_TEST(test_initialize_wastedCOP5_callbacks);
-    RUN_TEST(test_initialize_wastedCOP6_callbacks);
-    RUN_TEST(test_initialize_wastedCOP8_callbacks);
-    RUN_TEST(test_initialize_sequential_callbacks);
-    RUN_TEST(test_initialize_rotary_fc_callbacks);
-    RUN_TEST(test_initialize_rotary_fd_callbacks);
-    RUN_TEST(test_initialize_rotary_rx8_callbacks);
+    RUN_TEST_P(test_calculateIgnitionAngles_nonrotary);
+    RUN_TEST_P(test_calculateIgnitionAngles_rotary);
+    RUN_TEST_P(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
+    RUN_TEST_P(test_calculateIgnitionAngles_sync_state_transitions);
+    RUN_TEST_P(test_setIgnitionChannels_mask_enables_and_disables_channels);
+    RUN_TEST_P(test_changeIgnitionToFullSequential);
+    RUN_TEST_P(test_changeIgnitionToFullSequential_running_schedule);
+    RUN_TEST_P(test_changeIgnitionToHalfSync);
+    RUN_TEST_P(test_changeIgnitionToHalfSync_runningschedule);
+    RUN_TEST_P(test_isAnyIgnScheduleRunning);
+    RUN_TEST_P(test_initialize_singlechannel_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP1_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP2_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP3_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP4_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP5_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP6_callbacks);
+    RUN_TEST_P(test_initialize_wastedCOP8_callbacks);
+    RUN_TEST_P(test_initialize_sequential_callbacks);
+    RUN_TEST_P(test_initialize_rotary_fc_callbacks);
+    RUN_TEST_P(test_initialize_rotary_fd_callbacks);
+    RUN_TEST_P(test_initialize_rotary_rx8_callbacks);
   }
 }

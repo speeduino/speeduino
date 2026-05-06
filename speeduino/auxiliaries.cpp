@@ -17,6 +17,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/fastInputPin.h"
 #include "src/pins/fastOutputPin.h"
 #include "src/pins/outputPin.h"
+#include "scheduler_fuel_controller.h"
 
 constexpr uint8_t SIMPLE_BOOST_P = 1U;
 constexpr uint8_t SIMPLE_BOOST_I = 1U;
@@ -1218,7 +1219,7 @@ void wmiControl(void)
           break;
         case WMI_MODE_CLOSEDLOOP:
           // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
-          wmiPW = max(0, ((int)currentStatus.PW1 + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, (uint16_t)currentStatus.MAP, currentStatus.RPM) / 200;
+          wmiPW = max(0, ((int)fuelSchedule1.pw + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, (uint16_t)currentStatus.MAP, currentStatus.RPM) / 200;
           break;
         default:
           // Wrong mode

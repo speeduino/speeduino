@@ -79,7 +79,7 @@ static void test_applyChannelOverDwellProtection_notRunning(void) {
   counter = 0;
   setCallbacks(schedule, counter_callback, counter_callback);
 
-  schedule.Status = PENDING;
+  schedule._status = PENDING;
   schedule._startTime = 0; 
   applyChannelOverDwellProtection(schedule, 1000);
   TEST_ASSERT_EQUAL(0, counter); // Check that the callback was not called when the schedule is not running
@@ -93,7 +93,7 @@ static void test_applyChannelOverDwellProtection_running_notimeout(void) {
   counter = 0;
   setCallbacks(schedule, counter_callback, counter_callback);
   
-  schedule.Status = RUNNING;
+  schedule._status = RUNNING;
   schedule._startTime = 2000; 
   applyChannelOverDwellProtection(schedule, 1000);
   TEST_ASSERT_EQUAL(0, counter); // Check that the callback was not called when the schedule is not running
@@ -107,7 +107,7 @@ static void test_applyChannelOverDwellProtection_running_timeout(void) {
   counter = 0;
   setCallbacks(schedule, counter_callback, counter_callback);
 
-  schedule.Status = RUNNING;
+  schedule._status = RUNNING;
   schedule._startTime = 0; 
   applyChannelOverDwellProtection(schedule, 1000);
   TEST_ASSERT_EQUAL(1, counter); // Check that the callback was called when the schedule is running
@@ -116,10 +116,10 @@ static void test_applyChannelOverDwellProtection_running_timeout(void) {
 void test_overdwell(void)
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST(test_isOverDwellActive_rpmAboveLimit);
-    RUN_TEST(test_isOverDwellActive_rpmBelowLimit);
-    RUN_TEST(test_applyChannelOverDwellProtection_notRunning);
-    RUN_TEST(test_applyChannelOverDwellProtection_running_notimeout);
-    RUN_TEST(test_applyChannelOverDwellProtection_running_timeout);
+    RUN_TEST_P(test_isOverDwellActive_rpmAboveLimit);
+    RUN_TEST_P(test_isOverDwellActive_rpmBelowLimit);
+    RUN_TEST_P(test_applyChannelOverDwellProtection_notRunning);
+    RUN_TEST_P(test_applyChannelOverDwellProtection_running_notimeout);
+    RUN_TEST_P(test_applyChannelOverDwellProtection_running_timeout);
   }
 }

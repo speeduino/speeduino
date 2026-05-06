@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "../test_utils.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 
@@ -12,14 +12,14 @@
 static void test_status_pending_to_running(Schedule &schedule)
 {
     setSchedule(schedule, TIMEOUT, DURATION, true);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    while(schedule._status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(RUNNING, schedule._status);
+    while(schedule._status != OFF) /*Wait*/ ;
 }
 
 static void test_status_pending_to_running_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    schedule.reset();
     startFuelSchedulers();
     test_status_pending_to_running(schedule);
     stopFuelSchedulers();

@@ -10,8 +10,7 @@
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "programmableIOControl.h"
-#include "scheduler.h"
-#include "schedule_calcs.h"
+#include "scheduler_fuel_controller.h"
 #include "auxiliaries.h"
 #include "sensors.h"
 #include "decoders.h"
@@ -85,6 +84,33 @@ static void processResetStorageRequest(void) {
 #endif
 }
 #endif
+
+/** @brief Limit all injection schedule channel angles to 0-CRANK_ANGLE_MAX_INJ */
+static void clampInjectionChannelAngles(void)
+{
+  fuelSchedule1.channelDegrees = injectorLimits(fuelSchedule1.channelDegrees);
+#if INJ_CHANNELS>=2
+  fuelSchedule2.channelDegrees = injectorLimits(fuelSchedule2.channelDegrees);
+#endif
+#if INJ_CHANNELS>=3
+  fuelSchedule3.channelDegrees = injectorLimits(fuelSchedule3.channelDegrees);
+#endif
+#if INJ_CHANNELS>=4
+  fuelSchedule4.channelDegrees = injectorLimits(fuelSchedule4.channelDegrees);
+#endif
+#if INJ_CHANNELS>=5
+  fuelSchedule5.channelDegrees = injectorLimits(fuelSchedule5.channelDegrees);
+#endif
+#if INJ_CHANNELS>=6
+  fuelSchedule6.channelDegrees = injectorLimits(fuelSchedule6.channelDegrees);
+#endif
+#if INJ_CHANNELS>=7
+  fuelSchedule7.channelDegrees = injectorLimits(fuelSchedule7.channelDegrees);
+#endif
+#if INJ_CHANNELS>=8
+  fuelSchedule8.channelDegrees = injectorLimits(fuelSchedule8.channelDegrees);
+#endif
+}
 
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
@@ -197,9 +223,8 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseFuelSchedulers();
     initialiseIgnitionSchedules(configPage4.sparkMode, configPage2.nCylinders, configPage10.rotaryType);
-    //initialiseDisplay();
+    initialiseFuelSchedules(currentStatus, configPage2, configPage4);
     initialiseIdle(true);
     initialiseFan(pinFan);
     initialiseAirCon();
@@ -279,7 +304,8 @@ void initialiseAll(void)
     CRANK_ANGLE_MAX_IGN = 360;
     CRANK_ANGLE_MAX_INJ = 360;
 
-    currentStatus.maxInjOutputs = 1; // Disable all injectors expect channel 1
+    currentStatus.numPrimaryInjOutputs = 1; // Disable all injectors expect channel 1
+    currentStatus.numSecondaryInjOutputs = 0;
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
@@ -287,9 +313,9 @@ void initialiseAll(void)
     switch (configPage2.nCylinders) {
     case 1:
         ignitionSchedule1.channelDegrees = 0;
-        channel1InjDegrees = 0;
-        currentStatus.maxIgnOutputs= 1;
-        currentStatus.maxInjOutputs = 1;
+        fuelSchedule1.channelDegrees = 0;
+        currentStatus.maxIgnOutputs = 1;
+        currentStatus.numPrimaryInjOutputs = 1;
 
         //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
@@ -303,16 +329,16 @@ void initialiseAll(void)
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          currentStatus.maxInjOutputs = 2;
-          channel2InjDegrees = channel1InjDegrees;
+          currentStatus.numSecondaryInjOutputs = 1;
+          fuelSchedule2.channelDegrees = fuelSchedule1.channelDegrees;
         }
         break;
 
     case 2:
         ignitionSchedule1.channelDegrees = 0;
-        channel1InjDegrees = 0;
-        currentStatus.maxIgnOutputs= 2;
-        currentStatus.maxInjOutputs = 2;
+        fuelSchedule1.channelDegrees = 0;
+        currentStatus.maxIgnOutputs = 2;
+        currentStatus.numPrimaryInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
         else { ignitionSchedule2.channelDegrees = configPage2.oddfire2; }
 
@@ -325,22 +351,22 @@ void initialiseAll(void)
           currentStatus.nSquirts = 1;
         }
         //The below are true regardless of whether this is running sequential or not
-        if (configPage2.engineType == EVEN_FIRE ) { channel2InjDegrees = 180; }
-        else { channel2InjDegrees = configPage2.oddfire2; }
+        if (configPage2.engineType == EVEN_FIRE ) { fuelSchedule2.channelDegrees = 180; }
+        else { fuelSchedule2.channelDegrees = configPage2.oddfire2; }
         if (!configPage2.injTiming) 
         { 
           //For simultaneous, all squirts happen at the same time
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 0; 
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 0; 
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          currentStatus.maxInjOutputs = 4;
+          currentStatus.numSecondaryInjOutputs = 2;
 
-          channel3InjDegrees = channel1InjDegrees;
-          channel4InjDegrees = channel2InjDegrees;
+          fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
+          fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
         }
 
         break;
@@ -348,7 +374,7 @@ void initialiseAll(void)
     case 3:
         ignitionSchedule1.channelDegrees = 0;
         currentStatus.maxIgnOutputs= 3;
-        currentStatus.maxInjOutputs = 3;
+        currentStatus.numPrimaryInjOutputs = 3;
         if (configPage2.engineType == EVEN_FIRE )
         {
           //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
@@ -374,9 +400,9 @@ void initialiseAll(void)
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 120;
-          channel3InjDegrees = 240;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 120;
+          fuelSchedule3.channelDegrees = 240;
 
           if(configPage2.injType == INJ_TYPE_PORT)
           { 
@@ -389,16 +415,16 @@ void initialiseAll(void)
           //Adjust the injection angles based on the number of squirts
           if (currentStatus.nSquirts > 2)
           {
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule3.channelDegrees = (fuelSchedule3.channelDegrees * 2) / currentStatus.nSquirts;
           }
 
           if (!configPage2.injTiming) 
           { 
             //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0;
-            channel3InjDegrees = 0; 
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 0;
+            fuelSchedule3.channelDegrees = 0; 
           } 
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
@@ -407,48 +433,48 @@ void initialiseAll(void)
 
           if(configPage2.strokes == TWO_STROKE)
           {
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 120;
-            channel3InjDegrees = 240;
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 120;
+            fuelSchedule3.channelDegrees = 240;
             CRANK_ANGLE_MAX_INJ = 360;
           }
           else
           {
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 240;
-            channel3InjDegrees = 480;
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 240;
+            fuelSchedule3.channelDegrees = 480;
             CRANK_ANGLE_MAX_INJ = 720;
           }
         }
         else
         {
           //Should never happen, but default values
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 120;
-          channel3InjDegrees = 240;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 120;
+          fuelSchedule3.channelDegrees = 240;
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
           #if INJ_CHANNELS >= 6
-            currentStatus.maxInjOutputs = 6;
+            currentStatus.numSecondaryInjOutputs = 3;
 
-            channel4InjDegrees = channel1InjDegrees;
-            channel5InjDegrees = channel2InjDegrees;
-            channel6InjDegrees = channel3InjDegrees;
+            fuelSchedule4.channelDegrees = fuelSchedule1.channelDegrees;
+            fuelSchedule5.channelDegrees = fuelSchedule2.channelDegrees;
+            fuelSchedule6.channelDegrees = fuelSchedule3.channelDegrees;
           #else
             //Staged output is on channel 4
-            currentStatus.maxInjOutputs = 4;
-            channel4InjDegrees = channel1InjDegrees;
+            currentStatus.numSecondaryInjOutputs = 1;
+            fuelSchedule4.channelDegrees = fuelSchedule1.channelDegrees;
           #endif
         }
         break;
     case 4:
         ignitionSchedule1.channelDegrees = 0;
-        channel1InjDegrees = 0;
-        currentStatus.maxIgnOutputs= 2; //Default value for 4 cylinder, may be changed below
-        currentStatus.maxInjOutputs = 2;
+        fuelSchedule1.channelDegrees = 0;
+        currentStatus.maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
+        currentStatus.numPrimaryInjOutputs = 2;
         if (configPage2.engineType == EVEN_FIRE )
         {
           ignitionSchedule2.channelDegrees = 180;
@@ -482,28 +508,28 @@ void initialiseAll(void)
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) || (configPage2.strokes == TWO_STROKE) )
         {
-          channel2InjDegrees = 180;
+          fuelSchedule2.channelDegrees = 180;
 
           if (!configPage2.injTiming) 
           { 
             //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0; 
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 0; 
           }
           else if (currentStatus.nSquirts > 2)
           {
             //Adjust the injection angles based on the number of squirts
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / currentStatus.nSquirts;
           }
           else { } //Do nothing, default values are correct
         }
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel2InjDegrees = 180;
-          channel3InjDegrees = 360;
-          channel4InjDegrees = 540;
+          fuelSchedule2.channelDegrees = 180;
+          fuelSchedule3.channelDegrees = 360;
+          fuelSchedule4.channelDegrees = 540;
 
-          currentStatus.maxInjOutputs = 4;
+          currentStatus.numPrimaryInjOutputs = 4;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -511,37 +537,37 @@ void initialiseAll(void)
         else
         {
           //Should never happen, but default values
-          currentStatus.maxInjOutputs = 2;
+          currentStatus.numPrimaryInjOutputs = 2;
         }
 
         //Check if injector staging is enabled
         if(configPage10.stagingEnabled == true)
         {
-          currentStatus.maxInjOutputs = 4;
+          currentStatus.numPrimaryInjOutputs = 4;
 
           if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
           {
             //Staging with 4 cylinders semi/sequential requires 8 total channels
             #if INJ_CHANNELS >= 8
-              currentStatus.maxInjOutputs = 8;
+              currentStatus.numSecondaryInjOutputs = 4;
 
-              channel5InjDegrees = channel1InjDegrees;
-              channel6InjDegrees = channel2InjDegrees;
-              channel7InjDegrees = channel3InjDegrees;
-              channel8InjDegrees = channel4InjDegrees;
+              fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
+              fuelSchedule6.channelDegrees = fuelSchedule2.channelDegrees;
+              fuelSchedule7.channelDegrees = fuelSchedule3.channelDegrees;
+              fuelSchedule8.channelDegrees = fuelSchedule4.channelDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //Put the staging output to the non-existent channel 5
               #if (INJ_CHANNELS >= 5)
-              currentStatus.maxInjOutputs = 5;
-              channel5InjDegrees = channel1InjDegrees;
+              currentStatus.numSecondaryInjOutputs = 1;
+              fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
               #endif
             #endif
           }
           else
           {
-            channel3InjDegrees = channel1InjDegrees;
-            channel4InjDegrees = channel2InjDegrees;
+            fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
+            fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
           }
         }
 
@@ -555,7 +581,7 @@ void initialiseAll(void)
         ignitionSchedule5.channelDegrees = 288;
 #endif
         currentStatus.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
-        currentStatus.maxInjOutputs = 4; //Is updated below to 5 if there are enough channels
+        currentStatus.numPrimaryInjOutputs = 4; //Is updated below to 5 if there are enough channels
 
         if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
         {
@@ -575,22 +601,22 @@ void initialiseAll(void)
           if (!configPage2.injTiming) 
           { 
             //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0;
-            channel3InjDegrees = 0;
-            channel4InjDegrees = 0;
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 0;
+            fuelSchedule3.channelDegrees = 0;
+            fuelSchedule4.channelDegrees = 0;
 #if (INJ_CHANNELS >= 5)
-            channel5InjDegrees = 0; 
+            fuelSchedule5.channelDegrees = 0; 
 #endif
           }
           else
           {
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 72;
-            channel3InjDegrees = 144;
-            channel4InjDegrees = 216;
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 72;
+            fuelSchedule3.channelDegrees = 144;
+            fuelSchedule4.channelDegrees = 216;
 #if (INJ_CHANNELS >= 5)
-            channel5InjDegrees = 288;
+            fuelSchedule5.channelDegrees = 288;
 #endif
 
             //Divide by currentStatus.nSquirts ?
@@ -599,13 +625,13 @@ void initialiseAll(void)
     #if INJ_CHANNELS >= 5
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 144;
-          channel3InjDegrees = 288;
-          channel4InjDegrees = 432;
-          channel5InjDegrees = 576;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 144;
+          fuelSchedule3.channelDegrees = 288;
+          fuelSchedule4.channelDegrees = 432;
+          fuelSchedule5.channelDegrees = 576;
 
-          currentStatus.maxInjOutputs = 5;
+          currentStatus.numPrimaryInjOutputs = 5;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -613,7 +639,7 @@ void initialiseAll(void)
     #endif
 
     #if INJ_CHANNELS >= 6
-          if(configPage10.stagingEnabled == true) { currentStatus.maxInjOutputs = 6; }
+          if(configPage10.stagingEnabled == true) { currentStatus.numSecondaryInjOutputs = 1; }
     #endif
         break;
     case 6:
@@ -621,7 +647,7 @@ void initialiseAll(void)
         ignitionSchedule2.channelDegrees = 120;
         ignitionSchedule3.channelDegrees = 240;
         currentStatus.maxIgnOutputs= 3;
-        currentStatus.maxInjOutputs = 3;
+        currentStatus.numPrimaryInjOutputs = 3;
 
     #if IGN_CHANNELS >= 6
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL))
@@ -637,57 +663,57 @@ void initialiseAll(void)
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 120;
-          channel3InjDegrees = 240;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 120;
+          fuelSchedule3.channelDegrees = 240;
           if (!configPage2.injTiming)
           {
             //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0;
-            channel3InjDegrees = 0;
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 0;
+            fuelSchedule3.channelDegrees = 0;
           }
           else if (currentStatus.nSquirts > 2)
           {
             //Adjust the injection angles based on the number of squirts
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule3.channelDegrees = (fuelSchedule3.channelDegrees * 2) / currentStatus.nSquirts;
           }
         }
 
     #if INJ_CHANNELS >= 6
         if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 120;
-          channel3InjDegrees = 240;
-          channel4InjDegrees = 360;
-          channel5InjDegrees = 480;
-          channel6InjDegrees = 600;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 120;
+          fuelSchedule3.channelDegrees = 240;
+          fuelSchedule4.channelDegrees = 360;
+          fuelSchedule5.channelDegrees = 480;
+          fuelSchedule6.channelDegrees = 600;
 
-          currentStatus.maxInjOutputs = 6;
+          currentStatus.numPrimaryInjOutputs = 6;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
         }
         else if(configPage10.stagingEnabled == true) //Check if injector staging is enabled
         {
-          currentStatus.maxInjOutputs = 6;
+          currentStatus.numSecondaryInjOutputs = 3;
 
           if( (configPage2.injLayout == INJ_SEQUENTIAL) || (configPage2.injLayout == INJ_SEMISEQUENTIAL) )
           {
             //Staging with 6 cylinders semi/sequential requires 7 total channels
             #if INJ_CHANNELS >= 7
-              currentStatus.maxInjOutputs = 7;
+              currentStatus.numSecondaryInjOutputs = 4;
 
-              channel5InjDegrees = channel1InjDegrees;
-              channel6InjDegrees = channel2InjDegrees;
-              channel7InjDegrees = channel3InjDegrees;
-              channel8InjDegrees = channel4InjDegrees;
+              fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
+              fuelSchedule6.channelDegrees = fuelSchedule2.channelDegrees;
+              fuelSchedule7.channelDegrees = fuelSchedule3.channelDegrees;
+              // TODO: this makes no sense!!
+              fuelSchedule8.channelDegrees = fuelSchedule4.channelDegrees;
             #else
               //This is an invalid config as there are not enough outputs to support sequential + staging
               //No staging output will be active
-              currentStatus.maxInjOutputs = 6;
             #endif
           }
         }
@@ -699,7 +725,7 @@ void initialiseAll(void)
         ignitionSchedule3.channelDegrees = 180;
         ignitionSchedule4.channelDegrees = 270;
         currentStatus.maxIgnOutputs= 4;
-        currentStatus.maxInjOutputs = 4;
+        currentStatus.numPrimaryInjOutputs = 4;
 
 
         if( (configPage4.sparkMode == IGN_MODE_SINGLE))
@@ -724,41 +750,41 @@ void initialiseAll(void)
         //For alternating injection, the squirt occurs at different times for each channel
         if( (configPage2.injLayout == INJ_SEMISEQUENTIAL) || (configPage2.injLayout == INJ_PAIRED) )
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 90;
-          channel3InjDegrees = 180;
-          channel4InjDegrees = 270;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 90;
+          fuelSchedule3.channelDegrees = 180;
+          fuelSchedule4.channelDegrees = 270;
 
           if (!configPage2.injTiming)
           {
             //For simultaneous, all squirts happen at the same time
-            channel1InjDegrees = 0;
-            channel2InjDegrees = 0;
-            channel3InjDegrees = 0;
-            channel4InjDegrees = 0;
+            fuelSchedule1.channelDegrees = 0;
+            fuelSchedule2.channelDegrees = 0;
+            fuelSchedule3.channelDegrees = 0;
+            fuelSchedule4.channelDegrees = 0;
           }
           else if (currentStatus.nSquirts > 2)
           {
             //Adjust the injection angles based on the number of squirts
-            channel2InjDegrees = (channel2InjDegrees * 2) / currentStatus.nSquirts;
-            channel3InjDegrees = (channel3InjDegrees * 2) / currentStatus.nSquirts;
-            channel4InjDegrees = (channel4InjDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule3.channelDegrees = (fuelSchedule3.channelDegrees * 2) / currentStatus.nSquirts;
+            fuelSchedule4.channelDegrees = (fuelSchedule4.channelDegrees * 2) / currentStatus.nSquirts;
           }
         }
 
     #if INJ_CHANNELS >= 8
         else if (configPage2.injLayout == INJ_SEQUENTIAL)
         {
-          channel1InjDegrees = 0;
-          channel2InjDegrees = 90;
-          channel3InjDegrees = 180;
-          channel4InjDegrees = 270;
-          channel5InjDegrees = 360;
-          channel6InjDegrees = 450;
-          channel7InjDegrees = 540;
-          channel8InjDegrees = 630;
+          fuelSchedule1.channelDegrees = 0;
+          fuelSchedule2.channelDegrees = 90;
+          fuelSchedule3.channelDegrees = 180;
+          fuelSchedule4.channelDegrees = 270;
+          fuelSchedule5.channelDegrees = 360;
+          fuelSchedule6.channelDegrees = 450;
+          fuelSchedule7.channelDegrees = 540;
+          fuelSchedule8.channelDegrees = 630;
 
-          currentStatus.maxInjOutputs = 8;
+          currentStatus.numPrimaryInjOutputs = 8;
 
           CRANK_ANGLE_MAX_INJ = 720;
           currentStatus.nSquirts = 1;
@@ -767,8 +793,8 @@ void initialiseAll(void)
 
         break;
     default: //Handle this better!!!
-        channel1InjDegrees = 0;
-        channel2InjDegrees = 180;
+        fuelSchedule1.channelDegrees = 0;
+        fuelSchedule2.channelDegrees = 180;
         break;
     }
 
@@ -781,100 +807,14 @@ void initialiseAll(void)
     {
       if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = (720U / currentStatus.nSquirts); }
     }
-    
-    switch(configPage2.injLayout)
+    if ((configPage2.nCylinders==2U) && (configPage10.stagingEnabled == true))
     {
-    case INJ_PAIRED:
-        //Paired injection
-        setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-        setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-        setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-        setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-        setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-        break;
-
-    case INJ_SEMISEQUENTIAL:
-        //Semi-Sequential injection. Currently possible with 4, 6 and 8 cylinders. 5 cylinder is a special case
-        if( configPage2.nCylinders == 4 )
-        {
-          if(configPage4.inj4cylPairing == INJ_PAIR_13_24)
-          {
-            setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
-            setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
-          }
-          else
-          {
-            setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
-            setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
-          }
-        }
-        else if( configPage2.nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
-        {
-          setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-          setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-          setCallbacks(fuelSchedule3, openInjector3and5, closeInjector3and5);
-          setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-        }
-        else if( configPage2.nCylinders == 6 )
-        {
-          setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
-          setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
-          setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
-        }
-        else if( configPage2.nCylinders == 8 )
-        {
-          setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
-          setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
-          setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
-          setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
-        }
-        else
-        {
-          //Fall back to paired injection
-          setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-          setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-          setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-          setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-          setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-        }
-        break;
-
-    case INJ_SEQUENTIAL:
-        //Sequential injection
-        setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-        setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-        setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-        setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-        setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-#if INJ_CHANNELS >= 6
-        setCallbacks(fuelSchedule6, openInjector6, closeInjector6);
-#endif
-#if INJ_CHANNELS >= 7
-        setCallbacks(fuelSchedule7, openInjector7, closeInjector7);
-#endif
-#if INJ_CHANNELS >= 8
-        setCallbacks(fuelSchedule8, openInjector8, closeInjector8);
-#endif
-        break;
-
-    default:
-        //Paired injection
-        setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
-        setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
-        setCallbacks(fuelSchedule3, openInjector3, closeInjector3);
-        setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
-#if INJ_CHANNELS >= 5
-        setCallbacks(fuelSchedule5, openInjector5, closeInjector5);
-#endif
-        break;
+      //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+      fuelSchedule4.channelDegrees = fuelSchedule3.channelDegrees + (uint16_t)(CRANK_ANGLE_MAX_INJ / 2U); 
+      if (fuelSchedule4.channelDegrees>=(uint16_t)CRANK_ANGLE_MAX_INJ) { fuelSchedule4.channelDegrees -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
     }
-    
+    clampInjectionChannelAngles();
+       
     currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
 
     interrupts();

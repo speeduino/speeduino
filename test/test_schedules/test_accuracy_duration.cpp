@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "../test_utils.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 
@@ -18,13 +18,13 @@ static void test_accuracy_duration(Schedule &schedule)
 {
     setCallbacks(schedule, startCallback, endCallback);
     setSchedule(schedule, TIMEOUT, DURATION, true);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    while(schedule._status != OFF) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);
 }
 
 static void test_accuracy_duration_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    schedule.reset();
     startFuelSchedulers();
     test_accuracy_duration(schedule);
     stopFuelSchedulers();
