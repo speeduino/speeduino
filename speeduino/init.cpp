@@ -481,6 +481,18 @@ static void initFuelScheduleAngles(statuses &current, const config2 &page2, cons
   }
 }
 
+static uint8_t calulateDefaultSquirts(const config2 &page2)
+{
+  uint8_t nSquirts = 2U;
+  if (page2.divider != 0)
+  { 
+    nSquirts = page2.nCylinders / page2.divider; //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
+  }
+
+  //Safety check. Should never happen as TS will give an error, but leave in case tune is manually altered etc. 
+  return max((uint8_t)1, nSquirts);
+}
+
 /** Initialise Speeduino for the main loop.
  * Top level init entry point for all initialisations:
  * - Initialise and set sizes of 3D tables
@@ -629,13 +641,7 @@ void initialiseAll(void)
     currentLoopTime = micros();
     mainLoopCount = 0;
 
-    if(configPage2.divider == 0) { currentStatus.nSquirts = 2; } //Safety check.
-    else { currentStatus.nSquirts = configPage2.nCylinders / configPage2.divider; } //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
-    if(currentStatus.nSquirts == 0) { currentStatus.nSquirts = 1; } //Safety check. Should never happen as TS will give an error, but leave in case tune is manually altered etc. 
-
-    //Calculate the number of degrees between cylinders
-    //Set some default values. These will be updated below if required.
-    CRANK_ANGLE_MAX_INJ = 360;
+    currentStatus.nSquirts = calulateDefaultSquirts(configPage2);
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
