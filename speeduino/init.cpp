@@ -120,6 +120,9 @@ static void clampInjectionChannelAngles(void)
 
 static void initFuelScheduleAngles(statuses &current, const config2 &page2, const config10 &page10)
 {
+  current.numPrimaryInjOutputs = 1; // Disable all injectors expect channel 1
+  current.numSecondaryInjOutputs = 0;
+
   switch (page2.nCylinders) {
   case 1:
       fuelSchedule1.channelDegrees = 0;
@@ -485,7 +488,7 @@ static void initFuelScheduleAngles(statuses &current, const config2 &page2, cons
 static void initIgnitionScheduleAngles(statuses &current, const config2 &page2, config4 &page4)
 {
   CRANK_ANGLE_MAX_IGN = 360;
-  
+
   switch (page2.nCylinders) {
   case 1:
       ignitionSchedule1.channelDegrees = 0;
@@ -789,9 +792,6 @@ void initialiseAll(void)
     //Calculate the number of degrees between cylinders
     //Set some default values. These will be updated below if required.
     CRANK_ANGLE_MAX_INJ = 360;
-
-    currentStatus.numPrimaryInjOutputs = 1; // Disable all injectors expect channel 1
-    currentStatus.numSecondaryInjOutputs = 0;
 
     if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
     else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
