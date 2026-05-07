@@ -68,7 +68,10 @@ These functions cover the PWM and stepper idle control
 Idle Control
 Currently limited to on/off control and open loop PWM and stepper drive
 */
-integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, configPage6.idleKP, configPage6.idleKI, configPage6.idleKD, DIRECT); //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+// Gains are reapplied at runtime by SetTunings() (see currentIdleControl) before the PID is
+// ever used, so we initialise them to 0 here to avoid reading from configPage6 at static-init
+// time (cross-TU init order is unspecified).
+integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_target_rpm, 0, 0, 0, DIRECT);
 
 //Any common functions associated with starting the Idle
 //Typically this is enabling the PWM interrupt

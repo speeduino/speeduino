@@ -144,6 +144,42 @@ static void test_setPinMapping_default_triggerTeeth_preserved(void)
   TEST_ASSERT_EQUAL_UINT8(24U, configPage4.triggerTeeth);
 }
 
+// pinSDEnable is assigned only when the SD trigger mode is non-zero AND the
+// configured trigger pin is non-zero AND in range. This reaches a branch that
+// previously had a copy-paste bug (the same field was checked twice) — the
+// bug let pinSDEnable be assigned when tr5_Epin_pin was 0.
+static void test_setPinMapping_sdEnable_assigned_when_trigger_and_pin_valid(void)
+{
+  setTuneToEmpty();
+  pinSDEnable = 0U;
+  configPage13.onboard_log_trigger_Epin = 1U;       // any non-zero mode
+  configPage13.onboard_log_tr5_Epin_pin = 5U;       // valid digital pin
+  setPinMapping(3U);
+  TEST_ASSERT_EQUAL_UINT8(5U, pinSDEnable);
+}
+
+static void test_setPinMapping_sdEnable_skipped_when_pin_zero(void)
+{
+  // Regression guard: with the old duplicated && operand this test would fail
+  // because pinSDEnable would be assigned 0 via pinTranslate(0).
+  setTuneToEmpty();
+  pinSDEnable = 99U;                                // sentinel
+  configPage13.onboard_log_trigger_Epin = 1U;
+  configPage13.onboard_log_tr5_Epin_pin = 0U;       // zero pin -> skip
+  setPinMapping(3U);
+  TEST_ASSERT_EQUAL_UINT8(99U, pinSDEnable);
+}
+
+static void test_setPinMapping_sdEnable_skipped_when_trigger_zero(void)
+{
+  setTuneToEmpty();
+  pinSDEnable = 99U;
+  configPage13.onboard_log_trigger_Epin = 0U;       // disabled
+  configPage13.onboard_log_tr5_Epin_pin = 5U;
+  setPinMapping(3U);
+  TEST_ASSERT_EQUAL_UINT8(99U, pinSDEnable);
+}
+
 static void test_setPinMapping_resets_output_controls_to_direct(void)
 {
   // setPinMapping() unconditionally resets injector & ignition output control
@@ -177,6 +213,9 @@ void testBoardPinMappings(void)
     RUN_TEST_P(test_setPinMapping_board45);
     RUN_TEST_P(test_setPinMapping_default_triggerTeeth_guard);
     RUN_TEST_P(test_setPinMapping_default_triggerTeeth_preserved);
+    RUN_TEST_P(test_setPinMapping_sdEnable_assigned_when_trigger_and_pin_valid);
+    RUN_TEST_P(test_setPinMapping_sdEnable_skipped_when_pin_zero);
+    RUN_TEST_P(test_setPinMapping_sdEnable_skipped_when_trigger_zero);
     RUN_TEST_P(test_setPinMapping_resets_output_controls_to_direct);
   }
 }

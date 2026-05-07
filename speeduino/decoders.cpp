@@ -1638,12 +1638,11 @@ static void triggerPri_4G63(void)
         //trigger filter is turned off.
         triggerFilterTime = 0;
         if( (toothCurrentCount == 1) || (toothCurrentCount == 3) || (toothCurrentCount == 5) || (toothCurrentCount == 7) || (toothCurrentCount == 9) || (toothCurrentCount == 11) )
-        { 
-          if(configPage2.nCylinders == 4) { triggerToothAngle = 70; }
-          else  { triggerToothAngle = 70; }
-        } 
-        else 
-        { 
+        {
+          triggerToothAngle = 70;
+        }
+        else
+        {
           if(configPage2.nCylinders == 4) { triggerToothAngle = 110; }
           else  { triggerToothAngle = 50; }
         }
@@ -4293,15 +4292,8 @@ static void triggerSec_420a(void)
 static uint16_t getRPM_420a(void)
 {
   uint16_t tempRPM = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
-    tempRPM = stdGetRPM(CAM_SPEED);
-  }
-  else
-  {
-    tempRPM = stdGetRPM(CAM_SPEED);
-  }
+  //Possibly look at doing special handling for cranking in the future (when RPM < crankRPM), but for now just use the standard method
+  tempRPM = stdGetRPM(CAM_SPEED);
   return tempRPM;
 }
 

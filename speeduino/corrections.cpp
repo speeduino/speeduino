@@ -42,7 +42,10 @@ static long PID_AFRTarget;
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
+// Gains are reapplied at runtime by SetTunings() in correctionAFRClosedLoop() before the PID is
+// ever used, so we initialise them to 0 here to avoid reading from configPage6 at static-init
+// time (cross-TU init order is unspecified).
+static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, 0, 0, 0, REVERSE);
 
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
