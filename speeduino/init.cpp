@@ -50,14 +50,6 @@ static void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
   }
 }
 
-static void __attribute__((optimize("Os"))) closeAllInjectors(void)
-{
-  for (uint8_t index=1; index<=INJ_CHANNELS; ++index)
-  {
-    closeInjector(index);
-  }
-}
-
 ///
 /// @brief Allow the user to reset the firmware storage (aka EPROM).
 ///
@@ -179,9 +171,6 @@ void initialiseAll(void)
 
     //End all coil charges to ensure no stray sparks on startup
     stopAllCoilsCharging();
-
-    //Similar for injectors, make sure they're turned off
-    closeAllInjectors();
     
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
