@@ -178,7 +178,7 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
  */
 BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 {
-      if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
+      if(mainLoopCount < UINT16_MAX) { mainLoopCount = mainLoopCount + 1U; }
       LOOP_TIMER = TIMER_mask;
 
       //SERIAL Comms

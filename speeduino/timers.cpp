@@ -72,16 +72,18 @@ void tachoPulseLow(void)
 void oneMSInterval(void)
 {
   BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
-  ms_counter++;
+  // C++20 deprecates ++/-- and compound assignment on volatile, so use plain
+  // assignment. The semantics for these single-writer ISR counters are unchanged.
+  ms_counter = ms_counter + 1U;
 
   //Increment Loop Counters
-  loop5ms++;
-  loop20ms++;
-  loop33ms++;
-  loop66ms++;
-  loop100ms++;
-  loop250ms++;
-  loopSec++;
+  loop5ms = loop5ms + 1U;
+  loop20ms = loop20ms + 1U;
+  loop33ms = loop33ms + 1U;
+  loop66ms = loop66ms + 1U;
+  loop100ms = loop100ms + 1U;
+  loop250ms = loop250ms + 1U;
+  loopSec = loopSec + 1;
 
   applyOverDwellProtection(configPage4, currentStatus);
 
@@ -94,14 +96,14 @@ void oneMSInterval(void)
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
-      if( ms_counter < TACHO_SWEEP_RAMP_MS ) { tachoSweepAccum += map(ms_counter, 0, TACHO_SWEEP_RAMP_MS, 0, tachoSweepIncr); }
-      else                                   { tachoSweepAccum += tachoSweepIncr;                                             }
-             
+      if( ms_counter < TACHO_SWEEP_RAMP_MS ) { tachoSweepAccum = tachoSweepAccum + (uint16_t)map(ms_counter, 0, TACHO_SWEEP_RAMP_MS, 0, tachoSweepIncr); }
+      else                                   { tachoSweepAccum = tachoSweepAccum + tachoSweepIncr;                                                       }
+
       // Each time it rolls over, it's time to pulse the Tach
-      if( tachoSweepAccum >= MS_PER_SEC ) 
-      {  
+      if( tachoSweepAccum >= MS_PER_SEC )
+      {
         tachoOutputFlag = READY;
-        tachoSweepAccum -= MS_PER_SEC;
+        tachoSweepAccum = tachoSweepAccum - MS_PER_SEC;
       }
     }
   }
@@ -198,15 +200,15 @@ void oneMSInterval(void)
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
 
-    if ( currentStatus.engineIsRunning ) { runSecsX10++; }
+    if ( currentStatus.engineIsRunning ) { runSecsX10 = runSecsX10 + 1U; }
     else { runSecsX10 = 0; }
 
-    if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
-    { 
-      beginInjectorPriming(); 
-      currentStatus.injPrimed = true; 
+    if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) )
+    {
+      beginInjectorPriming();
+      currentStatus.injPrimed = true;
     }
-    seclx10++;
+    seclx10 = seclx10 + 1U;
   }
 
   //4Hz loop
@@ -233,7 +235,7 @@ void oneMSInterval(void)
     if (currentStatus.engineIsRunning)
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
       if (currentStatus.runSecs <= (UINT8_MAX-1U)) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
-        { currentStatus.runSecs++; } //Increment our run counter by 1 second.
+        { currentStatus.runSecs = currentStatus.runSecs + 1U; } //Increment our run counter by 1 second.
     }
     //**************************************************************************************************************************************************
     //This records the number of main loops the system has completed in the last second
@@ -241,7 +243,7 @@ void oneMSInterval(void)
     mainLoopCount = 0;
     //**************************************************************************************************************************************************
     //increment secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
-    currentStatus.secl++;
+    currentStatus.secl = currentStatus.secl + 1U;
     //**************************************************************************************************************************************************
     //Check the fan output status
     if (configPage2.fanEnable >= 1)
@@ -325,9 +327,9 @@ void oneMSInterval(void)
         
         testInjectorPulseCount = 0;
       }
-      else { testInjectorPulseCount++; }
+      else { testInjectorPulseCount = testInjectorPulseCount + 1U; }
     }
-    
+
 
     //Check for pulsed ignition output test
     if( (HWTest_IGN_Pulsed > 0) )
@@ -345,9 +347,9 @@ void oneMSInterval(void)
 
         testIgnitionPulseCount = 0;
       }
-      else { testIgnitionPulseCount++; }
+      else { testIgnitionPulseCount = testIgnitionPulseCount + 1U; }
     }
-    
+
   }
 
 

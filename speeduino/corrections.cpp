@@ -1177,7 +1177,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
           if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
           {
             //Recalculate the amount timing being pulled
-            currentStatus.knockCount++;
+            currentStatus.knockCount = currentStatus.knockCount + 1U;
             tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
             knockStartTime = micros();
             knockLastRecoveryStep = 0;
@@ -1210,7 +1210,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
 
         if(tmpKnockReading > configPage10.knock_threshold)
         {
-          currentStatus.knockCount++;
+          currentStatus.knockCount = currentStatus.knockCount + 1U;
           tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
           knockStartTime = micros();
           knockLastRecoveryStep = 0;

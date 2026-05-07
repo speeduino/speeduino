@@ -1093,7 +1093,7 @@ void sendToothLog(void)
     while(toothHistoryIndex < _countof(toothHistory))
     {
       toothHistory[toothHistoryIndex] = 0;
-      toothHistoryIndex++;
+      toothHistoryIndex = toothHistoryIndex + 1U;
     }
   }
 
@@ -1142,7 +1142,7 @@ void sendCompositeLog(void)
     {
       toothHistory[toothHistoryIndex] = toothHistory[toothHistoryIndex-1U]; //Composite logger needs a realistic time value to display correctly. Copy the last value
       compositeLogHistory[toothHistoryIndex] = 0U;
-      toothHistoryIndex++;
+      toothHistoryIndex = toothHistoryIndex + 1U;
     }
   }
 
