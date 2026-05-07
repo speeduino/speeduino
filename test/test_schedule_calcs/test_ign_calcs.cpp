@@ -11,6 +11,9 @@
 #endif
 
 extern void SetRevolutionTime(uint32_t revTime);
+extern uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle);
+extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
+extern void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, uint16_t dwellAngle, int16_t rotarySplitDegrees, IgnitionSchedule &trailing);
 
 constexpr uint16_t DWELL_TIME_MS = 4;
 

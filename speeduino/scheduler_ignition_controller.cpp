@@ -1,10 +1,8 @@
 #include "scheduler_ignition_controller.h"
 #include "scheduledIO_ign.h"
-#include "schedule_calcs.hpp"
 #include "scheduledIO_ign.h"
 #include "globals.h"
 #include "unit_testing.h"
-
 
 IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #if IGN_CHANNELS >= 2
@@ -493,6 +491,31 @@ TESTABLE_INLINE_STATIC void matchIgnitionSchedulersToSyncState(const config2 &pa
   }
 }
 
+static inline int16_t _calculateSparkAngle(const IgnitionSchedule &schedule, int8_t advance) {
+  int16_t angle = (int16_t)(schedule.channelDegrees==0U ? CRANK_ANGLE_MAX_IGN : schedule.channelDegrees) - advance;
+  if(angle > CRANK_ANGLE_MAX_IGN) {angle -= CRANK_ANGLE_MAX_IGN;}
+  return angle;
+}
+
+static inline int16_t _calculateCoilChargeAngle(uint16_t dwellAngle, int16_t dischargeAngle) {
+  if (dischargeAngle>(int16_t)dwellAngle) {
+    return dischargeAngle - (int16_t)dwellAngle;
+  }
+  return dischargeAngle + CRANK_ANGLE_MAX_IGN - (int16_t)dwellAngle;
+}
+
+TESTABLE_INLINE_STATIC void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance)
+{
+  schedule.dischargeAngle = _calculateSparkAngle(schedule,  advance);
+  schedule.chargeAngle = _calculateCoilChargeAngle(dwellAngle, schedule.dischargeAngle);
+}
+
+TESTABLE_STATIC void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, uint16_t dwellAngle, int16_t rotarySplitDegrees, IgnitionSchedule &trailing) 
+{
+  trailing.dischargeAngle = (int16_t)ignitionLimits(leading.dischargeAngle + rotarySplitDegrees);
+  trailing.chargeAngle = (int16_t)ignitionLimits(trailing.dischargeAngle - (int16_t)dwellAngle); 
+}
+
 static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
 {
 #if IGN_CHANNELS>=4
@@ -586,6 +609,11 @@ TESTABLE_INLINE_STATIC void setIgnitionScheduleDuration(IgnitionSchedule &schedu
 {
   // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
   setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
+}
+
+TESTABLE_INLINE_STATIC uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
+{
+  return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
 }
 
 static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellDuration, byte channelMask, uint8_t channelIdx)

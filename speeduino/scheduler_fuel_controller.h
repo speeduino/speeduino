@@ -58,3 +58,9 @@ void beginInjectorPriming(const statuses &current, const config4 &page4);
 
 /** @brief Initialise this module */
 void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10);
+
+// Unit test support
+struct injectorAngleCalcCache {
+  uint16_t pw = 0U;
+  uint16_t pwDegrees = 0U;
+};

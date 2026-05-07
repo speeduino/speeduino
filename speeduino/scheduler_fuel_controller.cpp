@@ -205,6 +205,71 @@ TESTABLE_INLINE_STATIC uint16_t lookupInjectorAngle(const statuses &current)
   return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
 }
 
+TESTABLE_INLINE_STATIC uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *pCache) {
+  // We can afford to be a bit loose updating the cache since injection timing doesn't 
+  // need to be precise (the PW calcs liberally use approximations)
+  //
+  // 1% of a revolution at max RPM should be plenty accurate.
+  constexpr int16_t PW_DELTA_THRESHOLD = MIN_REVOLUTION_TIME/100U; // in µS
+  if (abs((int16_t)pCache->pw-(int16_t)pw)>PW_DELTA_THRESHOLD) {
+    pCache->pwDegrees = timeToAngleDegPerMicroSec(pw);
+    pCache->pw = pw;
+  }
+  return pCache->pwDegrees;
+}
+
+/**
+ * @brief Compute the injector open angle for an injection channel
+ * 
+ * @param pwDegrees How many crank degrees the calculated PW will take at the current speed
+ * @param tdcOffset The number of crank degrees until cylinder is at TDC (at rest)
+ * @param injAngle The requested injection angle
+ * @return uint16_t 
+ */
+TESTABLE_INLINE_STATIC uint16_t _calculateOpenAngle(FuelSchedule &schedule, uint16_t pwDegrees, uint16_t injAngle)
+{
+  // 0<=injAngle<=720°
+  // 0<=injChannelDegrees<=720°
+  // 0<pwDegrees<=??? (could be many crank rotations in the worst case!)
+  // 45<=CRANK_ANGLE_MAX_INJ<=720
+  // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
+
+  uint16_t startAngle = injAngle + schedule.channelDegrees;
+  
+  while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
+  startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
+  while (startAngle>=(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
+
+  return startAngle;
+}
+
+/**
+ * @brief Calculate the time in uS from now to when the injector should be opened.
+ * 
+ * @param schedule The ignition channel
+ * @param openAngle The angle at which to open the injector
+ * @param crankAngle The current crank angle
+ * @return uint32_t 
+ */
+TESTABLE_INLINE_STATIC uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t crankAngle, uint16_t openAngle)
+{
+  int16_t delta = openAngle - crankAngle;
+
+  if (delta<0)
+  {
+    if (schedule._status != PENDING)
+    {
+      while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
+    }
+    else
+    {
+      delta = 0;
+      return 0U;
+    }
+  }
+  return angleToTimeMicroSecPerDegree((uint16_t)delta);
+}
+
 TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache) noexcept
 {
   if( (schedule.pw != 0U) && (BIT_CHECK(injChannelMask, INJ1_CMD_BIT+channel-1U)) )
