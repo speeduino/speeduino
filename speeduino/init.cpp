@@ -116,6 +116,8 @@ static void clampInjectionChannelAngles(void)
 
 static void initFuelScheduleAngles(statuses &current, const config2 &page2, const config10 &page10)
 {
+  CRANK_ANGLE_MAX_INJ = (page2.strokes == FOUR_STROKE ? 720 : 360) / current.nSquirts;
+
   current.numPrimaryInjOutputs = 1; // Disable all injectors expect channel 1
   current.numSecondaryInjOutputs = 0;
 
@@ -150,6 +152,7 @@ static void initFuelScheduleAngles(statuses &current, const config2 &page2, cons
       //The below are true regardless of whether this is running sequential or not
       if (page2.engineType == EVEN_FIRE ) { fuelSchedule2.channelDegrees = 180; }
       else { fuelSchedule2.channelDegrees = page2.oddfire2; }
+
       if (!page2.injTiming) 
       { 
         //For simultaneous, all squirts happen at the same time
@@ -163,7 +166,8 @@ static void initFuelScheduleAngles(statuses &current, const config2 &page2, cons
         current.numSecondaryInjOutputs = 2;
 
         fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
-        fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
+        //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+        fuelSchedule4.channelDegrees = fuelSchedule3.channelDegrees + (uint16_t)(CRANK_ANGLE_MAX_INJ / 2U); 
       }
       break;
 
@@ -479,6 +483,14 @@ static void initFuelScheduleAngles(statuses &current, const config2 &page2, cons
       fuelSchedule2.channelDegrees = 180;
       break;
   }
+
+  //Special case:
+  //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
+  //This is ONLY the case on 4 stroke systems
+  if( (current.nSquirts == 3) || (current.nSquirts == 5) )
+  {
+    if(page2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = (720U / currentStatus.nSquirts); }
+  }
 }
 
 static uint8_t calulateDefaultSquirts(const config2 &page2)
@@ -641,28 +653,11 @@ void initialiseAll(void)
     currentLoopTime = micros();
     mainLoopCount = 0;
 
-    currentStatus.nSquirts = calulateDefaultSquirts(configPage2);
-
-    if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 720 / currentStatus.nSquirts; }
-    else { CRANK_ANGLE_MAX_INJ = 360 / currentStatus.nSquirts; }
+  currentStatus.nSquirts = calulateDefaultSquirts(configPage2);
 
   initFuelScheduleAngles(currentStatus, configPage2, configPage10);
-     
-    //Special case:
-    //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
-    //This is ONLY the case on 4 stroke systems
-    if( (currentStatus.nSquirts == 3) || (currentStatus.nSquirts == 5) )
-    {
-      if(configPage2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = (720U / currentStatus.nSquirts); }
-    }
-    if ((configPage2.nCylinders==2U) && (configPage10.stagingEnabled == true))
-    {
-      //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
-      fuelSchedule4.channelDegrees = fuelSchedule3.channelDegrees + (uint16_t)(CRANK_ANGLE_MAX_INJ / 2U); 
-      if (fuelSchedule4.channelDegrees>=(uint16_t)CRANK_ANGLE_MAX_INJ) { fuelSchedule4.channelDegrees -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
-    }
-    clampInjectionChannelAngles();
-    
+  clampInjectionChannelAngles();
+       
     initialiseFuelPump(currentStatus, configPage2, pinNumbers.pinFuelPump);
 
     interrupts();
