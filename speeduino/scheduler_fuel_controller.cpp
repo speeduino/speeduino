@@ -253,6 +253,13 @@ TESTABLE_INLINE_STATIC uint16_t setFuelChannelSchedules(uint16_t crankAngle, byt
   return injAngle;
 }
 
+/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ] */
+TESTABLE_INLINE_STATIC uint16_t injectorLimits(uint16_t angle)
+{
+    while(angle >= (uint16_t)CRANK_ANGLE_MAX_INJ ) { angle -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
+    return angle;
+}
+
 // LCOV_EXCL_START
 BEGIN_LTO_ALWAYS_INLINE(uint16_t) __attribute__((flatten)) setFuelChannelSchedules(const statuses &current)
 {

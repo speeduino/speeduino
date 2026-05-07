@@ -52,20 +52,6 @@ static inline int16_t ignitionLimits(int16_t angle) {
     return nudge(0, CRANK_ANGLE_MAX_IGN-1, angle, CRANK_ANGLE_MAX_IGN);
 }
 
-/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ] */
-static inline uint16_t injectorLimits(uint16_t angle)
-{
-    while(angle >= (uint16_t)CRANK_ANGLE_MAX_INJ ) { angle -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
-    return angle;
-}
-
-/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ] */
-static inline uint16_t injectorLimits(int16_t angle)
-{
-    while(angle < 0) { angle += CRANK_ANGLE_MAX_INJ; }
-    return injectorLimits((uint16_t)angle);
-}
-
 /**
  * @brief Set the revolution time, from which some of the degree<-->angle conversions are derived
  * 

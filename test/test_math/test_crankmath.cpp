@@ -1,6 +1,8 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 
+extern uint16_t injectorLimits(uint16_t angle);
+
 static void test_ignitionLimits_within_range(void)
 {
     CRANK_ANGLE_MAX_IGN = 360;
@@ -19,17 +21,6 @@ static void test_injectorLimits_uint16_wrap(void)
     TEST_ASSERT_EQUAL_UINT16(1U, injectorLimits((uint16_t)361U));
     TEST_ASSERT_EQUAL_UINT16(0U, injectorLimits((uint16_t)720U));
     TEST_ASSERT_EQUAL_UINT16(1U, injectorLimits((uint16_t)1081U));
-}
-
-static void test_injectorLimits_int16_wrap(void)
-{
-    CRANK_ANGLE_MAX_INJ = 360;
-
-    TEST_ASSERT_EQUAL_UINT16(359U, injectorLimits((int16_t)-1081));
-    TEST_ASSERT_EQUAL_UINT16(0U, injectorLimits((int16_t)0));
-    TEST_ASSERT_EQUAL_UINT16(0U, injectorLimits((int16_t)360));
-    TEST_ASSERT_EQUAL_UINT16(1U, injectorLimits((int16_t)361U));
-    TEST_ASSERT_EQUAL_UINT16(1U, injectorLimits((int16_t)1081U));
 }
 
 static void test_angleToTimerTicks_matches_uS_conversion(void)
@@ -71,7 +62,6 @@ void testCrankMath()
   SET_UNITY_FILENAME() {
       RUN_TEST_P(test_ignitionLimits_within_range);
       RUN_TEST_P(test_injectorLimits_uint16_wrap);
-      RUN_TEST_P(test_injectorLimits_int16_wrap);
       RUN_TEST_P(test_angleToTimerTicks_matches_uS_conversion);
       RUN_TEST_P(test_timeToAngleDegPerMicroSec_inverse_roundtrip);
       RUN_TEST_P(test_setAngleConverterRevolutionTime_revolution_values);
