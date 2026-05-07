@@ -561,9 +561,9 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
         uint32_t CRC32_val = calculatePageCRC32( targetPort.read() );
         
         //Split the 4 bytes of the CRC32 value into individual bytes and send
-        targetPort.write( (uint8_t)(((uint32_t)CRC32_val >> 24) & 255U) );
-        targetPort.write( (uint8_t)(((uint32_t)CRC32_val >> 16) & 255U) );
-        targetPort.write( (uint8_t)(((uint32_t)CRC32_val >> 8) & 255U) );
+        targetPort.write( (uint8_t)((CRC32_val >> 24) & 255U) );
+        targetPort.write( (uint8_t)((CRC32_val >> 16) & 255U) );
+        targetPort.write( (uint8_t)((CRC32_val >> 8) & 255U) );
         targetPort.write( (uint8_t)(CRC32_val & 255U) );
         
         targetStatusFlag = SERIAL_INACTIVE;
@@ -1178,9 +1178,9 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
       serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
       for (uint8_t x = startOffset; x < _countof(toothHistory); ++x)
       {
-        primarySerial.write((uint8_t)((uint32_t)toothHistory[x] >> 24));
-        primarySerial.write((uint8_t)((uint32_t)toothHistory[x] >> 16));
-        primarySerial.write((uint8_t)((uint32_t)toothHistory[x] >> 8));
+        primarySerial.write((uint8_t)(toothHistory[x] >> 24));
+        primarySerial.write((uint8_t)(toothHistory[x] >> 16));
+        primarySerial.write((uint8_t)(toothHistory[x] >> 8));
         primarySerial.write((uint8_t)toothHistory[x]);
       }
       currentStatus.isToothLog1Full = false;

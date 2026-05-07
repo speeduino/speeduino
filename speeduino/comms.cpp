@@ -135,10 +135,10 @@ void flushRXbuffer(void)
  * */
 static __attribute__((noinline)) uint32_t reverse_bytes(uint32_t i)
 {
-  return  (((uint32_t)i >> 24) & 0xffU) | // move byte 3 to byte 0
-          (((uint32_t)i <<  8) & 0xff0000U) | // move byte 1 to byte 2
-          (((uint32_t)i >>  8) & 0xff00U) | // move byte 2 to byte 1
-          (((uint32_t)i << 24) & 0xff000000U);
+  return  ((i >> 24) & 0xffU) | // move byte 3 to byte 0
+          ((i <<  8) & 0xff0000U) | // move byte 1 to byte 2
+          ((i >>  8) & 0xff00U) | // move byte 2 to byte 1
+          ((i << 24) & 0xff000000U);
 }
 
 // ====================================== Blocking IO Support ================================
@@ -174,13 +174,13 @@ static void readSerialTimeout(char *buffer, size_t length) {
 template <typename TIntegral>
 static __attribute__((noinline)) TIntegral readSerialIntegralTimeout(void)
 {
-  char raw[sizeof(TIntegral)];
+  char raw[sizeof(TIntegral)] = {};
   readSerialTimeout(raw, sizeof(raw));
 
   if(isRxTimeout()) {
     return TIntegral();
   }
-  TIntegral value;
+  TIntegral value{};
   (void)memcpy(&value, raw, sizeof(value));
   return value;
 }
@@ -802,9 +802,9 @@ void processSerialCommand(void)
 
           //Max blocks (4 bytes)
           uint32_t sectors = sectorCount();
-          serialPayload[5] = (uint8_t)(((uint32_t)sectors >> 24) & 255U);
-          serialPayload[6] = (uint8_t)(((uint32_t)sectors >> 16) & 255U);
-          serialPayload[7] = (uint8_t)(((uint32_t)sectors >> 8) & 255U);
+          serialPayload[5] = (uint8_t)((sectors >> 24) & 255U);
+          serialPayload[6] = (uint8_t)((sectors >> 16) & 255U);
+          serialPayload[7] = (uint8_t)((sectors >> 8) & 255U);
           serialPayload[8] = (uint8_t)(sectors & 255U);
 
           //Max roots (Number of files)
@@ -1032,20 +1032,18 @@ void processSerialCommand(void)
           else if((SD_arg1 == SD_WRITE_COMP_ARG1) && (SD_arg2 == SD_WRITE_COMP_ARG2))
           {
             //Prepare to read a 2024 byte chunk of data from the SD card
-            uint8_t sector1 = serialPayload[7];
-            uint8_t sector2 = serialPayload[8];
-            uint8_t sector3 = serialPayload[9];
-            uint8_t sector4 = serialPayload[10];
-            //SDreadStartSector = (sector1 << 24) | (sector2 << 16) | (sector3 << 8) | sector4;
-            SDreadStartSector = ((uint32_t)sector4 << 24) | ((uint32_t)sector3 << 16) | ((uint32_t)sector2 << 8) | sector1;
-            //SDreadStartSector = sector4 | (sector3 << 8) | (sector2 << 16) | (sector1 << 24);
+            uint32_t sector1 = serialPayload[7];
+            uint32_t sector2 = serialPayload[8];
+            uint32_t sector3 = serialPayload[9];
+            uint32_t sector4 = serialPayload[10];
+            SDreadStartSector = (sector4 << 24) | (sector3 << 16) | (sector2 << 8) | sector1;
 
             //Next 4 bytes are the number of sectors to write
-            uint8_t sectorCount1 = serialPayload[11];
-            uint8_t sectorCount2 = serialPayload[12];
-            uint8_t sectorCount3 = serialPayload[13];
-            uint8_t sectorCount4 = serialPayload[14];
-            SDreadNumSectors = ((uint32_t)sectorCount1 << 24) | ((uint32_t)sectorCount2 << 16) | ((uint32_t)sectorCount3 << 8) | sectorCount4;
+            uint32_t sectorCount1 = serialPayload[11];
+            uint32_t sectorCount2 = serialPayload[12];
+            uint32_t sectorCount3 = serialPayload[13];
+            uint32_t sectorCount4 = serialPayload[14];
+            SDreadNumSectors = (sectorCount1 << 24) | (sectorCount2 << 16) | (sectorCount3 << 8) | sectorCount4;
 
             //Reset the sector counter
             SDreadCompletedSectors = 0;
