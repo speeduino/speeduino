@@ -111,6 +111,7 @@ static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedul
 static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAngle) {
   constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
 
+  crankAngle = ignitionLimits(crankAngle);
   ATOMIC() { // Prevent race conditions with the timer interrupt.
     // We only want to adjust the crank angle if we are running and the coil is charging or we are waiting for the timer to fire.
     if( isRunning(schedule) ) {
@@ -118,7 +119,7 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
         // Coil is charging so change the charge time so the spark fires at
         // the requested crank angle (this could reduce dwell time & potentially
         // result in a weaker spark).
-        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( ignitionLimits(schedule.dischargeAngle-crankAngle) )); 
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.dischargeAngle-crankAngle )); 
       } 
     }
     else if( (schedule.Status==PENDING) ) {
@@ -126,7 +127,7 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
         // We are waiting for the timer to fire & start charging the coil.
         // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
         // the spark fires at the requested crank angle.
-        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( ignitionLimits(schedule.chargeAngle-crankAngle) )); 
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.chargeAngle-crankAngle )); 
       }
     } else {
       // Unknown state, so no adjustment possible

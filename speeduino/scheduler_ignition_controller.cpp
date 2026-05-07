@@ -397,6 +397,7 @@ static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crank
 }
 
 BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime) {
+  crankAngle = ignitionLimits(crankAngle);
   #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
 
   SET_IGNITION_CHANNEL(1)

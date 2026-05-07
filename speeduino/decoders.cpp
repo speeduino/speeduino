@@ -664,10 +664,9 @@ static void triggerPri_missingTooth(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) )
         {
           crankAngle += 360;
-          crankAngle = ignitionLimits(crankAngle);
           checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); 
         }
-        else{ crankAngle = ignitionLimits(crankAngle); checkPerToothTiming(crankAngle, toothCurrentCount); }
+        else{ checkPerToothTiming(crankAngle, toothCurrentCount); }
       }
    }
 }
@@ -1190,7 +1189,6 @@ static void triggerPri_BasicDistributor(void)
     if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      crankAngle = ignitionLimits((crankAngle));
       uint16_t currentTooth = toothCurrentCount;
       if(toothCurrentCount > (triggerActualTeeth/2) ) { currentTooth = (toothCurrentCount - (triggerActualTeeth/2)); }
       checkPerToothTiming(crankAngle, currentTooth);
@@ -1655,7 +1653,7 @@ static void triggerPri_4G63(void)
       {
         if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
         {
-          int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+          int16_t crankAngle = toothAngles[(toothCurrentCount-1)];
 
           //Handle non-sequential tooth counts 
           if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
@@ -2617,7 +2615,7 @@ static void triggerPri_Miata9905(void)
           && (configPage4.triggerAngle == 0) 
           && (currentStatus.advance > 0) )
       {
-        int16_t crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+        int16_t crankAngle = toothAngles[(toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
         if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-configPage2.nCylinders) ); }
@@ -3410,7 +3408,7 @@ static void triggerPri_Subaru67(void)
       int16_t crankAngle = toothAngles[(toothCurrentCount - 1)] + configPage4.triggerAngle;
       if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
       {
-        crankAngle = ignitionLimits( toothAngles[(toothCurrentCount-1)] );
+        crankAngle = toothAngles[(toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
         if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (toothCurrentCount-6) ); }
@@ -3978,7 +3976,6 @@ static void triggerPri_ThirtySixMinus222(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-       crankAngle = ignitionLimits(crankAngle);
        checkPerToothTiming(crankAngle, toothCurrentCount);
      }
 
@@ -4136,7 +4133,6 @@ static void triggerPri_ThirtySixMinus21(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-       crankAngle = ignitionLimits(crankAngle);
        checkPerToothTiming(crankAngle, toothCurrentCount);
      }
 
@@ -4239,7 +4235,6 @@ static void triggerPri_420a(void)
     if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( toothAngles[(toothCurrentCount-1)] ) + configPage4.triggerAngle;
-      crankAngle = ignitionLimits(crankAngle);
       checkPerToothTiming(crankAngle, toothCurrentCount);
     }
   }
@@ -4823,7 +4818,6 @@ static void triggerPri_NGC(void)
     if( (configPage2.perToothIgn == true) && (currentStatus.engineIsCranking == false) ) 
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      crankAngle = ignitionLimits(crankAngle);
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
       {
         crankAngle += 360;
@@ -5335,7 +5329,6 @@ static void triggerPri_Renix(void)
       if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
       {
         int16_t crankAngle = ( (toothCurrentCount - 1) * triggerToothAngle ) + configPage4.triggerAngle;
-        crankAngle = ignitionLimits(crankAngle);
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
         {
           crankAngle += 360;
@@ -5565,7 +5558,6 @@ static void triggerPri_RoverMEMS(void)
     if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
     {  
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      crankAngle = ignitionLimits(crankAngle);
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true))
       { crankAngle += 360; checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + toothCurrentCount)); }
       else
@@ -5999,7 +5991,6 @@ static void triggerPri_SuzukiK6A(void)
       if( (configPage2.perToothIgn == true) ) 
       {  
         int16_t crankAngle = toothAngles[toothCurrentCount] + configPage4.triggerAngle;
-        crankAngle = ignitionLimits(crankAngle);
         checkPerToothTiming(crankAngle, toothCurrentCount);
       }     
 
@@ -6170,7 +6161,6 @@ static void triggerPri_FordTFI(void)
     if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
-      crankAngle = ignitionLimits((crankAngle));
       uint16_t currentTooth = toothCurrentCount;
       if(toothCurrentCount > (triggerActualTeeth/2) ) { currentTooth = (toothCurrentCount - (triggerActualTeeth/2)); }
       checkPerToothTiming(crankAngle, currentTooth);

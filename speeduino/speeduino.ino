@@ -823,7 +823,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       else { fixedCrankingOverride = 0; }
 
-      setIgnitionChannels(currentStatus, ignitionLimits(currentStatus.decoder.getCrankAngle()), currentStatus.dwell + fixedCrankingOverride);
+      setIgnitionChannels(currentStatus, currentStatus.decoder.getCrankAngle(), currentStatus.dwell + fixedCrankingOverride);
 
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
