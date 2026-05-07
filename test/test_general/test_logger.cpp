@@ -55,6 +55,218 @@ static void test_is2ByteEntry_edges(void)
   TEST_ASSERT_FALSE(is2ByteEntry(200U));
 }
 
+// ============================ buildEngineStatus =============================
+
+#include "globals.h"
+
+static void test_buildEngineStatus_all_clear(void)
+{
+  statuses s = {};
+  TEST_ASSERT_EQUAL_UINT8(0U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_running_only(void)
+{
+  statuses s = {};
+  s.engineIsRunning = true;
+  TEST_ASSERT_EQUAL_UINT8(0x01U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_cranking_only(void)
+{
+  statuses s = {};
+  s.engineIsCranking = true;
+  TEST_ASSERT_EQUAL_UINT8(0x02U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_ase_only(void)
+{
+  statuses s = {};
+  s.aseIsActive = true;
+  TEST_ASSERT_EQUAL_UINT8(0x04U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_wue_only(void)
+{
+  statuses s = {};
+  s.wueIsActive = true;
+  TEST_ASSERT_EQUAL_UINT8(0x08U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_accel_only(void)
+{
+  statuses s = {};
+  s.isAcceleratingTPS = true;
+  TEST_ASSERT_EQUAL_UINT8(0x10U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_decel_only(void)
+{
+  statuses s = {};
+  s.isDeceleratingTPS = true;
+  TEST_ASSERT_EQUAL_UINT8(0x20U, buildEngineStatus(s));
+}
+
+static void test_buildEngineStatus_combined(void)
+{
+  statuses s = {};
+  s.engineIsRunning = true;
+  s.wueIsActive = true;
+  s.isAcceleratingTPS = true;
+  TEST_ASSERT_EQUAL_UINT8(0x01U | 0x08U | 0x10U, buildEngineStatus(s));
+}
+
+// ============================ buildSdCardStatus =============================
+
+static void test_buildSdCardStatus_all_clear(void)
+{
+  statuses s = {};
+  TEST_ASSERT_EQUAL_UINT8(0U, buildSdCardStatus(s));
+}
+
+static void test_buildSdCardStatus_present_bit(void)
+{
+  statuses s = {};
+  s.sdCardPresent = 1U;
+  TEST_ASSERT_EQUAL_UINT8(0x01U, buildSdCardStatus(s));
+}
+
+static void test_buildSdCardStatus_type1_bit(void)
+{
+  statuses s = {};
+  s.sdCardType = 1U;
+  TEST_ASSERT_EQUAL_UINT8(0x02U, buildSdCardStatus(s));
+}
+
+static void test_buildSdCardStatus_ready_bit(void)
+{
+  statuses s = {};
+  s.sdCardReady = 1U;
+  TEST_ASSERT_EQUAL_UINT8(0x04U, buildSdCardStatus(s));
+}
+
+static void test_buildSdCardStatus_logging_bit(void)
+{
+  statuses s = {};
+  s.sdCardLogging = 1U;
+  TEST_ASSERT_EQUAL_UINT8(0x08U, buildSdCardStatus(s));
+}
+
+static void test_buildSdCardStatus_error_bit(void)
+{
+  statuses s = {};
+  s.sdCardError = 1U;
+  TEST_ASSERT_EQUAL_UINT8(0x10U, buildSdCardStatus(s));
+}
+
+// ============================ getTSLogEntry sweep ===========================
+//
+// The TS log has one byte per index in [0, LOG_ENTRY_SIZE). Asserting every
+// returned value would mean re-encoding the whole struct mapping, which is
+// the implementation we're trying to test. So the sweep just checks every
+// byte can be retrieved without crashing — that fires every case branch in
+// the giant getTSLogEntry switch and pulls a lot of related helpers in too.
+
+static void test_getTSLogEntry_sweep_all_indices(void)
+{
+  currentStatus = {};
+  for (uint16_t i = 0U; i < LOG_ENTRY_SIZE; ++i)
+  {
+    (void)getTSLogEntry(i);
+  }
+  TEST_PASS();
+}
+
+static void test_getTSLogEntry_secl_byte0(void)
+{
+  currentStatus = {};
+  currentStatus.secl = 42U;
+  TEST_ASSERT_EQUAL_UINT8(42U, getTSLogEntry(0));
+}
+
+static void test_getTSLogEntry_rpm_split_into_low_and_high(void)
+{
+  currentStatus = {};
+  currentStatus.RPM = 0x1234U;
+  TEST_ASSERT_EQUAL_UINT8(0x34U, getTSLogEntry(14));
+  TEST_ASSERT_EQUAL_UINT8(0x12U, getTSLogEntry(15));
+}
+
+static void test_getTSLogEntry_engine_status_byte2_running(void)
+{
+  currentStatus = {};
+  currentStatus.engineIsRunning = true;
+  TEST_ASSERT_EQUAL_UINT8(0x01U, getTSLogEntry(2));
+}
+
+// ============================ getReadableLogEntry sweep =====================
+
+static void test_getReadableLogEntry_sweep_all_indices(void)
+{
+  currentStatus = {};
+  for (uint16_t i = 0U; i < LOG_ENTRY_SIZE; ++i)
+  {
+    (void)getReadableLogEntry(i);
+  }
+  TEST_PASS();
+}
+
+static void test_getReadableLogEntry_rpm_returns_full_value(void)
+{
+  currentStatus = {};
+  currentStatus.RPM = 4321U;
+  TEST_ASSERT_EQUAL_INT16(4321, getReadableLogEntry(13));
+}
+
+// ============================ Float log sweep ===============================
+
+#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32
+static void test_getReadableFloatLogEntry_sweep(void)
+{
+  currentStatus = {};
+  for (uint16_t i = 0U; i < LOG_ENTRY_SIZE; ++i)
+  {
+    (void)getReadableFloatLogEntry(i);
+  }
+  TEST_PASS();
+}
+
+static void test_getReadableFloatLogEntry_battery_voltage(void)
+{
+  currentStatus = {};
+  currentStatus.battery10 = 138U;   // 13.8V
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 13.8f, getReadableFloatLogEntry(8));
+}
+
+static void test_getReadableFloatLogEntry_falls_back_to_int(void)
+{
+  // logIndex 13 (RPM) is not a float field so it should pass through to
+  // getReadableLogEntry().
+  currentStatus = {};
+  currentStatus.RPM = 4321U;
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 4321.0f, getReadableFloatLogEntry(13));
+}
+#endif
+
+// ============================ Legacy secondary log sweep ====================
+
+static void test_getLegacySecondarySerialLogEntry_sweep(void)
+{
+  currentStatus = {};
+  for (uint16_t i = 0U; i < LOG_ENTRY_SIZE; ++i)
+  {
+    (void)getLegacySecondarySerialLogEntry(i);
+  }
+  TEST_PASS();
+}
+
+static void test_getLegacySecondarySerialLogEntry_secl_byte0(void)
+{
+  currentStatus = {};
+  currentStatus.secl = 99U;
+  TEST_ASSERT_EQUAL_UINT8(99U, getLegacySecondarySerialLogEntry(0));
+}
+
 void testLogger(void)
 {
   SET_UNITY_FILENAME()
@@ -62,5 +274,38 @@ void testLogger(void)
     RUN_TEST(test_is2ByteEntry_known_2byte_keys);
     RUN_TEST(test_is2ByteEntry_exhaustive_complement);
     RUN_TEST(test_is2ByteEntry_edges);
+
+    RUN_TEST(test_buildEngineStatus_all_clear);
+    RUN_TEST(test_buildEngineStatus_running_only);
+    RUN_TEST(test_buildEngineStatus_cranking_only);
+    RUN_TEST(test_buildEngineStatus_ase_only);
+    RUN_TEST(test_buildEngineStatus_wue_only);
+    RUN_TEST(test_buildEngineStatus_accel_only);
+    RUN_TEST(test_buildEngineStatus_decel_only);
+    RUN_TEST(test_buildEngineStatus_combined);
+
+    RUN_TEST(test_buildSdCardStatus_all_clear);
+    RUN_TEST(test_buildSdCardStatus_present_bit);
+    RUN_TEST(test_buildSdCardStatus_type1_bit);
+    RUN_TEST(test_buildSdCardStatus_ready_bit);
+    RUN_TEST(test_buildSdCardStatus_logging_bit);
+    RUN_TEST(test_buildSdCardStatus_error_bit);
+
+    RUN_TEST(test_getTSLogEntry_sweep_all_indices);
+    RUN_TEST(test_getTSLogEntry_secl_byte0);
+    RUN_TEST(test_getTSLogEntry_rpm_split_into_low_and_high);
+    RUN_TEST(test_getTSLogEntry_engine_status_byte2_running);
+
+    RUN_TEST(test_getReadableLogEntry_sweep_all_indices);
+    RUN_TEST(test_getReadableLogEntry_rpm_returns_full_value);
+
+#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32
+    RUN_TEST(test_getReadableFloatLogEntry_sweep);
+    RUN_TEST(test_getReadableFloatLogEntry_battery_voltage);
+    RUN_TEST(test_getReadableFloatLogEntry_falls_back_to_int);
+#endif
+
+    RUN_TEST(test_getLegacySecondarySerialLogEntry_sweep);
+    RUN_TEST(test_getLegacySecondarySerialLogEntry_secl_byte0);
   }
 }

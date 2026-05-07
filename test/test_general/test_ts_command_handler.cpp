@@ -135,6 +135,78 @@ static void test_handler_vss_ratio1_no_vss_no_change(void)
   TEST_ASSERT_EQUAL_UINT16(999U, configPage2.vssRatio1);
 }
 
+// ============================ Per-channel INJ/IGN ===========================
+//
+// The INJ2..INJ8 and IGN2..IGN8 dispatch arms in TS_CommandButtonsHandler all
+// follow the same pattern as INJ1/IGN1: ON/OFF/PULSED open/close the channel
+// or flip a HWTest_*_Pulsed bit. The tests below sweep every channel to make
+// sure every case label compiles, dispatches and updates the bitmask the way
+// the channel-1 case does.
+
+#define DECLARE_INJ_PULSED_TEST(N)                                            \
+  static void test_handler_inj##N##_pulsed_sets_bit(void)                     \
+  {                                                                           \
+    reset_test_mode_state();                                                  \
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
+    HWTest_INJ_Pulsed = 0U;                                                   \
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_INJ##N##_PULSED));       \
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, INJ##N##_CMD_BIT));         \
+  }                                                                           \
+  static void test_handler_inj##N##_off_clears_bit(void)                      \
+  {                                                                           \
+    reset_test_mode_state();                                                  \
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
+    TS_CommandButtonsHandler(TS_CMD_INJ##N##_PULSED);                         \
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_INJ##N##_OFF));          \
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, INJ##N##_CMD_BIT));        \
+  }                                                                           \
+  static void test_handler_inj##N##_on_returns_true(void)                     \
+  {                                                                           \
+    reset_test_mode_state();                                                  \
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_INJ##N##_ON));           \
+  }
+
+#define DECLARE_IGN_PULSED_TEST(N)                                            \
+  static void test_handler_ign##N##_pulsed_sets_bit(void)                     \
+  {                                                                           \
+    reset_test_mode_state();                                                  \
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
+    HWTest_IGN_Pulsed = 0U;                                                   \
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_IGN##N##_PULSED));       \
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, IGN##N##_CMD_BIT));         \
+  }                                                                           \
+  static void test_handler_ign##N##_off_clears_bit(void)                      \
+  {                                                                           \
+    reset_test_mode_state();                                                  \
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
+    TS_CommandButtonsHandler(TS_CMD_IGN##N##_PULSED);                         \
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_IGN##N##_OFF));          \
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, IGN##N##_CMD_BIT));        \
+  }                                                                           \
+  static void test_handler_ign##N##_on_returns_true(void)                     \
+  {                                                                           \
+    reset_test_mode_state();                                                  \
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_IGN##N##_ON));           \
+  }
+
+DECLARE_INJ_PULSED_TEST(2)
+DECLARE_INJ_PULSED_TEST(3)
+DECLARE_INJ_PULSED_TEST(4)
+DECLARE_INJ_PULSED_TEST(5)
+DECLARE_INJ_PULSED_TEST(6)
+DECLARE_INJ_PULSED_TEST(7)
+DECLARE_INJ_PULSED_TEST(8)
+
+DECLARE_IGN_PULSED_TEST(2)
+DECLARE_IGN_PULSED_TEST(3)
+DECLARE_IGN_PULSED_TEST(4)
+DECLARE_IGN_PULSED_TEST(5)
+DECLARE_IGN_PULSED_TEST(6)
+DECLARE_IGN_PULSED_TEST(7)
+DECLARE_IGN_PULSED_TEST(8)
+
 void testTSCommandHandler(void)
 {
   SET_UNITY_FILENAME()
@@ -150,5 +222,49 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_inj_on_inactive_does_not_open);
     RUN_TEST(test_handler_vss_ratio1_with_vss);
     RUN_TEST(test_handler_vss_ratio1_no_vss_no_change);
+
+    RUN_TEST(test_handler_inj2_on_returns_true);
+    RUN_TEST(test_handler_inj2_off_clears_bit);
+    RUN_TEST(test_handler_inj2_pulsed_sets_bit);
+    RUN_TEST(test_handler_inj3_on_returns_true);
+    RUN_TEST(test_handler_inj3_off_clears_bit);
+    RUN_TEST(test_handler_inj3_pulsed_sets_bit);
+    RUN_TEST(test_handler_inj4_on_returns_true);
+    RUN_TEST(test_handler_inj4_off_clears_bit);
+    RUN_TEST(test_handler_inj4_pulsed_sets_bit);
+    RUN_TEST(test_handler_inj5_on_returns_true);
+    RUN_TEST(test_handler_inj5_off_clears_bit);
+    RUN_TEST(test_handler_inj5_pulsed_sets_bit);
+    RUN_TEST(test_handler_inj6_on_returns_true);
+    RUN_TEST(test_handler_inj6_off_clears_bit);
+    RUN_TEST(test_handler_inj6_pulsed_sets_bit);
+    RUN_TEST(test_handler_inj7_on_returns_true);
+    RUN_TEST(test_handler_inj7_off_clears_bit);
+    RUN_TEST(test_handler_inj7_pulsed_sets_bit);
+    RUN_TEST(test_handler_inj8_on_returns_true);
+    RUN_TEST(test_handler_inj8_off_clears_bit);
+    RUN_TEST(test_handler_inj8_pulsed_sets_bit);
+
+    RUN_TEST(test_handler_ign2_on_returns_true);
+    RUN_TEST(test_handler_ign2_off_clears_bit);
+    RUN_TEST(test_handler_ign2_pulsed_sets_bit);
+    RUN_TEST(test_handler_ign3_on_returns_true);
+    RUN_TEST(test_handler_ign3_off_clears_bit);
+    RUN_TEST(test_handler_ign3_pulsed_sets_bit);
+    RUN_TEST(test_handler_ign4_on_returns_true);
+    RUN_TEST(test_handler_ign4_off_clears_bit);
+    RUN_TEST(test_handler_ign4_pulsed_sets_bit);
+    RUN_TEST(test_handler_ign5_on_returns_true);
+    RUN_TEST(test_handler_ign5_off_clears_bit);
+    RUN_TEST(test_handler_ign5_pulsed_sets_bit);
+    RUN_TEST(test_handler_ign6_on_returns_true);
+    RUN_TEST(test_handler_ign6_off_clears_bit);
+    RUN_TEST(test_handler_ign6_pulsed_sets_bit);
+    RUN_TEST(test_handler_ign7_on_returns_true);
+    RUN_TEST(test_handler_ign7_off_clears_bit);
+    RUN_TEST(test_handler_ign7_pulsed_sets_bit);
+    RUN_TEST(test_handler_ign8_on_returns_true);
+    RUN_TEST(test_handler_ign8_off_clears_bit);
+    RUN_TEST(test_handler_ign8_pulsed_sets_bit);
   }
 }

@@ -10,6 +10,9 @@ void runAllTests(void)
     extern void testTimers(void);
     extern void testLogger(void);
     extern void testTSCommandHandler(void);
+    extern void testAuxiliaries(void);
+    extern void testUpdates(void);
+    extern void testIdle(void);
 
     testPinMapping();
     testResetControl();
@@ -17,6 +20,9 @@ void runAllTests(void)
     testTimers();
     testLogger();
     testTSCommandHandler();
+    testAuxiliaries();
+    testUpdates();
+    testIdle();
 }
 
 TEST_HARNESS(runAllTests)
