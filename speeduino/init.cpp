@@ -42,14 +42,6 @@
 #pragma GCC optimize ("Os") 
 #endif
 
-static void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
-{
-  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
-  {
-    endCoilCharge(index);
-  }
-}
-
 ///
 /// @brief Allow the user to reset the firmware storage (aka EPROM).
 ///
@@ -168,10 +160,7 @@ void initialiseAll(void)
 
     //Must come after setPinMapping() as secondary serial can be changed on a per board basis
     if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-
-    //End all coil charges to ensure no stray sparks on startup
-    stopAllCoilsCharging();
-    
+  
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
     //Perform all initialisations

@@ -394,9 +394,18 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
   }
 }
 
+void __attribute__((optimize("Os"))) dischargeAllCoils(void)
+{
+  //End all coil charges to ensure no stray sparks on startup
+  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  {
+    endCoilCharge(index);
+  }
+}
 
 void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10)
 {
+  dischargeAllCoils();
   resetIgnitionSchedulers();
   initScheduleAngles(current, page2, page4);
   setCallbacks(page4.sparkMode, page2.nCylinders, page10.rotaryType);
