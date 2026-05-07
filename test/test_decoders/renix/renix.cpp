@@ -7,6 +7,7 @@
 #include "scheduler_ignition_controller.h"
 
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
 static decoder_t test_setup_renix44(void)
 {

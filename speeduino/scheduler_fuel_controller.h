@@ -61,3 +61,9 @@ void initialiseFuelSchedules(statuses &current, const config2 &page2, const conf
 
 /** @brief Utility function to close all injectors */
 void closeAllInjectors(void);
+
+// Unit test support
+struct injectorAngleCalcCache {
+  uint16_t pw = 0U;
+  uint16_t pwDegrees = 0U;
+};
