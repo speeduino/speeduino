@@ -802,10 +802,11 @@ void processSerialCommand(void)
 
           //Max blocks (4 bytes)
           uint32_t sectors = sectorCount();
-          serialPayload[5] = (uint8_t)((sectors >> 24) & 255U);
-          serialPayload[6] = (uint8_t)((sectors >> 16) & 255U);
-          serialPayload[7] = (uint8_t)((sectors >> 8) & 255U);
-          serialPayload[8] = (uint8_t)(sectors & 255U);
+          uint32_t sectorsHi = sectors >> 16;
+          serialPayload[5] = (uint8_t)(sectorsHi >> 8);
+          serialPayload[6] = (uint8_t)sectorsHi;
+          serialPayload[7] = (uint8_t)(sectors >> 8);
+          serialPayload[8] = (uint8_t)sectors;
 
           //Max roots (Number of files)
           uint16_t numLogFiles = getNextSDLogFileNumber() - 2; // -1 because this returns the NEXT file name not the current one and -1 because TS expects a 0 based index
