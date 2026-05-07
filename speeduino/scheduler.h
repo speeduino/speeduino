@@ -195,6 +195,44 @@ struct IgnitionSchedule : public Schedule {
  */
 void moveToNextState(IgnitionSchedule &schedule) noexcept;
 
+/**
+ * @brief Adjust the crank angle used to originally set the schedule.
+ * 
+ * The assumption here is that we have a more accurate crank angle than
+ * was originally passed to calculateIgnitionTimeout. So we can increase the
+ * spark accuracy
+ * 
+ * @param schedule The schedule to modify 
+ * @param crankAngle The new crank angle in degrees
+ */
+static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAngle) {
+  constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
+
+  crankAngle = ignitionLimits(crankAngle);
+  ATOMIC() { // Prevent race conditions with the timer interrupt.
+    // We only want to adjust the crank angle if we are running and the coil is charging or we are waiting for the timer to fire.
+    if( isRunning(schedule) ) {
+      if  (schedule.dischargeAngle>crankAngle) { 
+        // Coil is charging so change the charge time so the spark fires at
+        // the requested crank angle (this could reduce dwell time & potentially
+        // result in a weaker spark).
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.dischargeAngle-crankAngle )); 
+      } 
+    }
+    else if( (schedule._status==PENDING) ) {
+      if ((currentStatus.startRevolutions > MIN_CYCLES_FOR_CORRECTION) && (schedule.chargeAngle>crankAngle)) {
+        // We are waiting for the timer to fire & start charging the coil.
+        // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
+        // the spark fires at the requested crank angle.
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.chargeAngle-crankAngle )); 
+      }
+    } else {
+      // Unknown state, so no adjustment possible
+    }
+  }
+}
+
+
 /** @brief A fuel injection schedule.
  *
  * Goal is to open & close the injector as accurately as possible.
@@ -223,6 +261,38 @@ struct FuelSchedule : public Schedule {
  */
 void moveToNextState(FuelSchedule &schedule) noexcept;
 
-#include "schedule_calcs.hpp"
+/// @cond
+static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
+  int16_t delta = eventAngle - crankAngle;
+  if ( (isRunning(schedule)) || (schedule._status == OFF)) {
+    while(delta < 0) { delta += (int16_t)maxAngle; }
+  } 
+
+  return delta > 0 ? angleToTime((uint16_t)delta) : 0U;
+}
+
+static FORCE_INLINE uint16_t _adjustToTDC(int16_t angle, uint16_t angleOffset, uint16_t maxAngle) {
+  angle = angle - (int16_t)angleOffset;
+  if( angle < 0) { return angle + (int16_t)maxAngle; }
+  return angle;
+}
+
+static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t angleOffset, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
+  if (angleOffset==0U) { // Optimize for zero channel angle - no need to adjust start & crank angles
+    return _calculateAngularTime(schedule, eventAngle, crankAngle, maxAngle);
+  }
+  // Realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
+  // Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (E.g. a standard 4 cylinder engine), then
+  // adjusted crank angle is 180* less than the current crank angle and adjusted start angle is the desired open angle less 180*. 
+  // Thus the cylinder is being treated relative to its own TDC, regardless of its offset
+  //
+  // This is done to avoid very small or very large deltas between crank angle and start angle.
+  return _calculateAngularTime(schedule, 
+            _adjustToTDC(eventAngle, angleOffset, maxAngle),
+            _adjustToTDC(crankAngle, angleOffset, maxAngle),
+            maxAngle);
+}
+
+/// @endcond
 
 #endif // SCHEDULER_H
