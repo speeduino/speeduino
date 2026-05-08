@@ -328,8 +328,6 @@ struct statuses {
   scheduler_cut_t schedulerCutState;
 
   decoder_t decoder = decoder_builder_t().build(); ///< The current decoder
-
-  volatile byte injOpenMask;
 };
 
 /**

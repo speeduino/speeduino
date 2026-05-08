@@ -1,5 +1,8 @@
 #pragma once
 
+/** @brief Injector open/close status bits */
+char getInjectorStatus(void);
+
 void openInjector1(void);
 void closeInjector1(void);
 

@@ -9,16 +9,24 @@
  * form where they are called (by scheduler.ino).
  */
 
- // LCOV_EXCL_START
- // Exclude from code coverage, since this is all board output control
+ volatile byte injStatusMask = 0;
 
- #define OPEN_INJECTOR(channel) \
+ /** @brief Injector open/close status bits */
+char getInjectorStatus(void)
+{
+    return injStatusMask;
+}
+
+// LCOV_EXCL_START
+// Exclude from code coverage, since this is all board output control
+
+#define OPEN_INJECTOR(channel) \
     if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { \
         openInjector ## channel ## _DIRECT(); \
     } else { \
         openInjector ## channel ## _MC33810(); \
     }; \
-    BIT_SET(currentStatus.injOpenMask, (channel)-1U);
+    BIT_SET(injStatusMask, (channel)-1U);
 
 #define CLOSE_INJECTOR(channel) \
     if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { \
@@ -26,7 +34,7 @@
     } else { \
         closeInjector ## channel ## _MC33810(); \
     }; \
-    BIT_CLEAR(currentStatus.injOpenMask, (channel)-1U); 
+    BIT_CLEAR(injStatusMask, (channel)-1U); 
 
 void openInjector1(void)   { OPEN_INJECTOR(1); }
 void closeInjector1(void)  { CLOSE_INJECTOR(1); }
