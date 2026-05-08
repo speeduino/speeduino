@@ -971,7 +971,7 @@ void flexPulse(void)
   {
     uint16_t tempPW = clamp(micros() - flexStartTime, 0UL, (unsigned long)UINT16_MAX); //Calculate the pulse width
     flexPulseWidth = LOW_PASS_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);
-    ++flexCounter;
+    flexCounter = flexCounter + 1U; // C++20: ++ on volatile is deprecated
   }
   else
   {
@@ -1003,7 +1003,7 @@ void knockPulse(void)
 {
   if( (currentStatus.MAP < (configPage10.knock_maxMAP*2)) && (currentStatus.RPMdiv100 < configPage10.knock_maxRPM) )
   {
-    if(!currentStatus.knockRetardActive) { currentStatus.knockCount++; } //If knock is not currently active we count every pulse. If knock is already active then additional pulses will be counted in correctionKnockTiming()
+    if(!currentStatus.knockRetardActive) { currentStatus.knockCount = currentStatus.knockCount + 1U; } //If knock is not currently active we count every pulse. If knock is already active then additional pulses will be counted in correctionKnockTiming()
     currentStatus.knockPulseDetected = true;
   }
 }
@@ -1015,7 +1015,7 @@ void knockPulse(void)
 void vssPulse(void)
 {
   //TODO: Add basic filtering here
-  vssIndex++;
+  vssIndex = vssIndex + 1U; // C++20: ++ on volatile is deprecated
   if(vssIndex == VSS_SAMPLES) { vssIndex = 0U; }
 
   vssTimes[vssIndex] = micros();

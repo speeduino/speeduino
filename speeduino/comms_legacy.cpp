@@ -561,10 +561,10 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
         uint32_t CRC32_val = calculatePageCRC32( targetPort.read() );
         
         //Split the 4 bytes of the CRC32 value into individual bytes and send
-        targetPort.write( ((CRC32_val >> 24) & 255) );
-        targetPort.write( ((CRC32_val >> 16) & 255) );
-        targetPort.write( ((CRC32_val >> 8) & 255) );
-        targetPort.write( (CRC32_val & 255) );
+        targetPort.write( (uint8_t)((CRC32_val >> 24) & 255U) );
+        targetPort.write( (uint8_t)((CRC32_val >> 16) & 255U) );
+        targetPort.write( (uint8_t)((CRC32_val >> 8) & 255U) );
+        targetPort.write( (uint8_t)(CRC32_val & 255U) );
         
         targetStatusFlag = SERIAL_INACTIVE;
       }
@@ -1178,10 +1178,10 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
       serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
       for (uint8_t x = startOffset; x < _countof(toothHistory); ++x)
       {
-        primarySerial.write(toothHistory[x] >> 24);
-        primarySerial.write(toothHistory[x] >> 16);
-        primarySerial.write(toothHistory[x] >> 8);
-        primarySerial.write(toothHistory[x]);
+        primarySerial.write((uint8_t)(toothHistory[x] >> 24));
+        primarySerial.write((uint8_t)(toothHistory[x] >> 16));
+        primarySerial.write((uint8_t)(toothHistory[x] >> 8));
+        primarySerial.write((uint8_t)toothHistory[x]);
       }
       currentStatus.isToothLog1Full = false;
       serialStatusFlag = SERIAL_INACTIVE; 
@@ -1216,10 +1216,10 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
 
         uint32_t inProgressCompositeTime = toothHistory[x]; //This combined runtime (in us) that the log was going for by this record)
         
-        primarySerial.write(inProgressCompositeTime >> 24);
-        primarySerial.write(inProgressCompositeTime >> 16);
-        primarySerial.write(inProgressCompositeTime >> 8);
-        primarySerial.write(inProgressCompositeTime);
+        primarySerial.write((uint8_t)(inProgressCompositeTime >> 24));
+        primarySerial.write((uint8_t)(inProgressCompositeTime >> 16));
+        primarySerial.write((uint8_t)(inProgressCompositeTime >> 8));
+        primarySerial.write((uint8_t)inProgressCompositeTime);
 
         primarySerial.write(compositeLogHistory[x]); //The status byte (Indicates the trigger edge, whether it was a pri/sec pulse, the sync status)
       }
