@@ -101,14 +101,6 @@ struct statuses {
 
   // Status1 fields as defined in the INI
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool isInj1Open : 1; ///< Injector 1 status: true == open, false == closed 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool isInj2Open : 1; ///< Injector 2 status: true == open, false == closed
-  // cppcheck-suppress misra-c2012-6.1
-  volatile bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
@@ -336,6 +328,8 @@ struct statuses {
   scheduler_cut_t schedulerCutState;
 
   decoder_t decoder = decoder_builder_t().build(); ///< The current decoder
+
+  volatile byte injOpenMask;
 };
 
 /**

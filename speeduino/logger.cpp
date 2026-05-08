@@ -33,10 +33,10 @@ static inline byte setStatusBits(byte status, bool (&bits)[N])
 static byte buildStatus1(const statuses &current)
 {
   bool bits[] = {
-    current.isInj1Open,
-    current.isInj2Open,
-    current.isInj3Open,
-    current.isInj4Open,
+    BIT_CHECK(current.injOpenMask, 0),
+    BIT_CHECK(current.injOpenMask, 1),
+    BIT_CHECK(current.injOpenMask, 2),
+    BIT_CHECK(current.injOpenMask, 3),
     current.isDFCOActive,
     false, // Unused
     current.isToothLog1Full,
