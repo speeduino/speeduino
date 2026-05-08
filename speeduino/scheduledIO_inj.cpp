@@ -12,22 +12,38 @@
  // LCOV_EXCL_START
  // Exclude from code coverage, since this is all board output control
 
-void openInjector1(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector1_DIRECT(); }   else { openInjector1_MC33810(); } }
-void closeInjector1(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector1_DIRECT(); }  else { closeInjector1_MC33810(); } }
-void openInjector2(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector2_DIRECT(); }   else { openInjector2_MC33810(); } }
-void closeInjector2(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector2_DIRECT(); }  else { closeInjector2_MC33810(); } }
-void openInjector3(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector3_DIRECT(); }   else { openInjector3_MC33810(); } }
-void closeInjector3(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector3_DIRECT(); }  else { closeInjector3_MC33810(); } }
-void openInjector4(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector4_DIRECT(); }   else { openInjector4_MC33810(); } }
-void closeInjector4(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector4_DIRECT(); }  else { closeInjector4_MC33810(); } }
-void openInjector5(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector5_DIRECT(); }   else { openInjector5_MC33810(); } }
-void closeInjector5(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector5_DIRECT(); }  else { closeInjector5_MC33810(); } }
-void openInjector6(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector6_DIRECT(); }   else { openInjector6_MC33810(); } }
-void closeInjector6(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector6_DIRECT(); }  else { closeInjector6_MC33810(); } }
-void openInjector7(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector7_DIRECT(); }   else { openInjector7_MC33810(); } }
-void closeInjector7(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector7_DIRECT(); }  else { closeInjector7_MC33810(); } }
-void openInjector8(void)   { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { openInjector8_DIRECT(); }   else { openInjector8_MC33810(); } }
-void closeInjector8(void)  { if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { closeInjector8_DIRECT(); }  else { closeInjector8_MC33810(); } }
+ #define OPEN_INJECTOR(channel) \
+    if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { \
+        openInjector ## channel ## _DIRECT(); \
+    } else { \
+        openInjector ## channel ## _MC33810(); \
+    }; \
+    BIT_SET(currentStatus.injOpenMask, (channel)-1U);
+
+#define CLOSE_INJECTOR(channel) \
+    if(injectorOutputControl != OUTPUT_CONTROL_MC33810) { \
+        closeInjector ## channel ## _DIRECT(); \
+    } else { \
+        closeInjector ## channel ## _MC33810(); \
+    }; \
+    BIT_CLEAR(currentStatus.injOpenMask, (channel)-1U); 
+
+void openInjector1(void)   { OPEN_INJECTOR(1); }
+void closeInjector1(void)  { CLOSE_INJECTOR(1); }
+void openInjector2(void)   { OPEN_INJECTOR(2); }
+void closeInjector2(void)  { CLOSE_INJECTOR(2); }
+void openInjector3(void)   { OPEN_INJECTOR(3); }
+void closeInjector3(void)  { CLOSE_INJECTOR(3); }
+void openInjector4(void)   { OPEN_INJECTOR(4); }
+void closeInjector4(void)  { CLOSE_INJECTOR(4); }
+void openInjector5(void)   { OPEN_INJECTOR(5); }
+void closeInjector5(void)  { CLOSE_INJECTOR(5); }
+void openInjector6(void)   { OPEN_INJECTOR(6); }
+void closeInjector6(void)  { CLOSE_INJECTOR(6); }
+void openInjector7(void)   { OPEN_INJECTOR(7); }
+void closeInjector7(void)  { CLOSE_INJECTOR(7); }
+void openInjector8(void)   { OPEN_INJECTOR(8); }
+void closeInjector8(void)  { CLOSE_INJECTOR(8); }
 
 // These are for Semi-Sequential and 5 Cylinder injection
 //Standard 4 cylinder pairings
