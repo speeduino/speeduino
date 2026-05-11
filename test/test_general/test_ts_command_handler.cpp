@@ -13,9 +13,12 @@ static void ensure_io_initialised(void)
   // Cases like TS_CMD_TEST_DSBL or TS_CMD_INJ1_OFF call closeInjectorN()/endCoilN()
   // unconditionally, which dereferences the static port pointers inside
   // fastOutputPin_t. Those must be wired to real pins (any free pin numbers
-  // will do under ArduinoFake) before driving the handler.
-  const uint8_t inj_pins[INJ_CHANNELS] = { 50U, 51U, 52U, 53U, 54U, 55U, 56U, 57U };
-  const uint8_t ign_pins[IGN_CHANNELS] = { 60U, 61U, 62U, 63U, 64U, 65U, 66U, 67U };
+  // will do under ArduinoFake) before driving the handler. Array size tracks
+  // INJ_CHANNELS / IGN_CHANNELS so the test compiles on AVR (4/5) and native (8/8).
+  uint8_t inj_pins[INJ_CHANNELS];
+  uint8_t ign_pins[IGN_CHANNELS];
+  for (uint8_t i = 0U; i < (uint8_t)INJ_CHANNELS; ++i) { inj_pins[i] = (uint8_t)(50U + i); }
+  for (uint8_t i = 0U; i < (uint8_t)IGN_CHANNELS; ++i) { ign_pins[i] = (uint8_t)(60U + i); }
   initInjDirectIO(inj_pins);
   initIgnDirectIO(ign_pins);
   ts_io_initialised = true;
@@ -194,18 +197,34 @@ static void test_handler_vss_ratio1_no_vss_no_change(void)
 DECLARE_INJ_PULSED_TEST(2)
 DECLARE_INJ_PULSED_TEST(3)
 DECLARE_INJ_PULSED_TEST(4)
+#if INJ_CHANNELS >= 5
 DECLARE_INJ_PULSED_TEST(5)
+#endif
+#if INJ_CHANNELS >= 6
 DECLARE_INJ_PULSED_TEST(6)
+#endif
+#if INJ_CHANNELS >= 7
 DECLARE_INJ_PULSED_TEST(7)
+#endif
+#if INJ_CHANNELS >= 8
 DECLARE_INJ_PULSED_TEST(8)
+#endif
 
 DECLARE_IGN_PULSED_TEST(2)
 DECLARE_IGN_PULSED_TEST(3)
 DECLARE_IGN_PULSED_TEST(4)
+#if IGN_CHANNELS >= 5
 DECLARE_IGN_PULSED_TEST(5)
+#endif
+#if IGN_CHANNELS >= 6
 DECLARE_IGN_PULSED_TEST(6)
+#endif
+#if IGN_CHANNELS >= 7
 DECLARE_IGN_PULSED_TEST(7)
+#endif
+#if IGN_CHANNELS >= 8
 DECLARE_IGN_PULSED_TEST(8)
+#endif
 
 void testTSCommandHandler(void)
 {
@@ -232,18 +251,26 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_inj4_on_returns_true);
     RUN_TEST(test_handler_inj4_off_clears_bit);
     RUN_TEST(test_handler_inj4_pulsed_sets_bit);
+#if INJ_CHANNELS >= 5
     RUN_TEST(test_handler_inj5_on_returns_true);
     RUN_TEST(test_handler_inj5_off_clears_bit);
     RUN_TEST(test_handler_inj5_pulsed_sets_bit);
+#endif
+#if INJ_CHANNELS >= 6
     RUN_TEST(test_handler_inj6_on_returns_true);
     RUN_TEST(test_handler_inj6_off_clears_bit);
     RUN_TEST(test_handler_inj6_pulsed_sets_bit);
+#endif
+#if INJ_CHANNELS >= 7
     RUN_TEST(test_handler_inj7_on_returns_true);
     RUN_TEST(test_handler_inj7_off_clears_bit);
     RUN_TEST(test_handler_inj7_pulsed_sets_bit);
+#endif
+#if INJ_CHANNELS >= 8
     RUN_TEST(test_handler_inj8_on_returns_true);
     RUN_TEST(test_handler_inj8_off_clears_bit);
     RUN_TEST(test_handler_inj8_pulsed_sets_bit);
+#endif
 
     RUN_TEST(test_handler_ign2_on_returns_true);
     RUN_TEST(test_handler_ign2_off_clears_bit);
@@ -254,17 +281,25 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_ign4_on_returns_true);
     RUN_TEST(test_handler_ign4_off_clears_bit);
     RUN_TEST(test_handler_ign4_pulsed_sets_bit);
+#if IGN_CHANNELS >= 5
     RUN_TEST(test_handler_ign5_on_returns_true);
     RUN_TEST(test_handler_ign5_off_clears_bit);
     RUN_TEST(test_handler_ign5_pulsed_sets_bit);
+#endif
+#if IGN_CHANNELS >= 6
     RUN_TEST(test_handler_ign6_on_returns_true);
     RUN_TEST(test_handler_ign6_off_clears_bit);
     RUN_TEST(test_handler_ign6_pulsed_sets_bit);
+#endif
+#if IGN_CHANNELS >= 7
     RUN_TEST(test_handler_ign7_on_returns_true);
     RUN_TEST(test_handler_ign7_off_clears_bit);
     RUN_TEST(test_handler_ign7_pulsed_sets_bit);
+#endif
+#if IGN_CHANNELS >= 8
     RUN_TEST(test_handler_ign8_on_returns_true);
     RUN_TEST(test_handler_ign8_off_clears_bit);
     RUN_TEST(test_handler_ign8_pulsed_sets_bit);
+#endif
   }
 }

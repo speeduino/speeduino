@@ -28,9 +28,12 @@ static void ensure_tm_io_initialised(void)
   if (tm_io_initialised) { return; }
   // oneMSInterval() may call openInjectorN()/closeInjectorN()/beginCoilNCharge()/endCoilNCharge()
   // when test mode is active. Those dereference the static port pointers inside fastOutputPin_t,
-  // which must be wired to real pins (any free pin numbers will do under ArduinoFake).
-  const uint8_t inj_pins[INJ_CHANNELS] = { 50U, 51U, 52U, 53U, 54U, 55U, 56U, 57U };
-  const uint8_t ign_pins[IGN_CHANNELS] = { 60U, 61U, 62U, 63U, 64U, 65U, 66U, 67U };
+  // which must be wired to real pins (any free pin numbers will do under ArduinoFake). The array
+  // size tracks INJ_CHANNELS / IGN_CHANNELS so the test compiles on AVR (4/5) and native (8/8).
+  uint8_t inj_pins[INJ_CHANNELS];
+  uint8_t ign_pins[IGN_CHANNELS];
+  for (uint8_t i = 0U; i < (uint8_t)INJ_CHANNELS; ++i) { inj_pins[i] = (uint8_t)(50U + i); }
+  for (uint8_t i = 0U; i < (uint8_t)IGN_CHANNELS; ++i) { ign_pins[i] = (uint8_t)(60U + i); }
   initInjDirectIO(inj_pins);
   initIgnDirectIO(ign_pins);
   initTacho(40U);

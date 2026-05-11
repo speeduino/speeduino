@@ -28,9 +28,9 @@ static void ensure_aux_io_initialised(void)
   // pointer is dereferenced unconditionally inside nitrousControl()'s
   // isPinHigh() call and would otherwise SIGSEGV.
   configPage10.n2o_minTPS = 0U;
-  configPage10.n2o_stage1_pin = 80U;
-  configPage10.n2o_stage2_pin = 81U;
-  configPage10.n2o_arming_pin = 82U;
+  configPage10.n2o_stage1_pin = 40U;
+  configPage10.n2o_stage2_pin = 41U;
+  configPage10.n2o_arming_pin = 42U;
   configPage10.n2o_pin_polarity = 0U;
   configPage10.n2o_enable = 1U;
   configPage6.boostMode = 0U;
