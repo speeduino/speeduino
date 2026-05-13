@@ -918,7 +918,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A8; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinIdle1 = 30; //Single wire idle control
       pinNumbers.pinIdle2 = 31; //2 wire idle control
@@ -954,7 +953,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A8; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinIdle2 = 53; //2 wire idle control
@@ -1020,7 +1018,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A8; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
       pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinIdle2 = 6; //2 wire idle control
@@ -1065,8 +1062,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
         pinNumbers.pinLaunch = 34; //Can be overwritten below
         pinNumbers.pinVSS = 35;
-        pinNumbers.pinSpareTemp2 = A16; //WRONG! Needs updating!!
-        pinNumbers.pinSpareTemp2 = A17; //WRONG! Needs updating!!
 
         pinNumbers.triggerPins.primary = 20; //The CAS pin
         pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
@@ -1134,7 +1129,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinO2 = PC4;  //ADC12
         pinNumbers.pinBat = PC5; //ADC12
         pinNumbers.pinVVT_1 = PC6; //
-        pinNumbers.pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
         /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
@@ -1227,7 +1221,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A3; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
       pinNumbers.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 4;
@@ -1279,8 +1272,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A3; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
-      pinNumbers.pinTachOut = A9; //Tacho output pin  (Goes to ULN2803)
       pinNumbers.pinIdle1 = 2; //Single wire idle control
       pinNumbers.pinBoost = 4;
       pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
@@ -1329,8 +1320,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A3; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinNumbers.pinIdle1 = 2; //Single wire idle control
       pinNumbers.pinBoost = 4;
       pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
@@ -1375,14 +1364,10 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.secondary = 19; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinMAP2 = A8; //MAP2 sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
       pinNumbers.pinCLT = A1; //CLS sensor pin
       pinNumbers.pinO2 = A4; //O2 Sensor pin
       pinNumbers.pinBat = A7; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
-      pinNumbers.pinSpareTemp1 = A6;
-      pinNumbers.pinSpareTemp2 = A5;
       pinNumbers.pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
       pinNumbers.pinFuelPump = 42; //Fuel pump output 2n2222
       pinNumbers.pinFan = 47; //Pin for the fan output
@@ -1413,7 +1398,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2 = PB0;             // O2 Sensor pin
       pinNumbers.pinBat = PA4;            // Battery reference voltage pin
       pinNumbers.pinBaro = PA5;           // Baro sensor pin
-      pinNumbers.pinDisplayReset = PE12;  // OLED reset pin (placeholder)
       pinNumbers.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
       pinNumbers.pinIdle1 = PD10;         // ICV pin1  (Goes to UNL2803)
       pinNumbers.pinIdle2 = PD9;          // ICV pin3  (Goes to UNL2803)
@@ -1447,16 +1431,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */ };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinSpareOut1 = 4; //Spare LSD Output 1(PWM)
-      pinNumbers.pinSpareOut2 = 5; //Spare LSD Output 2(PWM)
-      pinNumbers.pinSpareOut3 = 6; //Spare LSD Output 3(PWM)
-      pinNumbers.pinSpareOut4 = 7; //Spare LSD Output 4(PWM)
-      pinNumbers.pinSpareOut5 = 50; //Spare LSD Output 5(digital)
-      pinNumbers.pinSpareOut6 = 52; //Spare LSD Output 6(digital)
       pinNumbers.triggerPins.primary = 20; //The CAS pin
       pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-      pinNumbers.pinSpareTemp2 = A15; //spare Analog input 2
-      pinNumbers.pinSpareTemp1 = A14; //spare Analog input 1
       pinNumbers.pinO2 = A8; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
@@ -1491,20 +1467,12 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2 = A8; //O2 Sensor pin
       pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor)
       pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinFuelPump = 45; //Fuel pump output
       pinNumbers.pinStepperDir = 20; //Direction pin  for DRV8825 driver
       pinNumbers.pinStepperStep = 21; //Step pin for DRV8825 driver
-      pinNumbers.pinSpareHOut1 = 4; // high current output spare1
-      pinNumbers.pinSpareHOut2 = 6; // high current output spare2
       pinNumbers.pinBoost = 7;
-      pinNumbers.pinSpareLOut1 = 43; //low current output spare1
-      pinNumbers.pinSpareLOut2 = 47;
-      pinNumbers.pinSpareLOut3 = 49;
-      pinNumbers.pinSpareLOut4 = 51;
-      pinNumbers.pinSpareLOut5 = 53;
       pinNumbers.pinFan = 47; //Pin for the fan output
     #endif
       break;
@@ -1533,7 +1501,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2_2 = A12; //O2 Sensor pin
       pinNumbers.pinBat = A4; //Battery reference voltage pin
       pinNumbers.pinBaro = A5; //Baro sensor pin
-      pinNumbers.pinDisplayReset = 41; // OLED reset pin
       pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinNumbers.pinIdle1 = 5; //ICV pin1
       pinNumbers.pinIdle2 = 6; //ICV pin3
@@ -1575,7 +1542,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2_2 = PC2; //O2 Sensor pin
       pinNumbers.pinBat = PA4; //Battery reference voltage pin
       pinNumbers.pinBaro = PA5; //Baro sensor pin
-      pinNumbers.pinDisplayReset = PE12; // OLED reset pin
       pinNumbers.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
       pinNumbers.pinIdle1 = PD10; //ICV pin1
       pinNumbers.pinIdle2 = PD9; //ICV pin3
@@ -1621,8 +1587,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2 = A2; //O2 sensor pin
       pinNumbers.pinBat = A1; //Battery reference voltage pin
       pinNumbers.pinBaro = A6; //Baro sensor pin - ONLY WITH DB
-      pinNumbers.pinSpareTemp1 = A7; //spare Analog input 1 - ONLY WITH DB
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin - NOT USED
       pinNumbers.pinTachOut = 38; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinIdle2 = 47; //2 wire idle control - NOT USED
@@ -1636,9 +1600,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinLaunch = 10; //Can be overwritten below
       pinNumbers.pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
       pinNumbers.pinFan = 30; //Pin for the fan output - ONLY WITH DB
-      pinNumbers.pinSpareLOut1 = 32; //low current output spare1 - ONLY WITH DB
-      pinNumbers.pinSpareLOut2 = 34; //low current output spare2 - ONLY WITH DB
-      pinNumbers.pinSpareLOut3 = 36; //low current output spare3 - ONLY WITH DB
       pinNumbers.pinResetControl = 26; //Reset control output
       #endif
       break;
@@ -1666,9 +1627,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2 = A1; //O2 Sensor pin
       pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor)
       pinNumbers.pinBat = A2; //Battery reference voltage pin
-      pinNumbers.pinSpareTemp1 = A8; //spare Analog input 1
       pinNumbers.pinLaunch = 37; //Can be overwritten below
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin PLACEHOLDER value for now
       pinNumbers.pinTachOut = 22; //Tacho output pin
       pinNumbers.pinIdle1 = 9; //Single wire idle control
       pinNumbers.pinIdle2 = 10; //2 wire idle control
@@ -1679,10 +1638,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
       pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 12; //Boost control
-      pinNumbers.pinSpareLOut1 = 26; //low current output spare1
-      pinNumbers.pinSpareLOut2 = 27; //low current output spare2
-      pinNumbers.pinSpareLOut3 = 28; //low current output spare3
-      pinNumbers.pinSpareLOut4 = 29; //low current output spare4
       pinNumbers.pinFan = 24; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       pinNumbers.pinVSS = 2;
@@ -1703,7 +1658,6 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
       pinNumbers.pinTPS = A0; //TPS input pin
-      pinNumbers.pinSpareTemp1 = A1; //LMM sensor pin
       pinNumbers.pinO2 = A2; //O2 Sensor pin
       pinNumbers.pinIAT = A3; //IAT sensor pin
       pinNumbers.pinCLT = A4; //CLT sensor pin
@@ -1718,10 +1672,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinFuelPump = 3; //Fuel pump output
       pinNumbers.pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
       pinNumbers.pinBoost = 5; //Boost control
-      pinNumbers.pinSpareLOut1 = 49; //enable Wideband Lambda Heater
-      pinNumbers.pinSpareLOut2 = 16; //low current output spare2 PLACEHOLDER value for now
-      pinNumbers.pinSpareLOut3 = 17; //low current output spare3 PLACEHOLDER value for now
-      pinNumbers.pinSpareLOut4 = 21; //low current output spare4 PLACEHOLDER value for now
       pinNumbers.pinFan = 12; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
     break;
@@ -1750,9 +1700,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2 = A12; //O2 Sensor pin
       pinNumbers.pinO2_2 = A5; //O2 sensor pin (second sensor)
       pinNumbers.pinBat = A1; //Battery reference voltage pin
-      pinNumbers.pinSpareTemp1 = A14; //spare Analog input 1
       pinNumbers.pinLaunch = 24; //Can be overwritten below
-      pinNumbers.pinDisplayReset = 48; // OLED reset pin PLACEHOLDER value for now
       pinNumbers.pinTachOut = 38; //Tacho output pin
       pinNumbers.pinIdle1 = 42; //Single wire idle control
       pinNumbers.pinIdle2 = 43; //2 wire idle control
@@ -1763,9 +1711,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
       pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 45; //Boost control
-      pinNumbers.pinSpareLOut1 = 37; //low current output spare1
-      pinNumbers.pinSpareLOut2 = 36; //low current output spare2
-      pinNumbers.pinSpareLOut3 = 35; //low current output spare3
       pinNumbers.pinFan = 40; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       #endif
@@ -1801,9 +1746,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 33; //Enable pin for DRV8825 driver
       pinNumbers.pinLaunch = 26; //Can be overwritten below
       pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
-      pinNumbers.pinSpareHOut1 = 8; // high current output spare1
-      pinNumbers.pinSpareHOut2 = 7; // high current output spare2
-      pinNumbers.pinSpareLOut1 = 21; //low current output spare1
       break;
 
     case 51:
@@ -1834,9 +1776,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 33; //Enable pin for DRV8825 driver
       pinNumbers.pinLaunch = 26; //Can be overwritten below
       pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
-      pinNumbers.pinSpareHOut1 = 8; // high current output spare1
-      pinNumbers.pinSpareHOut2 = 7; // high current output spare2
-      pinNumbers.pinSpareLOut1 = 21; //low current output spare1
       break;
     #endif
 
@@ -1869,9 +1808,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
       pinNumbers.pinLaunch = 26; //Can be overwritten below
       pinNumbers.pinFan = 25; //Pin for the fan output
-      pinNumbers.pinSpareHOut1 = 26; // high current output spare1
-      pinNumbers.pinSpareHOut2 = 27; // high current output spare2
-      pinNumbers.pinSpareLOut1 = 55; //low current output spare1 - NOT USED
       break;
     #endif
 
@@ -1898,7 +1834,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinMAP = A1; //MAP sensor pin
       pinNumbers.pinBaro = A0; //Baro sensor pin
       pinNumbers.pinBat = A14; //Battery reference voltage pin
-      pinNumbers.pinSpareTemp1 = A17; //spare Analog input 1
       pinNumbers.pinLaunch = A15; //Can be overwritten below
       pinNumbers.pinTachOut = 5; //Tacho output pin
       pinNumbers.pinIdle1 = 27; //Single wire idle control
@@ -1909,17 +1844,13 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
       pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 24; //Boost control
-      pinNumbers.pinSpareLOut1 = 29; //low current output spare1
-      pinNumbers.pinSpareLOut2 = 26; //low current output spare2
-      pinNumbers.pinSpareLOut3 = 28; //low current output spare3
-      pinNumbers.pinSpareLOut4 = 29; //low current output spare4
       pinNumbers.pinFan = 25; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       pinNumbers.pinVSS = 22;
 
       pinNumbers.pinWMIEmpty = 23; //Spare digital input
-      pinNumbers.pinWMIIndicator = pinNumbers.pinSpareLOut2; //Spare output
-      pinNumbers.pinWMIEnabled = pinNumbers.pinSpareLOut1; //Spare output
+      pinNumbers.pinWMIIndicator = 26; //Spare output
+      pinNumbers.pinWMIEnabled = 29; //Spare output
 
       //CS pin number is now set in a compile flag. 
       // #ifdef USE_SPI_EEPROM
@@ -1947,8 +1878,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
         pinNumbers.pinLaunch = 36;
         pinNumbers.pinFlex = 37; // Flex sensor
-        pinNumbers.pinSpareTemp1 = A16; 
-        pinNumbers.pinSpareTemp2 = A17;
 
         pinNumbers.triggerPins.primary = 20; //The CAS pin
         pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
@@ -2018,8 +1947,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinO2 = A2; //O2 Sensor pin
       pinNumbers.pinLaunch = 36;
 
-      pinNumbers.pinSpareTemp1 = A16; //spare Analog input 1
-      pinNumbers.pinSpareTemp2 = A17; //spare Analog input 2
       pinNumbers.pinTachOut = 38; //Tacho output pin
       pinNumbers.pinIdle1 = 27; //Single wire idle control
       pinNumbers.pinIdle2 = 26; //2 wire idle control. Shared with Spare 1 output
@@ -2029,10 +1956,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
       pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 24; //Boost control
-      pinNumbers.pinSpareLOut1 = 29; //low current output spare1
-      pinNumbers.pinSpareLOut2 = 26; //low current output spare2
-      pinNumbers.pinSpareLOut3 = 28; //low current output spare3
-      pinNumbers.pinSpareLOut4 = 29; //low current output spare4
       pinNumbers.pinFan = 25; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
@@ -2199,7 +2122,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinStepperDir = PC15; //Direction pin  for DRV8825 driver
         pinNumbers.pinStepperStep = PC14; //Step pin for DRV8825 driver
         pinNumbers.pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinNumbers.pinDisplayReset = PB2; // OLED reset pin
         pinNumbers.pinFan = PB1; //Pin for the fan output
         pinNumbers.pinFuelPump = PB11; //Fuel pump output
         pinNumbers.pinTachOut = PB10; //Tacho output pin
@@ -2271,7 +2193,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinO2 = PC4; //ADC12
         pinNumbers.pinBat = PC5; //ADC12
         /*pinNumbers.pinVVT_1 = PC6; */ //
-        pinNumbers.pinDisplayReset = PC7; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
         /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
@@ -2337,7 +2258,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinBat = A4; //Battery reference voltage pin
         pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
         pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-        pinNumbers.pinDisplayReset = 48; // OLED reset pin
         pinNumbers.pinFan = 47; //Pin for the fan output
         pinNumbers.pinFuelPump = 4; //Fuel pump output
         pinNumbers.pinTachOut = 49; //Tacho output pin

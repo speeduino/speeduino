@@ -8,7 +8,7 @@
 template <uint8_t N>
 struct pin_array_t
 {
-  uint8_t pins[N];
+  uint8_t pins[N] = {0};
 
   /**
    * @brief Populate by copying from a source array stored in flash
@@ -68,37 +68,20 @@ struct pinNumbers_t
   uint8_t pinTPS = 0;//TPS input pin
   uint8_t pinMAP = 0; //MAP sensor pin
   uint8_t pinEMAP = 0; //EMAP sensor pin
-  uint8_t pinMAP2 = 0; //2nd MAP sensor (Currently unused)
   uint8_t pinIAT = 0; //IAT sensor pin
   uint8_t pinCLT = 0; //CLS sensor pin
   uint8_t pinO2 = 0; //O2 Sensor pin
   uint8_t pinO2_2 = 0; //second O2 pin
   uint8_t pinBat = 0; //Battery voltage pin
-  uint8_t pinDisplayReset = 0; // OLED reset pin
   uint8_t pinTachOut = 0; //Tacho output
   uint8_t pinFuelPump = 0; //Fuel pump on/off
   uint8_t pinIdle1 = 0; //Single wire idle control
-  uint8_t pinIdle2 = 0; //2 wire idle control (Not currently used)
+  uint8_t pinIdle2 = 0; //2 wire idle control
   uint8_t pinIdleUp = 0; //Input for triggering Idle Up
   uint8_t pinIdleUpOutput = 0; //Output that follows (normal or inverted) the idle up pin
   uint8_t pinCTPS = 0; //Input for triggering closed throttle state
   uint8_t pinFuel2Input = 0; //Input for switching to the 2nd fuel table
   uint8_t pinSpark2Input = 0; //Input for switching to the 2nd ignition table
-  uint8_t pinSpareTemp1 = 0; // Future use only
-  uint8_t pinSpareTemp2 = 0; // Future use only
-  uint8_t pinSpareOut1 = 0; //Generic output
-  uint8_t pinSpareOut2 = 0; //Generic output
-  uint8_t pinSpareOut3 = 0; //Generic output
-  uint8_t pinSpareOut4 = 0; //Generic output
-  uint8_t pinSpareOut5 = 0; //Generic output
-  uint8_t pinSpareOut6 = 0; //Generic output
-  uint8_t pinSpareHOut1 = 0; //spare high current output
-  uint8_t pinSpareHOut2 = 0; // spare high current output
-  uint8_t pinSpareLOut1 = 0; // spare low current output
-  uint8_t pinSpareLOut2 = 0; // spare low current output
-  uint8_t pinSpareLOut3 = 0;
-  uint8_t pinSpareLOut4 = 0;
-  uint8_t pinSpareLOut5 = 0;
   uint8_t pinBoost = 0;
   uint8_t pinVVT_1 = 0;		// vvt output 1
   uint8_t pinVVT_2 = 0;		// vvt output 2
@@ -124,9 +107,6 @@ struct pinNumbers_t
   uint8_t mc33810IgnBits[8];
 #endif
   uint8_t pinSDEnable = 0; //Input for manually enabling SD logging
-#ifdef USE_SPI_EEPROM
-  uint8_t pinSPIFlash_CS = 0;
-#endif
   uint8_t pinAirConComp = 0;    // Air conditioning compressor output
   uint8_t pinAirConFan = 0;    // Stand-alone air conditioning fan output
   uint8_t pinAirConRequest = 0; // Air conditioning request input
