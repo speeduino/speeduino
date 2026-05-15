@@ -4,6 +4,7 @@
 #include "channel_test_helpers.h"
 #include "../fake_decoder_status.h"
 #include "scheduledIO_ign.h"
+#include "decoder_builder.h"
 
 extern void SetRevolutionTime(uint32_t revTime);
 extern void changeIgnitionToFullSequential(const config2 &page2, statuses &current);

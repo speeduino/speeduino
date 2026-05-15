@@ -8,6 +8,7 @@
 #include "../test_schedules/channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 #include "../fake_decoder_status.h"
+#include "decoder_builder.h"
 
 extern void prepareForInitialiseAll(uint8_t boardId);
 extern void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
