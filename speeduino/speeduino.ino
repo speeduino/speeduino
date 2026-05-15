@@ -179,7 +179,7 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
 BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
-      LOOP_TIMER = TIMER_mask;
+      LOOP_TIMER = getAndClearTimerMask();
 
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
@@ -268,25 +268,14 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     //-----------------------------------------------------------------------------------------------------
     readPolledSensors(LOOP_TIMER);
 
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1KHZ)) //Every 1ms. NOTE: This is NOT guaranteed to run at 1kHz on AVR systems. It will run at 1kHz if possible or as fast as loops/s allows if not. 
-    {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_1KHZ);
-    }
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_200HZ))
-    {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_200HZ);
-    }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_50HZ);
-
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(50);
       #endif
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_30HZ);
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
@@ -315,15 +304,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_15HZ);
-      #if  defined(CORE_TEENSY35)       
-          if (configPage9.enable_intcan == 1) // use internal can module
-          {
-           // this is just to test the interface is sending
-           //sendCancommand(3,((configPage9.realtime_base_address & 0x3FF)+ 0x100),currentStatus.TPS,0,0x200);
-          }
-      #endif     
-
       checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
 
       #if defined(NATIVE_CAN_AVAILABLE)
@@ -335,8 +315,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_10HZ);
-      //updateFullStatus();
       checkProgrammableIO(currentStatus, configPage13);
       idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
       
@@ -353,7 +331,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_4HZ);
       nitrousControl();
 
       //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
@@ -426,7 +403,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
-      BIT_CLEAR(TIMER_mask, BIT_TIMER_1HZ);
       currentStatus.systemTemp = getSystemTemp();
 
       if ( (configPage10.wmiEnabled > 0) && (configPage10.wmiIndicatorEnabled > 0) )

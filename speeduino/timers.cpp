@@ -52,7 +52,17 @@ void __attribute__((optimize("Os"))) initialiseTimers(void)
 }
 
 static boardOutputPin_t tach_pin;
-volatile uint8_t TIMER_mask;
+static volatile uint8_t TIMER_mask;
+
+uint8_t getAndClearTimerMask(void)
+{
+  ATOMIC() {
+    uint8_t mask = TIMER_mask;
+    TIMER_mask = 0U;
+    return mask;
+  }
+  return 0U; // Suppress false compiler warning
+}
 
 void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
 {
