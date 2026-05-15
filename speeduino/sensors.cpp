@@ -42,6 +42,13 @@ volatile uint32_t flexPulseWidth = 0U;
 
 static map_algorithm_t mapAlgorithmState;
 
+static constexpr uint8_t TWO_STROKE_PSEUDO_MAP_MULTIPLIER = 3U;
+static constexpr uint16_t TWO_STROKE_PSEUDO_MAP_MIN_ANGLE = 0U;
+static constexpr uint16_t TWO_STROKE_PSEUDO_MAP_MAX_ANGLE = 140U;
+static constexpr uint16_t TWO_STROKE_PSEUDO_MAP_ANGLE_WINDOW = 20U;
+
+static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapMax);
+
 static uint16_t cltCalibration_bins[32];
 static uint8_t cltCalibration_values[32];
 table2D_u16_u8_32 cltCalibrationTable(&cltCalibration_bins, &cltCalibration_values);
@@ -311,11 +318,16 @@ static inline bool cycleAverageEndCycle(const statuses &current, map_cycle_avera
   return instanteneousMAPReading(); 
 }
 
-static inline bool isCycleCurrent(const statuses &current, uint32_t cycleStartIndex) {
+static inline bool isCycleCurrent(const statuses &current, uint32_t cycleStartIndex, uint8_t cycleRevolutions) {
   ATOMIC() {
-    return (cycleStartIndex == (uint8_t)current.startRevolutions) || ((cycleStartIndex+1U) == (uint8_t)current.startRevolutions);
+    const uint8_t cycleDelta = (uint8_t)((uint8_t)current.startRevolutions - (uint8_t)cycleStartIndex);
+    return cycleDelta < cycleRevolutions;
   }
   return false; // Just here to avoid compiler warning.
+}
+
+static inline bool isCycleCurrent(const statuses &current, uint32_t cycleStartIndex) {
+  return isCycleCurrent(current, cycleStartIndex, 2U);
 }
 
 static inline bool isCycleCurrent(const statuses &current, const map_cycle_average_t &cycle_avg) {
@@ -345,9 +357,47 @@ TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, cons
   return instanteneousMAPReading();
 }
 
-static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
+static inline uint16_t normalizeTwoStrokeCrankAngle(int16_t crankAngle)
+{
+  while(crankAngle < 0) { crankAngle += 360; }
+  while(crankAngle >= 360) { crankAngle -= 360; }
+  return (uint16_t)crankAngle;
+}
+
+static inline uint16_t getCrankAngleDifference(uint16_t firstAngle, uint16_t secondAngle)
+{
+  const uint16_t forwardDifference = (firstAngle > secondAngle) ? (firstAngle - secondAngle) : (secondAngle - firstAngle);
+  return min(forwardDifference, (uint16_t)(360U - forwardDifference));
+}
+
+static inline bool isCrankAngleNear(uint16_t crankAngle, uint16_t targetAngle)
+{
+  return getCrankAngleDifference(crankAngle, targetAngle) <= TWO_STROKE_PSEUDO_MAP_ANGLE_WINDOW;
+}
+
+static inline void cycleMinimumAccumulateTwoStroke(const statuses &current, map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings)
+{
+  const uint16_t crankAngle = normalizeTwoStrokeCrankAngle(current.decoder.getCrankAngle());
+
+  if( isCrankAngleNear(crankAngle, TWO_STROKE_PSEUDO_MAP_MIN_ANGLE) )
+  {
+    cycle_min.twoStrokeMinADC = cycle_min.twoStrokeMinSampled ? min(sensorReadings.mapADC, cycle_min.twoStrokeMinADC) : sensorReadings.mapADC;
+    cycle_min.twoStrokeMinSampled = true;
+  }
+
+  if( isCrankAngleNear(crankAngle, TWO_STROKE_PSEUDO_MAP_MAX_ANGLE) )
+  {
+    cycle_min.twoStrokeMaxADC = cycle_min.twoStrokeMaxSampled ? max(sensorReadings.mapADC, cycle_min.twoStrokeMaxADC) : sensorReadings.mapADC;
+    cycle_min.twoStrokeMaxSampled = true;
+  }
+}
+
+static inline bool cycleMinimumAccumulate(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
   //Check whether the current reading is lower than the running minimum
   cycle_min.mapMinimum = min(sensorReadings.mapADC, cycle_min.mapMinimum); 
+  cycle_min.mapMaximum = max(sensorReadings.mapADC, cycle_min.mapMaximum);
+
+  if(page2.strokes == TWO_STROKE) { cycleMinimumAccumulateTwoStroke(current, cycle_min, sensorReadings); }
 
   // We are *not* ready to derive new maps readings yet
   return false;
@@ -356,32 +406,59 @@ static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_
 static inline void reset(const statuses &current, map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
   cycle_min.cycleStartIndex = (uint8_t)current.startRevolutions; //Reset the current rev count
   cycle_min.mapMinimum = sensorReadings.mapADC; //Reset the latest value so the next reading will always be lower
+  cycle_min.mapMaximum = sensorReadings.mapADC;
+  cycle_min.twoStrokeMinADC = UINT16_MAX;
+  cycle_min.twoStrokeMaxADC = 0U;
+  cycle_min.twoStrokePseudoMAP = 0U;
+  cycle_min.twoStrokeMinSampled = false;
+  cycle_min.twoStrokeMaxSampled = false;
+  cycle_min.hasTwoStrokePseudoMAP = false;
 }
 
-static inline bool cycleMinimumEndCycle(const statuses &current, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
+static inline uint16_t calculateTwoStrokePseudoMAP(const config2 &page2, const map_cycle_min_t &cycle_min)
+{
+  const uint16_t minADC = cycle_min.twoStrokeMinSampled ? cycle_min.twoStrokeMinADC : cycle_min.mapMinimum;
+  const uint16_t maxADC = cycle_min.twoStrokeMaxSampled ? cycle_min.twoStrokeMaxADC : cycle_min.mapMaximum;
+  const uint16_t minMAP = mapADCToMAP(minADC, page2.mapMin, page2.mapMax);
+  const uint16_t maxMAP = mapADCToMAP(maxADC, page2.mapMin, page2.mapMax);
+
+  if(maxMAP <= minMAP) { return 0U; }
+
+  const uint32_t pseudoMAP = (uint32_t)(maxMAP - minMAP) * TWO_STROKE_PSEUDO_MAP_MULTIPLIER;
+  return (uint16_t)min(pseudoMAP, (uint32_t)UINT16_MAX);
+}
+
+static inline bool cycleMinimumEndCycle(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
   // Record this since we're about to overwrite it....
   map_adc_readings_t rawReadings = sensorReadings;
+  const bool useTwoStrokePseudoMAP = (page2.strokes == TWO_STROKE);
+  const uint16_t twoStrokePseudoMAP = useTwoStrokePseudoMAP ? calculateTwoStrokePseudoMAP(page2, cycle_min) : 0U;
 
   sensorReadings.mapADC = cycle_min.mapMinimum;
 
   reset(current, cycle_min, rawReadings);
 
+  if(useTwoStrokePseudoMAP)
+  {
+    cycle_min.twoStrokePseudoMAP = twoStrokePseudoMAP;
+    cycle_min.hasTwoStrokePseudoMAP = true;
+  }
+
   // We can now derive new map values
   return true;
 }
 
-static inline bool isCycleCurrent(const statuses &current, const map_cycle_min_t &cycle_min) {
-  return isCycleCurrent(current, cycle_min.cycleStartIndex);
+static inline bool isCycleCurrent(const statuses &current, const config2 &page2, const map_cycle_min_t &cycle_min) {
+  return isCycleCurrent(current, cycle_min.cycleStartIndex, (page2.strokes == TWO_STROKE) ? 1U : 2U);
 }
 
 TESTABLE_INLINE_STATIC bool cycleMinimumMAPReading(const statuses &current, const config2 &page2, map_cycle_min_t &cycle_min, map_adc_readings_t &sensorReadings) {
   if (current.RPMdiv100 > page2.mapSwitchPoint) {
-    //2 revolutions are looked at for 4 stroke. 2 stroke not currently catered for.
-    if ( isCycleCurrent(current, cycle_min) ) {
-      return cycleMinimumAccumulate(cycle_min, sensorReadings);
+    if ( isCycleCurrent(current, page2, cycle_min) ) {
+      return cycleMinimumAccumulate(current, page2, cycle_min, sensorReadings);
     }
       //Reaching here means that the last cycle has completed and the MAP value should be calculated
-    return cycleMinimumEndCycle(current, cycle_min, sensorReadings);
+    return cycleMinimumEndCycle(current, page2, cycle_min, sensorReadings);
   }
 
   //If the engine isn't running and RPM below switch point, fall back to instantaneous reads
@@ -504,6 +581,15 @@ TESTABLE_INLINE_STATIC void setMAPValuesFromReadings(const map_adc_readings_t &r
   if(useEMAP) { current.EMAP = mapADCToMAP(readings.emapADC, page2.EMAPMin, page2.EMAPMax); }
 }
 
+TESTABLE_INLINE_STATIC void applyTwoStrokePseudoMAP(const config2 &page2, map_algorithm_t &algorithmState, statuses &current)
+{
+  if((page2.mapSample == MAPSamplingCycleMinimum) && (page2.strokes == TWO_STROKE) && algorithmState.cycle_min.hasTwoStrokePseudoMAP)
+  {
+    current.MAP = algorithmState.cycle_min.twoStrokePseudoMAP;
+    algorithmState.cycle_min.hasTwoStrokePseudoMAP = false;
+  }
+}
+
 #if defined(UNIT_TEST)
 map_last_read_t& getMapLast(void){
   return mapAlgorithmState.lastReading;
@@ -552,6 +638,7 @@ static inline void readMAP(void)
 
     // Convert from filtered sensor readings to kPa
     setMAPValuesFromReadings(mapAlgorithmState.sensorReadings, configPage2, configPage6.useEMAP, currentStatus);
+    applyTwoStrokePseudoMAP(configPage2, mapAlgorithmState, currentStatus);
   }
 }
 
