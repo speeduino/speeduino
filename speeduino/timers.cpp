@@ -52,6 +52,7 @@ void __attribute__((optimize("Os"))) initialiseTimers(void)
 }
 
 static boardOutputPin_t tach_pin;
+volatile uint8_t TIMER_mask;
 
 void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
 {

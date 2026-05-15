@@ -30,6 +30,8 @@ constexpr uint8_t BIT_TIMER_50HZ = 5;
 constexpr uint8_t BIT_TIMER_200HZ = 6;
 constexpr uint8_t BIT_TIMER_1KHZ = 7;
 
+extern volatile uint8_t TIMER_mask;
+
 void initTacho(uint8_t tachoPin);
 void tachoPulseHigh(void);
 void tachoPulseLow(void);

@@ -46,7 +46,6 @@ volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents o
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_Pulsed = 0; 
 
-volatile byte TIMER_mask;
 volatile byte LOOP_TIMER;
 
 /// Various pin numbering (Injectors, Ign outputs, CAS, Cam, Sensors. etc.) assignments
