@@ -10,7 +10,7 @@ static decoder_status_t fakeGetStatus(void)
 static void assert_matchResetControlToEngineState_On(uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin)
 {
     statuses current = {};
-    setRpm(current, rpm);
+    current.setRpm( rpm);
 
     current.decoder.getStatus = fakeGetStatus;
     fakeDecoderStatus.syncStatus = syncStatus;
@@ -23,7 +23,7 @@ static void assert_matchResetControlToEngineState_On(uint16_t rpm, SyncStatus sy
 static void assert_matchResetControlToEngineState_Off(uint16_t rpm, SyncStatus syncStatus, uint8_t resetPin)
 {
     statuses current = {};
-    setRpm(current, rpm);
+    current.setRpm( rpm);
 
     current.decoder.getStatus = fakeGetStatus;
     fakeDecoderStatus.syncStatus = syncStatus;
@@ -37,7 +37,7 @@ static void assert_matchResetControlToEngineState_NoChange(uint16_t rpm, SyncSta
 {
     bool oldState = isResetPreventActive();
     statuses current = {};
-    setRpm(current, rpm);
+    current.setRpm( rpm);
 
     current.decoder.getStatus = fakeGetStatus;
     fakeDecoderStatus.syncStatus = syncStatus;

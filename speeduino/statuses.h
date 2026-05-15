@@ -34,6 +34,13 @@ enum class SchedulerCutStatus : uint8_t
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
+  /**
+   * @brief Set the RPM field, keeping RPMDiv100 in sync.
+   * 
+   * @param rpm 
+   */
+  void setRpm(uint16_t rpm);
+
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool initialisationComplete : 1; ///< Tracks whether the setup() function has run completely
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -327,11 +334,3 @@ struct statuses {
 
   decoder_t decoder = decoder_builder_t().build(); ///< The current decoder
 };
-
-/**
- * @brief Set the RPM field, keeping RPMDiv100 in sync.
- * 
- * @param status 
- * @param smallRpm 
- */
-void setRpm(statuses &status, uint16_t rpm);

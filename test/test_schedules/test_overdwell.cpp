@@ -11,7 +11,7 @@ extern bool isOverDwellActive(const config4 &page4, const statuses &current);
 static statuses rpmBelowLimit(void)
 {
   statuses current = {};
-  setRpm(current, 400);
+  current.setRpm( 400);
   current.crankRPM = 420;
   return current;
 }
@@ -39,7 +39,7 @@ static void test_isOverDwellActive_rpmBelowLimit(void) {
 static statuses rpmAboveLimit(void)
 {
   statuses current = {};
-  setRpm(current, 420);
+  current.setRpm( 420);
   current.crankRPM = 400;
   return current;
 }
