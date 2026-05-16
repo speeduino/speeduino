@@ -164,9 +164,9 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
  * - Check crank/cam/tooth/timing sync (skip remaining ops if out-of-sync)
  * - execute doCrankSpeedCalcs()
  * 
- * single byte variable @ref LOOP_TIMER plays a big part here as:
+ * single byte variable @ref currentStatus.LOOP_TIMER plays a big part here as:
  * - it contains expire-bits for interval based frequency driven events (e.g. 15Hz, 4Hz, 1Hz)
- * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)
+ * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_15HZ)
  * 
  * Sometimes loop() is inlined by LTO & sometimes not
  * When not inlined, there is a huge difference in stack usage: 60+ bytes
@@ -179,7 +179,7 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
 BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 {
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
-      LOOP_TIMER = getAndClearTimerMask();
+      currentStatus.LOOP_TIMER = getAndClearTimerMask();
 
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding
@@ -204,7 +204,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if (configPage9.enable_intcan == 1) // use internal can module
         {            
           //check local can module
-          // if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ) or (CANbus0.available())
           while (CAN_read()) 
           {
             can_Command();
@@ -266,15 +265,15 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
-    readPolledSensors(LOOP_TIMER);
+    readPolledSensors(currentStatus.LOOP_TIMER);
 
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
+    if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(50);
       #endif
     }
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
+    if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
@@ -302,7 +301,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //Check for any outstanding EEPROM writes.
       if( (isEepromWritePending() == true) && (serialStatusFlag == SERIAL_INACTIVE) && storageWriteTimeoutExpired()) { saveAllPages(); } 
     }
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
+    if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
       checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
 
@@ -313,7 +312,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //And check whether the tooth log buffer is ready
       if(toothHistoryIndex > _countof(toothHistory)) { currentStatus.isToothLog1Full = true; }
     }
-    if(BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
+    if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
       checkProgrammableIO(currentStatus, configPage13);
       idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
@@ -329,7 +328,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
     }
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_4HZ))
+    if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ))
     {
       nitrousControl();
 
@@ -401,7 +400,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         } //For loop going through each channel
       } //aux channels are enabled
     } //4Hz timer
-    if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
+    if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
       currentStatus.systemTemp = getSystemTemp();
 

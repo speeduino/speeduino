@@ -119,7 +119,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionWUE(void)
   uint8_t WUEValue = currentStatus.wueCorrection;
 
   // Only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
     if (currentStatus.coolant >= temperatureRemoveOffset(WUETable.axis[WUETable.size()-1U]))
     {
       //This prevents us doing the 2D lookup if we're already up to temp
@@ -175,7 +175,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
     crankingPercent = (uint16_t) map( crankingEnrichTaper, 
                                       0U, configPage10.crankingEnrichTaper, 
                                       computeCrankingTaperStartPct(lookUpCrankingEnrichmentPct()), NO_FUEL_CORRECTION); //Taper from start value to 100%
-    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { ++crankingEnrichTaper; }
+    if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++crankingEnrichTaper; }
   } else {
     // Not cranking and taper not in effect, so no cranking enrichment needed.
     // just need to keep MISRA checker happy.
@@ -208,7 +208,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
     ASEValue = NO_FUEL_CORRECTION;
   } else if (aseTaper!=ASE_COMPLETE) {
     // ASE hasn't started or isn't complete.
-    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ))
+    if ( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ))
     {
       // We only update ASE every 100ms for performance reasons - coolant
       // doesn't change temperature that quickly. 
@@ -424,7 +424,7 @@ static inline uint16_t correctionAccelModeMap(void) {
   uint16_t aeCorrection = currentStatus.AEamount;
 
   // No point in updating faster than the MAP sensor is read
-  if (BIT_CHECK(LOOP_TIMER, MAP_READ_TIMER_BIT)) {
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, MAP_READ_TIMER_BIT)) {
     currentStatus.mapDOT = computeMapDot();
 
     aeCorrection = correctionAccel(mapOnTimeoutExpired, mapShouldResetAe, mapShouldStartAe, mapComputeAe);
@@ -481,7 +481,7 @@ static inline uint16_t correctionAccelModeTps(void) {
   uint16_t aeCorrection = currentStatus.AEamount;
 
   // No point in updating faster than the TPS is read
-  if (BIT_CHECK(LOOP_TIMER, TPS_READ_TIMER_BIT)) {
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, TPS_READ_TIMER_BIT)) {
     currentStatus.tpsDOT = computeTPSDOT();
 
     aeCorrection = correctionAccel(tpsOnTimeoutExpired, tpsShouldResetAe, tpsShouldStartAe, tpsComputeAe);
@@ -534,7 +534,7 @@ TESTABLE_INLINE_STATIC byte correctionBatVoltage(void)
 {
   // No point in updating more often than the sensor is read
   uint8_t correction = currentStatus.batCorrection;
-  if( BIT_CHECK(LOOP_TIMER, BAT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT) ) { 
     correction = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
   }
   return correction;
@@ -546,7 +546,7 @@ This corrects for changes in air density from movement of the temperature.
 TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
 {
   // Performance: only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, IAT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT) ) { 
     return table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
   }
   return currentStatus.iatCorrection;
@@ -560,7 +560,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
 TESTABLE_INLINE_STATIC uint8_t correctionBaro(void)
 {
   // No point in updating more often than the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, BARO_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT) ) { 
     return (uint8_t)table2D_getValue(&baroFuelTable, currentStatus.baro);
   }
   return currentStatus.baroCorrection;
@@ -594,7 +594,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionDFCOfuel(void)
       scaleValue = (uint8_t)map(dfcoTaper, 
                                 configPage9.dfcoTaperTime, 0, 
                                 NO_FUEL_CORRECTION, configPage9.dfcoTaperFuel);
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { --dfcoTaper; }
+      if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { --dfcoTaper; }
     }
     else { scaleValue = 0; } //Taper ended or disabled, disable fuel
   }
@@ -627,7 +627,7 @@ TESTABLE_INLINE_STATIC bool correctionDFCO(void)
       {
         if( dfcoDelay < configPage2.dfcoDelay )
         {
-          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
+          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
         }
         else { DFCOValue = true; }
       }
@@ -880,7 +880,7 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
 {
   static int8_t cachedValue = 0U;  // Setting this to non-zero will use additional RAM for static initialisation
   // Performance: only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
     cachedValue = IGNITION_ADVANCE_SMALL.toUser(table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant)));
   }
   return advance + cachedValue;
@@ -943,7 +943,7 @@ TESTABLE_INLINE_STATIC int8_t correctionIATretard(int8_t advance)
 {
   static uint8_t cachedValue = 0U; // Setting this to non-zero will use additional RAM for static initialisation
   // Performance: only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, IAT_READ_TIMER_BIT)) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT)) { 
     cachedValue = (uint8_t)table2D_getValue(&IATRetardTable, (uint8_t)currentStatus.IAT); // TODO: check if this needs converted
   }
   return (int16_t)advance - (int16_t)cachedValue;
@@ -1001,7 +1001,7 @@ TESTABLE_INLINE_STATIC int8_t correctionIdleAdvance(int8_t advance)
     {
       if( idleAdvDelayCount < configPage9.idleAdvStartDelay )
       {
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { ++idleAdvDelayCount; }
+        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++idleAdvDelayCount; }
       }
       else
       {
@@ -1040,12 +1040,12 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftRevLimit(int8_t advance)
       if( softLimitTime < configPage4.SoftLimMax )
       {
         advance = calculateSoftRevLimitAdvance(advance);
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { 
+        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { 
           ++softLimitTime; 
         }
       }
     }
-    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { 
+    else if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { 
       softLimitTime = 0; //Only reset time at runSecsX10 update rate
     } else {
       // Nothing to do, keep MISRA checker happy.
@@ -1218,7 +1218,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
     else
     {
       //If not is not currently active, we read the analog pin every 30Hz
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ) ) 
+      if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_30HZ) ) 
       { 
         uint16_t tmpKnockReading = getAnalogKnock();
 
@@ -1302,7 +1302,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   //**************************************************************************************************************************
   //Pull battery voltage based dwell correction and apply if needed
   static uint8_t dwellCorrection = ONE_HUNDRED_PCT;
-  if (BIT_CHECK(LOOP_TIMER, BAT_READ_TIMER_BIT)) { // Performance: only update as fast as the sensor is read
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT)) { // Performance: only update as fast as the sensor is read
     dwellCorrection = (uint8_t)table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
   }
   if (dwellCorrection != ONE_HUNDRED_PCT) { 

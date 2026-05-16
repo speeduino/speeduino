@@ -336,4 +336,6 @@ struct statuses {
   scheduler_cut_t schedulerCutState;
 
   decoder_t decoder; ///< The current decoder
+
+  uint8_t LOOP_TIMER; ///< The timer flags currently in effect
 };

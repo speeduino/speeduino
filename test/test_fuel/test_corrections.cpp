@@ -13,8 +13,8 @@ extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 
 static void setup_wue_table(void) {
   initialiseCorrections();
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, CLT_READ_TIMER_BIT) ;
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ;
 
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   TEST_DATA_P uint8_t bins[] = { 
@@ -89,8 +89,8 @@ extern table2D_u8_u8_4 crankingEnrichTable; ///< 4 bin cranking Enrichment map (
 static void setup_correctionCranking(void) {
   initialiseCorrections();
 
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
 
@@ -215,8 +215,8 @@ static inline void setup_correctionASE(void) {
   initialiseCorrections();
 
   currentStatus.engineIsCranking = false;
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ) ;
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ;
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
   currentStatus.runSecs = 3;
@@ -679,8 +679,8 @@ extern table2D_u8_u8_6 injectorVCorrectionTable; ///< 6 bin injector voltage cor
 static void setup_battery_correction(void) {
   initialiseCorrections();
   
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BAT_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90 };
@@ -808,7 +808,7 @@ static void test_corrections_dfco_off_delay()
   //The steup function below simulates a 2 second delay
   setup_DFCO_on_taper_off_no_delay();
 
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   configPage2.dfcoDelay = 5;
   
   for (uint8_t index = 0; index < configPage2.dfcoDelay; ++index) {
@@ -855,7 +855,7 @@ static inline void reset_dfco_taper(void) {
 }
 
 static inline void advance_dfco_taper(uint8_t count) {
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   for (uint8_t index = 0; index < count; ++index) {
     (void)correctionDFCOfuel();
   }
@@ -871,19 +871,19 @@ static void test_correctionDFCOfuel_taper()
 
   // 50% test
   advance_dfco_taper(configPage9.dfcoTaperTime/2);
-  BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_CLEAR(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   TEST_ASSERT_EQUAL(50, correctionDFCOfuel());
 
   // 75% test
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
-  BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_CLEAR(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   TEST_ASSERT_EQUAL(25, correctionDFCOfuel());
 
   // Advance taper to 100%
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
 
   // 100% & beyond test
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
@@ -983,8 +983,8 @@ static void setup_TAE()
 {
   setup_AE();
 
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, TPS_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, TPS_READ_TIMER_BIT);
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
   TEST_DATA_P uint8_t bins[] = { 0, 8, 22, 97 };
@@ -1202,8 +1202,8 @@ static void setup_MAE(void)
   setup_AE();
 
   configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, MAP_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, MAP_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 0, 15, 19, 50 };
   TEST_DATA_P uint8_t values[] = { 70, 103, 124, 136 };
@@ -1541,8 +1541,8 @@ extern table2D_u8_u8_8 baroFuelTable; ///< 8 bin baro correction curve (2D)
 
 static void setup_baro_correction(void) {
   initialiseCorrections();
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110, 120, 130 };
   TEST_DATA_P uint8_t values[] = { 120, 110, 100, 90, 80, 70, 70, 70 };
@@ -1573,8 +1573,8 @@ static void test_corrections_baro(void)
 static void test_corrections_correctionsFuel_ae_modes(void) {
   setup_TAE();
   // Makes no sense in real life, but this is an artifical test
-  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   populate_2dtable(&injectorVCorrectionTable, (uint8_t)100U, (uint8_t)100U);
   populate_2dtable(&baroFuelTable, (uint8_t)100U, (uint8_t)100U);
   populate_2dtable(&IATDensityCorrectionTable, (uint8_t)100U, (uint8_t)100U);
@@ -1666,9 +1666,9 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   populate_2dtable(&flexFuelTable, (uint8_t)255, (uint8_t)100);
   populate_2dtable(&fuelTempTable, (uint8_t)255, (uint8_t)100);
 
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
-  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT);
+  BIT_SET(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT);
 
   configPage2.flexEnabled = 1;
   configPage2.dfcoEnabled = 0;

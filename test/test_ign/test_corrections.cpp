@@ -33,8 +33,8 @@ extern table2D_u8_u8_6 CLTAdvanceTable; ///< 6 bin ignition adjustment based on 
 
 static void setup_clt_advance_table(void) {
   initialiseCorrections();
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ);
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&CLTAdvanceTable, values, bins);
@@ -239,8 +239,8 @@ extern table2D_u8_u8_6 IATRetardTable; ///< 6 bin ignition adjustment based on i
 
 static void setup_IATRetard(void) {
   initialiseCorrections();
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT);
   TEST_DATA_P uint8_t bins[] = { 30, 40, 50, 60, 70, 80 };
   TEST_DATA_P uint8_t values[] = { 30, 25, 20, 15, 10, 5 };
   populate_2dtable_P(&IATRetardTable, values, bins);
@@ -391,7 +391,7 @@ static void test_correctionIdleAdvance_noadvance_rundelay(void) {
 static void test_correctionIdleAdvance_delay(void) {
     setup_correctionIdleAdvance();
     configPage9.idleAdvStartDelay = 3;
-    BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+    BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
@@ -425,7 +425,7 @@ static void setup_correctionSoftRevLimit(void) {
     currentStatus.setRpm( (configPage4.SoftRevLim + 1U)*100U);
     softLimitTime = 0;
 
-    BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
+    BIT_CLEAR(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
 }
 
 static void assert_correctionSoftRevLimit(int8_t advance) {
@@ -475,7 +475,7 @@ static void test_correctionSoftRevLimit_timeout(void) {
 
     configPage4.SoftLimMax = 3;
     configPage2.SoftLimitMode = SOFT_LIMIT_RELATIVE;
-    BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+    BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
     TEST_ASSERT_EQUAL(8-configPage4.SoftLimRetard, correctionSoftRevLimit(8));
     TEST_ASSERT_EQUAL(-5-configPage4.SoftLimRetard, correctionSoftRevLimit(-5));
     TEST_ASSERT_EQUAL(23-configPage4.SoftLimRetard, correctionSoftRevLimit(23));
@@ -769,7 +769,7 @@ extern table2D_u8_u8_6 dwellVCorrectionTable; ///< 6 bin dwell voltage correctio
 
 static void setup_correctionsDwell(void) {
     initialiseCorrections();
-    BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
+    BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ);
 
     configPage4.sparkDur = 10;
     configPage2.perToothIgn = false;
