@@ -4,7 +4,7 @@
 #include "scheduler_fuel_controller.h"
 #include "channel_test_helpers.h"
 #include "units.h"
-#include "type_traits.h"
+#include "src/stdlib/type_traits.h"
 
 extern bool isAnyFuelScheduleRunning(void);
 extern uint16_t lookupInjectorAngle(const statuses &current);
@@ -144,7 +144,7 @@ static void test_lookupInjectorAngle_clamp_max_inj(void)
   statuses current = {};
   populate_2dtable(&injectorAngleTable, (uint16_t)720, RPM_COARSE.toRaw(1000));
 
-  setRpm(current, 1000);
+  current.setRpm(1000);
   CRANK_ANGLE_MAX_INJ = injectorAngleTable.values[0]/2U;
 
   TEST_ASSERT_LESS_THAN(injectorAngleTable.values[0], CRANK_ANGLE_MAX_INJ);
