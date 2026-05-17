@@ -29,6 +29,7 @@ TESTABLE_CONSTEXPR uint16_t TACHO_SWEEP_RAMP_MS = TACHO_SWEEP_TIME_MS * 2 / 3;
 
 void __attribute__((optimize("Os"))) initialiseTachoControl(uint8_t tachoPin, const config2 &page2, const config6 &page6, const statuses &current)
 {
+    state = tacho_control_state();
     tach_pin.setPin(tachoPin, OUTPUT);
     //Set the tacho output default state
     tach_pin.setPinHigh();

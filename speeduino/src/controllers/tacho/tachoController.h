@@ -21,12 +21,12 @@ namespace tachoControl_detail
     {
         tacho_control_state(void);
 
-        TachoOutputStatus tachoOutputFlag;
-        uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
-        uint8_t tachoDuration;
-        uint16_t controlCounter;
-        uint16_t tachoSweepIncr;
-        uint16_t tachoSweepAccum;
+        TachoOutputStatus tachoOutputFlag = TachoOutputStatus::INACTIVE;
+        uint8_t tachoEndTime = 0; //The time (in ms) that the tacho pulse needs to end at
+        uint8_t tachoDuration = 0;
+        uint16_t controlCounter = 0;
+        uint16_t tachoSweepIncr = 0;
+        uint16_t tachoSweepAccum = 0;
         bool tachoSweepEnabled : 1;
         bool tachoAlt : 1;
         bool tachoHalf : 1;

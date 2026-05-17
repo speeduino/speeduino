@@ -26,14 +26,6 @@ struct tacho_test_context
         page2.tachoDuration = 6U;
 
         current.rotationStatus = EngineRotationStatus::Stopped;
-
-        state.controlCounter = 0;
-        state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::INACTIVE;
-        state.tachoSweepAccum = 0U;
-        state.tachoSweepIncr = 0U;
-        state.tachoEndTime = 0U;
-        state.tachoSweepEnabled = false;
-        state.tachoAlt = false;
     }
 
     void initialiseTachoControl(void)
