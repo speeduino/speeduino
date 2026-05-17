@@ -25,8 +25,6 @@ using namespace tachoControl_detail;
 TESTABLE_CONSTEXPR uint16_t TACHO_SWEEP_TIME_MS = 1500;
 TESTABLE_CONSTEXPR uint16_t TACHO_SWEEP_RAMP_MS = TACHO_SWEEP_TIME_MS * 2 / 3;
 
-// TESTABLE_STATIC tachoControl_detail::tacho_control_state 
-
 void __attribute__((optimize("Os"))) initialiseTachoControl(uint8_t tachoPin, const config2 &page2, const config6 &page6, const statuses &current)
 {
     state = tacho_control_state();
@@ -34,35 +32,36 @@ void __attribute__((optimize("Os"))) initialiseTachoControl(uint8_t tachoPin, co
     //Set the tacho output default state
     tach_pin.setPinHigh();
 
-    state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::INACTIVE;
-    state.tachoSweepEnabled = (page2.useTachoSweep > 0);
+    state = tachoControl_detail::tacho_control_state();
+    state.tachoSweepEnabled = (page2.useTachoSweep != 0);
     /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
         tachoSweepIncr is also the number of tach pulses per second */
     state.tachoSweepIncr = (page2.tachoSweepMaxRPM * current.maxIgnOutputs * 5) / 3;
     state.tachoHalf = page2.tachoDiv == 0;
     state.tachoDuration = page2.tachoDuration;
-    state.controlCounter = 0;
     state.modeDwell = page6.tachoMode;
 }
 
 static void tachoSweep(const statuses &current, tachoControl_detail::tacho_control_state &tachoState)
 {
   // See if we're in power-on sweep mode
+  tachoState.tachoSweepEnabled =   tachoState.tachoSweepEnabled 
+                                && (current.rotationStatus==EngineRotationStatus::Stopped)
+                                && (tachoState.controlCounter<TACHO_SWEEP_TIME_MS)
+                                ;
+
   if( tachoState.tachoSweepEnabled )
   {
-    if( (current.rotationStatus!=EngineRotationStatus::Stopped) || (tachoState.controlCounter >= TACHO_SWEEP_TIME_MS) )  { tachoState.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
-    else 
-    {
-      // Ramp the needle smoothly to the max over the SWEEP_RAMP time
-      if( tachoState.controlCounter < TACHO_SWEEP_RAMP_MS ) { tachoState.tachoSweepAccum += map(tachoState.controlCounter, 0, TACHO_SWEEP_RAMP_MS, 0, tachoState.tachoSweepIncr); }
-      else                                   { tachoState.tachoSweepAccum += tachoState.tachoSweepIncr;                                             }
-             
-      // Each time it rolls over, it's time to pulse the Tach
-      if( tachoState.tachoSweepAccum >= MILLI_PER_SEC ) 
-      {  
+    // Ramp the needle smoothly to the max over the SWEEP_RAMP time
+    tachoState.tachoSweepAccum += clamp((uint16_t)map(tachoState.controlCounter, 0, TACHO_SWEEP_RAMP_MS, 0, tachoState.tachoSweepIncr),
+                                        (uint16_t)0U, 
+                                        tachoState.tachoSweepIncr);
+            
+    // Each time it rolls over, it's time to pulse the Tach
+    if( tachoState.tachoSweepAccum >= MILLI_PER_SEC ) 
+    {  
         tachoState.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::READY;
         tachoState.tachoSweepAccum -= MILLI_PER_SEC;
-      }
     }
   }
 }
