@@ -5,13 +5,11 @@
 void runAllTests(void)
 {
     extern void testInit(void);
-    extern void testTacho(void);
     extern void testOneMsInterval(void);
     extern void testTestMode(void);
     extern void testFlex(void);
 
     testInit();
-    testTacho();
     testOneMsInterval();
     testFlex();
 }

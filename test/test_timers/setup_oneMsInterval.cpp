@@ -5,7 +5,6 @@
 void setup_oneMsInterval(void)
 {
   initialiseTimers();
-  ms_counter = 0UL;
   runSecsX10 = 0;
 
   // Default the global config state to "do nothing" branches inside oneMSInterval().
@@ -26,8 +25,6 @@ void setup_oneMsInterval(void)
   currentStatus.loopsPerSecond = 0U;
   currentStatus.rpmDOT = 0;
   currentStatus.rotationStatus = EngineRotationStatus::Stopped;
-  currentStatus.tachoSweepEnabled = false;
-  currentStatus.tachoAlt = false;
   currentStatus.injPrimed = true;    // Skip injector priming branch
   currentStatus.initialisationComplete = true;
   currentStatus.isTestModeActive = false;

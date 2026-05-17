@@ -14,6 +14,15 @@
 
 using byte = uint8_t;
 
+constexpr uint8_t BIT_TIMER_1HZ = 0;
+constexpr uint8_t BIT_TIMER_4HZ = 1;
+constexpr uint8_t BIT_TIMER_10HZ = 2;
+constexpr uint8_t BIT_TIMER_15HZ = 3;
+constexpr uint8_t BIT_TIMER_30HZ = 4;
+constexpr uint8_t BIT_TIMER_50HZ = 5;
+constexpr uint8_t BIT_TIMER_200HZ = 6;
+constexpr uint8_t BIT_TIMER_1KHZ = 7;
+
 /** @brief The current status of scheduler channel cuts */
 enum class SchedulerCutStatus : uint8_t
 {
@@ -63,10 +72,6 @@ struct statuses {
   bool previousClutchTrigger : 1;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool injPrimed : 1; ///< Tracks whether or not the injector priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool tachoSweepEnabled : 1;
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool tachoAlt : 1;
     
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
