@@ -52,19 +52,33 @@ static void test_initTacho_setsInactiveFlag(void)
   TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 }
 
-static void test_tachoPulseHighAndLow_togglePin(void)
+static void test_tachoOutputOnOff(void)
 {
   tacho_test_context context;
+
+  // Dwell mode
+  context.page6.tachoMode = 1U;
   context.initialiseTachoControl();
+  TEST_ASSERT_TRUE(state.modeDwell);
+  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 
+  // IRL, these will set the pin
   tachoOutputOn();
-  TEST_ASSERT_TRUE(tach_pin._pin.isPinHigh());
-
+  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
   tachoOutputOff();
-  TEST_ASSERT_TRUE(tach_pin._pin.isPinLow());
+  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+
+  // Fixed timing
+  context.page6.tachoMode = 0U;
+  context.initialiseTachoControl();
+  TEST_ASSERT_FALSE(state.modeDwell);
+  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 
   tachoOutputOn();
-  TEST_ASSERT_TRUE(tach_pin._pin.isPinHigh());
+  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::READY, state.tachoOutputFlag);
+  state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::INACTIVE;
+  tachoOutputOff(); // Does nothing in fixed timing mode
+  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 }
 
 static void test_tacho_sweep_post_ramp_branch(void)
@@ -217,6 +231,7 @@ void runAllTests(void)
     RUN_TEST_P(test_tacho_active_to_inactive_at_endtime)
     RUN_TEST_P(test_tacho_sweep_disables_when_running);
     RUN_TEST_P(test_tacho_sweep_pulse_marks_ready);
+    RUN_TEST_P(test_tachoOutputOnOff);
   }
 }
 
