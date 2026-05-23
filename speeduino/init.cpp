@@ -1034,9 +1034,9 @@ void setPinMapping(byte boardID)
       pinNumbers.pinResetControl = 43; //Reset control output
       pinNumbers.sensors.baro = A5;
       pinNumbers.pinVSS = 20;
-      pinNumbers.pinWMIEmpty = 46;
-      pinNumbers.pinWMIIndicator = 44;
-      pinNumbers.pinWMIEnabled = 42;
+      pinNumbers.wmi.empty = 46;
+      pinNumbers.wmi.indicator = 44;
+      pinNumbers.wmi.enabled = 42;
 
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
@@ -1073,9 +1073,9 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
         pinNumbers.pinFuelPump = 33;
-        pinNumbers.pinWMIEmpty = 34;
-        pinNumbers.pinWMIIndicator = 35;
-        pinNumbers.pinWMIEnabled = 36;
+        pinNumbers.wmi.empty = 34;
+        pinNumbers.wmi.indicator = 35;
+        pinNumbers.wmi.enabled = 36;
       #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -1413,9 +1413,9 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.flex = PD7;           // Flex sensor
       pinNumbers.pinResetControl = PB7;   // Reset control output
       pinNumbers.pinVSS = PB6;            // VSS input pin
-      pinNumbers.pinWMIEmpty = PA6;       //(placeholder)
-      pinNumbers.pinWMIIndicator = PC3;   //(placeholder)
-      pinNumbers.pinWMIEnabled = PE15;    //(placeholder)
+      pinNumbers.wmi.empty = PA6;       //(placeholder)
+      pinNumbers.wmi.indicator = PC3;   //(placeholder)
+      pinNumbers.wmi.enabled = PE15;    //(placeholder)
       pinNumbers.idle.idleUp = PC7;         //(placeholder)
     #endif
       break;
@@ -1516,9 +1516,9 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.flex = 2; // Flex sensor
       pinNumbers.pinResetControl = 43; //Reset control output
       pinNumbers.pinVSS = 3; //VSS input pin
-      pinNumbers.pinWMIEmpty = 31; //(placeholder)
-      pinNumbers.pinWMIIndicator = 33; //(placeholder)
-      pinNumbers.pinWMIEnabled = 35; //(placeholder)
+      pinNumbers.wmi.empty = 31; //(placeholder)
+      pinNumbers.wmi.indicator = 33; //(placeholder)
+      pinNumbers.wmi.enabled = 35; //(placeholder)
       pinNumbers.idle.idleUp = 37; //(placeholder)
       pinNumbers.idle.idleUpOutput = 41; //(placeholder)
       pinNumbers.sensors.CTPS = A6; //(placeholder)
@@ -1558,9 +1558,9 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.flex = PD7; // Flex sensor
       pinNumbers.pinResetControl = PB7; //Reset control output
       pinNumbers.pinVSS = PB6; //VSS input pin
-      pinNumbers.pinWMIEmpty = PD15; //(placeholder)
-      pinNumbers.pinWMIIndicator = PD13; //(placeholder)
-      pinNumbers.pinWMIEnabled = PE15; //(placeholder)
+      pinNumbers.wmi.empty = PD15; //(placeholder)
+      pinNumbers.wmi.indicator = PD13; //(placeholder)
+      pinNumbers.wmi.enabled = PE15; //(placeholder)
       pinNumbers.idle.idleUp = PE14; //(placeholder)
       pinNumbers.idle.idleUpOutput = PE12; //(placeholder)
       pinNumbers.sensors.CTPS = PA6; //(placeholder)
@@ -1851,9 +1851,9 @@ void setPinMapping(byte boardID)
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       pinNumbers.pinVSS = 22;
 
-      pinNumbers.pinWMIEmpty = 23; //Spare digital input
-      pinNumbers.pinWMIIndicator = 26; //Spare output
-      pinNumbers.pinWMIEnabled = 29; //Spare output
+      pinNumbers.wmi.empty = 23; //Spare digital input
+      pinNumbers.wmi.indicator = 26; //Spare output
+      pinNumbers.wmi.enabled = 29; //Spare output
 
       //CS pin number is now set in a compile flag. 
       // #ifdef USE_SPI_EEPROM
@@ -1890,7 +1890,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTachOut = 0; //Tacho output pin
 
         pinNumbers.pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
-        pinNumbers.pinWMIEmpty = 35; //Spare digital input
+        pinNumbers.wmi.empty = 35; //Spare digital input
         pinNumbers.pinVSS = 34;
 
         //CS pin number is now set in a compile flag. 
@@ -2290,9 +2290,9 @@ void setPinMapping(byte boardID)
   if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinNumbers.sensors.fuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
   if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinNumbers.sensors.oilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
   
-  if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
-  if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
-  if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinWMIEnabled = pinTranslate(configPage10.wmiEnabledPin); }
+  if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_MAX_IO_PINS) ) { pinNumbers.wmi.empty = pinTranslate(configPage10.wmiEmptyPin); }
+  if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinNumbers.wmi.indicator = pinTranslate(configPage10.wmiIndicatorPin); }
+  if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinNumbers.wmi.enabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
   if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) && (configPage13.onboard_log_tr5_Epin_pin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinSDEnable = pinTranslate(configPage13.onboard_log_tr5_Epin_pin); }
   
@@ -2441,16 +2441,16 @@ void setPinMapping(byte boardID)
   }
   if(configPage10.wmiEnabled > 0)
   {
-    pinMode(pinNumbers.pinWMIEnabled, OUTPUT);
+    pinMode(pinNumbers.wmi.enabled, OUTPUT);
     if(configPage10.wmiIndicatorEnabled > 0)
     {
-      pinMode(pinNumbers.pinWMIIndicator, OUTPUT);
-      if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinNumbers.pinWMIIndicator, HIGH); }
+      pinMode(pinNumbers.wmi.indicator, OUTPUT);
+      if (configPage10.wmiIndicatorPolarity > 0) { digitalWrite(pinNumbers.wmi.indicator, HIGH); }
     }
-    if( (configPage10.wmiEmptyEnabled > 0) && (!pinIsOutput(pinNumbers.pinWMIEmpty)) )
+    if( (configPage10.wmiEmptyEnabled > 0) && (!pinIsOutput(pinNumbers.wmi.empty)) )
     {
-      if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinNumbers.pinWMIEmpty, INPUT_PULLUP); } //Normal setting
-      else { pinMode(pinNumbers.pinWMIEmpty, INPUT); } //inverted setting
+      if (configPage10.wmiEmptyPolarity == 0) { pinMode(pinNumbers.wmi.empty, INPUT_PULLUP); } //Normal setting
+      else { pinMode(pinNumbers.wmi.empty, INPUT); } //inverted setting
     }
   } 
 }

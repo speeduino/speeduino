@@ -410,11 +410,11 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if (currentStatus.wmiTankEmpty)
         {
           // flash with 1sec interval
-          digitalWrite(pinNumbers.pinWMIIndicator, !digitalRead(pinNumbers.pinWMIIndicator));
+          digitalWrite(pinNumbers.wmi.indicator, !digitalRead(pinNumbers.wmi.indicator));
         }
         else
         {
-          digitalWrite(pinNumbers.pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
+          digitalWrite(pinNumbers.wmi.indicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
 

@@ -91,6 +91,14 @@ struct idle_pins_t
   uint8_t stepperEnable = 0; //Turning the DRV8825 driver on/off
 };
 
+/** @brief Water Methanol Injection (WMI) pins */
+struct wmi_pins_t
+{
+  uint8_t empty = 0; ///< Water tank empty sensor
+  uint8_t indicator = 0; ///< No water indicator bulb
+  uint8_t enabled = 0; ///< ON-OFF output to relay/pump/solenoid
+};
+
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
@@ -99,9 +107,10 @@ struct pinNumbers_t
   decoder_pins_t triggerPins;
   sensor_pins_t sensors;
   idle_pins_t idle;
+  wmi_pins_t wmi;
 
- uint8_t pinTachOut = 0; //Tacho output
- uint8_t pinFuelPump = 0; //Fuel pump on/off
+uint8_t pinTachOut = 0; //Tacho output
+uint8_t pinFuelPump = 0; //Fuel pump on/off
 
  uint8_t pinFuel2Input = 0; //Input for switching to the 2nd fuel table
  uint8_t pinSpark2Input = 0; //Input for switching to the 2nd ignition table
@@ -113,9 +122,6 @@ struct pinNumbers_t
  uint8_t pinIgnBypass = 0; //The pin used for an ignition bypass (Optional)
  uint8_t pinVSS = 0; 
  uint8_t pinResetControl = 0; // Output pin used control resetting the Arduino
- uint8_t pinWMIEmpty = 0; // Water tank empty sensor
- uint8_t pinWMIIndicator = 0; // No water indicator bulb
- uint8_t pinWMIEnabled = 0; // ON-OFF output to relay/pump/solenoid
  uint8_t pinSDEnable = 0; //Input for manually enabling SD logging
  uint8_t pinAirConComp = 0;    // Air conditioning compressor output
  uint8_t pinAirConFan = 0;    // Stand-alone air conditioning fan output

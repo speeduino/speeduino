@@ -150,7 +150,7 @@ static bool isWmiTankEmpty(void)
 {
   if (configPage10.wmiEmptyEnabled) 
   {
-    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinNumbers.pinWMIEmpty) : !digitalRead(pinNumbers.pinWMIEmpty);
+    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinNumbers.wmi.empty) : !digitalRead(pinNumbers.wmi.empty);
   }
   return true;
 }
@@ -1240,11 +1240,11 @@ void wmiControl(void)
       vvt2_pwm_state = false;
       vvt2_max_pwm = false;
       if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
-      digitalWrite(pinNumbers.pinWMIEnabled, LOW);
+      digitalWrite(pinNumbers.wmi.enabled, LOW);
     }
     else
     {
-      digitalWrite(pinNumbers.pinWMIEnabled, HIGH);
+      digitalWrite(pinNumbers.wmi.enabled, HIGH);
       if (wmiPW >= 200)
       {
         // Make sure water pump is on (100% duty)
