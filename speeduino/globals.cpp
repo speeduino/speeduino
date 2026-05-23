@@ -81,8 +81,8 @@ bool pinIsOutput(byte pin)
   || ((pin == pinNumbers.idle.stepperStep) && isIdleStepper)
   || ((pin == pinNumbers.idle.stepperDir) && isIdleStepper)
   || (pin == pinNumbers.pinTachOut)
-  || ((pin == pinNumbers.pinAirConComp) && (configPage15.airConEnable > 0))
-  || ((pin == pinNumbers.pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
+  || ((pin == pinNumbers.airCon.compressor) && (configPage15.airConEnable > 0))
+  || ((pin == pinNumbers.airCon.fan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
   {
     used = true;
   }

@@ -99,7 +99,15 @@ struct wmi_pins_t
   uint8_t enabled = 0; ///< ON-OFF output to relay/pump/solenoid
 };
 
-/** @brief Store the pin assignments, as defined by the board */
+/** @brief Air conditioning pins */
+struct aircon_pins_t
+{
+  uint8_t compressor = 0;    ///< Air conditioning compressor output
+  uint8_t fan = 0;    ///< Stand-alone air conditioning fan output
+  uint8_t request = 0; ///< Air conditioning request input
+};
+
+/** @brief Store the pin assignments, as defined by the tune and board */
 struct pinNumbers_t
 {
   injector_pins_t injectorPins;
@@ -108,26 +116,23 @@ struct pinNumbers_t
   sensor_pins_t sensors;
   idle_pins_t idle;
   wmi_pins_t wmi;
+  aircon_pins_t airCon;
 
-uint8_t pinTachOut = 0; //Tacho output
-uint8_t pinFuelPump = 0; //Fuel pump on/off
-
- uint8_t pinFuel2Input = 0; //Input for switching to the 2nd fuel table
- uint8_t pinSpark2Input = 0; //Input for switching to the 2nd ignition table
- uint8_t pinBoost = 0;
- uint8_t pinVVT_1 = 0;		// vvt output 1
- uint8_t pinVVT_2 = 0;		// vvt output 2
- uint8_t pinFan = 0;       // Cooling fan output
- uint8_t pinLaunch = 0;
- uint8_t pinIgnBypass = 0; //The pin used for an ignition bypass (Optional)
- uint8_t pinVSS = 0; 
- uint8_t pinResetControl = 0; // Output pin used control resetting the Arduino
+ uint8_t pinTachOut = 0; ///< Tacho output
+ uint8_t pinFuelPump = 0; ///< Fuel pump on/off
+ uint8_t pinFuel2Input = 0; ///< Input for switching to the 2nd fuel table
+ uint8_t pinSpark2Input = 0; ///< Input for switching to the 2nd ignition table
+ uint8_t pinBoost = 0; ///< Boost control output
+ uint8_t pinVVT_1 = 0;		///< vvt output 1
+ uint8_t pinVVT_2 = 0;		///< vvt output 2
+ uint8_t pinFan = 0;       ///< Cooling fan output
+ uint8_t pinLaunch = 0; ///< Launch control
+ uint8_t pinIgnBypass = 0; ///< The pin used for an ignition bypass (Optional)
+ uint8_t pinVSS = 0; ///< Speed sensor
+ uint8_t pinResetControl = 0; ///< Output pin used control resetting the Arduino
 #ifdef SD_LOGGING
   uint8_t pinSDEnable = 0; //Input for manually enabling SD logging
 #endif
- uint8_t pinAirConComp = 0;    // Air conditioning compressor output
- uint8_t pinAirConFan = 0;    // Stand-alone air conditioning fan output
- uint8_t pinAirConRequest = 0; // Air conditioning request input
 #if defined(MC33810_SUPPORT)
   uint8_t pinMC33810_1_CS = 0;
   uint8_t pinMC33810_2_CS = 0;
