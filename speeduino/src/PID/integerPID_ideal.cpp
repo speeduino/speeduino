@@ -28,7 +28,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
     integerPID_ideal::SetTunings(Kp, Ki, Kd);
 
     lastTime = millis()- *mySampleTime;
-    lastError = 0;
 }
 
 
@@ -40,8 +39,6 @@ integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setp
  **********************************************************************************/
 bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
 {
-   constexpr uint16_t limitMultiplier = 100; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
-
    unsigned long timeChange = (now - lastTime);
    if(timeChange >= *mySampleTime)
    {
@@ -50,47 +47,31 @@ bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
       long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
       long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
       long error = unitless_setpoint - unitless_input;
+      // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
+      uint32_t scaledFeedForward = FeedForward*10UL;
 
       ITerm += error;
 
-      // uint16_t bias = 50; //Base target DC%
-      long output = 0;
-
-      if(ki != 0)
-      {
-        output = ((outMax * limitMultiplier * 100) - FeedForward) / (long)ki;
-        if (output < 0) { output = 0; }
-      }
-      if (ITerm > output) { ITerm = output; }
-
-      if(ki != 0)
-      {
-        output = (FeedForward - (-outMin * limitMultiplier * 100)) / (long)ki;
-        if (output < 0) { output = 0; }
-      }
-      else { output = 0; }
-      if (ITerm < -output) { ITerm = -output; }
-
       /*Compute PID Output*/
-      output = (kp * error) + (ki * ITerm) + (kd * (error - lastError));
-      output = FeedForward + (output / 10); //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. Likewise, bias is % in whole numbers. Multiply it by 100 to get it with 2 places.
-
-      if(output > (outMax * limitMultiplier))
+      long output = scaledFeedForward + (kp * error) + (ki * ITerm) + (kd * (lastInput - *myInput));
+      
+      if(output > outMax)
       {
-         output  = (outMax * limitMultiplier);
+         output = outMax;
          ITerm -= error;
       }
-      if(output < (outMin * limitMultiplier))
+      else if(output < outMin)
       {
-         output  = (outMin * limitMultiplier);
+         output = outMin;
          ITerm -= error;
       }
 
-	    *myOutput = output;
+	   //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. 
+      *myOutput = output/10;
 
       /*Remember some variables for next time*/
       lastTime = now;
-      lastError = error;
+      lastInput = *myInput;
 
       return true;
    }
@@ -138,8 +119,10 @@ void integerPID_ideal::SetOutputLimits(long Min, long Max)
 {
    if(Min < Max)
    {
-     outMin = Min;
-     outMax = Max;
+     constexpr uint16_t LIMIT_FACTOR = 1000; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+
+     outMin = Min * LIMIT_FACTOR;
+     outMax = Max * LIMIT_FACTOR;
    }
 }
 
@@ -151,7 +134,6 @@ void integerPID_ideal::Initialize()
 {
    ITerm = 0;
    lastInput = *myInput;
-   lastError = 0;
 }
 
 /* SetControllerDirection(...)*************************************************

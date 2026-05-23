@@ -62,7 +62,6 @@ public:
 
 
 	unsigned long lastTime;
-  long lastError;
 	long ITerm, lastInput;
 
 	long outMin, outMax;
