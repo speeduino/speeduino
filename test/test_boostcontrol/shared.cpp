@@ -4,7 +4,7 @@
 
 void setup_simplepid_tune(void)
 {
-    pinBoost = TEST_BOOST_PIN;
+    pinNumbers.pinBoost = TEST_BOOST_PIN;
 
     configPage6.boostEnabled = true;
     configPage6.boostMode = BOOST_MODE_SIMPLE;

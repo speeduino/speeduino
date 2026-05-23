@@ -9,7 +9,7 @@ extern boardOutputPin_t boost_pin;
 
 static void test_on_to_off(void)
 {
-    pinBoost = TEST_BOOST_PIN;
+    pinNumbers.pinBoost = TEST_BOOST_PIN;
     initialiseAuxPWM();
 
     boost_pwm_state = true;
@@ -21,7 +21,7 @@ static void test_on_to_off(void)
 
 static void test_off_to_on(void)
 {
-    pinBoost = TEST_BOOST_PIN;
+    pinNumbers.pinBoost = TEST_BOOST_PIN;
     initialiseAuxPWM();
 
     boost_pwm_state = false;

@@ -435,7 +435,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(uint8_t boardID)
+void boardInitPins(uint8_t boardID, pinNumbers_t &)
 {
   if (boardID==55U)
   {

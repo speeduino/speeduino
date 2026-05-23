@@ -5,9 +5,9 @@
 
 void tearDown(void) 
 { 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger) );
+  detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger2) );
+  detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger3) );
 }
 
 void runAllDecoderTests(void)

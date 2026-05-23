@@ -8,7 +8,7 @@ extern table2D_u8_u8_4 fanPWMTable;
 
 static void setup_default_tune(void)
 {
-  pinFan = TEST_FAN_PIN;
+  pinNumbers.pinFan = TEST_FAN_PIN;
 
   configPage6.fanInv = 0U;
   configPage6.fanSP = temperatureAddOffset(80);   // ON above 80C

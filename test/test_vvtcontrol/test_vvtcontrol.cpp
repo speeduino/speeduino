@@ -50,8 +50,8 @@ static void assert_vvt2_duty(uint8_t expected)
 
 static void setup_vvt_basic_tune(uint8_t mode)
 {
-  pinVVT_1 = TEST_VVT1_PIN;
-  pinVVT_2 = TEST_VVT2_PIN;
+  pinNumbers.pinVVT_1 = TEST_VVT1_PIN;
+  pinNumbers.pinVVT_2 = TEST_VVT2_PIN;
 
   configPage6.vvtEnabled = true;
   configPage6.vvtFreq = 1U;

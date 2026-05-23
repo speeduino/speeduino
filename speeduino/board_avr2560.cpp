@@ -245,7 +245,7 @@ void boardInitRTC(void)
   // Do nothing
 }
 
-void boardInitPins(uint8_t)
+void boardInitPins(uint8_t, pinNumbers_t &)
 {
   // Do nothing
 }

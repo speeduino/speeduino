@@ -12,13 +12,13 @@ static void test_start_stop(void)
     configPage2.nCylinders = 4; // Needed to prevent division by zero.
     currentStatus.initialisationComplete = true;
 #if defined(STM32F407xx)
-    pinTrigger = PD3; //The CAS pin
-    pinTrigger2 = PD4; //The Cam Sensor pin
-    pinTrigger2 = PD5; //The Cam Sensor pin
+    pinNumbers.pinTrigger = PD3; //The CAS pin
+    pinNumbers.pinTrigger2 = PD4; //The Cam Sensor pin
+    pinNumbers.pinTrigger2 = PD5; //The Cam Sensor pin
 #else
-    pinTrigger = 18;
-    pinTrigger2 = 19;
-    pinTrigger3 = 20;
+    pinNumbers.pinTrigger = 18;
+    pinNumbers.pinTrigger2 = 19;
+    pinNumbers.pinTrigger3 = 20;
 #endif
     currentStatus.decoder = buildDecoder(decoderToTest);
     currentStatus.decoder.primary.edge = CHANGE;
