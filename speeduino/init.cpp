@@ -881,6 +881,1350 @@ void initialiseAll(void)
     digitalWrite(LED_BUILTIN, HIGH);
 
 }
+
+static pinNumbers_t getV02PinMapping(void)
+{
+  pinNumbers_t pins;
+#ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings as per the v0.2 shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34, };
+  pins.triggerPins.primary = 20; //The CAS pin
+  pins.triggerPins.secondary = 21; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 3; //The Cam sensor 2 pin
+  pins.sensors.TPS = A2; //TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = 49; //Tacho output pin
+  pins.idle.idle1 = 30; //Single wire idle control
+  pins.idle.idle2 = 31; //2 wire idle control
+  pins.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 17; //Step pin for DRV8825 driver
+  pins.pinFan = 47; //Pin for the fan output
+  pins.pinFuelPump = 4; //Fuel pump output
+  pins.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 43; //Reset control output
+
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getV03PinMapping(void)
+{
+  pinNumbers_t pins;
+
+#ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings as per the v0.3 shield
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 3; //The Cam sensor 2 pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = 49; //Tacho output pin
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.idle.idle2 = 53; //2 wire idle control
+  pins.pinBoost = 7; //Boost control
+  pins.pinVVT_1 = 6; //Default VVT output
+  pins.pinVVT_2 = 48; //Default VVT2 output
+  pins.pinFuelPump = 4; //Fuel pump output
+  pins.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 17; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 26; //Enable pin for DRV8825
+  pins.pinFan = A13; //Pin for the fan output
+  pins.pinLaunch = 51; //Can be overwritten below
+  pins.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 50; //Reset control output
+  pins.sensors.baro = A5;
+  pins.pinVSS = 20;
+
+#if defined(CORE_TEENSY35)
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 24, 30, 21, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+  pins.triggerPins.primary = 23;
+  pins.idle.stepperDir = 33;
+  pins.idle.stepperStep = 34;
+  pins.pinTachOut = 28;
+  pins.pinFan = 27;
+  pins.sensors.O2 = A22;
+#else
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+#endif
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getV04PinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings as per the v0.4 shield
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 3; //The Cam sensor 2 pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.idle.idle2 = 6; //2 wire idle control
+  pins.pinBoost = 7; //Boost control
+  pins.pinVVT_1 = 4; //Default VVT output
+  pins.pinVVT_2 = 48; //Default VVT2 output
+  pins.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
+  pins.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 17; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 24; //Enable pin for DRV8825
+  pins.pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+  pins.pinLaunch = 51; //Can be overwritten below
+  pins.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 43; //Reset control output
+  pins.sensors.baro = A5;
+  pins.pinVSS = 20;
+  pins.wmi.empty = 46;
+  pins.wmi.indicator = 44;
+  pins.wmi.enabled = 42;
+
+#if defined(CORE_TEENSY35)
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */, 51};
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 32, 30, 29 };
+  pins.triggerPins.primary = 23;
+  pins.triggerPins.secondary = 36;
+  pins.idle.stepperDir = 34;
+  pins.idle.stepperStep = 35;
+  pins.pinTachOut = 28;
+  pins.pinFan = 27;
+  pins.sensors.O2 = A22;
+
+  //Make sure the CAN pins aren't overwritten
+  pins.triggerPins.tertiary = 54;
+  pins.pinVVT_1 = 55;
+
+#elif defined(CORE_TEENSY41)
+  //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */};
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 32, 30, 29 };
+  pins.sensors.baro = A4; 
+  pins.sensors.MAP = A5;
+  pins.sensors.TPS = A3; //TPS input pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A2; //O2 Sensor pin
+  pins.sensors.Bat = A15; //Battery reference voltage pin. Needs Alpha4+
+  pins.pinLaunch = 34; //Can be overwritten below
+  pins.pinVSS = 35;
+
+  pins.triggerPins.primary = 20; //The CAS pin
+  pins.triggerPins.secondary = 21; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 24;
+
+  pins.idle.stepperDir = 34;
+  pins.idle.stepperStep = 35;
+  
+  pins.pinTachOut = 28;
+  pins.pinFan = 27;
+  pins.pinFuelPump = 33;
+  pins.wmi.empty = 34;
+  pins.wmi.indicator = 35;
+  pins.wmi.enabled = 36;
+#elif defined(STM32F407xx)
+//Pin definitions for experimental board Tjeerd 
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PB10, PD9 };
+  //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
+
+  //******************************************
+  //******** PORTA CONNECTIONS *************** 
+  //******************************************
+  /* = PA0 */ //Wakeup ADC123
+  // = PA1;
+  // = PA2;
+  // = PA3;
+  // = PA4;
+  /* = PA5; */ //ADC12
+  /* = PA6; */ //ADC12 LED_BUILTIN_1
+  pins.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
+  /* = PA9 */ //TXD1
+  /* = PA10 */ //RXD1
+  /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
+  /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
+  /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+
+  //******************************************
+  //******** PORTB CONNECTIONS *************** 
+  //******************************************
+  /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+  pins.sensors.baro = PB1; //ADC12
+  /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
+  /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+  /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+  /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+  /* = PB6; */ //NRF_CE
+  /* = PB7; */ //NRF_CS
+  /* = PB8; */ //NRF_IRQ
+  /* = PB9; */ //
+  pins.idle.idle1 = PB11; //RXD3
+  pins.idle.idle2 = PB12; //
+  pins.pinBoost = PB12; //
+  /* = PB13; */ //SPI2_SCK
+  /* = PB14; */ //SPI2_MISO
+  /* = PB15; */ //SPI2_MOSI
+
+  //******************************************
+  //******** PORTC CONNECTIONS *************** 
+  //******************************************
+  pins.sensors.MAP = PC0; //ADC123 
+  pins.sensors.TPS = PC1; //ADC123
+  pins.sensors.IAT = PC2; //ADC123
+  pins.sensors.CLT = PC3; //ADC123
+  pins.sensors.O2 = PC4;  //ADC12
+  pins.sensors.Bat = PC5; //ADC12
+  pins.pinVVT_1 = PC6; //
+  /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+  /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+  /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+  /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+  /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+  pins.pinTachOut = PC13; //
+  /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+  /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+
+  //******************************************
+  //******** PORTD CONNECTIONS *************** 
+  //******************************************
+  /* = PD0; */ //CANRX
+  /* = PD1; */ //CANTX
+  /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+  pins.pinVVT_2 = PD3; //
+  pins.sensors.flex = PD4;
+  /* = PD5;*/ //TXD2
+  /* = PD6; */ //RXD2
+  /* = PD8; */ //
+  /* = PD10; */ //
+  /* = PD11; */ //
+
+  //******************************************
+  //******** PORTE CONNECTIONS *************** 
+  //******************************************
+  pins.triggerPins.primary = PE0; //
+  pins.triggerPins.secondary = PE1; //
+  pins.idle.stepperEnable = PE2; //
+  /* = PE3; */ //ONBOARD KEY1
+  /* = PE4; */ //ONBOARD KEY2
+  pins.idle.stepperStep = PE5; //
+  pins.pinFan = PE6; //
+  pins.idle.stepperDir = PE7; //
+  /* = PE8; */ //
+  /* = PE9; */ //
+  /* = PE10; */ //
+  /* = PE13; */ //
+  /* = PE14; */ //
+  /* = PE15; */ //
+
+#elif defined(CORE_STM32)
+  //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
+  //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+  //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
+  //PB2 can't be used as input because it's the BOOT pin
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15 };
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4, };
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.sensors.baro = pins.sensors.MAP;
+  pins.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
+  pins.idle.idle1 = PB2; //Single wire idle control
+  pins.idle.idle2 = PB10; //2 wire idle control
+  pins.pinBoost = PA6; //Boost control
+  pins.idle.stepperDir = PB10; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = PB2; //Step pin for DRV8825 driver
+  pins.pinFuelPump = PA8; //Fuel pump output
+  pins.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
+  //external interrupt enabled pins
+  pins.sensors.flex = PC14; // Flex sensor (Must be external interrupt enabled)
+  pins.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
+  pins.triggerPins.secondary = PC15; //The Cam Sensor pin
+#else
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 50, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */};
+#endif
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  return pins;
+}
+
+static pinNumbers_t getMiataNB2Mapping(void)
+{
+  pinNumbers_t pins;
+#ifndef SMALL_FLASH_MODE
+  //Pin mappings as per the 2001-05 MX5 PNP shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 44, 46, 47, 45, 14, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 2; //The Cam sensor 2 pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A5; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A3; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.pinBoost = 4;
+  pins.pinVVT_1 = 11; //Default VVT output
+  pins.pinVVT_2 = 48; //Default VVT2 output
+  pins.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+  pins.pinFuelPump = 40; //Fuel pump output
+  pins.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 17; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 24;
+  pins.pinFan = 41; //Pin for the fan output
+  pins.pinLaunch = 12; //Can be overwritten below
+  pins.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 39; //Reset control output
+  pins.pinVSS = 2;
+
+  //This is NOT correct. It has not yet been tested with this board
+#if defined(CORE_TEENSY35)
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
+  pins.triggerPins.primary = 23;
+  pins.triggerPins.secondary = 36;
+  pins.idle.stepperDir = 34;
+  pins.idle.stepperStep = 35;
+  pins.pinFuelPump = 26; //Requires PVT4 adapter or above
+  pins.pinFan = 50; //Won't work (No mapping for pin 35)
+  pins.pinTachOut = 28; //Done
+#else
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 42, 43, 32, 33, 34, };
+#endif
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getMiataNA18PinMapping(void)
+{
+  pinNumbers_t pins;
+#ifndef SMALL_FLASH_MODE
+  //Pin mappings as per the 1996-97 MX5 PNP shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9,       8, 14, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A5; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A3; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = A9; //Tacho output pin  (Goes to ULN2803)
+  pins.idle.idle1 = 2; //Single wire idle control
+  pins.pinBoost = 4;
+  pins.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+  pins.pinFuelPump = 49; //Fuel pump output
+  pins.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 17; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 24;
+  pins.pinFan = 35; //Pin for the fan output
+  pins.pinLaunch = 37; //Can be overwritten below
+  pins.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 44; //Reset control output
+
+  //This is NOT correct. It has not yet been tested with this board
+#if defined(CORE_TEENSY35)
+  pins.triggerPins.primary = 23;
+  pins.triggerPins.secondary = 36;
+  pins.idle.stepperDir = 34;
+  pins.idle.stepperStep = 35;
+  pins.pinFuelPump = 26; //Requires PVT4 adapter or above
+  pins.pinFan = 50; //Won't work (No mapping for pin 35)
+  pins.pinTachOut = 28; //Done
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
+#else
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 41, 32, 33, 34, };
+#endif
+
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getMiataNA16PinMapping(void)
+{
+  pinNumbers_t pins;
+#ifndef SMALL_FLASH_MODE
+  //Pin mappings as per the 89-95 MX5 PNP shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9,       8, 14, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A5; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A3; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
+  pins.idle.idle1 = 2; //Single wire idle control
+  pins.pinBoost = 4;
+  pins.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+  pins.pinFuelPump = 37; //Fuel pump output
+  //Note that there is no stepper driver output on the PNP boards. These pins are unconnected and remain here just to prevent issues with random pin numbers occurring
+  pins.idle.stepperEnable = 15; //Enable pin for the DRV8825
+  pins.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 17; //Step pin for DRV8825 driver
+  pins.pinFan = 35; //Pin for the fan output
+  pins.pinLaunch = 12; //Can be overwritten below
+  pins.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 44; //Reset control output
+  pins.pinVSS = 20;
+  pins.idle.idleUp = 48;
+  pins.sensors.CTPS = 47;
+
+#if defined(CORE_TEENSY35)
+  pins.triggerPins.primary = 23;
+  pins.triggerPins.secondary = 36;
+  pins.idle.stepperDir = 34;
+  pins.idle.stepperStep = 35;
+  pins.pinFuelPump = 26; //Requires PVT4 adapter or above
+  pins.pinFan = 50; //Won't work (No mapping for pin 35)
+  pins.pinTachOut = 28; //Done
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
+#else
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 41, 32, 33, 34, };
+#endif
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getTurtanasPinMapping(void)
+{
+  pinNumbers_t pins;
+
+#ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings for user turtanas PCB
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 4, 5, 6, 7, 8, 9, 10, 11, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 28, 36, 40, 34, };
+  pins.triggerPins.primary = 18; //The CAS pin
+  pins.triggerPins.secondary = 19; //The Cam Sensor pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A4; //O2 Sensor pin
+  pins.sensors.Bat = A7; //Battery reference voltage pin
+  pins.pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
+  pins.pinFuelPump = 42; //Fuel pump output 2n2222
+  pins.pinFan = 47; //Pin for the fan output
+  pins.pinTachOut = 49; //Tacho output pin
+  pins.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
+  pins.pinResetControl = 26; //Reset control output
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getLevinPinMapping(void)
+{
+  pinNumbers_t pins;
+
+// Pin mappings for the Levin board
+#if defined(STM32F407xx)
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB15, PA8, PB13, PB14, PE13, PB12, PE7, PE10, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PC13, PE6, PE5, PE4, PE3, PE2, PB9, PD12, };
+  pins.triggerPins.primary = PD3;        // The CAS pin
+  pins.triggerPins.secondary = PD4;       // The Cam Sensor pin
+  pins.sensors.TPS = PA2;            // TPS input pin
+  pins.sensors.MAP = PA3;            // MAP sensor pin
+  pins.sensors.EMAP = PC5;           // EMAP sensor pin (placeholder)
+  pins.sensors.IAT = PA0;            // IAT sensor pin
+  pins.sensors.CLT = PA1;            // CLS sensor pin
+  pins.sensors.O2 = PB0;             // O2 Sensor pin
+  pins.sensors.Bat = PA4;            // Battery reference voltage pin
+  pins.sensors.baro = PA5;           // Baro sensor pin
+  pins.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
+  pins.idle.idle1 = PD10;         // ICV pin1  (Goes to UNL2803)
+  pins.idle.idle2 = PD9;          // ICV pin3  (Goes to UNL2803)
+  pins.pinBoost = PD8;          // Boost control
+  pins.pinVVT_1 = PD11;         // VVT1 output (intake vanos)
+  pins.pinVVT_2 = PC6;          // VVT2 output (exhaust vanos)
+  pins.pinFuelPump = PE11;      // Fuel pump output  (Goes to UNL2803)
+  pins.idle.stepperDir = PB10;    // Stepper valve isn't used with these
+  pins.idle.stepperStep = PB11;   // Stepper valve isn't used with these
+  pins.idle.stepperEnable = PA15; // Stepper valve isn't used with these
+  pins.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
+  pins.pinLaunch = PB8;         // Launch control pin
+  pins.sensors.flex = PD7;           // Flex sensor
+  pins.pinResetControl = PB7;   // Reset control output
+  pins.pinVSS = PB6;            // VSS input pin
+  pins.wmi.empty = PA6;       //(placeholder)
+  pins.wmi.indicator = PC3;   //(placeholder)
+  pins.wmi.enabled = PE15;    //(placeholder)
+  pins.idle.idleUp = PC7;         //(placeholder)
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getPlazomatv10PinMapping(void)
+{
+  pinNumbers_t pins;
+
+#if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34, };
+  pins.triggerPins.primary = 20; //The CAS pin
+  pins.triggerPins.secondary = 21; //The Cam Sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.pinFan = 47; //Pin for the fan output
+  pins.pinFuelPump = 4; //Fuel pump output
+  pins.pinTachOut = 49; //Tacho output pin
+  pins.pinResetControl = 26; //Reset control output
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getDazV6PinMapping(void)
+{
+  pinNumbers_t pins;
+
+#ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings as per the dazv6 shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 50, 52, 34, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.pinTachOut = 49; //Tacho output pin
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.pinFuelPump = 45; //Fuel pump output
+  pins.idle.stepperDir = 20; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 21; //Step pin for DRV8825 driver
+  pins.pinBoost = 7;
+  pins.pinFan = 47; //Pin for the fan output
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getBMWPnPPinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings for the BMW PnP PCBs by pazi88.
+#if defined(CORE_AVR)
+  //This is the regular MEGA2560 pin mapping
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50, 39, 42, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 48, 36, 34, 46, 53, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 20; //The Cam sensor 2 pin
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.EMAP = A15; //EMAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLT sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.O2_2 = A12; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.sensors.baro = A5; //Baro sensor pin
+  pins.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
+  pins.idle.idle1 = 5; //ICV pin1
+  pins.idle.idle2 = 6; //ICV pin3
+  pins.pinBoost = 7; //Boost control
+  pins.pinVVT_1 = 4; //VVT1 output (intake vanos)
+  pins.pinVVT_2 = 26; //VVT2 output (exhaust vanos)
+  pins.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
+  pins.idle.stepperDir = 16; //Stepper valve isn't used with these
+  pins.idle.stepperStep = 17; //Stepper valve isn't used with these
+  pins.idle.stepperEnable = 24; //Stepper valve isn't used with these
+  pins.pinFan = 47; //Pin for the fan output (Goes to ULN2003)
+  pins.pinLaunch = 51; //Launch control pin
+  pins.sensors.flex = 2; // Flex sensor
+  pins.pinResetControl = 43; //Reset control output
+  pins.pinVSS = 3; //VSS input pin
+  pins.wmi.empty = 31; //(placeholder)
+  pins.wmi.indicator = 33; //(placeholder)
+  pins.wmi.enabled = 35; //(placeholder)
+  pins.idle.idleUp = 37; //(placeholder)
+  pins.idle.idleUpOutput = 41; //(placeholder)
+  pins.sensors.CTPS = A6; //(placeholder)
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#elif defined(STM32F407xx)
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = {  PB15, PB14, PB12, PB13, PA8, PE7, PE13, PE10, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PE2, PE3, PC13, PE6, PE4, PE5, PE0, PB9, };
+  pins.triggerPins.primary = PD3; //The CAS pin
+  pins.triggerPins.secondary = PD4; //The Cam Sensor pin
+  pins.sensors.TPS = PA2;//TPS input pin
+  pins.sensors.MAP = PA3; //MAP sensor pin
+  pins.sensors.EMAP = PC5; //EMAP sensor pin
+  pins.sensors.IAT = PA0; //IAT sensor pin
+  pins.sensors.CLT = PA1; //CLS sensor pin
+  pins.sensors.O2 = PB0; //O2 Sensor pin
+  pins.sensors.O2_2 = PC2; //O2 Sensor pin
+  pins.sensors.Bat = PA4; //Battery reference voltage pin
+  pins.sensors.baro = PA5; //Baro sensor pin
+  pins.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
+  pins.idle.idle1 = PD10; //ICV pin1
+  pins.idle.idle2 = PD9; //ICV pin3
+  pins.pinBoost = PD8; //Boost control
+  pins.pinVVT_1 = PD11; //VVT1 output (intake vanos)
+  pins.pinVVT_2 = PC7; //VVT2 output (exhaust vanos)
+  pins.pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
+  pins.idle.stepperDir = PB10; //Stepper valve isn't used with these
+  pins.idle.stepperStep = PB11; //Stepper valve isn't used with these
+  pins.idle.stepperEnable = PA15; //Stepper valve isn't used with these
+  pins.pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
+  pins.pinLaunch = PB8; //Launch control pin
+  pins.sensors.flex = PD7; // Flex sensor
+  pins.pinResetControl = PB7; //Reset control output
+  pins.pinVSS = PB6; //VSS input pin
+  pins.wmi.empty = PD15; //(placeholder)
+  pins.wmi.indicator = PD13; //(placeholder)
+  pins.wmi.enabled = PE15; //(placeholder)
+  pins.idle.idleUp = PE14; //(placeholder)
+  pins.idle.idleUpOutput = PE12; //(placeholder)
+  pins.sensors.CTPS = PA6; //(placeholder)
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getNO2CPinMapping(void)
+{
+  pinNumbers_t pins;
+
+#ifndef SMALL_FLASH_MODE
+  //Pin mappings as per the NO2C shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 11, 12, 13, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 23, 22, 2, 3, 46, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 21; //The Cam sensor 2 pin
+  pins.sensors.TPS = A3; //TPS input pin
+  pins.sensors.MAP = A0; //MAP sensor pin
+  pins.sensors.IAT = A5; //IAT sensor pin
+  pins.sensors.CLT = A4; //CLT sensor pin
+  pins.sensors.O2 = A2; //O2 sensor pin
+  pins.sensors.Bat = A1; //Battery reference voltage pin
+  pins.sensors.baro = A6; //Baro sensor pin - ONLY WITH DB
+  pins.pinTachOut = 38; //Tacho output pin
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.idle.idle2 = 47; //2 wire idle control - NOT USED
+  pins.pinBoost = 7; //Boost control
+  pins.pinVVT_1 = 6; //Default VVT output
+  pins.pinVVT_2 = 48; //Default VVT2 output
+  pins.pinFuelPump = 4; //Fuel pump output
+  pins.idle.stepperDir = 25; //Direction pin for DRV8825 driver
+  pins.idle.stepperStep = 24; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 27; //Enable pin for DRV8825 driver
+  pins.pinLaunch = 10; //Can be overwritten below
+  pins.sensors.flex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+  pins.pinFan = 30; //Pin for the fan output - ONLY WITH DB
+  pins.pinResetControl = 26; //Reset control output
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getUA4CPinMapping(void)
+{
+  pinNumbers_t pins;
+
+#ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings as per the UA4C shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 7, 6, 5, 45, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 35, 36, 33, 34, 44, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 3; //The Cam sensor 2 pin
+  pins.sensors.flex = 20; // Flex sensor
+  pins.sensors.TPS = A3; //TPS input pin
+  pins.sensors.MAP = A0; //MAP sensor pin
+  pins.sensors.baro = A7; //Baro sensor pin
+  pins.sensors.IAT = A5; //IAT sensor pin
+  pins.sensors.CLT = A4; //CLS sensor pin
+  pins.sensors.O2 = A1; //O2 Sensor pin
+  pins.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
+  pins.sensors.Bat = A2; //Battery reference voltage pin
+  pins.pinLaunch = 37; //Can be overwritten below
+  pins.pinTachOut = 22; //Tacho output pin
+  pins.idle.idle1 = 9; //Single wire idle control
+  pins.idle.idle2 = 10; //2 wire idle control
+  pins.pinFuelPump = 23; //Fuel pump output
+  pins.pinVVT_1 = 11; //Default VVT output
+  pins.pinVVT_2 = 48; //Default VVT2 output
+  pins.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 31; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
+  pins.pinBoost = 12; //Boost control
+  pins.pinFan = 24; //Pin for the fan output
+  pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+  pins.pinVSS = 2;
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+static pinNumbers_t getBlitzboxBL49spPinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings for all BlitzboxBL49sp variants
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 6, 7, 8, 9, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 25, 23, 22, };
+  pins.triggerPins.primary = 19; //The CRANK Sensor pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.sensors.flex = 20; // Flex sensor PLACEHOLDER value for now
+  pins.sensors.TPS = A0; //TPS input pin
+  pins.sensors.O2 = A2; //O2 Sensor pin
+  pins.sensors.IAT = A3; //IAT sensor pin
+  pins.sensors.CLT = A4; //CLT sensor pin
+  pins.sensors.MAP = A7; //internal MAP sensor
+  pins.sensors.Bat = A6; //Battery reference voltage pin
+  pins.sensors.baro = A5; //external MAP/Baro sensor pin
+  pins.sensors.O2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
+  pins.pinLaunch = 2; //Can be overwritten below
+  pins.pinTachOut = 10; //Tacho output pin
+  pins.idle.idle1 = 11; //Single wire idle control
+  pins.idle.idle2 = 14; //2 wire idle control PLACEHOLDER value for now
+  pins.pinFuelPump = 3; //Fuel pump output
+  pins.pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
+  pins.pinBoost = 5; //Boost control
+  pins.pinFan = 12; //Pin for the fan output
+  pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  return pins;
+}
+
+static pinNumbers_t getDIYEFICORE4v10PinMapping(void)
+{
+  pinNumbers_t pins;
+
+#ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
+#if defined(CORE_AVR)
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = {  10, 11, 12, 9, 33, 34};
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 29, 28, 27, 26 /* Pin for coil 5 PLACEHOLDER value for now */, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 21;// The Cam sensor 2 pin
+  pins.sensors.flex = 20; // Flex sensor
+  pins.sensors.TPS = A3; //TPS input pin
+  pins.sensors.MAP = A2; //MAP sensor pin
+  pins.sensors.baro = A15; //Baro sensor pin
+  pins.sensors.IAT = A11; //IAT sensor pin
+  pins.sensors.CLT = A4; //CLS sensor pin
+  pins.sensors.O2 = A12; //O2 Sensor pin
+  pins.sensors.O2_2 = A5; //O2 sensor pin (second sensor)
+  pins.sensors.Bat = A1; //Battery reference voltage pin
+  pins.pinLaunch = 24; //Can be overwritten below
+  pins.pinTachOut = 38; //Tacho output pin
+  pins.idle.idle1 = 42; //Single wire idle control
+  pins.idle.idle2 = 43; //2 wire idle control
+  pins.pinFuelPump = 41; //Fuel pump output
+  pins.pinVVT_1 = 44; //Default VVT output
+  pins.pinVVT_2 = 48; //Default VVT2 output
+  pins.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 31; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
+  pins.pinBoost = 45; //Boost control
+  pins.pinFan = 40; //Pin for the fan output
+  pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+#endif
+
+  return pins;
+}
+
+#if defined(CORE_TEENSY35)
+static pinNumbers_t getDvjTeensyRevAPinMapping(void)
+{
+  pinNumbers_t pins;
+  //Pin mappings as per the teensy rev A shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31, 32, };
+  pins.triggerPins.primary = 23; //The CAS pin
+  pins.triggerPins.secondary = 36; //The Cam Sensor pin
+  pins.sensors.TPS = 16; //TPS input pin
+  pins.sensors.MAP = 17; //MAP sensor pin
+  pins.sensors.IAT = 14; //IAT sensor pin
+  pins.sensors.CLT = 15; //CLT sensor pin
+  pins.sensors.O2 = A22; //O2 sensor pin
+  pins.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
+  pins.sensors.Bat = 18; //Battery reference voltage pin
+  pins.pinTachOut = 20; //Tacho output pin
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.pinBoost = 11; //Boost control
+  pins.pinFuelPump = 38; //Fuel pump output
+  pins.idle.stepperDir = 34; //Direction pin for DRV8825 driver
+  pins.idle.stepperStep = 35; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 33; //Enable pin for DRV8825 driver
+  pins.pinLaunch = 26; //Can be overwritten below
+  pins.pinFan = 37; //Pin for the fan output - ONLY WITH DB
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  return pins;
+}
+#endif
+
+#if defined(CORE_TEENSY35)
+static pinNumbers_t getDvjTeensyRevBPinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings as per the teensy revB board shield
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31, 32, };
+  pins.triggerPins.primary = 23; //The CAS pin
+  pins.triggerPins.secondary = 36; //The Cam Sensor pin
+  pins.sensors.TPS = 16; //TPS input pin
+  pins.sensors.MAP = 17; //MAP sensor pin
+  pins.sensors.IAT = 14; //IAT sensor pin
+  pins.sensors.CLT = 15; //CLT sensor pin
+  pins.sensors.O2 = A22; //O2 sensor pin
+  pins.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
+  pins.sensors.Bat = 18; //Battery reference voltage pin
+  pins.pinTachOut = 20; //Tacho output pin
+  pins.idle.idle1 = 5; //Single wire idle control
+  pins.pinBoost = 11; //Boost control
+  pins.pinFuelPump = 38; //Fuel pump output
+  pins.idle.stepperDir = 34; //Direction pin for DRV8825 driver
+  pins.idle.stepperStep = 35; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 33; //Enable pin for DRV8825 driver
+  pins.pinLaunch = 26; //Can be overwritten below
+  pins.pinFan = 37; //Pin for the fan output - ONLY WITH DB
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  return pins;
+}
+#endif
+
+#if defined(CORE_TEENSY35)
+static pinNumbers_t getJuiceBoxPinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings for the Juice Box (ignition only board)
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 56, 6, 50, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31, 32, };
+  pins.triggerPins.primary = 37; //The CAS pin
+  pins.triggerPins.secondary = 38; //The Cam Sensor pin - NOT USED
+  pins.sensors.TPS = A2; //TPS input pin
+  pins.sensors.MAP = A7; //MAP sensor pin
+  pins.sensors.IAT = A1; //IAT sensor pin
+  pins.sensors.CLT = A5; //CLT sensor pin
+  pins.sensors.O2 = A0; //O2 sensor pin
+  pins.sensors.O2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
+  pins.sensors.Bat = A6; //Battery reference voltage pin
+  pins.pinTachOut = 28; //Tacho output pin
+  pins.idle.idle1 = 5; //Single wire idle control - NOT USED
+  pins.pinBoost = 11; //Boost control - NOT USED
+  pins.pinFuelPump = 24; //Fuel pump output
+  pins.idle.stepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
+  pins.idle.stepperStep = 4; //Step pin for DRV8825 driver - NOT USED
+  pins.idle.stepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
+  pins.pinLaunch = 26; //Can be overwritten below
+  pins.pinFan = 25; //Pin for the fan output
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  return pins;
+}
+#endif
+
+#if defined(CORE_TEENSY)
+static pinNumbers_t getDropBearPinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings for the DropBear
+  // injectorOutputControl = OUTPUT_CONTROL_MC33810;
+  // ignitionOutputControl = OUTPUT_CONTROL_MC33810;
+
+  //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 13, 11, 12, 10, 9, 9, };
+  //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 41, };
+  pins.triggerPins.primary = 19; //The CAS pin
+  pins.triggerPins.secondary = 18; //The Cam Sensor pin
+  pins.triggerPins.tertiary = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
+  pins.sensors.flex = A16; // Flex sensor
+  pins.sensors.MAP = A1; //MAP sensor pin
+  pins.sensors.baro = A0; //Baro sensor pin
+  pins.sensors.Bat = A14; //Battery reference voltage pin
+  pins.pinLaunch = A15; //Can be overwritten below
+  pins.pinTachOut = 5; //Tacho output pin
+  pins.idle.idle1 = 27; //Single wire idle control
+  pins.idle.idle2 = 29; //2 wire idle control. Shared with Spare 1 output
+  pins.pinFuelPump = 8; //Fuel pump output
+  pins.pinVVT_1 = 28; //Default VVT output
+  pins.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 31; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
+  pins.pinBoost = 24; //Boost control
+  pins.pinFan = 25; //Pin for the fan output
+  pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+  pins.pinVSS = 22;
+
+  pins.wmi.empty = 23; //Spare digital input
+  pins.wmi.indicator = 26; //Spare output
+  pins.wmi.enabled = 29; //Spare output
+
+  #if defined(CORE_TEENSY35)
+    pins.sensors.TPS = A22; //TPS input pin
+    pins.sensors.IAT = A19; //IAT sensor pin
+    pins.sensors.CLT = A20; //CLS sensor pin
+    pins.sensors.O2 = A21; //O2 Sensor pin
+    pins.sensors.O2_2 = A18; //Spare 2
+
+    pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
+  #elif defined(CORE_TEENSY41)
+    //New pins for the actual T4.1 version of the Dropbear
+    pins.sensors.baro = A4; 
+    pins.sensors.MAP = A5;
+    pins.sensors.TPS = A3; //TPS input pin
+    pins.sensors.IAT = A0; //IAT sensor pin
+    pins.sensors.CLT = A1; //CLS sensor pin
+    pins.sensors.O2 = A2; //O2 Sensor pin
+    pins.sensors.Bat = A15; //Battery reference voltage pin. Needs Alpha4+
+    pins.pinLaunch = 36;
+    pins.sensors.flex = 37; // Flex sensor
+
+    pins.triggerPins.primary = 20; //The CAS pin
+    pins.triggerPins.secondary = 21; //The Cam Sensor pin
+    pins.triggerPins.tertiary = 34; //Uses one of the protected spare digital inputs.
+
+    pins.pinFuelPump = 5; //Fuel pump output
+    pins.pinTachOut = 0; //Tacho output pin
+
+    pins.pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
+    pins.wmi.empty = 35; //Spare digital input
+    pins.pinVSS = 34;
+  #endif
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  //Pin alignment to the MC33810 outputs
+  pins.pinMC33810_1_CS = 10;
+  pins.pinMC33810_2_CS = 9;
+
+  pins.mc33810InjBits[0] = 3;
+  pins.mc33810InjBits[1] = 1;
+  pins.mc33810InjBits[2] = 0;
+  pins.mc33810InjBits[3] = 2;
+  pins.mc33810IgnBits[0] = 4;
+  pins.mc33810IgnBits[1] = 5;
+  pins.mc33810IgnBits[2] = 6;
+  pins.mc33810IgnBits[3] = 7;
+
+  pins.mc33810InjBits[4] = 3;
+  pins.mc33810InjBits[5] = 1;
+  pins.mc33810InjBits[6] = 0;
+  pins.mc33810InjBits[7] = 2;
+  pins.mc33810IgnBits[4] = 4;
+  pins.mc33810IgnBits[5] = 5;
+  pins.mc33810IgnBits[6] = 6;
+  pins.mc33810IgnBits[7] = 7;
+  return pins;
+}
+#endif
+
+#if defined(CORE_TEENSY41)
+static pinNumbers_t getBearCubPinMapping(void)
+{
+  pinNumbers_t pins;
+
+  //Pin mappings for the Bear Cub (Teensy 4.1)
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { 6, 7, 9, 8, 0, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { 2, 3, 4, 5, };
+  pins.triggerPins.primary = 20; //The CAS pin
+  pins.triggerPins.secondary = 21; //The Cam Sensor pin
+  pins.sensors.flex = 37; // Flex sensor
+  pins.sensors.MAP = A5; //MAP sensor pin
+  pins.sensors.baro = A4; //Baro sensor pin
+  pins.sensors.Bat = A15; //Battery reference voltage pin
+  pins.sensors.TPS = A3; //TPS input pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A2; //O2 Sensor pin
+  pins.pinLaunch = 36;
+
+  pins.pinTachOut = 38; //Tacho output pin
+  pins.idle.idle1 = 27; //Single wire idle control
+  pins.idle.idle2 = 26; //2 wire idle control. Shared with Spare 1 output
+  pins.pinFuelPump = 10; //Fuel pump output
+  pins.pinVVT_1 = 28; //Default VVT output
+  pins.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = 31; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
+  pins.pinBoost = 24; //Boost control
+  pins.pinFan = 25; //Pin for the fan output
+  pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+
+  return pins;
+}
+#endif
+
+static pinNumbers_t getSpectreV05PinMapping(void)
+{
+  pinNumbers_t pins;
+
+#if defined(STM32F407xx)
+  //Pin definitions for experimental board Tjeerd 
+  //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
+  //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE9, PE11, PE14, PE13, };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PD10, PD9, PB7, };
+  //******************************************
+  //******** PORTA CONNECTIONS *************** 
+  //******************************************
+  // = PA0; //Wakeup ADC123
+  // = PA1; //ADC123
+  // = PA2; //ADC123
+  // = PA3; //ADC123
+  // = PA4; //ADC12
+  // = PA5; //ADC12
+  // = PA6; //ADC12 LED_BUILTIN_1
+  // = PA7; //ADC12 LED_BUILTIN_2
+  // = PA9;  //TXD1=Bluetooth module
+  // = PA10; //RXD1=Bluetooth module
+  // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
+  // = PA12; //(DO NOT USE FOR SPEEDUINO) USB 
+  // = PA13;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  // = PA14;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  // = PA15;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+
+  //******************************************
+  //******** PORTB CONNECTIONS *************** 
+  //******************************************
+  // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+  pins.sensors.baro = PB1; //ADC12
+  // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
+  // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+  // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+  // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+  // = PB6;  //NRF_CE
+  // = PB8;  //NRF_IRQ
+  // = PB9;  //
+  // = PB10; //TXD3
+  // = PB11; //RXD3
+  // = PB12; //
+  // = PB13;  //SPI2_SCK
+  // = PB14;  //SPI2_MISO
+  // = PB15;  //SPI2_MOSI
+
+  //******************************************
+  //******** PORTC CONNECTIONS *************** 
+  //******************************************
+  pins.sensors.IAT = PC0; //ADC123 
+  pins.sensors.TPS = PC1; //ADC123
+  pins.sensors.MAP = PC2; //ADC123 
+  pins.sensors.CLT = PC3; //ADC123
+  pins.sensors.O2 = PC4; //ADC12
+  pins.sensors.Bat = PC5;  //ADC12
+  pins.pinBoost = PC6; //
+  pins.idle.idle1 = PC7; //
+  // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+  // = PC9;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+  // = PC10;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+  // = PC11;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+  // = PC12;  //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+  pins.pinTachOut = PC13; //
+  // = PC14;  //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+  // = PC15;  //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+
+  //******************************************
+  //******** PORTD CONNECTIONS *************** 
+  //******************************************
+  // = PD0;  //CANRX
+  // = PD1;  //CANTX
+  // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+  pins.idle.idle2 = PD3; //
+  // = PD4;  //
+  pins.sensors.flex = PD4;
+  // = PD5; //TXD2
+  // = PD6;  //RXD2
+  // = PD7;  //
+  // = PD8;  //
+  // = PD11;  //
+
+  //******************************************
+  //******** PORTE CONNECTIONS *************** 
+  //******************************************
+  pins.triggerPins.primary = PE0; //
+  pins.triggerPins.secondary = PE1; //
+  pins.idle.stepperEnable = PE2; //
+  pins.pinFuelPump = PE3; //ONBOARD KEY1
+  // = PE4;  //ONBOARD KEY2
+  pins.idle.stepperStep = PE5; //
+  pins.pinFan = PE6; //
+  pins.idle.stepperDir = PE7; //
+  // = PE8;  //
+  // = PE15;  //
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#elif (defined(STM32F411xE) || defined(STM32F401xC))
+  //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+  //PB2 can't be used as input because is BOOT pin
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15, };
+  pins.sensors.TPS = A2;//TPS input pin
+  pins.sensors.MAP = A3; //MAP sensor pin
+  pins.sensors.IAT = A0; //IAT sensor pin
+  pins.sensors.CLT = A1; //CLS sensor pin
+  pins.sensors.O2 = A8; //O2 Sensor pin
+  pins.sensors.Bat = A4; //Battery reference voltage pin
+  pins.sensors.baro = pins.sensors.MAP;
+  pins.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
+  pins.idle.idle1 = PB2; //Single wire idle control
+  pins.idle.idle2 = PB10; //2 wire idle control
+  pins.pinBoost = PA6; //Boost control
+  pins.idle.stepperDir = PB10; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = PB2; //Step pin for DRV8825 driver
+  pins.pinFuelPump = PA8; //Fuel pump output
+  pins.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
+
+  //external interrupt enabled pins
+  pins.sensors.flex = PC14; // Flex sensor (Must be external interrupt enabled)
+  pins.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
+  pins.triggerPins.secondary = PC15; //The Cam Sensor pin
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#elif defined(CORE_STM32)
+  //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
+  //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
+  //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
+  //PB2 can't be used as input because is BOOT pin
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PB3, PA15, PA14, PA9, PA8, };
+  pins.sensors.TPS = A0; //TPS input pin
+  pins.sensors.MAP = A1; //MAP sensor pin
+  pins.sensors.IAT = A2; //IAT sensor pin
+  pins.sensors.CLT = A3; //CLS sensor pin
+  pins.sensors.O2 = A4; //O2 Sensor pin
+  pins.sensors.Bat = A5; //Battery reference voltage pin
+  pins.sensors.baro = pins.sensors.MAP;
+  pins.idle.idle1 = PB2; //Single wire idle control
+  pins.idle.idle2 = PA2; //2 wire idle control
+  pins.pinBoost = PA1; //Boost control
+  pins.pinVVT_1 = PA0; //Default VVT output
+  pins.pinVVT_2 = PA2; //Default VVT2 output
+  pins.idle.stepperDir = PC15; //Direction pin  for DRV8825 driver
+  pins.idle.stepperStep = PC14; //Step pin for DRV8825 driver
+  pins.idle.stepperEnable = PC13; //Enable pin for DRV8825
+  pins.pinFan = PB1; //Pin for the fan output
+  pins.pinFuelPump = PB11; //Fuel pump output
+  pins.pinTachOut = PB10; //Tacho output pin
+  //external interrupt enabled pins
+  pins.sensors.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
+  pins.triggerPins.primary = PA10; //The CAS pin
+  pins.triggerPins.secondary = PA13; //The Cam Sensor pin
+
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+#endif
+
+  return pins;
+}
+
+#if defined(STM32F407xx)
+static pinNumbers_t getDefaultSTM32PinMapping(void)
+{
+  pinNumbers_t pins;
+  //Pin definitions for experimental board Tjeerd 
+  //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
+  static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12 };
+  pins.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+  static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PB10, PD9, };
+  pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+  //******************************************
+  //******** PORTA CONNECTIONS *************** 
+  //******************************************
+  /* = PA0 */ //Wakeup ADC123
+  // = PA1;
+  // = PA2;
+  // = PA3;
+  // = PA4;
+  /* = PA5; */ //ADC12
+  pins.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
+  /* = PA7; */ //ADC12 LED_BUILTIN_2
+  /* = PA9 */ //TXD1
+  /* = PA10 */ //RXD1
+  /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
+  /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
+  /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+
+  //******************************************
+  //******** PORTB CONNECTIONS *************** 
+  //******************************************
+  /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+  pins.sensors.baro = PB1; //ADC12
+  /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
+  /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+  /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+  /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+  /* = PB6; */ //NRF_CE
+  /* = PB7; */ //NRF_CS
+  /* = PB8; */ //NRF_IRQ
+  /* = PB9; */ //
+  pins.idle.idle1 = PB11; //RXD3
+  pins.idle.idle2 = PB12; //
+  /* pins.pinBoost = PB12; */ //
+  /* = PB13; */ //SPI2_SCK
+  /* = PB14; */ //SPI2_MISO
+  /* = PB15; */ //SPI2_MOSI
+
+  //******************************************
+  //******** PORTC CONNECTIONS *************** 
+  //******************************************
+  pins.sensors.MAP = PC0; //ADC123 
+  pins.sensors.TPS = PC1; //ADC123
+  pins.sensors.IAT = PC2; //ADC123
+  pins.sensors.CLT = PC3; //ADC123
+  pins.sensors.O2 = PC4; //ADC12
+  pins.sensors.Bat = PC5; //ADC12
+  /*pins.pinVVT_1 = PC6; */ //
+  /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+  /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+  /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+  /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+  /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+  pins.pinTachOut = PC13; //
+  /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+  /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+
+  //******************************************
+  //******** PORTD CONNECTIONS *************** 
+  //******************************************
+  /* = PD0; */ //CANRX
+  /* = PD1; */ //CANTX
+  /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+  /* = PD3; */ //
+  /* = PD4; */ //
+  pins.sensors.flex = PD4;
+  /* = PD5;*/ //TXD2
+  /* = PD6; */ //RXD2
+  /* = PD7; */ //
+  /* = PD8; */ //
+  /* = PD10; */ //
+  /* = PD11; */ //
+
+  //******************************************
+  //******** PORTE CONNECTIONS *************** 
+  //******************************************
+  pins.triggerPins.primary = PE0; //
+  pins.triggerPins.secondary = PE1; //
+  pins.idle.stepperEnable = PE2; //
+  /* = PE3; */ //ONBOARD KEY1
+  /* = PE4; */ //ONBOARD KEY2
+  pins.idle.stepperStep = PE5; //
+  pins.pinFan = PE6; //
+  pins.idle.stepperDir = PE7; //
+  /* = PE8; */ //
+  /* = PE9; */ //
+  /* = PE10; */ //
+  /* = PE13; */ //
+  /* = PE14; */ //
+  /* = PE15; */ //
+
+  return pins;
+}
+#endif
+
+static pinNumbers_t getDefaultPinMapping(void)
+{
+  return
+#if defined(STM32F407xx)
+    getDefaultSTM32PinMapping();
+#else
+    getV02PinMapping();
+#endif  
+}
+
 /** Set board / microcontroller specific pin mappings / assignments.
  * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
  * which are originated from tuning SW (e.g. TS) set values and are available in reference/speeduino.ini (See pinLayout, note also that
@@ -898,1379 +2242,35 @@ void setPinMapping(byte boardID)
   {
     //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
 
-    case 1:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings as per the v0.2 shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }
-      pinNumbers.triggerPins.primary = 20; //The CAS pin
-      pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.sensors.TPS = A2; //TPS input pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.idle.idle1 = 30; //Single wire idle control
-      pinNumbers.idle.idle2 = 31; //2 wire idle control
-      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinFan = 47; //Pin for the fan output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 43; //Reset control output
-      break;
-    #endif
-    case 2:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings as per the v0.3 shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }      
-      {
-      #if defined(CORE_TEENSY35)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 24, 30, 21, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-      #else
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-      #endif
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.idle.idle2 = 53; //2 wire idle control
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 6; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 26; //Enable pin for DRV8825
-      pinNumbers.pinFan = A13; //Pin for the fan output
-      pinNumbers.pinLaunch = 51; //Can be overwritten below
-      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 50; //Reset control output
-      pinNumbers.sensors.baro = A5;
-      pinNumbers.pinVSS = 20;
-
-      #if defined(CORE_TEENSY35)
-        pinNumbers.triggerPins.primary = 23;
-        pinNumbers.idle.stepperDir = 33;
-        pinNumbers.idle.stepperStep = 34;
-        pinNumbers.pinTachOut = 28;
-        pinNumbers.pinFan = 27;
-        pinNumbers.sensors.O2 = A22;
-      #endif
-    #endif
-      break;
-
-   case 3:
-      //Pin mappings as per the v0.4 shield
-      {
-      #if defined(CORE_TEENSY35)
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */, 51};
-      #elif defined(STM32F407xx)
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12, };
-      #elif defined(CORE_STM32)
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4, };
-      #else
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */};
-      #endif
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-      #if defined(CORE_TEENSY35)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 32, 30, 29 };
-      #elif defined(CORE_TEENSY41)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 32, 30, 29 };
-      #elif defined(STM32F407xx)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PB10, PD9 };
-      #elif defined(CORE_STM32)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15 };
-      #else
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 50, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-      #endif
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.idle.idle2 = 6; //2 wire idle control
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 4; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
-      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 24; //Enable pin for DRV8825
-      pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinNumbers.pinLaunch = 51; //Can be overwritten below
-      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 43; //Reset control output
-      pinNumbers.sensors.baro = A5;
-      pinNumbers.pinVSS = 20;
-      pinNumbers.wmi.empty = 46;
-      pinNumbers.wmi.indicator = 44;
-      pinNumbers.wmi.enabled = 42;
-
-      #if defined(CORE_TEENSY35)
-        pinNumbers.triggerPins.primary = 23;
-        pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.idle.stepperDir = 34;
-        pinNumbers.idle.stepperStep = 35;
-        pinNumbers.pinTachOut = 28;
-        pinNumbers.pinFan = 27;
-        pinNumbers.sensors.O2 = A22;
-
-        //Make sure the CAN pins aren't overwritten
-        pinNumbers.triggerPins.tertiary = 54;
-        pinNumbers.pinVVT_1 = 55;
-
-      #elif defined(CORE_TEENSY41)
-        //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
-        pinNumbers.sensors.baro = A4; 
-        pinNumbers.sensors.MAP = A5;
-        pinNumbers.sensors.TPS = A3; //TPS input pin
-        pinNumbers.sensors.IAT = A0; //IAT sensor pin
-        pinNumbers.sensors.CLT = A1; //CLS sensor pin
-        pinNumbers.sensors.O2 = A2; //O2 Sensor pin
-        pinNumbers.sensors.Bat = A15; //Battery reference voltage pin. Needs Alpha4+
-        pinNumbers.pinLaunch = 34; //Can be overwritten below
-        pinNumbers.pinVSS = 35;
-
-        pinNumbers.triggerPins.primary = 20; //The CAS pin
-        pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-        pinNumbers.triggerPins.tertiary = 24;
-
-        pinNumbers.idle.stepperDir = 34;
-        pinNumbers.idle.stepperStep = 35;
-        
-        pinNumbers.pinTachOut = 28;
-        pinNumbers.pinFan = 27;
-        pinNumbers.pinFuelPump = 33;
-        pinNumbers.wmi.empty = 34;
-        pinNumbers.wmi.indicator = 35;
-        pinNumbers.wmi.enabled = 36;
-      #elif defined(STM32F407xx)
-     //Pin definitions for experimental board Tjeerd 
-        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-
-        //******************************************
-        //******** PORTA CONNECTIONS *************** 
-        //******************************************
-        /* = PA0 */ //Wakeup ADC123
-        // = PA1;
-        // = PA2;
-        // = PA3;
-        // = PA4;
-        /* = PA5; */ //ADC12
-        /* = PA6; */ //ADC12 LED_BUILTIN_1
-        pinNumbers.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-        /* = PA9 */ //TXD1
-        /* = PA10 */ //RXD1
-        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
-        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-
-        //******************************************
-        //******** PORTB CONNECTIONS *************** 
-        //******************************************
-        /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.sensors.baro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        /* = PB6; */ //NRF_CE
-        /* = PB7; */ //NRF_CS
-        /* = PB8; */ //NRF_IRQ
-        /* = PB9; */ //
-        pinNumbers.idle.idle1 = PB11; //RXD3
-        pinNumbers.idle.idle2 = PB12; //
-        pinNumbers.pinBoost = PB12; //
-        /* = PB13; */ //SPI2_SCK
-        /* = PB14; */ //SPI2_MISO
-        /* = PB15; */ //SPI2_MOSI
-
-        //******************************************
-        //******** PORTC CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.sensors.MAP = PC0; //ADC123 
-        pinNumbers.sensors.TPS = PC1; //ADC123
-        pinNumbers.sensors.IAT = PC2; //ADC123
-        pinNumbers.sensors.CLT = PC3; //ADC123
-        pinNumbers.sensors.O2 = PC4;  //ADC12
-        pinNumbers.sensors.Bat = PC5; //ADC12
-        pinNumbers.pinVVT_1 = PC6; //
-        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinNumbers.pinTachOut = PC13; //
-        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
-
-        //******************************************
-        //******** PORTD CONNECTIONS *************** 
-        //******************************************
-        /* = PD0; */ //CANRX
-        /* = PD1; */ //CANTX
-        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinNumbers.pinVVT_2 = PD3; //
-        pinNumbers.sensors.flex = PD4;
-        /* = PD5;*/ //TXD2
-        /* = PD6; */ //RXD2
-        /* = PD8; */ //
-        /* = PD10; */ //
-        /* = PD11; */ //
-
-        //******************************************
-        //******** PORTE CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.triggerPins.primary = PE0; //
-        pinNumbers.triggerPins.secondary = PE1; //
-        pinNumbers.idle.stepperEnable = PE2; //
-        /* = PE3; */ //ONBOARD KEY1
-        /* = PE4; */ //ONBOARD KEY2
-        pinNumbers.idle.stepperStep = PE5; //
-        pinNumbers.pinFan = PE6; //
-        pinNumbers.idle.stepperDir = PE7; //
-        /* = PE8; */ //
-        /* = PE9; */ //
-        /* = PE10; */ //
-        /* = PE13; */ //
-        /* = PE14; */ //
-        /* = PE15; */ //
-
-      #elif defined(CORE_STM32)
-        //https://github.com/stm32duino/Arduino_Core_STM32/blob/master/variants/Generic_F411Cx/variant.h#L28
-        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-        //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
-        //PB2 can't be used as input because it's the BOOT pin
-        pinNumbers.sensors.TPS = A2;//TPS input pin
-        pinNumbers.sensors.MAP = A3; //MAP sensor pin
-        pinNumbers.sensors.IAT = A0; //IAT sensor pin
-        pinNumbers.sensors.CLT = A1; //CLS sensor pin
-        pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-        pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-        pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
-        pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
-        pinNumbers.idle.idle1 = PB2; //Single wire idle control
-        pinNumbers.idle.idle2 = PB10; //2 wire idle control
-        pinNumbers.pinBoost = PA6; //Boost control
-        pinNumbers.idle.stepperDir = PB10; //Direction pin  for DRV8825 driver
-        pinNumbers.idle.stepperStep = PB2; //Step pin for DRV8825 driver
-        pinNumbers.pinFuelPump = PA8; //Fuel pump output
-        pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
-        //external interrupt enabled pins
-        pinNumbers.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
-        pinNumbers.triggerPins.secondary = PC15; //The Cam Sensor pin
-      #endif
-      break;
-
-    case 6:
-      #ifndef SMALL_FLASH_MODE
-      //Pin mappings as per the 2001-05 MX5 PNP shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 44, 46, 47, 45, 14 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }      
-      {
-      #if defined(CORE_TEENSY35)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
-      #else
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 42, 43, 32, 33, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-      #endif
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 2; //The Cam sensor 2 pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A5; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A3; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.pinBoost = 4;
-      pinNumbers.pinVVT_1 = 11; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinNumbers.pinFuelPump = 40; //Fuel pump output
-      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 24;
-      pinNumbers.pinFan = 41; //Pin for the fan output
-      pinNumbers.pinLaunch = 12; //Can be overwritten below
-      pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 39; //Reset control output
-      pinNumbers.pinVSS = 2;
-      #endif
-      //This is NOT correct. It has not yet been tested with this board
-      #if defined(CORE_TEENSY35)
-        pinNumbers.triggerPins.primary = 23;
-        pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.idle.stepperDir = 34;
-        pinNumbers.idle.stepperStep = 35;
-        pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
-        pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
-        pinNumbers.pinTachOut = 28; //Done
-      #endif
-      break;
-
-    case 8:
-      #ifndef SMALL_FLASH_MODE
-      //Pin mappings as per the 1996-97 MX5 PNP shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9, 8, 14 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-      #if defined(CORE_TEENSY35)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
-      #else
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 41, 32, 33, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-      #endif
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A5; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A3; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.idle.idle1 = 2; //Single wire idle control
-      pinNumbers.pinBoost = 4;
-      pinNumbers.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinNumbers.pinFuelPump = 49; //Fuel pump output
-      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 24;
-      pinNumbers.pinFan = 35; //Pin for the fan output
-      pinNumbers.pinLaunch = 37; //Can be overwritten below
-      pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 44; //Reset control output
-
-      //This is NOT correct. It has not yet been tested with this board
-      #if defined(CORE_TEENSY35)
-        pinNumbers.triggerPins.primary = 23;
-        pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.idle.stepperDir = 34;
-        pinNumbers.idle.stepperStep = 35;
-        pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
-        pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
-        pinNumbers.pinTachOut = 28; //Done
-      #endif
-      #endif
-      break;
-
-    case 9:
-     #ifndef SMALL_FLASH_MODE
-      //Pin mappings as per the 89-95 MX5 PNP shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9, 8, 14 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-      #if defined(CORE_TEENSY35)
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
-      #else
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 41, 32, 33, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-      #endif
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A5; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A3; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.idle.idle1 = 2; //Single wire idle control
-      pinNumbers.pinBoost = 4;
-      pinNumbers.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinNumbers.pinFuelPump = 37; //Fuel pump output
-      //Note that there is no stepper driver output on the PNP boards. These pins are unconnected and remain here just to prevent issues with random pin numbers occurring
-      pinNumbers.idle.stepperEnable = 15; //Enable pin for the DRV8825
-      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinFan = 35; //Pin for the fan output
-      pinNumbers.pinLaunch = 12; //Can be overwritten below
-      pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 44; //Reset control output
-      pinNumbers.pinVSS = 20;
-      pinNumbers.idle.idleUp = 48;
-      pinNumbers.sensors.CTPS = 47;
-      #endif
-      #if defined(CORE_TEENSY35)
-        pinNumbers.triggerPins.primary = 23;
-        pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.idle.stepperDir = 34;
-        pinNumbers.idle.stepperStep = 35;
-        pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
-        pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
-        pinNumbers.pinTachOut = 28; //Done
-      #endif
-      break;
-
-    case 10:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings for user turtanas PCB
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  4, 5, 6, 7, 
-                                                              // Placeholders only - NOT USED
-                                                              8, 9, 10, 11 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 28, 36, 40, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = 18; //The CAS pin
-      pinNumbers.triggerPins.secondary = 19; //The Cam Sensor pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A4; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A7; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
-      pinNumbers.pinFuelPump = 42; //Fuel pump output 2n2222
-      pinNumbers.pinFan = 47; //Pin for the fan output
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 26; //Reset control output
-    #endif
-      break;
-
-    case 14:
-    // Pin mappings for the Levin board
-    #if defined(STM32F407xx)
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB15, PA8, PB13, PB14, PE13, PB12, PE7, PE10, };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }      
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { PC13, PE6, PE5, PE4, PE3, PE2, PB9, PD12, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = PD3;        // The CAS pin
-      pinNumbers.triggerPins.secondary = PD4;       // The Cam Sensor pin
-      pinNumbers.sensors.TPS = PA2;            // TPS input pin
-      pinNumbers.sensors.MAP = PA3;            // MAP sensor pin
-      pinNumbers.sensors.EMAP = PC5;           // EMAP sensor pin (placeholder)
-      pinNumbers.sensors.IAT = PA0;            // IAT sensor pin
-      pinNumbers.sensors.CLT = PA1;            // CLS sensor pin
-      pinNumbers.sensors.O2 = PB0;             // O2 Sensor pin
-      pinNumbers.sensors.Bat = PA4;            // Battery reference voltage pin
-      pinNumbers.sensors.baro = PA5;           // Baro sensor pin
-      pinNumbers.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
-      pinNumbers.idle.idle1 = PD10;         // ICV pin1  (Goes to UNL2803)
-      pinNumbers.idle.idle2 = PD9;          // ICV pin3  (Goes to UNL2803)
-      pinNumbers.pinBoost = PD8;          // Boost control
-      pinNumbers.pinVVT_1 = PD11;         // VVT1 output (intake vanos)
-      pinNumbers.pinVVT_2 = PC6;          // VVT2 output (exhaust vanos)
-      pinNumbers.pinFuelPump = PE11;      // Fuel pump output  (Goes to UNL2803)
-      pinNumbers.idle.stepperDir = PB10;    // Stepper valve isn't used with these
-      pinNumbers.idle.stepperStep = PB11;   // Stepper valve isn't used with these
-      pinNumbers.idle.stepperEnable = PA15; // Stepper valve isn't used with these
-      pinNumbers.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
-      pinNumbers.pinLaunch = PB8;         // Launch control pin
-      pinNumbers.sensors.flex = PD7;           // Flex sensor
-      pinNumbers.pinResetControl = PB7;   // Reset control output
-      pinNumbers.pinVSS = PB6;            // VSS input pin
-      pinNumbers.wmi.empty = PA6;       //(placeholder)
-      pinNumbers.wmi.indicator = PC3;   //(placeholder)
-      pinNumbers.wmi.enabled = PE15;    //(placeholder)
-      pinNumbers.idle.idleUp = PC7;         //(placeholder)
-    #endif
-      break;
-
-    case 20:
-    #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
-      //Pin mappings as per the Plazomat In/Out shields Rev 0.1
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */ };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = 20; //The CAS pin
-      pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.pinFan = 47; //Pin for the fan output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinResetControl = 26; //Reset control output
-    #endif
-      break;
-
-    case 30:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings as per the dazv6 shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 50, 52, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }       
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-      pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.pinFuelPump = 45; //Fuel pump output
-      pinNumbers.idle.stepperDir = 20; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 21; //Step pin for DRV8825 driver
-      pinNumbers.pinBoost = 7;
-      pinNumbers.pinFan = 47; //Pin for the fan output
-    #endif
-      break;
-
-   case 31:
-      //Pin mappings for the BMW PnP PCBs by pazi88.
-      #if defined(CORE_AVR)
-      //This is the regular MEGA2560 pin mapping
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12, 50, 39, 42 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 48, 36, 34, 46, 53, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }       
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 20; //The Cam sensor 2 pin
-      pinNumbers.sensors.TPS = A2;//TPS input pin
-      pinNumbers.sensors.MAP = A3; //MAP sensor pin
-      pinNumbers.sensors.EMAP = A15; //EMAP sensor pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLT sensor pin
-      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-      pinNumbers.sensors.O2_2 = A12; //O2 Sensor pin
-      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.sensors.baro = A5; //Baro sensor pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
-      pinNumbers.idle.idle1 = 5; //ICV pin1
-      pinNumbers.idle.idle2 = 6; //ICV pin3
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 4; //VVT1 output (intake vanos)
-      pinNumbers.pinVVT_2 = 26; //VVT2 output (exhaust vanos)
-      pinNumbers.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
-      pinNumbers.idle.stepperDir = 16; //Stepper valve isn't used with these
-      pinNumbers.idle.stepperStep = 17; //Stepper valve isn't used with these
-      pinNumbers.idle.stepperEnable = 24; //Stepper valve isn't used with these
-      pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2003)
-      pinNumbers.pinLaunch = 51; //Launch control pin
-      pinNumbers.sensors.flex = 2; // Flex sensor
-      pinNumbers.pinResetControl = 43; //Reset control output
-      pinNumbers.pinVSS = 3; //VSS input pin
-      pinNumbers.wmi.empty = 31; //(placeholder)
-      pinNumbers.wmi.indicator = 33; //(placeholder)
-      pinNumbers.wmi.enabled = 35; //(placeholder)
-      pinNumbers.idle.idleUp = 37; //(placeholder)
-      pinNumbers.idle.idleUpOutput = 41; //(placeholder)
-      pinNumbers.sensors.CTPS = A6; //(placeholder)
-     #elif defined(STM32F407xx)
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  PB15, PB14, PB12, PB13, PA8, PE7, PE13, PE10, };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { PE2, PE3, PC13, PE6, PE4, PE5, PE0, PB9, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }      
-      pinNumbers.triggerPins.primary = PD3; //The CAS pin
-      pinNumbers.triggerPins.secondary = PD4; //The Cam Sensor pin
-
-      pinNumbers.sensors.TPS = PA2;//TPS input pin
-      pinNumbers.sensors.MAP = PA3; //MAP sensor pin
-      pinNumbers.sensors.EMAP = PC5; //EMAP sensor pin
-      pinNumbers.sensors.IAT = PA0; //IAT sensor pin
-      pinNumbers.sensors.CLT = PA1; //CLS sensor pin
-      pinNumbers.sensors.O2 = PB0; //O2 Sensor pin
-      pinNumbers.sensors.O2_2 = PC2; //O2 Sensor pin
-      pinNumbers.sensors.Bat = PA4; //Battery reference voltage pin
-      pinNumbers.sensors.baro = PA5; //Baro sensor pin
-      pinNumbers.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
-      pinNumbers.idle.idle1 = PD10; //ICV pin1
-      pinNumbers.idle.idle2 = PD9; //ICV pin3
-      pinNumbers.pinBoost = PD8; //Boost control
-      pinNumbers.pinVVT_1 = PD11; //VVT1 output (intake vanos)
-      pinNumbers.pinVVT_2 = PC7; //VVT2 output (exhaust vanos)
-      pinNumbers.pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
-      pinNumbers.idle.stepperDir = PB10; //Stepper valve isn't used with these
-      pinNumbers.idle.stepperStep = PB11; //Stepper valve isn't used with these
-      pinNumbers.idle.stepperEnable = PA15; //Stepper valve isn't used with these
-      pinNumbers.pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
-      pinNumbers.pinLaunch = PB8; //Launch control pin
-      pinNumbers.sensors.flex = PD7; // Flex sensor
-      pinNumbers.pinResetControl = PB7; //Reset control output
-      pinNumbers.pinVSS = PB6; //VSS input pin
-      pinNumbers.wmi.empty = PD15; //(placeholder)
-      pinNumbers.wmi.indicator = PD13; //(placeholder)
-      pinNumbers.wmi.enabled = PE15; //(placeholder)
-      pinNumbers.idle.idleUp = PE14; //(placeholder)
-      pinNumbers.idle.idleUpOutput = PE12; //(placeholder)
-      pinNumbers.sensors.CTPS = PA6; //(placeholder)
-     #endif
-      break;
-
-    case 40:
-     #ifndef SMALL_FLASH_MODE
-      //Pin mappings as per the NO2C shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 11, 12, 13 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 23, 22, 2 /*Pin for coil 3 - ONLY WITH DB2*/, 3 /*Pin for coil 4 - ONLY WITH DB2*/, 46 /* Pin for coil 5 PLACEHOLDER value for now */, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }    
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 21; //The Cam sensor 2 pin
-      pinNumbers.sensors.TPS = A3; //TPS input pin
-      pinNumbers.sensors.MAP = A0; //MAP sensor pin
-      pinNumbers.sensors.IAT = A5; //IAT sensor pin
-      pinNumbers.sensors.CLT = A4; //CLT sensor pin
-      pinNumbers.sensors.O2 = A2; //O2 sensor pin
-      pinNumbers.sensors.Bat = A1; //Battery reference voltage pin
-      pinNumbers.sensors.baro = A6; //Baro sensor pin - ONLY WITH DB
-      pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.idle.idle2 = 47; //2 wire idle control - NOT USED
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 6; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.idle.stepperDir = 25; //Direction pin for DRV8825 driver
-      pinNumbers.idle.stepperStep = 24; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 27; //Enable pin for DRV8825 driver
-      pinNumbers.pinLaunch = 10; //Can be overwritten below
-      pinNumbers.sensors.flex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
-      pinNumbers.pinFan = 30; //Pin for the fan output - ONLY WITH DB
-      pinNumbers.pinResetControl = 26; //Reset control output
-      #endif
-      break;
-
-    case 41:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings as per the UA4C shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 7, 6, 5, 45 /* Output pin injector 5 is on PLACEHOLDER value for now */};
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 35, 36, 33, 34, 44 /* Pin for coil 5 PLACEHOLDER value for now */, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }       
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.sensors.flex = 20; // Flex sensor
-      pinNumbers.sensors.TPS = A3; //TPS input pin
-      pinNumbers.sensors.MAP = A0; //MAP sensor pin
-      pinNumbers.sensors.baro = A7; //Baro sensor pin
-      pinNumbers.sensors.IAT = A5; //IAT sensor pin
-      pinNumbers.sensors.CLT = A4; //CLS sensor pin
-      pinNumbers.sensors.O2 = A1; //O2 Sensor pin
-      pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
-      pinNumbers.sensors.Bat = A2; //Battery reference voltage pin
-      pinNumbers.pinLaunch = 37; //Can be overwritten below
-      pinNumbers.pinTachOut = 22; //Tacho output pin
-      pinNumbers.idle.idle1 = 9; //Single wire idle control
-      pinNumbers.idle.idle2 = 10; //2 wire idle control
-      pinNumbers.pinFuelPump = 23; //Fuel pump output
-      pinNumbers.pinVVT_1 = 11; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 12; //Boost control
-      pinNumbers.pinFan = 24; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-      pinNumbers.pinVSS = 2;
-    #endif
-      break;
-
-    case 42:
-      //Pin mappings for all BlitzboxBL49sp variants
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  6, 7, 8, 9 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 25, 23, 22, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      }       
-      pinNumbers.triggerPins.primary = 19; //The CRANK Sensor pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-
-      pinNumbers.sensors.flex = 20; // Flex sensor PLACEHOLDER value for now
-      pinNumbers.sensors.TPS = A0; //TPS input pin
-      pinNumbers.sensors.O2 = A2; //O2 Sensor pin
-      pinNumbers.sensors.IAT = A3; //IAT sensor pin
-      pinNumbers.sensors.CLT = A4; //CLT sensor pin
-      pinNumbers.sensors.MAP = A7; //internal MAP sensor
-      pinNumbers.sensors.Bat = A6; //Battery reference voltage pin
-      pinNumbers.sensors.baro = A5; //external MAP/Baro sensor pin
-      pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
-      pinNumbers.pinLaunch = 2; //Can be overwritten below
-      pinNumbers.pinTachOut = 10; //Tacho output pin
-      pinNumbers.idle.idle1 = 11; //Single wire idle control
-      pinNumbers.idle.idle2 = 14; //2 wire idle control PLACEHOLDER value for now
-      pinNumbers.pinFuelPump = 3; //Fuel pump output
-      pinNumbers.pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
-      pinNumbers.pinBoost = 5; //Boost control
-      pinNumbers.pinFan = 12; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-    break;
-    
-    case 45:
-    #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-      //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
-      #if defined(CORE_AVR)
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  10, 11, 12, 9, 33, 34};
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 29, 28, 27, 26 /* Pin for coil 5 PLACEHOLDER value for now */, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 21;// The Cam sensor 2 pin
-
-      pinNumbers.sensors.flex = 20; // Flex sensor
-      pinNumbers.sensors.TPS = A3; //TPS input pin
-      pinNumbers.sensors.MAP = A2; //MAP sensor pin
-      pinNumbers.sensors.baro = A15; //Baro sensor pin
-      pinNumbers.sensors.IAT = A11; //IAT sensor pin
-      pinNumbers.sensors.CLT = A4; //CLS sensor pin
-      pinNumbers.sensors.O2 = A12; //O2 Sensor pin
-      pinNumbers.sensors.O2_2 = A5; //O2 sensor pin (second sensor)
-      pinNumbers.sensors.Bat = A1; //Battery reference voltage pin
-      pinNumbers.pinLaunch = 24; //Can be overwritten below
-      pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.idle.idle1 = 42; //Single wire idle control
-      pinNumbers.idle.idle2 = 43; //2 wire idle control
-      pinNumbers.pinFuelPump = 41; //Fuel pump output
-      pinNumbers.pinVVT_1 = 44; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 45; //Boost control
-      pinNumbers.pinFan = 40; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-      #endif
-    #endif
-      break;
+    case 1: pinNumbers = getV02PinMapping(); break;
+    case 2: pinNumbers = getV03PinMapping(); break;
+    case 3: pinNumbers = getV04PinMapping(); break;
+    case 6: pinNumbers = getMiataNB2Mapping(); break;
+    case 8: pinNumbers = getMiataNA18PinMapping(); break;
+    case 9: pinNumbers = getMiataNA16PinMapping(); break;
+    case 10: pinNumbers = getTurtanasPinMapping(); break;
+    case 14: pinNumbers = getLevinPinMapping(); break;
+    case 20: pinNumbers = getPlazomatv10PinMapping(); break;
+    case 30: pinNumbers = getDazV6PinMapping(); break;
+    case 31: pinNumbers = getBMWPnPPinMapping(); break;
+    case 40: pinNumbers = getNO2CPinMapping(); break;
+    case 41: pinNumbers = getUA4CPinMapping(); break;
+    case 42: pinNumbers = getBlitzboxBL49spPinMapping(); break;
+    case 45: pinNumbers = getDIYEFICORE4v10PinMapping(); break;
 
     #if defined(CORE_TEENSY35)
-    case 50:
-      //Pin mappings as per the teensy rev A shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9, };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }      
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31 /* Pin for coil 3 - ONLY WITH DB2 */, 32 /* Pin for coil 4 - ONLY WITH DB2*/, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 23; //The CAS pin
-      pinNumbers.triggerPins.secondary = 36; //The Cam Sensor pin
-      pinNumbers.sensors.TPS = 16; //TPS input pin
-      pinNumbers.sensors.MAP = 17; //MAP sensor pin
-      pinNumbers.sensors.IAT = 14; //IAT sensor pin
-      pinNumbers.sensors.CLT = 15; //CLT sensor pin
-      pinNumbers.sensors.O2 = A22; //O2 sensor pin
-      pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
-      pinNumbers.sensors.Bat = 18; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 20; //Tacho output pin
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.pinBoost = 11; //Boost control
-      pinNumbers.pinFuelPump = 38; //Fuel pump output
-      pinNumbers.idle.stepperDir = 34; //Direction pin for DRV8825 driver
-      pinNumbers.idle.stepperStep = 35; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 33; //Enable pin for DRV8825 driver
-      pinNumbers.pinLaunch = 26; //Can be overwritten below
-      pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
-      break;
-
-    case 51:
-      //Pin mappings as per the teensy revB board shield
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31 /* Pin for coil 3 - ONLY WITH DB2 */, 32 /* Pin for coil 4 - ONLY WITH DB2*/, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 23; //The CAS pin
-      pinNumbers.triggerPins.secondary = 36; //The Cam Sensor pin
-      pinNumbers.sensors.TPS = 16; //TPS input pin
-      pinNumbers.sensors.MAP = 17; //MAP sensor pin
-      pinNumbers.sensors.IAT = 14; //IAT sensor pin
-      pinNumbers.sensors.CLT = 15; //CLT sensor pin
-      pinNumbers.sensors.O2 = A22; //O2 sensor pin
-      pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
-      pinNumbers.sensors.Bat = 18; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 20; //Tacho output pin
-      pinNumbers.idle.idle1 = 5; //Single wire idle control
-      pinNumbers.pinBoost = 11; //Boost control
-      pinNumbers.pinFuelPump = 38; //Fuel pump output
-      pinNumbers.idle.stepperDir = 34; //Direction pin for DRV8825 driver
-      pinNumbers.idle.stepperStep = 35; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 33; //Enable pin for DRV8825 driver
-      pinNumbers.pinLaunch = 26; //Can be overwritten below
-      pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
-      break;
+    case 50: pinNumbers = getDvjTeensyRevAPinMapping(); break;
+    case 51: pinNumbers = getDvjTeensyRevBPinMapping(); break;
+    case 53: pinNumbers = getJuiceBoxPinMapping(); break;
     #endif
-
-    #if defined(CORE_TEENSY35)
-    case 53:
-      //Pin mappings for the Juice Box (ignition only board)
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 56, 6, 50 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31, 32, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 37; //The CAS pin
-      pinNumbers.triggerPins.secondary = 38; //The Cam Sensor pin - NOT USED
-      pinNumbers.sensors.TPS = A2; //TPS input pin
-      pinNumbers.sensors.MAP = A7; //MAP sensor pin
-      pinNumbers.sensors.IAT = A1; //IAT sensor pin
-      pinNumbers.sensors.CLT = A5; //CLT sensor pin
-      pinNumbers.sensors.O2 = A0; //O2 sensor pin
-      pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
-      pinNumbers.sensors.Bat = A6; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 28; //Tacho output pin
-      pinNumbers.idle.idle1 = 5; //Single wire idle control - NOT USED
-      pinNumbers.pinBoost = 11; //Boost control - NOT USED
-      pinNumbers.pinFuelPump = 24; //Fuel pump output
-      pinNumbers.idle.stepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
-      pinNumbers.idle.stepperStep = 4; //Step pin for DRV8825 driver - NOT USED
-      pinNumbers.idle.stepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
-      pinNumbers.pinLaunch = 26; //Can be overwritten below
-      pinNumbers.pinFan = 25; //Pin for the fan output
-      break;
-    #endif
-
-    case 55:
-      #if defined(CORE_TEENSY)
-      //Pin mappings for the DropBear
-      injControlMode = InjIoControlMode::MC33810;
-      ignControlMode = IgnIoControlMode::MC33810;
-
-      //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 13, 11, 12, 10, 9, 9 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 41, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 19; //The CAS pin
-      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.triggerPins.tertiary = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
-      pinNumbers.sensors.flex = A16; // Flex sensor
-      pinNumbers.sensors.MAP = A1; //MAP sensor pin
-      pinNumbers.sensors.baro = A0; //Baro sensor pin
-      pinNumbers.sensors.Bat = A14; //Battery reference voltage pin
-      pinNumbers.pinLaunch = A15; //Can be overwritten below
-      pinNumbers.pinTachOut = 5; //Tacho output pin
-      pinNumbers.idle.idle1 = 27; //Single wire idle control
-      pinNumbers.idle.idle2 = 29; //2 wire idle control. Shared with Spare 1 output
-      pinNumbers.pinFuelPump = 8; //Fuel pump output
-      pinNumbers.pinVVT_1 = 28; //Default VVT output
-      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 24; //Boost control
-      pinNumbers.pinFan = 25; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-      pinNumbers.pinVSS = 22;
-
-      pinNumbers.wmi.empty = 23; //Spare digital input
-      pinNumbers.wmi.indicator = 26; //Spare output
-      pinNumbers.wmi.enabled = 29; //Spare output
-
-      //CS pin number is now set in a compile flag. 
-      // #ifdef USE_SPI_EEPROM
-      //   pinSPIFlash_CS = 6;
-      // #endif
-
-      #if defined(CORE_TEENSY35)
-        pinNumbers.sensors.TPS = A22; //TPS input pin
-        pinNumbers.sensors.IAT = A19; //IAT sensor pin
-        pinNumbers.sensors.CLT = A20; //CLS sensor pin
-        pinNumbers.sensors.O2 = A21; //O2 Sensor pin
-        pinNumbers.sensors.O2_2 = A18; //Spare 2
-
-        pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
-      #endif
-
-      #if defined(CORE_TEENSY41)
-        //New pins for the actual T4.1 version of the Dropbear
-        pinNumbers.sensors.baro = A4; 
-        pinNumbers.sensors.MAP = A5;
-        pinNumbers.sensors.TPS = A3; //TPS input pin
-        pinNumbers.sensors.IAT = A0; //IAT sensor pin
-        pinNumbers.sensors.CLT = A1; //CLS sensor pin
-        pinNumbers.sensors.O2 = A2; //O2 Sensor pin
-        pinNumbers.sensors.Bat = A15; //Battery reference voltage pin. Needs Alpha4+
-        pinNumbers.pinLaunch = 36;
-        pinNumbers.sensors.flex = 37; // Flex sensor
-
-        pinNumbers.triggerPins.primary = 20; //The CAS pin
-        pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-        pinNumbers.triggerPins.tertiary = 34; //Uses one of the protected spare digital inputs.
-
-        pinNumbers.pinFuelPump = 5; //Fuel pump output
-        pinNumbers.pinTachOut = 0; //Tacho output pin
-
-        pinNumbers.pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
-        pinNumbers.wmi.empty = 35; //Spare digital input
-        pinNumbers.pinVSS = 34;
-
-        //CS pin number is now set in a compile flag. 
-        // #ifdef USE_SPI_EEPROM
-        //   pinSPIFlash_CS = 33;
-        // #endif
-
-      #endif
-
-        pinNumbers.pinMC33810_1_CS = 10;
-        pinNumbers.pinMC33810_2_CS = 9;
-
-      //Pin alignment to the MC33810 outputs
-      pinNumbers.mc33810InjBits[0] = 3;
-      pinNumbers.mc33810InjBits[1] = 1;
-      pinNumbers.mc33810InjBits[2] = 0;
-      pinNumbers.mc33810InjBits[3] = 2;
-      pinNumbers.mc33810IgnBits[0] = 4;
-      pinNumbers.mc33810IgnBits[1] = 5;
-      pinNumbers.mc33810IgnBits[2] = 6;
-      pinNumbers.mc33810IgnBits[3] = 7;
-
-      pinNumbers.mc33810InjBits[4] = 3;
-      pinNumbers.mc33810InjBits[5] = 1;
-      pinNumbers.mc33810InjBits[6] = 0;
-      pinNumbers.mc33810InjBits[7] = 2;
-      pinNumbers.mc33810IgnBits[4] = 4;
-      pinNumbers.mc33810IgnBits[5] = 5;
-      pinNumbers.mc33810IgnBits[6] = 6;
-      pinNumbers.mc33810IgnBits[7] = 7;
-
-
-
-      #endif
-      break;
-
-    case 56:
-      #if defined(CORE_TEENSY)
-      //Pin mappings for the Bear Cub (Teensy 4.1)
-      {
-        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 6, 7, 9, 8 };
-        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-      }
-      {
-        static constexpr uint8_t boardCoilPins[] PROGMEM = { 2, 3, 4, 5, };
-        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-      } 
-      pinNumbers.triggerPins.primary = 20; //The CAS pin
-      pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-      pinNumbers.sensors.flex = 37; // Flex sensor
-      pinNumbers.sensors.MAP = A5; //MAP sensor pin
-      pinNumbers.sensors.baro = A4; //Baro sensor pin
-      pinNumbers.sensors.Bat = A15; //Battery reference voltage pin
-      pinNumbers.sensors.TPS = A3; //TPS input pin
-      pinNumbers.sensors.IAT = A0; //IAT sensor pin
-      pinNumbers.sensors.CLT = A1; //CLS sensor pin
-      pinNumbers.sensors.O2 = A2; //O2 Sensor pin
-      pinNumbers.pinLaunch = 36;
-
-      pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.idle.idle1 = 27; //Single wire idle control
-      pinNumbers.idle.idle2 = 26; //2 wire idle control. Shared with Spare 1 output
-      pinNumbers.pinFuelPump = 10; //Fuel pump output
-      pinNumbers.pinVVT_1 = 28; //Default VVT output
-      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 24; //Boost control
-      pinNumbers.pinFan = 25; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-
-      #endif
-      break;
-    
- 
-    case 60:
-        #if defined(STM32F407xx)
-        //Pin definitions for experimental board Tjeerd 
-        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-        //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
-        {
-          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE9, PE11, PE14, PE13, };
-          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }
-        {
-          static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PD10, PD9, PB7, };
-          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-        }
-        //******************************************
-        //******** PORTA CONNECTIONS *************** 
-        //******************************************
-        // = PA0; //Wakeup ADC123
-        // = PA1; //ADC123
-        // = PA2; //ADC123
-        // = PA3; //ADC123
-        // = PA4; //ADC12
-        // = PA5; //ADC12
-        // = PA6; //ADC12 LED_BUILTIN_1
-        // = PA7; //ADC12 LED_BUILTIN_2
-        // = PA9;  //TXD1=Bluetooth module
-        // = PA10; //RXD1=Bluetooth module
-        // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
-        // = PA12; //(DO NOT USE FOR SPEEDUINO) USB 
-        // = PA13;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        // = PA14;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        // = PA15;  //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-
-        //******************************************
-        //******** PORTB CONNECTIONS *************** 
-        //******************************************
-        // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.sensors.baro = PB1; //ADC12
-        // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        // = PB6;  //NRF_CE
-        // = PB8;  //NRF_IRQ
-        // = PB9;  //
-        // = PB10; //TXD3
-        // = PB11; //RXD3
-        // = PB12; //
-        // = PB13;  //SPI2_SCK
-        // = PB14;  //SPI2_MISO
-        // = PB15;  //SPI2_MOSI
-
-        //******************************************
-        //******** PORTC CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.sensors.IAT = PC0; //ADC123 
-        pinNumbers.sensors.TPS = PC1; //ADC123
-        pinNumbers.sensors.MAP = PC2; //ADC123 
-        pinNumbers.sensors.CLT = PC3; //ADC123
-        pinNumbers.sensors.O2 = PC4; //ADC12
-        pinNumbers.sensors.Bat = PC5;  //ADC12
-        pinNumbers.pinBoost = PC6; //
-        pinNumbers.idle.idle1 = PC7; //
-        // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        // = PC9;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        // = PC10;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        // = PC11;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        // = PC12;  //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinNumbers.pinTachOut = PC13; //
-        // = PC14;  //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        // = PC15;  //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
-
-        //******************************************
-        //******** PORTD CONNECTIONS *************** 
-        //******************************************
-        // = PD0;  //CANRX
-        // = PD1;  //CANTX
-        // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinNumbers.idle.idle2 = PD3; //
-        // = PD4;  //
-        pinNumbers.sensors.flex = PD4;
-        // = PD5; //TXD2
-        // = PD6;  //RXD2
-        // = PD7;  //
-        // = PD8;  //
-        // = PD11;  //
-
-        //******************************************
-        //******** PORTE CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.triggerPins.primary = PE0; //
-        pinNumbers.triggerPins.secondary = PE1; //
-        pinNumbers.idle.stepperEnable = PE2; //
-        pinNumbers.pinFuelPump = PE3; //ONBOARD KEY1
-        // = PE4;  //ONBOARD KEY2
-        pinNumbers.idle.stepperStep = PE5; //
-        pinNumbers.pinFan = PE6; //
-        pinNumbers.idle.stepperDir = PE7; //
-        // = PE8;  //
-        // = PE15;  //
-     #elif (defined(STM32F411xE) || defined(STM32F401xC))
-        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-        //PB2 can't be used as input because is BOOT pin
-        {
-          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
-          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }
-        {
-          static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15, };
-          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-        }
-        pinNumbers.sensors.TPS = A2;//TPS input pin
-        pinNumbers.sensors.MAP = A3; //MAP sensor pin
-        pinNumbers.sensors.IAT = A0; //IAT sensor pin
-        pinNumbers.sensors.CLT = A1; //CLS sensor pin
-        pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-        pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-        pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
-        pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
-        pinNumbers.idle.idle1 = PB2; //Single wire idle control
-        pinNumbers.idle.idle2 = PB10; //2 wire idle control
-        pinNumbers.pinBoost = PA6; //Boost control
-        pinNumbers.idle.stepperDir = PB10; //Direction pin  for DRV8825 driver
-        pinNumbers.idle.stepperStep = PB2; //Step pin for DRV8825 driver
-        pinNumbers.pinFuelPump = PA8; //Fuel pump output
-        pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
-
-        //external interrupt enabled pins
-        pinNumbers.sensors.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
-        pinNumbers.triggerPins.secondary = PC15; //The Cam Sensor pin
-
-     #elif defined(CORE_STM32)
-        //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
-        //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
-        //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
-        //PB2 can't be used as input because is BOOT pin
-        {
-          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
-          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }
-        {
-          static constexpr uint8_t boardCoilPins[] PROGMEM = { PB3, PA15, PA14, PA9, PA8, };
-          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-        }
-        pinNumbers.sensors.TPS = A0; //TPS input pin
-        pinNumbers.sensors.MAP = A1; //MAP sensor pin
-        pinNumbers.sensors.IAT = A2; //IAT sensor pin
-        pinNumbers.sensors.CLT = A3; //CLS sensor pin
-        pinNumbers.sensors.O2 = A4; //O2 Sensor pin
-        pinNumbers.sensors.Bat = A5; //Battery reference voltage pin
-        pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
-        pinNumbers.idle.idle1 = PB2; //Single wire idle control
-        pinNumbers.idle.idle2 = PA2; //2 wire idle control
-        pinNumbers.pinBoost = PA1; //Boost control
-        pinNumbers.pinVVT_1 = PA0; //Default VVT output
-        pinNumbers.pinVVT_2 = PA2; //Default VVT2 output
-        pinNumbers.idle.stepperDir = PC15; //Direction pin  for DRV8825 driver
-        pinNumbers.idle.stepperStep = PC14; //Step pin for DRV8825 driver
-        pinNumbers.idle.stepperEnable = PC13; //Enable pin for DRV8825
-        pinNumbers.pinFan = PB1; //Pin for the fan output
-        pinNumbers.pinFuelPump = PB11; //Fuel pump output
-        pinNumbers.pinTachOut = PB10; //Tacho output pin
-        //external interrupt enabled pins
-        pinNumbers.sensors.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.triggerPins.primary = PA10; //The CAS pin
-        pinNumbers.triggerPins.secondary = PA13; //The Cam Sensor pin
-      
-    #endif
-      break;
-    default:
-      #if defined(STM32F407xx)
-      //Pin definitions for experimental board Tjeerd 
-        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-        {
-          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12 };
-          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }
-        {
-          static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PB10, PD9, };
-          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-        }         
-        //******************************************
-        //******** PORTA CONNECTIONS *************** 
-        //******************************************
-        /* = PA0 */ //Wakeup ADC123
-        // = PA1;
-        // = PA2;
-        // = PA3;
-        // = PA4;
-        /* = PA5; */ //ADC12
-        pinNumbers.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
-        /* = PA9 */ //TXD1
-        /* = PA10 */ //RXD1
-        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
-        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-
-        //******************************************
-        //******** PORTB CONNECTIONS *************** 
-        //******************************************
-        /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.sensors.baro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        /* = PB6; */ //NRF_CE
-        /* = PB7; */ //NRF_CS
-        /* = PB8; */ //NRF_IRQ
-        /* = PB9; */ //
-        pinNumbers.idle.idle1 = PB11; //RXD3
-        pinNumbers.idle.idle2 = PB12; //
-        /* pinNumbers.pinBoost = PB12; */ //
-        /* = PB13; */ //SPI2_SCK
-        /* = PB14; */ //SPI2_MISO
-        /* = PB15; */ //SPI2_MOSI
-
-        //******************************************
-        //******** PORTC CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.sensors.MAP = PC0; //ADC123 
-        pinNumbers.sensors.TPS = PC1; //ADC123
-        pinNumbers.sensors.IAT = PC2; //ADC123
-        pinNumbers.sensors.CLT = PC3; //ADC123
-        pinNumbers.sensors.O2 = PC4; //ADC12
-        pinNumbers.sensors.Bat = PC5; //ADC12
-        /*pinNumbers.pinVVT_1 = PC6; */ //
-        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinNumbers.pinTachOut = PC13; //
-        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
-
-        //******************************************
-        //******** PORTD CONNECTIONS *************** 
-        //******************************************
-        /* = PD0; */ //CANRX
-        /* = PD1; */ //CANTX
-        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
-        pinNumbers.sensors.flex = PD4;
-        /* = PD5;*/ //TXD2
-        /* = PD6; */ //RXD2
-        /* = PD7; */ //
-        /* = PD8; */ //
-        /* = PD10; */ //
-        /* = PD11; */ //
-
-        //******************************************
-        //******** PORTE CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.triggerPins.primary = PE0; //
-        pinNumbers.triggerPins.secondary = PE1; //
-        pinNumbers.idle.stepperEnable = PE2; //
-        /* = PE3; */ //ONBOARD KEY1
-        /* = PE4; */ //ONBOARD KEY2
-        pinNumbers.idle.stepperStep = PE5; //
-        pinNumbers.pinFan = PE6; //
-        pinNumbers.idle.stepperDir = PE7; //
-        /* = PE8; */ //
-        /* = PE9; */ //
-        /* = PE10; */ //
-        /* = PE13; */ //
-        /* = PE14; */ //
-        /* = PE15; */ //
-      #else
-        #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-        //Pin mappings as per the v0.2 shield
-        {
-          static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12, };
-          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }   
-        {
-          static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
-          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
-        }
-        pinNumbers.triggerPins.primary = 20; //The CAS pin
-        pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-        pinNumbers.sensors.TPS = A2; //TPS input pin
-        pinNumbers.sensors.MAP = A3; //MAP sensor pin
-        pinNumbers.sensors.IAT = A0; //IAT sensor pin
-        pinNumbers.sensors.CLT = A1; //CLS sensor pin
-        #ifdef A8 //Bit hacky, but needed for the atmega2561
-        pinNumbers.sensors.O2 = A8; //O2 Sensor pin
-        #endif
-        pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-        pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
-        pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
-        pinNumbers.pinFan = 47; //Pin for the fan output
-        pinNumbers.pinFuelPump = 4; //Fuel pump output
-        pinNumbers.pinTachOut = 49; //Tacho output pin
-        pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinBoost = 5;
-        pinNumbers.idle.idle1 = 6;
-        pinNumbers.pinResetControl = 43; //Reset control output
-        #endif
-      #endif  
-      break;
+    #if defined(CORE_TEENSY)
+    case 55: pinNumbers = getDropBearPinMapping(); break;
+    #endif   
+    #if defined(CORE_TEENSY41)
+    case 56: pinNumbers = getBearCubPinMapping(); break;
+    #endif   
+    case 60: pinNumbers = getSpectreV05PinMapping(); break;
+    default: pinNumbers = getDefaultPinMapping(); break;
   }
 
   //Setup any devices that are using selectable pins

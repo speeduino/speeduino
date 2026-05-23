@@ -229,7 +229,7 @@ void test_initialisation_outputs_VVT(void)
 #if defined(STM32_CORE_VERSION_MAJOR)
   TEST_IGNORE_MESSAGE("Doesn't work on STM32");
 #else
-  prepareForInitialiseAll(9);
+  prepareForInitialiseAll(6);
   initialiseAll(); //Run the main initialise function
 
   char msg[32];
