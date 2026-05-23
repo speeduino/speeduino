@@ -6403,9 +6403,9 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
 }
 /** @} */
 
-void initDecoderPins(uint8_t primaryPin, uint8_t secondaryPin, uint8_t tertiaryPin)
+void initDecoderPins(const decoder_pins_t &pins)
 {
-  triggerPri_pin.setPin(primaryPin);
-  triggerSec_pin.setPin(secondaryPin);
-  triggerThird_pin.setPin(tertiaryPin);
+  triggerPri_pin.setPin(pins.primary);
+  triggerSec_pin.setPin(pins.secondary);
+  triggerThird_pin.setPin(pins.tertiary);
 }

@@ -909,9 +909,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }
-      pinNumbers.pinTrigger = 20; //The CAS pin
-      pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 20; //The CAS pin
+      pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
       pinNumbers.pinTPS = A2; //TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -945,9 +945,9 @@ void setPinMapping(byte boardID)
       #endif
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -973,7 +973,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
+        pinNumbers.triggerPins.primary = 23;
         pinNumbers.pinStepperDir = 33;
         pinNumbers.pinStepperStep = 34;
         pinNumbers.pinTachOut = 28;
@@ -1011,9 +1011,9 @@ void setPinMapping(byte boardID)
       #endif
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1042,8 +1042,8 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEnabled = 42;
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
+        pinNumbers.triggerPins.primary = 23;
+        pinNumbers.triggerPins.secondary = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
         pinNumbers.pinTachOut = 28;
@@ -1051,7 +1051,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinO2 = A22;
 
         //Make sure the CAN pins aren't overwritten
-        pinNumbers.pinTrigger3 = 54;
+        pinNumbers.triggerPins.tertiary = 54;
         pinNumbers.pinVVT_1 = 55;
 
       #elif defined(CORE_TEENSY41)
@@ -1068,9 +1068,9 @@ void setPinMapping(byte boardID)
         pinNumbers.pinSpareTemp2 = A16; //WRONG! Needs updating!!
         pinNumbers.pinSpareTemp2 = A17; //WRONG! Needs updating!!
 
-        pinNumbers.pinTrigger = 20; //The CAS pin
-        pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-        pinNumbers.pinTrigger3 = 24;
+        pinNumbers.triggerPins.primary = 20; //The CAS pin
+        pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
+        pinNumbers.triggerPins.tertiary = 24;
 
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
@@ -1161,8 +1161,8 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinTrigger = PE0; //
-        pinNumbers.pinTrigger2 = PE1; //
+        pinNumbers.triggerPins.primary = PE0; //
+        pinNumbers.triggerPins.secondary = PE1; //
         pinNumbers.pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
@@ -1198,8 +1198,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
         //external interrupt enabled pins
         pinNumbers.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinTrigger = PC13; //The CAS pin also led pin so bad idea
-        pinNumbers.pinTrigger2 = PC15; //The Cam Sensor pin
+        pinNumbers.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
+        pinNumbers.triggerPins.secondary = PC15; //The Cam Sensor pin
       #endif
       break;
 
@@ -1218,9 +1218,9 @@ void setPinMapping(byte boardID)
       #endif
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 2; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 2; //The Cam sensor 2 pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A5; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1246,8 +1246,8 @@ void setPinMapping(byte boardID)
       #endif
       //This is NOT correct. It has not yet been tested with this board
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
+        pinNumbers.triggerPins.primary = 23;
+        pinNumbers.triggerPins.secondary = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
@@ -1271,8 +1271,8 @@ void setPinMapping(byte boardID)
       #endif
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A5; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1295,8 +1295,8 @@ void setPinMapping(byte boardID)
 
       //This is NOT correct. It has not yet been tested with this board
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
+        pinNumbers.triggerPins.primary = 23;
+        pinNumbers.triggerPins.secondary = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
@@ -1321,8 +1321,8 @@ void setPinMapping(byte boardID)
       #endif
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A5; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1348,8 +1348,8 @@ void setPinMapping(byte boardID)
       pinNumbers.pinCTPS = 47;
       #endif
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
+        pinNumbers.triggerPins.primary = 23;
+        pinNumbers.triggerPins.secondary = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
@@ -1371,8 +1371,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 28, 36, 40, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinTrigger = 18; //The CAS pin
-      pinNumbers.pinTrigger2 = 19; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 18; //The CAS pin
+      pinNumbers.triggerPins.secondary = 19; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
       pinNumbers.pinMAP2 = A8; //MAP2 sensor pin
@@ -1403,8 +1403,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { PC13, PE6, PE5, PE4, PE3, PE2, PB9, PD12, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinTrigger = PD3;        // The CAS pin
-      pinNumbers.pinTrigger2 = PD4;       // The Cam Sensor pin
+      pinNumbers.triggerPins.primary = PD3;        // The CAS pin
+      pinNumbers.triggerPins.secondary = PD4;       // The Cam Sensor pin
       pinNumbers.pinTPS = PA2;            // TPS input pin
       pinNumbers.pinMAP = PA3;            // MAP sensor pin
       pinNumbers.pinEMAP = PC5;           // EMAP sensor pin (placeholder)
@@ -1453,8 +1453,8 @@ void setPinMapping(byte boardID)
       pinNumbers.pinSpareOut4 = 7; //Spare LSD Output 4(PWM)
       pinNumbers.pinSpareOut5 = 50; //Spare LSD Output 5(digital)
       pinNumbers.pinSpareOut6 = 52; //Spare LSD Output 6(digital)
-      pinNumbers.pinTrigger = 20; //The CAS pin
-      pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 20; //The CAS pin
+      pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
       pinNumbers.pinSpareTemp2 = A15; //spare Analog input 2
       pinNumbers.pinSpareTemp1 = A14; //spare Analog input 1
       pinNumbers.pinO2 = A8; //O2 Sensor pin
@@ -1481,9 +1481,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 50, 52, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }       
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
       pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1521,9 +1521,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 48, 36, 34, 46, 53, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }       
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 20; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 20; //The Cam sensor 2 pin
       pinNumbers.pinTPS = A2;//TPS input pin
       pinNumbers.pinMAP = A3; //MAP sensor pin
       pinNumbers.pinEMAP = A15; //EMAP sensor pin
@@ -1564,8 +1564,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { PE2, PE3, PC13, PE6, PE4, PE5, PE0, PB9, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinTrigger = PD3; //The CAS pin
-      pinNumbers.pinTrigger2 = PD4; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = PD3; //The CAS pin
+      pinNumbers.triggerPins.secondary = PD4; //The Cam Sensor pin
       pinNumbers.pinTPS = PA2;//TPS input pin
       pinNumbers.pinMAP = PA3; //MAP sensor pin
       pinNumbers.pinEMAP = PC5; //EMAP sensor pin
@@ -1611,9 +1611,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 23, 22, 2 /*Pin for coil 3 - ONLY WITH DB2*/, 3 /*Pin for coil 4 - ONLY WITH DB2*/, 46 /* Pin for coil 5 PLACEHOLDER value for now */, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }    
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 21; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 21; //The Cam sensor 2 pin
       pinNumbers.pinTPS = A3; //TPS input pin
       pinNumbers.pinMAP = A0; //MAP sensor pin
       pinNumbers.pinIAT = A5; //IAT sensor pin
@@ -1654,9 +1654,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 35, 36, 33, 34, 44 /* Pin for coil 5 PLACEHOLDER value for now */, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }       
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
       pinNumbers.pinFlex = 20; // Flex sensor
       pinNumbers.pinTPS = A3; //TPS input pin
       pinNumbers.pinMAP = A0; //MAP sensor pin
@@ -1699,8 +1699,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 25, 23, 22, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }       
-      pinNumbers.pinTrigger = 19; //The CRANK Sensor pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 19; //The CRANK Sensor pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
       pinNumbers.pinTPS = A0; //TPS input pin
       pinNumbers.pinSpareTemp1 = A1; //LMM sensor pin
@@ -1738,9 +1738,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 29, 28, 27, 26 /* Pin for coil 5 PLACEHOLDER value for now */, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 21;// The Cam sensor 2 pin
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 21;// The Cam sensor 2 pin
       pinNumbers.pinFlex = 20; // Flex sensor
       pinNumbers.pinTPS = A3; //TPS input pin
       pinNumbers.pinMAP = A2; //MAP sensor pin
@@ -1783,8 +1783,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31 /* Pin for coil 3 - ONLY WITH DB2 */, 32 /* Pin for coil 4 - ONLY WITH DB2*/, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 23; //The CAS pin
-      pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 23; //The CAS pin
+      pinNumbers.triggerPins.secondary = 36; //The Cam Sensor pin
       pinNumbers.pinTPS = 16; //TPS input pin
       pinNumbers.pinMAP = 17; //MAP sensor pin
       pinNumbers.pinIAT = 14; //IAT sensor pin
@@ -1816,8 +1816,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31 /* Pin for coil 3 - ONLY WITH DB2 */, 32 /* Pin for coil 4 - ONLY WITH DB2*/, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 23; //The CAS pin
-      pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 23; //The CAS pin
+      pinNumbers.triggerPins.secondary = 36; //The Cam Sensor pin
       pinNumbers.pinTPS = 16; //TPS input pin
       pinNumbers.pinMAP = 17; //MAP sensor pin
       pinNumbers.pinIAT = 14; //IAT sensor pin
@@ -1851,8 +1851,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31, 32, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 37; //The CAS pin
-      pinNumbers.pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
+      pinNumbers.triggerPins.primary = 37; //The CAS pin
+      pinNumbers.triggerPins.secondary = 38; //The Cam Sensor pin - NOT USED
       pinNumbers.pinTPS = A2; //TPS input pin
       pinNumbers.pinMAP = A7; //MAP sensor pin
       pinNumbers.pinIAT = A1; //IAT sensor pin
@@ -1891,9 +1891,9 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 41, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
+      pinNumbers.triggerPins.primary = 19; //The CAS pin
+      pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
+      pinNumbers.triggerPins.tertiary = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
       pinNumbers.pinFlex = A16; // Flex sensor
       pinNumbers.pinMAP = A1; //MAP sensor pin
       pinNumbers.pinBaro = A0; //Baro sensor pin
@@ -1950,9 +1950,9 @@ void setPinMapping(byte boardID)
         pinNumbers.pinSpareTemp1 = A16; 
         pinNumbers.pinSpareTemp2 = A17;
 
-        pinNumbers.pinTrigger = 20; //The CAS pin
-        pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-        pinNumbers.pinTrigger3 = 34; //Uses one of the protected spare digital inputs.
+        pinNumbers.triggerPins.primary = 20; //The CAS pin
+        pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
+        pinNumbers.triggerPins.tertiary = 34; //Uses one of the protected spare digital inputs.
 
         pinNumbers.pinFuelPump = 5; //Fuel pump output
         pinNumbers.pinTachOut = 0; //Tacho output pin
@@ -2006,8 +2006,8 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardCoilPins[] PROGMEM = { 2, 3, 4, 5, };
         pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       } 
-      pinNumbers.pinTrigger = 20; //The CAS pin
-      pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
+      pinNumbers.triggerPins.primary = 20; //The CAS pin
+      pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
       pinNumbers.pinFlex = 37; // Flex sensor
       pinNumbers.pinMAP = A5; //MAP sensor pin
       pinNumbers.pinBaro = A4; //Baro sensor pin
@@ -2129,8 +2129,8 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinTrigger = PE0; //
-        pinNumbers.pinTrigger2 = PE1; //
+        pinNumbers.triggerPins.primary = PE0; //
+        pinNumbers.triggerPins.secondary = PE1; //
         pinNumbers.pinStepperEnable = PE2; //
         pinNumbers.pinFuelPump = PE3; //ONBOARD KEY1
         // = PE4;  //ONBOARD KEY2
@@ -2168,8 +2168,8 @@ void setPinMapping(byte boardID)
 
         //external interrupt enabled pins
         pinNumbers.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinTrigger = PC13; //The CAS pin also led pin so bad idea
-        pinNumbers.pinTrigger2 = PC15; //The Cam Sensor pin
+        pinNumbers.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
+        pinNumbers.triggerPins.secondary = PC15; //The Cam Sensor pin
 
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
@@ -2205,8 +2205,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTachOut = PB10; //Tacho output pin
         //external interrupt enabled pins
         pinNumbers.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinTrigger = PA10; //The CAS pin
-        pinNumbers.pinTrigger2 = PA13; //The Cam Sensor pin
+        pinNumbers.triggerPins.primary = PA10; //The CAS pin
+        pinNumbers.triggerPins.secondary = PA13; //The Cam Sensor pin
       
     #endif
       break;
@@ -2300,8 +2300,8 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinTrigger = PE0; //
-        pinNumbers.pinTrigger2 = PE1; //
+        pinNumbers.triggerPins.primary = PE0; //
+        pinNumbers.triggerPins.secondary = PE1; //
         pinNumbers.pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
@@ -2325,8 +2325,8 @@ void setPinMapping(byte boardID)
           static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
           pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
         }
-        pinNumbers.pinTrigger = 20; //The CAS pin
-        pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
+        pinNumbers.triggerPins.primary = 20; //The CAS pin
+        pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
         pinNumbers.pinTPS = A2; //TPS input pin
         pinNumbers.pinMAP = A3; //MAP sensor pin
         pinNumbers.pinIAT = A0; //IAT sensor pin

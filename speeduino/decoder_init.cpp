@@ -122,13 +122,10 @@ static decoder_init_func_t getDecoderInitFunc(uint8_t decoderIndex)
 /** Initialise the chosen trigger decoder. */
 decoder_t buildDecoder(uint8_t decoderIndex)
 {
-  decoder_t decoder = getDecoderInitFunc(decoderIndex)();
-
-  decoder.primary.attach(pinNumbers.pinTrigger);
-  decoder.secondary.attach(pinNumbers.pinTrigger2);
-  decoder.tertiary.attach(pinNumbers.pinTrigger3);
+  // TODO: attach interrupts & init pins within the decoder init func
+  decoder_t decoder = getDecoderInitFunc(decoderIndex)().attachInterrupts(pinNumbers.triggerPins);
   
-  initDecoderPins(pinNumbers.pinTrigger, pinNumbers.pinTrigger2, pinNumbers.pinTrigger3);
+  initDecoderPins(pinNumbers.triggerPins);
 
   // Turn off per tooth ignition if the decoder doesn't support it
   configPage2.perToothIgn = configPage2.perToothIgn && decoder.getFeatures().supportsPerToothIgnition;

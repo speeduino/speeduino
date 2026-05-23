@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <Arduino.h>
 
+// Forward declare
+struct decoder_pins_t;
+
 /** @brief This constant represents no trigger edge */
 static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
 // Just in case
@@ -87,6 +90,8 @@ struct decoder_features_t {
 */
 struct decoder_t
 {
+  decoder_t& attachInterrupts(const decoder_pins_t &pins);
+
   /** @brief The primary interrupt configuration - usually the crank trigger */
   interrupt_t primary;
   /** @brief The secondary interrupt configuration - usually the cam trigger */

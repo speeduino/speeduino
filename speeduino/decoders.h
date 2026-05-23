@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "decoder_t.h"
+#include "src/pins/pinNumbers_t.h"
 
 // TODO: move these to logger.cpp
 void loggerPrimaryISR(void);
@@ -45,12 +46,7 @@ decoder_t triggerSetup_FordTFI(void);
 // TODO: use same VVT scheme as other decoders
 int getCamAngle_Miata9905(void);
 
-/** @brief Set the input pins for the decoders. Pin numbers are pulled from the tune
- * 
- * @param primaryPin Primary pin - usually the crank trigger
- * @param secondaryPin Secondary pin - optional, usually the cam trigger
- * @param tertiaryPin Tertiary pin - optional, for decoders that use a 3rd input. E.g. VVT
- */
-void initDecoderPins(uint8_t primaryPin, uint8_t secondaryPin, uint8_t tertiaryPin);
+/** @brief Set the input pins for the decoders. Pin numbers are pulled from the tune */
+void initDecoderPins(const decoder_pins_t &pins);
 
 #endif

@@ -74,7 +74,7 @@ static void assertPrimaryTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t 
     decoder.reset();
     configureDecoderForStartStop(decoderNum);
     delayMicroseconds(triggerFilterTime + 1);
-    fireInterrupt(pinNumbers.pinTrigger, edge);
+    fireInterrupt(pinNumbers.triggerPins.primary, edge);
 #if defined(NATIVE_BOARD)
     TEST_MESSAGE("No interrupts on native board :-(");
 #else
@@ -111,7 +111,7 @@ static void test_start_stop_rising(void)
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
 #endif
 
-    pinNumbers.pinTrigger = 19; // Example pin number
+    pinNumbers.triggerPins.primary = 19; // Example pin number
     configPage4.TrigEdge = 0;
     currentStatus.initialisationComplete = false;
     auto decoder = buildDecoder(decoderToTest);
@@ -125,7 +125,7 @@ static void test_start_stop_falling(void)
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
 #endif
 
-    pinNumbers.pinTrigger = 19; // Example pin number
+    pinNumbers.triggerPins.primary = 19; // Example pin number
     configPage4.TrigEdge = 1;
     auto decoder = buildDecoder(decoderToTest);
 
@@ -156,26 +156,26 @@ static void test_start_stop_ngc(void)
 #if !defined(SIMULATOR) && defined(CORE_AVR)
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
 #endif
-  pinNumbers.pinTrigger = 19; // Example pin number
+  pinNumbers.triggerPins.primary = 19; // Example pin number
   auto decoder = buildDecoder(DECODER_NGC);
 
   // The NGC decoder triggers on change, but only sets 
   // BIT_DECODER_VALID_TRIGGER on falling interrupts.
-  fireInterrupt(pinNumbers.pinTrigger, RISING);
+  fireInterrupt(pinNumbers.triggerPins.primary, RISING);
   assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
   
   // Attach logger
   startToothLogger();
 
   // Test primary trigger function
-  fireInterrupt(pinNumbers.pinTrigger, RISING);
+  fireInterrupt(pinNumbers.triggerPins.primary, RISING);
   assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
 
   // Detach logger
   stopToothLogger();
 
   // Test primary trigger function
-  fireInterrupt(pinNumbers.pinTrigger, RISING);
+  fireInterrupt(pinNumbers.triggerPins.primary, RISING);
   assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
 }
 

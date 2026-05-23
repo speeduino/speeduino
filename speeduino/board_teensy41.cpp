@@ -396,11 +396,11 @@ void boardInitRTC(void)
 void boardInitPins(pinNumbers_t &pins)
 {
   //Primary trigger
-  setPinHysteresis(pins.pinTrigger);
+  setPinHysteresis(pins.triggerPins.primary);
   //Secondary trigger
-  setPinHysteresis(pins.pinTrigger2);
+  setPinHysteresis(pins.triggerPins.secondary);
   //Tertiary trigger
-  setPinHysteresis(pins.pinTrigger3);
+  setPinHysteresis(pins.triggerPins.tertiary);
 
   if(configPage2.flexEnabled > 0) { setPinHysteresis(pins.pinFlex); }
   if(configPage2.vssMode > 1) { setPinHysteresis(pins.pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)

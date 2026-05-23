@@ -52,14 +52,19 @@ struct coil_pins_t : pin_array_t<IGN_CHANNELS>
 {
 };
 
+struct decoder_pins_t
+{
+  uint8_t primary = 0; ///< Crank angle sensor pin
+  uint8_t secondary = 0; ///< Cam angle sensor pin
+  uint8_t tertiary = 0; ///< 2nd cam angle sensor pin (often VVT)
+};
+
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
   injector_pins_t injectorPins;
   coil_pins_t coilPins;
-  uint8_t pinTrigger = 0; //The CAS pin
-  uint8_t pinTrigger2 = 0; //The Cam Sensor pin known as secondary input
-  uint8_t pinTrigger3 = 0;	//the 2nd cam sensor pin known as tertiary input
+  decoder_pins_t triggerPins;
   uint8_t pinTPS = 0;//TPS input pin
   uint8_t pinMAP = 0; //MAP sensor pin
   uint8_t pinEMAP = 0; //EMAP sensor pin
