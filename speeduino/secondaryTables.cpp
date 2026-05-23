@@ -47,7 +47,7 @@ static inline bool fuelModeCondSwitchActive(const config10 &page10, const status
 
 static inline bool fuelModeInputSwitchActive(const config10 &page10) {
   return (page10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH)
-      && (digitalRead(pinFuel2Input) == page10.fuel2InputPolarity);
+      && (digitalRead(pinNumbers.pinFuel2Input) == page10.fuel2InputPolarity);
 }
 
 void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLookupTable, statuses &current)
@@ -125,7 +125,7 @@ static inline bool sparkModeCondSwitchActive(const config10 &page10, const statu
 
 static inline bool sparkModeInputSwitchActive(const config10 &page10) {
   return (page10.spark2Mode == SPARK2_MODE_INPUT_SWITCH)
-      && (digitalRead(pinSpark2Input) == page10.spark2InputPolarity);
+      && (digitalRead(pinNumbers.pinSpark2Input) == page10.spark2InputPolarity);
 }
 
 static inline bool isFixedTimingOn(const config2 &page2, const statuses &current) {

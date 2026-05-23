@@ -261,7 +261,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       vvt2Off();
       DISABLE_VVT_TIMER();
       boostDisable();
-      if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
+      if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
@@ -410,11 +410,11 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if (currentStatus.wmiTankEmpty)
         {
           // flash with 1sec interval
-          digitalWrite(pinWMIIndicator, !digitalRead(pinWMIIndicator));
+          digitalWrite(pinNumbers.pinWMIIndicator, !digitalRead(pinNumbers.pinWMIIndicator));
         }
         else
         {
-          digitalWrite(pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
+          digitalWrite(pinNumbers.pinWMIIndicator, configPage10.wmiIndicatorPolarity ? HIGH : LOW);
         } 
       }
 
@@ -457,7 +457,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           if( currentStatus.engineIsCranking )
           {
             currentStatus.engineIsCranking = false;
-            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, HIGH); }
+            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, HIGH); }
           }
         }
         else
@@ -468,7 +468,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             currentStatus.engineIsCranking = true;
             currentStatus.engineIsRunning = false;
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
+            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); }
 
             //Check whether the user has selected to disable to the fan during cranking
             if(configPage2.fanWhenCranking == 0) { fanOff(); }
@@ -809,11 +809,11 @@ void checkLaunchAndFlatShift()
 {
   //Check for launching/flat shift (clutch) based on the current and previous clutch states
   currentStatus.previousClutchTrigger = currentStatus.clutchTrigger;
-  //Only check for pinLaunch if any function using it is enabled. Else pins might break starting a board
+  //Only check for pinNumbers.pinLaunch if any function using it is enabled. Else pins might break starting a board
   if(configPage6.flatSEnable || configPage6.launchEnabled)
   {
-    if(configPage6.launchHiLo > 0) { currentStatus.clutchTrigger = digitalRead(pinLaunch); }
-    else { currentStatus.clutchTrigger = !digitalRead(pinLaunch); }
+    if(configPage6.launchHiLo > 0) { currentStatus.clutchTrigger = digitalRead(pinNumbers.pinLaunch); }
+    else { currentStatus.clutchTrigger = !digitalRead(pinNumbers.pinLaunch); }
 
     currentStatus.clutchTriggerActive = currentStatus.clutchTrigger; //Stores the value to send to TunerStudio
   }

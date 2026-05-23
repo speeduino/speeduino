@@ -124,11 +124,11 @@ decoder_t buildDecoder(uint8_t decoderIndex)
 {
   decoder_t decoder = getDecoderInitFunc(decoderIndex)();
 
-  decoder.primary.attach(pinTrigger);
-  decoder.secondary.attach(pinTrigger2);
-  decoder.tertiary.attach(pinTrigger3);
+  decoder.primary.attach(pinNumbers.pinTrigger);
+  decoder.secondary.attach(pinNumbers.pinTrigger2);
+  decoder.tertiary.attach(pinNumbers.pinTrigger3);
   
-  initDecoderPins(pinTrigger, pinTrigger2, pinTrigger3);
+  initDecoderPins(pinNumbers.pinTrigger, pinNumbers.pinTrigger2, pinNumbers.pinTrigger3);
 
   // Turn off per tooth ignition if the decoder doesn't support it
   configPage2.perToothIgn = configPage2.perToothIgn && decoder.getFeatures().supportsPerToothIgnition;

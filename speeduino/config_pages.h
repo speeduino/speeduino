@@ -182,7 +182,7 @@ struct config2 : public config_page_t {
   byte wueValues[10];   ///< Warm up enrichment array (10 bytes, transferred to @ref WUETable)
   byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
-  byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)
+  byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinNumbers.pinTachOut, which defaults to board assigned tach pin)
   byte tachoDiv : 2;    ///< Whether to change the tacho speed ("half speed tacho" ?)
   byte tachoDuration;   //The duration of the tacho pulse in mS
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
@@ -366,7 +366,7 @@ struct config4 : public config_page_t {
   byte TrigPattern : 5; ///< Decoder configured (DECODER_MISSING_TOOTH, DECODER_BASIC_DISTRIBUTOR, DECODER_GM7X, ... See init.ino)
 
   byte TrigEdgeSec : 1; ///< Secondary (RPM2) Trigger Edge (See RPM1)
-  byte fuelPumpPin : 6; ///< Fuel pump pin (copied as override to pinFuelPump, defaults to board default, See: init.ino)
+  byte fuelPumpPin : 6; ///< Fuel pump pin (copied as override to pinNumbers.pinFuelPump, defaults to board default, See: init.ino)
   byte useResync : 1;
 
   byte sparkDur; ///< Spark duration in ms * 10
@@ -753,8 +753,8 @@ struct config10 : public config_page_t {
 
   byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinFuelPressure)
-  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinOilPressure)
+  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinNumbers.pinFuelPressure)
+  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinNumbers.pinOilPressure)
   byte oilPressureProtEnbl : 1;
   byte oilPressurePin : 5;
 

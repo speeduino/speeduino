@@ -237,22 +237,22 @@ static void __attribute__((noinline)) test_sparkmode_input_switch(void) {
     setup_test_mode_simple(page2, page10, current, lookupTable, SPARK2_MODE_INPUT_SWITCH);
 
     page10.spark2InputPolarity = HIGH;
-    pinSpark2Input = 3;   
-    pinMode(pinSpark2Input, OUTPUT);
+    pinNumbers.pinSpark2Input = 3;   
+    pinMode(pinNumbers.pinSpark2Input, OUTPUT);
 
     // On
-    digitalWrite(pinSpark2Input, page10.spark2InputPolarity);
+    digitalWrite(pinNumbers.pinSpark2Input, page10.spark2InputPolarity);
     calculateSecondarySpark(page2, page10, lookupTable, current);
     assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
 
     // Off
-    digitalWrite(pinSpark2Input, !page10.spark2InputPolarity);
+    digitalWrite(pinNumbers.pinSpark2Input, !page10.spark2InputPolarity);
     current.advance = current.advance1;
     calculateSecondarySpark(page2, page10, lookupTable, current);
     assert_2nd_spark_is_off(current, SIMPLE_ADVANCE1);
 
     // On again
-    digitalWrite(pinSpark2Input, page10.spark2InputPolarity);
+    digitalWrite(pinNumbers.pinSpark2Input, page10.spark2InputPolarity);
     calculateSecondarySpark(page2, page10, lookupTable, current);
     assert_2nd_spark_is_on(current, SIMPLE_ADVANCE1, SIMPLE_LOAD_VALUE, SIMPLE_LOAD_VALUE);
 }

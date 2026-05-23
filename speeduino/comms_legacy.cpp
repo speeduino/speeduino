@@ -401,7 +401,7 @@ void legacySerialCommand(void)
       #endif
 
         while (primarySerial.available() == 0) { }
-        digitalWrite(pinResetControl, LOW);
+        digitalWrite(pinNumbers.pinResetControl, LOW);
       }
       else
       {

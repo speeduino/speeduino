@@ -13,6 +13,9 @@
 #include "src/stdlib/limits.h"
 #include "storage_api.h"
 
+// Forward declarations
+struct pinNumbers_t;
+
 /**
  * @brief Initialise the board, including USB comms
  * 
@@ -27,7 +30,7 @@ void initBoard(uint32_t baudRate);
  * 
  * This is called *after* the pins are assigned and therefore after initBoard()
  */
-void boardInitPins(void);
+void boardInitPins(pinNumbers_t &);
 
 /** @brief Calculate free RAM for display in TunerStudio */
 uint16_t freeRam(void);
