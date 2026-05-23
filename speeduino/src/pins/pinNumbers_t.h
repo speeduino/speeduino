@@ -122,7 +122,9 @@ uint8_t pinFuelPump = 0; //Fuel pump on/off
  uint8_t pinIgnBypass = 0; //The pin used for an ignition bypass (Optional)
  uint8_t pinVSS = 0; 
  uint8_t pinResetControl = 0; // Output pin used control resetting the Arduino
- uint8_t pinSDEnable = 0; //Input for manually enabling SD logging
+#ifdef SD_LOGGING
+  uint8_t pinSDEnable = 0; //Input for manually enabling SD logging
+#endif
  uint8_t pinAirConComp = 0;    // Air conditioning compressor output
  uint8_t pinAirConFan = 0;    // Stand-alone air conditioning fan output
  uint8_t pinAirConRequest = 0; // Air conditioning request input

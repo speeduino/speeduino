@@ -2294,8 +2294,9 @@ void setPinMapping(byte boardID)
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinNumbers.wmi.indicator = pinTranslate(configPage10.wmiIndicatorPin); }
   if ( (configPage10.wmiEnabledPin != 0) && (configPage10.wmiEnabledPin < BOARD_MAX_IO_PINS) ) { pinNumbers.wmi.enabled = pinTranslate(configPage10.wmiEnabledPin); }
   if ( (configPage10.vvt2Pin != 0) && (configPage10.vvt2Pin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinVVT_2 = pinTranslate(configPage10.vvt2Pin); }
+#ifdef SD_LOGGING
   if ( (configPage13.onboard_log_trigger_Epin != 0 ) && (configPage13.onboard_log_trigger_Epin != 0) && (configPage13.onboard_log_tr5_Epin_pin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinSDEnable = pinTranslate(configPage13.onboard_log_tr5_Epin_pin); }
-  
+#endif  
 
   //Currently there's no default pin for Idle Up
   
@@ -2435,10 +2436,12 @@ void setPinMapping(byte boardID)
   {
     pinMode(pinNumbers.sensors.oilPressure, INPUT);
   }
+#ifdef SD_LOGGING
   if( (configPage13.onboard_log_trigger_Epin > 0) && (!pinIsOutput(pinNumbers.pinSDEnable)) )
   {
     pinMode(pinNumbers.pinSDEnable, INPUT);
   }
+#endif  
   if(configPage10.wmiEnabled > 0)
   {
     pinMode(pinNumbers.wmi.enabled, OUTPUT);
