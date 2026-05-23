@@ -42,6 +42,22 @@
 #pragma GCC optimize ("Os") 
 #endif
 
+static void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
+{
+  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  {
+    endCoilCharge(index);
+  }
+}
+
+static void __attribute__((optimize("Os"))) closeAllInjectors(void)
+{
+  for (uint8_t index=1; index<=INJ_CHANNELS; ++index)
+  {
+    closeInjector(index);
+  }
+}
+
 ///
 /// @brief Allow the user to reset the firmware storage (aka EPROM).
 ///
@@ -163,36 +179,10 @@ void initialiseAll(void)
     if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
 
     //End all coil charges to ensure no stray sparks on startup
-    endCoil1Charge();
-    endCoil2Charge();
-    endCoil3Charge();
-    endCoil4Charge();
-    endCoil5Charge();
-    #if (IGN_CHANNELS >= 6)
-    endCoil6Charge();
-    #endif
-    #if (IGN_CHANNELS >= 7)
-    endCoil7Charge();
-    #endif
-    #if (IGN_CHANNELS >= 8)
-    endCoil8Charge();
-    #endif
+    stopAllCoilsCharging();
 
     //Similar for injectors, make sure they're turned off
-    closeInjector1();
-    closeInjector2();
-    closeInjector3();
-    closeInjector4();
-    closeInjector5();
-    #if (INJ_CHANNELS >= 6)
-    closeInjector6();
-    #endif
-    #if (INJ_CHANNELS >= 7)
-    closeInjector7();
-    #endif
-    #if (INJ_CHANNELS >= 8)
-    closeInjector8();
-    #endif
+    closeAllInjectors();
     
     //Set the tacho output default state
     digitalWrite(pinTachOut, HIGH);
@@ -899,10 +889,15 @@ void initialiseAll(void)
 void setPinMapping(byte boardID)
 {
   //Force set defaults. Will be overwritten below if needed.
-  injectorOutputControl = OUTPUT_CONTROL_DIRECT;
-  ignitionOutputControl = OUTPUT_CONTROL_DIRECT;
+  InjIoControlMode injControlMode = InjIoControlMode::Direct;
+  IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
 
   if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
+
+#if defined(MC33810_SUPPORT)
+  uint8_t MC33810InjBits[8];
+  uint8_t MC33810IgnBits[8];
+#endif
 
   switch (boardID)
   {
@@ -1955,8 +1950,8 @@ void setPinMapping(byte boardID)
     case 55:
       #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
-      injectorOutputControl = OUTPUT_CONTROL_MC33810;
-      ignitionOutputControl = OUTPUT_CONTROL_MC33810;
+      injControlMode = InjIoControlMode::MC33810;
+      ignControlMode = IgnIoControlMode::MC33810;
 
       //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
       pinInjector1 = 13; //SCLK
@@ -2057,23 +2052,23 @@ void setPinMapping(byte boardID)
         pinMC33810_2_CS = 9;
 
       //Pin alignment to the MC33810 outputs
-      MC33810_BIT_INJ1 = 3;
-      MC33810_BIT_INJ2 = 1;
-      MC33810_BIT_INJ3 = 0;
-      MC33810_BIT_INJ4 = 2;
-      MC33810_BIT_IGN1 = 4;
-      MC33810_BIT_IGN2 = 5;
-      MC33810_BIT_IGN3 = 6;
-      MC33810_BIT_IGN4 = 7;
+      MC33810InjBits[0] = 3;
+      MC33810InjBits[1] = 1;
+      MC33810InjBits[2] = 0;
+      MC33810InjBits[3] = 2;
+      MC33810IgnBits[0] = 4;
+      MC33810IgnBits[1] = 5;
+      MC33810IgnBits[2] = 6;
+      MC33810IgnBits[3] = 7;
 
-      MC33810_BIT_INJ5 = 3;
-      MC33810_BIT_INJ6 = 1;
-      MC33810_BIT_INJ7 = 0;
-      MC33810_BIT_INJ8 = 2;
-      MC33810_BIT_IGN5 = 4;
-      MC33810_BIT_IGN6 = 5;
-      MC33810_BIT_IGN7 = 6;
-      MC33810_BIT_IGN8 = 7;
+      MC33810InjBits[4] = 3;
+      MC33810InjBits[5] = 1;
+      MC33810InjBits[6] = 0;
+      MC33810InjBits[7] = 2;
+      MC33810IgnBits[4] = 4;
+      MC33810IgnBits[5] = 5;
+      MC33810IgnBits[6] = 6;
+      MC33810IgnBits[7] = 7;
 
 
 
@@ -2516,7 +2511,7 @@ void setPinMapping(byte boardID)
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinMAP, HIGH); }
 
-  if(ignitionOutputControl == OUTPUT_CONTROL_DIRECT)
+  if(ignControlMode == IgnIoControlMode::Direct)
   {
     uint8_t ignPins[IGN_CHANNELS] = {
       pinCoil1,
@@ -2542,10 +2537,10 @@ void setPinMapping(byte boardID)
       pinCoil8,
       #endif
     };
-    initIgnDirectIO(ignPins);
+    initIgnDirectIO(configPage4, ignPins);
   } 
 
-  if(injectorOutputControl == OUTPUT_CONTROL_DIRECT)
+  if(injControlMode == InjIoControlMode::Direct)
   {
     uint8_t injPins[INJ_CHANNELS] = {
       pinInjector1,
@@ -2574,11 +2569,15 @@ void setPinMapping(byte boardID)
     initInjDirectIO(injPins);
   }
   
-  if( (ignitionOutputControl == OUTPUT_CONTROL_MC33810) || (injectorOutputControl == OUTPUT_CONTROL_MC33810) )
+#if defined(MC33810_SUPPORT)
+  if( (ignControlMode == IgnIoControlMode::MC33810) || (injControlMode == InjIoControlMode::MC33810) )
   {
-    initMC33810();
+    initMC33810(configPage4, pinMC33810_1_CS, pinMC33810_2_CS, MC33810InjBits, MC33810IgnBits);
     if( (LED_BUILTIN != SCK) && (LED_BUILTIN != MOSI) && (LED_BUILTIN != MISO) ) pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
   }
+#endif
+  initInjIoControl(injControlMode);
+  initIgnIoControl(ignControlMode);
 
 //CS pin number is now set in a compile flag. 
 // #ifdef USE_SPI_EEPROM

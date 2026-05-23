@@ -190,3 +190,5 @@ constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16, A17, A18, A19
  * in order to avoid it overflowing. 
  */
 constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 0U;
+
+#define MC33810_SUPPORT

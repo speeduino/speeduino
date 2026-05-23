@@ -57,3 +57,17 @@
 #else
 #define TESTABLE_STATIC_CONSTEXPR static inline
 #endif
+
+#if !defined(UNIT_TEST) 
+/** 
+ * @brief A unit test only assert
+ * 
+ * Useful for asserting non-unit test code during unit tests. A regular assert
+ * will exit(1) on AVR, which is not useful
+ * 
+ */
+#define INTERNAL_TEST_ASSERT(expression) 
+#else
+#include <unity.h>
+#define INTERNAL_TEST_ASSERT(expression) TEST_ASSERT_TRUE((expression))
+#endif

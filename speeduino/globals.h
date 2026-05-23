@@ -38,9 +38,6 @@ constexpr uint8_t TOOTH_LOG_SIZE = 127U;
 constexpr uint8_t TOOTH_LOG_SIZE = 1U;
 #endif
 
-#define OUTPUT_CONTROL_DIRECT   0
-#define OUTPUT_CONTROL_MC33810  10
-
 #define INJ1_CMD_BIT      0
 #define INJ2_CMD_BIT      1
 #define INJ3_CMD_BIT      2
@@ -111,7 +108,6 @@ extern byte pinInjector5; //Output pin injector 5
 extern byte pinInjector6; //Output pin injector 6
 extern byte pinInjector7; //Output pin injector 7
 extern byte pinInjector8; //Output pin injector 8
-extern byte injectorOutputControl; //Specifies whether the injectors are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinCoil1; //Pin for coil 1
 extern byte pinCoil2; //Pin for coil 2
 extern byte pinCoil3; //Pin for coil 3
@@ -120,7 +116,6 @@ extern byte pinCoil5; //Pin for coil 5
 extern byte pinCoil6; //Pin for coil 6
 extern byte pinCoil7; //Pin for coil 7
 extern byte pinCoil8; //Pin for coil 8
-extern byte ignitionOutputControl; //Specifies whether the coils are controlled directly (Via an IO pin) or using something like the MC33810
 extern byte pinTrigger; //The CAS pin
 extern byte pinTrigger2; //The Cam Sensor pin known as secondary input
 extern byte pinTrigger3;	//the 2nd cam sensor pin known as tertiary input

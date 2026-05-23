@@ -82,211 +82,211 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ1_ON: // cmd group is for injector1 on actions
-      if( currentStatus.isTestModeActive ){ openInjector1(); }
+      if( currentStatus.isTestModeActive ){ openInjector(1); }
       break;
 
     case TS_CMD_INJ1_OFF: // cmd group is for injector1 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector1(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(1); BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT); }
       break;
 
     case TS_CMD_INJ1_PULSED: // cmd group is for injector1 50% dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ1_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector1(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector(1); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ2_ON: // cmd group is for injector2 on actions
-      if( currentStatus.isTestModeActive ){ openInjector2(); }
+      if( currentStatus.isTestModeActive ){ openInjector(2); }
       break;
 
     case TS_CMD_INJ2_OFF: // cmd group is for injector2 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector2(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ2_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(2); BIT_CLEAR(HWTest_INJ_Pulsed, INJ2_CMD_BIT); }
       break;
 
     case TS_CMD_INJ2_PULSED: // cmd group is for injector2 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ2_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector2(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector(2); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ3_ON: // cmd group is for injector3 on actions
-      if( currentStatus.isTestModeActive ){ openInjector3(); }
+      if( currentStatus.isTestModeActive ){ openInjector(3); }
       break;
 
     case TS_CMD_INJ3_OFF: // cmd group is for injector3 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector3(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ3_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(3); BIT_CLEAR(HWTest_INJ_Pulsed, INJ3_CMD_BIT); }
       break;
 
     case TS_CMD_INJ3_PULSED: // cmd group is for injector3 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ3_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector3(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector(3); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ4_ON: // cmd group is for injector4 on actions
-      if( currentStatus.isTestModeActive ){ openInjector4(); }
+      if( currentStatus.isTestModeActive ){ openInjector(4); }
       break;
 
     case TS_CMD_INJ4_OFF: // cmd group is for injector4 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector4(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ4_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(4); BIT_CLEAR(HWTest_INJ_Pulsed, INJ4_CMD_BIT); }
       break;
 
     case TS_CMD_INJ4_PULSED: // cmd group is for injector4 50% dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ4_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector4(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector(4); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ5_ON: // cmd group is for injector5 on actions
-      if( currentStatus.isTestModeActive ){ openInjector5(); }
+      if( currentStatus.isTestModeActive ){ openInjector(5); }
       break;
 
     case TS_CMD_INJ5_OFF: // cmd group is for injector5 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector5(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ5_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(5); BIT_CLEAR(HWTest_INJ_Pulsed, INJ5_CMD_BIT); }
       break;
 
     case TS_CMD_INJ5_PULSED: // cmd group is for injector5 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ5_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector5(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector(5); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ6_ON: // cmd group is for injector6 on actions
-      if( currentStatus.isTestModeActive ){ openInjector6(); }
+      if( currentStatus.isTestModeActive ){ openInjector(6); }
       break;
 
     case TS_CMD_INJ6_OFF: // cmd group is for injector6 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector6(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ6_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(6); BIT_CLEAR(HWTest_INJ_Pulsed, INJ6_CMD_BIT); }
       break;
 
     case TS_CMD_INJ6_PULSED: // cmd group is for injector6 50% dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ6_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector6(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector(6); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ7_ON: // cmd group is for injector7 on actions
-      if( currentStatus.isTestModeActive ){ openInjector7(); }
+      if( currentStatus.isTestModeActive ){ openInjector(7); }
       break;
 
     case TS_CMD_INJ7_OFF: // cmd group is for injector7 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector7(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ7_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(7); BIT_CLEAR(HWTest_INJ_Pulsed, INJ7_CMD_BIT); }
       break;
 
     case TS_CMD_INJ7_PULSED: // cmd group is for injector7 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ7_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector7(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector(7); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_INJ8_ON: // cmd group is for injector8 on actions
-      if( currentStatus.isTestModeActive ){ openInjector8(); }
+      if( currentStatus.isTestModeActive ){ openInjector(8); }
       break;
 
     case TS_CMD_INJ8_OFF: // cmd group is for injector8 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector8(); BIT_CLEAR(HWTest_INJ_Pulsed, INJ8_CMD_BIT); }
+      if( currentStatus.isTestModeActive ){ closeInjector(8); BIT_CLEAR(HWTest_INJ_Pulsed, INJ8_CMD_BIT); }
       break;
 
     case TS_CMD_INJ8_PULSED: // cmd group is for injector8 50% dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_INJ_Pulsed, INJ8_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector8(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector(8); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN1_ON: // cmd group is for spark1 on actions
-      if( currentStatus.isTestModeActive ){ beginCoil1Charge(); }
+      if( currentStatus.isTestModeActive ){ beginCoilCharge(1); }
       break;
 
     case TS_CMD_IGN1_OFF: // cmd group is for spark1 off actions
-        if( currentStatus.isTestModeActive ) { endCoil1Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT); }
+        if( currentStatus.isTestModeActive ) { endCoilCharge(1); BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT); }
       break;
 
     case TS_CMD_IGN1_PULSED: // cmd group is for spark1 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN1_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoil1Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoilCharge(1); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN2_ON: // cmd group is for spark2 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil2Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(2); }
       break;
 
     case TS_CMD_IGN2_OFF: // cmd group is for spark2 off actions
-      if( currentStatus.isTestModeActive ) { endCoil2Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN2_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(2); BIT_CLEAR(HWTest_IGN_Pulsed, IGN2_CMD_BIT); }
       break;
 
     case TS_CMD_IGN2_PULSED: // cmd group is for spark2 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN2_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoil2Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoilCharge(2); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN3_ON: // cmd group is for spark3 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil3Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(3); }
       break;
 
     case TS_CMD_IGN3_OFF: // cmd group is for spark3 off actions
-      if( currentStatus.isTestModeActive ) { endCoil3Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN3_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(3); BIT_CLEAR(HWTest_IGN_Pulsed, IGN3_CMD_BIT); }
       break;
 
     case TS_CMD_IGN3_PULSED: // cmd group is for spark3 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN3_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoil3Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoilCharge(3); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN4_ON: // cmd group is for spark4 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil4Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(4); }
       break;
 
     case TS_CMD_IGN4_OFF: // cmd group is for spark4 off actions
-      if( currentStatus.isTestModeActive ) { endCoil4Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN4_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(4); BIT_CLEAR(HWTest_IGN_Pulsed, IGN4_CMD_BIT); }
       break;
 
     case TS_CMD_IGN4_PULSED: // cmd group is for spark4 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN4_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoil4Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoilCharge(4); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN5_ON: // cmd group is for spark5 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil5Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(5); }
       break;
 
     case TS_CMD_IGN5_OFF: // cmd group is for spark5 off actions
-      if( currentStatus.isTestModeActive ) { endCoil5Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN5_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(5); BIT_CLEAR(HWTest_IGN_Pulsed, IGN5_CMD_BIT); }
       break;
 
     case TS_CMD_IGN5_PULSED: // cmd group is for spark4 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN5_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoil5Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoilCharge(5); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN6_ON: // cmd group is for spark6 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil6Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(6); }
       break;
 
     case TS_CMD_IGN6_OFF: // cmd group is for spark6 off actions
-      if( currentStatus.isTestModeActive ) { endCoil6Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN6_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(6); BIT_CLEAR(HWTest_IGN_Pulsed, IGN6_CMD_BIT); }
       break;
 
     case TS_CMD_IGN6_PULSED: // cmd group is for spark6 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN6_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoil6Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoilCharge(6); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN7_ON: // cmd group is for spark7 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil7Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(7); }
       break;
 
     case TS_CMD_IGN7_OFF: // cmd group is for spark7 off actions
-      if( currentStatus.isTestModeActive ) { endCoil7Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN7_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(7); BIT_CLEAR(HWTest_IGN_Pulsed, IGN7_CMD_BIT); }
       break;
 
     case TS_CMD_IGN7_PULSED: // cmd group is for spark7 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN7_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoil7Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoilCharge(7); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     case TS_CMD_IGN8_ON: // cmd group is for spark8 on actions
-      if( currentStatus.isTestModeActive ) { beginCoil8Charge(); }
+      if( currentStatus.isTestModeActive ) { beginCoilCharge(8); }
       break;
 
     case TS_CMD_IGN8_OFF: // cmd group is for spark8 off actions
-      if( currentStatus.isTestModeActive ) { endCoil8Charge(); BIT_CLEAR(HWTest_IGN_Pulsed, IGN8_CMD_BIT); }
+      if( currentStatus.isTestModeActive ) { endCoilCharge(8); BIT_CLEAR(HWTest_IGN_Pulsed, IGN8_CMD_BIT); }
       break;
 
     case TS_CMD_IGN8_PULSED: // cmd group is for spark8 50%dc actions
       if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN8_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoil8Charge(); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoilCharge(8); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
       break;
 
     //VSS Calibration routines
