@@ -218,6 +218,10 @@ static String createIterationMsg(int16_t iteration, long input, long output)
 // Run the PID for maxIterations and confirm it hits the setpoint
 static void assert_pid_complete(PID &pid, long *pInput, long *pOutput, long setpoint, uint16_t maxIterations)
 {
+    char szMsg[64];
+    snprintf(szMsg, _countof(szMsg)-1, "Start: %" PRId32 ", SetPoint: %" PRId32, (int32_t)*pInput, (int32_t)setpoint);
+    UnityPrint(szMsg); UNITY_PRINT_EOL();
+
     UnityPrint("Iter,Input,Output"); UNITY_PRINT_EOL();
     UnityPrint(createIterationMsg(-1, *pInput, setpoint).c_str()); UNITY_PRINT_EOL();
 
@@ -229,7 +233,7 @@ static void assert_pid_complete(PID &pid, long *pInput, long *pOutput, long setp
         UnityPrint(createIterationMsg(iteration, *pInput, *pOutput).c_str()); UNITY_PRINT_EOL();
     }
     // Tolerance of 1%
-    TEST_ASSERT_INT32_WITHIN(DIV_ROUND_CLOSEST(setpoint, 100, int32_t), setpoint, *pInput);
+    TEST_ASSERT_INT32_WITHIN(abs(DIV_ROUND_CLOSEST(setpoint, 100, int32_t)), setpoint, *pInput);
 }
 
 static void test_end_to_end_positive_positive_up(void) 
@@ -266,8 +270,8 @@ static void test_end_to_end_negative_negative_up(void)
     long input = -1500;
     long setpoint = -900;
 
-    PID pid(&input, &output, &setpoint, 100, 30, 50, DIRECT);
-    pid.SetOutputLimits(-25, 25);
+    PID pid(&input, &output, &setpoint, 100, 25, 2, DIRECT);
+    pid.SetOutputLimits(-255, 255);
     pid.SetMode(AUTOMATIC);
     pid.Initialize();
 
@@ -295,7 +299,7 @@ static void test_end_to_end_negative_positive(void)
     long setpoint = 199;
 
     PID pid(&input, &output, &setpoint, 50, 1, 80, DIRECT);
-    pid.SetOutputLimits(-75, 75);
+    pid.SetOutputLimits(-255, 255);
     pid.SetMode(AUTOMATIC);
     pid.Initialize();
 
@@ -309,7 +313,7 @@ static void test_end_to_end_positive_to_negative(void)
     long setpoint = -1500;
 
     PID pid(&input, &output, &setpoint, 100, 30, 20, DIRECT);
-    pid.SetOutputLimits(-25, 25);
+    pid.SetOutputLimits(-255, 255);
     pid.SetMode(AUTOMATIC);
     pid.Initialize();
 
