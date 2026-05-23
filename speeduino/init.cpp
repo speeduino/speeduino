@@ -2225,6 +2225,45 @@ static pinNumbers_t getDefaultPinMapping(void)
 #endif  
 }
 
+static pinNumbers_t getPinMapping(uint8_t boardID)
+{
+  switch (boardID)
+  {
+    //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
+
+    case 1: return getV02PinMapping(); break;
+    case 2: return getV03PinMapping(); break;
+    case 3: return getV04PinMapping(); break;
+    case 6: return getMiataNB2Mapping(); break;
+    case 8: return getMiataNA18PinMapping(); break;
+    case 9: return getMiataNA16PinMapping(); break;
+    case 10: return getTurtanasPinMapping(); break;
+    case 14: return getLevinPinMapping(); break;
+    case 20: return getPlazomatv10PinMapping(); break;
+    case 30: return getDazV6PinMapping(); break;
+    case 31: return getBMWPnPPinMapping(); break;
+    case 40: return getNO2CPinMapping(); break;
+    case 41: return getUA4CPinMapping(); break;
+    case 42: return getBlitzboxBL49spPinMapping(); break;
+    case 45: return getDIYEFICORE4v10PinMapping(); break;
+
+    #if defined(CORE_TEENSY35)
+    case 50: return getDvjTeensyRevAPinMapping(); break;
+    case 51: return getDvjTeensyRevBPinMapping(); break;
+    case 53: return getJuiceBoxPinMapping(); break;
+    #endif
+    #if defined(CORE_TEENSY)
+    case 55: return getDropBearPinMapping(); break;
+    #endif   
+    #if defined(CORE_TEENSY41)
+    case 56: return getBearCubPinMapping(); break;
+    #endif   
+    case 60: return getSpectreV05PinMapping(); break;
+    default: break;
+  }
+  return getDefaultPinMapping();  
+}
+
 /** Set board / microcontroller specific pin mappings / assignments.
  * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
  * which are originated from tuning SW (e.g. TS) set values and are available in reference/speeduino.ini (See pinLayout, note also that
@@ -2238,40 +2277,7 @@ void setPinMapping(byte boardID)
 
   if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
 
-  switch (boardID)
-  {
-    //Note: Case 0 (Speeduino v0.1) was removed in Nov 2020 to handle default case for blank FRAM modules
-
-    case 1: pinNumbers = getV02PinMapping(); break;
-    case 2: pinNumbers = getV03PinMapping(); break;
-    case 3: pinNumbers = getV04PinMapping(); break;
-    case 6: pinNumbers = getMiataNB2Mapping(); break;
-    case 8: pinNumbers = getMiataNA18PinMapping(); break;
-    case 9: pinNumbers = getMiataNA16PinMapping(); break;
-    case 10: pinNumbers = getTurtanasPinMapping(); break;
-    case 14: pinNumbers = getLevinPinMapping(); break;
-    case 20: pinNumbers = getPlazomatv10PinMapping(); break;
-    case 30: pinNumbers = getDazV6PinMapping(); break;
-    case 31: pinNumbers = getBMWPnPPinMapping(); break;
-    case 40: pinNumbers = getNO2CPinMapping(); break;
-    case 41: pinNumbers = getUA4CPinMapping(); break;
-    case 42: pinNumbers = getBlitzboxBL49spPinMapping(); break;
-    case 45: pinNumbers = getDIYEFICORE4v10PinMapping(); break;
-
-    #if defined(CORE_TEENSY35)
-    case 50: pinNumbers = getDvjTeensyRevAPinMapping(); break;
-    case 51: pinNumbers = getDvjTeensyRevBPinMapping(); break;
-    case 53: pinNumbers = getJuiceBoxPinMapping(); break;
-    #endif
-    #if defined(CORE_TEENSY)
-    case 55: pinNumbers = getDropBearPinMapping(); break;
-    #endif   
-    #if defined(CORE_TEENSY41)
-    case 56: pinNumbers = getBearCubPinMapping(); break;
-    #endif   
-    case 60: pinNumbers = getSpectreV05PinMapping(); break;
-    default: pinNumbers = getDefaultPinMapping(); break;
-  }
+  pinNumbers = getPinMapping(boardID);
 
   //Setup any devices that are using selectable pins
 
