@@ -7,7 +7,7 @@
 void initialiseAll(void);
 void setPinMapping(byte boardID);
 
-#define VSS_USES_RPM2() (isExternalVssMode(configPage2) && (pinVSS == pinTrigger2) && (!currentStatus.decoder.secondary.isValid())) // VSS is on the same pin as RPM2 and RPM2 is not used as part of the decoder
-#define FLEX_USES_RPM2() ((configPage2.flexEnabled > 0U) && (pinFlex == pinTrigger2) && (!currentStatus.decoder.secondary.isValid())) // Same as above, but for Flex sensor
+#define VSS_USES_RPM2() (isExternalVssMode(configPage2) && (pinNumbers.pinVSS == pinNumbers.pinTrigger2) && (!currentStatus.decoder.secondary.isValid())) // VSS is on the same pin as RPM2 and RPM2 is not used as part of the decoder
+#define FLEX_USES_RPM2() ((configPage2.flexEnabled > 0U) && (pinNumbers.pinFlex == pinNumbers.pinTrigger2) && (!currentStatus.decoder.secondary.isValid())) // Same as above, but for Flex sensor
 
 #endif
