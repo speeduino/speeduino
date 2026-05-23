@@ -199,7 +199,7 @@ void initialiseAll(void)
     initialiseADC();
     initialiseMAPBaro();
     initialiseProgrammableIO(currentStatus, configPage13);
-    initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
+    initialiseFlexSensor(configPage2, currentStatus, pinNumbers.sensors.flex);
 
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
@@ -254,7 +254,7 @@ void initialiseAll(void)
     
     //The secondary input can be used for VSS if nothing else requires it. Allows for the standard VR conditioner to be used for VSS. This MUST be run after the initialiseTriggers() function
     if( VSS_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinNumbers.pinVSS), vssPulse, RISING); } //Secondary trigger input can safely be used for VSS
-    if( FLEX_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinNumbers.pinFlex), flexPulse, CHANGE); } //Secondary trigger input can safely be used for Flex sensor
+    if( FLEX_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinNumbers.sensors.flex), flexPulse, CHANGE); } //Secondary trigger input can safely be used for Flex sensor
 
     //Initial values for loop times
     currentLoopTime = micros();
@@ -912,12 +912,12 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 20; //The CAS pin
       pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2; //TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2; //TPS input pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinIdle1 = 30; //Single wire idle control
       pinNumbers.pinIdle2 = 31; //2 wire idle control
@@ -925,7 +925,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
       pinNumbers.pinFan = 47; //Pin for the fan output
       pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 43; //Reset control output
       break;
     #endif
@@ -947,12 +947,12 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinIdle2 = 53; //2 wire idle control
@@ -965,9 +965,9 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 26; //Enable pin for DRV8825
       pinNumbers.pinFan = A13; //Pin for the fan output
       pinNumbers.pinLaunch = 51; //Can be overwritten below
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 50; //Reset control output
-      pinNumbers.pinBaro = A5;
+      pinNumbers.sensors.baro = A5;
       pinNumbers.pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
@@ -976,7 +976,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinStepperStep = 34;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
-        pinNumbers.pinO2 = A22;
+        pinNumbers.sensors.O2 = A22;
       #endif
     #endif
       break;
@@ -1012,12 +1012,12 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinIdle2 = 6; //2 wire idle control
@@ -1030,9 +1030,9 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 24; //Enable pin for DRV8825
       pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinNumbers.pinLaunch = 51; //Can be overwritten below
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 43; //Reset control output
-      pinNumbers.pinBaro = A5;
+      pinNumbers.sensors.baro = A5;
       pinNumbers.pinVSS = 20;
       pinNumbers.pinWMIEmpty = 46;
       pinNumbers.pinWMIIndicator = 44;
@@ -1045,7 +1045,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinStepperStep = 35;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
-        pinNumbers.pinO2 = A22;
+        pinNumbers.sensors.O2 = A22;
 
         //Make sure the CAN pins aren't overwritten
         pinNumbers.triggerPins.tertiary = 54;
@@ -1053,13 +1053,13 @@ void setPinMapping(byte boardID)
 
       #elif defined(CORE_TEENSY41)
         //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
-        pinNumbers.pinBaro = A4; 
-        pinNumbers.pinMAP = A5;
-        pinNumbers.pinTPS = A3; //TPS input pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A2; //O2 Sensor pin
-        pinNumbers.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pinNumbers.sensors.baro = A4; 
+        pinNumbers.sensors.MAP = A5;
+        pinNumbers.sensors.TPS = A3; //TPS input pin
+        pinNumbers.sensors.IAT = A0; //IAT sensor pin
+        pinNumbers.sensors.CLT = A1; //CLS sensor pin
+        pinNumbers.sensors.O2 = A2; //O2 Sensor pin
+        pinNumbers.sensors.Bat = A15; //Battery reference voltage pin. Needs Alpha4+
         pinNumbers.pinLaunch = 34; //Can be overwritten below
         pinNumbers.pinVSS = 35;
 
@@ -1103,7 +1103,7 @@ void setPinMapping(byte boardID)
         //******** PORTB CONNECTIONS *************** 
         //******************************************
         /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.pinBaro = PB1; //ADC12
+        pinNumbers.sensors.baro = PB1; //ADC12
         /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
         /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
@@ -1122,12 +1122,12 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinMAP = PC0; //ADC123 
-        pinNumbers.pinTPS = PC1; //ADC123
-        pinNumbers.pinIAT = PC2; //ADC123
-        pinNumbers.pinCLT = PC3; //ADC123
-        pinNumbers.pinO2 = PC4;  //ADC12
-        pinNumbers.pinBat = PC5; //ADC12
+        pinNumbers.sensors.MAP = PC0; //ADC123 
+        pinNumbers.sensors.TPS = PC1; //ADC123
+        pinNumbers.sensors.IAT = PC2; //ADC123
+        pinNumbers.sensors.CLT = PC3; //ADC123
+        pinNumbers.sensors.O2 = PC4;  //ADC12
+        pinNumbers.sensors.Bat = PC5; //ADC12
         pinNumbers.pinVVT_1 = PC6; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -1145,7 +1145,7 @@ void setPinMapping(byte boardID)
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
         pinNumbers.pinVVT_2 = PD3; //
-        pinNumbers.pinFlex = PD4;
+        pinNumbers.sensors.flex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
         /* = PD8; */ //
@@ -1175,13 +1175,13 @@ void setPinMapping(byte boardID)
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         //PB2 can't be used as input because it's the BOOT pin
-        pinNumbers.pinTPS = A2;//TPS input pin
-        pinNumbers.pinMAP = A3; //MAP sensor pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A8; //O2 Sensor pin
-        pinNumbers.pinBat = A4; //Battery reference voltage pin
-        pinNumbers.pinBaro = pinNumbers.pinMAP;
+        pinNumbers.sensors.TPS = A2;//TPS input pin
+        pinNumbers.sensors.MAP = A3; //MAP sensor pin
+        pinNumbers.sensors.IAT = A0; //IAT sensor pin
+        pinNumbers.sensors.CLT = A1; //CLS sensor pin
+        pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+        pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
+        pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
         pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
         pinNumbers.pinIdle1 = PB2; //Single wire idle control
         pinNumbers.pinIdle2 = PB10; //2 wire idle control
@@ -1215,12 +1215,12 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 2; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A3; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A5; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A3; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 4;
@@ -1233,7 +1233,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 24;
       pinNumbers.pinFan = 41; //Pin for the fan output
       pinNumbers.pinLaunch = 12; //Can be overwritten below
-      pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 39; //Reset control output
       pinNumbers.pinVSS = 2;
       #endif
@@ -1266,12 +1266,12 @@ void setPinMapping(byte boardID)
       }      
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A3; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A5; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A3; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinIdle1 = 2; //Single wire idle control
       pinNumbers.pinBoost = 4;
       pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
@@ -1281,7 +1281,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 24;
       pinNumbers.pinFan = 35; //Pin for the fan output
       pinNumbers.pinLaunch = 37; //Can be overwritten below
-      pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 44; //Reset control output
 
       //This is NOT correct. It has not yet been tested with this board
@@ -1314,12 +1314,12 @@ void setPinMapping(byte boardID)
       }
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A3; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A5; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A3; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinIdle1 = 2; //Single wire idle control
       pinNumbers.pinBoost = 4;
       pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
@@ -1330,11 +1330,11 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
       pinNumbers.pinFan = 35; //Pin for the fan output
       pinNumbers.pinLaunch = 12; //Can be overwritten below
-      pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 44; //Reset control output
       pinNumbers.pinVSS = 20;
       pinNumbers.pinIdleUp = 48;
-      pinNumbers.pinCTPS = 47;
+      pinNumbers.sensors.CTPS = 47;
       #endif
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
@@ -1362,17 +1362,17 @@ void setPinMapping(byte boardID)
       }      
       pinNumbers.triggerPins.primary = 18; //The CAS pin
       pinNumbers.triggerPins.secondary = 19; //The Cam Sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A4; //O2 Sensor pin
-      pinNumbers.pinBat = A7; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A4; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A7; //Battery reference voltage pin
       pinNumbers.pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
       pinNumbers.pinFuelPump = 42; //Fuel pump output 2n2222
       pinNumbers.pinFan = 47; //Pin for the fan output
       pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 26; //Reset control output
     #endif
       break;
@@ -1390,14 +1390,14 @@ void setPinMapping(byte boardID)
       }      
       pinNumbers.triggerPins.primary = PD3;        // The CAS pin
       pinNumbers.triggerPins.secondary = PD4;       // The Cam Sensor pin
-      pinNumbers.pinTPS = PA2;            // TPS input pin
-      pinNumbers.pinMAP = PA3;            // MAP sensor pin
-      pinNumbers.pinEMAP = PC5;           // EMAP sensor pin (placeholder)
-      pinNumbers.pinIAT = PA0;            // IAT sensor pin
-      pinNumbers.pinCLT = PA1;            // CLS sensor pin
-      pinNumbers.pinO2 = PB0;             // O2 Sensor pin
-      pinNumbers.pinBat = PA4;            // Battery reference voltage pin
-      pinNumbers.pinBaro = PA5;           // Baro sensor pin
+      pinNumbers.sensors.TPS = PA2;            // TPS input pin
+      pinNumbers.sensors.MAP = PA3;            // MAP sensor pin
+      pinNumbers.sensors.EMAP = PC5;           // EMAP sensor pin (placeholder)
+      pinNumbers.sensors.IAT = PA0;            // IAT sensor pin
+      pinNumbers.sensors.CLT = PA1;            // CLS sensor pin
+      pinNumbers.sensors.O2 = PB0;             // O2 Sensor pin
+      pinNumbers.sensors.Bat = PA4;            // Battery reference voltage pin
+      pinNumbers.sensors.baro = PA5;           // Baro sensor pin
       pinNumbers.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
       pinNumbers.pinIdle1 = PD10;         // ICV pin1  (Goes to UNL2803)
       pinNumbers.pinIdle2 = PD9;          // ICV pin3  (Goes to UNL2803)
@@ -1410,7 +1410,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = PA15; // Stepper valve isn't used with these
       pinNumbers.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
       pinNumbers.pinLaunch = PB8;         // Launch control pin
-      pinNumbers.pinFlex = PD7;           // Flex sensor
+      pinNumbers.sensors.flex = PD7;           // Flex sensor
       pinNumbers.pinResetControl = PB7;   // Reset control output
       pinNumbers.pinVSS = PB6;            // VSS input pin
       pinNumbers.pinWMIEmpty = PA6;       //(placeholder)
@@ -1433,12 +1433,12 @@ void setPinMapping(byte boardID)
       }      
       pinNumbers.triggerPins.primary = 20; //The CAS pin
       pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
+      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
       pinNumbers.pinFan = 47; //Pin for the fan output
       pinNumbers.pinFuelPump = 4; //Fuel pump output
       pinNumbers.pinTachOut = 49; //Tacho output pin
@@ -1460,13 +1460,13 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+      pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinFuelPump = 45; //Fuel pump output
@@ -1492,15 +1492,15 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 20; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinEMAP = A15; //EMAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLT sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A12; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinBaro = A5; //Baro sensor pin
+      pinNumbers.sensors.TPS = A2;//TPS input pin
+      pinNumbers.sensors.MAP = A3; //MAP sensor pin
+      pinNumbers.sensors.EMAP = A15; //EMAP sensor pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLT sensor pin
+      pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+      pinNumbers.sensors.O2_2 = A12; //O2 Sensor pin
+      pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
+      pinNumbers.sensors.baro = A5; //Baro sensor pin
       pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
       pinNumbers.pinIdle1 = 5; //ICV pin1
       pinNumbers.pinIdle2 = 6; //ICV pin3
@@ -1513,7 +1513,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = 24; //Stepper valve isn't used with these
       pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2003)
       pinNumbers.pinLaunch = 51; //Launch control pin
-      pinNumbers.pinFlex = 2; // Flex sensor
+      pinNumbers.sensors.flex = 2; // Flex sensor
       pinNumbers.pinResetControl = 43; //Reset control output
       pinNumbers.pinVSS = 3; //VSS input pin
       pinNumbers.pinWMIEmpty = 31; //(placeholder)
@@ -1521,7 +1521,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEnabled = 35; //(placeholder)
       pinNumbers.pinIdleUp = 37; //(placeholder)
       pinNumbers.pinIdleUpOutput = 41; //(placeholder)
-      pinNumbers.pinCTPS = A6; //(placeholder)
+      pinNumbers.sensors.CTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
       {
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  PB15, PB14, PB12, PB13, PA8, PE7, PE13, PE10, };
@@ -1533,15 +1533,16 @@ void setPinMapping(byte boardID)
       }      
       pinNumbers.triggerPins.primary = PD3; //The CAS pin
       pinNumbers.triggerPins.secondary = PD4; //The Cam Sensor pin
-      pinNumbers.pinTPS = PA2;//TPS input pin
-      pinNumbers.pinMAP = PA3; //MAP sensor pin
-      pinNumbers.pinEMAP = PC5; //EMAP sensor pin
-      pinNumbers.pinIAT = PA0; //IAT sensor pin
-      pinNumbers.pinCLT = PA1; //CLS sensor pin
-      pinNumbers.pinO2 = PB0; //O2 Sensor pin
-      pinNumbers.pinO2_2 = PC2; //O2 Sensor pin
-      pinNumbers.pinBat = PA4; //Battery reference voltage pin
-      pinNumbers.pinBaro = PA5; //Baro sensor pin
+
+      pinNumbers.sensors.TPS = PA2;//TPS input pin
+      pinNumbers.sensors.MAP = PA3; //MAP sensor pin
+      pinNumbers.sensors.EMAP = PC5; //EMAP sensor pin
+      pinNumbers.sensors.IAT = PA0; //IAT sensor pin
+      pinNumbers.sensors.CLT = PA1; //CLS sensor pin
+      pinNumbers.sensors.O2 = PB0; //O2 Sensor pin
+      pinNumbers.sensors.O2_2 = PC2; //O2 Sensor pin
+      pinNumbers.sensors.Bat = PA4; //Battery reference voltage pin
+      pinNumbers.sensors.baro = PA5; //Baro sensor pin
       pinNumbers.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
       pinNumbers.pinIdle1 = PD10; //ICV pin1
       pinNumbers.pinIdle2 = PD9; //ICV pin3
@@ -1554,7 +1555,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperEnable = PA15; //Stepper valve isn't used with these
       pinNumbers.pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
       pinNumbers.pinLaunch = PB8; //Launch control pin
-      pinNumbers.pinFlex = PD7; // Flex sensor
+      pinNumbers.sensors.flex = PD7; // Flex sensor
       pinNumbers.pinResetControl = PB7; //Reset control output
       pinNumbers.pinVSS = PB6; //VSS input pin
       pinNumbers.pinWMIEmpty = PD15; //(placeholder)
@@ -1562,7 +1563,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEnabled = PE15; //(placeholder)
       pinNumbers.pinIdleUp = PE14; //(placeholder)
       pinNumbers.pinIdleUpOutput = PE12; //(placeholder)
-      pinNumbers.pinCTPS = PA6; //(placeholder)
+      pinNumbers.sensors.CTPS = PA6; //(placeholder)
      #endif
       break;
 
@@ -1580,13 +1581,13 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 21; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinMAP = A0; //MAP sensor pin
-      pinNumbers.pinIAT = A5; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLT sensor pin
-      pinNumbers.pinO2 = A2; //O2 sensor pin
-      pinNumbers.pinBat = A1; //Battery reference voltage pin
-      pinNumbers.pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      pinNumbers.sensors.TPS = A3; //TPS input pin
+      pinNumbers.sensors.MAP = A0; //MAP sensor pin
+      pinNumbers.sensors.IAT = A5; //IAT sensor pin
+      pinNumbers.sensors.CLT = A4; //CLT sensor pin
+      pinNumbers.sensors.O2 = A2; //O2 sensor pin
+      pinNumbers.sensors.Bat = A1; //Battery reference voltage pin
+      pinNumbers.sensors.baro = A6; //Baro sensor pin - ONLY WITH DB
       pinNumbers.pinTachOut = 38; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinIdle2 = 47; //2 wire idle control - NOT USED
@@ -1598,7 +1599,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinStepperStep = 24; //Step pin for DRV8825 driver
       pinNumbers.pinStepperEnable = 27; //Enable pin for DRV8825 driver
       pinNumbers.pinLaunch = 10; //Can be overwritten below
-      pinNumbers.pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pinNumbers.sensors.flex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
       pinNumbers.pinFan = 30; //Pin for the fan output - ONLY WITH DB
       pinNumbers.pinResetControl = 26; //Reset control output
       #endif
@@ -1618,15 +1619,15 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 3; //The Cam sensor 2 pin
-      pinNumbers.pinFlex = 20; // Flex sensor
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinMAP = A0; //MAP sensor pin
-      pinNumbers.pinBaro = A7; //Baro sensor pin
-      pinNumbers.pinIAT = A5; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLS sensor pin
-      pinNumbers.pinO2 = A1; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = A2; //Battery reference voltage pin
+      pinNumbers.sensors.flex = 20; // Flex sensor
+      pinNumbers.sensors.TPS = A3; //TPS input pin
+      pinNumbers.sensors.MAP = A0; //MAP sensor pin
+      pinNumbers.sensors.baro = A7; //Baro sensor pin
+      pinNumbers.sensors.IAT = A5; //IAT sensor pin
+      pinNumbers.sensors.CLT = A4; //CLS sensor pin
+      pinNumbers.sensors.O2 = A1; //O2 Sensor pin
+      pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
+      pinNumbers.sensors.Bat = A2; //Battery reference voltage pin
       pinNumbers.pinLaunch = 37; //Can be overwritten below
       pinNumbers.pinTachOut = 22; //Tacho output pin
       pinNumbers.pinIdle1 = 9; //Single wire idle control
@@ -1656,15 +1657,16 @@ void setPinMapping(byte boardID)
       }       
       pinNumbers.triggerPins.primary = 19; //The CRANK Sensor pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
-      pinNumbers.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
-      pinNumbers.pinTPS = A0; //TPS input pin
-      pinNumbers.pinO2 = A2; //O2 Sensor pin
-      pinNumbers.pinIAT = A3; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLT sensor pin
-      pinNumbers.pinMAP = A7; //internal MAP sensor
-      pinNumbers.pinBat = A6; //Battery reference voltage pin
-      pinNumbers.pinBaro = A5; //external MAP/Baro sensor pin
-      pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
+
+      pinNumbers.sensors.flex = 20; // Flex sensor PLACEHOLDER value for now
+      pinNumbers.sensors.TPS = A0; //TPS input pin
+      pinNumbers.sensors.O2 = A2; //O2 Sensor pin
+      pinNumbers.sensors.IAT = A3; //IAT sensor pin
+      pinNumbers.sensors.CLT = A4; //CLT sensor pin
+      pinNumbers.sensors.MAP = A7; //internal MAP sensor
+      pinNumbers.sensors.Bat = A6; //Battery reference voltage pin
+      pinNumbers.sensors.baro = A5; //external MAP/Baro sensor pin
+      pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
       pinNumbers.pinLaunch = 2; //Can be overwritten below
       pinNumbers.pinTachOut = 10; //Tacho output pin
       pinNumbers.pinIdle1 = 11; //Single wire idle control
@@ -1691,15 +1693,16 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 21;// The Cam sensor 2 pin
-      pinNumbers.pinFlex = 20; // Flex sensor
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinMAP = A2; //MAP sensor pin
-      pinNumbers.pinBaro = A15; //Baro sensor pin
-      pinNumbers.pinIAT = A11; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLS sensor pin
-      pinNumbers.pinO2 = A12; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A5; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = A1; //Battery reference voltage pin
+
+      pinNumbers.sensors.flex = 20; // Flex sensor
+      pinNumbers.sensors.TPS = A3; //TPS input pin
+      pinNumbers.sensors.MAP = A2; //MAP sensor pin
+      pinNumbers.sensors.baro = A15; //Baro sensor pin
+      pinNumbers.sensors.IAT = A11; //IAT sensor pin
+      pinNumbers.sensors.CLT = A4; //CLS sensor pin
+      pinNumbers.sensors.O2 = A12; //O2 Sensor pin
+      pinNumbers.sensors.O2_2 = A5; //O2 sensor pin (second sensor)
+      pinNumbers.sensors.Bat = A1; //Battery reference voltage pin
       pinNumbers.pinLaunch = 24; //Can be overwritten below
       pinNumbers.pinTachOut = 38; //Tacho output pin
       pinNumbers.pinIdle1 = 42; //Single wire idle control
@@ -1730,13 +1733,13 @@ void setPinMapping(byte boardID)
       } 
       pinNumbers.triggerPins.primary = 23; //The CAS pin
       pinNumbers.triggerPins.secondary = 36; //The Cam Sensor pin
-      pinNumbers.pinTPS = 16; //TPS input pin
-      pinNumbers.pinMAP = 17; //MAP sensor pin
-      pinNumbers.pinIAT = 14; //IAT sensor pin
-      pinNumbers.pinCLT = 15; //CLT sensor pin
-      pinNumbers.pinO2 = A22; //O2 sensor pin
-      pinNumbers.pinO2_2 = A21; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = 18; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = 16; //TPS input pin
+      pinNumbers.sensors.MAP = 17; //MAP sensor pin
+      pinNumbers.sensors.IAT = 14; //IAT sensor pin
+      pinNumbers.sensors.CLT = 15; //CLT sensor pin
+      pinNumbers.sensors.O2 = A22; //O2 sensor pin
+      pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
+      pinNumbers.sensors.Bat = 18; //Battery reference voltage pin
       pinNumbers.pinTachOut = 20; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 11; //Boost control
@@ -1760,13 +1763,13 @@ void setPinMapping(byte boardID)
       } 
       pinNumbers.triggerPins.primary = 23; //The CAS pin
       pinNumbers.triggerPins.secondary = 36; //The Cam Sensor pin
-      pinNumbers.pinTPS = 16; //TPS input pin
-      pinNumbers.pinMAP = 17; //MAP sensor pin
-      pinNumbers.pinIAT = 14; //IAT sensor pin
-      pinNumbers.pinCLT = 15; //CLT sensor pin
-      pinNumbers.pinO2 = A22; //O2 sensor pin
-      pinNumbers.pinO2_2 = A21; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = 18; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = 16; //TPS input pin
+      pinNumbers.sensors.MAP = 17; //MAP sensor pin
+      pinNumbers.sensors.IAT = 14; //IAT sensor pin
+      pinNumbers.sensors.CLT = 15; //CLT sensor pin
+      pinNumbers.sensors.O2 = A22; //O2 sensor pin
+      pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
+      pinNumbers.sensors.Bat = 18; //Battery reference voltage pin
       pinNumbers.pinTachOut = 20; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 11; //Boost control
@@ -1792,13 +1795,13 @@ void setPinMapping(byte boardID)
       } 
       pinNumbers.triggerPins.primary = 37; //The CAS pin
       pinNumbers.triggerPins.secondary = 38; //The Cam Sensor pin - NOT USED
-      pinNumbers.pinTPS = A2; //TPS input pin
-      pinNumbers.pinMAP = A7; //MAP sensor pin
-      pinNumbers.pinIAT = A1; //IAT sensor pin
-      pinNumbers.pinCLT = A5; //CLT sensor pin
-      pinNumbers.pinO2 = A0; //O2 sensor pin
-      pinNumbers.pinO2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
-      pinNumbers.pinBat = A6; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A2; //TPS input pin
+      pinNumbers.sensors.MAP = A7; //MAP sensor pin
+      pinNumbers.sensors.IAT = A1; //IAT sensor pin
+      pinNumbers.sensors.CLT = A5; //CLT sensor pin
+      pinNumbers.sensors.O2 = A0; //O2 sensor pin
+      pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
+      pinNumbers.sensors.Bat = A6; //Battery reference voltage pin
       pinNumbers.pinTachOut = 28; //Tacho output pin
       pinNumbers.pinIdle1 = 5; //Single wire idle control - NOT USED
       pinNumbers.pinBoost = 11; //Boost control - NOT USED
@@ -1830,10 +1833,10 @@ void setPinMapping(byte boardID)
       pinNumbers.triggerPins.primary = 19; //The CAS pin
       pinNumbers.triggerPins.secondary = 18; //The Cam Sensor pin
       pinNumbers.triggerPins.tertiary = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
-      pinNumbers.pinFlex = A16; // Flex sensor
-      pinNumbers.pinMAP = A1; //MAP sensor pin
-      pinNumbers.pinBaro = A0; //Baro sensor pin
-      pinNumbers.pinBat = A14; //Battery reference voltage pin
+      pinNumbers.sensors.flex = A16; // Flex sensor
+      pinNumbers.sensors.MAP = A1; //MAP sensor pin
+      pinNumbers.sensors.baro = A0; //Baro sensor pin
+      pinNumbers.sensors.Bat = A14; //Battery reference voltage pin
       pinNumbers.pinLaunch = A15; //Can be overwritten below
       pinNumbers.pinTachOut = 5; //Tacho output pin
       pinNumbers.pinIdle1 = 27; //Single wire idle control
@@ -1858,26 +1861,26 @@ void setPinMapping(byte boardID)
       // #endif
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTPS = A22; //TPS input pin
-        pinNumbers.pinIAT = A19; //IAT sensor pin
-        pinNumbers.pinCLT = A20; //CLS sensor pin
-        pinNumbers.pinO2 = A21; //O2 Sensor pin
-        pinNumbers.pinO2_2 = A18; //Spare 2
+        pinNumbers.sensors.TPS = A22; //TPS input pin
+        pinNumbers.sensors.IAT = A19; //IAT sensor pin
+        pinNumbers.sensors.CLT = A20; //CLS sensor pin
+        pinNumbers.sensors.O2 = A21; //O2 Sensor pin
+        pinNumbers.sensors.O2_2 = A18; //Spare 2
 
         pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
       #endif
 
       #if defined(CORE_TEENSY41)
         //New pins for the actual T4.1 version of the Dropbear
-        pinNumbers.pinBaro = A4; 
-        pinNumbers.pinMAP = A5;
-        pinNumbers.pinTPS = A3; //TPS input pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A2; //O2 Sensor pin
-        pinNumbers.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pinNumbers.sensors.baro = A4; 
+        pinNumbers.sensors.MAP = A5;
+        pinNumbers.sensors.TPS = A3; //TPS input pin
+        pinNumbers.sensors.IAT = A0; //IAT sensor pin
+        pinNumbers.sensors.CLT = A1; //CLS sensor pin
+        pinNumbers.sensors.O2 = A2; //O2 Sensor pin
+        pinNumbers.sensors.Bat = A15; //Battery reference voltage pin. Needs Alpha4+
         pinNumbers.pinLaunch = 36;
-        pinNumbers.pinFlex = 37; // Flex sensor
+        pinNumbers.sensors.flex = 37; // Flex sensor
 
         pinNumbers.triggerPins.primary = 20; //The CAS pin
         pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
@@ -1937,14 +1940,14 @@ void setPinMapping(byte boardID)
       } 
       pinNumbers.triggerPins.primary = 20; //The CAS pin
       pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-      pinNumbers.pinFlex = 37; // Flex sensor
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinBaro = A4; //Baro sensor pin
-      pinNumbers.pinBat = A15; //Battery reference voltage pin
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A2; //O2 Sensor pin
+      pinNumbers.sensors.flex = 37; // Flex sensor
+      pinNumbers.sensors.MAP = A5; //MAP sensor pin
+      pinNumbers.sensors.baro = A4; //Baro sensor pin
+      pinNumbers.sensors.Bat = A15; //Battery reference voltage pin
+      pinNumbers.sensors.TPS = A3; //TPS input pin
+      pinNumbers.sensors.IAT = A0; //IAT sensor pin
+      pinNumbers.sensors.CLT = A1; //CLS sensor pin
+      pinNumbers.sensors.O2 = A2; //O2 Sensor pin
       pinNumbers.pinLaunch = 36;
 
       pinNumbers.pinTachOut = 38; //Tacho output pin
@@ -1999,7 +2002,7 @@ void setPinMapping(byte boardID)
         //******** PORTB CONNECTIONS *************** 
         //******************************************
         // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.pinBaro = PB1; //ADC12
+        pinNumbers.sensors.baro = PB1; //ADC12
         // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
         // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
@@ -2017,12 +2020,12 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinIAT = PC0; //ADC123 
-        pinNumbers.pinTPS = PC1; //ADC123
-        pinNumbers.pinMAP = PC2; //ADC123 
-        pinNumbers.pinCLT = PC3; //ADC123
-        pinNumbers.pinO2 = PC4; //ADC12
-        pinNumbers.pinBat = PC5;  //ADC12
+        pinNumbers.sensors.IAT = PC0; //ADC123 
+        pinNumbers.sensors.TPS = PC1; //ADC123
+        pinNumbers.sensors.MAP = PC2; //ADC123 
+        pinNumbers.sensors.CLT = PC3; //ADC123
+        pinNumbers.sensors.O2 = PC4; //ADC12
+        pinNumbers.sensors.Bat = PC5;  //ADC12
         pinNumbers.pinBoost = PC6; //
         pinNumbers.pinIdle1 = PC7; //
         // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
@@ -2042,7 +2045,7 @@ void setPinMapping(byte boardID)
         // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
         pinNumbers.pinIdle2 = PD3; //
         // = PD4;  //
-        pinNumbers.pinFlex = PD4;
+        pinNumbers.sensors.flex = PD4;
         // = PD5; //TXD2
         // = PD6;  //RXD2
         // = PD7;  //
@@ -2073,13 +2076,13 @@ void setPinMapping(byte boardID)
           static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15, };
           pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
         }
-        pinNumbers.pinTPS = A2;//TPS input pin
-        pinNumbers.pinMAP = A3; //MAP sensor pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A8; //O2 Sensor pin
-        pinNumbers.pinBat = A4; //Battery reference voltage pin
-        pinNumbers.pinBaro = pinNumbers.pinMAP;
+        pinNumbers.sensors.TPS = A2;//TPS input pin
+        pinNumbers.sensors.MAP = A3; //MAP sensor pin
+        pinNumbers.sensors.IAT = A0; //IAT sensor pin
+        pinNumbers.sensors.CLT = A1; //CLS sensor pin
+        pinNumbers.sensors.O2 = A8; //O2 Sensor pin
+        pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
+        pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
         pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
         pinNumbers.pinIdle1 = PB2; //Single wire idle control
         pinNumbers.pinIdle2 = PB10; //2 wire idle control
@@ -2090,7 +2093,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
 
         //external interrupt enabled pins
-        pinNumbers.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
+        pinNumbers.sensors.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
         pinNumbers.triggerPins.primary = PC13; //The CAS pin also led pin so bad idea
         pinNumbers.triggerPins.secondary = PC15; //The Cam Sensor pin
 
@@ -2107,13 +2110,13 @@ void setPinMapping(byte boardID)
           static constexpr uint8_t boardCoilPins[] PROGMEM = { PB3, PA15, PA14, PA9, PA8, };
           pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
         }
-        pinNumbers.pinTPS = A0; //TPS input pin
-        pinNumbers.pinMAP = A1; //MAP sensor pin
-        pinNumbers.pinIAT = A2; //IAT sensor pin
-        pinNumbers.pinCLT = A3; //CLS sensor pin
-        pinNumbers.pinO2 = A4; //O2 Sensor pin
-        pinNumbers.pinBat = A5; //Battery reference voltage pin
-        pinNumbers.pinBaro = pinNumbers.pinMAP;
+        pinNumbers.sensors.TPS = A0; //TPS input pin
+        pinNumbers.sensors.MAP = A1; //MAP sensor pin
+        pinNumbers.sensors.IAT = A2; //IAT sensor pin
+        pinNumbers.sensors.CLT = A3; //CLS sensor pin
+        pinNumbers.sensors.O2 = A4; //O2 Sensor pin
+        pinNumbers.sensors.Bat = A5; //Battery reference voltage pin
+        pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
         pinNumbers.pinIdle1 = PB2; //Single wire idle control
         pinNumbers.pinIdle2 = PA2; //2 wire idle control
         pinNumbers.pinBoost = PA1; //Boost control
@@ -2126,7 +2129,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFuelPump = PB11; //Fuel pump output
         pinNumbers.pinTachOut = PB10; //Tacho output pin
         //external interrupt enabled pins
-        pinNumbers.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
+        pinNumbers.sensors.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
         pinNumbers.triggerPins.primary = PA10; //The CAS pin
         pinNumbers.triggerPins.secondary = PA13; //The Cam Sensor pin
       
@@ -2167,7 +2170,7 @@ void setPinMapping(byte boardID)
         //******** PORTB CONNECTIONS *************** 
         //******************************************
         /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.pinBaro = PB1; //ADC12
+        pinNumbers.sensors.baro = PB1; //ADC12
         /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
         /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
@@ -2186,12 +2189,12 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinMAP = PC0; //ADC123 
-        pinNumbers.pinTPS = PC1; //ADC123
-        pinNumbers.pinIAT = PC2; //ADC123
-        pinNumbers.pinCLT = PC3; //ADC123
-        pinNumbers.pinO2 = PC4; //ADC12
-        pinNumbers.pinBat = PC5; //ADC12
+        pinNumbers.sensors.MAP = PC0; //ADC123 
+        pinNumbers.sensors.TPS = PC1; //ADC123
+        pinNumbers.sensors.IAT = PC2; //ADC123
+        pinNumbers.sensors.CLT = PC3; //ADC123
+        pinNumbers.sensors.O2 = PC4; //ADC12
+        pinNumbers.sensors.Bat = PC5; //ADC12
         /*pinNumbers.pinVVT_1 = PC6; */ //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
@@ -2210,7 +2213,7 @@ void setPinMapping(byte boardID)
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
         /* = PD3; */ //
         /* = PD4; */ //
-        pinNumbers.pinFlex = PD4;
+        pinNumbers.sensors.flex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
         /* = PD7; */ //
@@ -2248,20 +2251,20 @@ void setPinMapping(byte boardID)
         }
         pinNumbers.triggerPins.primary = 20; //The CAS pin
         pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
-        pinNumbers.pinTPS = A2; //TPS input pin
-        pinNumbers.pinMAP = A3; //MAP sensor pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
+        pinNumbers.sensors.TPS = A2; //TPS input pin
+        pinNumbers.sensors.MAP = A3; //MAP sensor pin
+        pinNumbers.sensors.IAT = A0; //IAT sensor pin
+        pinNumbers.sensors.CLT = A1; //CLS sensor pin
         #ifdef A8 //Bit hacky, but needed for the atmega2561
-        pinNumbers.pinO2 = A8; //O2 Sensor pin
+        pinNumbers.sensors.O2 = A8; //O2 Sensor pin
         #endif
-        pinNumbers.pinBat = A4; //Battery reference voltage pin
+        pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
         pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
         pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
         pinNumbers.pinFan = 47; //Pin for the fan output
         pinNumbers.pinFuelPump = 4; //Fuel pump output
         pinNumbers.pinTachOut = 49; //Tacho output pin
-        pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+        pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
         pinNumbers.pinBoost = 5;
         pinNumbers.pinIdle1 = 6;
         pinNumbers.pinResetControl = 43; //Reset control output
@@ -2279,13 +2282,13 @@ void setPinMapping(byte boardID)
   if ( (configPage6.fanPin != 0) && (configPage6.fanPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinFan = pinTranslate(configPage6.fanPin); }
   if ( (configPage6.boostPin != 0) && (configPage6.boostPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinBoost = pinTranslate(configPage6.boostPin); }
   if ( (configPage6.vvt1Pin != 0) && (configPage6.vvt1Pin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinVVT_1 = pinTranslate(configPage6.vvt1Pin); }
-  if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinBaro = pinTranslateAnalog(configPage6.baroPin); }
-  if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinEMAP = pinTranslateAnalog(configPage10.EMAPPin); }
+  if ( (configPage6.useExtBaro != 0) && (configPage6.baroPin < BOARD_MAX_IO_PINS) ) { pinNumbers.sensors.baro = pinTranslateAnalog(configPage6.baroPin); }
+  if ( (configPage6.useEMAP != 0) && (configPage10.EMAPPin < BOARD_MAX_IO_PINS) ) { pinNumbers.sensors.EMAP = pinTranslateAnalog(configPage10.EMAPPin); }
   if ( (configPage10.fuel2InputPin != 0) && (configPage10.fuel2InputPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinFuel2Input = pinTranslate(configPage10.fuel2InputPin); }
   if ( (configPage10.spark2InputPin != 0) && (configPage10.spark2InputPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinSpark2Input = pinTranslate(configPage10.spark2InputPin); }
   if ( (configPage2.vssPin != 0) && (configPage2.vssPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinVSS = pinTranslate(configPage2.vssPin); }
-  if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinFuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
-  if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinOilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
+  if ( (configPage10.fuelPressureEnable) && (configPage10.fuelPressurePin < BOARD_MAX_IO_PINS) ) { pinNumbers.sensors.fuelPressure = pinTranslateAnalog(configPage10.fuelPressurePin); }
+  if ( (configPage10.oilPressureEnable) && (configPage10.oilPressurePin < BOARD_MAX_IO_PINS) ) { pinNumbers.sensors.oilPressure = pinTranslateAnalog(configPage10.oilPressurePin); }
   
   if ( (configPage10.wmiEmptyPin != 0) && (configPage10.wmiEmptyPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinWMIEmpty = pinTranslate(configPage10.wmiEmptyPin); }
   if ( (configPage10.wmiIndicatorPin != 0) && (configPage10.wmiIndicatorPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinWMIIndicator = pinTranslate(configPage10.wmiIndicatorPin); }
@@ -2302,7 +2305,7 @@ void setPinMapping(byte boardID)
   pinNumbers.pinIdleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
 
   //Currently there's no default pin for closed throttle position sensor
-  pinNumbers.pinCTPS = pinTranslate(configPage2.CTPSPin);
+  pinNumbers.sensors.CTPS = pinTranslate(configPage2.CTPSPin);
   
   // Air conditioning control initialisation
   if ((configPage15.airConCompPin != 0) && (configPage15.airConCompPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinAirConComp = pinTranslate(configPage15.airConCompPin); }
@@ -2331,7 +2334,7 @@ void setPinMapping(byte boardID)
   if(configPage4.ignBypassEnabled > 0) { pinMode(pinNumbers.pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
-  if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
+  if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.sensors.MAP, HIGH); }
 
   if(ignControlMode == IgnIoControlMode::Direct)
   {
@@ -2364,34 +2367,34 @@ void setPinMapping(byte boardID)
   //And for inputs
   #if defined(CORE_STM32)
     #ifdef INPUT_ANALOG
-      pinMode(pinNumbers.pinMAP, INPUT_ANALOG);
-      pinMode(pinNumbers.pinO2, INPUT_ANALOG);
-      pinMode(pinNumbers.pinO2_2, INPUT_ANALOG);
-      pinMode(pinNumbers.pinTPS, INPUT_ANALOG);
-      pinMode(pinNumbers.pinIAT, INPUT_ANALOG);
-      pinMode(pinNumbers.pinCLT, INPUT_ANALOG);
-      pinMode(pinNumbers.pinBat, INPUT_ANALOG);
-      pinMode(pinNumbers.pinBaro, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.MAP, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.O2, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.O2_2, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.TPS, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.IAT, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.CLT, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.Bat, INPUT_ANALOG);
+      pinMode(pinNumbers.sensors.baro, INPUT_ANALOG);
     #else
-      pinMode(pinNumbers.pinMAP, INPUT);
-      pinMode(pinNumbers.pinO2, INPUT);
-      pinMode(pinNumbers.pinO2_2, INPUT);
-      pinMode(pinNumbers.pinTPS, INPUT);
-      pinMode(pinNumbers.pinIAT, INPUT);
-      pinMode(pinNumbers.pinCLT, INPUT);
-      pinMode(pinNumbers.pinBat, INPUT);
-      pinMode(pinNumbers.pinBaro, INPUT);
+      pinMode(pinNumbers.sensors.MAP, INPUT);
+      pinMode(pinNumbers.sensors.O2, INPUT);
+      pinMode(pinNumbers.sensors.O2_2, INPUT);
+      pinMode(pinNumbers.sensors.TPS, INPUT);
+      pinMode(pinNumbers.sensors.IAT, INPUT);
+      pinMode(pinNumbers.sensors.CLT, INPUT);
+      pinMode(pinNumbers.sensors.Bat, INPUT);
+      pinMode(pinNumbers.sensors.baro, INPUT);
     #endif
   #elif defined(CORE_TEENSY41)
     //Teensy 4.1 has a weak pull down resistor that needs to be disabled for all analog pinNumbers. 
-    pinMode(pinNumbers.pinMAP, INPUT_DISABLE);
-    pinMode(pinNumbers.pinO2, INPUT_DISABLE);
-    pinMode(pinNumbers.pinO2_2, INPUT_DISABLE);
-    pinMode(pinNumbers.pinTPS, INPUT_DISABLE);
-    pinMode(pinNumbers.pinIAT, INPUT_DISABLE);
-    pinMode(pinNumbers.pinCLT, INPUT_DISABLE);
-    pinMode(pinNumbers.pinBat, INPUT_DISABLE);
-    pinMode(pinNumbers.pinBaro, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.MAP, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.O2, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.O2_2, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.TPS, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.IAT, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.CLT, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.Bat, INPUT_DISABLE);
+    pinMode(pinNumbers.sensors.baro, INPUT_DISABLE);
   #endif
 
   //Each of the below are only set when their relevant function is enabled. This can help prevent pin conflicts that users aren't aware of with unused functions
@@ -2409,10 +2412,10 @@ void setPinMapping(byte boardID)
     if (configPage2.idleUpPolarity == 0) { pinMode(pinNumbers.pinIdleUp, INPUT_PULLUP); } //Normal setting
     else { pinMode(pinNumbers.pinIdleUp, INPUT); } //inverted setting
   }
-  if( (configPage2.CTPSEnabled > 0) && (!pinIsOutput(pinNumbers.pinCTPS)) )
+  if( (configPage2.CTPSEnabled > 0) && (!pinIsOutput(pinNumbers.sensors.CTPS)) )
   {
-    if (configPage2.CTPSPolarity == 0) { pinMode(pinNumbers.pinCTPS, INPUT_PULLUP); } //Normal setting
-    else { pinMode(pinNumbers.pinCTPS, INPUT); } //inverted setting
+    if (configPage2.CTPSPolarity == 0) { pinMode(pinNumbers.sensors.CTPS, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinNumbers.sensors.CTPS, INPUT); } //inverted setting
   }
   if( (configPage10.fuel2Mode == FUEL2_MODE_INPUT_SWITCH) && (!pinIsOutput(pinNumbers.pinFuel2Input)) )
   {
@@ -2424,13 +2427,13 @@ void setPinMapping(byte boardID)
     if (configPage10.spark2InputPullup == true) { pinMode(pinNumbers.pinSpark2Input, INPUT_PULLUP); } //With pullup
     else { pinMode(pinNumbers.pinSpark2Input, INPUT); } //Normal input
   }
-  if( (configPage10.fuelPressureEnable > 0)  && (!pinIsOutput(pinNumbers.pinFuelPressure)) )
+  if( (configPage10.fuelPressureEnable > 0)  && (!pinIsOutput(pinNumbers.sensors.fuelPressure)) )
   {
-    pinMode(pinNumbers.pinFuelPressure, INPUT);
+    pinMode(pinNumbers.sensors.fuelPressure, INPUT);
   }
-  if( (configPage10.oilPressureEnable > 0) && (!pinIsOutput(pinNumbers.pinOilPressure)) )
+  if( (configPage10.oilPressureEnable > 0) && (!pinIsOutput(pinNumbers.sensors.oilPressure)) )
   {
-    pinMode(pinNumbers.pinOilPressure, INPUT);
+    pinMode(pinNumbers.sensors.oilPressure, INPUT);
   }
   if( (configPage13.onboard_log_trigger_Epin > 0) && (!pinIsOutput(pinNumbers.pinSDEnable)) )
   {

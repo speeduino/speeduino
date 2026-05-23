@@ -402,7 +402,7 @@ void boardInitPins(pinNumbers_t &pins)
   //Tertiary trigger
   setPinHysteresis(pins.triggerPins.tertiary);
 
-  if(configPage2.flexEnabled > 0) { setPinHysteresis(pins.pinFlex); }
+  if(configPage2.flexEnabled > 0) { setPinHysteresis(pins.sensors.flex); }
   if(configPage2.vssMode > 1) { setPinHysteresis(pins.pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }

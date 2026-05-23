@@ -183,9 +183,9 @@ static void test_initialiseProgrammableIO_used_physical_pin(void)
 {
     programmableIOTestContext_t context;
 
-    pinNumbers.pinCLT = 10;
+    pinNumbers.sensors.CLT = 10;
 
-    context.page13.outputPin[0] = pinNumbers.pinCLT; // Physical pin (used)
+    context.page13.outputPin[0] = pinNumbers.sensors.CLT; // Physical pin (used)
     context.page13.outputPin[1] = 11; // Pin 11 - should be available
 
     initialiseProgrammableIO(context.current, context.page13);

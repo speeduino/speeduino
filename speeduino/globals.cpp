@@ -92,22 +92,12 @@ bool pinIsOutput(byte pin)
   return used;
 }
 
-#define pinIsSensor(pin)    ( ((pin) == pinNumbers.pinCLT) || ((pin) == pinNumbers.pinIAT) || ((pin) == pinNumbers.pinMAP) || ((pin) == pinNumbers.pinTPS) || ((pin) == pinNumbers.pinO2) || ((pin) == pinNumbers.pinBat) || (((pin) == pinNumbers.pinFlex) && (configPage2.flexEnabled != 0)) )
-
 bool pinIsUsed(byte pin)
 {
-  bool used = false;
-
-  //Analog input?
-  if ( pinIsSensor(pin) )
-  {
-    used = true;
-  }
-  //Functions?
-  if ( pinIsOutput(pin) )
-  {
-    used = true;
-  }
-
-  return used;
+  return 
+    //Analog input?
+    pinNumbers.sensors.isPinUsed(pin)
+    //Functions?
+    || pinIsOutput(pin)
+    ;
 }
