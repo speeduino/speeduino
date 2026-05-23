@@ -1,5 +1,6 @@
 #include "scheduledIO_direct_ign.h"
 #include "board_definition.h"
+#include "scheduledIO_direct_ign.h"
 #include "src/pins/fastOutputPin.h"
 #include "preprocessor.h"
 
@@ -24,11 +25,11 @@ using channelFunc = void(*)(uint8_t);
 static channelFunc coilChargingFn = coilHigh;
 static channelFunc coilDischargingFn = coilLow;
 
-void initIgnDirectIO(const config4 &page4, const uint8_t (&pinNumbers)[_countof(pins)])
+void initIgnDirectIO(const config4 &page4, const coil_pins_t &coilPins)
 {
     for (uint8_t i = 0; i < _countof(pins); i++)
     {
-        pins[i].setPin(pinNumbers[i], OUTPUT);
+        pins[i].setPin(coilPins.pins[i], OUTPUT);
     }
     if (page4.IgInv == GOING_HIGH)
     {

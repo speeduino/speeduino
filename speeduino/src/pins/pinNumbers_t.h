@@ -4,26 +4,59 @@
 #include "../../board_definition.h"
 #include "../../config_pages.h"
 
-/** @brief Injector control pin numbers */
-struct injector_pins_t
+/** @brief An array of pin numbers */
+template <uint8_t N>
+struct pin_array_t
 {
-  uint8_t pins[INJ_CHANNELS];
+  uint8_t pins[N];
 
+  /**
+   * @brief Populate by copying from a source array stored in flash
+   * 
+   * Handles array length mismatches. 
+   */
+  void __attribute__((optimize("Os"))) copy_P(const uint8_t *pSrc, uint8_t length)
+  {
+    uint8_t elementsToCopy = min(N, length);
+    (void)memcpy_P(pins, pSrc, elementsToCopy*sizeof(pins[0]));
+    // Fill remainder with zero
+    memset(pins+elementsToCopy, 0, (N-elementsToCopy)*sizeof(pins[0]));
+  }
+
+  /** @brief Does the array contain \p pin? */
+  bool isPinUsed(uint8_t pin) const
+  {
+    uint8_t index = 0;
+    while (index<N && pin!=pins[index])
+    {
+      ++index;
+    }
+    return index<N;
+  }
+};
+
+/** @brief Injector control pin numbers */
+struct injector_pins_t : pin_array_t<INJ_CHANNELS>
+{
+  /**
+   * @brief Populate by copying from a source array stored in flash
+   * 
+   * Limits the source array length to the number of injectors defined in
+   * the tune.
+   */
   void copy_P(const uint8_t *pSrc, uint8_t length, const config2 &page2);
+};
+
+/** @brief Coil control pin numbers */
+struct coil_pins_t : pin_array_t<IGN_CHANNELS>
+{
 };
 
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
   injector_pins_t injectorPins;
-  uint8_t pinCoil1 = 0; //Pin for coil 1
-  uint8_t pinCoil2 = 0; //Pin for coil 2
-  uint8_t pinCoil3 = 0; //Pin for coil 3
-  uint8_t pinCoil4 = 0; //Pin for coil 4
-  uint8_t pinCoil5 = 0; //Pin for coil 5
-  uint8_t pinCoil6 = 0; //Pin for coil 6
-  uint8_t pinCoil7 = 0; //Pin for coil 7
-  uint8_t pinCoil8 = 0; //Pin for coil 8
+  coil_pins_t coilPins;
   uint8_t pinTrigger = 0; //The CAS pin
   uint8_t pinTrigger2 = 0; //The Cam Sensor pin known as secondary input
   uint8_t pinTrigger3 = 0;	//the 2nd cam sensor pin known as tertiary input

@@ -905,11 +905,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 28; //Pin for coil 1
-      pinNumbers.pinCoil2 = 24; //Pin for coil 2
-      pinNumbers.pinCoil3 = 40; //Pin for coil 3
-      pinNumbers.pinCoil4 = 36; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }
       pinNumbers.pinTrigger = 20; //The CAS pin
       pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -938,11 +937,14 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }      
-      pinNumbers.pinCoil1 = 28; //Pin for coil 1
-      pinNumbers.pinCoil2 = 24; //Pin for coil 2
-      pinNumbers.pinCoil3 = 40; //Pin for coil 3
-      pinNumbers.pinCoil4 = 36; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+      #if defined(CORE_TEENSY35)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 24, 30, 21, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+      #else
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+      #endif
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }      
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -974,11 +976,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger = 23;
         pinNumbers.pinStepperDir = 33;
         pinNumbers.pinStepperStep = 34;
-        pinNumbers.pinCoil1 = 31;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
-        pinNumbers.pinCoil4 = 21;
-        pinNumbers.pinCoil3 = 30;
         pinNumbers.pinO2 = A22;
       #endif
     #endif
@@ -997,12 +996,21 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */};
       #endif
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
+      {
+      #if defined(CORE_TEENSY35)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 32, 30, 29 };
+      #elif defined(CORE_TEENSY41)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 31, 32, 30, 29 };
+      #elif defined(STM32F407xx)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PB10, PD9 };
+      #elif defined(CORE_STM32)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15 };
+      #else
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 50, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+      #endif
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
       }      
-      pinNumbers.pinCoil1 = 40; //Pin for coil 1
-      pinNumbers.pinCoil2 = 38; //Pin for coil 2
-      pinNumbers.pinCoil3 = 52; //Pin for coil 3
-      pinNumbers.pinCoil4 = 50; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1038,12 +1046,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 31;
-        pinNumbers.pinCoil2 = 32;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
-        pinNumbers.pinCoil4 = 29;
-        pinNumbers.pinCoil3 = 30;
         pinNumbers.pinO2 = A22;
 
         //Make sure the CAN pins aren't overwritten
@@ -1071,11 +1075,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
         
-        pinNumbers.pinCoil1 = 31;
-        pinNumbers.pinCoil2 = 32;
-        pinNumbers.pinCoil4 = 29;
-        pinNumbers.pinCoil3 = 30;
-
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
         pinNumbers.pinFuelPump = 33;
@@ -1097,7 +1096,6 @@ void setPinMapping(byte boardID)
         /* = PA5; */ //ADC12
         /* = PA6; */ //ADC12 LED_BUILTIN_1
         pinNumbers.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-        pinNumbers.pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -1118,9 +1116,7 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinNumbers.pinCoil2 = PB9; //
         /* = PB9; */ //
-        pinNumbers.pinCoil4 = PB10; //TXD3
         pinNumbers.pinIdle1 = PB11; //RXD3
         pinNumbers.pinIdle2 = PB12; //
         pinNumbers.pinBoost = PB12; //
@@ -1158,9 +1154,7 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinNumbers.pinCoil1 = PD7; //
         /* = PD8; */ //
-        pinNumbers.pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
 
@@ -1187,10 +1181,6 @@ void setPinMapping(byte boardID)
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         //PB2 can't be used as input because it's the BOOT pin
-        pinNumbers.pinCoil1 = PB9; //Pin for coil 1
-        pinNumbers.pinCoil2 = PB8; //Pin for coil 2
-        pinNumbers.pinCoil3 = PB3; //Pin for coil 3
-        pinNumbers.pinCoil4 = PA15; //Pin for coil 4
         pinNumbers.pinTPS = A2;//TPS input pin
         pinNumbers.pinMAP = A3; //MAP sensor pin
         pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1220,11 +1210,14 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 44, 46, 47, 45, 14 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }      
-      pinNumbers.pinCoil1 = 42; //Pin for coil 1
-      pinNumbers.pinCoil2 = 43; //Pin for coil 2
-      pinNumbers.pinCoil3 = 32; //Pin for coil 3
-      pinNumbers.pinCoil4 = 33; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+      #if defined(CORE_TEENSY35)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
+      #else
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 42, 43, 32, 33, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+      #endif
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 2; //The Cam sensor 2 pin
@@ -1257,10 +1250,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 33; //Done
-        pinNumbers.pinCoil2 = 24; //Done
-        pinNumbers.pinCoil3 = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.pinCoil4 = 52; //Won't work (No mapping for pin 33)
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1274,11 +1263,14 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9, 8, 14 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 39; //Pin for coil 1
-      pinNumbers.pinCoil2 = 41; //Pin for coil 2
-      pinNumbers.pinCoil3 = 32; //Pin for coil 3
-      pinNumbers.pinCoil4 = 33; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+      #if defined(CORE_TEENSY35)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
+      #else
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 41, 32, 33, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+      #endif
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }      
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
@@ -1307,10 +1299,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 33; //Done
-        pinNumbers.pinCoil2 = 24; //Done
-        pinNumbers.pinCoil3 = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.pinCoil4 = 52; //Won't work (No mapping for pin 33)
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1325,11 +1313,14 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9, 8, 14 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 39; //Pin for coil 1
-      pinNumbers.pinCoil2 = 41; //Pin for coil 2
-      pinNumbers.pinCoil3 = 32; //Pin for coil 3
-      pinNumbers.pinCoil4 = 33; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+      #if defined(CORE_TEENSY35)
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 33, 24, 51, 52 };        
+      #else
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 41, 32, 33, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+      #endif
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
@@ -1361,10 +1352,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 33; //Done
-        pinNumbers.pinCoil2 = 24; //Done
-        pinNumbers.pinCoil3 = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.pinCoil4 = 52; //Won't work (No mapping for pin 33)
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1380,11 +1367,10 @@ void setPinMapping(byte boardID)
                                                               8, 9, 10, 11 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 24; //Pin for coil 1
-      pinNumbers.pinCoil2 = 28; //Pin for coil 2
-      pinNumbers.pinCoil3 = 36; //Pin for coil 3
-      pinNumbers.pinCoil4 = 40; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 28, 36, 40, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }      
       pinNumbers.pinTrigger = 18; //The CAS pin
       pinNumbers.pinTrigger2 = 19; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
@@ -1403,7 +1389,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinTachOut = 49; //Tacho output pin
       pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 26; //Reset control output
-
     #endif
       break;
 
@@ -1414,14 +1399,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB15, PA8, PB13, PB14, PE13, PB12, PE7, PE10, };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }      
-      pinNumbers.pinCoil1 = PC13;         // Pin for coil 1
-      pinNumbers.pinCoil2 = PE6;          // Pin for coil 2
-      pinNumbers.pinCoil3 = PE5;          // Pin for coil 3
-      pinNumbers.pinCoil4 = PE4;          // Pin for coil 4
-      pinNumbers.pinCoil5 = PE3;          // Pin for coil 5
-      pinNumbers.pinCoil6 = PE2;          // Pin for coil 6
-      pinNumbers.pinCoil7 = PB9;          // Pin for coil 7
-      pinNumbers.pinCoil8 = PD12;         // Pin for coil 8
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { PC13, PE6, PE5, PE4, PE3, PE2, PB9, PD12, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }      
       pinNumbers.pinTrigger = PD3;        // The CAS pin
       pinNumbers.pinTrigger2 = PD4;       // The Cam Sensor pin
       pinNumbers.pinTPS = PA2;            // TPS input pin
@@ -1462,11 +1443,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 28; //Pin for coil 1
-      pinNumbers.pinCoil2 = 24; //Pin for coil 2
-      pinNumbers.pinCoil3 = 40; //Pin for coil 3
-      pinNumbers.pinCoil4 = 36; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */ };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }      
       pinNumbers.pinSpareOut1 = 4; //Spare LSD Output 1(PWM)
       pinNumbers.pinSpareOut2 = 5; //Spare LSD Output 2(PWM)
       pinNumbers.pinSpareOut3 = 6; //Spare LSD Output 3(PWM)
@@ -1497,11 +1477,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 40; //Pin for coil 1
-      pinNumbers.pinCoil2 = 38; //Pin for coil 2
-      pinNumbers.pinCoil3 = 50; //Pin for coil 3
-      pinNumbers.pinCoil4 = 52; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 50, 52, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }       
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
@@ -1538,14 +1517,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12, 50, 39, 42 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 40; //Pin for coil 1
-      pinNumbers.pinCoil2 = 38; //Pin for coil 2
-      pinNumbers.pinCoil3 = 52; //Pin for coil 3
-      pinNumbers.pinCoil4 = 48; //Pin for coil 4
-      pinNumbers.pinCoil5 = 36; //Pin for coil 5
-      pinNumbers.pinCoil6 = 34; //Pin for coil 6
-      pinNumbers.pinCoil7 = 46; //Pin for coil 7
-      pinNumbers.pinCoil8 = 53; //Pin for coil 8
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 38, 52, 48, 36, 34, 46, 53, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }       
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 20; //The Cam sensor 2 pin
@@ -1585,14 +1560,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  PB15, PB14, PB12, PB13, PA8, PE7, PE13, PE10, };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = PE2; //Pin for coil 1
-      pinNumbers.pinCoil2 = PE3; //Pin for coil 2
-      pinNumbers.pinCoil3 = PC13; //Pin for coil 3
-      pinNumbers.pinCoil4 = PE6; //Pin for coil 4
-      pinNumbers.pinCoil5 = PE4; //Pin for coil 5
-      pinNumbers.pinCoil6 = PE5; //Pin for coil 6
-      pinNumbers.pinCoil7 = PE0; //Pin for coil 7
-      pinNumbers.pinCoil8 = PB9; //Pin for coil 8
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { PE2, PE3, PC13, PE6, PE4, PE5, PE0, PB9, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }      
       pinNumbers.pinTrigger = PD3; //The CAS pin
       pinNumbers.pinTrigger2 = PD4; //The Cam Sensor pin
       pinNumbers.pinTPS = PA2;//TPS input pin
@@ -1636,11 +1607,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 11, 12, 13 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 23; //Pin for coil 1
-      pinNumbers.pinCoil2 = 22; //Pin for coil 2
-      pinNumbers.pinCoil3 = 2; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.pinCoil4 = 3; //Pin for coil 4 - ONLY WITH DB2
-      pinNumbers.pinCoil5 = 46; //Placeholder only - NOT USED
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 23, 22, 2 /*Pin for coil 3 - ONLY WITH DB2*/, 3 /*Pin for coil 4 - ONLY WITH DB2*/, 46 /* Pin for coil 5 PLACEHOLDER value for now */, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }    
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 21; //The Cam sensor 2 pin
@@ -1680,11 +1650,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 7, 6, 5, 45 /* Output pin injector 5 is on PLACEHOLDER value for now */};
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 35; //Pin for coil 1
-      pinNumbers.pinCoil2 = 36; //Pin for coil 2
-      pinNumbers.pinCoil3 = 33; //Pin for coil 3
-      pinNumbers.pinCoil4 = 34; //Pin for coil 4
-      pinNumbers.pinCoil5 = 44; //Pin for coil 5 PLACEHOLDER value for now
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 35, 36, 33, 34, 44 /* Pin for coil 5 PLACEHOLDER value for now */, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }       
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1726,10 +1695,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  6, 7, 8, 9 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 24; //Pin for coil 1
-      pinNumbers.pinCoil2 = 25; //Pin for coil 2
-      pinNumbers.pinCoil3 = 23; //Pin for coil 3
-      pinNumbers.pinCoil4 = 22; //Pin for coil 4
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 24, 25, 23, 22, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      }       
       pinNumbers.pinTrigger = 19; //The CRANK Sensor pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
@@ -1765,11 +1734,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = {  10, 11, 12, 9, 33, 34};
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 39; //Pin for coil 1
-      pinNumbers.pinCoil2 = 29; //Pin for coil 2
-      pinNumbers.pinCoil3 = 28; //Pin for coil 3
-      pinNumbers.pinCoil4 = 27; //Pin for coil 4
-      pinNumbers.pinCoil5 = 26; //Placeholder  for coil 5
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 39, 29, 28, 27, 26 /* Pin for coil 5 PLACEHOLDER value for now */, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 21;// The Cam sensor 2 pin
@@ -1811,12 +1779,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9, };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }      
-      pinNumbers.pinCoil1 = 29; //Pin for coil 1
-      pinNumbers.pinCoil2 = 30; //Pin for coil 2
-      pinNumbers.pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
-      //Placeholder only - NOT USED:
-      //pinNumbers.pinCoil5 = 46; 
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31 /* Pin for coil 3 - ONLY WITH DB2 */, 32 /* Pin for coil 4 - ONLY WITH DB2*/, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 23; //The CAS pin
       pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
       pinNumbers.pinTPS = 16; //TPS input pin
@@ -1846,10 +1812,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 29; //Pin for coil 1
-      pinNumbers.pinCoil2 = 30; //Pin for coil 2
-      pinNumbers.pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31 /* Pin for coil 3 - ONLY WITH DB2 */, 32 /* Pin for coil 4 - ONLY WITH DB2*/, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 23; //The CAS pin
       pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
       pinNumbers.pinTPS = 16; //TPS input pin
@@ -1881,10 +1847,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 56, 6, 50 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 29; //Pin for coil 1
-      pinNumbers.pinCoil2 = 30; //Pin for coil 2
-      pinNumbers.pinCoil3 = 31; //Pin for coil 3
-      pinNumbers.pinCoil4 = 32; //Pin for coil 4
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 29, 30, 31, 32, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 37; //The CAS pin
       pinNumbers.pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
       pinNumbers.pinTPS = A2; //TPS input pin
@@ -1920,16 +1886,11 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 13, 11, 12, 10, 9, 9 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
-      pinNumbers.pinCoil1 = 40;
-      pinNumbers.pinCoil2 = 41;
-      /*
-      pinNumbers.pinCoil3 = 55;
-      pinNumbers.pinCoil4 = 55;
-      pinNumbers.pinCoil5 = 55;
-      pinNumbers.pinCoil6 = 55;
-      */
-      
+      {
+        //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 40, 41, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
@@ -2041,11 +2002,10 @@ void setPinMapping(byte boardID)
         static constexpr uint8_t boardInjectorPins[] PROGMEM = { 6, 7, 9, 8 };
         pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
       }
-      pinNumbers.pinCoil1 = 2;
-      pinNumbers.pinCoil2 = 3;
-      pinNumbers.pinCoil3 = 4;
-      pinNumbers.pinCoil4 = 5;
-
+      {
+        static constexpr uint8_t boardCoilPins[] PROGMEM = { 2, 3, 4, 5, };
+        pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+      } 
       pinNumbers.pinTrigger = 20; //The CAS pin
       pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
       pinNumbers.pinFlex = 37; // Flex sensor
@@ -2089,7 +2049,10 @@ void setPinMapping(byte boardID)
           static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE9, PE11, PE14, PE13, };
           pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
         }
-                
+        {
+          static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PD10, PD9, PB7, };
+          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+        }
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
@@ -2101,7 +2064,6 @@ void setPinMapping(byte boardID)
         // = PA5; //ADC12
         // = PA6; //ADC12 LED_BUILTIN_1
         // = PA7; //ADC12 LED_BUILTIN_2
-        pinNumbers.pinCoil3 = PA8;
         // = PA9;  //TXD1=Bluetooth module
         // = PA10; //RXD1=Bluetooth module
         // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
@@ -2120,9 +2082,7 @@ void setPinMapping(byte boardID)
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
         // = PB6;  //NRF_CE
-        pinNumbers.pinCoil6 = PB7;  //NRF_CS
         // = PB8;  //NRF_IRQ
-        pinNumbers.pinCoil2 = PB9; //
         // = PB9;  //
         // = PB10; //TXD3
         // = PB11; //RXD3
@@ -2162,11 +2122,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFlex = PD4;
         // = PD5; //TXD2
         // = PD6;  //RXD2
-        pinNumbers.pinCoil1 = PD7; //
         // = PD7;  //
         // = PD8;  //
-        pinNumbers.pinCoil5 = PD9;//
-        pinNumbers.pinCoil4 = PD10;//
         // = PD11;  //
 
         //******************************************
@@ -2188,11 +2145,11 @@ void setPinMapping(byte boardID)
         {
           static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
           pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }        
-        pinNumbers.pinCoil1 = PB9; //Pin for coil 1
-        pinNumbers.pinCoil2 = PB8; //Pin for coil 2
-        pinNumbers.pinCoil3 = PB3; //Pin for coil 3
-        pinNumbers.pinCoil4 = PA15; //Pin for coil 4
+        }
+        {
+          static constexpr uint8_t boardCoilPins[] PROGMEM = { PB9, PB8, PB3, PA15, };
+          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+        }
         pinNumbers.pinTPS = A2;//TPS input pin
         pinNumbers.pinMAP = A3; //MAP sensor pin
         pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -2222,12 +2179,11 @@ void setPinMapping(byte boardID)
         {
           static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
           pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }        
-        pinNumbers.pinCoil1 = PB3; //Pin for coil 1
-        pinNumbers.pinCoil2 = PA15; //Pin for coil 2
-        pinNumbers.pinCoil3 = PA14; //Pin for coil 3
-        pinNumbers.pinCoil4 = PA9; //Pin for coil 4
-        pinNumbers.pinCoil5 = PA8; //Pin for coil 5
+        }
+        {
+          static constexpr uint8_t boardCoilPins[] PROGMEM = { PB3, PA15, PA14, PA9, PA8, };
+          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+        }
         pinNumbers.pinTPS = A0; //TPS input pin
         pinNumbers.pinMAP = A1; //MAP sensor pin
         pinNumbers.pinIAT = A2; //IAT sensor pin
@@ -2261,8 +2217,11 @@ void setPinMapping(byte boardID)
         {
           static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12 };
           pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
-        }        
-
+        }
+        {
+          static constexpr uint8_t boardCoilPins[] PROGMEM = { PD7, PB9, PA8, PB10, PD9, };
+          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+        }         
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
@@ -2274,7 +2233,6 @@ void setPinMapping(byte boardID)
         /* = PA5; */ //ADC12
         pinNumbers.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
         /* = PA7; */ //ADC12 LED_BUILTIN_2
-        pinNumbers.pinCoil3 = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -2295,9 +2253,7 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinNumbers.pinCoil2 = PB9; //
         /* = PB9; */ //
-        pinNumbers.pinCoil4 = PB10; //TXD3
         pinNumbers.pinIdle1 = PB11; //RXD3
         pinNumbers.pinIdle2 = PB12; //
         /* pinNumbers.pinBoost = PB12; */ //
@@ -2336,10 +2292,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinNumbers.pinCoil1 = PD7; //
         /* = PD7; */ //
         /* = PD8; */ //
-        pinNumbers.pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
 
@@ -2367,11 +2321,10 @@ void setPinMapping(byte boardID)
           static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12, };
           pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
         }   
-        pinNumbers.pinCoil1 = 28; //Pin for coil 1
-        pinNumbers.pinCoil2 = 24; //Pin for coil 2
-        pinNumbers.pinCoil3 = 40; //Pin for coil 3
-        pinNumbers.pinCoil4 = 36; //Pin for coil 4
-        pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+        {
+          static constexpr uint8_t boardCoilPins[] PROGMEM = { 28, 24, 40, 36, 34 /* Pin for coil 5 PLACEHOLDER value for now */, };
+          pinNumbers.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
+        }
         pinNumbers.pinTrigger = 20; //The CAS pin
         pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
         pinNumbers.pinTPS = A2; //TPS input pin
@@ -2462,31 +2415,7 @@ void setPinMapping(byte boardID)
 
   if(ignControlMode == IgnIoControlMode::Direct)
   {
-    uint8_t ignPins[IGN_CHANNELS] = {
-      pinNumbers.pinCoil1,
-      #if (IGN_CHANNELS >= 2)
-      pinNumbers.pinCoil2,
-      #endif
-      #if (IGN_CHANNELS >= 3)
-      pinNumbers.pinCoil3,
-      #endif
-      #if (IGN_CHANNELS >= 4)
-      pinNumbers.pinCoil4,
-      #endif
-      #if (IGN_CHANNELS >= 5)
-      pinNumbers.pinCoil5,
-      #endif
-      #if (IGN_CHANNELS >= 6)
-      pinNumbers.pinCoil6,
-      #endif
-      #if (IGN_CHANNELS >= 7)
-      pinNumbers.pinCoil7,
-      #endif
-      #if (IGN_CHANNELS >= 8)
-      pinNumbers.pinCoil8,
-      #endif
-    };
-    initIgnDirectIO(configPage4, ignPins);
+    initIgnDirectIO(configPage4, pinNumbers.coilPins);
   } 
 
   if(injControlMode == InjIoControlMode::Direct)
