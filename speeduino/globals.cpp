@@ -64,16 +64,9 @@ bool pinIsOutput(byte pin)
   bool isIdlePWM = isPwmIac(configPage6);
   bool isIdleStepper = isStepperIac(configPage6);
   //Injector?
-  if ((pin == pinNumbers.pinInjector1)
-  || ((pin == pinNumbers.pinInjector2) && (configPage2.nInjectors > 1))
-  || ((pin == pinNumbers.pinInjector3) && (configPage2.nInjectors > 2))
-  || ((pin == pinNumbers.pinInjector4) && (configPage2.nInjectors > 3))
-  || ((pin == pinNumbers.pinInjector5) && (configPage2.nInjectors > 4))
-  || ((pin == pinNumbers.pinInjector6) && (configPage2.nInjectors > 5))
-  || ((pin == pinNumbers.pinInjector7) && (configPage2.nInjectors > 6))
-  || ((pin == pinNumbers.pinInjector8) && (configPage2.nInjectors > 7)))
+  for (uint8_t index=0; index<min((uint8_t)_countof(pinNumbers.injectorPins.pins), (uint8_t)configPage2.nInjectors); ++index)
   {
-    used = true;
+    used = used || (pin==pinNumbers.injectorPins.pins[index]);
   }
   //Ignition?
   if ((pin == pinNumbers.pinCoil1)

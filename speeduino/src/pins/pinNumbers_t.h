@@ -1,18 +1,21 @@
 #pragma once
 
 #include <stdint.h>
+#include "../../board_definition.h"
+#include "../../config_pages.h"
+
+/** @brief Injector control pin numbers */
+struct injector_pins_t
+{
+  uint8_t pins[INJ_CHANNELS];
+
+  void copy_P(const uint8_t *pSrc, uint8_t length, const config2 &page2);
+};
 
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
-  uint8_t pinInjector1 = 0; //Output pin injector 1
-  uint8_t pinInjector2 = 0; //Output pin injector 2
-  uint8_t pinInjector3 = 0; //Output pin injector 3
-  uint8_t pinInjector4 = 0; //Output pin injector 4
-  uint8_t pinInjector5 = 0; //Output pin injector 5
-  uint8_t pinInjector6 = 0; //Output pin injector 6
-  uint8_t pinInjector7 = 0; //Output pin injector 7
-  uint8_t pinInjector8 = 0; //Output pin injector 8
+  injector_pins_t injectorPins;
   uint8_t pinCoil1 = 0; //Pin for coil 1
   uint8_t pinCoil2 = 0; //Pin for coil 2
   uint8_t pinCoil3 = 0; //Pin for coil 3

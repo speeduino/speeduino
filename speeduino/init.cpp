@@ -901,11 +901,10 @@ void setPinMapping(byte boardID)
     case 1:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 10; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 11; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 12; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 28; //Pin for coil 1
       pinNumbers.pinCoil2 = 24; //Pin for coil 2
       pinNumbers.pinCoil3 = 40; //Pin for coil 3
@@ -935,11 +934,10 @@ void setPinMapping(byte boardID)
     case 2:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.3 shield
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 10; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 11; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 12; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }      
       pinNumbers.pinCoil1 = 28; //Pin for coil 1
       pinNumbers.pinCoil2 = 24; //Pin for coil 2
       pinNumbers.pinCoil3 = 40; //Pin for coil 3
@@ -986,14 +984,20 @@ void setPinMapping(byte boardID)
     #endif
       break;
 
-    case 3:
+   case 3:
       //Pin mappings as per the v0.4 shield
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 10; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 11; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 12; //Output pin injector 5 is on
-      pinNumbers.pinInjector6 = 50; //CAUTION: Uses the same as Coil 4 below. 
+      {
+      #if defined(CORE_TEENSY35)
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */, 51};
+      #elif defined(STM32F407xx)
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12, };
+      #elif defined(CORE_STM32)
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4, };
+      #else
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 8, 9, 10, 11, 12, 50 /* CAUTION: Uses the same as Coil 4 below. */};
+      #endif
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }      
       pinNumbers.pinCoil1 = 40; //Pin for coil 1
       pinNumbers.pinCoil2 = 38; //Pin for coil 2
       pinNumbers.pinCoil3 = 52; //Pin for coil 3
@@ -1030,8 +1034,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEnabled = 42;
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinInjector6 = 51;
-
         pinNumbers.pinTrigger = 23;
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
@@ -1161,10 +1163,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        pinNumbers.pinInjector1 = PD12; //
-        pinNumbers.pinInjector2 = PD13; //
-        pinNumbers.pinInjector3 = PD14; //
-        pinNumbers.pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
@@ -1180,8 +1178,6 @@ void setPinMapping(byte boardID)
         /* = PE8; */ //
         /* = PE9; */ //
         /* = PE10; */ //
-        pinNumbers.pinInjector5 = PE11; //
-        pinNumbers.pinInjector6 = PE12; //
         /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
@@ -1191,10 +1187,6 @@ void setPinMapping(byte boardID)
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         //PB2 can't be used as input because it's the BOOT pin
-        pinNumbers.pinInjector1 = PB7; //Output pin injector 1 is on
-        pinNumbers.pinInjector2 = PB6; //Output pin injector 2 is on
-        pinNumbers.pinInjector3 = PB5; //Output pin injector 3 is on
-        pinNumbers.pinInjector4 = PB4; //Output pin injector 4 is on
         pinNumbers.pinCoil1 = PB9; //Pin for coil 1
         pinNumbers.pinCoil2 = PB8; //Pin for coil 2
         pinNumbers.pinCoil3 = PB3; //Pin for coil 3
@@ -1224,11 +1216,10 @@ void setPinMapping(byte boardID)
     case 6:
       #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the 2001-05 MX5 PNP shield
-      pinNumbers.pinInjector1 = 44; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 46; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 47; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 45; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 14; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 44, 46, 47, 45, 14 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }      
       pinNumbers.pinCoil1 = 42; //Pin for coil 1
       pinNumbers.pinCoil2 = 43; //Pin for coil 2
       pinNumbers.pinCoil3 = 32; //Pin for coil 3
@@ -1279,11 +1270,10 @@ void setPinMapping(byte boardID)
     case 8:
       #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the 1996-97 MX5 PNP shield
-      pinNumbers.pinInjector1 = 11; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 10; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 9; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 8; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 14; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9, 8, 14 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 39; //Pin for coil 1
       pinNumbers.pinCoil2 = 41; //Pin for coil 2
       pinNumbers.pinCoil3 = 32; //Pin for coil 3
@@ -1331,11 +1321,10 @@ void setPinMapping(byte boardID)
     case 9:
      #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the 89-95 MX5 PNP shield
-      pinNumbers.pinInjector1 = 11; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 10; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 9; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 8; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 14; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 11, 10, 9, 8, 14 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 39; //Pin for coil 1
       pinNumbers.pinCoil2 = 41; //Pin for coil 2
       pinNumbers.pinCoil3 = 32; //Pin for coil 3
@@ -1385,14 +1374,12 @@ void setPinMapping(byte boardID)
     case 10:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for user turtanas PCB
-      pinNumbers.pinInjector1 = 4; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 5; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 6; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 7; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 8; //Placeholder only - NOT USED
-      pinNumbers.pinInjector6 = 9; //Placeholder only - NOT USED
-      pinNumbers.pinInjector7 = 10; //Placeholder only - NOT USED
-      pinNumbers.pinInjector8 = 11; //Placeholder only - NOT USED
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  4, 5, 6, 7, 
+                                                              // Placeholders only - NOT USED
+                                                              8, 9, 10, 11 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 24; //Pin for coil 1
       pinNumbers.pinCoil2 = 28; //Pin for coil 2
       pinNumbers.pinCoil3 = 36; //Pin for coil 3
@@ -1423,14 +1410,10 @@ void setPinMapping(byte boardID)
     case 14:
     // Pin mappings for the Levin board
     #if defined(STM32F407xx)
-      pinNumbers.pinInjector1 = PB15;     // Output pin injector 1
-      pinNumbers.pinInjector2 = PA8;      // Output pin injector 2
-      pinNumbers.pinInjector3 = PB13;     // Output pin injector 3
-      pinNumbers.pinInjector4 = PB14;     // Output pin injector 4
-      pinNumbers.pinInjector5 = PE13;     // Output pin injector 5
-      pinNumbers.pinInjector6 = PB12;     // Output pin injector 6
-      pinNumbers.pinInjector7 = PE7;      // Output pin injector 7
-      pinNumbers.pinInjector8 = PE10;     // Output pin injector 8
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB15, PA8, PB13, PB14, PE13, PB12, PE7, PE10, };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }      
       pinNumbers.pinCoil1 = PC13;         // Pin for coil 1
       pinNumbers.pinCoil2 = PE6;          // Pin for coil 2
       pinNumbers.pinCoil3 = PE5;          // Pin for coil 3
@@ -1475,11 +1458,10 @@ void setPinMapping(byte boardID)
     case 20:
     #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 10; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 11; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 12; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 28; //Pin for coil 1
       pinNumbers.pinCoil2 = 24; //Pin for coil 2
       pinNumbers.pinCoil3 = 40; //Pin for coil 3
@@ -1511,11 +1493,10 @@ void setPinMapping(byte boardID)
     case 30:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the dazv6 shield
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 10; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 11; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 12; //Output pin injector 5 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 40; //Pin for coil 1
       pinNumbers.pinCoil2 = 38; //Pin for coil 2
       pinNumbers.pinCoil3 = 50; //Pin for coil 3
@@ -1553,14 +1534,10 @@ void setPinMapping(byte boardID)
       //Pin mappings for the BMW PnP PCBs by pazi88.
       #if defined(CORE_AVR)
       //This is the regular MEGA2560 pin mapping
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2
-      pinNumbers.pinInjector3 = 10; //Output pin injector 3
-      pinNumbers.pinInjector4 = 11; //Output pin injector 4
-      pinNumbers.pinInjector5 = 12; //Output pin injector 5
-      pinNumbers.pinInjector6 = 50; //Output pin injector 6
-      pinNumbers.pinInjector7 = 39; //Output pin injector 7
-      pinNumbers.pinInjector8 = 42; //Output pin injector 8
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12, 50, 39, 42 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 40; //Pin for coil 1
       pinNumbers.pinCoil2 = 38; //Pin for coil 2
       pinNumbers.pinCoil3 = 52; //Pin for coil 3
@@ -1604,14 +1581,10 @@ void setPinMapping(byte boardID)
       pinNumbers.pinIdleUpOutput = 41; //(placeholder)
       pinNumbers.pinCTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
-      pinNumbers.pinInjector1 = PB15; //Output pin injector 1
-      pinNumbers.pinInjector2 = PB14; //Output pin injector 2
-      pinNumbers.pinInjector3 = PB12; //Output pin injector 3
-      pinNumbers.pinInjector4 = PB13; //Output pin injector 4
-      pinNumbers.pinInjector5 = PA8; //Output pin injector 5
-      pinNumbers.pinInjector6 = PE7; //Output pin injector 6
-      pinNumbers.pinInjector7 = PE13; //Output pin injector 7
-      pinNumbers.pinInjector8 = PE10; //Output pin injector 8
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  PB15, PB14, PB12, PB13, PA8, PE7, PE13, PE10, };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = PE2; //Pin for coil 1
       pinNumbers.pinCoil2 = PE3; //Pin for coil 2
       pinNumbers.pinCoil3 = PC13; //Pin for coil 3
@@ -1659,11 +1632,10 @@ void setPinMapping(byte boardID)
     case 40:
      #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the NO2C shield
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 11; //Output pin injector 3 is on - NOT USED
-      pinNumbers.pinInjector4 = 12; //Output pin injector 4 is on - NOT USED
-      pinNumbers.pinInjector5 = 13; //Placeholder only - NOT USED
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 11, 12, 13 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 23; //Pin for coil 1
       pinNumbers.pinCoil2 = 22; //Pin for coil 2
       pinNumbers.pinCoil3 = 2; //Pin for coil 3 - ONLY WITH DB2
@@ -1704,11 +1676,10 @@ void setPinMapping(byte boardID)
     case 41:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the UA4C shield
-      pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 7; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 6; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 5; //Output pin injector 4 is on
-      pinNumbers.pinInjector5 = 45; //Output pin injector 5 is on PLACEHOLDER value for now
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 7, 6, 5, 45 /* Output pin injector 5 is on PLACEHOLDER value for now */};
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 35; //Pin for coil 1
       pinNumbers.pinCoil2 = 36; //Pin for coil 2
       pinNumbers.pinCoil3 = 33; //Pin for coil 3
@@ -1751,10 +1722,10 @@ void setPinMapping(byte boardID)
 
     case 42:
       //Pin mappings for all BlitzboxBL49sp variants
-      pinNumbers.pinInjector1 = 6; //Output pin injector 1
-      pinNumbers.pinInjector2 = 7; //Output pin injector 2
-      pinNumbers.pinInjector3 = 8; //Output pin injector 3
-      pinNumbers.pinInjector4 = 9; //Output pin injector 4
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  6, 7, 8, 9 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 24; //Pin for coil 1
       pinNumbers.pinCoil2 = 25; //Pin for coil 2
       pinNumbers.pinCoil3 = 23; //Pin for coil 3
@@ -1790,10 +1761,10 @@ void setPinMapping(byte boardID)
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
       #if defined(CORE_AVR)
-      pinNumbers.pinInjector1 = 10; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 11; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 12; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 9; //Output pin injector 4 is on
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = {  10, 11, 12, 9, 33, 34};
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 39; //Pin for coil 1
       pinNumbers.pinCoil2 = 29; //Pin for coil 2
       pinNumbers.pinCoil3 = 28; //Pin for coil 3
@@ -1827,8 +1798,6 @@ void setPinMapping(byte boardID)
       pinNumbers.pinSpareLOut1 = 37; //low current output spare1
       pinNumbers.pinSpareLOut2 = 36; //low current output spare2
       pinNumbers.pinSpareLOut3 = 35; //low current output spare3
-      pinNumbers.pinInjector5 = 33; //Output pin injector 5 is on
-      pinNumbers.pinInjector6 = 34; //Output pin injector 6 is on
       pinNumbers.pinFan = 40; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       #endif
@@ -1838,12 +1807,10 @@ void setPinMapping(byte boardID)
     #if defined(CORE_TEENSY35)
     case 50:
       //Pin mappings as per the teensy rev A shield
-      pinNumbers.pinInjector1 = 2; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 10; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 6; //Output pin injector 3 is on
-      pinNumbers.pinInjector4 = 9; //Output pin injector 4 is on
-      //Placeholder only - NOT USED:
-      //pinNumbers.pinInjector5 = 13;
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9, };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }      
       pinNumbers.pinCoil1 = 29; //Pin for coil 1
       pinNumbers.pinCoil2 = 30; //Pin for coil 2
       pinNumbers.pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
@@ -1875,10 +1842,10 @@ void setPinMapping(byte boardID)
 
     case 51:
       //Pin mappings as per the teensy revB board shield
-      pinNumbers.pinInjector1 = 2; //Output pin injector 1 is on
-      pinNumbers.pinInjector2 = 10; //Output pin injector 2 is on
-      pinNumbers.pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
-      pinNumbers.pinInjector4 = 9; //Output pin injector 4 is on - NOT USED
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 10, 6, 9 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 29; //Pin for coil 1
       pinNumbers.pinCoil2 = 30; //Pin for coil 2
       pinNumbers.pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
@@ -1910,10 +1877,10 @@ void setPinMapping(byte boardID)
     #if defined(CORE_TEENSY35)
     case 53:
       //Pin mappings for the Juice Box (ignition only board)
-      pinNumbers.pinInjector1 = 2; //Output pin injector 1 is on - NOT USED
-      pinNumbers.pinInjector2 = 56; //Output pin injector 2 is on - NOT USED
-      pinNumbers.pinInjector3 = 6; //Output pin injector 3 is on - NOT USED
-      pinNumbers.pinInjector4 = 50; //Output pin injector 4 is on - NOT USED
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 2, 56, 6, 50 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 29; //Pin for coil 1
       pinNumbers.pinCoil2 = 30; //Pin for coil 2
       pinNumbers.pinCoil3 = 31; //Pin for coil 3
@@ -1949,13 +1916,10 @@ void setPinMapping(byte boardID)
       ignControlMode = IgnIoControlMode::MC33810;
 
       //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
-      pinNumbers.pinInjector1 = 13; //SCLK
-      pinNumbers.pinInjector2 = 11; //MOSI
-      pinNumbers.pinInjector3 = 12; //MISO
-      pinNumbers.pinInjector4 = 10; //CS for MC33810 1
-      pinNumbers.pinInjector5 = 9; //CS for MC33810 2
-      pinNumbers.pinInjector6 = 9; //CS for MC33810 3
-
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 13, 11, 12, 10, 9, 9 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
       pinNumbers.pinCoil1 = 40;
       pinNumbers.pinCoil2 = 41;
@@ -2073,11 +2037,10 @@ void setPinMapping(byte boardID)
     case 56:
       #if defined(CORE_TEENSY)
       //Pin mappings for the Bear Cub (Teensy 4.1)
-      pinNumbers.pinInjector1 = 6;
-      pinNumbers.pinInjector2 = 7;
-      pinNumbers.pinInjector3 = 9;
-      pinNumbers.pinInjector4 = 8;
-      pinNumbers.pinInjector5 = 0; //Not used
+      {
+        static constexpr uint8_t boardInjectorPins[] PROGMEM = { 6, 7, 9, 8 };
+        pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+      }
       pinNumbers.pinCoil1 = 2;
       pinNumbers.pinCoil2 = 3;
       pinNumbers.pinCoil3 = 4;
@@ -2122,7 +2085,11 @@ void setPinMapping(byte boardID)
         //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
         //https://github.com/Tjeerdie/SPECTRE/tree/master/SPECTRE_V0.5
-        
+        {
+          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE9, PE11, PE14, PE13, };
+          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+        }
+                
         //******************************************
         //******** PORTA CONNECTIONS *************** 
         //******************************************
@@ -2201,10 +2168,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinCoil5 = PD9;//
         pinNumbers.pinCoil4 = PD10;//
         // = PD11;  //
-        pinNumbers.pinInjector1 = PD12; //
-        pinNumbers.pinInjector2 = PD13; //
-        pinNumbers.pinInjector3 = PD14; //
-        pinNumbers.pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
@@ -2218,20 +2181,14 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFan = PE6; //
         pinNumbers.pinStepperDir = PE7; //
         // = PE8;  //
-        pinNumbers.pinInjector5 = PE9; //
-        // = PE10;  //
-        pinNumbers.pinInjector6 = PE11; //
-        // = PE12; //
-        pinNumbers.pinInjector8 = PE13; //
-        pinNumbers.pinInjector7 = PE14; //
         // = PE15;  //
      #elif (defined(STM32F411xE) || defined(STM32F401xC))
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //PB2 can't be used as input because is BOOT pin
-        pinNumbers.pinInjector1 = PB7; //Output pin injector 1 is on
-        pinNumbers.pinInjector2 = PB6; //Output pin injector 2 is on
-        pinNumbers.pinInjector3 = PB5; //Output pin injector 3 is on
-        pinNumbers.pinInjector4 = PB4; //Output pin injector 4 is on
+        {
+          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
+          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+        }        
         pinNumbers.pinCoil1 = PB9; //Pin for coil 1
         pinNumbers.pinCoil2 = PB8; //Pin for coil 2
         pinNumbers.pinCoil3 = PB3; //Pin for coil 3
@@ -2262,10 +2219,10 @@ void setPinMapping(byte boardID)
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //PB2 can't be used as input because is BOOT pin
-        pinNumbers.pinInjector1 = PB7; //Output pin injector 1 is on
-        pinNumbers.pinInjector2 = PB6; //Output pin injector 2 is on
-        pinNumbers.pinInjector3 = PB5; //Output pin injector 3 is on
-        pinNumbers.pinInjector4 = PB4; //Output pin injector 4 is on
+        {
+          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PB7, PB6, PB5, PB4 };
+          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+        }        
         pinNumbers.pinCoil1 = PB3; //Pin for coil 1
         pinNumbers.pinCoil2 = PA15; //Pin for coil 2
         pinNumbers.pinCoil3 = PA14; //Pin for coil 3
@@ -2301,6 +2258,10 @@ void setPinMapping(byte boardID)
       #if defined(STM32F407xx)
       //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
+        {
+          static constexpr uint8_t boardInjectorPins[] PROGMEM = { PD12, PD13, PD14, PD15, PE11, PE12 };
+          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+        }        
 
         //******************************************
         //******** PORTA CONNECTIONS *************** 
@@ -2381,10 +2342,6 @@ void setPinMapping(byte boardID)
         pinNumbers.pinCoil5 = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        pinNumbers.pinInjector1 = PD12; //
-        pinNumbers.pinInjector2 = PD13; //
-        pinNumbers.pinInjector3 = PD14; //
-        pinNumbers.pinInjector4 = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
@@ -2400,19 +2357,16 @@ void setPinMapping(byte boardID)
         /* = PE8; */ //
         /* = PE9; */ //
         /* = PE10; */ //
-        pinNumbers.pinInjector5 = PE11; //
-        pinNumbers.pinInjector6 = PE12; //
         /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
       #else
         #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
         //Pin mappings as per the v0.2 shield
-        pinNumbers.pinInjector1 = 8; //Output pin injector 1 is on
-        pinNumbers.pinInjector2 = 9; //Output pin injector 2 is on
-        pinNumbers.pinInjector3 = 10; //Output pin injector 3 is on
-        pinNumbers.pinInjector4 = 11; //Output pin injector 4 is on
-        pinNumbers.pinInjector5 = 12; //Output pin injector 5 is on
+        {
+          static constexpr uint8_t boardInjectorPins[] PROGMEM = {  8, 9, 10, 11, 12, };
+          pinNumbers.injectorPins.copy_P(boardInjectorPins, _countof(boardInjectorPins), configPage2);
+        }   
         pinNumbers.pinCoil1 = 28; //Pin for coil 1
         pinNumbers.pinCoil2 = 24; //Pin for coil 2
         pinNumbers.pinCoil3 = 40; //Pin for coil 3
@@ -2537,31 +2491,7 @@ void setPinMapping(byte boardID)
 
   if(injControlMode == InjIoControlMode::Direct)
   {
-    uint8_t injPins[INJ_CHANNELS] = {
-      pinNumbers.pinInjector1,
-      #if (INJ_CHANNELS >= 2)
-      pinNumbers.pinInjector2,
-      #endif
-      #if (INJ_CHANNELS >= 3)
-      pinNumbers.pinInjector3,
-      #endif
-      #if (INJ_CHANNELS >= 4)
-      pinNumbers.pinInjector4,
-      #endif
-      #if (INJ_CHANNELS >= 5)
-      pinNumbers.pinInjector5,
-      #endif
-      #if (INJ_CHANNELS >= 6)
-      pinNumbers.pinInjector6,
-      #endif
-      #if (INJ_CHANNELS >= 7)
-      pinNumbers.pinInjector7,
-      #endif
-      #if (INJ_CHANNELS >= 8)
-      pinNumbers.pinInjector8,
-      #endif
-    };
-    initInjDirectIO(injPins);
+    initInjDirectIO(pinNumbers.injectorPins);
   }
   
 #if defined(MC33810_SUPPORT)
