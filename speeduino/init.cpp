@@ -919,10 +919,10 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2 = A8; //O2 Sensor pin
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinIdle1 = 30; //Single wire idle control
-      pinNumbers.pinIdle2 = 31; //2 wire idle control
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinNumbers.idle.idle1 = 30; //Single wire idle control
+      pinNumbers.idle.idle2 = 31; //2 wire idle control
+      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
       pinNumbers.pinFan = 47; //Pin for the fan output
       pinNumbers.pinFuelPump = 4; //Fuel pump output
       pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
@@ -954,15 +954,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2 = A8; //O2 Sensor pin
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinIdle2 = 53; //2 wire idle control
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle2 = 53; //2 wire idle control
       pinNumbers.pinBoost = 7; //Boost control
       pinNumbers.pinVVT_1 = 6; //Default VVT output
       pinNumbers.pinVVT_2 = 48; //Default VVT2 output
       pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 26; //Enable pin for DRV8825
+      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 26; //Enable pin for DRV8825
       pinNumbers.pinFan = A13; //Pin for the fan output
       pinNumbers.pinLaunch = 51; //Can be overwritten below
       pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
@@ -972,8 +972,8 @@ void setPinMapping(byte boardID)
 
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
-        pinNumbers.pinStepperDir = 33;
-        pinNumbers.pinStepperStep = 34;
+        pinNumbers.idle.stepperDir = 33;
+        pinNumbers.idle.stepperStep = 34;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
         pinNumbers.sensors.O2 = A22;
@@ -1019,15 +1019,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2 = A8; //O2 Sensor pin
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinIdle2 = 6; //2 wire idle control
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle2 = 6; //2 wire idle control
       pinNumbers.pinBoost = 7; //Boost control
       pinNumbers.pinVVT_1 = 4; //Default VVT output
       pinNumbers.pinVVT_2 = 48; //Default VVT2 output
       pinNumbers.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 24; //Enable pin for DRV8825
+      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 24; //Enable pin for DRV8825
       pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2803)
       pinNumbers.pinLaunch = 51; //Can be overwritten below
       pinNumbers.sensors.flex = 2; // Flex sensor (Must be external interrupt enabled)
@@ -1041,8 +1041,8 @@ void setPinMapping(byte boardID)
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
         pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
+        pinNumbers.idle.stepperDir = 34;
+        pinNumbers.idle.stepperStep = 35;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
         pinNumbers.sensors.O2 = A22;
@@ -1067,8 +1067,8 @@ void setPinMapping(byte boardID)
         pinNumbers.triggerPins.secondary = 21; //The Cam Sensor pin
         pinNumbers.triggerPins.tertiary = 24;
 
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
+        pinNumbers.idle.stepperDir = 34;
+        pinNumbers.idle.stepperStep = 35;
         
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
@@ -1112,8 +1112,8 @@ void setPinMapping(byte boardID)
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
         /* = PB9; */ //
-        pinNumbers.pinIdle1 = PB11; //RXD3
-        pinNumbers.pinIdle2 = PB12; //
+        pinNumbers.idle.idle1 = PB11; //RXD3
+        pinNumbers.idle.idle2 = PB12; //
         pinNumbers.pinBoost = PB12; //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
@@ -1157,12 +1157,12 @@ void setPinMapping(byte boardID)
         //******************************************
         pinNumbers.triggerPins.primary = PE0; //
         pinNumbers.triggerPins.secondary = PE1; //
-        pinNumbers.pinStepperEnable = PE2; //
+        pinNumbers.idle.stepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
-        pinNumbers.pinStepperStep = PE5; //
+        pinNumbers.idle.stepperStep = PE5; //
         pinNumbers.pinFan = PE6; //
-        pinNumbers.pinStepperDir = PE7; //
+        pinNumbers.idle.stepperDir = PE7; //
         /* = PE8; */ //
         /* = PE9; */ //
         /* = PE10; */ //
@@ -1183,11 +1183,11 @@ void setPinMapping(byte boardID)
         pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
         pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
         pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
-        pinNumbers.pinIdle1 = PB2; //Single wire idle control
-        pinNumbers.pinIdle2 = PB10; //2 wire idle control
+        pinNumbers.idle.idle1 = PB2; //Single wire idle control
+        pinNumbers.idle.idle2 = PB10; //2 wire idle control
         pinNumbers.pinBoost = PA6; //Boost control
-        pinNumbers.pinStepperDir = PB10; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = PB2; //Step pin for DRV8825 driver
+        pinNumbers.idle.stepperDir = PB10; //Direction pin  for DRV8825 driver
+        pinNumbers.idle.stepperStep = PB2; //Step pin for DRV8825 driver
         pinNumbers.pinFuelPump = PA8; //Fuel pump output
         pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
         //external interrupt enabled pins
@@ -1222,15 +1222,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2 = A3; //O2 Sensor pin
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 4;
       pinNumbers.pinVVT_1 = 11; //Default VVT output
       pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pinNumbers.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinNumbers.pinFuelPump = 40; //Fuel pump output
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 24;
+      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 24;
       pinNumbers.pinFan = 41; //Pin for the fan output
       pinNumbers.pinLaunch = 12; //Can be overwritten below
       pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
@@ -1241,8 +1241,8 @@ void setPinMapping(byte boardID)
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
         pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
+        pinNumbers.idle.stepperDir = 34;
+        pinNumbers.idle.stepperStep = 35;
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1272,13 +1272,13 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.CLT = A1; //CLS sensor pin
       pinNumbers.sensors.O2 = A3; //O2 Sensor pin
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinIdle1 = 2; //Single wire idle control
+      pinNumbers.idle.idle1 = 2; //Single wire idle control
       pinNumbers.pinBoost = 4;
-      pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pinNumbers.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinNumbers.pinFuelPump = 49; //Fuel pump output
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 24;
+      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 24;
       pinNumbers.pinFan = 35; //Pin for the fan output
       pinNumbers.pinLaunch = 37; //Can be overwritten below
       pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
@@ -1288,8 +1288,8 @@ void setPinMapping(byte boardID)
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
         pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
+        pinNumbers.idle.stepperDir = 34;
+        pinNumbers.idle.stepperStep = 35;
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1320,27 +1320,27 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.CLT = A1; //CLS sensor pin
       pinNumbers.sensors.O2 = A3; //O2 Sensor pin
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-      pinNumbers.pinIdle1 = 2; //Single wire idle control
+      pinNumbers.idle.idle1 = 2; //Single wire idle control
       pinNumbers.pinBoost = 4;
-      pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pinNumbers.idle.idle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
       pinNumbers.pinFuelPump = 37; //Fuel pump output
       //Note that there is no stepper driver output on the PNP boards. These pins are unconnected and remain here just to prevent issues with random pin numbers occurring
-      pinNumbers.pinStepperEnable = 15; //Enable pin for the DRV8825
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 15; //Enable pin for the DRV8825
+      pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
       pinNumbers.pinFan = 35; //Pin for the fan output
       pinNumbers.pinLaunch = 12; //Can be overwritten below
       pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
       pinNumbers.pinResetControl = 44; //Reset control output
       pinNumbers.pinVSS = 20;
-      pinNumbers.pinIdleUp = 48;
+      pinNumbers.idle.idleUp = 48;
       pinNumbers.sensors.CTPS = 47;
       #endif
       #if defined(CORE_TEENSY35)
         pinNumbers.triggerPins.primary = 23;
         pinNumbers.triggerPins.secondary = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
+        pinNumbers.idle.stepperDir = 34;
+        pinNumbers.idle.stepperStep = 35;
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1399,15 +1399,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = PA4;            // Battery reference voltage pin
       pinNumbers.sensors.baro = PA5;           // Baro sensor pin
       pinNumbers.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
-      pinNumbers.pinIdle1 = PD10;         // ICV pin1  (Goes to UNL2803)
-      pinNumbers.pinIdle2 = PD9;          // ICV pin3  (Goes to UNL2803)
+      pinNumbers.idle.idle1 = PD10;         // ICV pin1  (Goes to UNL2803)
+      pinNumbers.idle.idle2 = PD9;          // ICV pin3  (Goes to UNL2803)
       pinNumbers.pinBoost = PD8;          // Boost control
       pinNumbers.pinVVT_1 = PD11;         // VVT1 output (intake vanos)
       pinNumbers.pinVVT_2 = PC6;          // VVT2 output (exhaust vanos)
       pinNumbers.pinFuelPump = PE11;      // Fuel pump output  (Goes to UNL2803)
-      pinNumbers.pinStepperDir = PB10;    // Stepper valve isn't used with these
-      pinNumbers.pinStepperStep = PB11;   // Stepper valve isn't used with these
-      pinNumbers.pinStepperEnable = PA15; // Stepper valve isn't used with these
+      pinNumbers.idle.stepperDir = PB10;    // Stepper valve isn't used with these
+      pinNumbers.idle.stepperStep = PB11;   // Stepper valve isn't used with these
+      pinNumbers.idle.stepperEnable = PA15; // Stepper valve isn't used with these
       pinNumbers.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
       pinNumbers.pinLaunch = PB8;         // Launch control pin
       pinNumbers.sensors.flex = PD7;           // Flex sensor
@@ -1416,7 +1416,7 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEmpty = PA6;       //(placeholder)
       pinNumbers.pinWMIIndicator = PC3;   //(placeholder)
       pinNumbers.pinWMIEnabled = PE15;    //(placeholder)
-      pinNumbers.pinIdleUp = PC7;         //(placeholder)
+      pinNumbers.idle.idleUp = PC7;         //(placeholder)
     #endif
       break;
 
@@ -1468,10 +1468,10 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor)
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
       pinNumbers.pinFuelPump = 45; //Fuel pump output
-      pinNumbers.pinStepperDir = 20; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 21; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 20; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 21; //Step pin for DRV8825 driver
       pinNumbers.pinBoost = 7;
       pinNumbers.pinFan = 47; //Pin for the fan output
     #endif
@@ -1502,15 +1502,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
       pinNumbers.sensors.baro = A5; //Baro sensor pin
       pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
-      pinNumbers.pinIdle1 = 5; //ICV pin1
-      pinNumbers.pinIdle2 = 6; //ICV pin3
+      pinNumbers.idle.idle1 = 5; //ICV pin1
+      pinNumbers.idle.idle2 = 6; //ICV pin3
       pinNumbers.pinBoost = 7; //Boost control
       pinNumbers.pinVVT_1 = 4; //VVT1 output (intake vanos)
       pinNumbers.pinVVT_2 = 26; //VVT2 output (exhaust vanos)
       pinNumbers.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
-      pinNumbers.pinStepperDir = 16; //Stepper valve isn't used with these
-      pinNumbers.pinStepperStep = 17; //Stepper valve isn't used with these
-      pinNumbers.pinStepperEnable = 24; //Stepper valve isn't used with these
+      pinNumbers.idle.stepperDir = 16; //Stepper valve isn't used with these
+      pinNumbers.idle.stepperStep = 17; //Stepper valve isn't used with these
+      pinNumbers.idle.stepperEnable = 24; //Stepper valve isn't used with these
       pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2003)
       pinNumbers.pinLaunch = 51; //Launch control pin
       pinNumbers.sensors.flex = 2; // Flex sensor
@@ -1519,8 +1519,8 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEmpty = 31; //(placeholder)
       pinNumbers.pinWMIIndicator = 33; //(placeholder)
       pinNumbers.pinWMIEnabled = 35; //(placeholder)
-      pinNumbers.pinIdleUp = 37; //(placeholder)
-      pinNumbers.pinIdleUpOutput = 41; //(placeholder)
+      pinNumbers.idle.idleUp = 37; //(placeholder)
+      pinNumbers.idle.idleUpOutput = 41; //(placeholder)
       pinNumbers.sensors.CTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
       {
@@ -1544,15 +1544,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = PA4; //Battery reference voltage pin
       pinNumbers.sensors.baro = PA5; //Baro sensor pin
       pinNumbers.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
-      pinNumbers.pinIdle1 = PD10; //ICV pin1
-      pinNumbers.pinIdle2 = PD9; //ICV pin3
+      pinNumbers.idle.idle1 = PD10; //ICV pin1
+      pinNumbers.idle.idle2 = PD9; //ICV pin3
       pinNumbers.pinBoost = PD8; //Boost control
       pinNumbers.pinVVT_1 = PD11; //VVT1 output (intake vanos)
       pinNumbers.pinVVT_2 = PC7; //VVT2 output (exhaust vanos)
       pinNumbers.pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
-      pinNumbers.pinStepperDir = PB10; //Stepper valve isn't used with these
-      pinNumbers.pinStepperStep = PB11; //Stepper valve isn't used with these
-      pinNumbers.pinStepperEnable = PA15; //Stepper valve isn't used with these
+      pinNumbers.idle.stepperDir = PB10; //Stepper valve isn't used with these
+      pinNumbers.idle.stepperStep = PB11; //Stepper valve isn't used with these
+      pinNumbers.idle.stepperEnable = PA15; //Stepper valve isn't used with these
       pinNumbers.pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
       pinNumbers.pinLaunch = PB8; //Launch control pin
       pinNumbers.sensors.flex = PD7; // Flex sensor
@@ -1561,8 +1561,8 @@ void setPinMapping(byte boardID)
       pinNumbers.pinWMIEmpty = PD15; //(placeholder)
       pinNumbers.pinWMIIndicator = PD13; //(placeholder)
       pinNumbers.pinWMIEnabled = PE15; //(placeholder)
-      pinNumbers.pinIdleUp = PE14; //(placeholder)
-      pinNumbers.pinIdleUpOutput = PE12; //(placeholder)
+      pinNumbers.idle.idleUp = PE14; //(placeholder)
+      pinNumbers.idle.idleUpOutput = PE12; //(placeholder)
       pinNumbers.sensors.CTPS = PA6; //(placeholder)
      #endif
       break;
@@ -1589,15 +1589,15 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = A1; //Battery reference voltage pin
       pinNumbers.sensors.baro = A6; //Baro sensor pin - ONLY WITH DB
       pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinIdle2 = 47; //2 wire idle control - NOT USED
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle2 = 47; //2 wire idle control - NOT USED
       pinNumbers.pinBoost = 7; //Boost control
       pinNumbers.pinVVT_1 = 6; //Default VVT output
       pinNumbers.pinVVT_2 = 48; //Default VVT2 output
       pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinStepperDir = 25; //Direction pin for DRV8825 driver
-      pinNumbers.pinStepperStep = 24; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 27; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 25; //Direction pin for DRV8825 driver
+      pinNumbers.idle.stepperStep = 24; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 27; //Enable pin for DRV8825 driver
       pinNumbers.pinLaunch = 10; //Can be overwritten below
       pinNumbers.sensors.flex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
       pinNumbers.pinFan = 30; //Pin for the fan output - ONLY WITH DB
@@ -1630,14 +1630,14 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = A2; //Battery reference voltage pin
       pinNumbers.pinLaunch = 37; //Can be overwritten below
       pinNumbers.pinTachOut = 22; //Tacho output pin
-      pinNumbers.pinIdle1 = 9; //Single wire idle control
-      pinNumbers.pinIdle2 = 10; //2 wire idle control
+      pinNumbers.idle.idle1 = 9; //Single wire idle control
+      pinNumbers.idle.idle2 = 10; //2 wire idle control
       pinNumbers.pinFuelPump = 23; //Fuel pump output
       pinNumbers.pinVVT_1 = 11; //Default VVT output
       pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 12; //Boost control
       pinNumbers.pinFan = 24; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
@@ -1669,8 +1669,8 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
       pinNumbers.pinLaunch = 2; //Can be overwritten below
       pinNumbers.pinTachOut = 10; //Tacho output pin
-      pinNumbers.pinIdle1 = 11; //Single wire idle control
-      pinNumbers.pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
+      pinNumbers.idle.idle1 = 11; //Single wire idle control
+      pinNumbers.idle.idle2 = 14; //2 wire idle control PLACEHOLDER value for now
       pinNumbers.pinFuelPump = 3; //Fuel pump output
       pinNumbers.pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
       pinNumbers.pinBoost = 5; //Boost control
@@ -1705,14 +1705,14 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = A1; //Battery reference voltage pin
       pinNumbers.pinLaunch = 24; //Can be overwritten below
       pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.pinIdle1 = 42; //Single wire idle control
-      pinNumbers.pinIdle2 = 43; //2 wire idle control
+      pinNumbers.idle.idle1 = 42; //Single wire idle control
+      pinNumbers.idle.idle2 = 43; //2 wire idle control
       pinNumbers.pinFuelPump = 41; //Fuel pump output
       pinNumbers.pinVVT_1 = 44; //Default VVT output
       pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 45; //Boost control
       pinNumbers.pinFan = 40; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
@@ -1741,12 +1741,12 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
       pinNumbers.sensors.Bat = 18; //Battery reference voltage pin
       pinNumbers.pinTachOut = 20; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 11; //Boost control
       pinNumbers.pinFuelPump = 38; //Fuel pump output
-      pinNumbers.pinStepperDir = 34; //Direction pin for DRV8825 driver
-      pinNumbers.pinStepperStep = 35; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 34; //Direction pin for DRV8825 driver
+      pinNumbers.idle.stepperStep = 35; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 33; //Enable pin for DRV8825 driver
       pinNumbers.pinLaunch = 26; //Can be overwritten below
       pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
       break;
@@ -1771,12 +1771,12 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor)
       pinNumbers.sensors.Bat = 18; //Battery reference voltage pin
       pinNumbers.pinTachOut = 20; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
+      pinNumbers.idle.idle1 = 5; //Single wire idle control
       pinNumbers.pinBoost = 11; //Boost control
       pinNumbers.pinFuelPump = 38; //Fuel pump output
-      pinNumbers.pinStepperDir = 34; //Direction pin for DRV8825 driver
-      pinNumbers.pinStepperStep = 35; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 34; //Direction pin for DRV8825 driver
+      pinNumbers.idle.stepperStep = 35; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 33; //Enable pin for DRV8825 driver
       pinNumbers.pinLaunch = 26; //Can be overwritten below
       pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
       break;
@@ -1803,12 +1803,12 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.O2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
       pinNumbers.sensors.Bat = A6; //Battery reference voltage pin
       pinNumbers.pinTachOut = 28; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control - NOT USED
+      pinNumbers.idle.idle1 = 5; //Single wire idle control - NOT USED
       pinNumbers.pinBoost = 11; //Boost control - NOT USED
       pinNumbers.pinFuelPump = 24; //Fuel pump output
-      pinNumbers.pinStepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
-      pinNumbers.pinStepperStep = 4; //Step pin for DRV8825 driver - NOT USED
-      pinNumbers.pinStepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
+      pinNumbers.idle.stepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
+      pinNumbers.idle.stepperStep = 4; //Step pin for DRV8825 driver - NOT USED
+      pinNumbers.idle.stepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
       pinNumbers.pinLaunch = 26; //Can be overwritten below
       pinNumbers.pinFan = 25; //Pin for the fan output
       break;
@@ -1839,13 +1839,13 @@ void setPinMapping(byte boardID)
       pinNumbers.sensors.Bat = A14; //Battery reference voltage pin
       pinNumbers.pinLaunch = A15; //Can be overwritten below
       pinNumbers.pinTachOut = 5; //Tacho output pin
-      pinNumbers.pinIdle1 = 27; //Single wire idle control
-      pinNumbers.pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
+      pinNumbers.idle.idle1 = 27; //Single wire idle control
+      pinNumbers.idle.idle2 = 29; //2 wire idle control. Shared with Spare 1 output
       pinNumbers.pinFuelPump = 8; //Fuel pump output
       pinNumbers.pinVVT_1 = 28; //Default VVT output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 24; //Boost control
       pinNumbers.pinFan = 25; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
@@ -1951,13 +1951,13 @@ void setPinMapping(byte boardID)
       pinNumbers.pinLaunch = 36;
 
       pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.pinIdle1 = 27; //Single wire idle control
-      pinNumbers.pinIdle2 = 26; //2 wire idle control. Shared with Spare 1 output
+      pinNumbers.idle.idle1 = 27; //Single wire idle control
+      pinNumbers.idle.idle2 = 26; //2 wire idle control. Shared with Spare 1 output
       pinNumbers.pinFuelPump = 10; //Fuel pump output
       pinNumbers.pinVVT_1 = 28; //Default VVT output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pinNumbers.idle.stepperDir = 32; //Direction pin  for DRV8825 driver
+      pinNumbers.idle.stepperStep = 31; //Step pin for DRV8825 driver
+      pinNumbers.idle.stepperEnable = 30; //Enable pin for DRV8825 driver
       pinNumbers.pinBoost = 24; //Boost control
       pinNumbers.pinFan = 25; //Pin for the fan output
       pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
@@ -2027,7 +2027,7 @@ void setPinMapping(byte boardID)
         pinNumbers.sensors.O2 = PC4; //ADC12
         pinNumbers.sensors.Bat = PC5;  //ADC12
         pinNumbers.pinBoost = PC6; //
-        pinNumbers.pinIdle1 = PC7; //
+        pinNumbers.idle.idle1 = PC7; //
         // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         // = PC9;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
         // = PC10;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
@@ -2043,7 +2043,7 @@ void setPinMapping(byte boardID)
         // = PD0;  //CANRX
         // = PD1;  //CANTX
         // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinNumbers.pinIdle2 = PD3; //
+        pinNumbers.idle.idle2 = PD3; //
         // = PD4;  //
         pinNumbers.sensors.flex = PD4;
         // = PD5; //TXD2
@@ -2057,12 +2057,12 @@ void setPinMapping(byte boardID)
         //******************************************
         pinNumbers.triggerPins.primary = PE0; //
         pinNumbers.triggerPins.secondary = PE1; //
-        pinNumbers.pinStepperEnable = PE2; //
+        pinNumbers.idle.stepperEnable = PE2; //
         pinNumbers.pinFuelPump = PE3; //ONBOARD KEY1
         // = PE4;  //ONBOARD KEY2
-        pinNumbers.pinStepperStep = PE5; //
+        pinNumbers.idle.stepperStep = PE5; //
         pinNumbers.pinFan = PE6; //
-        pinNumbers.pinStepperDir = PE7; //
+        pinNumbers.idle.stepperDir = PE7; //
         // = PE8;  //
         // = PE15;  //
      #elif (defined(STM32F411xE) || defined(STM32F401xC))
@@ -2084,11 +2084,11 @@ void setPinMapping(byte boardID)
         pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
         pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
         pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
-        pinNumbers.pinIdle1 = PB2; //Single wire idle control
-        pinNumbers.pinIdle2 = PB10; //2 wire idle control
+        pinNumbers.idle.idle1 = PB2; //Single wire idle control
+        pinNumbers.idle.idle2 = PB10; //2 wire idle control
         pinNumbers.pinBoost = PA6; //Boost control
-        pinNumbers.pinStepperDir = PB10; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = PB2; //Step pin for DRV8825 driver
+        pinNumbers.idle.stepperDir = PB10; //Direction pin  for DRV8825 driver
+        pinNumbers.idle.stepperStep = PB2; //Step pin for DRV8825 driver
         pinNumbers.pinFuelPump = PA8; //Fuel pump output
         pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
 
@@ -2117,14 +2117,14 @@ void setPinMapping(byte boardID)
         pinNumbers.sensors.O2 = A4; //O2 Sensor pin
         pinNumbers.sensors.Bat = A5; //Battery reference voltage pin
         pinNumbers.sensors.baro = pinNumbers.sensors.MAP;
-        pinNumbers.pinIdle1 = PB2; //Single wire idle control
-        pinNumbers.pinIdle2 = PA2; //2 wire idle control
+        pinNumbers.idle.idle1 = PB2; //Single wire idle control
+        pinNumbers.idle.idle2 = PA2; //2 wire idle control
         pinNumbers.pinBoost = PA1; //Boost control
         pinNumbers.pinVVT_1 = PA0; //Default VVT output
         pinNumbers.pinVVT_2 = PA2; //Default VVT2 output
-        pinNumbers.pinStepperDir = PC15; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = PC14; //Step pin for DRV8825 driver
-        pinNumbers.pinStepperEnable = PC13; //Enable pin for DRV8825
+        pinNumbers.idle.stepperDir = PC15; //Direction pin  for DRV8825 driver
+        pinNumbers.idle.stepperStep = PC14; //Step pin for DRV8825 driver
+        pinNumbers.idle.stepperEnable = PC13; //Enable pin for DRV8825
         pinNumbers.pinFan = PB1; //Pin for the fan output
         pinNumbers.pinFuelPump = PB11; //Fuel pump output
         pinNumbers.pinTachOut = PB10; //Tacho output pin
@@ -2179,8 +2179,8 @@ void setPinMapping(byte boardID)
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
         /* = PB9; */ //
-        pinNumbers.pinIdle1 = PB11; //RXD3
-        pinNumbers.pinIdle2 = PB12; //
+        pinNumbers.idle.idle1 = PB11; //RXD3
+        pinNumbers.idle.idle2 = PB12; //
         /* pinNumbers.pinBoost = PB12; */ //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
@@ -2226,12 +2226,12 @@ void setPinMapping(byte boardID)
         //******************************************
         pinNumbers.triggerPins.primary = PE0; //
         pinNumbers.triggerPins.secondary = PE1; //
-        pinNumbers.pinStepperEnable = PE2; //
+        pinNumbers.idle.stepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
-        pinNumbers.pinStepperStep = PE5; //
+        pinNumbers.idle.stepperStep = PE5; //
         pinNumbers.pinFan = PE6; //
-        pinNumbers.pinStepperDir = PE7; //
+        pinNumbers.idle.stepperDir = PE7; //
         /* = PE8; */ //
         /* = PE9; */ //
         /* = PE10; */ //
@@ -2259,14 +2259,14 @@ void setPinMapping(byte boardID)
         pinNumbers.sensors.O2 = A8; //O2 Sensor pin
         #endif
         pinNumbers.sensors.Bat = A4; //Battery reference voltage pin
-        pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
+        pinNumbers.idle.stepperDir = 16; //Direction pin  for DRV8825 driver
+        pinNumbers.idle.stepperStep = 17; //Step pin for DRV8825 driver
         pinNumbers.pinFan = 47; //Pin for the fan output
         pinNumbers.pinFuelPump = 4; //Fuel pump output
         pinNumbers.pinTachOut = 49; //Tacho output pin
         pinNumbers.sensors.flex = 3; // Flex sensor (Must be external interrupt enabled)
         pinNumbers.pinBoost = 5;
-        pinNumbers.pinIdle1 = 6;
+        pinNumbers.idle.idle1 = 6;
         pinNumbers.pinResetControl = 43; //Reset control output
         #endif
       #endif  
@@ -2299,10 +2299,10 @@ void setPinMapping(byte boardID)
 
   //Currently there's no default pin for Idle Up
   
-  pinNumbers.pinIdleUp = pinTranslate(configPage2.idleUpPin);
+  pinNumbers.idle.idleUp = pinTranslate(configPage2.idleUpPin);
 
   //Currently there's no default pin for Idle Up Output
-  pinNumbers.pinIdleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
+  pinNumbers.idle.idleUpOutput = pinTranslate(configPage2.idleUpOutputPin);
 
   //Currently there's no default pin for closed throttle position sensor
   pinNumbers.sensors.CTPS = pinTranslate(configPage2.CTPSPin);
@@ -2325,12 +2325,12 @@ void setPinMapping(byte boardID)
   
 
   //Finally, set the relevant pin modes for outputs
-  pinMode(pinNumbers.pinIdle1, OUTPUT);
-  pinMode(pinNumbers.pinIdle2, OUTPUT);
-  pinMode(pinNumbers.pinIdleUpOutput, OUTPUT);
-  pinMode(pinNumbers.pinStepperDir, OUTPUT);
-  pinMode(pinNumbers.pinStepperStep, OUTPUT);
-  pinMode(pinNumbers.pinStepperEnable, OUTPUT);
+  pinMode(pinNumbers.idle.idle1, OUTPUT);
+  pinMode(pinNumbers.idle.idle2, OUTPUT);
+  pinMode(pinNumbers.idle.idleUpOutput, OUTPUT);
+  pinMode(pinNumbers.idle.stepperDir, OUTPUT);
+  pinMode(pinNumbers.idle.stepperStep, OUTPUT);
+  pinMode(pinNumbers.idle.stepperEnable, OUTPUT);
   if(configPage4.ignBypassEnabled > 0) { pinMode(pinNumbers.pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
@@ -2407,10 +2407,10 @@ void setPinMapping(byte boardID)
     if (configPage6.lnchPullRes == true) { pinMode(pinNumbers.pinLaunch, INPUT_PULLUP); }
     else { pinMode(pinNumbers.pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
   }
-  if( (configPage2.idleUpEnabled > 0) && (!pinIsOutput(pinNumbers.pinIdleUp)) )
+  if( (configPage2.idleUpEnabled > 0) && (!pinIsOutput(pinNumbers.idle.idleUp)) )
   {
-    if (configPage2.idleUpPolarity == 0) { pinMode(pinNumbers.pinIdleUp, INPUT_PULLUP); } //Normal setting
-    else { pinMode(pinNumbers.pinIdleUp, INPUT); } //inverted setting
+    if (configPage2.idleUpPolarity == 0) { pinMode(pinNumbers.idle.idleUp, INPUT_PULLUP); } //Normal setting
+    else { pinMode(pinNumbers.idle.idleUp, INPUT); } //inverted setting
   }
   if( (configPage2.CTPSEnabled > 0) && (!pinIsOutput(pinNumbers.sensors.CTPS)) )
   {

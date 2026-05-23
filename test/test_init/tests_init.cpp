@@ -115,14 +115,14 @@ void test_initialisation_outputs_V04(void)
   /*
   if(isIdlePWM) 
   {
-    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinIdle1), "Idle 1");
-    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinIdle2), "Idle 2");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.idle1), "Idle 1");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.idle2), "Idle 2");
   }
   else if (isIdleStepper)
   {
-    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinStepperDir), "Stepper Dir");
-    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinStepperStep), "Stepper Step");
-    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinStepperEnable), "Stepper Enable");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.stepperDir), "Stepper Dir");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.stepperStep), "Stepper Step");
+    TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.stepperEnable), "Stepper Enable");
   }
   
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinFan), "Fan");
@@ -187,9 +187,9 @@ void test_initialisation_outputs_PWM_idle(void)
   strcpy_P(msg, PSTR("Is PWM Idle"));
   TEST_ASSERT_TRUE_MESSAGE(isPwmIac(configPage6), msg);
   strcpy_P(msg, PSTR("Idle 1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinIdle1), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.idle1), msg);
   strcpy_P(msg, PSTR("Idle 2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinIdle2), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.idle2), msg);
 #endif
 }
 
@@ -203,11 +203,11 @@ void test_initialisation_outputs_stepper_idle(void)
   strcpy_P(msg, PSTR("Is Stepper Idle"));
   TEST_ASSERT_TRUE_MESSAGE(isIdleStepper, msg);
   strcpy_P(msg, PSTR("Stepper Dir"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinStepperDir), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.stepperDir), msg);
   strcpy_P(msg, PSTR("Stepper Step"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinStepperStep), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.stepperStep), msg);
   strcpy_P(msg, PSTR("Stepper Enable"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinStepperEnable), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.idle.stepperEnable), msg);
 }
 
 void test_initialisation_outputs_boost(void)

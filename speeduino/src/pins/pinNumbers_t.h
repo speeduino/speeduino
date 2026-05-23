@@ -70,13 +70,25 @@ struct sensor_pins_t
   uint8_t O2 = 0; ///< O2 Sensor pin
   uint8_t O2_2 = 0; ///< Second O2 pin
   uint8_t Bat = 0; ///< Battery voltage pin
-  uint8_t CTPS; ///< Input for triggering closed throttle state
-  uint8_t flex; ///< Pin with the flex sensor attached
-  uint8_t fuelPressure;
-  uint8_t oilPressure;
-  uint8_t baro; //Pin that an external barometric pressure sensor is attached to (If used)
+  uint8_t CTPS = 0; ///< Input for triggering closed throttle state
+  uint8_t flex = 0; ///< Pin with the flex sensor attached
+  uint8_t fuelPressure = 0;
+  uint8_t oilPressure = 0;
+  uint8_t baro = 0; //Pin that an external barometric pressure sensor is attached to (If used)
 
   bool isPinUsed(uint8_t pin) const;
+};
+
+/** @brief Idle pins */
+struct idle_pins_t
+{
+  uint8_t idle1 = 0; ///< Single wire idle control
+  uint8_t idle2 = 0; ///< 2 wire idle control
+  uint8_t idleUp = 0; ///< Input for triggering Idle Up
+  uint8_t idleUpOutput = 0; ///< Output that follows (normal or inverted) the idle up pin
+  uint8_t stepperDir = 0; //Direction pin for the stepper motor driver
+  uint8_t stepperStep = 0; //Step pin for the stepper motor driver
+  uint8_t stepperEnable = 0; //Turning the DRV8825 driver on/off
 };
 
 /** @brief Store the pin assignments, as defined by the board */
@@ -86,21 +98,17 @@ struct pinNumbers_t
   coil_pins_t coilPins;
   decoder_pins_t triggerPins;
   sensor_pins_t sensors;
+  idle_pins_t idle;
+
  uint8_t pinTachOut = 0; //Tacho output
  uint8_t pinFuelPump = 0; //Fuel pump on/off
- uint8_t pinIdle1 = 0; //Single wire idle control
- uint8_t pinIdle2 = 0; //2 wire idle control
- uint8_t pinIdleUp = 0; //Input for triggering Idle Up
- uint8_t pinIdleUpOutput = 0; //Output that follows (normal or inverted) the idle up pin
+
  uint8_t pinFuel2Input = 0; //Input for switching to the 2nd fuel table
  uint8_t pinSpark2Input = 0; //Input for switching to the 2nd ignition table
  uint8_t pinBoost = 0;
  uint8_t pinVVT_1 = 0;		// vvt output 1
  uint8_t pinVVT_2 = 0;		// vvt output 2
  uint8_t pinFan = 0;       // Cooling fan output
- uint8_t pinStepperDir = 0; //Direction pin for the stepper motor driver
- uint8_t pinStepperStep = 0; //Step pin for the stepper motor driver
- uint8_t pinStepperEnable = 0; //Turning the DRV8825 driver on/off
  uint8_t pinLaunch = 0;
  uint8_t pinIgnBypass = 0; //The pin used for an ignition bypass (Optional)
  uint8_t pinVSS = 0; 
