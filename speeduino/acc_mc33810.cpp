@@ -5,8 +5,8 @@
 
 #if defined(MC33810_SUPPORT)
 
-static uint8_t MC33810_BIT_INJ[_countof(pinNumbers_t::mc33810InjBits)] = {};
-static uint8_t MC33810_BIT_IGN[_countof(pinNumbers_t::mc33810IgnBits)] = {};
+static uint8_t MC33810_BIT_INJ[_countof(mc33810_pins_t::injBits)] = {};
+static uint8_t MC33810_BIT_IGN[_countof(mc33810_pins_t::ignBits)] = {};
 
 static constexpr uint8_t MC33810_ONOFF_CMD = 0x30; //48 in decimal
 
@@ -93,10 +93,10 @@ static channelFunc coilDischargingFn = coilLow;
 void __attribute__((optimize("Os"))) initMC33810(const config4 &page4, const pinNumbers_t &pinNumbers)
 {
     //Set pin port/masks
-    memcpy(MC33810_BIT_INJ, pinNumbers.mc33810InjBits, sizeof(MC33810_BIT_INJ));
-    memcpy(MC33810_BIT_IGN, pinNumbers.mc33810IgnBits, sizeof(MC33810_BIT_IGN));
-    mc33810_1.init(pinNumbers.pinMC33810_1_CS);
-    mc33810_2.init(pinNumbers.pinMC33810_2_CS);
+    memcpy(MC33810_BIT_INJ, pinNumbers.mc33810.injBits, sizeof(MC33810_BIT_INJ));
+    memcpy(MC33810_BIT_IGN, pinNumbers.mc33810.ignBits, sizeof(MC33810_BIT_IGN));
+    mc33810_1.init(pinNumbers.mc33810.CS_1);
+    mc33810_2.init(pinNumbers.mc33810.CS_2);
 
     SPI.begin();
     //These are the SPI settings per the datasheet

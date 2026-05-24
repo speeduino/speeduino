@@ -107,6 +107,15 @@ struct aircon_pins_t
   uint8_t request = 0; ///< Air conditioning request input
 };
 
+/** @brief Pin configuration for an MC33810 board */
+struct mc33810_pins_t
+{
+  uint8_t CS_1 = 0; ///< Chip select pin for the first MC33810 IC (Channels 1-4)
+  uint8_t CS_2 = 0; ///< Chip select pin for the second MC33810 IC (Channels 5-8)
+  uint8_t injBits[8];
+  uint8_t ignBits[8];
+};
+
 /** @brief Store the pin assignments, as defined by the tune and board */
 struct pinNumbers_t
 {
@@ -118,25 +127,22 @@ struct pinNumbers_t
   wmi_pins_t wmi;
   aircon_pins_t airCon;
 
- uint8_t pinTachOut = 0; ///< Tacho output
- uint8_t pinFuelPump = 0; ///< Fuel pump on/off
- uint8_t pinFuel2Input = 0; ///< Input for switching to the 2nd fuel table
- uint8_t pinSpark2Input = 0; ///< Input for switching to the 2nd ignition table
- uint8_t pinBoost = 0; ///< Boost control output
- uint8_t pinVVT_1 = 0;		///< vvt output 1
- uint8_t pinVVT_2 = 0;		///< vvt output 2
- uint8_t pinFan = 0;       ///< Cooling fan output
- uint8_t pinLaunch = 0; ///< Launch control
- uint8_t pinIgnBypass = 0; ///< The pin used for an ignition bypass (Optional)
- uint8_t pinVSS = 0; ///< Speed sensor
- uint8_t pinResetControl = 0; ///< Output pin used control resetting the Arduino
+  uint8_t pinTachOut = 0; ///< Tacho output
+  uint8_t pinFuelPump = 0; ///< Fuel pump on/off
+  uint8_t pinFuel2Input = 0; ///< Input for switching to the 2nd fuel table
+  uint8_t pinSpark2Input = 0; ///< Input for switching to the 2nd ignition table
+  uint8_t pinBoost = 0; ///< Boost control output
+  uint8_t pinVVT_1 = 0;		///< vvt output 1
+  uint8_t pinVVT_2 = 0;		///< vvt output 2
+  uint8_t pinFan = 0;       ///< Cooling fan output
+  uint8_t pinLaunch = 0; ///< Launch control
+  uint8_t pinIgnBypass = 0; ///< The pin used for an ignition bypass (Optional)
+  uint8_t pinVSS = 0; ///< Speed sensor
+  uint8_t pinResetControl = 0; ///< Output pin used control resetting the Arduino
 #ifdef SD_LOGGING
   uint8_t pinSDEnable = 0; //Input for manually enabling SD logging
 #endif
 #if defined(MC33810_SUPPORT)
-  uint8_t pinMC33810_1_CS = 0;
-  uint8_t pinMC33810_2_CS = 0;
-  uint8_t mc33810InjBits[8];
-  uint8_t mc33810IgnBits[8];
+  mc33810_pins_t mc33810;
 #endif
 };

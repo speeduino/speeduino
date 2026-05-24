@@ -1882,26 +1882,26 @@ static pinNumbers_t getDropBearPinMapping(void)
   pins.coilPins.copy_P(boardCoilPins, _countof(boardCoilPins));
 
   //Pin alignment to the MC33810 outputs
-  pins.pinMC33810_1_CS = 10;
-  pins.pinMC33810_2_CS = 9;
+  pins.mc33810.CS_1 = 10;
+  pins.mc33810.CS_2 = 9;
 
-  pins.mc33810InjBits[0] = 3;
-  pins.mc33810InjBits[1] = 1;
-  pins.mc33810InjBits[2] = 0;
-  pins.mc33810InjBits[3] = 2;
-  pins.mc33810IgnBits[0] = 4;
-  pins.mc33810IgnBits[1] = 5;
-  pins.mc33810IgnBits[2] = 6;
-  pins.mc33810IgnBits[3] = 7;
+  pins.mc33810.injBits[0] = 3;
+  pins.mc33810.injBits[1] = 1;
+  pins.mc33810.injBits[2] = 0;
+  pins.mc33810.injBits[3] = 2;
+  pins.mc33810.ignBits[0] = 4;
+  pins.mc33810.ignBits[1] = 5;
+  pins.mc33810.ignBits[2] = 6;
+  pins.mc33810.ignBits[3] = 7;
 
-  pins.mc33810InjBits[4] = 3;
-  pins.mc33810InjBits[5] = 1;
-  pins.mc33810InjBits[6] = 0;
-  pins.mc33810InjBits[7] = 2;
-  pins.mc33810IgnBits[4] = 4;
-  pins.mc33810IgnBits[5] = 5;
-  pins.mc33810IgnBits[6] = 6;
-  pins.mc33810IgnBits[7] = 7;
+  pins.mc33810.injBits[4] = 3;
+  pins.mc33810.injBits[5] = 1;
+  pins.mc33810.injBits[6] = 0;
+  pins.mc33810.injBits[7] = 2;
+  pins.mc33810.ignBits[4] = 4;
+  pins.mc33810.ignBits[5] = 5;
+  pins.mc33810.ignBits[6] = 6;
+  pins.mc33810.ignBits[7] = 7;
   return pins;
 }
 #endif
