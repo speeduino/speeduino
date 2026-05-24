@@ -430,9 +430,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
     } //1Hz timer
 
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL)
-    || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL)
-    || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
+    if (isPwmIac(configPage6))
     {
       idleControl(); //Run idlecontrol every loop for stepper idle.
     }

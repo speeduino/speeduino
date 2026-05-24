@@ -141,8 +141,8 @@ struct config15 configPage15;
 bool pinIsOutput(byte pin)
 {
   bool used = false;
-  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
-  bool isIdleSteper = (configPage6.iacAlgorithm > 3) && (configPage6.iacAlgorithm != 6);
+  bool isIdlePWM = isPwmIac(configPage6);
+  bool isIdleStepper = isStepperIac(configPage6);
   //Injector?
   if ((pin == pinInjector1)
   || ((pin == pinInjector2) && (configPage2.nInjectors > 1))
@@ -176,9 +176,9 @@ bool pinIsOutput(byte pin)
   || ((pin == pinBoost) && (configPage6.boostEnabled == 1))
   || ((pin == pinIdle1) && isIdlePWM)
   || ((pin == pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
-  || ((pin == pinStepperEnable) && isIdleSteper)
-  || ((pin == pinStepperStep) && isIdleSteper)
-  || ((pin == pinStepperDir) && isIdleSteper)
+  || ((pin == pinStepperEnable) && isIdleStepper)
+  || ((pin == pinStepperStep) && isIdleStepper)
+  || ((pin == pinStepperDir) && isIdleStepper)
   || (pin == pinTachOut)
   || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
   || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )

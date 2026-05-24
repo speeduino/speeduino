@@ -62,7 +62,7 @@ void initBoard(uint32_t /*baudRate*/)
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
