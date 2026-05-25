@@ -185,7 +185,7 @@ void test_initialisation_outputs_PWM_idle(void)
 
   char msg[32];
   strcpy_P(msg, PSTR("Is PWM Idle"));
-  TEST_ASSERT_TRUE_MESSAGE(isIdlePWM, msg);
+  TEST_ASSERT_TRUE_MESSAGE(isPwmIac(configPage6), msg);
   strcpy_P(msg, PSTR("Idle 1"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), msg);
   strcpy_P(msg, PSTR("Idle 2"));

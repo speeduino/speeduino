@@ -547,6 +547,18 @@ struct config6 : public config_page_t {
 
 } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
+static inline bool isPwmIac(const config6 &page6) {
+  return page6.iacAlgorithm == IAC_ALGORITHM_PWM_OL
+      || page6.iacAlgorithm == IAC_ALGORITHM_PWM_CL
+      || page6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL;
+}
+
+static inline bool isStepperIac(const config6 &page6) {
+  return page6.iacAlgorithm == IAC_ALGORITHM_STEP_OL
+      || page6.iacAlgorithm == IAC_ALGORITHM_STEP_CL
+      || page6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL;
+}
+
 constexpr uint8_t HARD_REV_FIXED   = 1U;
 constexpr uint8_t HARD_REV_COOLANT = 2U;
 

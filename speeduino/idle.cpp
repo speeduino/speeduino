@@ -74,13 +74,9 @@ integerPID idlePID(&currentStatus.longRPM, &idle_pid_target_value, &idle_cl_targ
 //Typically this is enabling the PWM interrupt
 static inline void enableIdle(void)
 {
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
+  if (isPwmIac(configPage6))
   {
     IDLE_TIMER_ENABLE();
-  }
-  else if ( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
-  {
-
   }
 }
 
@@ -690,7 +686,7 @@ void idleControl(void)
   lastDFCOValue = currentStatus.isDFCOActive;
 
   //Check for 100% and 0% DC on PWM idle
-  if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL) )
+  if (isPwmIac(configPage6))
   {
     if(currentStatus.idleLoad >= 100)
     {
@@ -741,7 +737,7 @@ void disableIdle(void)
       if(configPage6.iacChannels == 1) { idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
   }
-  else if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL) )
+  else if( isStepperIac(configPage6) )
   {
     //Only disable the stepper motor if homing is completed
     if( (checkForStepping() == false) && (isStepperHomed() == true) )
