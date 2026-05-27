@@ -4,7 +4,7 @@
 #include "schedule_calcs.h"
 #include "crankMaths.h"
 #include "../test_utils.h"
-#include "type_traits.h"
+#include "src/stdlib/type_traits.h"
 
 using raw_counter_t = type_traits::remove_reference<FuelSchedule::counter_t>::type;
 using raw_compare_t = type_traits::remove_reference<FuelSchedule::compare_t>::type;

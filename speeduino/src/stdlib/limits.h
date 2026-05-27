@@ -5,23 +5,8 @@
  */
 #pragma once
 
-namespace type_traits {
+#include <stdint.h>
 
-  // std::remove_reference. See https://en.cppreference.com/w/cpp/types/remove_reference.html
-  template <typename T>
-  struct remove_reference {
-    using type = T;
-  };
-  template <typename T>
-  struct remove_reference<T&> {
-    using type = T;
-  };
-  template <typename T>
-  struct remove_reference<T&&> {
-    using type = T;
-  };
-
-}
 // std::numeric_limits. See https://en.cppreference.com/w/cpp/types/numeric_limits
 template <typename T>
 struct numeric_limits {

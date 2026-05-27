@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "table2d.h"
 #include "../test_utils.h"
-#include "type_traits.h"
+#include "src/stdlib/limits.h"
 
 #define U8_X4_DATA 251, 211, 199, 167,
 static uint8_t table2d_data_u8_4[4] = { U8_X4_DATA };
