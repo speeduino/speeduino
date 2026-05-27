@@ -7,7 +7,7 @@
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
  
-static fastOutputPin_t pins[IGN_CHANNELS];
+static fastOutputPin_t pins[_countof(coil_pins_t::_elements)];
 
 static inline void coilLow(uint8_t channel)
 {
@@ -27,9 +27,9 @@ static channelFunc coilDischargingFn = coilLow;
 
 void initIgnDirectIO(const config4 &page4, const coil_pins_t &coilPins)
 {
-    for (uint8_t i = 0; i < _countof(pins); i++)
+    for (uint8_t i = 0; i < coilPins.size(); i++)
     {
-        pins[i].setPin(coilPins.pins[i], OUTPUT);
+        pins[i].setPin(coilPins[i], OUTPUT);
     }
     if (page4.IgInv == GOING_HIGH)
     {

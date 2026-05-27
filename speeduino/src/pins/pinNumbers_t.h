@@ -3,13 +3,12 @@
 #include <stdint.h>
 #include "../../board_definition.h"
 #include "../../config_pages.h"
+#include "../stdlib/array.h"
 
 /** @brief An array of pin numbers */
-template <uint8_t N>
-struct pin_array_t
+template <uint8_t N, typename base_type = array<uint8_t, N>>
+struct pin_array_t : public base_type
 {
-  uint8_t pins[N] = {NOT_A_PIN};
-
   /**
    * @brief Populate by copying from a source array stored in flash
    * 
@@ -18,16 +17,16 @@ struct pin_array_t
   void __attribute__((optimize("Os"))) copy_P(const uint8_t *pSrc, uint8_t length)
   {
     uint8_t elementsToCopy = min(N, length);
-    (void)memcpy_P(pins, pSrc, elementsToCopy*sizeof(pins[0]));
+    (void)memcpy_P(this->_elements, pSrc, elementsToCopy*sizeof(typename base_type::value_type));
     // Fill remainder with NOT_A_PIN
-    (void)memset(pins+elementsToCopy, NOT_A_PIN, (N-elementsToCopy)*sizeof(pins[0]));
+    (void)memset(this->_elements+elementsToCopy, NOT_A_PIN, (N-elementsToCopy)*sizeof(typename base_type::value_type));
   }
 
   /** @brief Does the array contain \p pin? */
   bool isPinUsed(uint8_t pin) const
   {
-    uint8_t index = NOT_A_PIN;
-    while (index<N && pin!=pins[index])
+    uint8_t index = 0;
+    while (index<N && pin!=this->operator[](index))
     {
       ++index;
     }

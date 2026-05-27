@@ -56,21 +56,21 @@ void test_initialisation_outputs_V03(void)
 
   char msg[32];
   strcpy_P(msg, PSTR("Coil1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[0]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[0]), msg);
   strcpy_P(msg, PSTR("Coil2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[1]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[1]), msg);
   strcpy_P(msg, PSTR("Coil3"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[2]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[2]), msg);
   strcpy_P(msg, PSTR("Coil4"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[3]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[3]), msg);
   strcpy_P(msg, PSTR("Injector 1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[0]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[0]), msg);
   strcpy_P(msg, PSTR("Injector 2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[1]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[1]), msg);
   strcpy_P(msg, PSTR("Injector 3"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[2]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[2]), msg);
   strcpy_P(msg, PSTR("Injector 4"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[3]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[3]), msg);
   strcpy_P(msg, PSTR("Tacho Out"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinTachOut), msg);
   strcpy_P(msg, PSTR("Fuel Pump"));
@@ -91,21 +91,21 @@ void test_initialisation_outputs_V04(void)
 
   char msg[32];
   strcpy_P(msg, PSTR("Coil1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[0]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[0]), msg);
   strcpy_P(msg, PSTR("Coil2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[1]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[1]), msg);
   strcpy_P(msg, PSTR("Coil3"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[2]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[2]), msg);
   strcpy_P(msg, PSTR("Coil4"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[3]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[3]), msg);
   strcpy_P(msg, PSTR("Injector 1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[0]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[0]), msg);
   strcpy_P(msg, PSTR("Injector 2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[1]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[1]), msg);
   strcpy_P(msg, PSTR("Injector 3"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[2]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[2]), msg);
   strcpy_P(msg, PSTR("Injector 4"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[3]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[3]), msg);
   strcpy_P(msg, PSTR("Tacho Out"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinTachOut), msg);
   strcpy_P(msg, PSTR("Fuel Pump"));
@@ -144,21 +144,21 @@ void test_initialisation_outputs_MX5_8995(void)
 
   char msg[32];
   strcpy_P(msg, PSTR("Coil1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[0]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[0]), msg);
   strcpy_P(msg, PSTR("Coil2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[1]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[1]), msg);
   strcpy_P(msg, PSTR("Coil3"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[2]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[2]), msg);
   strcpy_P(msg, PSTR("Coil4"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins.pins[3]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.coilPins[3]), msg);
   strcpy_P(msg, PSTR("Injector 1"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[0]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[0]), msg);
   strcpy_P(msg, PSTR("Injector 2"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[1]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[1]), msg);
   strcpy_P(msg, PSTR("Injector 3"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[2]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[2]), msg);
   strcpy_P(msg, PSTR("Injector 4"));
-  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins.pins[3]), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.injectorPins[3]), msg);
   strcpy_P(msg, PSTR("Tacho Out"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinNumbers.pinTachOut), msg);
   strcpy_P(msg, PSTR("Fuel Pump"));
@@ -180,8 +180,6 @@ void test_initialisation_outputs_PWM_idle(void)
   configPage6.iacAlgorithm = 2;
 
   initialiseAll(); //Run the main initialise function
-
-  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
 
   char msg[32];
   strcpy_P(msg, PSTR("Is PWM Idle"));

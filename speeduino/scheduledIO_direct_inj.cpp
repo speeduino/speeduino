@@ -6,13 +6,13 @@
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
 
-static fastOutputPin_t pins[_countof(injector_pins_t::pins)];
+static fastOutputPin_t pins[_countof(injector_pins_t::_elements)];
 
 void initInjDirectIO(const injector_pins_t &injPins)
 {
-    for (uint8_t i = 0; i < _countof(injPins.pins); i++)
+    for (uint8_t i = 0; i < injPins.size(); i++)
     {
-        pins[i].setPin(injPins.pins[i], OUTPUT);
+        pins[i].setPin(injPins[i], OUTPUT);
     }
 }
 
