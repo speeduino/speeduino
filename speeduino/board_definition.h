@@ -9,7 +9,8 @@
 
 #include <stdint.h>
 #include <Arduino.h>
-#include "type_traits.h"
+#include "src/stdlib/type_traits.h"
+#include "src/stdlib/limits.h"
 #include "storage_api.h"
 
 /**
