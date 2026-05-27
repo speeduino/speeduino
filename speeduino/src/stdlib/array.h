@@ -71,22 +71,11 @@ struct array {
     }
 };
 
-/** @brief A free function to populate an array from a source C-style array*/
+/** @brief A free function to populate a C-style array from a source C-style array*/
 template <typename T, size_t N, size_t M>
-constexpr array<T, N>& fill(array<T, N>& arr, const T (&src)[M]) {
+constexpr void copy(T (&target)[N], const T (&src)[M]) {
     for (size_t i = 0; i < N && i < M; ++i) {
-        arr[i] = src[i];
+        target[i] = src[i];
     }
-    return arr;
 }
-
-/** @brief A free function to populate an array from a source array*/
-template <typename T, size_t N, size_t M>
-constexpr array<T, N>& fill(array<T, N>& arr, const array<T, M> &src) {
-    for (size_t i = 0; i < N && i < M; ++i) {
-        arr[i] = src[i];
-    }
-    return arr;
-}
-
 // LCOV_EXCL_STOP

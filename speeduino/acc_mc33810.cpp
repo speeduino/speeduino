@@ -93,8 +93,8 @@ static channelFunc coilDischargingFn = coilLow;
 void __attribute__((optimize("Os"))) initMC33810(const config4 &page4, const pinNumbers_t &pinNumbers)
 {
     //Set pin port/masks
-    memcpy(MC33810_BIT_INJ, pinNumbers.mc33810.injBits, sizeof(MC33810_BIT_INJ));
-    memcpy(MC33810_BIT_IGN, pinNumbers.mc33810.ignBits, sizeof(MC33810_BIT_IGN));
+    copy(MC33810_BIT_INJ, pinNumbers.mc33810.injBits._elements);
+    copy(MC33810_BIT_IGN, pinNumbers.mc33810.ignBits._elements);
     mc33810_1.init(pinNumbers.mc33810.CS_1);
     mc33810_2.init(pinNumbers.mc33810.CS_2);
 
