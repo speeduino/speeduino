@@ -1197,10 +1197,10 @@ static pinNumbers_t getTurtanasPinMapping(void)
 #endif
 }
 
+#if defined(STM32F407xx)
 static pinNumbers_t getLevinPinMapping(void)
 {
 // Pin mappings for the Levin board
-#if defined(STM32F407xx)
   static constexpr pinNumbers_t pins PROGMEM = pinNumber_builder_t()
     .withInjectorPins((uint8_t[]){ PB15, PA8, PB13, PB14, PE13, PB12, PE7, PE10, })
     .withCoilPins((uint8_t[]){ PC13, PE6, PE5, PE4, PE3, PE2, PB9, PD12, })
@@ -1234,10 +1234,8 @@ static pinNumbers_t getLevinPinMapping(void)
     .withIdleUp(PC7)
     .build();
   return copyObject_P(&pins);
-#else
-  return pinNumbers_t();
-#endif
 }
+#endif
 
 static pinNumbers_t getPlazomatv10PinMapping(void)
 {
@@ -1696,6 +1694,11 @@ static pinNumbers_t getBearCubPinMapping(void)
 }
 #endif
 
+#if defined(STM32F407xx) || defined(STM32F411xE) || defined(STM32F401xC) || defined(CORE_STM32)
+#define SPECTRE_V05_PIN_MAPPING_AVAILABLE
+#endif
+
+#if defined(SPECTRE_V05_PIN_MAPPING_AVAILABLE)
 static pinNumbers_t getSpectreV05PinMapping(void)
 {
   static constexpr pinNumbers_t pins PROGMEM = pinNumber_builder_t()
@@ -1776,6 +1779,7 @@ static pinNumbers_t getSpectreV05PinMapping(void)
     .build();
   return copyObject_P(&pins);
 }
+#endif
 
 #if defined(STM32F407xx)
 static pinNumbers_t getDefaultSTM32PinMapping(void)
@@ -1830,7 +1834,9 @@ static pinNumbers_t getPinMapping(uint8_t boardID)
     case 8: return getMiataNA18PinMapping(); break;
     case 9: return getMiataNA16PinMapping(); break;
     case 10: return getTurtanasPinMapping(); break;
+#if defined(STM32F407xx)
     case 14: return getLevinPinMapping(); break;
+#endif
     case 20: return getPlazomatv10PinMapping(); break;
     case 30: return getDazV6PinMapping(); break;
     case 31: return getBMWPnPPinMapping(); break;
@@ -1850,7 +1856,9 @@ static pinNumbers_t getPinMapping(uint8_t boardID)
     #if defined(CORE_TEENSY41)
     case 56: return getBearCubPinMapping(); break;
     #endif   
+    #if defined(SPECTRE_V05_PIN_MAPPING_AVAILABLE)
     case 60: return getSpectreV05PinMapping(); break;
+    #endif   
     default: break;
   }
   return getDefaultPinMapping();  
