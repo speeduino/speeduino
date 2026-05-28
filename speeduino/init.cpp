@@ -38,11 +38,8 @@
 #include "prog_mem_support.h"
 #include "src/pins/pinNumber_builder_t.h"
 
-#if defined(CORE_AVR)
-#pragma GCC push_options
-// This minimizes RAM usage at no performance cost
+// This minimizes RAM usage and the code is only called at startup, so speed isn't a concern.
 #pragma GCC optimize ("Os") 
-#endif
 
 static void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
 {
@@ -53,8 +50,7 @@ static void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
 }
 
 static void __attribute__((optimize("Os"))) closeAllInjectors(void)
-{
-  for (uint8_t index=1; index<=INJ_CHANNELS; ++index)
+{for (uint8_t index=1; index<=INJ_CHANNELS; ++index)
   {
     closeInjector(index);
   }
@@ -1294,7 +1290,6 @@ static pinNumbers_t getBMWPnPPinMapping(void)
 {
   static constexpr pinNumbers_t pins PROGMEM = pinNumber_builder_t()
   //Pin mappings for the BMW PnP PCBs by pazi88.
-#if defined(CORE_AVR)
     //This is the regular MEGA2560 pin mapping
     .withInjectorPins((uint8_t[]){ 8, 9, 10, 11, 12, 50, 39, 42, })
     .withCoilPins((uint8_t[]){ 40, 38, 52, 48, 36, 34, 46, 53, })
@@ -1329,7 +1324,7 @@ static pinNumbers_t getBMWPnPPinMapping(void)
     .withIdleUp(37)
     .withIdleUpOutput(41)
     .withCTPS(A6)
-#elif defined(STM32F407xx)
+#if defined(STM32F407xx)
     .withInjectorPins((uint8_t[]){  PB15, PB14, PB12, PB13, PA8, PE7, PE13, PE10, })
     .withCoilPins((uint8_t[]){ PE2, PE3, PC13, PE6, PE4, PE5, PE0, PB9, })
     .withDecoderPins(PD3, PD4)
@@ -1471,10 +1466,11 @@ static pinNumbers_t getBlitzboxBL49spPinMapping(void)
   return copyObject_P(&pins);
 }
 
+#if defined(CORE_AVR)
 static pinNumbers_t getDIYEFICORE4v10PinMapping(void)
 {
   //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
-#if !defined(SMALL_FLASH_MODE) && defined(CORE_AVR)
+#if !defined(SMALL_FLASH_MODE)
   static constexpr pinNumbers_t pins PROGMEM = pinNumber_builder_t()
     .withInjectorPins((uint8_t[]){  10, 11, 12, 9, 33, 34})
     .withCoilPins((uint8_t[]){ 39, 29, 28, 27, 26 /* Pin for coil 5 PLACEHOLDER value for now */, })
@@ -1507,6 +1503,7 @@ static pinNumbers_t getDIYEFICORE4v10PinMapping(void)
   return pinNumbers_t();
 #endif
 }
+#endif
 
 #if defined(CORE_TEENSY35)
 static pinNumbers_t getDvjTeensyRevAPinMapping(void)
@@ -1811,7 +1808,7 @@ static pinNumbers_t getDefaultSTM32PinMapping(void)
 }
 #endif
 
-static pinNumbers_t getDefaultPinMapping(void)
+TESTABLE_STATIC pinNumbers_t getDefaultPinMapping(void)
 {
   return
 #if defined(STM32F407xx)
@@ -1821,7 +1818,7 @@ static pinNumbers_t getDefaultPinMapping(void)
 #endif  
 }
 
-static pinNumbers_t getPinMapping(uint8_t boardID)
+TESTABLE_STATIC pinNumbers_t getPinMapping(uint8_t boardID)
 {
   switch (boardID)
   {
@@ -1843,22 +1840,24 @@ static pinNumbers_t getPinMapping(uint8_t boardID)
     case 40: return getNO2CPinMapping(); break;
     case 41: return getUA4CPinMapping(); break;
     case 42: return getBlitzboxBL49spPinMapping(); break;
+#if defined(CORE_AVR)
     case 45: return getDIYEFICORE4v10PinMapping(); break;
+#endif
 
-    #if defined(CORE_TEENSY35)
+#if defined(CORE_TEENSY35)
     case 50: return getDvjTeensyRevAPinMapping(); break;
     case 51: return getDvjTeensyRevBPinMapping(); break;
     case 53: return getJuiceBoxPinMapping(); break;
-    #endif
-    #if defined(CORE_TEENSY)
+#endif
+#if defined(CORE_TEENSY)
     case 55: return getDropBearPinMapping(); break;
-    #endif   
-    #if defined(CORE_TEENSY41)
+#endif   
+#if defined(CORE_TEENSY41)
     case 56: return getBearCubPinMapping(); break;
-    #endif   
-    #if defined(SPECTRE_V05_PIN_MAPPING_AVAILABLE)
+#endif   
+#if defined(SPECTRE_V05_PIN_MAPPING_AVAILABLE)
     case 60: return getSpectreV05PinMapping(); break;
-    #endif   
+#endif   
     default: break;
   }
   return getDefaultPinMapping();  
@@ -2065,14 +2064,3 @@ void setPinMapping(byte boardID)
     }
   } 
 }
-
-/** Initialise the chosen trigger decoder.
- * - Set Interrupt numbers @ref triggerInterrupt, @ref triggerInterrupt2 and @ref triggerInterrupt3  by pin their numbers (based on board CORE_* define)
- * - Call decoder specific setup function triggerSetup_*() (by @ref config4.TrigPattern, set to one of the DECODER_* defines) and do any additional initialisations needed.
- * 
- * @todo Explain why triggerSetup_*() alone cannot do all the setup, but there's ~10+ lines worth of extra init for each of decoders.
- */
-
-#if defined(CORE_AVR)
-#pragma GCC pop_options
-#endif
