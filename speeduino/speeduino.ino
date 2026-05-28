@@ -315,7 +315,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
       checkProgrammableIO(currentStatus, configPage13);
-      idleControl(); //Perform any idle related actions. This needs to be run at 10Hz to align with the idle taper resolution of 0.1s
       
       // Air conditioning control
       airConControl();
@@ -430,9 +429,12 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
     } //1Hz timer
 
-    if (isStepperIac(configPage6))
+    // Run idlecontrol every loop for stepper idle...
+    if (isStepperIac(configPage6)
+    // ...or to be run at 10Hz to align with the idle taper resolution of 0.1s
+    || BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ))
     {
-      idleControl(); //Run idlecontrol every loop for stepper idle.
+      idleControl(); 
     }
 
     //VE and advance calculation were moved outside the sync/RPM check so that the fuel and ignition load value will be accurately shown when RPM=0
