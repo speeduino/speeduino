@@ -1506,39 +1506,10 @@ static pinNumbers_t getDIYEFICORE4v10PinMapping(void)
 #endif
 
 #if defined(CORE_TEENSY35)
-static pinNumbers_t getDvjTeensyRevAPinMapping(void)
+static pinNumbers_t getDvjTeensyPinMapping(void)
 {
   static constexpr pinNumbers_t pins PROGMEM = pinNumber_builder_t()
     //Pin mappings as per the teensy rev A shield
-    .withInjectorPins((uint8_t[]){ 2, 10, 6, 9, })
-    .withCoilPins((uint8_t[]){ 29, 30, 31, 32, })
-    .withDecoderPins(23, 36)
-    .withTPS(16)
-    .withMAP(17)
-    .withIAT(14)
-    .withCLT(15)
-    .withO2(A22)
-    .withO2_2(A21)
-    .withBat(18)
-    .withTach(20)
-    .withIdle1(5)
-    .withBoost(11)
-    .withFuelPump(38)
-    .withStepperDir(34)
-    .withStepperStep(35)
-    .withStepperEnable(33)
-    .withLaunch(26)
-    .withFan(37)
-    .build();
-  return copyObject_P(&pins);
-}
-#endif
-
-#if defined(CORE_TEENSY35)
-static pinNumbers_t getDvjTeensyRevBPinMapping(void)
-{
-  //Pin mappings as per the teensy revB board shield
-  static constexpr pinNumbers_t pins PROGMEM = pinNumber_builder_t()
     .withInjectorPins((uint8_t[]){ 2, 10, 6, 9, })
     .withCoilPins((uint8_t[]){ 29, 30, 31, 32, })
     .withDecoderPins(23, 36)
@@ -1845,8 +1816,8 @@ TESTABLE_STATIC pinNumbers_t getPinMapping(uint8_t boardID)
 #endif
 
 #if defined(CORE_TEENSY35)
-    case 50: return getDvjTeensyRevAPinMapping(); break;
-    case 51: return getDvjTeensyRevBPinMapping(); break;
+    case 50: return getDvjTeensyPinMapping(); break;
+    case 51: return getDvjTeensyPinMapping(); break;
     case 53: return getJuiceBoxPinMapping(); break;
 #endif
 #if defined(CORE_TEENSY)
