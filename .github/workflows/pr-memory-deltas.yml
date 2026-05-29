@@ -79,6 +79,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4     
 
+      - name: Add Poetry to PATH (Local Act Fix)
+        if: ${{ env.ACT }}
+        run: echo "/root/.local/bin" >> $GITHUB_PATH
+
       - name: Compile platforms
         uses: arduino/compile-sketches@v1.1.2
         with:
@@ -91,9 +95,10 @@ jobs:
             - speeduino/speeduino.ino
           platforms: |
             ${{ matrix.board.platform }}
-          cli-compile-flags: 
-            --build-property "build.extra_flags=${{ env.COMMON_BUILD_FLAGS }} ${{ matrix.board.compile-flags }}"
-            --clean
+          cli-compile-flags: | 
+            - --clean
+            - --build-property 
+            - build.extra_flags=${{ env.COMMON_BUILD_FLAGS }} ${{ matrix.board.compile-flags }}
           libraries: |
             ${{ matrix.board.lib_deps }}
             ${{ env.COMMON_LIB_DEPS }}
