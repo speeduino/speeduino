@@ -107,7 +107,11 @@ struct pinNumber_builder_t
     {
         return withSensorPin(pin, &sensor_pins_t::baro);
     }
-
+    constexpr pinNumber_builder_t& withBaroAsMap(void)
+    {
+        pins.sensors.baro = pins.sensors.MAP;
+        return *this;
+    }
     constexpr pinNumber_builder_t& withIdle1(uint8_t pin)
     {
         return withIdlePin(pin, &idle_pins_t::idle1);
@@ -178,6 +182,11 @@ struct pinNumber_builder_t
     {
         return withPin(pin, &pinNumbers_t::pinBoost);
     }
+    constexpr pinNumber_builder_t& withBoostAsIdle2(void)
+    {
+        pins.pinBoost = pins.idle.idle2;
+        return *this;
+    }
     constexpr pinNumber_builder_t& withVVT1(uint8_t pin)
     {
         return withPin(pin, &pinNumbers_t::pinVVT_1);
@@ -197,6 +206,11 @@ struct pinNumber_builder_t
     constexpr pinNumber_builder_t& withVSS(uint8_t pin)
     {
         return withPin(pin, &pinNumbers_t::pinVSS);
+    }
+    constexpr pinNumber_builder_t& withVSSAsTertiaryTrigger(void)
+    {
+        pins.pinVSS = pins.triggerPins.tertiary;
+        return *this;
     }
 #ifdef SD_LOGGING
     constexpr pinNumber_builder_t& withSDEnable(uint8_t pin)
