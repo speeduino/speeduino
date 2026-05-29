@@ -19,6 +19,7 @@ env:
       version: "1.41"
     - name: avr-fast-div
       version: "1.4.0"
+  COMMON_BUILD_FLAGS: -I./speeduino/ -I./src/ -I./lib/
 
 jobs:
   compile:
@@ -35,9 +36,7 @@ jobs:
             family-name: arduino:avr
             platform: |
               - name: arduino:avr
-            compile-flags: |
-              - --build-property
-              - build.extra_flags=-DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
+            compile-flags: -DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
             lib_deps: |
               - name: Time
 
@@ -46,9 +45,7 @@ jobs:
             platform: |
               - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
                 name: teensy:avr
-            compile-flags: |
-              - --build-property
-              - build.extra_flags="-Wall"
+            compile-flags: -Wall
             lib_deps: |
               - name: SDfat
               - name: InternalTemperature
@@ -59,9 +56,7 @@ jobs:
             platform: |
               - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
                 name: teensy:avr
-            compile-flags: |
-              - --build-property
-              - build..extra_flags="-Wall"
+            compile-flags: -Wall
             lib_deps: |
               - name: SDfat
               - name: InternalTemperature
@@ -73,9 +68,7 @@ jobs:
               - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
                 name: STMicroelectronics:stm32
                 version: 2.7.1
-            compile-flags: |
-              - --build-property
-              - build.extra_flags=-DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
+            compile-flags: -DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
             lib_deps: |
               - name: "STM32duino RTC"
                 version: 1.2.0
@@ -90,15 +83,17 @@ jobs:
         uses: arduino/compile-sketches@v1.1.2
         with:
           fqbn: ${{ matrix.board.fqbn }}
-          enable-deltas-report: true
+          enable-deltas-report: ${{ !env.ACT }}
+          verbose: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sketch-paths: |
             - speeduino/speeduino.ino
           platforms: |
             ${{ matrix.board.platform }}
-          cli-compile-flags: |
-            ${{ matrix.board.compile-flags }}
+          cli-compile-flags: 
+            --build-property "build.extra_flags=${{ env.COMMON_BUILD_FLAGS }} ${{ matrix.board.compile-flags }}"
+            --clean
           libraries: |
             ${{ matrix.board.lib_deps }}
             ${{ env.COMMON_LIB_DEPS }}
