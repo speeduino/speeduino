@@ -37,22 +37,10 @@ struct pin_array_t : public base_type
 };
 
 /** @brief Injector control pin numbers */
-struct injector_pins_t : pin_array_t<INJ_CHANNELS>
-{
-  using pin_array_t<INJ_CHANNELS>::pin_array_t; // Inherit constructors
-
-  /**
-   * @brief Limits the source array length to the number of injectors defined in
-   * the tune.
-   */
-  void clampToNumInjectors(const config2 &page2);
-};
+using injector_pins_t = pin_array_t<INJ_CHANNELS>;
 
 /** @brief Coil control pin numbers */
-struct coil_pins_t : pin_array_t<IGN_CHANNELS>
-{
-  using pin_array_t<IGN_CHANNELS>::pin_array_t; // Inherit constructors
-};
+using coil_pins_t = pin_array_t<IGN_CHANNELS>;
 
 struct decoder_pins_t
 {

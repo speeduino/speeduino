@@ -1849,8 +1849,6 @@ void setPinMapping(byte boardID)
 
   pinNumbers = getPinMapping(boardID);
 
-  pinNumbers.injectorPins.clampToNumInjectors(configPage2);
-
   //Setup any devices that are using selectable pins
 
   if ( (configPage6.launchPin != 0) && (configPage6.launchPin < BOARD_MAX_IO_PINS) ) { pinNumbers.pinLaunch = pinTranslate(configPage6.launchPin); }

@@ -1,5 +1,6 @@
 #pragma once
 #include "src/pins/pinNumbers_t.h"
+#include "config_pages.h"
 
 void initInjDirectIO(const injector_pins_t &injPins);
 
