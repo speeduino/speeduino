@@ -38,24 +38,6 @@ constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 
 static inline bool pinIsReserved(uint8_t pin) { return pin==0U; } //Forbidden pins like USB on other boards
 
-#if false
-static constexpr uint8_t A0 = 0U;
-static constexpr uint8_t A1 = 0U;
-static constexpr uint8_t A2 = 0U;
-static constexpr uint8_t A3 = 0U;
-static constexpr uint8_t A5 = 0U;
-static constexpr uint8_t A6 = 0U;
-static constexpr uint8_t A7 = 0U;
-#endif
-static constexpr uint8_t A8 = 0U;
-static constexpr uint8_t A9 = 0U;
-static constexpr uint8_t A10 = 0U;
-static constexpr uint8_t A11 = 0U;
-static constexpr uint8_t A12 = 0U;
-static constexpr uint8_t A13 = 0U;
-static constexpr uint8_t A14 = 0U;
-static constexpr uint8_t A15 = 0U;
-
 #define PWM_FAN_AVAILABLE
 
 /*
