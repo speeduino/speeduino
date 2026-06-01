@@ -84,6 +84,10 @@ constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
   #ifndef NUM_DIGITAL_PINS
     #define NUM_DIGITAL_PINS 75
   #endif
+#elif defined(BOARD_FCR_MICRO_F4)
+  #ifndef NUM_DIGITAL_PINS
+    #define NUM_DIGITAL_PINS 100
+  #endif
 #endif
 
 //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
@@ -149,14 +153,30 @@ extern STM32RTC& rtc;
   #endif
 #else
   #ifdef USE_SPI_EEPROM
-    static inline bool pinIsReserved(uint8_t pin) { 
-      return (pin == (uint8_t)PA11) 
-          || (pin == (uint8_t)PA12) 
-          || (pin == (uint8_t)PB3) 
+    #if defined(BOARD_FCR_MICRO_F4) //FCR Micro F4: USB(PA11/PA12) + VBUS sense(PA9) + SPI3 flash(PC10/11/12) + CS + CAN1 ALT_2(PD0/PD1)
+    static inline bool pinIsReserved(uint8_t pin) {
+      PinName p = digitalPinToPinName(pin);
+      return (p == PA_11)
+          || (p == PA_12)
+          || (p == PA_9)
+          || (p == PC_10)
+          || (p == PC_11)
+          || (p == PC_12)
+          || (p == (PinName)USE_SPI_EEPROM)
+          || (p == PD_0)
+          || (p == PD_1)
+        ;
+    }
+    #else
+    static inline bool pinIsReserved(uint8_t pin) {
+      return (pin == (uint8_t)PA11)
+          || (pin == (uint8_t)PA12)
+          || (pin == (uint8_t)PB3)
           || (pin == (uint8_t)PB4)
           || (pin == (uint8_t)USE_SPI_EEPROM)
         ;
     }
+    #endif
   #else
     static inline bool pinIsReserved(uint8_t pin) { 
       return (pin == (uint8_t)PA11) 

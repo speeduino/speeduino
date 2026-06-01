@@ -9,6 +9,51 @@
 #include "comms_secondary.h"
 #include "scheduler_ignition_controller.h"
 
+#if defined(BOARD_FCR_MICRO_F4)
+extern "C" void __real_pinMode(uint8_t pin, uint8_t mode);
+extern "C" void __wrap_pinMode(uint8_t pin, uint8_t mode)
+{
+  if (pinIsReserved(pin)) { return; }
+  __real_pinMode(pin, mode);
+}
+
+__attribute__((constructor)) static void fcrInitFlashChipSelect(void)
+{
+  __real_pinMode((uint8_t)USE_SPI_EEPROM, OUTPUT);
+  digitalWrite((uint8_t)USE_SPI_EEPROM, HIGH);
+}
+
+// The stm32duino generic F429VITx variant ships an EMPTY (weak) SystemClock_Config(), so the chip
+// would run on the 16MHz HSI reset clock with no 48MHz USB clock and USB never enumerates.
+// Override it for the FCR Micro F4: 8MHz HSE -> 168MHz SYSCLK, PLLQ=7 -> 48MHz for USB FS.
+extern "C" void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
+
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM       = 8;    // 8MHz HSE / 8 = 1MHz PLL input
+  RCC_OscInitStruct.PLL.PLLN       = 336;  // 1MHz * 336 = 336MHz VCO
+  RCC_OscInitStruct.PLL.PLLP       = RCC_PLLP_DIV2; // 336/2 = 168MHz SYSCLK
+  RCC_OscInitStruct.PLL.PLLQ       = 7;    // 336/7 = 48MHz USB/SDIO clock
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) { Error_Handler(); }
+
+  RCC_ClkInitStruct.ClockType      = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                                   | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider  = RCC_SYSCLK_DIV1; // 168MHz AHB
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;   // 42MHz APB1 (max 45)
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;   // 84MHz APB2 (max 90)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) { Error_Handler(); }
+}
+#endif
+
 #if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
   #include "src/BackupSram/BackupSramAsEEPROM.h"
   BackupSramAsEEPROM EEPROM;
@@ -16,6 +61,8 @@
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
     #if defined(STM32F407xx)
       SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    #elif defined(BOARD_FCR_MICRO_F4)
+      SPIClass SPI_for_flash(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK (FCR Micro F4)
     #else //Blue/Black Pills
       SPIClass SPI_for_flash(PB15, PB14, PB13);
     #endif
