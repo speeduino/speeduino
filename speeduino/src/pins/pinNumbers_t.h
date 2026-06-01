@@ -2,18 +2,40 @@
 
 #include <stdint.h>
 #include "../../board_definition.h"
+#include "../../config_pages.h"
+#include "../stdlib/array.h"
+
+/** @brief An array of pin numbers */
+template <uint8_t N, typename base_type = array<uint8_t, N>>
+struct pin_array_t : public base_type
+{
+  // LCOV_EXCL_START
+  // Default constructor test coverage isn't registered since it's only used in constexpr context.
+  constexpr pin_array_t()
+  {
+    base_type::fill(NOT_A_PIN);
+  }
+  // LCOV_EXCL_STOP
+
+  /** @brief Does the array contain \p pin? */
+  bool __attribute__((optimize("Os"))) isPinUsed(uint8_t pin) const
+  {
+    uint8_t index = 0;
+    while (index<N && pin!=this->operator[](index))
+    {
+      ++index;
+    }
+    return index<N;
+  }
+};
+
+/** @brief Injector control pin numbers */
+using injector_pins_t = pin_array_t<INJ_CHANNELS>;
 
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
-  uint8_t pinInjector1 = NOT_A_PIN; //Output pin injector 1
-  uint8_t pinInjector2 = NOT_A_PIN; //Output pin injector 2
-  uint8_t pinInjector3 = NOT_A_PIN; //Output pin injector 3
-  uint8_t pinInjector4 = NOT_A_PIN; //Output pin injector 4
-  uint8_t pinInjector5 = NOT_A_PIN; //Output pin injector 5
-  uint8_t pinInjector6 = NOT_A_PIN; //Output pin injector 6
-  uint8_t pinInjector7 = NOT_A_PIN; //Output pin injector 7
-  uint8_t pinInjector8 = NOT_A_PIN; //Output pin injector 8
+  injector_pins_t injectorPins;
   uint8_t pinCoil1 = NOT_A_PIN; //Pin for coil 1
   uint8_t pinCoil2 = NOT_A_PIN; //Pin for coil 2
   uint8_t pinCoil3 = NOT_A_PIN; //Pin for coil 3

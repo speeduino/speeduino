@@ -20,6 +20,7 @@ void prepareForInitialiseAll(uint8_t boardId) {
   // calling setTuneToEmpty & thus blatting any
   // configuration made in step 2.
   configPage2.pinMapping = boardId;
+  configPage2.nInjectors = INJ_CHANNELS;
   currentStatus.initialisationComplete = false;
 }
 
