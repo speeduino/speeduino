@@ -875,11 +875,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 28; //Pin for coil 1
-      pinNumbers.pinCoil2 = 24; //Pin for coil 2
-      pinNumbers.pinCoil3 = 40; //Pin for coil 3
-      pinNumbers.pinCoil4 = 36; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 28; //Pin for coil 1
+      pinNumbers.coilPins[1] = 24; //Pin for coil 2
+      pinNumbers.coilPins[2] = 40; //Pin for coil 3
+      pinNumbers.coilPins[3] = 36; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 20; //The CAS pin
       pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -909,11 +909,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 28; //Pin for coil 1
-      pinNumbers.pinCoil2 = 24; //Pin for coil 2
-      pinNumbers.pinCoil3 = 40; //Pin for coil 3
-      pinNumbers.pinCoil4 = 36; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 28; //Pin for coil 1
+      pinNumbers.coilPins[1] = 24; //Pin for coil 2
+      pinNumbers.coilPins[2] = 40; //Pin for coil 3
+      pinNumbers.coilPins[3] = 36; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -945,11 +945,11 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger = 23;
         pinNumbers.pinStepperDir = 33;
         pinNumbers.pinStepperStep = 34;
-        pinNumbers.pinCoil1 = 31;
+        pinNumbers.coilPins[0] = 31;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
-        pinNumbers.pinCoil4 = 21;
-        pinNumbers.pinCoil3 = 30;
+        pinNumbers.coilPins[3] = 21;
+        pinNumbers.coilPins[2] = 30;
         pinNumbers.pinO2 = A22;
       #endif
     #endif
@@ -963,11 +963,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
       pinNumbers.injectorPins[5] = 50; //CAUTION: Uses the same as Coil 4 below. 
-      pinNumbers.pinCoil1 = 40; //Pin for coil 1
-      pinNumbers.pinCoil2 = 38; //Pin for coil 2
-      pinNumbers.pinCoil3 = 52; //Pin for coil 3
-      pinNumbers.pinCoil4 = 50; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 40; //Pin for coil 1
+      pinNumbers.coilPins[1] = 38; //Pin for coil 2
+      pinNumbers.coilPins[2] = 52; //Pin for coil 3
+      pinNumbers.coilPins[3] = 50; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1005,12 +1005,12 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 31;
-        pinNumbers.pinCoil2 = 32;
+        pinNumbers.coilPins[0] = 31;
+        pinNumbers.coilPins[1] = 32;
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
-        pinNumbers.pinCoil4 = 29;
-        pinNumbers.pinCoil3 = 30;
+        pinNumbers.coilPins[3] = 29;
+        pinNumbers.coilPins[2] = 30;
         pinNumbers.pinO2 = A22;
 
         //Make sure the CAN pins aren't overwritten
@@ -1038,10 +1038,10 @@ void setPinMapping(byte boardID)
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
         
-        pinNumbers.pinCoil1 = 31;
-        pinNumbers.pinCoil2 = 32;
-        pinNumbers.pinCoil4 = 29;
-        pinNumbers.pinCoil3 = 30;
+        pinNumbers.coilPins[0] = 31;
+        pinNumbers.coilPins[1] = 32;
+        pinNumbers.coilPins[3] = 29;
+        pinNumbers.coilPins[2] = 30;
 
         pinNumbers.pinTachOut = 28;
         pinNumbers.pinFan = 27;
@@ -1064,7 +1064,7 @@ void setPinMapping(byte boardID)
         /* = PA5; */ //ADC12
         /* = PA6; */ //ADC12 LED_BUILTIN_1
         pinNumbers.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-        pinNumbers.pinCoil3 = PA8;
+        pinNumbers.coilPins[2] = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -1085,9 +1085,9 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinNumbers.pinCoil2 = PB9; //
+        pinNumbers.coilPins[1] = PB9; //
         /* = PB9; */ //
-        pinNumbers.pinCoil4 = PB10; //TXD3
+        pinNumbers.coilPins[3] = PB10; //TXD3
         pinNumbers.pinIdle1 = PB11; //RXD3
         pinNumbers.pinIdle2 = PB12; //
         pinNumbers.pinBoost = PB12; //
@@ -1125,9 +1125,9 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinNumbers.pinCoil1 = PD7; //
+        pinNumbers.coilPins[0] = PD7; //
         /* = PD8; */ //
-        pinNumbers.pinCoil5 = PD9;//
+        pinNumbers.coilPins[4] = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
         pinNumbers.injectorPins[0] = PD12; //
@@ -1164,10 +1164,10 @@ void setPinMapping(byte boardID)
         pinNumbers.injectorPins[1] = PB6; //Output pin injector 2 is on
         pinNumbers.injectorPins[2] = PB5; //Output pin injector 3 is on
         pinNumbers.injectorPins[3] = PB4; //Output pin injector 4 is on
-        pinNumbers.pinCoil1 = PB9; //Pin for coil 1
-        pinNumbers.pinCoil2 = PB8; //Pin for coil 2
-        pinNumbers.pinCoil3 = PB3; //Pin for coil 3
-        pinNumbers.pinCoil4 = PA15; //Pin for coil 4
+        pinNumbers.coilPins[0] = PB9; //Pin for coil 1
+        pinNumbers.coilPins[1] = PB8; //Pin for coil 2
+        pinNumbers.coilPins[2] = PB3; //Pin for coil 3
+        pinNumbers.coilPins[3] = PA15; //Pin for coil 4
         pinNumbers.pinTPS = A2;//TPS input pin
         pinNumbers.pinMAP = A3; //MAP sensor pin
         pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -1198,11 +1198,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 47; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 45; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 14; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 42; //Pin for coil 1
-      pinNumbers.pinCoil2 = 43; //Pin for coil 2
-      pinNumbers.pinCoil3 = 32; //Pin for coil 3
-      pinNumbers.pinCoil4 = 33; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 42; //Pin for coil 1
+      pinNumbers.coilPins[1] = 43; //Pin for coil 2
+      pinNumbers.coilPins[2] = 32; //Pin for coil 3
+      pinNumbers.coilPins[3] = 33; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 2; //The Cam sensor 2 pin
@@ -1235,10 +1235,10 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 33; //Done
-        pinNumbers.pinCoil2 = 24; //Done
-        pinNumbers.pinCoil3 = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinNumbers.coilPins[0] = 33; //Done
+        pinNumbers.coilPins[1] = 24; //Done
+        pinNumbers.coilPins[2] = 51; //Won't work (No mapping for pin 32)
+        pinNumbers.coilPins[3] = 52; //Won't work (No mapping for pin 33)
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1253,11 +1253,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 9; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 8; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 14; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 39; //Pin for coil 1
-      pinNumbers.pinCoil2 = 41; //Pin for coil 2
-      pinNumbers.pinCoil3 = 32; //Pin for coil 3
-      pinNumbers.pinCoil4 = 33; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 39; //Pin for coil 1
+      pinNumbers.coilPins[1] = 41; //Pin for coil 2
+      pinNumbers.coilPins[2] = 32; //Pin for coil 3
+      pinNumbers.coilPins[3] = 33; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
@@ -1286,10 +1286,10 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 33; //Done
-        pinNumbers.pinCoil2 = 24; //Done
-        pinNumbers.pinCoil3 = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinNumbers.coilPins[0] = 33; //Done
+        pinNumbers.coilPins[1] = 24; //Done
+        pinNumbers.coilPins[2] = 51; //Won't work (No mapping for pin 32)
+        pinNumbers.coilPins[3] = 52; //Won't work (No mapping for pin 33)
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1305,11 +1305,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 9; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 8; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 14; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 39; //Pin for coil 1
-      pinNumbers.pinCoil2 = 41; //Pin for coil 2
-      pinNumbers.pinCoil3 = 32; //Pin for coil 3
-      pinNumbers.pinCoil4 = 33; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 39; //Pin for coil 1
+      pinNumbers.coilPins[1] = 41; //Pin for coil 2
+      pinNumbers.coilPins[2] = 32; //Pin for coil 3
+      pinNumbers.coilPins[3] = 33; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
@@ -1341,10 +1341,10 @@ void setPinMapping(byte boardID)
         pinNumbers.pinTrigger2 = 36;
         pinNumbers.pinStepperDir = 34;
         pinNumbers.pinStepperStep = 35;
-        pinNumbers.pinCoil1 = 33; //Done
-        pinNumbers.pinCoil2 = 24; //Done
-        pinNumbers.pinCoil3 = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.pinCoil4 = 52; //Won't work (No mapping for pin 33)
+        pinNumbers.coilPins[0] = 33; //Done
+        pinNumbers.coilPins[1] = 24; //Done
+        pinNumbers.coilPins[2] = 51; //Won't work (No mapping for pin 32)
+        pinNumbers.coilPins[3] = 52; //Won't work (No mapping for pin 33)
         pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
         pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
         pinNumbers.pinTachOut = 28; //Done
@@ -1362,11 +1362,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[5] = 9; //Placeholder only - NOT USED
       pinNumbers.injectorPins[6] = 10; //Placeholder only - NOT USED
       pinNumbers.injectorPins[7] = 11; //Placeholder only - NOT USED
-      pinNumbers.pinCoil1 = 24; //Pin for coil 1
-      pinNumbers.pinCoil2 = 28; //Pin for coil 2
-      pinNumbers.pinCoil3 = 36; //Pin for coil 3
-      pinNumbers.pinCoil4 = 40; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 24; //Pin for coil 1
+      pinNumbers.coilPins[1] = 28; //Pin for coil 2
+      pinNumbers.coilPins[2] = 36; //Pin for coil 3
+      pinNumbers.coilPins[3] = 40; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 18; //The CAS pin
       pinNumbers.pinTrigger2 = 19; //The Cam Sensor pin
       pinNumbers.pinTPS = A2;//TPS input pin
@@ -1400,14 +1400,14 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[5] = PB12;     // Output pin injector 6
       pinNumbers.injectorPins[6] = PE7;      // Output pin injector 7
       pinNumbers.injectorPins[7] = PE10;     // Output pin injector 8
-      pinNumbers.pinCoil1 = PC13;         // Pin for coil 1
-      pinNumbers.pinCoil2 = PE6;          // Pin for coil 2
-      pinNumbers.pinCoil3 = PE5;          // Pin for coil 3
-      pinNumbers.pinCoil4 = PE4;          // Pin for coil 4
-      pinNumbers.pinCoil5 = PE3;          // Pin for coil 5
-      pinNumbers.pinCoil6 = PE2;          // Pin for coil 6
-      pinNumbers.pinCoil7 = PB9;          // Pin for coil 7
-      pinNumbers.pinCoil8 = PD12;         // Pin for coil 8
+      pinNumbers.coilPins[0] = PC13;         // Pin for coil 1
+      pinNumbers.coilPins[1] = PE6;          // Pin for coil 2
+      pinNumbers.coilPins[2] = PE5;          // Pin for coil 3
+      pinNumbers.coilPins[3] = PE4;          // Pin for coil 4
+      pinNumbers.coilPins[4] = PE3;          // Pin for coil 5
+      pinNumbers.coilPins[5] = PE2;          // Pin for coil 6
+      pinNumbers.coilPins[6] = PB9;          // Pin for coil 7
+      pinNumbers.coilPins[7] = PD12;         // Pin for coil 8
       pinNumbers.pinTrigger = PD3;        // The CAS pin
       pinNumbers.pinTrigger2 = PD4;       // The Cam Sensor pin
       pinNumbers.pinTPS = PA2;            // TPS input pin
@@ -1449,11 +1449,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 28; //Pin for coil 1
-      pinNumbers.pinCoil2 = 24; //Pin for coil 2
-      pinNumbers.pinCoil3 = 40; //Pin for coil 3
-      pinNumbers.pinCoil4 = 36; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 28; //Pin for coil 1
+      pinNumbers.coilPins[1] = 24; //Pin for coil 2
+      pinNumbers.coilPins[2] = 40; //Pin for coil 3
+      pinNumbers.coilPins[3] = 36; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinSpareOut1 = 4; //Spare LSD Output 1(PWM)
       pinNumbers.pinSpareOut2 = 5; //Spare LSD Output 2(PWM)
       pinNumbers.pinSpareOut3 = 6; //Spare LSD Output 3(PWM)
@@ -1485,11 +1485,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.pinCoil1 = 40; //Pin for coil 1
-      pinNumbers.pinCoil2 = 38; //Pin for coil 2
-      pinNumbers.pinCoil3 = 50; //Pin for coil 3
-      pinNumbers.pinCoil4 = 52; //Pin for coil 4
-      pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 40; //Pin for coil 1
+      pinNumbers.coilPins[1] = 38; //Pin for coil 2
+      pinNumbers.coilPins[2] = 50; //Pin for coil 3
+      pinNumbers.coilPins[3] = 52; //Pin for coil 4
+      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
@@ -1530,14 +1530,14 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[5] = 50; //Output pin injector 6
       pinNumbers.injectorPins[6] = 39; //Output pin injector 7
       pinNumbers.injectorPins[7] = 42; //Output pin injector 8
-      pinNumbers.pinCoil1 = 40; //Pin for coil 1
-      pinNumbers.pinCoil2 = 38; //Pin for coil 2
-      pinNumbers.pinCoil3 = 52; //Pin for coil 3
-      pinNumbers.pinCoil4 = 48; //Pin for coil 4
-      pinNumbers.pinCoil5 = 36; //Pin for coil 5
-      pinNumbers.pinCoil6 = 34; //Pin for coil 6
-      pinNumbers.pinCoil7 = 46; //Pin for coil 7
-      pinNumbers.pinCoil8 = 53; //Pin for coil 8
+      pinNumbers.coilPins[0] = 40; //Pin for coil 1
+      pinNumbers.coilPins[1] = 38; //Pin for coil 2
+      pinNumbers.coilPins[2] = 52; //Pin for coil 3
+      pinNumbers.coilPins[3] = 48; //Pin for coil 4
+      pinNumbers.coilPins[4] = 36; //Pin for coil 5
+      pinNumbers.coilPins[5] = 34; //Pin for coil 6
+      pinNumbers.coilPins[6] = 46; //Pin for coil 7
+      pinNumbers.coilPins[7] = 53; //Pin for coil 8
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 20; //The Cam sensor 2 pin
@@ -1581,14 +1581,14 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[5] = PE7; //Output pin injector 6
       pinNumbers.injectorPins[6] = PE13; //Output pin injector 7
       pinNumbers.injectorPins[7] = PE10; //Output pin injector 8
-      pinNumbers.pinCoil1 = PE2; //Pin for coil 1
-      pinNumbers.pinCoil2 = PE3; //Pin for coil 2
-      pinNumbers.pinCoil3 = PC13; //Pin for coil 3
-      pinNumbers.pinCoil4 = PE6; //Pin for coil 4
-      pinNumbers.pinCoil5 = PE4; //Pin for coil 5
-      pinNumbers.pinCoil6 = PE5; //Pin for coil 6
-      pinNumbers.pinCoil7 = PE0; //Pin for coil 7
-      pinNumbers.pinCoil8 = PB9; //Pin for coil 8
+      pinNumbers.coilPins[0] = PE2; //Pin for coil 1
+      pinNumbers.coilPins[1] = PE3; //Pin for coil 2
+      pinNumbers.coilPins[2] = PC13; //Pin for coil 3
+      pinNumbers.coilPins[3] = PE6; //Pin for coil 4
+      pinNumbers.coilPins[4] = PE4; //Pin for coil 5
+      pinNumbers.coilPins[5] = PE5; //Pin for coil 6
+      pinNumbers.coilPins[6] = PE0; //Pin for coil 7
+      pinNumbers.coilPins[7] = PB9; //Pin for coil 8
       pinNumbers.pinTrigger = PD3; //The CAS pin
       pinNumbers.pinTrigger2 = PD4; //The Cam Sensor pin
       pinNumbers.pinTPS = PA2;//TPS input pin
@@ -1633,11 +1633,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 11; //Output pin injector 3 is on - NOT USED
       pinNumbers.injectorPins[3] = 12; //Output pin injector 4 is on - NOT USED
       pinNumbers.injectorPins[4] = 13; //Placeholder only - NOT USED
-      pinNumbers.pinCoil1 = 23; //Pin for coil 1
-      pinNumbers.pinCoil2 = 22; //Pin for coil 2
-      pinNumbers.pinCoil3 = 2; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.pinCoil4 = 3; //Pin for coil 4 - ONLY WITH DB2
-      pinNumbers.pinCoil5 = 46; //Placeholder only - NOT USED
+      pinNumbers.coilPins[0] = 23; //Pin for coil 1
+      pinNumbers.coilPins[1] = 22; //Pin for coil 2
+      pinNumbers.coilPins[2] = 2; //Pin for coil 3 - ONLY WITH DB2
+      pinNumbers.coilPins[3] = 3; //Pin for coil 4 - ONLY WITH DB2
+      pinNumbers.coilPins[4] = 46; //Placeholder only - NOT USED
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 21; //The Cam sensor 2 pin
@@ -1678,11 +1678,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 5; //Output pin injector 4 is on
       pinNumbers.injectorPins[4] = 45; //Output pin injector 5 is on PLACEHOLDER value for now
-      pinNumbers.pinCoil1 = 35; //Pin for coil 1
-      pinNumbers.pinCoil2 = 36; //Pin for coil 2
-      pinNumbers.pinCoil3 = 33; //Pin for coil 3
-      pinNumbers.pinCoil4 = 34; //Pin for coil 4
-      pinNumbers.pinCoil5 = 44; //Pin for coil 5 PLACEHOLDER value for now
+      pinNumbers.coilPins[0] = 35; //Pin for coil 1
+      pinNumbers.coilPins[1] = 36; //Pin for coil 2
+      pinNumbers.coilPins[2] = 33; //Pin for coil 3
+      pinNumbers.coilPins[3] = 34; //Pin for coil 4
+      pinNumbers.coilPins[4] = 44; //Pin for coil 5 PLACEHOLDER value for now
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1724,10 +1724,10 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[1] = 7; //Output pin injector 2
       pinNumbers.injectorPins[2] = 8; //Output pin injector 3
       pinNumbers.injectorPins[3] = 9; //Output pin injector 4
-      pinNumbers.pinCoil1 = 24; //Pin for coil 1
-      pinNumbers.pinCoil2 = 25; //Pin for coil 2
-      pinNumbers.pinCoil3 = 23; //Pin for coil 3
-      pinNumbers.pinCoil4 = 22; //Pin for coil 4
+      pinNumbers.coilPins[0] = 24; //Pin for coil 1
+      pinNumbers.coilPins[1] = 25; //Pin for coil 2
+      pinNumbers.coilPins[2] = 23; //Pin for coil 3
+      pinNumbers.coilPins[3] = 22; //Pin for coil 4
       pinNumbers.pinTrigger = 19; //The CRANK Sensor pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
@@ -1763,11 +1763,11 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[1] = 11; //Output pin injector 2 is on
       pinNumbers.injectorPins[2] = 12; //Output pin injector 3 is on
       pinNumbers.injectorPins[3] = 9; //Output pin injector 4 is on
-      pinNumbers.pinCoil1 = 39; //Pin for coil 1
-      pinNumbers.pinCoil2 = 29; //Pin for coil 2
-      pinNumbers.pinCoil3 = 28; //Pin for coil 3
-      pinNumbers.pinCoil4 = 27; //Pin for coil 4
-      pinNumbers.pinCoil5 = 26; //Placeholder  for coil 5
+      pinNumbers.coilPins[0] = 39; //Pin for coil 1
+      pinNumbers.coilPins[1] = 29; //Pin for coil 2
+      pinNumbers.coilPins[2] = 28; //Pin for coil 3
+      pinNumbers.coilPins[3] = 27; //Pin for coil 4
+      pinNumbers.coilPins[4] = 26; //Placeholder  for coil 5
       pinNumbers.pinTrigger = 19; //The CAS pin
       pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
       pinNumbers.pinTrigger3 = 21;// The Cam sensor 2 pin
@@ -1813,12 +1813,12 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[3] = 9; //Output pin injector 4 is on
       //Placeholder only - NOT USED:
       //pinNumbers.injectorPins[4] = 13;
-      pinNumbers.pinCoil1 = 29; //Pin for coil 1
-      pinNumbers.pinCoil2 = 30; //Pin for coil 2
-      pinNumbers.pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      pinNumbers.coilPins[0] = 29; //Pin for coil 1
+      pinNumbers.coilPins[1] = 30; //Pin for coil 2
+      pinNumbers.coilPins[2] = 31; //Pin for coil 3 - ONLY WITH DB2
+      pinNumbers.coilPins[3] = 32; //Pin for coil 4 - ONLY WITH DB2
       //Placeholder only - NOT USED:
-      //pinNumbers.pinCoil5 = 46; 
+      //pinNumbers.coilPins[4] = 46; 
       pinNumbers.pinTrigger = 23; //The CAS pin
       pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
       pinNumbers.pinTPS = 16; //TPS input pin
@@ -1848,10 +1848,10 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[1] = 10; //Output pin injector 2 is on
       pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on - NOT USED
       pinNumbers.injectorPins[3] = 9; //Output pin injector 4 is on - NOT USED
-      pinNumbers.pinCoil1 = 29; //Pin for coil 1
-      pinNumbers.pinCoil2 = 30; //Pin for coil 2
-      pinNumbers.pinCoil3 = 31; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.pinCoil4 = 32; //Pin for coil 4 - ONLY WITH DB2
+      pinNumbers.coilPins[0] = 29; //Pin for coil 1
+      pinNumbers.coilPins[1] = 30; //Pin for coil 2
+      pinNumbers.coilPins[2] = 31; //Pin for coil 3 - ONLY WITH DB2
+      pinNumbers.coilPins[3] = 32; //Pin for coil 4 - ONLY WITH DB2
       pinNumbers.pinTrigger = 23; //The CAS pin
       pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
       pinNumbers.pinTPS = 16; //TPS input pin
@@ -1883,10 +1883,10 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[1] = 56; //Output pin injector 2 is on - NOT USED
       pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on - NOT USED
       pinNumbers.injectorPins[3] = 50; //Output pin injector 4 is on - NOT USED
-      pinNumbers.pinCoil1 = 29; //Pin for coil 1
-      pinNumbers.pinCoil2 = 30; //Pin for coil 2
-      pinNumbers.pinCoil3 = 31; //Pin for coil 3
-      pinNumbers.pinCoil4 = 32; //Pin for coil 4
+      pinNumbers.coilPins[0] = 29; //Pin for coil 1
+      pinNumbers.coilPins[1] = 30; //Pin for coil 2
+      pinNumbers.coilPins[2] = 31; //Pin for coil 3
+      pinNumbers.coilPins[3] = 32; //Pin for coil 4
       pinNumbers.pinTrigger = 37; //The CAS pin
       pinNumbers.pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
       pinNumbers.pinTPS = A2; //TPS input pin
@@ -1926,13 +1926,13 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[5] = 9; //CS for MC33810 3
 
       //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
-      pinNumbers.pinCoil1 = 40;
-      pinNumbers.pinCoil2 = 41;
+      pinNumbers.coilPins[0] = 40;
+      pinNumbers.coilPins[1] = 41;
       /*
-      pinNumbers.pinCoil3 = 55;
-      pinNumbers.pinCoil4 = 55;
-      pinNumbers.pinCoil5 = 55;
-      pinNumbers.pinCoil6 = 55;
+      pinNumbers.coilPins[2] = 55;
+      pinNumbers.coilPins[3] = 55;
+      pinNumbers.coilPins[4] = 55;
+      pinNumbers.coilPins[5] = 55;
       */
       
       pinNumbers.pinTrigger = 19; //The CAS pin
@@ -2045,10 +2045,10 @@ void setPinMapping(byte boardID)
       pinNumbers.injectorPins[2] = 9;
       pinNumbers.injectorPins[3] = 8;
       pinNumbers.injectorPins[4] = 0; //Not used
-      pinNumbers.pinCoil1 = 2;
-      pinNumbers.pinCoil2 = 3;
-      pinNumbers.pinCoil3 = 4;
-      pinNumbers.pinCoil4 = 5;
+      pinNumbers.coilPins[0] = 2;
+      pinNumbers.coilPins[1] = 3;
+      pinNumbers.coilPins[2] = 4;
+      pinNumbers.coilPins[3] = 5;
 
       pinNumbers.pinTrigger = 20; //The CAS pin
       pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
@@ -2101,7 +2101,7 @@ void setPinMapping(byte boardID)
         // = PA5; //ADC12
         // = PA6; //ADC12 LED_BUILTIN_1
         // = PA7; //ADC12 LED_BUILTIN_2
-        pinNumbers.pinCoil3 = PA8;
+        pinNumbers.coilPins[2] = PA8;
         // = PA9;  //TXD1=Bluetooth module
         // = PA10; //RXD1=Bluetooth module
         // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
@@ -2120,9 +2120,9 @@ void setPinMapping(byte boardID)
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
         // = PB6;  //NRF_CE
-        pinNumbers.pinCoil6 = PB7;  //NRF_CS
+        pinNumbers.coilPins[5] = PB7;  //NRF_CS
         // = PB8;  //NRF_IRQ
-        pinNumbers.pinCoil2 = PB9; //
+        pinNumbers.coilPins[1] = PB9; //
         // = PB9;  //
         // = PB10; //TXD3
         // = PB11; //RXD3
@@ -2162,11 +2162,11 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFlex = PD4;
         // = PD5; //TXD2
         // = PD6;  //RXD2
-        pinNumbers.pinCoil1 = PD7; //
+        pinNumbers.coilPins[0] = PD7; //
         // = PD7;  //
         // = PD8;  //
-        pinNumbers.pinCoil5 = PD9;//
-        pinNumbers.pinCoil4 = PD10;//
+        pinNumbers.coilPins[4] = PD9;//
+        pinNumbers.coilPins[3] = PD10;//
         // = PD11;  //
         pinNumbers.injectorPins[0] = PD12; //
         pinNumbers.injectorPins[1] = PD13; //
@@ -2199,10 +2199,10 @@ void setPinMapping(byte boardID)
         pinNumbers.injectorPins[1] = PB6; //Output pin injector 2 is on
         pinNumbers.injectorPins[2] = PB5; //Output pin injector 3 is on
         pinNumbers.injectorPins[3] = PB4; //Output pin injector 4 is on
-        pinNumbers.pinCoil1 = PB9; //Pin for coil 1
-        pinNumbers.pinCoil2 = PB8; //Pin for coil 2
-        pinNumbers.pinCoil3 = PB3; //Pin for coil 3
-        pinNumbers.pinCoil4 = PA15; //Pin for coil 4
+        pinNumbers.coilPins[0] = PB9; //Pin for coil 1
+        pinNumbers.coilPins[1] = PB8; //Pin for coil 2
+        pinNumbers.coilPins[2] = PB3; //Pin for coil 3
+        pinNumbers.coilPins[3] = PA15; //Pin for coil 4
         pinNumbers.pinTPS = A2;//TPS input pin
         pinNumbers.pinMAP = A3; //MAP sensor pin
         pinNumbers.pinIAT = A0; //IAT sensor pin
@@ -2233,11 +2233,11 @@ void setPinMapping(byte boardID)
         pinNumbers.injectorPins[1] = PB6; //Output pin injector 2 is on
         pinNumbers.injectorPins[2] = PB5; //Output pin injector 3 is on
         pinNumbers.injectorPins[3] = PB4; //Output pin injector 4 is on
-        pinNumbers.pinCoil1 = PB3; //Pin for coil 1
-        pinNumbers.pinCoil2 = PA15; //Pin for coil 2
-        pinNumbers.pinCoil3 = PA14; //Pin for coil 3
-        pinNumbers.pinCoil4 = PA9; //Pin for coil 4
-        pinNumbers.pinCoil5 = PA8; //Pin for coil 5
+        pinNumbers.coilPins[0] = PB3; //Pin for coil 1
+        pinNumbers.coilPins[1] = PA15; //Pin for coil 2
+        pinNumbers.coilPins[2] = PA14; //Pin for coil 3
+        pinNumbers.coilPins[3] = PA9; //Pin for coil 4
+        pinNumbers.coilPins[4] = PA8; //Pin for coil 5
         pinNumbers.pinTPS = A0; //TPS input pin
         pinNumbers.pinMAP = A1; //MAP sensor pin
         pinNumbers.pinIAT = A2; //IAT sensor pin
@@ -2276,8 +2276,8 @@ void setPinMapping(byte boardID)
         pinNumbers.pinO2        = PB0;
         pinNumbers.pinTrigger   = PB1;
         pinNumbers.pinTrigger2  = PA7;
-        pinNumbers.pinCoil1     = PE10;
-        pinNumbers.pinCoil2     = PE11;
+        pinNumbers.coilPins[0]  = PE10;
+        pinNumbers.coilPins[1]  = PE11;
         pinNumbers.injectorPins[0] = PC6;
         pinNumbers.injectorPins[1] = PC7;
         pinNumbers.pinIdle1     = PD2;
@@ -2303,7 +2303,7 @@ void setPinMapping(byte boardID)
         /* = PA5; */ //ADC12
         pinNumbers.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
         /* = PA7; */ //ADC12 LED_BUILTIN_2
-        pinNumbers.pinCoil3 = PA8;
+        pinNumbers.coilPins[2] = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -2324,9 +2324,9 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinNumbers.pinCoil2 = PB9; //
+        pinNumbers.coilPins[1] = PB9; //
         /* = PB9; */ //
-        pinNumbers.pinCoil4 = PB10; //TXD3
+        pinNumbers.coilPins[3] = PB10; //TXD3
         pinNumbers.pinIdle1 = PB11; //RXD3
         pinNumbers.pinIdle2 = PB12; //
         /* pinNumbers.pinBoost = PB12; */ //
@@ -2365,10 +2365,10 @@ void setPinMapping(byte boardID)
         pinNumbers.pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinNumbers.pinCoil1 = PD7; //
+        pinNumbers.coilPins[0] = PD7; //
         /* = PD7; */ //
         /* = PD8; */ //
-        pinNumbers.pinCoil5 = PD9;//
+        pinNumbers.coilPins[4] = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
         pinNumbers.injectorPins[0] = PD12; //
@@ -2403,11 +2403,11 @@ void setPinMapping(byte boardID)
         pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
         pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
         pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-        pinNumbers.pinCoil1 = 28; //Pin for coil 1
-        pinNumbers.pinCoil2 = 24; //Pin for coil 2
-        pinNumbers.pinCoil3 = 40; //Pin for coil 3
-        pinNumbers.pinCoil4 = 36; //Pin for coil 4
-        pinNumbers.pinCoil5 = 34; //Pin for coil 5 PLACEHOLDER value for now
+        pinNumbers.coilPins[0] = 28; //Pin for coil 1
+        pinNumbers.coilPins[1] = 24; //Pin for coil 2
+        pinNumbers.coilPins[2] = 40; //Pin for coil 3
+        pinNumbers.coilPins[3] = 36; //Pin for coil 4
+        pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
         pinNumbers.pinTrigger = 20; //The CAS pin
         pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
         pinNumbers.pinTPS = A2; //TPS input pin
@@ -2498,31 +2498,7 @@ void setPinMapping(byte boardID)
 
   if(ignControlMode == IgnIoControlMode::Direct)
   {
-    uint8_t ignPins[IGN_CHANNELS] = {
-      pinNumbers.pinCoil1,
-      #if (IGN_CHANNELS >= 2)
-      pinNumbers.pinCoil2,
-      #endif
-      #if (IGN_CHANNELS >= 3)
-      pinNumbers.pinCoil3,
-      #endif
-      #if (IGN_CHANNELS >= 4)
-      pinNumbers.pinCoil4,
-      #endif
-      #if (IGN_CHANNELS >= 5)
-      pinNumbers.pinCoil5,
-      #endif
-      #if (IGN_CHANNELS >= 6)
-      pinNumbers.pinCoil6,
-      #endif
-      #if (IGN_CHANNELS >= 7)
-      pinNumbers.pinCoil7,
-      #endif
-      #if (IGN_CHANNELS >= 8)
-      pinNumbers.pinCoil8,
-      #endif
-    };
-    initIgnDirectIO(configPage4, ignPins);
+    initIgnDirectIO(configPage4, pinNumbers.coilPins);
   } 
 
   if(injControlMode == InjIoControlMode::Direct)

@@ -51,23 +51,11 @@ bool pinIsOutput(byte pin)
   bool used = false;
   bool isIdlePWM = isPwmIac(configPage6);
   bool isIdleStepper = isStepperIac(configPage6);
-  //Injector?
-  for (uint8_t index=0; index<min((uint8_t)pinNumbers.injectorPins.size(), (uint8_t)configPage2.nInjectors); ++index)
-  {
-    used = used || (pin==pinNumbers.injectorPins[index]);
-  }
-  //Ignition?
-  if ((pin == pinNumbers.pinCoil1)
-  || ((pin == pinNumbers.pinCoil2) && (currentStatus.maxIgnOutputs > 1))
-  || ((pin == pinNumbers.pinCoil3) && (currentStatus.maxIgnOutputs > 2))
-  || ((pin == pinNumbers.pinCoil4) && (currentStatus.maxIgnOutputs > 3))
-  || ((pin == pinNumbers.pinCoil5) && (currentStatus.maxIgnOutputs > 4))
-  || ((pin == pinNumbers.pinCoil6) && (currentStatus.maxIgnOutputs > 5))
-  || ((pin == pinNumbers.pinCoil7) && (currentStatus.maxIgnOutputs > 6))
-  || ((pin == pinNumbers.pinCoil8) && (currentStatus.maxIgnOutputs > 7)))
-  {
-    used = true;
-  }
+  used = used 
+      //Injector?
+      || pinNumbers.injectorPins.isPinUsed(pin)
+      //Ignition?
+      || pinNumbers.coilPins.isPinUsed(pin);
   //Functions?
   if ((pin == pinNumbers.pinFuelPump)
   || ((pin == pinNumbers.pinFan) && (configPage2.fanEnable == 1))

@@ -32,18 +32,14 @@ struct pin_array_t : public base_type
 /** @brief Injector control pin numbers */
 using injector_pins_t = pin_array_t<INJ_CHANNELS>;
 
+/** @brief Coil control pin numbers */
+using coil_pins_t = pin_array_t<IGN_CHANNELS>;
+
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
   injector_pins_t injectorPins;
-  uint8_t pinCoil1 = NOT_A_PIN; //Pin for coil 1
-  uint8_t pinCoil2 = NOT_A_PIN; //Pin for coil 2
-  uint8_t pinCoil3 = NOT_A_PIN; //Pin for coil 3
-  uint8_t pinCoil4 = NOT_A_PIN; //Pin for coil 4
-  uint8_t pinCoil5 = NOT_A_PIN; //Pin for coil 5
-  uint8_t pinCoil6 = NOT_A_PIN; //Pin for coil 6
-  uint8_t pinCoil7 = NOT_A_PIN; //Pin for coil 7
-  uint8_t pinCoil8 = NOT_A_PIN; //Pin for coil 8
+  coil_pins_t coilPins;
   uint8_t pinTrigger = NOT_A_PIN; //The CAS pin
   uint8_t pinTrigger2 = NOT_A_PIN; //The Cam Sensor pin known as secondary input
   uint8_t pinTrigger3 = NOT_A_PIN;	//the 2nd cam sensor pin known as tertiary input
