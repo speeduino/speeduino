@@ -84,7 +84,9 @@ struct pinNumbers_t
   uint8_t mc33810InjBits[8];
   uint8_t mc33810IgnBits[8];
 #endif
+#ifdef SD_LOGGING
   uint8_t pinSDEnable = NOT_A_PIN; //Input for manually enabling SD logging
+#endif
 #ifdef USE_SPI_EEPROM
   uint8_t pinSPIFlash_CS = NOT_A_PIN;
 #endif
