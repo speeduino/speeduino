@@ -1,3 +1,4 @@
+#include "scheduledIO_direct_inj.h"
 #include "board_definition.h"
 #include "src/pins/fastOutputPin.h"
 #include "preprocessor.h"
@@ -5,13 +6,13 @@
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
 
-static fastOutputPin_t pins[INJ_CHANNELS];
+static fastOutputPin_t pins[_countof(injector_pins_t::_elements)];
 
-void initInjDirectIO(const uint8_t (&pinNumbers)[_countof(pins)])
+void initInjDirectIO(const injector_pins_t &injPins)
 {
-    for (uint8_t i = 0; i < _countof(pins); i++)
+    for (uint8_t i = 0; i < _countof(injector_pins_t::_elements); i++)
     {
-        pins[i].setPin(pinNumbers[i], OUTPUT);
+        pins[i].setPin(injPins[i], OUTPUT);
     }
 }
 
