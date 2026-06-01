@@ -817,20 +817,157 @@ void initialiseAll(void)
    
     currentStatus.initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
-
 }
-/** Set board / microcontroller specific pin mappings / assignments.
- * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
- * which are originated from tuning SW (e.g. TS) set values and are available in reference/speeduino.ini (See pinLayout, note also that
- * numbering is not contiguous here).
- */
-void setPinMapping(byte boardID)
-{
-  //Force set defaults. Will be overwritten below if needed.
-  InjIoControlMode injControlMode = InjIoControlMode::Direct;
-  IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
 
-  if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
+TESTABLE_STATIC pinNumbers_t getDefaultPinMapping(void)
+{
+  pinNumbers_t pins;
+
+#if defined(STM32F407xx)
+  //Pin definitions for experimental board Tjeerd 
+  //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
+
+  //******************************************
+  //******** PORTA CONNECTIONS *************** 
+  //******************************************
+  /* = PA0 */ //Wakeup ADC123
+  // = PA1;
+  // = PA2;
+  // = PA3;
+  // = PA4;
+  /* = PA5; */ //ADC12
+  pins.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
+  /* = PA7; */ //ADC12 LED_BUILTIN_2
+  pins.coilPins[2] = PA8;
+  /* = PA9 */ //TXD1
+  /* = PA10 */ //RXD1
+  /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
+  /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
+  /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+  /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
+
+  //******************************************
+  //******** PORTB CONNECTIONS *************** 
+  //******************************************
+  /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
+  pins.pinBaro = PB1; //ADC12
+  /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
+  /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
+  /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
+  /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
+  /* = PB6; */ //NRF_CE
+  /* = PB7; */ //NRF_CS
+  /* = PB8; */ //NRF_IRQ
+  pins.coilPins[1] = PB9; //
+  /* = PB9; */ //
+  pins.coilPins[3] = PB10; //TXD3
+  pins.pinIdle1 = PB11; //RXD3
+  pins.pinIdle2 = PB12; //
+  /* pins.pinBoost = PB12; */ //
+  /* = PB13; */ //SPI2_SCK
+  /* = PB14; */ //SPI2_MISO
+  /* = PB15; */ //SPI2_MOSI
+
+  //******************************************
+  //******** PORTC CONNECTIONS *************** 
+  //******************************************
+  pins.pinMAP = PC0; //ADC123 
+  pins.pinTPS = PC1; //ADC123
+  pins.pinIAT = PC2; //ADC123
+  pins.pinCLT = PC3; //ADC123
+  pins.pinO2 = PC4; //ADC12
+  pins.pinBat = PC5; //ADC12
+  /*pins.pinVVT_1 = PC6; */ //
+  /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
+  /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
+  /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
+  /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
+  /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
+  pins.pinTachOut = PC13; //
+  /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
+  /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
+
+  //******************************************
+  //******** PORTD CONNECTIONS *************** 
+  //******************************************
+  /* = PD0; */ //CANRX
+  /* = PD1; */ //CANTX
+  /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
+  /* = PD3; */ //
+  /* = PD4; */ //
+  pins.pinFlex = PD4;
+  /* = PD5;*/ //TXD2
+  /* = PD6; */ //RXD2
+  pins.coilPins[0] = PD7; //
+  /* = PD7; */ //
+  /* = PD8; */ //
+  pins.coilPins[4] = PD9;//
+  /* = PD10; */ //
+  /* = PD11; */ //
+  pins.injectorPins[0] = PD12; //
+  pins.injectorPins[1] = PD13; //
+  pins.injectorPins[2] = PD14; //
+  pins.injectorPins[3] = PD15; //
+
+  //******************************************
+  //******** PORTE CONNECTIONS *************** 
+  //******************************************
+  pins.pinTrigger = PE0; //
+  pins.pinTrigger2 = PE1; //
+  pins.pinStepperEnable = PE2; //
+  /* = PE3; */ //ONBOARD KEY1
+  /* = PE4; */ //ONBOARD KEY2
+  pins.pinStepperStep = PE5; //
+  pins.pinFan = PE6; //
+  pins.pinStepperDir = PE7; //
+  /* = PE8; */ //
+  /* = PE9; */ //
+  /* = PE10; */ //
+  pins.injectorPins[4] = PE11; //
+  pins.injectorPins[5] = PE12; //
+  /* = PE13; */ //
+  /* = PE14; */ //
+  /* = PE15; */ //
+#else
+  #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
+  //Pin mappings as per the v0.2 shield
+  pins.injectorPins[0] = 8; //Output pin injector 1 is on
+  pins.injectorPins[1] = 9; //Output pin injector 2 is on
+  pins.injectorPins[2] = 10; //Output pin injector 3 is on
+  pins.injectorPins[3] = 11; //Output pin injector 4 is on
+  pins.injectorPins[4] = 12; //Output pin injector 5 is on
+  pins.coilPins[0] = 28; //Pin for coil 1
+  pins.coilPins[1] = 24; //Pin for coil 2
+  pins.coilPins[2] = 40; //Pin for coil 3
+  pins.coilPins[3] = 36; //Pin for coil 4
+  pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+  pins.pinTrigger = 20; //The CAS pin
+  pins.pinTrigger2 = 21; //The Cam Sensor pin
+  pins.pinTPS = A2; //TPS input pin
+  pins.pinMAP = A3; //MAP sensor pin
+  pins.pinIAT = A0; //IAT sensor pin
+  pins.pinCLT = A1; //CLS sensor pin
+  pins.pinO2 = A8; //O2 Sensor pin
+  pins.pinBat = A4; //Battery reference voltage pin
+  pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+  pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+  pins.pinFan = 47; //Pin for the fan output
+  pins.pinFuelPump = 4; //Fuel pump output
+  pins.pinTachOut = 49; //Tacho output pin
+  pins.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+  pins.pinBoost = 5;
+  pins.pinIdle1 = 6;
+  pins.pinResetControl = 43; //Reset control output
+  #endif
+#endif  
+
+  return pins;
+}
+
+TESTABLE_STATIC pinNumbers_t getPinMapping(uint8_t boardID)
+{
+  pinNumbers_t pins = getDefaultPinMapping();
 
   switch (boardID)
   {
@@ -839,180 +976,180 @@ void setPinMapping(byte boardID)
     case 1:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.2 shield
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 28; //Pin for coil 1
-      pinNumbers.coilPins[1] = 24; //Pin for coil 2
-      pinNumbers.coilPins[2] = 40; //Pin for coil 3
-      pinNumbers.coilPins[3] = 36; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 20; //The CAS pin
-      pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2; //TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinIdle1 = 30; //Single wire idle control
-      pinNumbers.pinIdle2 = 31; //2 wire idle control
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinFan = 47; //Pin for the fan output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 43; //Reset control output
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 9; //Output pin injector 2 is on
+      pins.injectorPins[2] = 10; //Output pin injector 3 is on
+      pins.injectorPins[3] = 11; //Output pin injector 4 is on
+      pins.injectorPins[4] = 12; //Output pin injector 5 is on
+      pins.coilPins[0] = 28; //Pin for coil 1
+      pins.coilPins[1] = 24; //Pin for coil 2
+      pins.coilPins[2] = 40; //Pin for coil 3
+      pins.coilPins[3] = 36; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 20; //The CAS pin
+      pins.pinTrigger2 = 21; //The Cam Sensor pin
+      pins.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pins.pinTPS = A2; //TPS input pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A8; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = 49; //Tacho output pin
+      pins.pinIdle1 = 30; //Single wire idle control
+      pins.pinIdle2 = 31; //2 wire idle control
+      pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pins.pinFan = 47; //Pin for the fan output
+      pins.pinFuelPump = 4; //Fuel pump output
+      pins.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 43; //Reset control output
       break;
     #endif
     case 2:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the v0.3 shield
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 28; //Pin for coil 1
-      pinNumbers.coilPins[1] = 24; //Pin for coil 2
-      pinNumbers.coilPins[2] = 40; //Pin for coil 3
-      pinNumbers.coilPins[3] = 36; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinIdle2 = 53; //2 wire idle control
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 6; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 26; //Enable pin for DRV8825
-      pinNumbers.pinFan = A13; //Pin for the fan output
-      pinNumbers.pinLaunch = 51; //Can be overwritten below
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 50; //Reset control output
-      pinNumbers.pinBaro = A5;
-      pinNumbers.pinVSS = 20;
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 9; //Output pin injector 2 is on
+      pins.injectorPins[2] = 10; //Output pin injector 3 is on
+      pins.injectorPins[3] = 11; //Output pin injector 4 is on
+      pins.injectorPins[4] = 12; //Output pin injector 5 is on
+      pins.coilPins[0] = 28; //Pin for coil 1
+      pins.coilPins[1] = 24; //Pin for coil 2
+      pins.coilPins[2] = 40; //Pin for coil 3
+      pins.coilPins[3] = 36; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A8; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = 49; //Tacho output pin
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinIdle2 = 53; //2 wire idle control
+      pins.pinBoost = 7; //Boost control
+      pins.pinVVT_1 = 6; //Default VVT output
+      pins.pinVVT_2 = 48; //Default VVT2 output
+      pins.pinFuelPump = 4; //Fuel pump output
+      pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 26; //Enable pin for DRV8825
+      pins.pinFan = A13; //Pin for the fan output
+      pins.pinLaunch = 51; //Can be overwritten below
+      pins.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 50; //Reset control output
+      pins.pinBaro = A5;
+      pins.pinVSS = 20;
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinStepperDir = 33;
-        pinNumbers.pinStepperStep = 34;
-        pinNumbers.coilPins[0] = 31;
-        pinNumbers.pinTachOut = 28;
-        pinNumbers.pinFan = 27;
-        pinNumbers.coilPins[3] = 21;
-        pinNumbers.coilPins[2] = 30;
-        pinNumbers.pinO2 = A22;
+        pins.pinTrigger = 23;
+        pins.pinStepperDir = 33;
+        pins.pinStepperStep = 34;
+        pins.coilPins[0] = 31;
+        pins.pinTachOut = 28;
+        pins.pinFan = 27;
+        pins.coilPins[3] = 21;
+        pins.coilPins[2] = 30;
+        pins.pinO2 = A22;
       #endif
     #endif
       break;
 
     case 3:
       //Pin mappings as per the v0.4 shield
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.injectorPins[5] = 50; //CAUTION: Uses the same as Coil 4 below. 
-      pinNumbers.coilPins[0] = 40; //Pin for coil 1
-      pinNumbers.coilPins[1] = 38; //Pin for coil 2
-      pinNumbers.coilPins[2] = 52; //Pin for coil 3
-      pinNumbers.coilPins[3] = 50; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinIdle2 = 6; //2 wire idle control
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 4; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 24; //Enable pin for DRV8825
-      pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2803)
-      pinNumbers.pinLaunch = 51; //Can be overwritten below
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 43; //Reset control output
-      pinNumbers.pinBaro = A5;
-      pinNumbers.pinVSS = 20;
-      pinNumbers.pinWMIEmpty = 46;
-      pinNumbers.pinWMIIndicator = 44;
-      pinNumbers.pinWMIEnabled = 42;
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 9; //Output pin injector 2 is on
+      pins.injectorPins[2] = 10; //Output pin injector 3 is on
+      pins.injectorPins[3] = 11; //Output pin injector 4 is on
+      pins.injectorPins[4] = 12; //Output pin injector 5 is on
+      pins.injectorPins[5] = 50; //CAUTION: Uses the same as Coil 4 below. 
+      pins.coilPins[0] = 40; //Pin for coil 1
+      pins.coilPins[1] = 38; //Pin for coil 2
+      pins.coilPins[2] = 52; //Pin for coil 3
+      pins.coilPins[3] = 50; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A8; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinIdle2 = 6; //2 wire idle control
+      pins.pinBoost = 7; //Boost control
+      pins.pinVVT_1 = 4; //Default VVT output
+      pins.pinVVT_2 = 48; //Default VVT2 output
+      pins.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2803)
+      pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 24; //Enable pin for DRV8825
+      pins.pinFan = 47; //Pin for the fan output (Goes to ULN2803)
+      pins.pinLaunch = 51; //Can be overwritten below
+      pins.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 43; //Reset control output
+      pins.pinBaro = A5;
+      pins.pinVSS = 20;
+      pins.pinWMIEmpty = 46;
+      pins.pinWMIIndicator = 44;
+      pins.pinWMIEnabled = 42;
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.injectorPins[5] = 51;
+        pins.injectorPins[5] = 51;
 
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
-        pinNumbers.coilPins[0] = 31;
-        pinNumbers.coilPins[1] = 32;
-        pinNumbers.pinTachOut = 28;
-        pinNumbers.pinFan = 27;
-        pinNumbers.coilPins[3] = 29;
-        pinNumbers.coilPins[2] = 30;
-        pinNumbers.pinO2 = A22;
+        pins.pinTrigger = 23;
+        pins.pinTrigger2 = 36;
+        pins.pinStepperDir = 34;
+        pins.pinStepperStep = 35;
+        pins.coilPins[0] = 31;
+        pins.coilPins[1] = 32;
+        pins.pinTachOut = 28;
+        pins.pinFan = 27;
+        pins.coilPins[3] = 29;
+        pins.coilPins[2] = 30;
+        pins.pinO2 = A22;
 
         //Make sure the CAN pins aren't overwritten
-        pinNumbers.pinTrigger3 = 54;
-        pinNumbers.pinVVT_1 = 55;
+        pins.pinTrigger3 = 54;
+        pins.pinVVT_1 = 55;
 
       #elif defined(CORE_TEENSY41)
         //These are only to prevent lockups or weird behaviour on T4.1 when this board is used as the default
-        pinNumbers.pinBaro = A4; 
-        pinNumbers.pinMAP = A5;
-        pinNumbers.pinTPS = A3; //TPS input pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A2; //O2 Sensor pin
-        pinNumbers.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
-        pinNumbers.pinLaunch = 34; //Can be overwritten below
-        pinNumbers.pinVSS = 35;
+        pins.pinBaro = A4; 
+        pins.pinMAP = A5;
+        pins.pinTPS = A3; //TPS input pin
+        pins.pinIAT = A0; //IAT sensor pin
+        pins.pinCLT = A1; //CLS sensor pin
+        pins.pinO2 = A2; //O2 Sensor pin
+        pins.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pins.pinLaunch = 34; //Can be overwritten below
+        pins.pinVSS = 35;
 
-        pinNumbers.pinTrigger = 20; //The CAS pin
-        pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-        pinNumbers.pinTrigger3 = 24;
+        pins.pinTrigger = 20; //The CAS pin
+        pins.pinTrigger2 = 21; //The Cam Sensor pin
+        pins.pinTrigger3 = 24;
 
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
+        pins.pinStepperDir = 34;
+        pins.pinStepperStep = 35;
         
-        pinNumbers.coilPins[0] = 31;
-        pinNumbers.coilPins[1] = 32;
-        pinNumbers.coilPins[3] = 29;
-        pinNumbers.coilPins[2] = 30;
+        pins.coilPins[0] = 31;
+        pins.coilPins[1] = 32;
+        pins.coilPins[3] = 29;
+        pins.coilPins[2] = 30;
 
-        pinNumbers.pinTachOut = 28;
-        pinNumbers.pinFan = 27;
-        pinNumbers.pinFuelPump = 33;
-        pinNumbers.pinWMIEmpty = 34;
-        pinNumbers.pinWMIIndicator = 35;
-        pinNumbers.pinWMIEnabled = 36;
+        pins.pinTachOut = 28;
+        pins.pinFan = 27;
+        pins.pinFuelPump = 33;
+        pins.pinWMIEmpty = 34;
+        pins.pinWMIIndicator = 35;
+        pins.pinWMIEnabled = 36;
       #elif defined(STM32F407xx)
      //Pin definitions for experimental board Tjeerd 
         //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
@@ -1027,8 +1164,8 @@ void setPinMapping(byte boardID)
         // = PA4;
         /* = PA5; */ //ADC12
         /* = PA6; */ //ADC12 LED_BUILTIN_1
-        pinNumbers.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-        pinNumbers.coilPins[2] = PA8;
+        pins.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
+        pins.coilPins[2] = PA8;
         /* = PA9 */ //TXD1
         /* = PA10 */ //RXD1
         /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -1041,7 +1178,7 @@ void setPinMapping(byte boardID)
         //******** PORTB CONNECTIONS *************** 
         //******************************************
         /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.pinBaro = PB1; //ADC12
+        pins.pinBaro = PB1; //ADC12
         /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
         /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
@@ -1049,12 +1186,12 @@ void setPinMapping(byte boardID)
         /* = PB6; */ //NRF_CE
         /* = PB7; */ //NRF_CS
         /* = PB8; */ //NRF_IRQ
-        pinNumbers.coilPins[1] = PB9; //
+        pins.coilPins[1] = PB9; //
         /* = PB9; */ //
-        pinNumbers.coilPins[3] = PB10; //TXD3
-        pinNumbers.pinIdle1 = PB11; //RXD3
-        pinNumbers.pinIdle2 = PB12; //
-        pinNumbers.pinBoost = PB12; //
+        pins.coilPins[3] = PB10; //TXD3
+        pins.pinIdle1 = PB11; //RXD3
+        pins.pinIdle2 = PB12; //
+        pins.pinBoost = PB12; //
         /* = PB13; */ //SPI2_SCK
         /* = PB14; */ //SPI2_MISO
         /* = PB15; */ //SPI2_MOSI
@@ -1062,19 +1199,19 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinMAP = PC0; //ADC123 
-        pinNumbers.pinTPS = PC1; //ADC123
-        pinNumbers.pinIAT = PC2; //ADC123
-        pinNumbers.pinCLT = PC3; //ADC123
-        pinNumbers.pinO2 = PC4;  //ADC12
-        pinNumbers.pinBat = PC5; //ADC12
-        pinNumbers.pinVVT_1 = PC6; //
+        pins.pinMAP = PC0; //ADC123 
+        pins.pinTPS = PC1; //ADC123
+        pins.pinIAT = PC2; //ADC123
+        pins.pinCLT = PC3; //ADC123
+        pins.pinO2 = PC4;  //ADC12
+        pins.pinBat = PC5; //ADC12
+        pins.pinVVT_1 = PC6; //
         /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
         /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
         /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
         /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinNumbers.pinTachOut = PC13; //
+        pins.pinTachOut = PC13; //
         /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
         /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
@@ -1084,36 +1221,36 @@ void setPinMapping(byte boardID)
         /* = PD0; */ //CANRX
         /* = PD1; */ //CANTX
         /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinNumbers.pinVVT_2 = PD3; //
-        pinNumbers.pinFlex = PD4;
+        pins.pinVVT_2 = PD3; //
+        pins.pinFlex = PD4;
         /* = PD5;*/ //TXD2
         /* = PD6; */ //RXD2
-        pinNumbers.coilPins[0] = PD7; //
+        pins.coilPins[0] = PD7; //
         /* = PD8; */ //
-        pinNumbers.coilPins[4] = PD9;//
+        pins.coilPins[4] = PD9;//
         /* = PD10; */ //
         /* = PD11; */ //
-        pinNumbers.injectorPins[0] = PD12; //
-        pinNumbers.injectorPins[1] = PD13; //
-        pinNumbers.injectorPins[2] = PD14; //
-        pinNumbers.injectorPins[3] = PD15; //
+        pins.injectorPins[0] = PD12; //
+        pins.injectorPins[1] = PD13; //
+        pins.injectorPins[2] = PD14; //
+        pins.injectorPins[3] = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinTrigger = PE0; //
-        pinNumbers.pinTrigger2 = PE1; //
-        pinNumbers.pinStepperEnable = PE2; //
+        pins.pinTrigger = PE0; //
+        pins.pinTrigger2 = PE1; //
+        pins.pinStepperEnable = PE2; //
         /* = PE3; */ //ONBOARD KEY1
         /* = PE4; */ //ONBOARD KEY2
-        pinNumbers.pinStepperStep = PE5; //
-        pinNumbers.pinFan = PE6; //
-        pinNumbers.pinStepperDir = PE7; //
+        pins.pinStepperStep = PE5; //
+        pins.pinFan = PE6; //
+        pins.pinStepperDir = PE7; //
         /* = PE8; */ //
         /* = PE9; */ //
         /* = PE10; */ //
-        pinNumbers.injectorPins[4] = PE11; //
-        pinNumbers.injectorPins[5] = PE12; //
+        pins.injectorPins[4] = PE11; //
+        pins.injectorPins[5] = PE12; //
         /* = PE13; */ //
         /* = PE14; */ //
         /* = PE15; */ //
@@ -1123,137 +1260,137 @@ void setPinMapping(byte boardID)
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
         //PB2 can't be used as input because it's the BOOT pin
-        pinNumbers.injectorPins[0] = PB7; //Output pin injector 1 is on
-        pinNumbers.injectorPins[1] = PB6; //Output pin injector 2 is on
-        pinNumbers.injectorPins[2] = PB5; //Output pin injector 3 is on
-        pinNumbers.injectorPins[3] = PB4; //Output pin injector 4 is on
-        pinNumbers.coilPins[0] = PB9; //Pin for coil 1
-        pinNumbers.coilPins[1] = PB8; //Pin for coil 2
-        pinNumbers.coilPins[2] = PB3; //Pin for coil 3
-        pinNumbers.coilPins[3] = PA15; //Pin for coil 4
-        pinNumbers.pinTPS = A2;//TPS input pin
-        pinNumbers.pinMAP = A3; //MAP sensor pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A8; //O2 Sensor pin
-        pinNumbers.pinBat = A4; //Battery reference voltage pin
-        pinNumbers.pinBaro = pinNumbers.pinMAP;
-        pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
-        pinNumbers.pinIdle1 = PB2; //Single wire idle control
-        pinNumbers.pinIdle2 = PB10; //2 wire idle control
-        pinNumbers.pinBoost = PA6; //Boost control
-        pinNumbers.pinStepperDir = PB10; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = PB2; //Step pin for DRV8825 driver
-        pinNumbers.pinFuelPump = PA8; //Fuel pump output
-        pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
+        pins.injectorPins[0] = PB7; //Output pin injector 1 is on
+        pins.injectorPins[1] = PB6; //Output pin injector 2 is on
+        pins.injectorPins[2] = PB5; //Output pin injector 3 is on
+        pins.injectorPins[3] = PB4; //Output pin injector 4 is on
+        pins.coilPins[0] = PB9; //Pin for coil 1
+        pins.coilPins[1] = PB8; //Pin for coil 2
+        pins.coilPins[2] = PB3; //Pin for coil 3
+        pins.coilPins[3] = PA15; //Pin for coil 4
+        pins.pinTPS = A2;//TPS input pin
+        pins.pinMAP = A3; //MAP sensor pin
+        pins.pinIAT = A0; //IAT sensor pin
+        pins.pinCLT = A1; //CLS sensor pin
+        pins.pinO2 = A8; //O2 Sensor pin
+        pins.pinBat = A4; //Battery reference voltage pin
+        pins.pinBaro = pins.pinMAP;
+        pins.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
+        pins.pinIdle1 = PB2; //Single wire idle control
+        pins.pinIdle2 = PB10; //2 wire idle control
+        pins.pinBoost = PA6; //Boost control
+        pins.pinStepperDir = PB10; //Direction pin  for DRV8825 driver
+        pins.pinStepperStep = PB2; //Step pin for DRV8825 driver
+        pins.pinFuelPump = PA8; //Fuel pump output
+        pins.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
         //external interrupt enabled pins
-        pinNumbers.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinTrigger = PC13; //The CAS pin also led pin so bad idea
-        pinNumbers.pinTrigger2 = PC15; //The Cam Sensor pin
+        pins.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
+        pins.pinTrigger = PC13; //The CAS pin also led pin so bad idea
+        pins.pinTrigger2 = PC15; //The Cam Sensor pin
       #endif
       break;
 
     case 6:
       #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the 2001-05 MX5 PNP shield
-      pinNumbers.injectorPins[0] = 44; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 46; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 47; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 45; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 14; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 42; //Pin for coil 1
-      pinNumbers.coilPins[1] = 43; //Pin for coil 2
-      pinNumbers.coilPins[2] = 32; //Pin for coil 3
-      pinNumbers.coilPins[3] = 33; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 2; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A3; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinBoost = 4;
-      pinNumbers.pinVVT_1 = 11; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinNumbers.pinFuelPump = 40; //Fuel pump output
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 24;
-      pinNumbers.pinFan = 41; //Pin for the fan output
-      pinNumbers.pinLaunch = 12; //Can be overwritten below
-      pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 39; //Reset control output
-      pinNumbers.pinVSS = 2;
+      pins.injectorPins[0] = 44; //Output pin injector 1 is on
+      pins.injectorPins[1] = 46; //Output pin injector 2 is on
+      pins.injectorPins[2] = 47; //Output pin injector 3 is on
+      pins.injectorPins[3] = 45; //Output pin injector 4 is on
+      pins.injectorPins[4] = 14; //Output pin injector 5 is on
+      pins.coilPins[0] = 42; //Pin for coil 1
+      pins.coilPins[1] = 43; //Pin for coil 2
+      pins.coilPins[2] = 32; //Pin for coil 3
+      pins.coilPins[3] = 33; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 2; //The Cam sensor 2 pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A5; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A3; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = 23; //Tacho output pin  (Goes to ULN2803)
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinBoost = 4;
+      pins.pinVVT_1 = 11; //Default VVT output
+      pins.pinVVT_2 = 48; //Default VVT2 output
+      pins.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pins.pinFuelPump = 40; //Fuel pump output
+      pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 24;
+      pins.pinFan = 41; //Pin for the fan output
+      pins.pinLaunch = 12; //Can be overwritten below
+      pins.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 39; //Reset control output
+      pins.pinVSS = 2;
       #endif
       //This is NOT correct. It has not yet been tested with this board
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
-        pinNumbers.coilPins[0] = 33; //Done
-        pinNumbers.coilPins[1] = 24; //Done
-        pinNumbers.coilPins[2] = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.coilPins[3] = 52; //Won't work (No mapping for pin 33)
-        pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
-        pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
-        pinNumbers.pinTachOut = 28; //Done
+        pins.pinTrigger = 23;
+        pins.pinTrigger2 = 36;
+        pins.pinStepperDir = 34;
+        pins.pinStepperStep = 35;
+        pins.coilPins[0] = 33; //Done
+        pins.coilPins[1] = 24; //Done
+        pins.coilPins[2] = 51; //Won't work (No mapping for pin 32)
+        pins.coilPins[3] = 52; //Won't work (No mapping for pin 33)
+        pins.pinFuelPump = 26; //Requires PVT4 adapter or above
+        pins.pinFan = 50; //Won't work (No mapping for pin 35)
+        pins.pinTachOut = 28; //Done
       #endif
       break;
 
     case 8:
       #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the 1996-97 MX5 PNP shield
-      pinNumbers.injectorPins[0] = 11; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 10; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 9; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 8; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 14; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 39; //Pin for coil 1
-      pinNumbers.coilPins[1] = 41; //Pin for coil 2
-      pinNumbers.coilPins[2] = 32; //Pin for coil 3
-      pinNumbers.coilPins[3] = 33; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A3; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = A9; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.pinIdle1 = 2; //Single wire idle control
-      pinNumbers.pinBoost = 4;
-      pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinNumbers.pinFuelPump = 49; //Fuel pump output
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 24;
-      pinNumbers.pinFan = 35; //Pin for the fan output
-      pinNumbers.pinLaunch = 37; //Can be overwritten below
-      pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 44; //Reset control output
+      pins.injectorPins[0] = 11; //Output pin injector 1 is on
+      pins.injectorPins[1] = 10; //Output pin injector 2 is on
+      pins.injectorPins[2] = 9; //Output pin injector 3 is on
+      pins.injectorPins[3] = 8; //Output pin injector 4 is on
+      pins.injectorPins[4] = 14; //Output pin injector 5 is on
+      pins.coilPins[0] = 39; //Pin for coil 1
+      pins.coilPins[1] = 41; //Pin for coil 2
+      pins.coilPins[2] = 32; //Pin for coil 3
+      pins.coilPins[3] = 33; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A5; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A3; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = A9; //Tacho output pin  (Goes to ULN2803)
+      pins.pinIdle1 = 2; //Single wire idle control
+      pins.pinBoost = 4;
+      pins.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pins.pinFuelPump = 49; //Fuel pump output
+      pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 24;
+      pins.pinFan = 35; //Pin for the fan output
+      pins.pinLaunch = 37; //Can be overwritten below
+      pins.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 44; //Reset control output
 
       //This is NOT correct. It has not yet been tested with this board
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
-        pinNumbers.coilPins[0] = 33; //Done
-        pinNumbers.coilPins[1] = 24; //Done
-        pinNumbers.coilPins[2] = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.coilPins[3] = 52; //Won't work (No mapping for pin 33)
-        pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
-        pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
-        pinNumbers.pinTachOut = 28; //Done
+        pins.pinTrigger = 23;
+        pins.pinTrigger2 = 36;
+        pins.pinStepperDir = 34;
+        pins.pinStepperStep = 35;
+        pins.coilPins[0] = 33; //Done
+        pins.coilPins[1] = 24; //Done
+        pins.coilPins[2] = 51; //Won't work (No mapping for pin 32)
+        pins.coilPins[3] = 52; //Won't work (No mapping for pin 33)
+        pins.pinFuelPump = 26; //Requires PVT4 adapter or above
+        pins.pinFan = 50; //Won't work (No mapping for pin 35)
+        pins.pinTachOut = 28; //Done
       #endif
       #endif
       break;
@@ -1261,86 +1398,86 @@ void setPinMapping(byte boardID)
     case 9:
      #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the 89-95 MX5 PNP shield
-      pinNumbers.injectorPins[0] = 11; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 10; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 9; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 8; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 14; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 39; //Pin for coil 1
-      pinNumbers.coilPins[1] = 41; //Pin for coil 2
-      pinNumbers.coilPins[2] = 32; //Pin for coil 3
-      pinNumbers.coilPins[3] = 33; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A3; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
-      pinNumbers.pinIdle1 = 2; //Single wire idle control
-      pinNumbers.pinBoost = 4;
-      pinNumbers.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
-      pinNumbers.pinFuelPump = 37; //Fuel pump output
+      pins.injectorPins[0] = 11; //Output pin injector 1 is on
+      pins.injectorPins[1] = 10; //Output pin injector 2 is on
+      pins.injectorPins[2] = 9; //Output pin injector 3 is on
+      pins.injectorPins[3] = 8; //Output pin injector 4 is on
+      pins.injectorPins[4] = 14; //Output pin injector 5 is on
+      pins.coilPins[0] = 39; //Pin for coil 1
+      pins.coilPins[1] = 41; //Pin for coil 2
+      pins.coilPins[2] = 32; //Pin for coil 3
+      pins.coilPins[3] = 33; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A5; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A3; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = 49; //Tacho output pin  (Goes to ULN2803)
+      pins.pinIdle1 = 2; //Single wire idle control
+      pins.pinBoost = 4;
+      pins.pinIdle2 = 4; //2 wire idle control (Note this is shared with boost!!!)
+      pins.pinFuelPump = 37; //Fuel pump output
       //Note that there is no stepper driver output on the PNP boards. These pins are unconnected and remain here just to prevent issues with random pin numbers occurring
-      pinNumbers.pinStepperEnable = 15; //Enable pin for the DRV8825
-      pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-      pinNumbers.pinFan = 35; //Pin for the fan output
-      pinNumbers.pinLaunch = 12; //Can be overwritten below
-      pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 44; //Reset control output
-      pinNumbers.pinVSS = 20;
-      pinNumbers.pinIdleUp = 48;
-      pinNumbers.pinCTPS = 47;
+      pins.pinStepperEnable = 15; //Enable pin for the DRV8825
+      pins.pinStepperDir = 16; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 17; //Step pin for DRV8825 driver
+      pins.pinFan = 35; //Pin for the fan output
+      pins.pinLaunch = 12; //Can be overwritten below
+      pins.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 44; //Reset control output
+      pins.pinVSS = 20;
+      pins.pinIdleUp = 48;
+      pins.pinCTPS = 47;
       #endif
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTrigger = 23;
-        pinNumbers.pinTrigger2 = 36;
-        pinNumbers.pinStepperDir = 34;
-        pinNumbers.pinStepperStep = 35;
-        pinNumbers.coilPins[0] = 33; //Done
-        pinNumbers.coilPins[1] = 24; //Done
-        pinNumbers.coilPins[2] = 51; //Won't work (No mapping for pin 32)
-        pinNumbers.coilPins[3] = 52; //Won't work (No mapping for pin 33)
-        pinNumbers.pinFuelPump = 26; //Requires PVT4 adapter or above
-        pinNumbers.pinFan = 50; //Won't work (No mapping for pin 35)
-        pinNumbers.pinTachOut = 28; //Done
+        pins.pinTrigger = 23;
+        pins.pinTrigger2 = 36;
+        pins.pinStepperDir = 34;
+        pins.pinStepperStep = 35;
+        pins.coilPins[0] = 33; //Done
+        pins.coilPins[1] = 24; //Done
+        pins.coilPins[2] = 51; //Won't work (No mapping for pin 32)
+        pins.coilPins[3] = 52; //Won't work (No mapping for pin 33)
+        pins.pinFuelPump = 26; //Requires PVT4 adapter or above
+        pins.pinFan = 50; //Won't work (No mapping for pin 35)
+        pins.pinTachOut = 28; //Done
       #endif
       break;
 
     case 10:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for user turtanas PCB
-      pinNumbers.injectorPins[0] = 4; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 5; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 7; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 8; //Placeholder only - NOT USED
-      pinNumbers.injectorPins[5] = 9; //Placeholder only - NOT USED
-      pinNumbers.injectorPins[6] = 10; //Placeholder only - NOT USED
-      pinNumbers.injectorPins[7] = 11; //Placeholder only - NOT USED
-      pinNumbers.coilPins[0] = 24; //Pin for coil 1
-      pinNumbers.coilPins[1] = 28; //Pin for coil 2
-      pinNumbers.coilPins[2] = 36; //Pin for coil 3
-      pinNumbers.coilPins[3] = 40; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 18; //The CAS pin
-      pinNumbers.pinTrigger2 = 19; //The Cam Sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A4; //O2 Sensor pin
-      pinNumbers.pinBat = A7; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
-      pinNumbers.pinFuelPump = 42; //Fuel pump output 2n2222
-      pinNumbers.pinFan = 47; //Pin for the fan output
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
-      pinNumbers.pinResetControl = 26; //Reset control output
+      pins.injectorPins[0] = 4; //Output pin injector 1 is on
+      pins.injectorPins[1] = 5; //Output pin injector 2 is on
+      pins.injectorPins[2] = 6; //Output pin injector 3 is on
+      pins.injectorPins[3] = 7; //Output pin injector 4 is on
+      pins.injectorPins[4] = 8; //Placeholder only - NOT USED
+      pins.injectorPins[5] = 9; //Placeholder only - NOT USED
+      pins.injectorPins[6] = 10; //Placeholder only - NOT USED
+      pins.injectorPins[7] = 11; //Placeholder only - NOT USED
+      pins.coilPins[0] = 24; //Pin for coil 1
+      pins.coilPins[1] = 28; //Pin for coil 2
+      pins.coilPins[2] = 36; //Pin for coil 3
+      pins.coilPins[3] = 40; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 18; //The CAS pin
+      pins.pinTrigger2 = 19; //The Cam Sensor pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A4; //O2 Sensor pin
+      pins.pinBat = A7; //Battery reference voltage pin
+      pins.pinTachOut = 41; //Tacho output pin transistor is missing 2n2222 for this and 1k for 12v
+      pins.pinFuelPump = 42; //Fuel pump output 2n2222
+      pins.pinFan = 47; //Pin for the fan output
+      pins.pinTachOut = 49; //Tacho output pin
+      pins.pinFlex = 2; // Flex sensor (Must be external interrupt enabled)
+      pins.pinResetControl = 26; //Reset control output
 
     #endif
       break;
@@ -1348,112 +1485,112 @@ void setPinMapping(byte boardID)
     case 14:
     // Pin mappings for the Levin board
     #if defined(STM32F407xx)
-      pinNumbers.injectorPins[0] = PB15;     // Output pin injector 1
-      pinNumbers.injectorPins[1] = PA8;      // Output pin injector 2
-      pinNumbers.injectorPins[2] = PB13;     // Output pin injector 3
-      pinNumbers.injectorPins[3] = PB14;     // Output pin injector 4
-      pinNumbers.injectorPins[4] = PE13;     // Output pin injector 5
-      pinNumbers.injectorPins[5] = PB12;     // Output pin injector 6
-      pinNumbers.injectorPins[6] = PE7;      // Output pin injector 7
-      pinNumbers.injectorPins[7] = PE10;     // Output pin injector 8
-      pinNumbers.coilPins[0] = PC13;         // Pin for coil 1
-      pinNumbers.coilPins[1] = PE6;          // Pin for coil 2
-      pinNumbers.coilPins[2] = PE5;          // Pin for coil 3
-      pinNumbers.coilPins[3] = PE4;          // Pin for coil 4
-      pinNumbers.coilPins[4] = PE3;          // Pin for coil 5
-      pinNumbers.coilPins[5] = PE2;          // Pin for coil 6
-      pinNumbers.coilPins[6] = PB9;          // Pin for coil 7
-      pinNumbers.coilPins[7] = PD12;         // Pin for coil 8
-      pinNumbers.pinTrigger = PD3;        // The CAS pin
-      pinNumbers.pinTrigger2 = PD4;       // The Cam Sensor pin
-      pinNumbers.pinTPS = PA2;            // TPS input pin
-      pinNumbers.pinMAP = PA3;            // MAP sensor pin
-      pinNumbers.pinEMAP = PC5;           // EMAP sensor pin (placeholder)
-      pinNumbers.pinIAT = PA0;            // IAT sensor pin
-      pinNumbers.pinCLT = PA1;            // CLS sensor pin
-      pinNumbers.pinO2 = PB0;             // O2 Sensor pin
-      pinNumbers.pinBat = PA4;            // Battery reference voltage pin
-      pinNumbers.pinBaro = PA5;           // Baro sensor pin
-      pinNumbers.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
-      pinNumbers.pinIdle1 = PD10;         // ICV pin1  (Goes to UNL2803)
-      pinNumbers.pinIdle2 = PD9;          // ICV pin3  (Goes to UNL2803)
-      pinNumbers.pinBoost = PD8;          // Boost control
-      pinNumbers.pinVVT_1 = PD11;         // VVT1 output (intake vanos)
-      pinNumbers.pinVVT_2 = PC6;          // VVT2 output (exhaust vanos)
-      pinNumbers.pinFuelPump = PE11;      // Fuel pump output  (Goes to UNL2803)
-      pinNumbers.pinStepperDir = PB10;    // Stepper valve isn't used with these
-      pinNumbers.pinStepperStep = PB11;   // Stepper valve isn't used with these
-      pinNumbers.pinStepperEnable = PA15; // Stepper valve isn't used with these
-      pinNumbers.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
-      pinNumbers.pinLaunch = PB8;         // Launch control pin
-      pinNumbers.pinFlex = PD7;           // Flex sensor
-      pinNumbers.pinResetControl = PB7;   // Reset control output
-      pinNumbers.pinVSS = PB6;            // VSS input pin
-      pinNumbers.pinWMIEmpty = PA6;       //(placeholder)
-      pinNumbers.pinWMIIndicator = PC3;   //(placeholder)
-      pinNumbers.pinWMIEnabled = PE15;    //(placeholder)
-      pinNumbers.pinIdleUp = PC7;         //(placeholder)
+      pins.injectorPins[0] = PB15;     // Output pin injector 1
+      pins.injectorPins[1] = PA8;      // Output pin injector 2
+      pins.injectorPins[2] = PB13;     // Output pin injector 3
+      pins.injectorPins[3] = PB14;     // Output pin injector 4
+      pins.injectorPins[4] = PE13;     // Output pin injector 5
+      pins.injectorPins[5] = PB12;     // Output pin injector 6
+      pins.injectorPins[6] = PE7;      // Output pin injector 7
+      pins.injectorPins[7] = PE10;     // Output pin injector 8
+      pins.coilPins[0] = PC13;         // Pin for coil 1
+      pins.coilPins[1] = PE6;          // Pin for coil 2
+      pins.coilPins[2] = PE5;          // Pin for coil 3
+      pins.coilPins[3] = PE4;          // Pin for coil 4
+      pins.coilPins[4] = PE3;          // Pin for coil 5
+      pins.coilPins[5] = PE2;          // Pin for coil 6
+      pins.coilPins[6] = PB9;          // Pin for coil 7
+      pins.coilPins[7] = PD12;         // Pin for coil 8
+      pins.pinTrigger = PD3;        // The CAS pin
+      pins.pinTrigger2 = PD4;       // The Cam Sensor pin
+      pins.pinTPS = PA2;            // TPS input pin
+      pins.pinMAP = PA3;            // MAP sensor pin
+      pins.pinEMAP = PC5;           // EMAP sensor pin (placeholder)
+      pins.pinIAT = PA0;            // IAT sensor pin
+      pins.pinCLT = PA1;            // CLS sensor pin
+      pins.pinO2 = PB0;             // O2 Sensor pin
+      pins.pinBat = PA4;            // Battery reference voltage pin
+      pins.pinBaro = PA5;           // Baro sensor pin
+      pins.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
+      pins.pinIdle1 = PD10;         // ICV pin1  (Goes to UNL2803)
+      pins.pinIdle2 = PD9;          // ICV pin3  (Goes to UNL2803)
+      pins.pinBoost = PD8;          // Boost control
+      pins.pinVVT_1 = PD11;         // VVT1 output (intake vanos)
+      pins.pinVVT_2 = PC6;          // VVT2 output (exhaust vanos)
+      pins.pinFuelPump = PE11;      // Fuel pump output  (Goes to UNL2803)
+      pins.pinStepperDir = PB10;    // Stepper valve isn't used with these
+      pins.pinStepperStep = PB11;   // Stepper valve isn't used with these
+      pins.pinStepperEnable = PA15; // Stepper valve isn't used with these
+      pins.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
+      pins.pinLaunch = PB8;         // Launch control pin
+      pins.pinFlex = PD7;           // Flex sensor
+      pins.pinResetControl = PB7;   // Reset control output
+      pins.pinVSS = PB6;            // VSS input pin
+      pins.pinWMIEmpty = PA6;       //(placeholder)
+      pins.pinWMIIndicator = PC3;   //(placeholder)
+      pins.pinWMIEnabled = PE15;    //(placeholder)
+      pins.pinIdleUp = PC7;         //(placeholder)
     #endif
       break;
 
     case 20:
     #if defined(CORE_AVR) && !defined(SMALL_FLASH_MODE) //No support for bluepill here anyway
       //Pin mappings as per the Plazomat In/Out shields Rev 0.1
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 28; //Pin for coil 1
-      pinNumbers.coilPins[1] = 24; //Pin for coil 2
-      pinNumbers.coilPins[2] = 40; //Pin for coil 3
-      pinNumbers.coilPins[3] = 36; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 20; //The CAS pin
-      pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinFan = 47; //Pin for the fan output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinResetControl = 26; //Reset control output
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 9; //Output pin injector 2 is on
+      pins.injectorPins[2] = 10; //Output pin injector 3 is on
+      pins.injectorPins[3] = 11; //Output pin injector 4 is on
+      pins.injectorPins[4] = 12; //Output pin injector 5 is on
+      pins.coilPins[0] = 28; //Pin for coil 1
+      pins.coilPins[1] = 24; //Pin for coil 2
+      pins.coilPins[2] = 40; //Pin for coil 3
+      pins.coilPins[3] = 36; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 20; //The CAS pin
+      pins.pinTrigger2 = 21; //The Cam Sensor pin
+      pins.pinO2 = A8; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinFan = 47; //Pin for the fan output
+      pins.pinFuelPump = 4; //Fuel pump output
+      pins.pinTachOut = 49; //Tacho output pin
+      pins.pinResetControl = 26; //Reset control output
     #endif
       break;
 
     case 30:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the dazv6 shield
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-      pinNumbers.coilPins[0] = 40; //Pin for coil 1
-      pinNumbers.coilPins[1] = 38; //Pin for coil 2
-      pinNumbers.coilPins[2] = 50; //Pin for coil 3
-      pinNumbers.coilPins[3] = 52; //Pin for coil 4
-      pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinFuelPump = 45; //Fuel pump output
-      pinNumbers.pinStepperDir = 20; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 21; //Step pin for DRV8825 driver
-      pinNumbers.pinBoost = 7;
-      pinNumbers.pinFan = 47; //Pin for the fan output
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 9; //Output pin injector 2 is on
+      pins.injectorPins[2] = 10; //Output pin injector 3 is on
+      pins.injectorPins[3] = 11; //Output pin injector 4 is on
+      pins.injectorPins[4] = 12; //Output pin injector 5 is on
+      pins.coilPins[0] = 40; //Pin for coil 1
+      pins.coilPins[1] = 38; //Pin for coil 2
+      pins.coilPins[2] = 50; //Pin for coil 3
+      pins.coilPins[3] = 52; //Pin for coil 4
+      pins.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A8; //O2 Sensor pin
+      pins.pinO2_2 = A9; //O2 sensor pin (second sensor)
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinTachOut = 49; //Tacho output pin
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinFuelPump = 45; //Fuel pump output
+      pins.pinStepperDir = 20; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 21; //Step pin for DRV8825 driver
+      pins.pinBoost = 7;
+      pins.pinFan = 47; //Pin for the fan output
     #endif
       break;
 
@@ -1461,261 +1598,261 @@ void setPinMapping(byte boardID)
       //Pin mappings for the BMW PnP PCBs by pazi88.
       #if defined(CORE_AVR)
       //This is the regular MEGA2560 pin mapping
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2
-      pinNumbers.injectorPins[2] = 10; //Output pin injector 3
-      pinNumbers.injectorPins[3] = 11; //Output pin injector 4
-      pinNumbers.injectorPins[4] = 12; //Output pin injector 5
-      pinNumbers.injectorPins[5] = 50; //Output pin injector 6
-      pinNumbers.injectorPins[6] = 39; //Output pin injector 7
-      pinNumbers.injectorPins[7] = 42; //Output pin injector 8
-      pinNumbers.coilPins[0] = 40; //Pin for coil 1
-      pinNumbers.coilPins[1] = 38; //Pin for coil 2
-      pinNumbers.coilPins[2] = 52; //Pin for coil 3
-      pinNumbers.coilPins[3] = 48; //Pin for coil 4
-      pinNumbers.coilPins[4] = 36; //Pin for coil 5
-      pinNumbers.coilPins[5] = 34; //Pin for coil 6
-      pinNumbers.coilPins[6] = 46; //Pin for coil 7
-      pinNumbers.coilPins[7] = 53; //Pin for coil 8
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 20; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A2;//TPS input pin
-      pinNumbers.pinMAP = A3; //MAP sensor pin
-      pinNumbers.pinEMAP = A15; //EMAP sensor pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLT sensor pin
-      pinNumbers.pinO2 = A8; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A12; //O2 Sensor pin
-      pinNumbers.pinBat = A4; //Battery reference voltage pin
-      pinNumbers.pinBaro = A5; //Baro sensor pin
-      pinNumbers.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
-      pinNumbers.pinIdle1 = 5; //ICV pin1
-      pinNumbers.pinIdle2 = 6; //ICV pin3
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 4; //VVT1 output (intake vanos)
-      pinNumbers.pinVVT_2 = 26; //VVT2 output (exhaust vanos)
-      pinNumbers.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
-      pinNumbers.pinStepperDir = 16; //Stepper valve isn't used with these
-      pinNumbers.pinStepperStep = 17; //Stepper valve isn't used with these
-      pinNumbers.pinStepperEnable = 24; //Stepper valve isn't used with these
-      pinNumbers.pinFan = 47; //Pin for the fan output (Goes to ULN2003)
-      pinNumbers.pinLaunch = 51; //Launch control pin
-      pinNumbers.pinFlex = 2; // Flex sensor
-      pinNumbers.pinResetControl = 43; //Reset control output
-      pinNumbers.pinVSS = 3; //VSS input pin
-      pinNumbers.pinWMIEmpty = 31; //(placeholder)
-      pinNumbers.pinWMIIndicator = 33; //(placeholder)
-      pinNumbers.pinWMIEnabled = 35; //(placeholder)
-      pinNumbers.pinIdleUp = 37; //(placeholder)
-      pinNumbers.pinIdleUpOutput = 41; //(placeholder)
-      pinNumbers.pinCTPS = A6; //(placeholder)
+      pins.injectorPins[0] = 8; //Output pin injector 1
+      pins.injectorPins[1] = 9; //Output pin injector 2
+      pins.injectorPins[2] = 10; //Output pin injector 3
+      pins.injectorPins[3] = 11; //Output pin injector 4
+      pins.injectorPins[4] = 12; //Output pin injector 5
+      pins.injectorPins[5] = 50; //Output pin injector 6
+      pins.injectorPins[6] = 39; //Output pin injector 7
+      pins.injectorPins[7] = 42; //Output pin injector 8
+      pins.coilPins[0] = 40; //Pin for coil 1
+      pins.coilPins[1] = 38; //Pin for coil 2
+      pins.coilPins[2] = 52; //Pin for coil 3
+      pins.coilPins[3] = 48; //Pin for coil 4
+      pins.coilPins[4] = 36; //Pin for coil 5
+      pins.coilPins[5] = 34; //Pin for coil 6
+      pins.coilPins[6] = 46; //Pin for coil 7
+      pins.coilPins[7] = 53; //Pin for coil 8
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 20; //The Cam sensor 2 pin
+      pins.pinTPS = A2;//TPS input pin
+      pins.pinMAP = A3; //MAP sensor pin
+      pins.pinEMAP = A15; //EMAP sensor pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLT sensor pin
+      pins.pinO2 = A8; //O2 Sensor pin
+      pins.pinO2_2 = A12; //O2 Sensor pin
+      pins.pinBat = A4; //Battery reference voltage pin
+      pins.pinBaro = A5; //Baro sensor pin
+      pins.pinTachOut = 49; //Tacho output pin  (Goes to ULN2003)
+      pins.pinIdle1 = 5; //ICV pin1
+      pins.pinIdle2 = 6; //ICV pin3
+      pins.pinBoost = 7; //Boost control
+      pins.pinVVT_1 = 4; //VVT1 output (intake vanos)
+      pins.pinVVT_2 = 26; //VVT2 output (exhaust vanos)
+      pins.pinFuelPump = 45; //Fuel pump output  (Goes to ULN2003)
+      pins.pinStepperDir = 16; //Stepper valve isn't used with these
+      pins.pinStepperStep = 17; //Stepper valve isn't used with these
+      pins.pinStepperEnable = 24; //Stepper valve isn't used with these
+      pins.pinFan = 47; //Pin for the fan output (Goes to ULN2003)
+      pins.pinLaunch = 51; //Launch control pin
+      pins.pinFlex = 2; // Flex sensor
+      pins.pinResetControl = 43; //Reset control output
+      pins.pinVSS = 3; //VSS input pin
+      pins.pinWMIEmpty = 31; //(placeholder)
+      pins.pinWMIIndicator = 33; //(placeholder)
+      pins.pinWMIEnabled = 35; //(placeholder)
+      pins.pinIdleUp = 37; //(placeholder)
+      pins.pinIdleUpOutput = 41; //(placeholder)
+      pins.pinCTPS = A6; //(placeholder)
      #elif defined(STM32F407xx)
-      pinNumbers.injectorPins[0] = PB15; //Output pin injector 1
-      pinNumbers.injectorPins[1] = PB14; //Output pin injector 2
-      pinNumbers.injectorPins[2] = PB12; //Output pin injector 3
-      pinNumbers.injectorPins[3] = PB13; //Output pin injector 4
-      pinNumbers.injectorPins[4] = PA8; //Output pin injector 5
-      pinNumbers.injectorPins[5] = PE7; //Output pin injector 6
-      pinNumbers.injectorPins[6] = PE13; //Output pin injector 7
-      pinNumbers.injectorPins[7] = PE10; //Output pin injector 8
-      pinNumbers.coilPins[0] = PE2; //Pin for coil 1
-      pinNumbers.coilPins[1] = PE3; //Pin for coil 2
-      pinNumbers.coilPins[2] = PC13; //Pin for coil 3
-      pinNumbers.coilPins[3] = PE6; //Pin for coil 4
-      pinNumbers.coilPins[4] = PE4; //Pin for coil 5
-      pinNumbers.coilPins[5] = PE5; //Pin for coil 6
-      pinNumbers.coilPins[6] = PE0; //Pin for coil 7
-      pinNumbers.coilPins[7] = PB9; //Pin for coil 8
-      pinNumbers.pinTrigger = PD3; //The CAS pin
-      pinNumbers.pinTrigger2 = PD4; //The Cam Sensor pin
-      pinNumbers.pinTPS = PA2;//TPS input pin
-      pinNumbers.pinMAP = PA3; //MAP sensor pin
-      pinNumbers.pinEMAP = PC5; //EMAP sensor pin
-      pinNumbers.pinIAT = PA0; //IAT sensor pin
-      pinNumbers.pinCLT = PA1; //CLS sensor pin
-      pinNumbers.pinO2 = PB0; //O2 Sensor pin
-      pinNumbers.pinO2_2 = PC2; //O2 Sensor pin
-      pinNumbers.pinBat = PA4; //Battery reference voltage pin
-      pinNumbers.pinBaro = PA5; //Baro sensor pin
-      pinNumbers.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
-      pinNumbers.pinIdle1 = PD10; //ICV pin1
-      pinNumbers.pinIdle2 = PD9; //ICV pin3
-      pinNumbers.pinBoost = PD8; //Boost control
-      pinNumbers.pinVVT_1 = PD11; //VVT1 output (intake vanos)
-      pinNumbers.pinVVT_2 = PC7; //VVT2 output (exhaust vanos)
-      pinNumbers.pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
-      pinNumbers.pinStepperDir = PB10; //Stepper valve isn't used with these
-      pinNumbers.pinStepperStep = PB11; //Stepper valve isn't used with these
-      pinNumbers.pinStepperEnable = PA15; //Stepper valve isn't used with these
-      pinNumbers.pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
-      pinNumbers.pinLaunch = PB8; //Launch control pin
-      pinNumbers.pinFlex = PD7; // Flex sensor
-      pinNumbers.pinResetControl = PB7; //Reset control output
-      pinNumbers.pinVSS = PB6; //VSS input pin
-      pinNumbers.pinWMIEmpty = PD15; //(placeholder)
-      pinNumbers.pinWMIIndicator = PD13; //(placeholder)
-      pinNumbers.pinWMIEnabled = PE15; //(placeholder)
-      pinNumbers.pinIdleUp = PE14; //(placeholder)
-      pinNumbers.pinIdleUpOutput = PE12; //(placeholder)
-      pinNumbers.pinCTPS = PA6; //(placeholder)
+      pins.injectorPins[0] = PB15; //Output pin injector 1
+      pins.injectorPins[1] = PB14; //Output pin injector 2
+      pins.injectorPins[2] = PB12; //Output pin injector 3
+      pins.injectorPins[3] = PB13; //Output pin injector 4
+      pins.injectorPins[4] = PA8; //Output pin injector 5
+      pins.injectorPins[5] = PE7; //Output pin injector 6
+      pins.injectorPins[6] = PE13; //Output pin injector 7
+      pins.injectorPins[7] = PE10; //Output pin injector 8
+      pins.coilPins[0] = PE2; //Pin for coil 1
+      pins.coilPins[1] = PE3; //Pin for coil 2
+      pins.coilPins[2] = PC13; //Pin for coil 3
+      pins.coilPins[3] = PE6; //Pin for coil 4
+      pins.coilPins[4] = PE4; //Pin for coil 5
+      pins.coilPins[5] = PE5; //Pin for coil 6
+      pins.coilPins[6] = PE0; //Pin for coil 7
+      pins.coilPins[7] = PB9; //Pin for coil 8
+      pins.pinTrigger = PD3; //The CAS pin
+      pins.pinTrigger2 = PD4; //The Cam Sensor pin
+      pins.pinTPS = PA2;//TPS input pin
+      pins.pinMAP = PA3; //MAP sensor pin
+      pins.pinEMAP = PC5; //EMAP sensor pin
+      pins.pinIAT = PA0; //IAT sensor pin
+      pins.pinCLT = PA1; //CLS sensor pin
+      pins.pinO2 = PB0; //O2 Sensor pin
+      pins.pinO2_2 = PC2; //O2 Sensor pin
+      pins.pinBat = PA4; //Battery reference voltage pin
+      pins.pinBaro = PA5; //Baro sensor pin
+      pins.pinTachOut = PE8; //Tacho output pin  (Goes to ULN2003)
+      pins.pinIdle1 = PD10; //ICV pin1
+      pins.pinIdle2 = PD9; //ICV pin3
+      pins.pinBoost = PD8; //Boost control
+      pins.pinVVT_1 = PD11; //VVT1 output (intake vanos)
+      pins.pinVVT_2 = PC7; //VVT2 output (exhaust vanos)
+      pins.pinFuelPump = PE11; //Fuel pump output  (Goes to ULN2003)
+      pins.pinStepperDir = PB10; //Stepper valve isn't used with these
+      pins.pinStepperStep = PB11; //Stepper valve isn't used with these
+      pins.pinStepperEnable = PA15; //Stepper valve isn't used with these
+      pins.pinFan = PE9; //Pin for the fan output (Goes to ULN2003)
+      pins.pinLaunch = PB8; //Launch control pin
+      pins.pinFlex = PD7; // Flex sensor
+      pins.pinResetControl = PB7; //Reset control output
+      pins.pinVSS = PB6; //VSS input pin
+      pins.pinWMIEmpty = PD15; //(placeholder)
+      pins.pinWMIIndicator = PD13; //(placeholder)
+      pins.pinWMIEnabled = PE15; //(placeholder)
+      pins.pinIdleUp = PE14; //(placeholder)
+      pins.pinIdleUpOutput = PE12; //(placeholder)
+      pins.pinCTPS = PA6; //(placeholder)
      #endif
       break;
 
     case 40:
      #ifndef SMALL_FLASH_MODE
       //Pin mappings as per the NO2C shield
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 11; //Output pin injector 3 is on - NOT USED
-      pinNumbers.injectorPins[3] = 12; //Output pin injector 4 is on - NOT USED
-      pinNumbers.injectorPins[4] = 13; //Placeholder only - NOT USED
-      pinNumbers.coilPins[0] = 23; //Pin for coil 1
-      pinNumbers.coilPins[1] = 22; //Pin for coil 2
-      pinNumbers.coilPins[2] = 2; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.coilPins[3] = 3; //Pin for coil 4 - ONLY WITH DB2
-      pinNumbers.coilPins[4] = 46; //Placeholder only - NOT USED
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 21; //The Cam sensor 2 pin
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinMAP = A0; //MAP sensor pin
-      pinNumbers.pinIAT = A5; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLT sensor pin
-      pinNumbers.pinO2 = A2; //O2 sensor pin
-      pinNumbers.pinBat = A1; //Battery reference voltage pin
-      pinNumbers.pinBaro = A6; //Baro sensor pin - ONLY WITH DB
-      pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinIdle2 = 47; //2 wire idle control - NOT USED
-      pinNumbers.pinBoost = 7; //Boost control
-      pinNumbers.pinVVT_1 = 6; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinFuelPump = 4; //Fuel pump output
-      pinNumbers.pinStepperDir = 25; //Direction pin for DRV8825 driver
-      pinNumbers.pinStepperStep = 24; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 27; //Enable pin for DRV8825 driver
-      pinNumbers.pinLaunch = 10; //Can be overwritten below
-      pinNumbers.pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
-      pinNumbers.pinFan = 30; //Pin for the fan output - ONLY WITH DB
-      pinNumbers.pinResetControl = 26; //Reset control output
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 9; //Output pin injector 2 is on
+      pins.injectorPins[2] = 11; //Output pin injector 3 is on - NOT USED
+      pins.injectorPins[3] = 12; //Output pin injector 4 is on - NOT USED
+      pins.injectorPins[4] = 13; //Placeholder only - NOT USED
+      pins.coilPins[0] = 23; //Pin for coil 1
+      pins.coilPins[1] = 22; //Pin for coil 2
+      pins.coilPins[2] = 2; //Pin for coil 3 - ONLY WITH DB2
+      pins.coilPins[3] = 3; //Pin for coil 4 - ONLY WITH DB2
+      pins.coilPins[4] = 46; //Placeholder only - NOT USED
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 21; //The Cam sensor 2 pin
+      pins.pinTPS = A3; //TPS input pin
+      pins.pinMAP = A0; //MAP sensor pin
+      pins.pinIAT = A5; //IAT sensor pin
+      pins.pinCLT = A4; //CLT sensor pin
+      pins.pinO2 = A2; //O2 sensor pin
+      pins.pinBat = A1; //Battery reference voltage pin
+      pins.pinBaro = A6; //Baro sensor pin - ONLY WITH DB
+      pins.pinTachOut = 38; //Tacho output pin
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinIdle2 = 47; //2 wire idle control - NOT USED
+      pins.pinBoost = 7; //Boost control
+      pins.pinVVT_1 = 6; //Default VVT output
+      pins.pinVVT_2 = 48; //Default VVT2 output
+      pins.pinFuelPump = 4; //Fuel pump output
+      pins.pinStepperDir = 25; //Direction pin for DRV8825 driver
+      pins.pinStepperStep = 24; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 27; //Enable pin for DRV8825 driver
+      pins.pinLaunch = 10; //Can be overwritten below
+      pins.pinFlex = 20; // Flex sensor (Must be external interrupt enabled) - ONLY WITH DB
+      pins.pinFan = 30; //Pin for the fan output - ONLY WITH DB
+      pins.pinResetControl = 26; //Reset control output
       #endif
       break;
 
     case 41:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings as per the UA4C shield
-      pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 7; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 5; //Output pin injector 4 is on
-      pinNumbers.injectorPins[4] = 45; //Output pin injector 5 is on PLACEHOLDER value for now
-      pinNumbers.coilPins[0] = 35; //Pin for coil 1
-      pinNumbers.coilPins[1] = 36; //Pin for coil 2
-      pinNumbers.coilPins[2] = 33; //Pin for coil 3
-      pinNumbers.coilPins[3] = 34; //Pin for coil 4
-      pinNumbers.coilPins[4] = 44; //Pin for coil 5 PLACEHOLDER value for now
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 3; //The Cam sensor 2 pin
-      pinNumbers.pinFlex = 20; // Flex sensor
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinMAP = A0; //MAP sensor pin
-      pinNumbers.pinBaro = A7; //Baro sensor pin
-      pinNumbers.pinIAT = A5; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLS sensor pin
-      pinNumbers.pinO2 = A1; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = A2; //Battery reference voltage pin
-      pinNumbers.pinLaunch = 37; //Can be overwritten below
-      pinNumbers.pinTachOut = 22; //Tacho output pin
-      pinNumbers.pinIdle1 = 9; //Single wire idle control
-      pinNumbers.pinIdle2 = 10; //2 wire idle control
-      pinNumbers.pinFuelPump = 23; //Fuel pump output
-      pinNumbers.pinVVT_1 = 11; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 12; //Boost control
-      pinNumbers.pinFan = 24; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-      pinNumbers.pinVSS = 2;
+      pins.injectorPins[0] = 8; //Output pin injector 1 is on
+      pins.injectorPins[1] = 7; //Output pin injector 2 is on
+      pins.injectorPins[2] = 6; //Output pin injector 3 is on
+      pins.injectorPins[3] = 5; //Output pin injector 4 is on
+      pins.injectorPins[4] = 45; //Output pin injector 5 is on PLACEHOLDER value for now
+      pins.coilPins[0] = 35; //Pin for coil 1
+      pins.coilPins[1] = 36; //Pin for coil 2
+      pins.coilPins[2] = 33; //Pin for coil 3
+      pins.coilPins[3] = 34; //Pin for coil 4
+      pins.coilPins[4] = 44; //Pin for coil 5 PLACEHOLDER value for now
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 3; //The Cam sensor 2 pin
+      pins.pinFlex = 20; // Flex sensor
+      pins.pinTPS = A3; //TPS input pin
+      pins.pinMAP = A0; //MAP sensor pin
+      pins.pinBaro = A7; //Baro sensor pin
+      pins.pinIAT = A5; //IAT sensor pin
+      pins.pinCLT = A4; //CLS sensor pin
+      pins.pinO2 = A1; //O2 Sensor pin
+      pins.pinO2_2 = A9; //O2 sensor pin (second sensor)
+      pins.pinBat = A2; //Battery reference voltage pin
+      pins.pinLaunch = 37; //Can be overwritten below
+      pins.pinTachOut = 22; //Tacho output pin
+      pins.pinIdle1 = 9; //Single wire idle control
+      pins.pinIdle2 = 10; //2 wire idle control
+      pins.pinFuelPump = 23; //Fuel pump output
+      pins.pinVVT_1 = 11; //Default VVT output
+      pins.pinVVT_2 = 48; //Default VVT2 output
+      pins.pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 31; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pins.pinBoost = 12; //Boost control
+      pins.pinFan = 24; //Pin for the fan output
+      pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pins.pinVSS = 2;
     #endif
       break;
 
     case 42:
       //Pin mappings for all BlitzboxBL49sp variants
-      pinNumbers.injectorPins[0] = 6; //Output pin injector 1
-      pinNumbers.injectorPins[1] = 7; //Output pin injector 2
-      pinNumbers.injectorPins[2] = 8; //Output pin injector 3
-      pinNumbers.injectorPins[3] = 9; //Output pin injector 4
-      pinNumbers.coilPins[0] = 24; //Pin for coil 1
-      pinNumbers.coilPins[1] = 25; //Pin for coil 2
-      pinNumbers.coilPins[2] = 23; //Pin for coil 3
-      pinNumbers.coilPins[3] = 22; //Pin for coil 4
-      pinNumbers.pinTrigger = 19; //The CRANK Sensor pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
-      pinNumbers.pinTPS = A0; //TPS input pin
-      pinNumbers.pinO2 = A2; //O2 Sensor pin
-      pinNumbers.pinIAT = A3; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLT sensor pin
-      pinNumbers.pinMAP = A7; //internal MAP sensor
-      pinNumbers.pinBat = A6; //Battery reference voltage pin
-      pinNumbers.pinBaro = A5; //external MAP/Baro sensor pin
-      pinNumbers.pinO2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
-      pinNumbers.pinLaunch = 2; //Can be overwritten below
-      pinNumbers.pinTachOut = 10; //Tacho output pin
-      pinNumbers.pinIdle1 = 11; //Single wire idle control
-      pinNumbers.pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
-      pinNumbers.pinFuelPump = 3; //Fuel pump output
-      pinNumbers.pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
-      pinNumbers.pinBoost = 5; //Boost control
-      pinNumbers.pinFan = 12; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pins.injectorPins[0] = 6; //Output pin injector 1
+      pins.injectorPins[1] = 7; //Output pin injector 2
+      pins.injectorPins[2] = 8; //Output pin injector 3
+      pins.injectorPins[3] = 9; //Output pin injector 4
+      pins.coilPins[0] = 24; //Pin for coil 1
+      pins.coilPins[1] = 25; //Pin for coil 2
+      pins.coilPins[2] = 23; //Pin for coil 3
+      pins.coilPins[3] = 22; //Pin for coil 4
+      pins.pinTrigger = 19; //The CRANK Sensor pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
+      pins.pinTPS = A0; //TPS input pin
+      pins.pinO2 = A2; //O2 Sensor pin
+      pins.pinIAT = A3; //IAT sensor pin
+      pins.pinCLT = A4; //CLT sensor pin
+      pins.pinMAP = A7; //internal MAP sensor
+      pins.pinBat = A6; //Battery reference voltage pin
+      pins.pinBaro = A5; //external MAP/Baro sensor pin
+      pins.pinO2_2 = A9; //O2 sensor pin (second sensor) PLACEHOLDER value for now
+      pins.pinLaunch = 2; //Can be overwritten below
+      pins.pinTachOut = 10; //Tacho output pin
+      pins.pinIdle1 = 11; //Single wire idle control
+      pins.pinIdle2 = 14; //2 wire idle control PLACEHOLDER value for now
+      pins.pinFuelPump = 3; //Fuel pump output
+      pins.pinVVT_1 = 15; //Default VVT output PLACEHOLDER value for now
+      pins.pinBoost = 5; //Boost control
+      pins.pinFan = 12; //Pin for the fan output
+      pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
     break;
     
     case 45:
     #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
       //Pin mappings for the DIY-EFI CORE4 Module. This is an AVR only module
       #if defined(CORE_AVR)
-      pinNumbers.injectorPins[0] = 10; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 11; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 12; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 9; //Output pin injector 4 is on
-      pinNumbers.coilPins[0] = 39; //Pin for coil 1
-      pinNumbers.coilPins[1] = 29; //Pin for coil 2
-      pinNumbers.coilPins[2] = 28; //Pin for coil 3
-      pinNumbers.coilPins[3] = 27; //Pin for coil 4
-      pinNumbers.coilPins[4] = 26; //Placeholder  for coil 5
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 21;// The Cam sensor 2 pin
-      pinNumbers.pinFlex = 20; // Flex sensor
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinMAP = A2; //MAP sensor pin
-      pinNumbers.pinBaro = A15; //Baro sensor pin
-      pinNumbers.pinIAT = A11; //IAT sensor pin
-      pinNumbers.pinCLT = A4; //CLS sensor pin
-      pinNumbers.pinO2 = A12; //O2 Sensor pin
-      pinNumbers.pinO2_2 = A5; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = A1; //Battery reference voltage pin
-      pinNumbers.pinLaunch = 24; //Can be overwritten below
-      pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.pinIdle1 = 42; //Single wire idle control
-      pinNumbers.pinIdle2 = 43; //2 wire idle control
-      pinNumbers.pinFuelPump = 41; //Fuel pump output
-      pinNumbers.pinVVT_1 = 44; //Default VVT output
-      pinNumbers.pinVVT_2 = 48; //Default VVT2 output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 45; //Boost control
-      pinNumbers.injectorPins[4] = 33; //Output pin injector 5 is on
-      pinNumbers.injectorPins[5] = 34; //Output pin injector 6 is on
-      pinNumbers.pinFan = 40; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pins.injectorPins[0] = 10; //Output pin injector 1 is on
+      pins.injectorPins[1] = 11; //Output pin injector 2 is on
+      pins.injectorPins[2] = 12; //Output pin injector 3 is on
+      pins.injectorPins[3] = 9; //Output pin injector 4 is on
+      pins.coilPins[0] = 39; //Pin for coil 1
+      pins.coilPins[1] = 29; //Pin for coil 2
+      pins.coilPins[2] = 28; //Pin for coil 3
+      pins.coilPins[3] = 27; //Pin for coil 4
+      pins.coilPins[4] = 26; //Placeholder  for coil 5
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 21;// The Cam sensor 2 pin
+      pins.pinFlex = 20; // Flex sensor
+      pins.pinTPS = A3; //TPS input pin
+      pins.pinMAP = A2; //MAP sensor pin
+      pins.pinBaro = A15; //Baro sensor pin
+      pins.pinIAT = A11; //IAT sensor pin
+      pins.pinCLT = A4; //CLS sensor pin
+      pins.pinO2 = A12; //O2 Sensor pin
+      pins.pinO2_2 = A5; //O2 sensor pin (second sensor)
+      pins.pinBat = A1; //Battery reference voltage pin
+      pins.pinLaunch = 24; //Can be overwritten below
+      pins.pinTachOut = 38; //Tacho output pin
+      pins.pinIdle1 = 42; //Single wire idle control
+      pins.pinIdle2 = 43; //2 wire idle control
+      pins.pinFuelPump = 41; //Fuel pump output
+      pins.pinVVT_1 = 44; //Default VVT output
+      pins.pinVVT_2 = 48; //Default VVT2 output
+      pins.pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 31; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pins.pinBoost = 45; //Boost control
+      pins.injectorPins[4] = 33; //Output pin injector 5 is on
+      pins.injectorPins[5] = 34; //Output pin injector 6 is on
+      pins.pinFan = 40; //Pin for the fan output
+      pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
       #endif
     #endif
       break;
@@ -1723,149 +1860,146 @@ void setPinMapping(byte boardID)
     #if defined(CORE_TEENSY35)
     case 50:
       //Pin mappings as per the teensy rev A shield
-      pinNumbers.injectorPins[0] = 2; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 10; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on
-      pinNumbers.injectorPins[3] = 9; //Output pin injector 4 is on
+      pins.injectorPins[0] = 2; //Output pin injector 1 is on
+      pins.injectorPins[1] = 10; //Output pin injector 2 is on
+      pins.injectorPins[2] = 6; //Output pin injector 3 is on
+      pins.injectorPins[3] = 9; //Output pin injector 4 is on
       //Placeholder only - NOT USED:
-      //pinNumbers.injectorPins[4] = 13;
-      pinNumbers.coilPins[0] = 29; //Pin for coil 1
-      pinNumbers.coilPins[1] = 30; //Pin for coil 2
-      pinNumbers.coilPins[2] = 31; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.coilPins[3] = 32; //Pin for coil 4 - ONLY WITH DB2
+      //pins.injectorPins[4] = 13;
+      pins.coilPins[0] = 29; //Pin for coil 1
+      pins.coilPins[1] = 30; //Pin for coil 2
+      pins.coilPins[2] = 31; //Pin for coil 3 - ONLY WITH DB2
+      pins.coilPins[3] = 32; //Pin for coil 4 - ONLY WITH DB2
       //Placeholder only - NOT USED:
-      //pinNumbers.coilPins[4] = 46; 
-      pinNumbers.pinTrigger = 23; //The CAS pin
-      pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
-      pinNumbers.pinTPS = 16; //TPS input pin
-      pinNumbers.pinMAP = 17; //MAP sensor pin
-      pinNumbers.pinIAT = 14; //IAT sensor pin
-      pinNumbers.pinCLT = 15; //CLT sensor pin
-      pinNumbers.pinO2 = A22; //O2 sensor pin
-      pinNumbers.pinO2_2 = A21; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = 18; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 20; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinBoost = 11; //Boost control
-      pinNumbers.pinFuelPump = 38; //Fuel pump output
-      pinNumbers.pinStepperDir = 34; //Direction pin for DRV8825 driver
-      pinNumbers.pinStepperStep = 35; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 33; //Enable pin for DRV8825 driver
-      pinNumbers.pinLaunch = 26; //Can be overwritten below
-      pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
+      //pins.coilPins[4] = 46; 
+      pins.pinTrigger = 23; //The CAS pin
+      pins.pinTrigger2 = 36; //The Cam Sensor pin
+      pins.pinTPS = 16; //TPS input pin
+      pins.pinMAP = 17; //MAP sensor pin
+      pins.pinIAT = 14; //IAT sensor pin
+      pins.pinCLT = 15; //CLT sensor pin
+      pins.pinO2 = A22; //O2 sensor pin
+      pins.pinO2_2 = A21; //O2 sensor pin (second sensor)
+      pins.pinBat = 18; //Battery reference voltage pin
+      pins.pinTachOut = 20; //Tacho output pin
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinBoost = 11; //Boost control
+      pins.pinFuelPump = 38; //Fuel pump output
+      pins.pinStepperDir = 34; //Direction pin for DRV8825 driver
+      pins.pinStepperStep = 35; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pins.pinLaunch = 26; //Can be overwritten below
+      pins.pinFan = 37; //Pin for the fan output - ONLY WITH DB
       break;
 
     case 51:
       //Pin mappings as per the teensy revB board shield
-      pinNumbers.injectorPins[0] = 2; //Output pin injector 1 is on
-      pinNumbers.injectorPins[1] = 10; //Output pin injector 2 is on
-      pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on - NOT USED
-      pinNumbers.injectorPins[3] = 9; //Output pin injector 4 is on - NOT USED
-      pinNumbers.coilPins[0] = 29; //Pin for coil 1
-      pinNumbers.coilPins[1] = 30; //Pin for coil 2
-      pinNumbers.coilPins[2] = 31; //Pin for coil 3 - ONLY WITH DB2
-      pinNumbers.coilPins[3] = 32; //Pin for coil 4 - ONLY WITH DB2
-      pinNumbers.pinTrigger = 23; //The CAS pin
-      pinNumbers.pinTrigger2 = 36; //The Cam Sensor pin
-      pinNumbers.pinTPS = 16; //TPS input pin
-      pinNumbers.pinMAP = 17; //MAP sensor pin
-      pinNumbers.pinIAT = 14; //IAT sensor pin
-      pinNumbers.pinCLT = 15; //CLT sensor pin
-      pinNumbers.pinO2 = A22; //O2 sensor pin
-      pinNumbers.pinO2_2 = A21; //O2 sensor pin (second sensor)
-      pinNumbers.pinBat = 18; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 20; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control
-      pinNumbers.pinBoost = 11; //Boost control
-      pinNumbers.pinFuelPump = 38; //Fuel pump output
-      pinNumbers.pinStepperDir = 34; //Direction pin for DRV8825 driver
-      pinNumbers.pinStepperStep = 35; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 33; //Enable pin for DRV8825 driver
-      pinNumbers.pinLaunch = 26; //Can be overwritten below
-      pinNumbers.pinFan = 37; //Pin for the fan output - ONLY WITH DB
+      pins.injectorPins[0] = 2; //Output pin injector 1 is on
+      pins.injectorPins[1] = 10; //Output pin injector 2 is on
+      pins.injectorPins[2] = 6; //Output pin injector 3 is on - NOT USED
+      pins.injectorPins[3] = 9; //Output pin injector 4 is on - NOT USED
+      pins.coilPins[0] = 29; //Pin for coil 1
+      pins.coilPins[1] = 30; //Pin for coil 2
+      pins.coilPins[2] = 31; //Pin for coil 3 - ONLY WITH DB2
+      pins.coilPins[3] = 32; //Pin for coil 4 - ONLY WITH DB2
+      pins.pinTrigger = 23; //The CAS pin
+      pins.pinTrigger2 = 36; //The Cam Sensor pin
+      pins.pinTPS = 16; //TPS input pin
+      pins.pinMAP = 17; //MAP sensor pin
+      pins.pinIAT = 14; //IAT sensor pin
+      pins.pinCLT = 15; //CLT sensor pin
+      pins.pinO2 = A22; //O2 sensor pin
+      pins.pinO2_2 = A21; //O2 sensor pin (second sensor)
+      pins.pinBat = 18; //Battery reference voltage pin
+      pins.pinTachOut = 20; //Tacho output pin
+      pins.pinIdle1 = 5; //Single wire idle control
+      pins.pinBoost = 11; //Boost control
+      pins.pinFuelPump = 38; //Fuel pump output
+      pins.pinStepperDir = 34; //Direction pin for DRV8825 driver
+      pins.pinStepperStep = 35; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 33; //Enable pin for DRV8825 driver
+      pins.pinLaunch = 26; //Can be overwritten below
+      pins.pinFan = 37; //Pin for the fan output - ONLY WITH DB
       break;
     #endif
 
     #if defined(CORE_TEENSY35)
     case 53:
       //Pin mappings for the Juice Box (ignition only board)
-      pinNumbers.injectorPins[0] = 2; //Output pin injector 1 is on - NOT USED
-      pinNumbers.injectorPins[1] = 56; //Output pin injector 2 is on - NOT USED
-      pinNumbers.injectorPins[2] = 6; //Output pin injector 3 is on - NOT USED
-      pinNumbers.injectorPins[3] = 50; //Output pin injector 4 is on - NOT USED
-      pinNumbers.coilPins[0] = 29; //Pin for coil 1
-      pinNumbers.coilPins[1] = 30; //Pin for coil 2
-      pinNumbers.coilPins[2] = 31; //Pin for coil 3
-      pinNumbers.coilPins[3] = 32; //Pin for coil 4
-      pinNumbers.pinTrigger = 37; //The CAS pin
-      pinNumbers.pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
-      pinNumbers.pinTPS = A2; //TPS input pin
-      pinNumbers.pinMAP = A7; //MAP sensor pin
-      pinNumbers.pinIAT = A1; //IAT sensor pin
-      pinNumbers.pinCLT = A5; //CLT sensor pin
-      pinNumbers.pinO2 = A0; //O2 sensor pin
-      pinNumbers.pinO2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
-      pinNumbers.pinBat = A6; //Battery reference voltage pin
-      pinNumbers.pinTachOut = 28; //Tacho output pin
-      pinNumbers.pinIdle1 = 5; //Single wire idle control - NOT USED
-      pinNumbers.pinBoost = 11; //Boost control - NOT USED
-      pinNumbers.pinFuelPump = 24; //Fuel pump output
-      pinNumbers.pinStepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
-      pinNumbers.pinStepperStep = 4; //Step pin for DRV8825 driver - NOT USED
-      pinNumbers.pinStepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
-      pinNumbers.pinLaunch = 26; //Can be overwritten below
-      pinNumbers.pinFan = 25; //Pin for the fan output
+      pins.injectorPins[0] = 2; //Output pin injector 1 is on - NOT USED
+      pins.injectorPins[1] = 56; //Output pin injector 2 is on - NOT USED
+      pins.injectorPins[2] = 6; //Output pin injector 3 is on - NOT USED
+      pins.injectorPins[3] = 50; //Output pin injector 4 is on - NOT USED
+      pins.coilPins[0] = 29; //Pin for coil 1
+      pins.coilPins[1] = 30; //Pin for coil 2
+      pins.coilPins[2] = 31; //Pin for coil 3
+      pins.coilPins[3] = 32; //Pin for coil 4
+      pins.pinTrigger = 37; //The CAS pin
+      pins.pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
+      pins.pinTPS = A2; //TPS input pin
+      pins.pinMAP = A7; //MAP sensor pin
+      pins.pinIAT = A1; //IAT sensor pin
+      pins.pinCLT = A5; //CLT sensor pin
+      pins.pinO2 = A0; //O2 sensor pin
+      pins.pinO2_2 = A21; //O2 sensor pin (second sensor) - NOT USED
+      pins.pinBat = A6; //Battery reference voltage pin
+      pins.pinTachOut = 28; //Tacho output pin
+      pins.pinIdle1 = 5; //Single wire idle control - NOT USED
+      pins.pinBoost = 11; //Boost control - NOT USED
+      pins.pinFuelPump = 24; //Fuel pump output
+      pins.pinStepperDir = 3; //Direction pin for DRV8825 driver - NOT USED
+      pins.pinStepperStep = 4; //Step pin for DRV8825 driver - NOT USED
+      pins.pinStepperEnable = 6; //Enable pin for DRV8825 driver - NOT USED
+      pins.pinLaunch = 26; //Can be overwritten below
+      pins.pinFan = 25; //Pin for the fan output
       break;
     #endif
 
     case 55:
       #if defined(CORE_TEENSY)
       //Pin mappings for the DropBear
-      injControlMode = InjIoControlMode::MC33810;
-      ignControlMode = IgnIoControlMode::MC33810;
-
       //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
-      pinNumbers.injectorPins[0] = 13; //SCLK
-      pinNumbers.injectorPins[1] = 11; //MOSI
-      pinNumbers.injectorPins[2] = 12; //MISO
-      pinNumbers.injectorPins[3] = 10; //CS for MC33810 1
-      pinNumbers.injectorPins[4] = 9; //CS for MC33810 2
-      pinNumbers.injectorPins[5] = 9; //CS for MC33810 3
+      pins.injectorPins[0] = 13; //SCLK
+      pins.injectorPins[1] = 11; //MOSI
+      pins.injectorPins[2] = 12; //MISO
+      pins.injectorPins[3] = 10; //CS for MC33810 1
+      pins.injectorPins[4] = 9; //CS for MC33810 2
+      pins.injectorPins[5] = 9; //CS for MC33810 3
 
       //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
-      pinNumbers.coilPins[0] = 40;
-      pinNumbers.coilPins[1] = 41;
+      pins.coilPins[0] = 40;
+      pins.coilPins[1] = 41;
       /*
-      pinNumbers.coilPins[2] = 55;
-      pinNumbers.coilPins[3] = 55;
-      pinNumbers.coilPins[4] = 55;
-      pinNumbers.coilPins[5] = 55;
+      pins.coilPins[2] = 55;
+      pins.coilPins[3] = 55;
+      pins.coilPins[4] = 55;
+      pins.coilPins[5] = 55;
       */
       
-      pinNumbers.pinTrigger = 19; //The CAS pin
-      pinNumbers.pinTrigger2 = 18; //The Cam Sensor pin
-      pinNumbers.pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
-      pinNumbers.pinFlex = A16; // Flex sensor
-      pinNumbers.pinMAP = A1; //MAP sensor pin
-      pinNumbers.pinBaro = A0; //Baro sensor pin
-      pinNumbers.pinBat = A14; //Battery reference voltage pin
-      pinNumbers.pinLaunch = A15; //Can be overwritten below
-      pinNumbers.pinTachOut = 5; //Tacho output pin
-      pinNumbers.pinIdle1 = 27; //Single wire idle control
-      pinNumbers.pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
-      pinNumbers.pinFuelPump = 8; //Fuel pump output
-      pinNumbers.pinVVT_1 = 28; //Default VVT output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 24; //Boost control
-      pinNumbers.pinFan = 25; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
-      pinNumbers.pinVSS = 22;
+      pins.pinTrigger = 19; //The CAS pin
+      pins.pinTrigger2 = 18; //The Cam Sensor pin
+      pins.pinTrigger3 = 22; //Uses one of the protected spare digital inputs. This must be set or Serial1 (Pin 0) gets broken
+      pins.pinFlex = A16; // Flex sensor
+      pins.pinMAP = A1; //MAP sensor pin
+      pins.pinBaro = A0; //Baro sensor pin
+      pins.pinBat = A14; //Battery reference voltage pin
+      pins.pinLaunch = A15; //Can be overwritten below
+      pins.pinTachOut = 5; //Tacho output pin
+      pins.pinIdle1 = 27; //Single wire idle control
+      pins.pinIdle2 = 29; //2 wire idle control. Shared with Spare 1 output
+      pins.pinFuelPump = 8; //Fuel pump output
+      pins.pinVVT_1 = 28; //Default VVT output
+      pins.pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 31; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pins.pinBoost = 24; //Boost control
+      pins.pinFan = 25; //Pin for the fan output
+      pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pins.pinVSS = 22;
 
-      pinNumbers.pinWMIEmpty = 23; //Spare digital input
-      pinNumbers.pinWMIIndicator = 26; //Spare output
-      pinNumbers.pinWMIEnabled = 29; //Spare output
+      pins.pinWMIEmpty = 23; //Spare digital input
+      pins.pinWMIIndicator = 26; //Spare output
+      pins.pinWMIEnabled = 29; //Spare output
 
       //CS pin number is now set in a compile flag. 
       // #ifdef USE_SPI_EEPROM
@@ -1873,35 +2007,35 @@ void setPinMapping(byte boardID)
       // #endif
 
       #if defined(CORE_TEENSY35)
-        pinNumbers.pinTPS = A22; //TPS input pin
-        pinNumbers.pinIAT = A19; //IAT sensor pin
-        pinNumbers.pinCLT = A20; //CLS sensor pin
-        pinNumbers.pinO2 = A21; //O2 Sensor pin
-        pinNumbers.pinO2_2 = A18; //Spare 2
+        pins.pinTPS = A22; //TPS input pin
+        pins.pinIAT = A19; //IAT sensor pin
+        pins.pinCLT = A20; //CLS sensor pin
+        pins.pinO2 = A21; //O2 Sensor pin
+        pins.pinO2_2 = A18; //Spare 2
       #endif
 
       #if defined(CORE_TEENSY41)
         //New pins for the actual T4.1 version of the Dropbear
-        pinNumbers.pinBaro = A4; 
-        pinNumbers.pinMAP = A5;
-        pinNumbers.pinTPS = A3; //TPS input pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A2; //O2 Sensor pin
-        pinNumbers.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
-        pinNumbers.pinLaunch = 36;
-        pinNumbers.pinFlex = 37; // Flex sensor
+        pins.pinBaro = A4; 
+        pins.pinMAP = A5;
+        pins.pinTPS = A3; //TPS input pin
+        pins.pinIAT = A0; //IAT sensor pin
+        pins.pinCLT = A1; //CLS sensor pin
+        pins.pinO2 = A2; //O2 Sensor pin
+        pins.pinBat = A15; //Battery reference voltage pin. Needs Alpha4+
+        pins.pinLaunch = 36;
+        pins.pinFlex = 37; // Flex sensor
 
-        pinNumbers.pinTrigger = 20; //The CAS pin
-        pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-        pinNumbers.pinTrigger3 = 34; //Uses one of the protected spare digital inputs.
+        pins.pinTrigger = 20; //The CAS pin
+        pins.pinTrigger2 = 21; //The Cam Sensor pin
+        pins.pinTrigger3 = 34; //Uses one of the protected spare digital inputs.
 
-        pinNumbers.pinFuelPump = 5; //Fuel pump output
-        pinNumbers.pinTachOut = 0; //Tacho output pin
+        pins.pinFuelPump = 5; //Fuel pump output
+        pins.pinTachOut = 0; //Tacho output pin
 
-        pinNumbers.pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
-        pinNumbers.pinWMIEmpty = 35; //Spare digital input
-        pinNumbers.pinVSS = 34;
+        pins.pinResetControl = 49; //PLaceholder only. Cannot use 42-47 as these are the SD card
+        pins.pinWMIEmpty = 35; //Spare digital input
+        pins.pinVSS = 34;
 
         //CS pin number is now set in a compile flag. 
         // #ifdef USE_SPI_EEPROM
@@ -1910,27 +2044,27 @@ void setPinMapping(byte boardID)
 
       #endif
 
-        pinNumbers.pinMC33810_1_CS = 10;
-        pinNumbers.pinMC33810_2_CS = 9;
+        pins.pinMC33810_1_CS = 10;
+        pins.pinMC33810_2_CS = 9;
 
       //Pin alignment to the MC33810 outputs
-      pinNumbers.mc33810InjBits[0] = 3;
-      pinNumbers.mc33810InjBits[1] = 1;
-      pinNumbers.mc33810InjBits[2] = 0;
-      pinNumbers.mc33810InjBits[3] = 2;
-      pinNumbers.mc33810IgnBits[0] = 4;
-      pinNumbers.mc33810IgnBits[1] = 5;
-      pinNumbers.mc33810IgnBits[2] = 6;
-      pinNumbers.mc33810IgnBits[3] = 7;
+      pins.mc33810InjBits[0] = 3;
+      pins.mc33810InjBits[1] = 1;
+      pins.mc33810InjBits[2] = 0;
+      pins.mc33810InjBits[3] = 2;
+      pins.mc33810IgnBits[0] = 4;
+      pins.mc33810IgnBits[1] = 5;
+      pins.mc33810IgnBits[2] = 6;
+      pins.mc33810IgnBits[3] = 7;
 
-      pinNumbers.mc33810InjBits[4] = 3;
-      pinNumbers.mc33810InjBits[5] = 1;
-      pinNumbers.mc33810InjBits[6] = 0;
-      pinNumbers.mc33810InjBits[7] = 2;
-      pinNumbers.mc33810IgnBits[4] = 4;
-      pinNumbers.mc33810IgnBits[5] = 5;
-      pinNumbers.mc33810IgnBits[6] = 6;
-      pinNumbers.mc33810IgnBits[7] = 7;
+      pins.mc33810InjBits[4] = 3;
+      pins.mc33810InjBits[5] = 1;
+      pins.mc33810InjBits[6] = 0;
+      pins.mc33810InjBits[7] = 2;
+      pins.mc33810IgnBits[4] = 4;
+      pins.mc33810IgnBits[5] = 5;
+      pins.mc33810IgnBits[6] = 6;
+      pins.mc33810IgnBits[7] = 7;
 
 
 
@@ -1940,39 +2074,39 @@ void setPinMapping(byte boardID)
     case 56:
       #if defined(CORE_TEENSY)
       //Pin mappings for the Bear Cub (Teensy 4.1)
-      pinNumbers.injectorPins[0] = 6;
-      pinNumbers.injectorPins[1] = 7;
-      pinNumbers.injectorPins[2] = 9;
-      pinNumbers.injectorPins[3] = 8;
-      pinNumbers.injectorPins[4] = 0; //Not used
-      pinNumbers.coilPins[0] = 2;
-      pinNumbers.coilPins[1] = 3;
-      pinNumbers.coilPins[2] = 4;
-      pinNumbers.coilPins[3] = 5;
+      pins.injectorPins[0] = 6;
+      pins.injectorPins[1] = 7;
+      pins.injectorPins[2] = 9;
+      pins.injectorPins[3] = 8;
+      pins.injectorPins[4] = 0; //Not used
+      pins.coilPins[0] = 2;
+      pins.coilPins[1] = 3;
+      pins.coilPins[2] = 4;
+      pins.coilPins[3] = 5;
 
-      pinNumbers.pinTrigger = 20; //The CAS pin
-      pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-      pinNumbers.pinFlex = 37; // Flex sensor
-      pinNumbers.pinMAP = A5; //MAP sensor pin
-      pinNumbers.pinBaro = A4; //Baro sensor pin
-      pinNumbers.pinBat = A15; //Battery reference voltage pin
-      pinNumbers.pinTPS = A3; //TPS input pin
-      pinNumbers.pinIAT = A0; //IAT sensor pin
-      pinNumbers.pinCLT = A1; //CLS sensor pin
-      pinNumbers.pinO2 = A2; //O2 Sensor pin
-      pinNumbers.pinLaunch = 36;
+      pins.pinTrigger = 20; //The CAS pin
+      pins.pinTrigger2 = 21; //The Cam Sensor pin
+      pins.pinFlex = 37; // Flex sensor
+      pins.pinMAP = A5; //MAP sensor pin
+      pins.pinBaro = A4; //Baro sensor pin
+      pins.pinBat = A15; //Battery reference voltage pin
+      pins.pinTPS = A3; //TPS input pin
+      pins.pinIAT = A0; //IAT sensor pin
+      pins.pinCLT = A1; //CLS sensor pin
+      pins.pinO2 = A2; //O2 Sensor pin
+      pins.pinLaunch = 36;
 
-      pinNumbers.pinTachOut = 38; //Tacho output pin
-      pinNumbers.pinIdle1 = 27; //Single wire idle control
-      pinNumbers.pinIdle2 = 26; //2 wire idle control. Shared with Spare 1 output
-      pinNumbers.pinFuelPump = 10; //Fuel pump output
-      pinNumbers.pinVVT_1 = 28; //Default VVT output
-      pinNumbers.pinStepperDir = 32; //Direction pin  for DRV8825 driver
-      pinNumbers.pinStepperStep = 31; //Step pin for DRV8825 driver
-      pinNumbers.pinStepperEnable = 30; //Enable pin for DRV8825 driver
-      pinNumbers.pinBoost = 24; //Boost control
-      pinNumbers.pinFan = 25; //Pin for the fan output
-      pinNumbers.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
+      pins.pinTachOut = 38; //Tacho output pin
+      pins.pinIdle1 = 27; //Single wire idle control
+      pins.pinIdle2 = 26; //2 wire idle control. Shared with Spare 1 output
+      pins.pinFuelPump = 10; //Fuel pump output
+      pins.pinVVT_1 = 28; //Default VVT output
+      pins.pinStepperDir = 32; //Direction pin  for DRV8825 driver
+      pins.pinStepperStep = 31; //Step pin for DRV8825 driver
+      pins.pinStepperEnable = 30; //Enable pin for DRV8825 driver
+      pins.pinBoost = 24; //Boost control
+      pins.pinFan = 25; //Pin for the fan output
+      pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
       #endif
       break;
@@ -1995,7 +2129,7 @@ void setPinMapping(byte boardID)
         // = PA5; //ADC12
         // = PA6; //ADC12 LED_BUILTIN_1
         // = PA7; //ADC12 LED_BUILTIN_2
-        pinNumbers.coilPins[2] = PA8;
+        pins.coilPins[2] = PA8;
         // = PA9;  //TXD1=Bluetooth module
         // = PA10; //RXD1=Bluetooth module
         // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
@@ -2008,15 +2142,15 @@ void setPinMapping(byte boardID)
         //******** PORTB CONNECTIONS *************** 
         //******************************************
         // = PB0;  //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.pinBaro = PB1; //ADC12
+        pins.pinBaro = PB1; //ADC12
         // = PB2;  //(DO NOT USE FOR SPEEDUINO) BOOT1 
         // = PB3;  //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
         // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
         // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
         // = PB6;  //NRF_CE
-        pinNumbers.coilPins[5] = PB7;  //NRF_CS
+        pins.coilPins[5] = PB7;  //NRF_CS
         // = PB8;  //NRF_IRQ
-        pinNumbers.coilPins[1] = PB9; //
+        pins.coilPins[1] = PB9; //
         // = PB9;  //
         // = PB10; //TXD3
         // = PB11; //RXD3
@@ -2028,20 +2162,20 @@ void setPinMapping(byte boardID)
         //******************************************
         //******** PORTC CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinIAT = PC0; //ADC123 
-        pinNumbers.pinTPS = PC1; //ADC123
-        pinNumbers.pinMAP = PC2; //ADC123 
-        pinNumbers.pinCLT = PC3; //ADC123
-        pinNumbers.pinO2 = PC4; //ADC12
-        pinNumbers.pinBat = PC5;  //ADC12
-        pinNumbers.pinBoost = PC6; //
-        pinNumbers.pinIdle1 = PC7; //
+        pins.pinIAT = PC0; //ADC123 
+        pins.pinTPS = PC1; //ADC123
+        pins.pinMAP = PC2; //ADC123 
+        pins.pinCLT = PC3; //ADC123
+        pins.pinO2 = PC4; //ADC12
+        pins.pinBat = PC5;  //ADC12
+        pins.pinBoost = PC6; //
+        pins.pinIdle1 = PC7; //
         // = PC8;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
         // = PC9;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
         // = PC10;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
         // = PC11;  //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
         // = PC12;  //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinNumbers.pinTachOut = PC13; //
+        pins.pinTachOut = PC13; //
         // = PC14;  //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
         // = PC15;  //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
 
@@ -2051,109 +2185,109 @@ void setPinMapping(byte boardID)
         // = PD0;  //CANRX
         // = PD1;  //CANTX
         // = PD2;  //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        pinNumbers.pinIdle2 = PD3; //
+        pins.pinIdle2 = PD3; //
         // = PD4;  //
-        pinNumbers.pinFlex = PD4;
+        pins.pinFlex = PD4;
         // = PD5; //TXD2
         // = PD6;  //RXD2
-        pinNumbers.coilPins[0] = PD7; //
+        pins.coilPins[0] = PD7; //
         // = PD7;  //
         // = PD8;  //
-        pinNumbers.coilPins[4] = PD9;//
-        pinNumbers.coilPins[3] = PD10;//
+        pins.coilPins[4] = PD9;//
+        pins.coilPins[3] = PD10;//
         // = PD11;  //
-        pinNumbers.injectorPins[0] = PD12; //
-        pinNumbers.injectorPins[1] = PD13; //
-        pinNumbers.injectorPins[2] = PD14; //
-        pinNumbers.injectorPins[3] = PD15; //
+        pins.injectorPins[0] = PD12; //
+        pins.injectorPins[1] = PD13; //
+        pins.injectorPins[2] = PD14; //
+        pins.injectorPins[3] = PD15; //
 
         //******************************************
         //******** PORTE CONNECTIONS *************** 
         //******************************************
-        pinNumbers.pinTrigger = PE0; //
-        pinNumbers.pinTrigger2 = PE1; //
-        pinNumbers.pinStepperEnable = PE2; //
-        pinNumbers.pinFuelPump = PE3; //ONBOARD KEY1
+        pins.pinTrigger = PE0; //
+        pins.pinTrigger2 = PE1; //
+        pins.pinStepperEnable = PE2; //
+        pins.pinFuelPump = PE3; //ONBOARD KEY1
         // = PE4;  //ONBOARD KEY2
-        pinNumbers.pinStepperStep = PE5; //
-        pinNumbers.pinFan = PE6; //
-        pinNumbers.pinStepperDir = PE7; //
+        pins.pinStepperStep = PE5; //
+        pins.pinFan = PE6; //
+        pins.pinStepperDir = PE7; //
         // = PE8;  //
-        pinNumbers.injectorPins[4] = PE9; //
+        pins.injectorPins[4] = PE9; //
         // = PE10;  //
-        pinNumbers.injectorPins[5] = PE11; //
+        pins.injectorPins[5] = PE11; //
         // = PE12; //
-        pinNumbers.injectorPins[7] = PE13; //
-        pinNumbers.injectorPins[6] = PE14; //
+        pins.injectorPins[7] = PE13; //
+        pins.injectorPins[6] = PE14; //
         // = PE15;  //
      #elif (defined(STM32F411xE) || defined(STM32F401xC))
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //PB2 can't be used as input because is BOOT pin
-        pinNumbers.injectorPins[0] = PB7; //Output pin injector 1 is on
-        pinNumbers.injectorPins[1] = PB6; //Output pin injector 2 is on
-        pinNumbers.injectorPins[2] = PB5; //Output pin injector 3 is on
-        pinNumbers.injectorPins[3] = PB4; //Output pin injector 4 is on
-        pinNumbers.coilPins[0] = PB9; //Pin for coil 1
-        pinNumbers.coilPins[1] = PB8; //Pin for coil 2
-        pinNumbers.coilPins[2] = PB3; //Pin for coil 3
-        pinNumbers.coilPins[3] = PA15; //Pin for coil 4
-        pinNumbers.pinTPS = A2;//TPS input pin
-        pinNumbers.pinMAP = A3; //MAP sensor pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        pinNumbers.pinO2 = A8; //O2 Sensor pin
-        pinNumbers.pinBat = A4; //Battery reference voltage pin
-        pinNumbers.pinBaro = pinNumbers.pinMAP;
-        pinNumbers.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
-        pinNumbers.pinIdle1 = PB2; //Single wire idle control
-        pinNumbers.pinIdle2 = PB10; //2 wire idle control
-        pinNumbers.pinBoost = PA6; //Boost control
-        pinNumbers.pinStepperDir = PB10; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = PB2; //Step pin for DRV8825 driver
-        pinNumbers.pinFuelPump = PA8; //Fuel pump output
-        pinNumbers.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
+        pins.injectorPins[0] = PB7; //Output pin injector 1 is on
+        pins.injectorPins[1] = PB6; //Output pin injector 2 is on
+        pins.injectorPins[2] = PB5; //Output pin injector 3 is on
+        pins.injectorPins[3] = PB4; //Output pin injector 4 is on
+        pins.coilPins[0] = PB9; //Pin for coil 1
+        pins.coilPins[1] = PB8; //Pin for coil 2
+        pins.coilPins[2] = PB3; //Pin for coil 3
+        pins.coilPins[3] = PA15; //Pin for coil 4
+        pins.pinTPS = A2;//TPS input pin
+        pins.pinMAP = A3; //MAP sensor pin
+        pins.pinIAT = A0; //IAT sensor pin
+        pins.pinCLT = A1; //CLS sensor pin
+        pins.pinO2 = A8; //O2 Sensor pin
+        pins.pinBat = A4; //Battery reference voltage pin
+        pins.pinBaro = pins.pinMAP;
+        pins.pinTachOut = PB1; //Tacho output pin  (Goes to ULN2803)
+        pins.pinIdle1 = PB2; //Single wire idle control
+        pins.pinIdle2 = PB10; //2 wire idle control
+        pins.pinBoost = PA6; //Boost control
+        pins.pinStepperDir = PB10; //Direction pin  for DRV8825 driver
+        pins.pinStepperStep = PB2; //Step pin for DRV8825 driver
+        pins.pinFuelPump = PA8; //Fuel pump output
+        pins.pinFan = PA5; //Pin for the fan output (Goes to ULN2803)
 
         //external interrupt enabled pins
-        pinNumbers.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinTrigger = PC13; //The CAS pin also led pin so bad idea
-        pinNumbers.pinTrigger2 = PC15; //The Cam Sensor pin
+        pins.pinFlex = PC14; // Flex sensor (Must be external interrupt enabled)
+        pins.pinTrigger = PC13; //The CAS pin also led pin so bad idea
+        pins.pinTrigger2 = PC15; //The Cam Sensor pin
 
      #elif defined(CORE_STM32)
         //blue pill wiki.stm32duino.com/index.php?title=Blue_Pill
         //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
         //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
         //PB2 can't be used as input because is BOOT pin
-        pinNumbers.injectorPins[0] = PB7; //Output pin injector 1 is on
-        pinNumbers.injectorPins[1] = PB6; //Output pin injector 2 is on
-        pinNumbers.injectorPins[2] = PB5; //Output pin injector 3 is on
-        pinNumbers.injectorPins[3] = PB4; //Output pin injector 4 is on
-        pinNumbers.coilPins[0] = PB3; //Pin for coil 1
-        pinNumbers.coilPins[1] = PA15; //Pin for coil 2
-        pinNumbers.coilPins[2] = PA14; //Pin for coil 3
-        pinNumbers.coilPins[3] = PA9; //Pin for coil 4
-        pinNumbers.coilPins[4] = PA8; //Pin for coil 5
-        pinNumbers.pinTPS = A0; //TPS input pin
-        pinNumbers.pinMAP = A1; //MAP sensor pin
-        pinNumbers.pinIAT = A2; //IAT sensor pin
-        pinNumbers.pinCLT = A3; //CLS sensor pin
-        pinNumbers.pinO2 = A4; //O2 Sensor pin
-        pinNumbers.pinBat = A5; //Battery reference voltage pin
-        pinNumbers.pinBaro = pinNumbers.pinMAP;
-        pinNumbers.pinIdle1 = PB2; //Single wire idle control
-        pinNumbers.pinIdle2 = PA2; //2 wire idle control
-        pinNumbers.pinBoost = PA1; //Boost control
-        pinNumbers.pinVVT_1 = PA0; //Default VVT output
-        pinNumbers.pinVVT_2 = PA2; //Default VVT2 output
-        pinNumbers.pinStepperDir = PC15; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = PC14; //Step pin for DRV8825 driver
-        pinNumbers.pinStepperEnable = PC13; //Enable pin for DRV8825
-        pinNumbers.pinFan = PB1; //Pin for the fan output
-        pinNumbers.pinFuelPump = PB11; //Fuel pump output
-        pinNumbers.pinTachOut = PB10; //Tacho output pin
+        pins.injectorPins[0] = PB7; //Output pin injector 1 is on
+        pins.injectorPins[1] = PB6; //Output pin injector 2 is on
+        pins.injectorPins[2] = PB5; //Output pin injector 3 is on
+        pins.injectorPins[3] = PB4; //Output pin injector 4 is on
+        pins.coilPins[0] = PB3; //Pin for coil 1
+        pins.coilPins[1] = PA15; //Pin for coil 2
+        pins.coilPins[2] = PA14; //Pin for coil 3
+        pins.coilPins[3] = PA9; //Pin for coil 4
+        pins.coilPins[4] = PA8; //Pin for coil 5
+        pins.pinTPS = A0; //TPS input pin
+        pins.pinMAP = A1; //MAP sensor pin
+        pins.pinIAT = A2; //IAT sensor pin
+        pins.pinCLT = A3; //CLS sensor pin
+        pins.pinO2 = A4; //O2 Sensor pin
+        pins.pinBat = A5; //Battery reference voltage pin
+        pins.pinBaro = pins.pinMAP;
+        pins.pinIdle1 = PB2; //Single wire idle control
+        pins.pinIdle2 = PA2; //2 wire idle control
+        pins.pinBoost = PA1; //Boost control
+        pins.pinVVT_1 = PA0; //Default VVT output
+        pins.pinVVT_2 = PA2; //Default VVT2 output
+        pins.pinStepperDir = PC15; //Direction pin  for DRV8825 driver
+        pins.pinStepperStep = PC14; //Step pin for DRV8825 driver
+        pins.pinStepperEnable = PC13; //Enable pin for DRV8825
+        pins.pinFan = PB1; //Pin for the fan output
+        pins.pinFuelPump = PB11; //Fuel pump output
+        pins.pinTachOut = PB10; //Tacho output pin
         //external interrupt enabled pins
-        pinNumbers.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinTrigger = PA10; //The CAS pin
-        pinNumbers.pinTrigger2 = PA13; //The Cam Sensor pin
+        pins.pinFlex = PB8; // Flex sensor (Must be external interrupt enabled)
+        pins.pinTrigger = PA10; //The CAS pin
+        pins.pinTrigger2 = PA13; //The Cam Sensor pin
       
     #endif
       break;
@@ -2181,148 +2315,31 @@ void setPinMapping(byte boardID)
       break;
 
     default:
-      #if defined(STM32F407xx)
-      //Pin definitions for experimental board Tjeerd 
-        //Black F407VE wiki.stm32duino.com/index.php?title=STM32F407
-
-        //******************************************
-        //******** PORTA CONNECTIONS *************** 
-        //******************************************
-        /* = PA0 */ //Wakeup ADC123
-        // = PA1;
-        // = PA2;
-        // = PA3;
-        // = PA4;
-        /* = PA5; */ //ADC12
-        pinNumbers.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
-        /* = PA7; */ //ADC12 LED_BUILTIN_2
-        pinNumbers.coilPins[2] = PA8;
-        /* = PA9 */ //TXD1
-        /* = PA10 */ //RXD1
-        /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
-        /* = PA12 */ //(DO NOT USE FOR SPEEDUINO) USB 
-        /* = PA13 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA14 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-        /* = PA15 */ //(DO NOT USE FOR SPEEDUINO) NOT ON GPIO - DEBUG ST-LINK
-
-        //******************************************
-        //******** PORTB CONNECTIONS *************** 
-        //******************************************
-        /* = PB0; */ //(DO NOT USE FOR SPEEDUINO) ADC123 - SPI FLASH CHIP CS pin
-        pinNumbers.pinBaro = PB1; //ADC12
-        /* = PB2; */ //(DO NOT USE FOR SPEEDUINO) BOOT1 
-        /* = PB3; */ //(DO NOT USE FOR SPEEDUINO) SPI1_SCK FLASH CHIP
-        /* = PB4; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
-        /* = PB5; */ //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
-        /* = PB6; */ //NRF_CE
-        /* = PB7; */ //NRF_CS
-        /* = PB8; */ //NRF_IRQ
-        pinNumbers.coilPins[1] = PB9; //
-        /* = PB9; */ //
-        pinNumbers.coilPins[3] = PB10; //TXD3
-        pinNumbers.pinIdle1 = PB11; //RXD3
-        pinNumbers.pinIdle2 = PB12; //
-        /* pinNumbers.pinBoost = PB12; */ //
-        /* = PB13; */ //SPI2_SCK
-        /* = PB14; */ //SPI2_MISO
-        /* = PB15; */ //SPI2_MOSI
-
-        //******************************************
-        //******** PORTC CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.pinMAP = PC0; //ADC123 
-        pinNumbers.pinTPS = PC1; //ADC123
-        pinNumbers.pinIAT = PC2; //ADC123
-        pinNumbers.pinCLT = PC3; //ADC123
-        pinNumbers.pinO2 = PC4; //ADC12
-        pinNumbers.pinBat = PC5; //ADC12
-        /*pinNumbers.pinVVT_1 = PC6; */ //
-        /* = PC8; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D0
-        /* = PC9; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D1
-        /* = PC10; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D2
-        /* = PC11; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_D3
-        /* = PC12; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_SCK
-        pinNumbers.pinTachOut = PC13; //
-        /* = PC14; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_IN
-        /* = PC15; */ //(DO NOT USE FOR SPEEDUINO) - OSC32_OUT
-
-        //******************************************
-        //******** PORTD CONNECTIONS *************** 
-        //******************************************
-        /* = PD0; */ //CANRX
-        /* = PD1; */ //CANTX
-        /* = PD2; */ //(DO NOT USE FOR SPEEDUINO) - SDIO_CMD
-        /* = PD3; */ //
-        /* = PD4; */ //
-        pinNumbers.pinFlex = PD4;
-        /* = PD5;*/ //TXD2
-        /* = PD6; */ //RXD2
-        pinNumbers.coilPins[0] = PD7; //
-        /* = PD7; */ //
-        /* = PD8; */ //
-        pinNumbers.coilPins[4] = PD9;//
-        /* = PD10; */ //
-        /* = PD11; */ //
-        pinNumbers.injectorPins[0] = PD12; //
-        pinNumbers.injectorPins[1] = PD13; //
-        pinNumbers.injectorPins[2] = PD14; //
-        pinNumbers.injectorPins[3] = PD15; //
-
-        //******************************************
-        //******** PORTE CONNECTIONS *************** 
-        //******************************************
-        pinNumbers.pinTrigger = PE0; //
-        pinNumbers.pinTrigger2 = PE1; //
-        pinNumbers.pinStepperEnable = PE2; //
-        /* = PE3; */ //ONBOARD KEY1
-        /* = PE4; */ //ONBOARD KEY2
-        pinNumbers.pinStepperStep = PE5; //
-        pinNumbers.pinFan = PE6; //
-        pinNumbers.pinStepperDir = PE7; //
-        /* = PE8; */ //
-        /* = PE9; */ //
-        /* = PE10; */ //
-        pinNumbers.injectorPins[4] = PE11; //
-        pinNumbers.injectorPins[5] = PE12; //
-        /* = PE13; */ //
-        /* = PE14; */ //
-        /* = PE15; */ //
-      #else
-        #ifndef SMALL_FLASH_MODE //No support for bluepill here anyway
-        //Pin mappings as per the v0.2 shield
-        pinNumbers.injectorPins[0] = 8; //Output pin injector 1 is on
-        pinNumbers.injectorPins[1] = 9; //Output pin injector 2 is on
-        pinNumbers.injectorPins[2] = 10; //Output pin injector 3 is on
-        pinNumbers.injectorPins[3] = 11; //Output pin injector 4 is on
-        pinNumbers.injectorPins[4] = 12; //Output pin injector 5 is on
-        pinNumbers.coilPins[0] = 28; //Pin for coil 1
-        pinNumbers.coilPins[1] = 24; //Pin for coil 2
-        pinNumbers.coilPins[2] = 40; //Pin for coil 3
-        pinNumbers.coilPins[3] = 36; //Pin for coil 4
-        pinNumbers.coilPins[4] = 34; //Pin for coil 5 PLACEHOLDER value for now
-        pinNumbers.pinTrigger = 20; //The CAS pin
-        pinNumbers.pinTrigger2 = 21; //The Cam Sensor pin
-        pinNumbers.pinTPS = A2; //TPS input pin
-        pinNumbers.pinMAP = A3; //MAP sensor pin
-        pinNumbers.pinIAT = A0; //IAT sensor pin
-        pinNumbers.pinCLT = A1; //CLS sensor pin
-        #ifdef A8 //Bit hacky, but needed for the atmega2561
-        pinNumbers.pinO2 = A8; //O2 Sensor pin
-        #endif
-        pinNumbers.pinBat = A4; //Battery reference voltage pin
-        pinNumbers.pinStepperDir = 16; //Direction pin  for DRV8825 driver
-        pinNumbers.pinStepperStep = 17; //Step pin for DRV8825 driver
-        pinNumbers.pinFan = 47; //Pin for the fan output
-        pinNumbers.pinFuelPump = 4; //Fuel pump output
-        pinNumbers.pinTachOut = 49; //Tacho output pin
-        pinNumbers.pinFlex = 3; // Flex sensor (Must be external interrupt enabled)
-        pinNumbers.pinBoost = 5;
-        pinNumbers.pinIdle1 = 6;
-        pinNumbers.pinResetControl = 43; //Reset control output
-        #endif
-      #endif  
+      return getDefaultPinMapping();
       break;
   }
+
+  return pins;
+}
+
+/** Set board / microcontroller specific pin mappings / assignments.
+ * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
+ * which are originated from tuning SW (e.g. TS) set values and are available in reference/speeduino.ini (See pinLayout, note also that
+ * numbering is not contiguous here).
+ */
+void setPinMapping(byte boardID)
+{
+#if defined(MC33810_SUPPORT)
+  InjIoControlMode injControlMode = boardID==55 ? InjIoControlMode::MC33810 : InjIoControlMode::Direct;
+  IgnIoControlMode ignControlMode = boardID==55 ? IgnIoControlMode::MC33810 : IgnIoControlMode::Direct;
+#else
+  InjIoControlMode injControlMode = InjIoControlMode::Direct;
+  IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
+#endif
+
+  if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
+
+  pinNumbers = getPinMapping(boardID);
 
   //Setup any devices that are using selectable pins
 
