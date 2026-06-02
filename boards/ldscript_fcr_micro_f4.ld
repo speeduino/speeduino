@@ -2,20 +2,6 @@
  ******************************************************************************
  * Linker script for the FCR Micro F4 (STM32F429VIT6)
  *
- * NOTE: the silicon on this board reliably identifies as F40x-class via SWD
- * (DBGMCU DEV_ID=0x413, flash-size reg=1024KB) and the CPU bus-faults on any
- * access to SRAM3 (0x20020000+, BFAR=0x20020000). i.e. only 128KB of contiguous
- * ram0 (SRAM1+2) is present, NOT the 192KB a genuine F429 has. Placing _estack
- * at the top of an assumed 192KB put the stack inside the dead SRAM3 region,
- * causing intermittent HardFaults (worst on the deep doUpdates/saveAllPages
- * EEPROM path). RAM/FLASH below are capped to what physically responds.
- *
- *                      1024 Kbytes FLASH  @ 0x08000000
- *                       128 Kbytes RAM    @ 0x20000000 (SRAM1+2, contiguous)
- *                        64 Kbytes CCMRAM @ 0x10000000
- *
- * The stm32duino generic F429VITx variant ships without an ldscript.ld, so this
- * concrete script is provided in-repo and selected via board_build.ldscript.
  * Derived from the core's STM32F407 template (BSD-3-Clause, (c) STMicroelectronics).
  ******************************************************************************
  */

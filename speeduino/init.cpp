@@ -2302,6 +2302,29 @@ void setPinMapping(byte boardID)
       
     #endif
       break;
+
+    case 61:
+    #if defined(BOARD_FCR_MICRO_F4)
+        pinIAT       = PA0;
+        pinCLT       = PA1;
+        pinTPS       = PA2;
+        pinBat       = PA4;
+        pinMAP       = PA5;
+        pinBaro      = PA6;
+        pinO2        = PB0;
+        pinTrigger   = PB1;
+        pinTrigger2  = PA7;
+        pinCoil1     = PE10;
+        pinCoil2     = PE11;
+        pinInjector1 = PC6;
+        pinInjector2 = PC7;
+        pinIdle1     = PD2;
+        pinFan       = PD3;
+        pinFuelPump  = PD4;
+        pinTachOut   = PC9;
+    #endif
+      break;
+
     default:
       #if defined(STM32F407xx)
       //Pin definitions for experimental board Tjeerd 
