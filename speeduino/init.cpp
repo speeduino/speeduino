@@ -2396,14 +2396,6 @@ TESTABLE_STATIC pinNumbers_t getPinMapping(uint8_t boardID)
  */
 void setPinMapping(byte boardID)
 {
-#if defined(MC33810_SUPPORT)
-  InjIoControlMode injControlMode = boardID==55 ? InjIoControlMode::MC33810 : InjIoControlMode::Direct;
-  IgnIoControlMode ignControlMode = boardID==55 ? IgnIoControlMode::MC33810 : IgnIoControlMode::Direct;
-#else
-  InjIoControlMode injControlMode = InjIoControlMode::Direct;
-  IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
-#endif
-
   if( configPage4.triggerTeeth == 0 ) { configPage4.triggerTeeth = 4; } //Avoid potential divide by 0 when starting decoders
 
   pinNumbers = getPinMapping(boardID);
@@ -2472,6 +2464,14 @@ void setPinMapping(byte boardID)
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
+
+#if defined(MC33810_SUPPORT)
+  InjIoControlMode injControlMode = boardID==55 ? InjIoControlMode::MC33810 : InjIoControlMode::Direct;
+  IgnIoControlMode ignControlMode = boardID==55 ? IgnIoControlMode::MC33810 : IgnIoControlMode::Direct;
+#else
+  InjIoControlMode injControlMode = InjIoControlMode::Direct;
+  IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
+#endif
 
   if(ignControlMode == IgnIoControlMode::Direct)
   {
