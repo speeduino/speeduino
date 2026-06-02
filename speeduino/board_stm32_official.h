@@ -86,6 +86,8 @@ constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
   #ifndef NUM_DIGITAL_PINS
     #define NUM_DIGITAL_PINS 100
   #endif
+  #define BOARD_ANALOG_SCALE_NUM 5148
+  #define BOARD_ANALOG_SCALE_DEN 5000
 #endif
 
 //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
@@ -222,11 +224,19 @@ extern STM32RTC& rtc;
 * 4 - IDLE  |4 - IGN4  |4 - INJ4  |4 - IGN8  |4 - INJ8  | 
 */
 #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 8
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 8
+  #endif
 #else
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 5
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 4
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 5
+  #endif
 #endif
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT

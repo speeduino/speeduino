@@ -90,7 +90,12 @@ static inline uint16_t readAnalogPin(uint8_t pin)
   int tmp = analogRead(pin);
   // max is a macro on some platforms - DO NOT place the call to analogRead as an inline parameter:
   // (you might end up calling it twice)
-  return max(0, tmp);
+  tmp = max(0, tmp);
+#if defined(BOARD_ANALOG_SCALE_NUM) && defined(BOARD_ANALOG_SCALE_DEN)
+  tmp = (int)(((uint32_t)tmp * BOARD_ANALOG_SCALE_NUM) / BOARD_ANALOG_SCALE_DEN);
+  if (tmp > 1023) { tmp = 1023; }
+#endif
+  return (uint16_t)tmp;
 }
 
 
