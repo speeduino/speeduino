@@ -1558,7 +1558,7 @@ static pinNumbers_t getLevinMapping(void)
 }
 #endif
 
-#if defined(CORE_AVR)
+#if defined(CORE_AVR) || defined(UNIT_TEST)
 #define PLAZOMAT_V01_MAPPING
 #endif
 
@@ -1629,7 +1629,7 @@ static pinNumbers_t getDazV6V01Mapping(void)
   return pins;
 }
 
-#if defined(CORE_AVR) || defined(STM32F407xx)
+#if defined(CORE_AVR) || defined(STM32F407xx) || defined(UNIT_TEST)
 #define PAZI_BMW_PNP_MAPPING
 #endif
 
@@ -1639,7 +1639,7 @@ static pinNumbers_t getBmwPnPMapping(void)
 {
   pinNumbers_t pins;
 
-#if defined(CORE_AVR)
+#if defined(CORE_AVR) || defined(UNIT_TEST)
   //This is the regular MEGA2560 pin mapping
   if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1
   if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2
@@ -1867,7 +1867,7 @@ static pinNumbers_t getBlitzboxBL49spMapping(void)
   return pins;
 }
 
-#if defined(CORE_AVR)
+#if defined(CORE_AVR) || defined(UNIT_TEST)
 #define DIY_EFI_CORE4_MAPPING
 #endif
 
@@ -2102,7 +2102,7 @@ static pinNumbers_t getDropBearMapping(void)
 }
 #endif
 
-#if defined(CORE_TEENSY)
+#if defined(CORE_TEENSY) || defined(UNIT_TEST)
 #define BEAR_CUB_MAPPING
 #endif
 
