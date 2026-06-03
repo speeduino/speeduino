@@ -823,16 +823,16 @@ void initialiseAll(void)
 static pinNumbers_t getV02ShieldMapping(void)
 {
   pinNumbers_t pins;
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 10; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 11; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 12; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 28; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 24; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 40; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 36; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 9);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 10);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 11);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 12);//Output pin injector 5 is on
+  pins.setCoilPin(0, 28);//Pin for coil 1
+  pins.setCoilPin(1, 24);//Pin for coil 2
+  pins.setCoilPin(2, 40);//Pin for coil 3
+  pins.setCoilPin(3, 36);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 20; //The CAS pin
   pins.pinTrigger2 = 21; //The Cam Sensor pin
   pins.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -873,7 +873,7 @@ TESTABLE_STATIC pinNumbers_t getDefaultPinMapping(void)
   /* = PA5; */ //ADC12
   pins.pinFuelPump = PA6; //ADC12 LED_BUILTIN_1
   /* = PA7; */ //ADC12 LED_BUILTIN_2
-  pins.coilPins[2] = PA8;
+  pins.setCoilPin(2, PA8);
   /* = PA9 */ //TXD1
   /* = PA10 */ //RXD1
   /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -894,9 +894,9 @@ TESTABLE_STATIC pinNumbers_t getDefaultPinMapping(void)
   /* = PB6; */ //NRF_CE
   /* = PB7; */ //NRF_CS
   /* = PB8; */ //NRF_IRQ
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PB9; }//
+  pins.setCoilPin(1, PB9);//
   /* = PB9; */ //
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PB10; }//TXD3
+  pins.setCoilPin(3, PB10);//TXD3
   pins.pinIdle1 = PB11; //RXD3
   pins.pinIdle2 = PB12; //
   /* pins.pinBoost = PB12; */ //
@@ -934,16 +934,16 @@ TESTABLE_STATIC pinNumbers_t getDefaultPinMapping(void)
   pins.pinFlex = PD4;
   /* = PD5;*/ //TXD2
   /* = PD6; */ //RXD2
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PD7; }//
+  pins.setCoilPin(0, PD7);//
   /* = PD7; */ //
   /* = PD8; */ //
-  pins.coilPins[4] = PD9;//
+  pins.setCoilPin(4, PD9);//
   /* = PD10; */ //
   /* = PD11; */ //
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PD12; }//
-   (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PD13; }//
-   (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PD14; }//
-   (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PD15; }//
+  pins.setInjectorPin(0, PD12);//
+  pins.setInjectorPin(1, PD13);//
+  pins.setInjectorPin(2, PD14);//
+  pins.setInjectorPin(3, PD15);//
 
   //******************************************
   //******** PORTE CONNECTIONS *************** 
@@ -959,8 +959,8 @@ TESTABLE_STATIC pinNumbers_t getDefaultPinMapping(void)
   /* = PE8; */ //
   /* = PE9; */ //
   /* = PE10; */ //
-   (pins.injectorPins.size()>4U) { pins.injectorPins[4] = PE11; }//
-   (pins.injectorPins.size()>5U) { pins.injectorPins[5] = PE12; }//
+  pins.setInjectorPin(4, PE11); //
+  pins.setInjectorPin(5, PE12); //
   /* = PE13; */ //
   /* = PE14; */ //
   /* = PE15; */ //
@@ -976,16 +976,16 @@ static pinNumbers_t getV03ShieldMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 10; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 11; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 12; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 28; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 24; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 40; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 36; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 9);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 10);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 11);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 12);//Output pin injector 5 is on
+  pins.setCoilPin(0, 28);//Pin for coil 1
+  pins.setCoilPin(1, 24);//Pin for coil 2
+  pins.setCoilPin(2, 40);//Pin for coil 3
+  pins.setCoilPin(3, 36);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1016,11 +1016,11 @@ static pinNumbers_t getV03ShieldMapping(void)
   pins.pinTrigger = 23;
   pins.pinStepperDir = 33;
   pins.pinStepperStep = 34;
-  pins.coilPins[0] = 31;
+  pins.setCoilPin(0, 31);
   pins.pinTachOut = 28;
   pins.pinFan = 27;
-  pins.coilPins[3] = 21;
-  pins.coilPins[2] = 30;
+  pins.setCoilPin(3, 21);
+  pins.setCoilPin(2, 30);
   pins.pinO2 = A22;
 #endif
 
@@ -1032,17 +1032,17 @@ static pinNumbers_t getV04ShieldMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 10; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 11; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 12; }//Output pin injector 5 is on
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = 50; }//CAUTION: Uses the same as Coil 4 below. 
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 40; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 38; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 52; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 50; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 9);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 10);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 11);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 12);//Output pin injector 5 is on
+  pins.setInjectorPin(5, 50);//CAUTION: Uses the same as Coil 4 below. 
+  pins.setCoilPin(0, 40);//Pin for coil 1
+  pins.setCoilPin(1, 38);//Pin for coil 2
+  pins.setCoilPin(2, 52);//Pin for coil 3
+  pins.setCoilPin(3, 50);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1073,18 +1073,18 @@ static pinNumbers_t getV04ShieldMapping(void)
   pins.pinWMIEnabled = 42;
 
 #if defined(CORE_TEENSY35)
-  pins.injectorPins[5] = 51;
+  pins.setInjectorPin(5, 51);
 
   pins.pinTrigger = 23;
   pins.pinTrigger2 = 36;
   pins.pinStepperDir = 34;
   pins.pinStepperStep = 35;
-  pins.coilPins[0] = 31;
-  pins.coilPins[1] = 32;
+  pins.setCoilPin(0, 31);
+  pins.setCoilPin(1, 32);
   pins.pinTachOut = 28;
   pins.pinFan = 27;
-  pins.coilPins[3] = 29;
-  pins.coilPins[2] = 30;
+  pins.setCoilPin(3, 29);
+  pins.setCoilPin(2, 30);
   pins.pinO2 = A22;
 
   //Make sure the CAN pins aren't overwritten
@@ -1110,10 +1110,10 @@ static pinNumbers_t getV04ShieldMapping(void)
   pins.pinStepperDir = 34;
   pins.pinStepperStep = 35;
   
-  pins.coilPins[0] = 31;
-  pins.coilPins[1] = 32;
-  pins.coilPins[3] = 29;
-  pins.coilPins[2] = 30;
+  pins.setCoilPin(0, 31);
+  pins.setCoilPin(1, 32);
+  pins.setCoilPin(3, 29);
+  pins.setCoilPin(2, 30);
 
   pins.pinTachOut = 28;
   pins.pinFan = 27;
@@ -1136,7 +1136,7 @@ static pinNumbers_t getV04ShieldMapping(void)
   /* = PA5; */ //ADC12
   /* = PA6; */ //ADC12 LED_BUILTIN_1
   pins.pinFuelPump = PA7; //ADC12 LED_BUILTIN_2
-  pins.coilPins[2] = PA8;
+  pins.setCoilPin(2, PA8);
   /* = PA9 */ //TXD1
   /* = PA10 */ //RXD1
   /* = PA11 */ //(DO NOT USE FOR SPEEDUINO) USB
@@ -1157,9 +1157,9 @@ static pinNumbers_t getV04ShieldMapping(void)
   /* = PB6; */ //NRF_CE
   /* = PB7; */ //NRF_CS
   /* = PB8; */ //NRF_IRQ
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PB9; }//
+  pins.setCoilPin(1, PB9);//
   /* = PB9; */ //
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PB10; }//TXD3
+  pins.setCoilPin(3, PB10);//TXD3
   pins.pinIdle1 = PB11; //RXD3
   pins.pinIdle2 = PB12; //
   pins.pinBoost = PB12; //
@@ -1196,15 +1196,15 @@ static pinNumbers_t getV04ShieldMapping(void)
   pins.pinFlex = PD4;
   /* = PD5;*/ //TXD2
   /* = PD6; */ //RXD2
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PD7; }//
+  pins.setCoilPin(0, PD7);//
   /* = PD8; */ //
-  pins.coilPins[4] = PD9;//
+  pins.setCoilPin(4, PD9);//
   /* = PD10; */ //
   /* = PD11; */ //
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PD12; }//
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PD13; }//
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PD14; }//
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PD15; }//
+  pins.setInjectorPin(0, PD12);//
+  pins.setInjectorPin(1, PD13);//
+  pins.setInjectorPin(2, PD14);//
+  pins.setInjectorPin(3, PD15);//
 
   //******************************************
   //******** PORTE CONNECTIONS *************** 
@@ -1220,8 +1220,8 @@ static pinNumbers_t getV04ShieldMapping(void)
   /* = PE8; */ //
   /* = PE9; */ //
   /* = PE10; */ //
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = PE11; }//
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = PE12; }//
+  pins.setInjectorPin(4, PE11);//
+  pins.setInjectorPin(5, PE12);//
   /* = PE13; */ //
   /* = PE14; */ //
   /* = PE15; */ //
@@ -1231,14 +1231,14 @@ static pinNumbers_t getV04ShieldMapping(void)
   //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
   //pins PB12, PB13, PB14 and PB15 are used to SPI FLASH
   //PB2 can't be used as input because it's the BOOT pin
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PB7; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PB6; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PB5; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PB4; }//Output pin injector 4 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PB9; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PB8; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = PB3; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PA15; }//Pin for coil 4
+  pins.setInjectorPin(0, PB7);//Output pin injector 1 is on
+  pins.setInjectorPin(1, PB6);//Output pin injector 2 is on
+  pins.setInjectorPin(2, PB5);//Output pin injector 3 is on
+  pins.setInjectorPin(3, PB4);//Output pin injector 4 is on
+  pins.setCoilPin(0, PB9);//Pin for coil 1
+  pins.setCoilPin(1, PB8);//Pin for coil 2
+  pins.setCoilPin(2, PB3);//Pin for coil 3
+  pins.setCoilPin(3, PA15);//Pin for coil 4
   pins.pinTPS = A2;//TPS input pin
   pins.pinMAP = A3; //MAP sensor pin
   pins.pinIAT = A0; //IAT sensor pin
@@ -1268,16 +1268,16 @@ static pinNumbers_t getMiataNB2Mapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 44; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 46; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 47; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 45; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 14; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 42; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 43; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 32; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 33; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 44);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 46);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 47);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 45);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 14);//Output pin injector 5 is on
+  pins.setCoilPin(0, 42);//Pin for coil 1
+  pins.setCoilPin(1, 43);//Pin for coil 2
+  pins.setCoilPin(2, 32);//Pin for coil 3
+  pins.setCoilPin(3, 33);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 2; //The Cam sensor 2 pin
@@ -1309,10 +1309,10 @@ static pinNumbers_t getMiataNB2Mapping(void)
   pins.pinTrigger2 = 36;
   pins.pinStepperDir = 34;
   pins.pinStepperStep = 35;
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 33; }//Done
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 24; }//Done
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 51; }//Won't work (No mapping for pin 32)
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 52; }//Won't work (No mapping for pin 33)
+  pins.setCoilPin(0, 33);//Done
+  pins.setCoilPin(1, 24);//Done
+  pins.setCoilPin(2, 51);//Won't work (No mapping for pin 32)
+  pins.setCoilPin(3, 52);//Won't work (No mapping for pin 33)
   pins.pinFuelPump = 26; //Requires PVT4 adapter or above
   pins.pinFan = 50; //Won't work (No mapping for pin 35)
   pins.pinTachOut = 28; //Done
@@ -1326,16 +1326,16 @@ static pinNumbers_t getMiataNA18Mapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 11; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 10; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 9; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 8; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 14; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 39; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 41; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 32; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 33; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 11);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 10);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 9);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 8);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 14);//Output pin injector 5 is on
+  pins.setCoilPin(0, 39);//Pin for coil 1
+  pins.setCoilPin(1, 41);//Pin for coil 2
+  pins.setCoilPin(2, 32);//Pin for coil 3
+  pins.setCoilPin(3, 33);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTPS = A2;//TPS input pin
@@ -1363,10 +1363,10 @@ static pinNumbers_t getMiataNA18Mapping(void)
   pins.pinTrigger2 = 36;
   pins.pinStepperDir = 34;
   pins.pinStepperStep = 35;
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 33; }//Done
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 24; }//Done
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 51; }//Won't work (No mapping for pin 32)
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 52; }//Won't work (No mapping for pin 33)
+  pins.setCoilPin(0, 33);//Done
+  pins.setCoilPin(1, 24);//Done
+  pins.setCoilPin(2, 51);//Won't work (No mapping for pin 32)
+  pins.setCoilPin(3, 52);//Won't work (No mapping for pin 33)
   pins.pinFuelPump = 26; //Requires PVT4 adapter or above
   pins.pinFan = 50; //Won't work (No mapping for pin 35)
   pins.pinTachOut = 28; //Done
@@ -1380,16 +1380,16 @@ static pinNumbers_t getMiataNA16Mapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 11; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 10; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 9; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 8; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 14; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 39; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 41; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 32; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 33; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 11);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 10);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 9);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 8);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 14);//Output pin injector 5 is on
+  pins.setCoilPin(0, 39);//Pin for coil 1
+  pins.setCoilPin(1, 41);//Pin for coil 2
+  pins.setCoilPin(2, 32);//Pin for coil 3
+  pins.setCoilPin(3, 33);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTPS = A2;//TPS input pin
@@ -1420,10 +1420,10 @@ static pinNumbers_t getMiataNA16Mapping(void)
   pins.pinTrigger2 = 36;
   pins.pinStepperDir = 34;
   pins.pinStepperStep = 35;
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 33; }//Done
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 24; }//Done
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 51; }//Won't work (No mapping for pin 32)
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 52; }//Won't work (No mapping for pin 33)
+  pins.setCoilPin(0, 33);//Done
+  pins.setCoilPin(1, 24);//Done
+  pins.setCoilPin(2, 51);//Won't work (No mapping for pin 32)
+  pins.setCoilPin(3, 52);//Won't work (No mapping for pin 33)
   pins.pinFuelPump = 26; //Requires PVT4 adapter or above
   pins.pinFan = 50; //Won't work (No mapping for pin 35)
   pins.pinTachOut = 28; //Done
@@ -1437,19 +1437,19 @@ static pinNumbers_t getTurtanasPcbPinMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 4; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 5; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 6; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 7; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 8; }//Placeholder only - NOT USED
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = 9; }//Placeholder only - NOT USED
-  if (pins.injectorPins.size()>6U) { pins.injectorPins[6] = 10; }//Placeholder only - NOT USED
-  if (pins.injectorPins.size()>7U) { pins.injectorPins[7] = 11; }//Placeholder only - NOT USED
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 24; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 28; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 36; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 40; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 4);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 5);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 6);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 7);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 8);//Placeholder only - NOT USED
+  pins.setInjectorPin(5, 9);//Placeholder only - NOT USED
+  pins.setInjectorPin(6, 10);//Placeholder only - NOT USED
+  pins.setInjectorPin(7, 11);//Placeholder only - NOT USED
+  pins.setCoilPin(0, 24);//Pin for coil 1
+  pins.setCoilPin(1, 28);//Pin for coil 2
+  pins.setCoilPin(2, 36);//Pin for coil 3
+  pins.setCoilPin(3, 40);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 18; //The CAS pin
   pins.pinTrigger2 = 19; //The Cam Sensor pin
   pins.pinTPS = A2;//TPS input pin
@@ -1478,22 +1478,22 @@ static pinNumbers_t getLevinMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PB15; }    // Output pin injector 1
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PA8; }     // Output pin injector 2
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PB13; }    // Output pin injector 3
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PB14; }    // Output pin injector 4
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = PE13; }    // Output pin injector 5
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = PB12; }    // Output pin injector 6
-  if (pins.injectorPins.size()>6U) { pins.injectorPins[6] = PE7; }     // Output pin injector 7
-  if (pins.injectorPins.size()>7U) { pins.injectorPins[7] = PE10; }    // Output pin injector 8
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PC13; }        // Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PE6; }         // Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = PE5; }         // Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PE4; }         // Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = PE3; }         // Pin for coil 5
-  if (pins.coilPins.size()>5U) { pins.coilPins[5] = PE2; }         // Pin for coil 6
-  if (pins.coilPins.size()>6U) { pins.coilPins[6] = PB9; }         // Pin for coil 7
-  if (pins.coilPins.size()>7U) { pins.coilPins[7] = PD12; }        // Pin for coil 8
+  pins.setInjectorPin(0, PB15);    // Output pin injector 1
+  pins.setInjectorPin(1, PA8);     // Output pin injector 2
+  pins.setInjectorPin(2, PB13);    // Output pin injector 3
+  pins.setInjectorPin(3, PB14);    // Output pin injector 4
+  pins.setInjectorPin(4, PE13);    // Output pin injector 5
+  pins.setInjectorPin(5, PB12);    // Output pin injector 6
+  pins.setInjectorPin(6, PE7);     // Output pin injector 7
+  pins.setInjectorPin(7, PE10);    // Output pin injector 8
+  pins.setCoilPin(0, PC13);        // Pin for coil 1
+  pins.setCoilPin(1, PE6);         // Pin for coil 2
+  pins.setCoilPin(2, PE5);         // Pin for coil 3
+  pins.setCoilPin(3, PE4);         // Pin for coil 4
+  pins.setCoilPin(4, PE3);         // Pin for coil 5
+  pins.setCoilPin(5, PE2);         // Pin for coil 6
+  pins.setCoilPin(6, PB9);         // Pin for coil 7
+  pins.setCoilPin(7, PD12);        // Pin for coil 8
   pins.pinTrigger = PD3;        // The CAS pin
   pins.pinTrigger2 = PD4;       // The Cam Sensor pin
   pins.pinTPS = PA2;            // TPS input pin
@@ -1536,16 +1536,16 @@ static pinNumbers_t getLevinMapping(void)
 static pinNumbers_t getPlazomatV01Mapping(void)
 {
   pinNumbers_t pins;
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 10; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 11; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 12; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 28; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 24; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 40; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 36; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 9);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 10);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 11);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 12);//Output pin injector 5 is on
+  pins.setCoilPin(0, 28);//Pin for coil 1
+  pins.setCoilPin(1, 24);//Pin for coil 2
+  pins.setCoilPin(2, 40);//Pin for coil 3
+  pins.setCoilPin(3, 36);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 20; //The CAS pin
   pins.pinTrigger2 = 21; //The Cam Sensor pin
   pins.pinO2 = A8; //O2 Sensor pin
@@ -1567,16 +1567,16 @@ static pinNumbers_t getPlazomatV01Mapping(void)
 static pinNumbers_t getDazV6V01Mapping(void)
 {
   pinNumbers_t pins;
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 10; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 11; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 12; }//Output pin injector 5 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 40; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 38; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 50; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 52; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 34; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 9);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 10);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 11);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 12);//Output pin injector 5 is on
+  pins.setCoilPin(0, 40);//Pin for coil 1
+  pins.setCoilPin(1, 38);//Pin for coil 2
+  pins.setCoilPin(2, 50);//Pin for coil 3
+  pins.setCoilPin(3, 52);//Pin for coil 4
+  pins.setCoilPin(4, 34);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 17; // cam sensor 2 pin, pin17 isn't external trigger enabled in arduino mega??
@@ -1610,22 +1610,22 @@ static pinNumbers_t getBmwPnPMapping(void)
 
 #if defined(CORE_AVR) || defined(UNIT_TEST)
   //This is the regular MEGA2560 pin mapping
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 10; }//Output pin injector 3
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 11; }//Output pin injector 4
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 12; }//Output pin injector 5
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = 50; }//Output pin injector 6
-  if (pins.injectorPins.size()>6U) { pins.injectorPins[6] = 39; }//Output pin injector 7
-  if (pins.injectorPins.size()>7U) { pins.injectorPins[7] = 42; }//Output pin injector 8
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 40; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 38; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 52; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 48; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 36; }//Pin for coil 5
-  if (pins.coilPins.size()>5U) { pins.coilPins[5] = 34; }//Pin for coil 6
-  if (pins.coilPins.size()>6U) { pins.coilPins[6] = 46; }//Pin for coil 7
-  if (pins.coilPins.size()>7U) { pins.coilPins[7] = 53; }//Pin for coil 8
+  pins.setInjectorPin(0, 8);//Output pin injector 1
+  pins.setInjectorPin(1, 9);//Output pin injector 2
+  pins.setInjectorPin(2, 10);//Output pin injector 3
+  pins.setInjectorPin(3, 11);//Output pin injector 4
+  pins.setInjectorPin(4, 12);//Output pin injector 5
+  pins.setInjectorPin(5, 50);//Output pin injector 6
+  pins.setInjectorPin(6, 39);//Output pin injector 7
+  pins.setInjectorPin(7, 42);//Output pin injector 8
+  pins.setCoilPin(0, 40);//Pin for coil 1
+  pins.setCoilPin(1, 38);//Pin for coil 2
+  pins.setCoilPin(2, 52);//Pin for coil 3
+  pins.setCoilPin(3, 48);//Pin for coil 4
+  pins.setCoilPin(4, 36);//Pin for coil 5
+  pins.setCoilPin(5, 34);//Pin for coil 6
+  pins.setCoilPin(6, 46);//Pin for coil 7
+  pins.setCoilPin(7, 53);//Pin for coil 8
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 20; //The Cam sensor 2 pin
@@ -1660,22 +1660,22 @@ static pinNumbers_t getBmwPnPMapping(void)
   pins.pinIdleUpOutput = 41; //(placeholder)
   pins.pinCTPS = A6; //(placeholder)
 #elif defined(STM32F407xx)
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PB15; }//Output pin injector 1
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PB14; }//Output pin injector 2
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PB12; }//Output pin injector 3
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PB13; }//Output pin injector 4
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = PA8; }//Output pin injector 5
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = PE7; }//Output pin injector 6
-  if (pins.injectorPins.size()>6U) { pins.injectorPins[6] = PE13; }//Output pin injector 7
-  if (pins.injectorPins.size()>7U) { pins.injectorPins[7] = PE10; }//Output pin injector 8
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PE2; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PE3; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = PC13; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PE6; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = PE4; }//Pin for coil 5
-  if (pins.coilPins.size()>5U) { pins.coilPins[5] = PE5; }//Pin for coil 6
-  if (pins.coilPins.size()>6U) { pins.coilPins[6] = PE0; }//Pin for coil 7
-  if (pins.coilPins.size()>7U) { pins.coilPins[7] = PB9; }//Pin for coil 8
+  pins.setInjectorPin(0, PB15);//Output pin injector 1
+  pins.setInjectorPin(1, PB14);//Output pin injector 2
+  pins.setInjectorPin(2, PB12);//Output pin injector 3
+  pins.setInjectorPin(3, PB13);//Output pin injector 4
+  pins.setInjectorPin(4, PA8);//Output pin injector 5
+  pins.setInjectorPin(5, PE7);//Output pin injector 6
+  pins.setInjectorPin(6, PE13);//Output pin injector 7
+  pins.setInjectorPin(7, PE10);//Output pin injector 8
+  pins.setCoilPin(0, PE2);//Pin for coil 1
+  pins.setCoilPin(1, PE3);//Pin for coil 2
+  pins.setCoilPin(2, PC13);//Pin for coil 3
+  pins.setCoilPin(3, PE6);//Pin for coil 4
+  pins.setCoilPin(4, PE4);//Pin for coil 5
+  pins.setCoilPin(5, PE5);//Pin for coil 6
+  pins.setCoilPin(6, PE0);//Pin for coil 7
+  pins.setCoilPin(7, PB9);//Pin for coil 8
   pins.pinTrigger = PD3; //The CAS pin
   pins.pinTrigger2 = PD4; //The Cam Sensor pin
   pins.pinTPS = PA2;//TPS input pin
@@ -1718,16 +1718,16 @@ static pinNumbers_t getNO2CMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 9; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 11; }//Output pin injector 3 is on - NOT USED
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 12; }//Output pin injector 4 is on - NOT USED
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 13; }//Placeholder only - NOT USED
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 23; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 22; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 2; }//Pin for coil 3 - ONLY WITH DB2
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 3; }//Pin for coil 4 - ONLY WITH DB2
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 46; }//Placeholder only - NOT USED
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 9);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 11);//Output pin injector 3 is on - NOT USED
+  pins.setInjectorPin(3, 12);//Output pin injector 4 is on - NOT USED
+  pins.setInjectorPin(4, 13);//Placeholder only - NOT USED
+  pins.setCoilPin(0, 23);//Pin for coil 1
+  pins.setCoilPin(1, 22);//Pin for coil 2
+  pins.setCoilPin(2, 2);//Pin for coil 3 - ONLY WITH DB2
+  pins.setCoilPin(3, 3);//Pin for coil 4 - ONLY WITH DB2
+  pins.setCoilPin(4, 46);//Placeholder only - NOT USED
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 21; //The Cam sensor 2 pin
@@ -1760,16 +1760,16 @@ static pinNumbers_t getUA4CMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 8; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 7; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 6; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 5; }//Output pin injector 4 is on
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 45; }//Output pin injector 5 is on PLACEHOLDER value for now
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 35; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 36; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 33; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 34; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 44; }//Pin for coil 5 PLACEHOLDER value for now
+  pins.setInjectorPin(0, 8);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 7);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 6);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 5);//Output pin injector 4 is on
+  pins.setInjectorPin(4, 45);//Output pin injector 5 is on PLACEHOLDER value for now
+  pins.setCoilPin(0, 35);//Pin for coil 1
+  pins.setCoilPin(1, 36);//Pin for coil 2
+  pins.setCoilPin(2, 33);//Pin for coil 3
+  pins.setCoilPin(3, 34);//Pin for coil 4
+  pins.setCoilPin(4, 44);//Pin for coil 5 PLACEHOLDER value for now
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 3; //The Cam sensor 2 pin
@@ -1804,14 +1804,14 @@ static pinNumbers_t getBlitzboxBL49spMapping(void)
 {
   pinNumbers_t pins;
 
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 6; }//Output pin injector 1
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 7; }//Output pin injector 2
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 8; }//Output pin injector 3
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 9; }//Output pin injector 4
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 24; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 25; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 23; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 22; }//Pin for coil 4
+  pins.setInjectorPin(0, 6);//Output pin injector 1
+  pins.setInjectorPin(1, 7);//Output pin injector 2
+  pins.setInjectorPin(2, 8);//Output pin injector 3
+  pins.setInjectorPin(3, 9);//Output pin injector 4
+  pins.setCoilPin(0, 24);//Pin for coil 1
+  pins.setCoilPin(1, 25);//Pin for coil 2
+  pins.setCoilPin(2, 23);//Pin for coil 3
+  pins.setCoilPin(3, 22);//Pin for coil 4
   pins.pinTrigger = 19; //The CRANK Sensor pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinFlex = 20; // Flex sensor PLACEHOLDER value for now
@@ -1845,15 +1845,15 @@ static pinNumbers_t getBlitzboxBL49spMapping(void)
 static pinNumbers_t getDIYEFICore4Mapping(void)
 {
   pinNumbers_t pins;
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 10; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 11; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 12; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 9; }//Output pin injector 4 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 39; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 29; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 28; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 27; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = 26; }//Placeholder  for coil 5
+  pins.setInjectorPin(0, 10);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 11);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 12);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 9);//Output pin injector 4 is on
+  pins.setCoilPin(0, 39);//Pin for coil 1
+  pins.setCoilPin(1, 29);//Pin for coil 2
+  pins.setCoilPin(2, 28);//Pin for coil 3
+  pins.setCoilPin(3, 27);//Pin for coil 4
+  pins.setCoilPin(4, 26);//Placeholder  for coil 5
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
   pins.pinTrigger3 = 21;// The Cam sensor 2 pin
@@ -1877,8 +1877,8 @@ static pinNumbers_t getDIYEFICore4Mapping(void)
   pins.pinStepperStep = 31; //Step pin for DRV8825 driver
   pins.pinStepperEnable = 30; //Enable pin for DRV8825 driver
   pins.pinBoost = 45; //Boost control
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 33; }//Output pin injector 5 is on
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = 34; }//Output pin injector 6 is on
+  pins.setInjectorPin(4, 33);//Output pin injector 5 is on
+  pins.setInjectorPin(5, 34);//Output pin injector 6 is on
   pins.pinFan = 40; //Pin for the fan output
   pins.pinResetControl = 46; //Reset control output PLACEHOLDER value for now
 
@@ -1895,14 +1895,14 @@ static pinNumbers_t getDIYEFICore4Mapping(void)
 static pinNumbers_t getDvjCodecMapping(void)
 {
   pinNumbers_t pins;
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 2; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 10; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 6; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 9; }//Output pin injector 4 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 29; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 30; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 31; }//Pin for coil 3 - ONLY WITH DB2
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 32; }//Pin for coil 4 - ONLY WITH DB2
+  pins.setInjectorPin(0, 2);//Output pin injector 1 is on
+  pins.setInjectorPin(1, 10);//Output pin injector 2 is on
+  pins.setInjectorPin(2, 6);//Output pin injector 3 is on
+  pins.setInjectorPin(3, 9);//Output pin injector 4 is on
+  pins.setCoilPin(0, 29);//Pin for coil 1
+  pins.setCoilPin(1, 30);//Pin for coil 2
+  pins.setCoilPin(2, 31);//Pin for coil 3 - ONLY WITH DB2
+  pins.setCoilPin(3, 32);//Pin for coil 4 - ONLY WITH DB2
   pins.pinTrigger = 23; //The CAS pin
   pins.pinTrigger2 = 36; //The Cam Sensor pin
   pins.pinTPS = 16; //TPS input pin
@@ -1935,14 +1935,14 @@ static pinNumbers_t getDvjCodecMapping(void)
 static pinNumbers_t getJuiceBoxMapping(void)
 {
   pinNumbers_t pins;
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 2; }//Output pin injector 1 is on - NOT USED
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 56; }//Output pin injector 2 is on - NOT USED
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 6; }//Output pin injector 3 is on - NOT USED
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 50; }//Output pin injector 4 is on - NOT USED
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = 29; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = 30; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = 31; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = 32; }//Pin for coil 4
+  pins.setInjectorPin(0, 2);//Output pin injector 1 is on - NOT USED
+  pins.setInjectorPin(1, 56);//Output pin injector 2 is on - NOT USED
+  pins.setInjectorPin(2, 6);//Output pin injector 3 is on - NOT USED
+  pins.setInjectorPin(3, 50);//Output pin injector 4 is on - NOT USED
+  pins.setCoilPin(0, 29);//Pin for coil 1
+  pins.setCoilPin(1, 30);//Pin for coil 2
+  pins.setCoilPin(2, 31);//Pin for coil 3
+  pins.setCoilPin(3, 32);//Pin for coil 4
   pins.pinTrigger = 37; //The CAS pin
   pins.pinTrigger2 = 38; //The Cam Sensor pin - NOT USED
   pins.pinTPS = A2; //TPS input pin
@@ -1977,16 +1977,16 @@ static pinNumbers_t getDropBearMapping(void)
   pinNumbers_t pins;
 
   //The injector pins below are not used directly as the control is via SPI through the MC33810s, however the pin numbers are set to be the SPI pins (SCLK, MOSI, MISO and CS) so that nothing else will set them as inputs
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = 13; }//SCLK
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = 11; }//MOSI
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = 12; }//MISO
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = 10; }//CS for MC33810 1
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 9; }//CS for MC33810 2
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = 9; }//CS for MC33810 3
+  pins.setInjectorPin(0, 13);//SCLK
+  pins.setInjectorPin(1, 11);//MOSI
+  pins.setInjectorPin(2, 12);//MISO
+  pins.setInjectorPin(3, 10);//CS for MC33810 1
+  pins.setInjectorPin(4, 9);//CS for MC33810 2
+  pins.setInjectorPin(5, 9);//CS for MC33810 3
 
   //Dummy pins, without these pin 0 (Serial1 RX) gets overwritten
-  pins.coilPins[0] = 40;
-  pins.coilPins[1] = 41;
+  pins.setCoilPin(0, 40);
+  pins.setCoilPin(1, 41);
 
   pins.pinTrigger = 19; //The CAS pin
   pins.pinTrigger2 = 18; //The Cam Sensor pin
@@ -2081,15 +2081,15 @@ static pinNumbers_t getBearCubMapping(void)
   pinNumbers_t pins;
 
   //Pin mappings for the Bear Cub (Teensy 4.1)
-  pins.injectorPins[0] = 6;
-  pins.injectorPins[1] = 7;
-  pins.injectorPins[2] = 9;
-  pins.injectorPins[3] = 8;
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = 0; }//Not used
-  pins.coilPins[0] = 2;
-  pins.coilPins[1] = 3;
-  pins.coilPins[2] = 4;
-  pins.coilPins[3] = 5;
+  pins.setInjectorPin(0, 6);
+  pins.setInjectorPin(1, 7);
+  pins.setInjectorPin(2, 9);
+  pins.setInjectorPin(3, 8);
+  pins.setInjectorPin(4, 0); //Not used
+  pins.setCoilPin(0, 2);
+  pins.setCoilPin(1, 3);
+  pins.setCoilPin(2, 4);
+  pins.setCoilPin(3, 5);
 
   pins.pinTrigger = 20; //The CAS pin
   pins.pinTrigger2 = 21; //The Cam Sensor pin
@@ -2143,7 +2143,7 @@ static pinNumbers_t getSpectreV05Mapping(void)
   // = PA5; //ADC12
   // = PA6; //ADC12 LED_BUILTIN_1
   // = PA7; //ADC12 LED_BUILTIN_2
-  pins.coilPins[2] = PA8;
+  pins.setCoilPin(2, PA8);
   // = PA9;  //TXD1=Bluetooth module
   // = PA10; //RXD1=Bluetooth module
   // = PA11; //(DO NOT USE FOR SPEEDUINO) USB
@@ -2162,9 +2162,9 @@ static pinNumbers_t getSpectreV05Mapping(void)
   // = PB4;  //(DO NOT USE FOR SPEEDUINO) SPI1_MISO FLASH CHIP
   // = PB5;  //(DO NOT USE FOR SPEEDUINO) SPI1_MOSI FLASH CHIP
   // = PB6;  //NRF_CE
-  if (pins.coilPins.size()>5U) { pins.coilPins[5] = PB7; } //NRF_CS
+  pins.setCoilPin(5, PB7); //NRF_CS
   // = PB8;  //NRF_IRQ
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PB9; }//
+  pins.setCoilPin(1, PB9);//
   // = PB9;  //
   // = PB10; //TXD3
   // = PB11; //RXD3
@@ -2204,16 +2204,16 @@ static pinNumbers_t getSpectreV05Mapping(void)
   pins.pinFlex = PD4;
   // = PD5; //TXD2
   // = PD6;  //RXD2
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PD7; }//
+  pins.setCoilPin(0, PD7);//
   // = PD7;  //
   // = PD8;  //
-  pins.coilPins[4] = PD9;//
-  pins.coilPins[3] = PD10;//
+  pins.setCoilPin(4, PD9);//
+  pins.setCoilPin(3, PD10);//
   // = PD11;  //
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PD12; }//
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PD13; }//
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PD14; }//
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PD15; }//
+  pins.setInjectorPin(0, PD12);//
+  pins.setInjectorPin(1, PD13);//
+  pins.setInjectorPin(2, PD14);//
+  pins.setInjectorPin(3, PD15);//
 
   //******************************************
   //******** PORTE CONNECTIONS *************** 
@@ -2227,24 +2227,24 @@ static pinNumbers_t getSpectreV05Mapping(void)
   pins.pinFan = PE6; //
   pins.pinStepperDir = PE7; //
   // = PE8;  //
-  if (pins.injectorPins.size()>4U) { pins.injectorPins[4] = PE9; }//
+  pins.setInjectorPin(4, PE9);//
   // = PE10;  //
-  if (pins.injectorPins.size()>5U) { pins.injectorPins[5] = PE11; }//
+  pins.setInjectorPin(5, PE11);//
   // = PE12; //
-  if (pins.injectorPins.size()>7U) { pins.injectorPins[7] = PE13; }//
-  if (pins.injectorPins.size()>6U) { pins.injectorPins[6] = PE14; }//
+  pins.setInjectorPin(7, PE13);//
+  pins.setInjectorPin(6, PE14);//
   // = PE15;  //
 #elif defined(STM32F411xE) || defined(STM32F401xC)
   //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
   //PB2 can't be used as input because is BOOT pin
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PB7; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PB6; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PB5; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PB4; }//Output pin injector 4 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PB9; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PB8; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = PB3; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PA15; }//Pin for coil 4
+  pins.setInjectorPin(0, PB7);//Output pin injector 1 is on
+  pins.setInjectorPin(1, PB6);//Output pin injector 2 is on
+  pins.setInjectorPin(2, PB5);//Output pin injector 3 is on
+  pins.setInjectorPin(3, PB4);//Output pin injector 4 is on
+  pins.setCoilPin(0, PB9);//Pin for coil 1
+  pins.setCoilPin(1, PB8);//Pin for coil 2
+  pins.setCoilPin(2, PB3);//Pin for coil 3
+  pins.setCoilPin(3, PA15);//Pin for coil 4
   pins.pinTPS = A2;//TPS input pin
   pins.pinMAP = A3; //MAP sensor pin
   pins.pinIAT = A0; //IAT sensor pin
@@ -2270,15 +2270,15 @@ static pinNumbers_t getSpectreV05Mapping(void)
   //Maple mini wiki.stm32duino.com/index.php?title=Maple_Mini
   //pins PA12, PA11 are used for USB or CAN couldn't be used for GPIO
   //PB2 can't be used as input because is BOOT pin
-  if (pins.injectorPins.size()>0U) { pins.injectorPins[0] = PB7; }//Output pin injector 1 is on
-  if (pins.injectorPins.size()>1U) { pins.injectorPins[1] = PB6; }//Output pin injector 2 is on
-  if (pins.injectorPins.size()>2U) { pins.injectorPins[2] = PB5; }//Output pin injector 3 is on
-  if (pins.injectorPins.size()>3U) { pins.injectorPins[3] = PB4; }//Output pin injector 4 is on
-  if (pins.coilPins.size()>0U) { pins.coilPins[0] = PB3; }//Pin for coil 1
-  if (pins.coilPins.size()>1U) { pins.coilPins[1] = PA15; }//Pin for coil 2
-  if (pins.coilPins.size()>2U) { pins.coilPins[2] = PA14; }//Pin for coil 3
-  if (pins.coilPins.size()>3U) { pins.coilPins[3] = PA9; }//Pin for coil 4
-  if (pins.coilPins.size()>4U) { pins.coilPins[4] = PA8; }//Pin for coil 5
+  pins.setInjectorPin(0, PB7);//Output pin injector 1 is on
+  pins.setInjectorPin(1, PB6);//Output pin injector 2 is on
+  pins.setInjectorPin(2, PB5);//Output pin injector 3 is on
+  pins.setInjectorPin(3, PB4);//Output pin injector 4 is on
+  pins.setCoilPin(0, PB3);//Pin for coil 1
+  pins.setCoilPin(1, PA15);//Pin for coil 2
+  pins.setCoilPin(2, PA14);//Pin for coil 3
+  pins.setCoilPin(3, PA9);//Pin for coil 4
+  pins.setCoilPin(4, PA8);//Pin for coil 5
   pins.pinTPS = A0; //TPS input pin
   pins.pinMAP = A1; //MAP sensor pin
   pins.pinIAT = A2; //IAT sensor pin

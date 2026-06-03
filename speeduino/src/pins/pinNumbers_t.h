@@ -45,6 +45,20 @@ using coil_pins_t = pin_array_t<IGN_CHANNELS>;
 /** @brief Store the pin assignments, as defined by the board */
 struct pinNumbers_t
 {
+  void setInjectorPin(uint8_t index, uint8_t pin) 
+  {
+    if (index<injectorPins.size()) 
+    {
+      injectorPins[index] = pin; 
+    }
+  }
+  void setCoilPin(uint8_t index, uint8_t pin)
+  { 
+    if (index<coilPins.size()) 
+    {
+      coilPins[index] = pin; 
+    }
+  }
   injector_pins_t injectorPins;
   coil_pins_t coilPins;
   uint8_t pinTrigger = NOT_A_PIN; //The CAS pin
