@@ -134,6 +134,11 @@ void __attribute__((optimize("Os"))) initMC33810(const config4 &page4, const pin
         coilChargingFn = coilHigh;
         coilDischargingFn = coilLow;
     }
+    
+    if( (LED_BUILTIN != SCK) && (LED_BUILTIN != MOSI) && (LED_BUILTIN != MISO) ) 
+    {
+        pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
+    }
 }
 
 void openInjector_MC33810(uint8_t channel)
