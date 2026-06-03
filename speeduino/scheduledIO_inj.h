@@ -1,13 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include "src/pins/pinNumbers_t.h"
 
-enum class InjIoControlMode : uint8_t
-{
-    Direct,
-    MC33810
-};
-void initInjIoControl(InjIoControlMode controlMode);
+void initialiseInjectionIO(const config4 &page4, const pinNumbers_t &pins);
 
 /** @brief Injector open/close status bits */
 char getInjectorStatus(void);

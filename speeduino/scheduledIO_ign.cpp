@@ -4,11 +4,26 @@
 #include "timers.h"
 #include "globals.h"
 
-static IgnIoControlMode _controlMode = IgnIoControlMode::Direct;
+#if defined(MC33810_SUPPORT)
+static bool controlModeDirect = true;
+#endif
 
-void initIgnIoControl(IgnIoControlMode controlMode)
+void __attribute__((optimize("Os"))) initialiseIgnitionIO(const config4 &page4, const pinNumbers_t &pins)
 {
-    _controlMode = controlMode;
+#if defined(MC33810_SUPPORT)
+  controlModeDirect = pins.pinMC33810_1_CS==NOT_A_PIN;
+
+  if(controlModeDirect)
+  {
+    initIgnDirectIO(page4, pins.coilPins);
+  } 
+  else
+  {
+    initMC33810(page4, pins);
+  }
+#else
+    initIgnDirectIO(page4, pins.coilPins);
+#endif
 }
 
 // LCOV_EXCL_START
@@ -20,7 +35,7 @@ static void tachoOutputOff(void) { if(configPage6.tachoMode) { tachoPulseHigh();
 void beginCoilCharge(uint8_t channel) 
 { 
 #if defined(MC33810_SUPPORT)
-    if(_controlMode==IgnIoControlMode::Direct) 
+    if(controlModeDirect) 
     {
         coilCharging_DIRECT(channel);
     }
@@ -37,7 +52,7 @@ void beginCoilCharge(uint8_t channel)
 void endCoilCharge(uint8_t channel)
 {
 #if defined(MC33810_SUPPORT)
-    if(_controlMode==IgnIoControlMode::Direct) 
+    if(controlModeDirect) 
     {
         coilStopCharging_DIRECT(channel);
     }

@@ -2465,37 +2465,8 @@ void setPinMapping(byte boardID)
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
 
-  InjIoControlMode injControlMode = InjIoControlMode::Direct;
-  IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
-
-#if defined(MC33810_SUPPORT)
-  injControlMode = pinNumbers.pinMC33810_1_CS!=NOT_A_PIN ? InjIoControlMode::MC33810 : InjIoControlMode::Direct;
-  ignControlMode = pinNumbers.pinMC33810_1_CS!=NOT_A_PIN ? IgnIoControlMode::MC33810 : IgnIoControlMode::Direct;
-  if( (ignControlMode == IgnIoControlMode::MC33810) || (injControlMode == InjIoControlMode::MC33810) )
-  {
-    initMC33810(configPage4, pinNumbers);
-    if( (LED_BUILTIN != SCK) && (LED_BUILTIN != MOSI) && (LED_BUILTIN != MISO) ) pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
-  }
-#endif
-
-  if(ignControlMode == IgnIoControlMode::Direct)
-  {
-    initIgnDirectIO(configPage4, pinNumbers.coilPins);
-  } 
-
-  if(injControlMode == InjIoControlMode::Direct)
-  {
-    initInjDirectIO(pinNumbers.injectorPins);
-  }
-  
-  initInjIoControl(injControlMode);
-  initIgnIoControl(ignControlMode);
-
-//CS pin number is now set in a compile flag. 
-// #ifdef USE_SPI_EEPROM
-//   //We need to send the flash CS (SS) pin if we're using SPI flash. It cannot read from globals.
-//   EEPROM.begin(USE_SPI_EEPROM);
-// #endif
+  initialiseInjectionIO(configPage4, pinNumbers);
+  initialiseIgnitionIO(configPage4, pinNumbers);
 
   initTacho(pinNumbers.pinTachOut);
 
