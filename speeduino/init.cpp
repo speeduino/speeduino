@@ -2465,12 +2465,17 @@ void setPinMapping(byte boardID)
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
 
-#if defined(MC33810_SUPPORT)
-  InjIoControlMode injControlMode = boardID==55 ? InjIoControlMode::MC33810 : InjIoControlMode::Direct;
-  IgnIoControlMode ignControlMode = boardID==55 ? IgnIoControlMode::MC33810 : IgnIoControlMode::Direct;
-#else
   InjIoControlMode injControlMode = InjIoControlMode::Direct;
   IgnIoControlMode ignControlMode = IgnIoControlMode::Direct;
+
+#if defined(MC33810_SUPPORT)
+  injControlMode = pinNumbers.pinMC33810_1_CS!=NOT_A_PIN ? InjIoControlMode::MC33810 : InjIoControlMode::Direct;
+  ignControlMode = pinNumbers.pinMC33810_1_CS!=NOT_A_PIN ? IgnIoControlMode::MC33810 : IgnIoControlMode::Direct;
+  if( (ignControlMode == IgnIoControlMode::MC33810) || (injControlMode == InjIoControlMode::MC33810) )
+  {
+    initMC33810(configPage4, pinNumbers);
+    if( (LED_BUILTIN != SCK) && (LED_BUILTIN != MOSI) && (LED_BUILTIN != MISO) ) pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
+  }
 #endif
 
   if(ignControlMode == IgnIoControlMode::Direct)
@@ -2483,13 +2488,6 @@ void setPinMapping(byte boardID)
     initInjDirectIO(pinNumbers.injectorPins);
   }
   
-#if defined(MC33810_SUPPORT)
-  if( (ignControlMode == IgnIoControlMode::MC33810) || (injControlMode == InjIoControlMode::MC33810) )
-  {
-    initMC33810(configPage4, pinNumbers);
-    if( (LED_BUILTIN != SCK) && (LED_BUILTIN != MOSI) && (LED_BUILTIN != MISO) ) pinMode(LED_BUILTIN, OUTPUT); //This is required on as the LED pin can otherwise be reset to an input
-  }
-#endif
   initInjIoControl(injControlMode);
   initIgnIoControl(ignControlMode);
 
