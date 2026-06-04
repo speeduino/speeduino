@@ -27,7 +27,7 @@ void initBoard(uint32_t baudRate);
  * 
  * This is called *after* the pins are assigned and therefore after initBoard()
  */
-void boardInitPins(void);
+void boardInitPins(uint8_t boardID);
 
 /** @brief Calculate free RAM for display in TunerStudio */
 uint16_t freeRam(void);

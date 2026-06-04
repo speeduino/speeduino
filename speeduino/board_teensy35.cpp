@@ -441,9 +441,12 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t boardID)
 {
-  // Do nothing
+  if (boardID==55U)
+  {
+    pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
+  }
 }
 
 static uint16_t getEepromWriteBlockSize(const statuses &current)
