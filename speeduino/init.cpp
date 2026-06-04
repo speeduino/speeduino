@@ -2012,8 +2012,6 @@ void setPinMapping(byte boardID)
         pinCLT = A20; //CLS sensor pin
         pinO2 = A21; //O2 Sensor pin
         pinO2_2 = A18; //Spare 2
-
-        pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
       #endif
 
       #if defined(CORE_TEENSY41)
