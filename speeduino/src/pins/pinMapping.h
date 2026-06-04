@@ -5,6 +5,7 @@
  */
 
 #include <stdint.h>
+#include "pinNumbers_t.h"
 
 /**
  * @brief Translate between the pin list that appears in TS and the actual pin numbers.
@@ -25,3 +26,11 @@ uint8_t pinTranslate(uint8_t rawPin);
  * @return uint8_t 
  */
 uint8_t pinTranslateAnalog(uint8_t rawPin);
+
+/**
+ * @brief Get the pin numbers for the relevant board, based on the boardID. 
+ * 
+ * The boardID is set in the tuning SW and is used to allow the same firmware to 
+ * be used across different hardware configurations with different pin layouts.
+ */
+pinNumbers_t getPinMapping(uint8_t boardID);
