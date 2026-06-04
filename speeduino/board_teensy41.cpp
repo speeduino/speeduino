@@ -392,7 +392,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   //Primary trigger
   setPinHysteresis(pinTrigger);

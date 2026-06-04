@@ -165,9 +165,9 @@ void initialiseAll(void)
       //First time running on this board
       setTuneToEmpty();
       configPage4.triggerTeeth = 4; //Avoiddiv by 0 when start decoders
-      setPinMapping(3); //Force board to v0.4
+      configPage2.pinMapping = 3; //Force board to v0.4
     }
-    else { setPinMapping(configPage2.pinMapping); }
+    setPinMapping(configPage2.pinMapping);
 
     // Repeatedly initialising the CAN bus hangs the system when
     // running initialisation tests on Teensy 3.5
@@ -247,7 +247,7 @@ void initialiseAll(void)
     
     noInterrupts();
     currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
-    boardInitPins();
+    boardInitPins(configPage2.pinMapping);
     // The schedulers are all configured & pins are mapped - so start the schedulers
     startIgnitionSchedulers();
     startFuelSchedulers();

@@ -93,7 +93,7 @@ void boardInitRTC(void)
   // Do nothing
 }
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   // Do nothing
 }

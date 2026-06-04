@@ -441,7 +441,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   // Do nothing
 }
