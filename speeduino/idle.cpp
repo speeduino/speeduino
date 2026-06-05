@@ -249,8 +249,10 @@ static inline byte checkForStepping(void)
         idleStepper.stepperStatus = SOFF;
         if(configPage9.iacStepperPower == STEPPER_POWER_WHEN_ACTIVE) 
         { 
-          //Disable the DRV8825, but only if we're at the final step in this cycle or within the hysteresis range. 
-          if (isWithin(idleStepper.targetIdleStep, idleStepper.curIdleStep - configPage6.iacStepHyster, idleStepper.curIdleStep + configPage6.iacStepHyster)) // Hysteresis check
+          //Disable the DRV8825, but only if we're at the final step in this cycle or within the hysteresis range.
+          //Exclusive bounds: keep the motor energised when the target sits exactly on the hysteresis edge,
+          //so the driver is not disabled before the position has fully settled (see PR #1289).
+          if (isWithinExclusive(idleStepper.targetIdleStep, idleStepper.curIdleStep - configPage6.iacStepHyster, idleStepper.curIdleStep + configPage6.iacStepHyster)) // Hysteresis check
           { 
             digitalWrite(pinStepperEnable, HIGH); 
           } 
