@@ -1,6 +1,11 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(CORE_TEENSY35)
+#ifdef USE_SPI_EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#else
+  #include <EEPROM.h>
+#endif
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -8,6 +13,8 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
+#include "board_eeprom_adapter.hpp"
+#include "scheduler_ignition_controller.h"
 
  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
 // #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
@@ -17,6 +24,7 @@
 //   FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1; 
 // #endif
 
+static IntervalTimer lowResTimer;
 
 void initBoard(uint32_t baudRate)
 {
@@ -31,7 +39,7 @@ void initBoard(uint32_t baudRate)
     ***********************************************************************************************************
     * Idle
     */
-    if ((configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
         //FlexTimer 2, compare channel 0 is used for idle
         FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
@@ -321,14 +329,14 @@ void ftm0_isr(void)
   bool interrupt7 = (FTM0_C6SC & FTM_CSC_CHF);
   bool interrupt8 = (FTM0_C7SC & FTM_CSC_CHF);
 
-  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; fuelSchedule1Interrupt(); }
-  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; fuelSchedule2Interrupt(); }
-  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; fuelSchedule3Interrupt(); }
-  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; fuelSchedule4Interrupt(); }
-  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; ignitionSchedule1Interrupt(); }
-  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; ignitionSchedule2Interrupt(); }
-  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; ignitionSchedule3Interrupt(); }
-  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; ignitionSchedule4Interrupt(); }
+  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule1); }
+  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule2); }
+  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule3); }
+  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule4); }
+  else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule1); }
+  else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule2); }
+  else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule3); }
+  else if(interrupt8) { FTM0_C7SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule4); }
 
 }
 void ftm3_isr(void)
@@ -336,35 +344,35 @@ void ftm3_isr(void)
 
 #if (INJ_CHANNELS >= 5)
   bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
-  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; fuelSchedule5Interrupt(); }
+  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule5); }
 #endif
 #if (INJ_CHANNELS >= 6)
   bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; fuelSchedule6Interrupt(); }
+  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule6); }
 #endif
 #if (INJ_CHANNELS >= 7)
   bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; fuelSchedule7Interrupt(); }
+  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule7); }
 #endif
 #if (INJ_CHANNELS >= 8)
   bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; fuelSchedule8Interrupt(); }
+  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule8); }
 #endif
 #if (IGN_CHANNELS >= 5)
   bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);
-  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; ignitionSchedule5Interrupt(); }
+  if(interrupt5) { FTM3_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule5); }
 #endif
 #if (IGN_CHANNELS >= 6)
   bool interrupt6 = (FTM3_C5SC & FTM_CSC_CHF);
-  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; ignitionSchedule6Interrupt(); }
+  if(interrupt6) { FTM3_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule6); }
 #endif
 #if (IGN_CHANNELS >= 7)
   bool interrupt7 = (FTM3_C6SC & FTM_CSC_CHF);
-  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; ignitionSchedule7Interrupt(); }
+  if(interrupt7) { FTM3_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule7); }
 #endif
 #if (IGN_CHANNELS >= 8)
   bool interrupt8 = (FTM3_C7SC & FTM_CSC_CHF);
-  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; ignitionSchedule8Interrupt(); }
+  if(interrupt8) { FTM3_C7SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule8); }
 #endif
 
 }
@@ -433,9 +441,35 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t boardID)
 {
-  // Do nothing
+  if (boardID==55U)
+  {
+    pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
+  }
+}
+
+static uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint16_t maxWrite = 20; //This needs tuning
+#else
+  uint16_t maxWrite = 64;
+#endif
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
+
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
+{
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif

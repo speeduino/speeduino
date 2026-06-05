@@ -2,7 +2,6 @@
  * Instantiation of various (table2D, table3D) tables, volatile (interrupt modified) variables, Injector (1...8) enablement flags, etc.
  */
 #include "globals.h"
-#include "utilities.h"
 
 struct table3d16RpmLoad fuelTable; ///< 16x16 fuel map
 struct table3d16RpmLoad fuelTable2; ///< 16x16 fuel map
@@ -25,97 +24,27 @@ trimTable3d trim7Table; ///< 6x6 Fuel trim 7 map
 trimTable3d trim8Table; ///< 6x6 Fuel trim 8 map
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
 
-
-/// volatile inj*_pin_port and  inj*_pin_mask vars are for the direct port manipulation of the injectors, coils and aux outputs.
-PORT_TYPE inj1_pin_port;
-PINMASK_TYPE inj1_pin_mask;
-PORT_TYPE inj2_pin_port;
-PINMASK_TYPE inj2_pin_mask;
-PORT_TYPE inj3_pin_port;
-PINMASK_TYPE inj3_pin_mask;
-PORT_TYPE inj4_pin_port;
-PINMASK_TYPE inj4_pin_mask;
-PORT_TYPE inj5_pin_port;
-PINMASK_TYPE inj5_pin_mask;
-PORT_TYPE inj6_pin_port;
-PINMASK_TYPE inj6_pin_mask;
-PORT_TYPE inj7_pin_port;
-PINMASK_TYPE inj7_pin_mask;
-PORT_TYPE inj8_pin_port;
-PINMASK_TYPE inj8_pin_mask;
-
-PORT_TYPE ign1_pin_port;
-PINMASK_TYPE ign1_pin_mask;
-PORT_TYPE ign2_pin_port;
-PINMASK_TYPE ign2_pin_mask;
-PORT_TYPE ign3_pin_port;
-PINMASK_TYPE ign3_pin_mask;
-PORT_TYPE ign4_pin_port;
-PINMASK_TYPE ign4_pin_mask;
-PORT_TYPE ign5_pin_port;
-PINMASK_TYPE ign5_pin_mask;
-PORT_TYPE ign6_pin_port;
-PINMASK_TYPE ign6_pin_mask;
-PORT_TYPE ign7_pin_port;
-PINMASK_TYPE ign7_pin_mask;
-PORT_TYPE ign8_pin_port;
-PINMASK_TYPE ign8_pin_mask;
-
-PORT_TYPE tach_pin_port;
-PINMASK_TYPE tach_pin_mask;
-PORT_TYPE pump_pin_port;
-PINMASK_TYPE pump_pin_mask;
-
-PORT_TYPE flex_pin_port;
-PINMASK_TYPE flex_pin_mask;
-
-PORT_TYPE triggerPri_pin_port;
-PINMASK_TYPE triggerPri_pin_mask;
-PORT_TYPE triggerSec_pin_port;
-PINMASK_TYPE triggerSec_pin_mask;
-PORT_TYPE triggerThird_pin_port;
-PINMASK_TYPE triggerThird_pin_mask;
-
 //These are variables used across multiple files
 byte fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started
 volatile uint16_t mainLoopCount; //Main loop counter (incremented at each main loop rev., used for maintaining currentStatus.loopsPerSecond)
-uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-volatile unsigned long timer5_overflow_count = 0; //Increments every time counter 5 overflows. Used for the fast version of micros()
 volatile unsigned long ms_counter = 0; //A counter that increments once per ms
 uint16_t fixedCrankingOverride = 0;
-bool clutchTrigger;
-bool previousClutchTrigger;
 volatile uint32_t toothHistory[TOOTH_LOG_SIZE]; ///< Tooth trigger history - delta time (in uS) from last tooth (Indexed by @ref toothHistoryIndex)
-volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE]; 
+volatile uint8_t compositeLogHistory[TOOTH_LOG_SIZE];
+// Some code relies on tooth log containing less than UINT8_MAX items.
+static_assert(_countof(toothHistory)<UINT8_MAX, "Check all uses of toothHistory/toothHistoryIndex etc.");
 volatile unsigned int toothHistoryIndex = 0; ///< Current index to @ref toothHistory array
 unsigned long currentLoopTime; /**< The time (in uS) that the current mainloop started */
 volatile uint16_t ignitionCount; /**< The count of ignition events that have taken place since the engine started */
-#if defined(CORE_SAMD21)
-  PinStatus primaryTriggerEdge;
-  PinStatus secondaryTriggerEdge;
-  PinStatus tertiaryTriggerEdge;
-#else
-  byte primaryTriggerEdge;
-  byte secondaryTriggerEdge;
-  byte tertiaryTriggerEdge;
-#endif
-int CRANK_ANGLE_MAX_IGN = 360;
-int CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. Typically 720 divided by the number of squirts per cycle (Eg 360 for wasted 2 squirt and 720 for sequential single squirt)
+int16_t CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. Typically 720 divided by the number of squirts per cycle (Eg 360 for wasted 2 squirt and 720 for sequential single squirt)
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents one of the injector channels and it's pulsed HW test status */
 volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_Pulsed = 0; 
-byte maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
-byte maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
-
-//This needs to be here because using the config page directly can prevent burning the setting
-byte resetControl = RESET_CONTROL_DISABLED;
-
-volatile byte TIMER_mask;
-volatile byte LOOP_TIMER;
 
 /// Various pin numbering (Injectors, Ign outputs, CAS, Cam, Sensors. etc.) assignments
 byte pinInjector1; ///< Output pin injector 1
@@ -126,8 +55,6 @@ byte pinInjector5; ///< Output pin injector 5
 byte pinInjector6; ///< Output pin injector 6
 byte pinInjector7; ///< Output pin injector 7
 byte pinInjector8; ///< Output pin injector 8
-byte injectorOutputControl = OUTPUT_CONTROL_DIRECT; /**< Specifies whether the injectors are controlled directly (Via an IO pin)
-    or using something like the MC33810. 0 = Direct (OUTPUT_CONTROL_DIRECT), 10 = MC33810 (OUTPUT_CONTROL_MC33810) */
 byte pinCoil1; ///< Pin for coil 1
 byte pinCoil2; ///< Pin for coil 2
 byte pinCoil3; ///< Pin for coil 3
@@ -136,8 +63,6 @@ byte pinCoil5; ///< Pin for coil 5
 byte pinCoil6; ///< Pin for coil 6
 byte pinCoil7; ///< Pin for coil 7
 byte pinCoil8; ///< Pin for coil 8
-byte ignitionOutputControl = OUTPUT_CONTROL_DIRECT; /**< Specifies whether the coils are controlled directly (Via an IO pin)
-   or using something like the MC33810. 0 = Direct (OUTPUT_CONTROL_DIRECT), 10 = MC33810 (OUTPUT_CONTROL_MC33810) */
 byte pinTrigger;  ///< RPM1 (Typically CAS=crankshaft angle sensor) pin
 byte pinTrigger2; ///< RPM2 (Typically the Cam Sensor) pin
 byte pinTrigger3;	///< the 2nd cam sensor pin
@@ -216,8 +141,8 @@ struct config15 configPage15;
 bool pinIsOutput(byte pin)
 {
   bool used = false;
-  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
-  bool isIdleSteper = (configPage6.iacAlgorithm > 3) && (configPage6.iacAlgorithm != 6);
+  bool isIdlePWM = isPwmIac(configPage6);
+  bool isIdleStepper = isStepperIac(configPage6);
   //Injector?
   if ((pin == pinInjector1)
   || ((pin == pinInjector2) && (configPage2.nInjectors > 1))
@@ -232,13 +157,13 @@ bool pinIsOutput(byte pin)
   }
   //Ignition?
   if ((pin == pinCoil1)
-  || ((pin == pinCoil2) && (maxIgnOutputs > 1))
-  || ((pin == pinCoil3) && (maxIgnOutputs > 2))
-  || ((pin == pinCoil4) && (maxIgnOutputs > 3))
-  || ((pin == pinCoil5) && (maxIgnOutputs > 4))
-  || ((pin == pinCoil6) && (maxIgnOutputs > 5))
-  || ((pin == pinCoil7) && (maxIgnOutputs > 6))
-  || ((pin == pinCoil8) && (maxIgnOutputs > 7)))
+  || ((pin == pinCoil2) && (currentStatus.maxIgnOutputs > 1))
+  || ((pin == pinCoil3) && (currentStatus.maxIgnOutputs > 2))
+  || ((pin == pinCoil4) && (currentStatus.maxIgnOutputs > 3))
+  || ((pin == pinCoil5) && (currentStatus.maxIgnOutputs > 4))
+  || ((pin == pinCoil6) && (currentStatus.maxIgnOutputs > 5))
+  || ((pin == pinCoil7) && (currentStatus.maxIgnOutputs > 6))
+  || ((pin == pinCoil8) && (currentStatus.maxIgnOutputs > 7)))
   {
     used = true;
   }
@@ -251,9 +176,9 @@ bool pinIsOutput(byte pin)
   || ((pin == pinBoost) && (configPage6.boostEnabled == 1))
   || ((pin == pinIdle1) && isIdlePWM)
   || ((pin == pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
-  || ((pin == pinStepperEnable) && isIdleSteper)
-  || ((pin == pinStepperStep) && isIdleSteper)
-  || ((pin == pinStepperDir) && isIdleSteper)
+  || ((pin == pinStepperEnable) && isIdleStepper)
+  || ((pin == pinStepperStep) && isIdleStepper)
+  || ((pin == pinStepperDir) && isIdleStepper)
   || (pin == pinTachOut)
   || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
   || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )

@@ -6,14 +6,17 @@
 ***********************************************************************************************************
 * General
 */
-  #define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+  #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
   #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
   #define BOARD_MAX_IO_PINS  52 //digital pins + analog channels + 1
   #define BOARD_MAX_DIGITAL_PINS 52 //Pretty sure this isn't right
-  #define EEPROM_LIB_H <EEPROM.h> //The name of the file that provides the EEPROM class
-  typedef int eeprom_address_t;
-  
-  #define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB
+  #define EEPROM_LIB_H <EEPROM.h>
+  class EEPROMClass;
+  using EEPROM_t = EEPROMClass;
+  // Forbidden pins like USB
+  static inline bool pinIsReserved(uint8_t pin) { 
+    return pin==0U; 
+  } 
 
 /*
 ***********************************************************************************************************
@@ -101,7 +104,6 @@
     static inline void IGN8_TIMER_DISABLE(void)  {<macro here>;}
 
   
-  #define MAX_TIMER_PERIOD 139808 //This is the maximum time, in uS, that the compare channels can run before overflowing. It is typically 65535 * <how long each tick represents>
   #define uS_TO_TIMER_COMPARE(uS) ((uS * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
 
 /*

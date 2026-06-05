@@ -3,6 +3,9 @@
 /** DO NOT INCLUDE DIRECTLY - should be included via board_definition.h */
 
 #include <Arduino.h>
+#include <limits>
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
 #define CORE_TEENSY41
 
@@ -11,21 +14,80 @@
 * General
 */
 bool pinIsSerial(uint8_t);
-#define COMPARE_TYPE uint16_t
-#define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+namespace
+{
+  /** @brief Tick resolution in µS */
+  // Need to handle this dynamically in the future for other frequencies
+#if F_CPU == 600000000  
+  //Bus Clock is 150Mhz @ 600 Mhz CPU.
+  constexpr auto BUS_CLOCK = 150U; // MHz
+#elif F_CPU == 528000000
+  //Bus Clock is 132Mhz @ 528 Mhz CPU.
+  constexpr auto BUS_CLOCK = 132U; // MHz
+#elif F_CPU == 450000000
+  //Bus Clock is 150Mhz @ 450 Mhz CPU.
+  constexpr auto BUS_CLOCK = 150U; // MHz
+#elif F_CPU == 396000000
+  //Bus Clock is 132Mhz @ 396 Mhz CPU.
+  constexpr auto BUS_CLOCK = 132U; // MHz
+#elif F_CPU == 150000000
+  //Bus Clock is 75Mhz @ 150 Mhz CPU.
+  constexpr auto BUS_CLOCK = 75U; // MHz
+#else
+  #error Unsupported CPU frequency. 
+#endif
+
+  /** @brief Tick resolution in µS */
+  constexpr auto TICK_RESOLUTION = (1U<<7U)/(double)BUS_CLOCK;
+
+  /** @brief µS<->tick conversion precision in decimal places for fixed point math */
+  constexpr uint32_t TICK_CONVERTER_PRECISION = 6UL;
+}
+
+/** @brief Convert µS to timer ticks */
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)/TICK_RESOLUTION);
+  return (COMPARE_TYPE)((micros * MULTIPLIER) >> TICK_CONVERTER_PRECISION);
+}
+
+/** @brief Convert timer ticks to µS */
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)*TICK_RESOLUTION);
+  return (ticks * MULTIPLIER) >> TICK_CONVERTER_PRECISION;
+}
+
+#define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define BOARD_MAX_DIGITAL_PINS 54
 #define BOARD_MAX_IO_PINS 54
-#define BOARD_MAX_ADC_PINS  17 //Number of analog pins
-#define EEPROM_LIB_H <EEPROM.h>
-typedef int eeprom_address_t;
 #define RTC_ENABLED
 #define SD_LOGGING //SD logging enabled by default for Teensy 4.1 as it has the slot built in
 #define RTC_LIB_H "TimeLib.h"
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
+constexpr uint16_t BLOCKING_FACTOR = 251;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 256;
 
 //#define PWM_FAN_AVAILABLE
-#define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 42) || ((pin) == 43) || ((pin) == 44) || ((pin) == 45) || ((pin) == 46) || ((pin) == 47) || pinIsSerial((pin)) ) //Forbidden pins like USB
+static inline bool pinIsReserved(uint8_t pin) { 
+  return (pin == 0U) 
+      || (pin == 42U) 
+      || (pin == 43U) 
+      || (pin == 44U) 
+      || (pin == 45U) 
+      || (pin == 46U) 
+      || (pin == 47U) 
+      || pinIsSerial(pin) 
+  ;
+}
 
 #define INJ_CHANNELS 8
 #define IGN_CHANNELS 8
@@ -115,40 +177,6 @@ static inline void IGN6_TIMER_DISABLE(void)  {TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1EN
 static inline void IGN7_TIMER_DISABLE(void)  {TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1EN;}
 static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN;}
 
-// Need to handle this dynamically in the future for other frequencies
-//#define TMR_PRESCALE  128
-//#define MAX_TIMER_PERIOD ((65535U * 1000000ULL) / (F_BUS_ACTUAL / TMR_PRESCALE)) //55923 @ 600Mhz. 
-#if F_CPU == 600000000  
-  //Bus Clock is 150Mhz @ 600 Mhz CPU.
-  #define MAX_TIMER_PERIOD 55923UL //Time per tick = 0.8533333
-  #define uS_TO_TIMER_COMPARE(uS) (((uS) * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
-#elif F_CPU == 528000000
-  //Bus Clock is 132Mhz @ 528 Mhz CPU.
-  #define MAX_TIMER_PERIOD 63549UL //Time per tick = 0.96969696
-  #define uS_TO_TIMER_COMPARE(uS) (((uS) * 66UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
-#elif F_CPU == 450000000
-  //Bus Clock is 150Mhz @ 450 Mhz CPU.
-  #define MAX_TIMER_PERIOD 55923UL //Time per tick = 0.8533333
-  #define uS_TO_TIMER_COMPARE(uS) (((uS) * 75UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
-#elif F_CPU == 396000000
-  //Bus Clock is 132Mhz @ 396 Mhz CPU.
-  #define MAX_TIMER_PERIOD 63549UL //Time per tick = 0.96969696
-  #define uS_TO_TIMER_COMPARE(uS) (((uS) * 66UL) >> 6) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
-#elif F_CPU == 150000000
-  //Bus Clock is 75Mhz @ 150 Mhz CPU.
-  #define MAX_TIMER_PERIOD 111846UL //Time per tick = 1.706666
-  #define uS_TO_TIMER_COMPARE(uS) (((uS) * 75UL) >> 7) //Converts a given number of uS into the required number of timer ticks until that time has passed. 
-#else
-  #error Unsupported CPU frequency. 
-#endif
-/*
-To calculate the above uS_TO_TIMER_COMPARE
-Choose number of bit of precision. Eg: 6
-Divide 2^6 by the time per tick (0.853333) = 75
-Multiply and bitshift back by the precision: (uS * 75) >> 6
-*/
-
-
 /*
 ***********************************************************************************************************
 * Auxiliaries
@@ -190,3 +218,17 @@ Multiply and bitshift back by the precision: (uS * 75) >> 6
 
 #include <FlexCAN_T4.h>
 #define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
+
+using boardInputPin_t = inputPin_t;
+using boardOutputPin_t = outputPin_t;
+
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16 };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 0U;
+
+#define MC33810_SUPPORT

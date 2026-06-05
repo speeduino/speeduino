@@ -9,9 +9,22 @@
 
 #include <stdint.h>
 #include "bit_manip.h"
-#include "atomic.h"
+#include "maths.h"
+#include "decoder_t.h"
 
 using byte = uint8_t;
+
+/** @brief The current status of scheduler channel cuts */
+enum class SchedulerCutStatus : uint8_t
+{
+  /** No cuts are in effect */
+  None, 
+  /** Rolling cut is in effect. */
+  Rolling, 
+  /** Full cut is applied. */
+  Full, 
+};
+
 
 /** @brief The status struct with current values for all 'live' variables.
 * 
@@ -21,9 +34,16 @@ using byte = uint8_t;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool hasSync : 1; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
-  This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
+  /** @brief Default construct */
+  statuses(void);
+
+  /**
+   * @brief Set the RPM field, keeping RPMDiv100 in sync.
+   * 
+   * @param rpm 
+   */
+  void setRpm(uint16_t rpm);
+
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool initialisationComplete : 1; ///< Tracks whether the setup() function has run completely
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -91,14 +111,6 @@ struct statuses {
 
   // Status1 fields as defined in the INI
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool isInj1Open : 1; ///< Injector 1 status: true == open, false == closed 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool isInj2Open : 1; ///< Injector 2 status: true == open, false == closed
-  // cppcheck-suppress misra-c2012-6.1
-  volatile bool isInj3Open : 1; ///< Injector 3 status: true == open, false == closed
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool isInj4Open : 1; ///< Injector 4 status: true == open, false == closed
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
@@ -111,18 +123,11 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool hardLimitActive : 1; ///< Hard limit status: true == on, false == off 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
-  // TODO: resolve duplication with hasSync
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool hasFullSync : 1; // Whether engine has sync (true) or not (false)
 
   // Status3 fields as defined in the INI.   
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool resetPreventActive : 1; ///< Reset prevent on (true) or off (false) 
   // TODO: resolve duplication with nitrous_status
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool nitrousActive : 1; ///< Nitrous on (true) or off (false)
@@ -130,9 +135,6 @@ struct statuses {
   bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
-  // TODO: resolve duplication with hasSync & hasFullSync
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool halfSync : 1;  ///< 
   // TODO: resolve duplication with nSquirts
   unsigned int nSquirtsStatus: 3; ///< 
 
@@ -236,19 +238,44 @@ struct statuses {
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
 
-  // engineProtectStatus fields as defined in the INI. Needs to be accessible as a byte for I/O, so use type punning.
+  /** @brief Engine protection status fields. */
+  struct engine_protect_flags_t
+  {
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool rpm : 1; ///< true if RPM limits have been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool coolant : 1; ///< true if coolant limits have been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool boostCut : 1; ///< true if the boost limit has been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool oil : 1; ///< true if the oil limit has been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool afr : 1; ///< true if the afr limit has been breached, false otherwise
+
+    /** @brief Are any protections active */
+    // cppcheck-suppress misra-c2012-8.10 ; False positive - cannot make this static
+    inline bool isActive(void) const {
+      return rpm
+            || coolant
+            || boostCut
+            || oil
+            || afr
+            ;
+    }
+
+    /** @brief Reset all protections to off */
+    // cppcheck-suppress misra-c2012-8.10 ; False positive - cannot make this static
+    inline void reset(void) {
+      rpm = false;
+      boostCut = false;
+      oil = false;
+      afr = false;
+      coolant = false;
+    }  
+  };
+  engine_protect_flags_t engineProtect;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectRpm : 1; ///< Engine protection is active (true) due to exceeding RPM limits 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectBoostCut : 1; ///< Engine protection is active (true) due to exceeding MAP limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectOil : 1; ///< Engine protection is active (true) due to minimum oil pressure limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectAfr : 1; ///< Engine protection is active (true) based on maximum AFR limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectClt : 1; ///< Engine protection is active (true) based on exceeding coolant limits
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineProtectIoError : 1; ///<
+  bool ioError : 1; ///< true if there is an analog pin conflict
 
   byte fanDuty;
   byte wmiPW;
@@ -291,36 +318,24 @@ struct statuses {
   bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
   
   uint8_t systemTemp;
+  uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+
+  uint8_t maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
+  uint8_t maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
+
+  /** @brief Fuel and ignition scheduler cut state. @see calculateFuelIgnitionChannelCut */
+  struct scheduler_cut_t
+  {
+    // Using bytes for compactness ATM, but that limits us to 8 fuel and 
+    // 8 ignition channels
+    byte ignitionChannelsPending = 0; ///< Any ignition channels that are pending injections before they are resumed
+    byte ignitionChannels = 0xFF; ///< Which ignition channels are on (1) or off (0)
+    byte fuelChannels = 0xFF; ///< Which fuel channels are on (1) or off (0)
+    SchedulerCutStatus status = SchedulerCutStatus::None;
+  };
+  scheduler_cut_t schedulerCutState;
+
+  decoder_t decoder; ///< The current decoder
+
+  uint8_t LOOP_TIMER; ///< The timer flags currently in effect
 };
-
-/**
- * @brief Non-atomic version of HasAnySync. **Should only be called in an ATOMIC() block***
- * 
- */
-static inline bool HasAnySyncUnsafe(const statuses &status) {
-  return status.hasSync || status.halfSync;
-}
-
-static inline bool HasAnySync(const statuses &status) {
-  ATOMIC() {
-    return HasAnySyncUnsafe(status);
-  }
-  return false; // Just here to avoid compiler warning.
-}
-
-static inline bool isEngineProtectActive(const statuses &status) {
-  return status.engineProtectRpm
-        || status.engineProtectBoostCut
-        || status.engineProtectOil
-        || status.engineProtectAfr
-        || status.engineProtectClt;
-}
-
-static inline void resetEngineProtect(statuses &status) {
-  status.engineProtectRpm = false;
-  status.engineProtectBoostCut = false;
-  status.engineProtectOil = false;
-  status.engineProtectAfr = false;
-  status.engineProtectClt = false;
-  status.engineProtectIoError = false;
-}

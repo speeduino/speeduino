@@ -9,6 +9,9 @@
 
 #include <stdint.h>
 #include <Arduino.h>
+#include "src/stdlib/type_traits.h"
+#include "src/stdlib/limits.h"
+#include "storage_api.h"
 
 /**
  * @brief Initialise the board, including USB comms
@@ -24,7 +27,7 @@ void initBoard(uint32_t baudRate);
  * 
  * This is called *after* the pins are assigned and therefore after initBoard()
  */
-void boardInitPins(void);
+void boardInitPins(uint8_t boardID);
 
 /** @brief Calculate free RAM for display in TunerStudio */
 uint16_t freeRam(void);
@@ -37,6 +40,15 @@ void jumpToBootloader(void);
 
 /** @brief Get the board temp for display in TunerStudio (optional) */
 uint8_t getSystemTemp(void);
+
+/** @brief Get the storage API for the board */
+storage_api_t getBoardStorageApi(void);
+
+///@cond 
+// Shared building blocks for the board headers
+#define _ANALOG_PINS_A0_A8  A0, A1, A2, A3, A4, A5, A6, A7, A8
+#define _ANALOG_PINS_A0_A14  _ANALOG_PINS_A0_A8, A9, A10, A11, A12, A13, A14
+///@endcond 
 
 // Include a specific header for a board.
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega2561__)
@@ -62,3 +74,10 @@ uint8_t getSystemTemp(void);
 /** @brief Board specific RTC system initialisation (optional) */
 void boardInitRTC(void);
 #endif
+
+// It is important that we cast this to the actual overflow limit of the timer. 
+// The compare variables type can be wider than the timer overflow.
+#define SET_COMPARE(compare, value) (compare) = (COMPARE_TYPE)(value)
+
+/** @brief The longest period of time (in uS) that the timer can permit */
+constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros((numeric_limits<COMPARE_TYPE>::max)());

@@ -7,6 +7,8 @@
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
 #include <SPI.h>
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
 #define CORE_STM32
 
@@ -36,15 +38,34 @@
 ***********************************************************************************************************
 * General
 */
-#define COMPARE_TYPE uint16_t
-#define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
-#define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
-#define TIMER_RESOLUTION 4
 
-//Select one for EEPROM,the default is EEPROM emulation on internal flash.
-//#define SRAM_AS_EEPROM /*Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin */
-//#define USE_SPI_EEPROM PB0 /*Use M25Qxx SPI flash on BlackF407VE*/
-//#define FRAM_AS_EEPROM /*Use FRAM like FM25xxx, MB85RSxxx or any SPI compatible */
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+/** @brief The timer tick length in µS */
+constexpr uint32_t TIMER_RESOLUTION = 4U;
+
+/** @brief Converts a given number of uS into the required number of timer ticks until that time has passed */
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  // Faster than micros/TIMER_RESOLUTION
+  constexpr uint32_t SHIFT = TIMER_RESOLUTION/2U;
+  return (COMPARE_TYPE)(micros >> SHIFT); 
+}
+
+/** @brief Convert timer ticks to µS */
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  return ticks * TIMER_RESOLUTION;
+}
+
+#define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+#define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
+constexpr uint16_t BLOCKING_FACTOR = 121;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 
 #ifndef word
   #define word(h, l) (((h) << 8) | (l)) //word() function not defined for this platform in the main library
@@ -106,7 +127,13 @@ extern STM32RTC& rtc;
 
 #if defined(ARDUINO_BLUEPILL_F103C8) || defined(ARDUINO_BLUEPILL_F103CB) \
  || defined(ARDUINO_BLACKPILL_F401CC) || defined(ARDUINO_BLACKPILL_F411CE)
-  #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PC14) || ((pin) == PC15) )
+  static inline bool pinIsReserved(uint8_t pin) { 
+    return (pin == (uint8_t)PA11) 
+        || (pin == (uint8_t)PA12) 
+        || (pin == (uint8_t)PC14) 
+        || (pin == (uint8_t)PC15)
+      ;
+  }
 
   #ifndef PB11 //Hack for F4 BlackPills
     #define PB11 PB10
@@ -122,14 +149,28 @@ extern STM32RTC& rtc;
   #endif
 #else
   #ifdef USE_SPI_EEPROM
-    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == USE_SPI_EEPROM) ) //Forbidden pins like USB
+    static inline bool pinIsReserved(uint8_t pin) { 
+      return (pin == (uint8_t)PA11) 
+          || (pin == (uint8_t)PA12) 
+          || (pin == (uint8_t)PB3) 
+          || (pin == (uint8_t)PB4)
+          || (pin == (uint8_t)USE_SPI_EEPROM)
+        ;
+    }
   #else
-    #define pinIsReserved(pin)  ( ((pin) == PA11) || ((pin) == PA12) || ((pin) == PB3) || ((pin) == PB4) || ((pin) == PB5) || ((pin) == PB0) ) //Forbidden pins like USB
+    static inline bool pinIsReserved(uint8_t pin) { 
+      return (pin == (uint8_t)PA11) 
+          || (pin == (uint8_t)PA12)
+          || (pin == (uint8_t)PB3) 
+          || (pin == (uint8_t)PB4)
+          || (pin == (uint8_t)PB5)
+          || (pin == (uint8_t)PB0)
+         ;
+    }
   #endif
 #endif
 
 #define PWM_FAN_AVAILABLE
-#define BOARD_MAX_ADC_PINS  NUM_ANALOG_INPUTS-1 //Number of analog pins from core.
 
 #ifndef LED_BUILTIN
   #define LED_BUILTIN PA7
@@ -139,41 +180,8 @@ extern STM32RTC& rtc;
 ***********************************************************************************************************
 * EEPROM emulation
 */
-#if defined(SRAM_AS_EEPROM)
-    #define EEPROM_LIB_H "src/BackupSram/BackupSramAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    extern BackupSramAsEEPROM EEPROM;
-
-#elif defined(USE_SPI_EEPROM)
-    #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    extern SPIClass SPI_for_flash; //SPI1_MOSI, SPI1_MISO, SPI1_SCK
- 
-    //windbond W25Q16 SPI flash EEPROM emulation
-    extern EEPROM_Emulation_Config EmulatedEEPROMMconfig;
-    extern Flash_SPI_Config SPIconfig;
-    extern SPI_EEPROM_Class EEPROM;
-
-#elif defined(FRAM_AS_EEPROM) //https://github.com/VitorBoss/FRAM
-    #define EEPROM_LIB_H "src/FRAM/Fram.h"
-    typedef uint16_t eeprom_address_t;
-    #include EEPROM_LIB_H
-    #if defined(STM32F407xx)
-      extern FramClass EEPROM; /*(mosi, miso, sclk, ssel, clockspeed) 31/01/2020*/
-    #else
-      extern FramClass EEPROM; //Blue/Black Pills
-    #endif
-
-#else //default case, internal flash as EEPROM
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
-  #include EEPROM_LIB_H
-    extern InternalSTM32F4_EEPROM_Class EEPROM;
-  #if defined(STM32F401xC)
-    #define SMALL_FLASH_MODE
-  #endif
+#if defined(STM32F401xC)
+  #define SMALL_FLASH_MODE
 #endif
 
 #define RTC_LIB_H "STM32RTC.h"
@@ -195,9 +203,6 @@ extern STM32RTC& rtc;
 * 3 - VVT   |3 - IGN3  |3 - INJ3  |3 - IGN7  |3 - INJ7  |
 * 4 - IDLE  |4 - IGN4  |4 - INJ4  |4 - IGN8  |4 - INJ8  | 
 */
-#define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
-
 #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
   #define INJ_CHANNELS 8
   #define IGN_CHANNELS 8
@@ -334,3 +339,19 @@ extern STM32_CAN Can0;
 #else //libmaple core aka STM32DUINO
   #define SECONDARY_SERIAL_T HardwareSerial
 #endif
+
+using boardInputPin_t = inputPin_t;
+using boardOutputPin_t = outputPin_t;
+
+/** @brief Analog pin mapping */
+#if NUM_ANALOG_INPUTS==10
+constexpr uint8_t ANALOG_PINS[NUM_ANALOG_INPUTS-1] = { _ANALOG_PINS_A0_A8  };
+#else
+constexpr uint8_t ANALOG_PINS[NUM_ANALOG_INPUTS-1] = { _ANALOG_PINS_A0_A14  };
+#endif
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 0U;

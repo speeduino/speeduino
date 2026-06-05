@@ -3,6 +3,8 @@
 /** DO NOT INCLUDE DIRECTLY - should be included via board_definition.h */
 
 #include <Arduino.h>
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
 #define CORE_TEENSY35
 
@@ -10,27 +12,54 @@
 ***********************************************************************************************************
 * General
 */
-#define COMPARE_TYPE uint16_t
-#define SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
+
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+namespace {
+  /** @brief Tick resolution in µS */
+  constexpr auto TICK_RESOLUTION = 2.13333333333333;
+
+  /** @brief µS<->tick conversion precision in decimal places for fixed point math */
+  constexpr uint32_t TICK_CONVERTER_PRECISION = 8UL;
+}
+
+/** @brief Convert µS to timer ticks */
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)/TICK_RESOLUTION);
+  return (COMPARE_TYPE)((micros * MULTIPLIER) >> TICK_CONVERTER_PRECISION);
+}
+
+/** @brief Convert timer ticks to µS */
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  constexpr uint32_t MULTIPLIER = (uint32_t)((1UL<<TICK_CONVERTER_PRECISION)*TICK_RESOLUTION);
+  return (ticks * MULTIPLIER) >> TICK_CONVERTER_PRECISION;
+}
+
+#define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 #define SD_LOGGING //SD logging enabled by default for Teensy 3.5 as it has the slot built in
 #define BOARD_MAX_DIGITAL_PINS 57
 #define BOARD_MAX_IO_PINS 57
-#define BOARD_MAX_ADC_PINS  26 //Number of analog pins
-#ifdef USE_SPI_EEPROM
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
-#else
-  #define EEPROM_LIB_H <EEPROM.h>
-  typedef int eeprom_address_t;
-#endif
 #define RTC_ENABLED
 #define RTC_LIB_H "TimeLib.h"
 #define SD_CONFIG  SdioConfig(FIFO_SDIO) //Set Teensy to use SDIO in FIFO mode. This is the fastest SD mode on Teensy as it offloads most of the writes
+constexpr uint16_t BLOCKING_FACTOR = 251;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 256;
 
 #define PWM_FAN_AVAILABLE
-#define pinIsReserved(pin)  ( ((pin) == 0) || ((pin) == 1) || ((pin) == 3) || ((pin) == 4) ) //Forbidden pins like USB
-
+static inline bool pinIsReserved(uint8_t pin) { 
+  return (pin == 0U) 
+      || (pin == 1U) 
+      || (pin == 3U) 
+      || (pin == 4U) 
+  ;
+}
 #define INJ_CHANNELS 8
 #define IGN_CHANNELS 8
 
@@ -111,9 +140,6 @@ static inline void IGN6_TIMER_DISABLE(void)  {FTM3_C5SC &= ~FTM_CSC_CHIE;}
 static inline void IGN7_TIMER_DISABLE(void)  {FTM3_C6SC &= ~FTM_CSC_CHIE;}
 static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
-#define MAX_TIMER_PERIOD 139808UL // 2.13333333uS * 65535
-#define uS_TO_TIMER_COMPARE(uS) (((uS) * 15) >> 5) //Converts a given number of uS into the required number of timer ticks until that time has passed.
-
 /*
 ***********************************************************************************************************
 * Auxiliaries
@@ -152,3 +178,17 @@ static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 
 #include <FlexCAN_T4.h>
 #define NATIVE_CAN_AVAILABLE
+
+using boardInputPin_t = inputPin_t;
+using boardOutputPin_t = outputPin_t;
+
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16, A17, A18, A19, A20, A21, A22, A23, A24, A25  };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 0U;
+
+#define MC33810_SUPPORT

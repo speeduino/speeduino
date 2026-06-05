@@ -5,6 +5,15 @@
 #include "auxiliaries.h"
 #include "comms_secondary.h"
 #include "idle.h"
+#include "scheduler.h"
+#include "timers.h"
+#ifdef USE_SPI_EEPROM
+  #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
+#else
+  #include <EEPROM.h>
+#endif
+#include "board_eeprom_adapter.hpp"
+#include "scheduler_ignition_controller.h"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))
@@ -18,6 +27,117 @@
 #define TIMER_MODE_PWM       ((0<<WGM01)|(1<<WGM00))
 #define TIMER_MODE_CTC       ((1<<WGM01)|(0<<WGM00))
 #define TIMER_MODE_FASTPWM   ((1<<WGM01)|(1<<WGM00))
+
+#define FUEL_INTERRUPT(index, avr_vector) \
+  ISR((avr_vector)) { \
+    moveToNextState(fuelSchedule ## index); \
+  }
+
+/** @brief ISR for fuel channel 1 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(1, TIMER3_COMPA_vect)
+#if INJ_CHANNELS >= 2
+/** @brief ISR for fuel channel 2 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(2, TIMER3_COMPB_vect)
+#endif
+#if INJ_CHANNELS >= 3
+/** @brief ISR for fuel channel 3 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(3, TIMER3_COMPC_vect)
+#endif
+#if INJ_CHANNELS >= 4
+/** @brief ISR for fuel channel 4 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(4, TIMER4_COMPB_vect)
+#endif
+#if INJ_CHANNELS >= 5
+/** @brief ISR for fuel channel 5 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(5, TIMER4_COMPC_vect)
+#endif
+#if INJ_CHANNELS >= 6
+/** @brief ISR for fuel channel 6 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(6, TIMER4_COMPA_vect)
+#endif
+#if INJ_CHANNELS >= 7
+/** @brief ISR for fuel channel 7 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(7, TIMER5_COMPC_vect)
+#endif
+#if INJ_CHANNELS >= 8
+/** @brief ISR for fuel channel 8 */
+// cppcheck-suppress misra-c2012-8.2
+FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
+#endif
+
+#define IGNITION_INTERRUPT(index, avr_vector) \
+  ISR((avr_vector)) { \
+    moveToNextState(ignitionSchedule ## index); \
+  }
+
+/** @brief ISR for ignition channel 1 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(1, TIMER5_COMPA_vect)
+#if IGN_CHANNELS >= 2
+/** @brief ISR for ignition channel 2 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(2, TIMER5_COMPB_vect)
+#endif
+#if IGN_CHANNELS >= 3
+/** @brief ISR for ignition channel 3 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(3, TIMER5_COMPC_vect)
+#endif
+#if IGN_CHANNELS >= 4
+/** @brief ISR for ignition channel 4 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(4, TIMER4_COMPA_vect)
+#endif
+#if IGN_CHANNELS >= 5
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(5, TIMER4_COMPC_vect)
+#endif
+#if IGN_CHANNELS >= 6
+/** @brief ISR for ignition channel 6 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(6, TIMER4_COMPB_vect)
+#endif
+#if IGN_CHANNELS >= 7
+/** @brief ISR for ignition channel 7 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(7, TIMER3_COMPC_vect)
+#endif
+#if IGN_CHANNELS >= 8
+/** @brief ISR for ignition channel 8 */
+// cppcheck-suppress misra-c2012-8.2
+IGNITION_INTERRUPT(8, TIMER3_COMPB_vect)
+#endif
+
+ISR(TIMER1_COMPC_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  idleInterrupt();
+}
+
+//Timer2 Overflow Interrupt Vector, called when the timer overflows.
+//Executes every ~1ms.
+//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
+ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
+{
+  oneMSInterval();
+}
+
+//The interrupt to control the Boost PWM
+ISR(TIMER1_COMPA_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  boostInterrupt();
+}
+
+ISR(TIMER1_COMPB_vect) //cppcheck-suppress misra-c2012-8.2
+{
+  vvtInterrupt();
+}
 
 void initBoard(uint32_t baudRate)
 {
@@ -41,7 +161,7 @@ void initBoard(uint32_t baudRate)
 
     boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle
-    if ((configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
       idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
@@ -132,9 +252,44 @@ void boardInitRTC(void)
   // Do nothing
 }
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   // Do nothing
+}
+
+static uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+#if defined(USE_SPI_EEPROM)
+  //For use with common Winbond SPI EEPROMs Eg W25Q16JV
+  uint16_t maxWrite = 20U; //This needs tuning
+#else
+  uint16_t maxWrite = 18U;
+  if(current.commCompat) { maxWrite = 8U; } //If comms compatibility mode is on, slow the burn rate down even further
+
+  //In order to prevent missed pulses during EEPROM writes on AVR, scale the
+  //maximum write block size based on the RPM.
+  //This calculation is based on EEPROM writes taking approximately 4ms per byte
+  //(Actual value is 3.8ms, so 4ms has some safety margin) 
+  if(current.RPM > 65U) //Min RPM of 65 prevents overflow of uint8_t
+  { 
+    maxWrite = (uint16_t)(15000U / current.RPM);
+    maxWrite = constrain(maxWrite, 1U, 15U); //Any higher than this will cause comms timeouts on AVR
+  }
+#endif
+
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
+
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
+{
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
 #endif //CORE_AVR

@@ -1,6 +1,7 @@
 #include "board_definition.h"
 
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
+#include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
 #include "scheduler.h"
@@ -8,6 +9,8 @@
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
+#include "board_eeprom_adapter.hpp"
+#include "scheduler_ignition_controller.h"
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -59,7 +62,7 @@ void initBoard(uint32_t /*baudRate*/)
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
@@ -74,7 +77,6 @@ void initBoard(uint32_t /*baudRate*/)
     * Timers
     */
     //Uses the PIT timer channel 4 on Teensy 4.1.
-    //lowResTimer.begin(oneMSInterval, 1000);
     PIT_TCTRL3 = 0;
     PIT_TCTRL3 |= PIT_TCTRL_TIE; // enable Timer 2 interrupts
     PIT_TCTRL3 |= PIT_TCTRL_TEN; // start Timer 2
@@ -252,10 +254,10 @@ void TMR1_isr(void)
   bool interrupt3 = (TMR1_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR1_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; fuelSchedule1Interrupt(); }
-  else if(interrupt2) { TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; fuelSchedule2Interrupt(); }
-  else if(interrupt3) { TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; fuelSchedule3Interrupt(); }
-  else if(interrupt4) { TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; fuelSchedule4Interrupt(); }
+  if(interrupt1)      { TMR1_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule1); }
+  else if(interrupt2) { TMR1_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule2); }
+  else if(interrupt3) { TMR1_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule3); }
+  else if(interrupt4) { TMR1_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule4); }
 }
 void TMR2_isr(void)
 {
@@ -265,10 +267,10 @@ void TMR2_isr(void)
   bool interrupt3 = (TMR2_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR2_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; ignitionSchedule1Interrupt(); }
-  else if(interrupt2) { TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule2Interrupt(); }
-  else if(interrupt3) { TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule3Interrupt(); }
-  else if(interrupt4) { TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule4Interrupt(); }
+  if(interrupt1)      { TMR2_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule1); }
+  else if(interrupt2) { TMR2_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule2); }
+  else if(interrupt3) { TMR2_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule3); }
+  else if(interrupt4) { TMR2_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule4); }
 }
 void TMR3_isr(void)
 {
@@ -278,10 +280,10 @@ void TMR3_isr(void)
   bool interrupt3 = (TMR3_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR3_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; fuelSchedule5Interrupt(); }
-  else if(interrupt2) { TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; fuelSchedule6Interrupt(); }
-  else if(interrupt3) { TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; fuelSchedule7Interrupt(); }
-  else if(interrupt4) { TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; fuelSchedule8Interrupt(); }
+  if(interrupt1)      { TMR3_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule5); }
+  else if(interrupt2) { TMR3_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule6); }
+  else if(interrupt3) { TMR3_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule7); }
+  else if(interrupt4) { TMR3_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(fuelSchedule8); }
 }
 void TMR4_isr(void)
 {
@@ -291,10 +293,10 @@ void TMR4_isr(void)
   bool interrupt3 = (TMR4_CSCTRL2 & TMR_CSCTRL_TCF1);
   bool interrupt4 = (TMR4_CSCTRL3 & TMR_CSCTRL_TCF1);
 
-  if(interrupt1)      { TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; ignitionSchedule5Interrupt(); }
-  else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; ignitionSchedule6Interrupt(); }
-  else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; ignitionSchedule7Interrupt(); }
-  else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; ignitionSchedule8Interrupt(); }
+  if(interrupt1)      { TMR4_CSCTRL0 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule5); }
+  else if(interrupt2) { TMR4_CSCTRL1 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule6); }
+  else if(interrupt3) { TMR4_CSCTRL2 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule7); }
+  else if(interrupt4) { TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1; moveToNextState(ignitionSchedule8); }
 }
 
 uint16_t freeRam()
@@ -390,7 +392,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   //Primary trigger
   setPinHysteresis(pinTrigger);
@@ -404,5 +406,23 @@ void boardInitPins(void)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 
+static uint16_t getEepromWriteBlockSize(const statuses &current)
+{
+  uint16_t maxWrite = 64;
+
+  // Write to EEPROM more aggressively if the engine is not running
+  if(current.RPM==0U)
+  { 
+    return maxWrite * 8U;
+  } 
+
+  return maxWrite;
+}
+
+/** @brief Get the EEPROM storage API for the board */
+storage_api_t getBoardStorageApi(void)
+{
+  return getEEPROMStorageApi(getEepromWriteBlockSize);
+}
 
 #endif

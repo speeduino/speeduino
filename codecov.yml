@@ -1,0 +1,5 @@
+ignore:
+  - "test"
+  - "lib/ArduinoFake"
+  - "speeduino/board*"
+  - "speeduino/src/SPIAsEEPROM"

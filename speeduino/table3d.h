@@ -64,38 +64,49 @@
  * Since we have a compile time fixed set of table types, we can map a unique
  * identifier to the type via a cast - this enum is that unique identifier.
  * 
- * Typically used in conjunction with the '#CONCRETE_TABLE_ACTION' macro
+ * Typically used in conjunction with visitTable3d()
  */
-enum table_type_t {
+enum class TableType : uint8_t {
     table_type_None,
+/// @cond
     #define TABLE3D_GEN_TYPEKEY(size, xDom, yDom) TO_TYPE_KEY(size, xDom, yDom),
     TABLE3D_GENERATOR(TABLE3D_GEN_TYPEKEY)
+/// @endcond
+};
+
+// A marker type for 3d tables.
+struct table3d_t
+{
 };
 
 // Generate the 3D table types
 #define TABLE3D_GEN_TYPE(size, xDom, yDom) \
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) \
+    struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) : public table3d_t \
     { \
         typedef TABLE3D_TYPENAME_AXIS(size) xaxis_t; \
         typedef TABLE3D_TYPENAME_AXIS(size) yaxis_t; \
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
-        static constexpr table_type_t type_key = TO_TYPE_KEY(size, xDom, yDom); \
+        static constexpr TableType type_key = TableType::TO_TYPE_KEY(size, xDom, yDom); \
+        static constexpr AxisDomain XDomain = AxisDomain::xDom; \
+        static constexpr AxisDomain YDomain = AxisDomain::yDom; \
         \
         mutable table3DGetValueCache get_value_cache; \
         value_t values; \
         xaxis_t axisX; \
         yaxis_t axisY; \
     };
+// LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
+// LCOV_EXCL_STOP
 
 // Generate get3DTableValue() functions
 #define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
     static inline table3d_value_t get3DTableValue(const TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, const uint16_t y, const uint16_t x) \
     { \
-      constexpr uint16_t xFactor = axis_domain_to_factor(axis_domain_ ## xDom); \
-      constexpr uint16_t yFactor = axis_domain_to_factor(axis_domain_ ## yDom); \
+      constexpr uint16_t xFactor = getConversionFactor(AxisDomain::xDom); \
+      constexpr uint16_t yFactor = getConversionFactor(AxisDomain::yDom); \
       return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache, \
                               TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
                               pTable->values.values, \
@@ -103,29 +114,20 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
                               pTable->axisY.axis, \
                               { x, y }); \
     } 
+// LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
+// LCOV_EXCL_STOP
 
 // =============================== Table function calls =========================
 
-// With no templates or inheritance we need some way to call functions
-// for the various distinct table types. CONCRETE_TABLE_ACTION dispatches
-// to a caller defined function overloaded by the type of the table. 
-#define CONCRETE_TABLE_ACTION_INNER(size, xDomain, yDomain, action, ...) \
-  case TO_TYPE_KEY(size, xDomain, yDomain): action(size, xDomain, yDomain, ##__VA_ARGS__);
-#define CONCRETE_TABLE_ACTION(testKey, action, defaultAction, ...) \
-  switch ((table_type_t)testKey) { \
-  TABLE3D_GENERATOR(CONCRETE_TABLE_ACTION_INNER, action, ##__VA_ARGS__ ) \
-  default: defaultAction; }
+table_value_iterator rows_begin(table3d_t *pTable, TableType key);
 
-// =============================== Table function calls =========================
+table_axis_iterator x_begin(table3d_t *pTable, TableType key);
 
-table_value_iterator rows_begin(void *pTable, table_type_t key);
+table_axis_iterator x_rbegin(table3d_t *pTable, TableType key);
 
-table_axis_iterator x_begin(void *pTable, table_type_t key);
+table_axis_iterator y_begin(table3d_t *pTable, TableType key);
 
-table_axis_iterator x_rbegin(void *pTable, table_type_t key);
+table_axis_iterator y_rbegin(table3d_t *pTable, TableType key);
 
-table_axis_iterator y_begin(void *pTable, table_type_t key);
-
-table_axis_iterator y_rbegin(void *pTable, table_type_t key);
 /** @} */

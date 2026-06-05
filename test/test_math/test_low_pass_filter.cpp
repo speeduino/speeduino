@@ -29,9 +29,9 @@ static void test_S16_max(void) {
     // Passing UINT8_MAX for the filter value should make the input close to the previous value
     TEST_ASSERT_EQUAL_INT16(0,    LOW_PASS_FILTER((int16_t)0,   UINT8_MAX, (int16_t)0));
     TEST_ASSERT_EQUAL_INT16(4,    LOW_PASS_FILTER((int16_t)1234, UINT8_MAX, (int16_t)0));
-    TEST_ASSERT_EQUAL_INT16(-4,    LOW_PASS_FILTER((int16_t)-1234, UINT8_MAX, (int16_t)0));
+    TEST_ASSERT_EQUAL_INT16(-5,    LOW_PASS_FILTER((int16_t)-1234, UINT8_MAX, (int16_t)0));
     TEST_ASSERT_EQUAL_INT16(9964, LOW_PASS_FILTER((int16_t)1234, UINT8_MAX, (int16_t)9999));
-    TEST_ASSERT_EQUAL_INT16(-9964, LOW_PASS_FILTER((int16_t)-1234, UINT8_MAX, (int16_t)-9999));
+    TEST_ASSERT_EQUAL_INT16(-9965, LOW_PASS_FILTER((int16_t)-1234, UINT8_MAX, (int16_t)-9999));
 }
 
 void test_LOW_PASS_FILTER(void) {

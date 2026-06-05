@@ -4,8 +4,11 @@
 
 #define CORE_AVR
 
+#include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include "src/pins/fastInputPin.h"
+#include "src/pins/fastOutputPin.h"
 
 /*
 ***********************************************************************************************************
@@ -13,7 +16,6 @@
 */
 #define BOARD_MAX_DIGITAL_PINS 54 //digital pins +1
 #define BOARD_MAX_IO_PINS 70 //digital pins + analog channels + 1
-#define BOARD_MAX_ADC_PINS  15 //Number of analog pins
 #ifndef LED_BUILTIN
   #define LED_BUILTIN 13
 #endif
@@ -25,23 +27,41 @@
   #define IGN_CHANNELS 5
 #endif
 
-#define COMPARE_TYPE uint16_t
-#define SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
+/** @brief The timer overflow type
+ * 
+ * On some boards timers can overflow at less than the timer register width
+ */
+using COMPARE_TYPE = uint16_t;
+
+namespace {
+  /** @brief The timer tick length in µS */
+  constexpr uint32_t TICK_RESOLUTION = 4U;
+}
+
+/** @brief Convert µS to timer ticks */
+static constexpr COMPARE_TYPE uS_TO_TIMER_COMPARE(uint32_t micros)
+{
+  // Faster than micros/TICK_RESOLUTION
+  constexpr uint32_t SHIFT = TICK_RESOLUTION/2U;
+  return (COMPARE_TYPE)(micros >> SHIFT); 
+}
+
+/** @brief Convert timer ticks to µS */
+static constexpr uint32_t ticksToMicros(COMPARE_TYPE ticks)
+{
+  return ticks * TICK_RESOLUTION;
+}
+
+#define TS_SERIAL_BUFFER_SIZE (256+7+1) //Size of the serial buffer used by new comms protocol. The largest single packet is the O2 calibration which is 256 bytes + 7 bytes of overhead
 #define FPU_MAX_SIZE 0 //Size of the FPU buffer. 0 means no FPU.
-#ifdef USE_SPI_EEPROM
-  #define EEPROM_LIB_H "src/SPIAsEEPROM/SPIAsEEPROM.h"
-  typedef uint16_t eeprom_address_t;
-#else
-  #define EEPROM_LIB_H <EEPROM.h>
-  typedef int eeprom_address_t;
-#endif
 #ifdef PLATFORMIO
   #define RTC_LIB_H <TimeLib.h>
 #else
   #define RTC_LIB_H <Time.h>
 #endif
-
-#define pinIsReserved(pin)  ( ((pin) == 0) ) //Forbidden pins like USB on other boards
+constexpr uint16_t BLOCKING_FACTOR = 121;
+constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
+static inline bool pinIsReserved(uint8_t pin) { return pin==0U; } //Forbidden pins like USB on other boards
 
 /*
 ***********************************************************************************************************
@@ -122,9 +142,6 @@ static inline void IGN6_TIMER_DISABLE(void) { TIMSK4 &= ~(1 << OCIE4B); } //Repl
 static inline void IGN7_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3C); } //Replaces injector 3
 static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Replaces injector 2
 
-#define MAX_TIMER_PERIOD 262140UL //The longest period of time (in uS) that the timer can permit (IN this case it is 65535 * 4, as each timer tick is 4uS)
-#define uS_TO_TIMER_COMPARE(uS1) ((uS1) >> 2) //Converts a given number of uS into the required number of timer ticks until that time has passed
-
 /*
 ***********************************************************************************************************
 * Auxiliaries
@@ -154,3 +171,15 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 * CAN / Second serial
 */
 #define SECONDARY_SERIAL_T HardwareSerial
+
+using boardInputPin_t = fastInputPin_t;
+using boardOutputPin_t = fastOutputPin_t;
+
+/** @brief Analog pin mapping */
+constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14 };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 32U;

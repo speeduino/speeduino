@@ -14,16 +14,15 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "globals.h"
 #include "sensors.h"
 #include "scheduler.h"
-#include "scheduledIO.h"
-#include "speeduino.h"
-#include "scheduler.h"
+#include "scheduler_ignition_controller.h"
 #include "auxiliaries.h"
 #include "comms.h"
 #include "maths.h"
-
-#if defined(CORE_AVR)
-  #include <avr/wdt.h>
-#endif
+#include "preprocessor.h"
+#include "scheduledIO_ign.h"
+#include "scheduledIO_inj.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
 volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
 volatile byte loop5ms;
@@ -33,9 +32,6 @@ volatile byte loop66ms;
 volatile byte loop100ms;
 volatile byte loop250ms;
 volatile int loopSec;
-
-volatile unsigned int dwellLimit_uS;
-
 volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 volatile uint16_t tachoSweepIncr;
@@ -43,11 +39,7 @@ volatile uint16_t tachoSweepAccum;
 volatile uint8_t testInjectorPulseCount = 0;
 volatile uint8_t testIgnitionPulseCount = 0;
 
-#if defined (CORE_TEENSY)
-  IntervalTimer lowResTimer;
-#endif
-
-void initialiseTimers(void)
+void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
   lastRPM_100ms = 0;
   loop5ms = 0;
@@ -57,24 +49,38 @@ void initialiseTimers(void)
   loop100ms = 0;
   loop250ms = 0;
   loopSec = 0;
+}
+
+static boardOutputPin_t tach_pin;
+static volatile uint8_t TIMER_mask;
+
+uint8_t getAndClearTimerMask(void)
+{
+  ATOMIC() {
+    uint8_t mask = TIMER_mask;
+    TIMER_mask = 0U;
+    return mask;
+  }
+  return 0U; // Suppress false compiler warning
+}
+
+void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
+{
+  tach_pin.setPin(tachoPin, OUTPUT);
   tachoOutputFlag = TACHO_INACTIVE;
 }
 
-static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
-  //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if ((schedule.Status == RUNNING) && (schedule.startTime < targetOverdwellTime)) { 
-    schedule.pEndCallback(); schedule.Status = OFF; 
-  }
+void tachoPulseHigh(void)
+{
+  tach_pin.setPinHigh();
 }
 
-//Timer2 Overflow Interrupt Vector, called when the timer overflows.
-//Executes every ~1ms.
-#if defined(CORE_AVR) //AVR chips use the ISR for this
-//This MUST be no block. Turning NO_BLOCK off messes with timing accuracy. 
-ISR(TIMER2_OVF_vect, ISR_NOBLOCK) //cppcheck-suppress misra-c2012-8.2
-#else
-void oneMSInterval(void) //Most ARM chips can simply call a function
-#endif
+void tachoPulseLow(void)
+{
+  tach_pin.setPinLow();
+}
+
+void oneMSInterval(void)
 {
   BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
   ms_counter++;
@@ -88,34 +94,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
   loop250ms++;
   loopSec++;
 
-  //Overdwell check
-  uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) 
-  {
-    applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
-#if IGN_CHANNELS >= 2
-    applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 3
-    applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 4
-    applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 5
-    applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 6
-    applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 7
-    applyOverDwellCheck(ignitionSchedule7, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 8
-    applyOverDwellCheck(ignitionSchedule8, targetOverdwellTime);
-#endif
-  }
+  applyOverDwellProtection(configPage4, currentStatus);
 
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 
@@ -144,7 +123,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     //Check for half speed tacho
     if( (configPage2.tachoDiv == 0) || (currentStatus.tachoAlt == true) ) 
     { 
-      TACHO_PULSE_LOW();
+      tach_pin.setPinLow();
       //ms_counter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
       tachoEndTime = (uint8_t)ms_counter + configPage2.tachoDuration;
       tachoOutputFlag = ACTIVE;
@@ -161,7 +140,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     //If the tacho output is already active, check whether it's reached it's end time
     if((uint8_t)ms_counter == tachoEndTime)
     {
-      TACHO_PULSE_HIGH();
+      tach_pin.setPinHigh();
       tachoOutputFlag = TACHO_INACTIVE;
     }
   }
@@ -257,7 +236,6 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
-    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value in case setting has changed
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
@@ -292,8 +270,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
         if(currentStatus.RPM == 0)
         {
           //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          digitalWrite(pinFuelPump, LOW);
-          currentStatus.fuelPumpOn = false;
+          fuelPumpOff();
         }
       }
     }
@@ -335,7 +312,7 @@ void oneMSInterval(void) //Most ARM chips can simply call a function
 
       //Continental flex sensor fuel temperature can be read with following formula: (Temperature = (41.25 * pulse width(ms)) - 81.25). 1000μs = -40C and 5000μs = 125C
       flexPulseWidth = constrain(flexPulseWidth, 1000UL, 5000UL);
-      int32_t tempX100 = (int32_t)rshift<10>(4224UL * flexPulseWidth) - 8125L; //Split up for MISRA compliance
+      int32_t tempX100 = (int32_t)rshift<10>((uint32_t)(4224UL * flexPulseWidth)) - 8125L; //Split up for MISRA compliance
       currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
   }

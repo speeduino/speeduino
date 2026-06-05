@@ -4,6 +4,7 @@
 #include "maths.h"
 #include "unit_testing.h"
 #include "globals.h"
+#include "units.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
@@ -85,7 +86,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
 // The bounds of the spark table vary depending on the mode (see the INI file).
 // int16_t is wide enough to capture the full range of the table.
 static inline int16_t lookupSpark2(const config10 &page10, const table3d16RpmLoad &sparkLookupTable, const statuses &current) {
-  return (int16_t)get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM) - INT16_C(OFFSET_IGNITION);  
+  return IGNITION_ADVANCE_LARGE.toUser(get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM));  
 }
 
 static inline int8_t constrainAdvance(int16_t advance)
@@ -146,7 +147,7 @@ void calculateSecondarySpark(const config2 &page2, const config10 &page10, const
       current.secondSparkTableActive = true;
       uint8_t spark2Percent = (uint8_t)clamp(lookupSpark2(page10, sparkLookupTable, current), (int16_t)0, (int16_t)UINT8_MAX);
       //Spark 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
-      int16_t combinedAdvance = div100((int16_t)spark2Percent * (int16_t)current.advance1);
+      int16_t combinedAdvance = div100((int16_t)(spark2Percent * current.advance1));
       //make sure we don't overflow and accidentally set negative timing: current.advance can only hold a signed 8 bit value
       current.advance = constrainAdvance(combinedAdvance);
 

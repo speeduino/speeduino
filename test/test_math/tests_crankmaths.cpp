@@ -28,6 +28,7 @@ struct crankmaths_tooth_testdata {
 } *crankmaths_tooth_testdata_current;
 
 extern uint32_t angleToTimeIntervalTooth(uint16_t angle);
+extern volatile unsigned long toothLastMinusOneToothTime;
 
 void test_crankmaths_angletotime_tooth_execute() {
   crankmaths_tooth_testdata *testdata = crankmaths_tooth_testdata_current;
@@ -83,7 +84,7 @@ void testCrankMaths()
       { .rpm = 20000, .triggerToothAngle = 180, .toothTime = 1500,   .angle = 720, .expected = 6000 },
     };
     // The same for all tests
-    BIT_SET(decoderState, BIT_DECODER_TOOTH_ANG_CORRECT);
+    decoderStatus.toothAngleIsCorrect = true;
     toothLastMinusOneToothTime = 200000;
 
     for (auto testdata : crankmaths_tooth_testdatas) {

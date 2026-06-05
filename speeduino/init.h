@@ -1,13 +1,13 @@
 #ifndef INIT_H
 #define INIT_H
 
-void initialiseAll(void);
-void initialiseTriggers(void);
-void setPinMapping(byte boardID);
-void changeHalfToFullSync(void);
-void changeFullToHalfSync(void);
+#include "config_pages.h"
+#include "statuses.h"
 
-#define VSS_USES_RPM2() ((configPage2.vssMode > 1U) && (pinVSS == pinTrigger2) && !BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY)) // VSS is on the same pin as RPM2 and RPM2 is not used as part of the decoder
-#define FLEX_USES_RPM2() ((configPage2.flexEnabled > 0U) && (pinFlex == pinTrigger2) && !BIT_CHECK(decoderState, BIT_DECODER_HAS_SECONDARY)) // Same as above, but for Flex sensor
+void initialiseAll(void);
+void setPinMapping(byte boardID);
+
+#define VSS_USES_RPM2() (isExternalVssMode(configPage2) && (pinVSS == pinTrigger2) && (!currentStatus.decoder.secondary.isValid())) // VSS is on the same pin as RPM2 and RPM2 is not used as part of the decoder
+#define FLEX_USES_RPM2() ((configPage2.flexEnabled > 0U) && (pinFlex == pinTrigger2) && (!currentStatus.decoder.secondary.isValid())) // Same as above, but for Flex sensor
 
 #endif

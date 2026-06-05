@@ -1,51 +1,82 @@
 #include <stdlib.h>
 #include "table3d.h"
+#include "table3d_visitor.h"
 
 // =============================== Iterators =========================
 
-table_value_iterator rows_begin(void *pTable, table_type_t key)
+struct row_begin_visitor {
+    template <typename TTable>
+    table_value_iterator visit(TTable &table) {
+        return table.values.begin();
+    }
+};
+
+table_value_iterator rows_begin(table3d_t *pTable, TableType key)
 {
-  #define CTA_GET_ROW_ITERATOR(size, xDomain, yDomain, pTable) \
-      return ((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable)->values.begin();
-  #define CTA_GET_ROW_ITERATOR_DEFAULT ({ return table_value_iterator(NULL, 0U); })      
-  CONCRETE_TABLE_ACTION(key, CTA_GET_ROW_ITERATOR, CTA_GET_ROW_ITERATOR_DEFAULT, pTable);
+  row_begin_visitor visitor;
+  // LCOV_EXCL_BR_START
+  return visitTable3d<row_begin_visitor, table_value_iterator>(*pTable, key, visitor);
+  // LCOV_EXCL_BR_STOP
+}
+
+struct x_begin_visitor {
+    template <typename TTable>
+    table_axis_iterator visit(TTable &table) {
+        return table.axisX.begin();
+    }
+};
+
+table_axis_iterator x_begin(table3d_t *pTable, TableType key)
+{
+  x_begin_visitor visitor;
+  // LCOV_EXCL_BR_START
+  return visitTable3d<x_begin_visitor, table_axis_iterator>(*pTable, key, visitor);
+  // LCOV_EXCL_BR_STOP
 }
 
 
-/**
- * Convert page iterator to table x axis iterator.
- */
-table_axis_iterator x_begin(void *pTable, table_type_t key)
+struct x_rbegin_visitor {
+    template <typename TTable>
+    table_axis_iterator visit(TTable &table) {
+        return table.axisX.rbegin();
+    }
+};
+
+table_axis_iterator x_rbegin(table3d_t *pTable, TableType key)
 {
-  #define CTA_GET_X_ITERATOR(size, xDomain, yDomain, pTable) \
-      return ((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable)->axisX.begin();
-  #define CTA_GET_X_ITERATOR_DEFAULT ({ return table_axis_iterator(NULL, NULL); })      
-  CONCRETE_TABLE_ACTION(key, CTA_GET_X_ITERATOR, CTA_GET_X_ITERATOR_DEFAULT, pTable);
+  x_rbegin_visitor visitor;
+  // LCOV_EXCL_BR_START
+  return visitTable3d<x_rbegin_visitor, table_axis_iterator>(*pTable, key, visitor);
+  // LCOV_EXCL_BR_STOP
 }
 
-table_axis_iterator x_rbegin(void *pTable, table_type_t key)
+struct y_begin_visitor {
+    template <typename TTable>
+    table_axis_iterator visit(TTable &table) {
+        return table.axisY.begin();
+    }
+};
+
+table_axis_iterator y_begin(table3d_t *pTable, TableType key)
 {
-  #define CTA_GET_X_RITERATOR(size, xDomain, yDomain, pTable) \
-      return ((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable)->axisX.rbegin();
-  #define CTA_GET_X_ITERATOR_DEFAULT ({ return table_axis_iterator(NULL, NULL); })      
-  CONCRETE_TABLE_ACTION(key, CTA_GET_X_RITERATOR, CTA_GET_X_ITERATOR_DEFAULT, pTable);
+  y_begin_visitor visitor;
+  // LCOV_EXCL_BR_START
+  return visitTable3d<y_begin_visitor, table_axis_iterator>(*pTable, key, visitor);
+  // LCOV_EXCL_BR_STOP
 }
 
-/**
- * Convert page iterator to table y axis iterator.
- */
-table_axis_iterator y_begin(void *pTable, table_type_t key)
-{
-  #define CTA_GET_Y_ITERATOR(size, xDomain, yDomain, pTable) \
-      return ((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable)->axisY.begin();
-  #define CTA_GET_Y_ITERATOR_DEFAULT ({ return table_axis_iterator(NULL, NULL); })      
-  CONCRETE_TABLE_ACTION(key, CTA_GET_Y_ITERATOR, CTA_GET_Y_ITERATOR_DEFAULT, pTable);
-}
 
-table_axis_iterator y_rbegin(void *pTable, table_type_t key)
+struct y_rbegin_visitor {
+    template <typename TTable>
+    table_axis_iterator visit(TTable &table) {
+        return table.axisY.rbegin();
+    }
+};
+
+table_axis_iterator y_rbegin(table3d_t *pTable, TableType key)
 {
-  #define CTA_GET_Y_RITERATOR(size, xDomain, yDomain, pTable) \
-      return ((TABLE3D_TYPENAME_BASE(size, xDomain, yDomain)*)pTable)->axisY.rbegin();
-  #define CTA_GET_Y_ITERATOR_DEFAULT ({ return table_axis_iterator(NULL, NULL); })      
-  CONCRETE_TABLE_ACTION(key, CTA_GET_Y_RITERATOR, CTA_GET_Y_ITERATOR_DEFAULT, pTable);
+  y_rbegin_visitor visitor;
+  // LCOV_EXCL_BR_START
+  return visitTable3d<y_rbegin_visitor, table_axis_iterator>(*pTable, key, visitor);
+  // LCOV_EXCL_BR_STOP
 }
