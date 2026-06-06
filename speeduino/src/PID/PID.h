@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "PidBase.h"
+#include "PidCore.h"
 
-class PID : public PidBase
+class PID
 {
 public:
 
@@ -42,5 +42,6 @@ private:
   int16_t _setpoint = 0;
   int32_t _integralTerm;
   int32_t _lastInput;
+  PidCore _pidCore;
 };
 

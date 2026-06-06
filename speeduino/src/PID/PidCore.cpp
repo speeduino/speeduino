@@ -1,6 +1,6 @@
-#include "PidBase.h"
+#include "PidCore.h"
 
-int32_t PidBase::compute(int32_t feedForwardTerm, int32_t error, int32_t derivative)
+int32_t PidCore::compute(int32_t feedForwardTerm, int32_t error, int32_t derivative)
 {
    _integralTerm += error;
 
@@ -18,6 +18,10 @@ int32_t PidBase::compute(int32_t feedForwardTerm, int32_t error, int32_t derivat
        output = _min;
        _integralTerm -= error;
    }   
+   else
+   {
+        // Nothing to do, but keep the static checker happy
+   }
 
    return output;
 }

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "PidBase.h"
+#include "PidCore.h"
 
-class integerPID_ideal : public PidBase
+class integerPID_ideal
 {
 public:
   
@@ -28,7 +28,9 @@ public:
   }
   
   /** @brief Set the PID parameters */
-  using PidBase::setTunings;
+  void setTunings(const PidTuningParameters& params) { 
+      _pidCore.setTunings(params); 
+  }
 
   /** @brief Set the controller set point */
   void setSetPoint(uint16_t setpoint) { _setpoint = setpoint; }
@@ -69,4 +71,6 @@ private:
 
 	uint32_t _lastTime = 0;
   uint16_t _lastInput = 0;
+
+  PidCore _pidCore;
 };
