@@ -5,10 +5,10 @@
  * 
  * Provides a shared %PID algorithm. @see compute.
  */
-class PidBase
+class PidCore
 {
-protected:
-    PidBase(void) = default;
+public:
+    PidCore(void) = default;
 
     /** @brief Set the output limits */
     void setOutputLimits(int32_t min, int32_t max) {
@@ -34,6 +34,7 @@ private:
     PidTuningParameters _pidParams;
 
     int32_t _integralTerm = 0;
+    // TODO: shrink these to int16_t if possible
     int32_t _min = 0;
     int32_t _max = 0;
 };

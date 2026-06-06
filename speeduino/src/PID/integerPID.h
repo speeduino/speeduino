@@ -1,9 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include "PidBase.h"
+#include "PidCore.h"
 
-class integerPID : public PidBase
+class integerPID
 {
 public:
   
@@ -54,12 +54,16 @@ public:
 
 private:
 
+  // TODO: shrink these to int16_t if possible
   int32_t _setpoint = 0;
   int32_t _feedForwardTerm = 0;
 
 	uint32_t _lastTime = 0;
+  // TODO: shrink these to int16_t if possible
   int32_t _lastInput = 0;
   
 	uint16_t _sampleTime = 0;
 	bool _isActive = false;
+
+  PidCore _pidCore;
 };

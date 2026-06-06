@@ -25,7 +25,7 @@ bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
    uint32_t scaledFeedForward = _feedForwardTerm*10UL;
 
    // We are using "Derivative on Measurement" as described [here](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-derivative-kick/)
-   *pOutput = PidBase::compute(scaledFeedForward, error, (int32_t)_lastInput - input)/10L;
+   *pOutput = _pidCore.compute(scaledFeedForward, error, (int32_t)_lastInput - input)/10L;
 
    /*Remember some variables for next time*/
    _lastTime = now;
@@ -37,11 +37,11 @@ bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
 void integerPID_ideal::setOutputLimits(uint8_t min, uint8_t max)
 {
    constexpr int32_t limitMultiplier = 1000; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
-   PidBase::setOutputLimits(min*limitMultiplier, max*limitMultiplier);
+   _pidCore.setOutputLimits(min*limitMultiplier, max*limitMultiplier);
 }
 
 void integerPID_ideal::initialize(uint16_t input)
 {
-   PidBase::resetIntegral();
+   _pidCore.resetIntegral();
    _lastInput = input;
 }

@@ -14,7 +14,7 @@ bool integerPID::compute(uint32_t now, int32_t input, int32_t* pOutput)
    if ((!_isActive) || (timeChange < _sampleTime)) return false;
 
    // We are using "Derivative on Measurement" as described [here](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-derivative-kick/)
-   *pOutput = PidBase::compute(_feedForwardTerm, _setpoint - input, _lastInput - input) >> PID_SHIFTS;
+   *pOutput = _pidCore.compute(_feedForwardTerm, _setpoint - input, _lastInput - input) >> PID_SHIFTS;
 
    /*Remember some variables for next time*/
    _lastInput = input;
@@ -36,12 +36,12 @@ void integerPID::setTunings(const PidTuningParameters &pidParams, uint32_t nowMs
 {
    _sampleTime = minComputeInterval;
    _lastTime = nowMs - minComputeInterval;
-   PidBase::setTunings(scaleTuningParameters(pidParams, minComputeInterval));
+   _pidCore.setTunings(scaleTuningParameters(pidParams, minComputeInterval));
 }
 
 void integerPID::setOutputLimits(int32_t min, int32_t max)
 {
-   PidBase::setOutputLimits(min<< PID_SHIFTS, max<< PID_SHIFTS);
+   _pidCore.setOutputLimits(min<< PID_SHIFTS, max<< PID_SHIFTS);
 }
 
 void integerPID::activate(int32_t input)
@@ -61,7 +61,7 @@ void integerPID::reset(int32_t input)
 
 void integerPID::resetIntegeral(void) 
 { 
-   PidBase::resetIntegral();
+   _pidCore.resetIntegral();
 }
 
 void integerPID::setFeedForwardTerm(int32_t feedForwardTerm) 
