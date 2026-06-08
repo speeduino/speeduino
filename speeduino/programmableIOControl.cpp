@@ -26,7 +26,7 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& pa
   }
 }
 
-TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, getDataFn pGetData)
 {
   int16_t data = 0;
   if ( request >= REUSE_RULES )
@@ -39,30 +39,15 @@ TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, int16_t (*getD
   }
   else 
   { 
-    data = getData(request); 
+    data = pGetData(request); 
   }
 
   return data;
 }
 
-TESTABLE_INLINE_STATIC bool evaluateComparisonOp(uint8_t compType, int16_t lhs, int16_t rhs)
+static inline bool evaluateComparisonOp(const compOperation_t& operation, getDataFn pGetData)
 {
-  switch (compType) {
-    case COMPARATOR_EQUAL: return lhs == rhs;
-    case COMPARATOR_NOT_EQUAL: return lhs != rhs;
-    case COMPARATOR_GREATER: return lhs > rhs;
-    case COMPARATOR_GREATER_EQUAL: return lhs >= rhs;
-    case COMPARATOR_LESS: return lhs < rhs;
-    case COMPARATOR_LESS_EQUAL: return lhs <= rhs;
-    case COMPARATOR_AND: return (lhs & rhs) != 0;
-    case COMPARATOR_XOR: return (lhs ^ rhs) != 0;
-    default: return false; // Invalid comparator type
-  }
-}
-
-static inline bool evaluateComparisonOp(const compOperation_t& operation, int16_t (*getData)(uint16_t index))
-{
-  return evaluateComparisonOp(operation.opType, getComparisonData(operation.dataIndex, getData), operation.target);
+  return operation.evaluate(getComparisonData(operation.dataIndex, pGetData), operation.target);
 }
 
 TESTABLE_INLINE_STATIC bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs)
@@ -85,17 +70,22 @@ TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const chann
   return ruleActive && !(rule.hasMaxLimit() && outputDelayExpired(rule, channel));
 }
 
-TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &channel, int16_t (*getData)(uint16_t index)) noexcept
+static bool evaluateRule(const rule_t& rule, getDataFn pGetData) noexcept
 {
-  bool firstCheck = evaluateComparisonOp(rule.firstOp, getData);
+  bool firstCheck = evaluateComparisonOp(rule.firstOp, pGetData);
 
   if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
-    bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
+    bool secondCheck = evaluateComparisonOp(rule.secondOp, pGetData);
     firstCheck = evaluateBooleanOp(rule.combineOpType, firstCheck, secondCheck);
   }
 
-  return applyOutputTimeLimit(rule, channel, firstCheck);
+  return firstCheck;
+}
+
+TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &channel, getDataFn pGetData) noexcept
+{
+  return applyOutputTimeLimit(rule, channel, evaluateRule(rule, pGetData));
 }
 
 static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive) noexcept
@@ -145,12 +135,12 @@ static inline void processChannelInactive(channel_t &channel, const rule_t &rule
   channel.activationDelayCount = 0;
 }
 
-static inline void processChannel(channel_t &channel, const config13& page13, int16_t (*getData)(uint16_t index))
+static inline void processChannel(channel_t &channel, const config13& page13, getDataFn pGetData)
 {
   if ( channel.isPinValid )
   {
     rule_t rule(page13, channel._index);
-    if (isRuleActive(rule, channel, getData))
+    if (isRuleActive(rule, channel, pGetData))
     {
       processChannelActive(channel, rule);
     }
@@ -166,11 +156,11 @@ static inline void processChannel(channel_t &channel, const config13& page13, in
  * Use ProgrammableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index))
+TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, getDataFn pGetData)
 {
   for (auto& channel: state.channels)
   {
-    processChannel(channel, page13, getData);
+    processChannel(channel, page13, pGetData);
   }
 }
 

@@ -27,6 +27,8 @@ constexpr uint8_t COMBINE_XOR = 3;
 
 constexpr uint8_t REUSE_RULES = 240;
 
+using getDataFn = int16_t (*)(uint16_t index);
+
 struct compOperation_t {
   uint8_t opType;
   uint8_t dataIndex;
@@ -41,6 +43,7 @@ struct compOperation_t {
     }
     return dataIndex - REUSE_RULES;
   }
+  bool evaluate(int16_t lhs, int16_t rhs) const;
 };
 
 enum class LimitingType : uint8_t {
