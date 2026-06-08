@@ -36,22 +36,9 @@ TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const chann
   return ruleActive && !(rule.hasMaxLimit() && outputDelayExpired(rule, channel));
 }
 
-static bool evaluateRule(const rule_t& rule, getDataFn pGetData) noexcept
-{
-  bool firstCheck = rule.firstOp.evaluate(state, pGetData);
-
-  if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
-  {
-    bool secondCheck = rule.secondOp.evaluate(state, pGetData);
-    firstCheck = rule.evaluateCombineOp(firstCheck, secondCheck);
-  }
-
-  return firstCheck;
-}
-
 TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &channel, getDataFn pGetData) noexcept
 {
-  return applyOutputTimeLimit(rule, channel, evaluateRule(rule, pGetData));
+  return applyOutputTimeLimit(rule, channel, rule.evaluate(state, pGetData));
 }
 
 static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive) noexcept

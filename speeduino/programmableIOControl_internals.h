@@ -87,6 +87,7 @@ struct rule_t {
   }
 
   bool evaluateCombineOp(bool lhs, bool rhs) const;
+  bool evaluate(const state_t& state, getDataFn pGetData) const;
 };
 
 // The struct representing the state of each programmable I/O channel, used for processing the 
