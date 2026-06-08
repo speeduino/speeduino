@@ -105,7 +105,7 @@ struct channel_t
   : isPinValid(false), isRuleActive(false), isOutputActive(false), _index(0U)
   {}
 
-  void initialize(const rule_t& rule, uint8_t index);
+  void initialize(const config13& page13, uint8_t index);
 };
 
 // The struct representing the current state of the programmable I/O system
