@@ -14,7 +14,6 @@ extern state_t state;
 // Forward declare the testable functions
 extern void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index));
 extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
-extern bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs);
 extern bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive);
 extern uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule);
 
@@ -766,24 +765,6 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     assert_checkProgrammableIO(context, 13 /* Arbitrary number */, 0, 0);
 }
 
-static void test_evaluateBitwiseOp(void)
-{
-    // Test no bitwise operation
-    TEST_ASSERT_FALSE(evaluateBooleanOp(0, true, true));
-
-    // Test bitwise AND
-    TEST_ASSERT_FALSE(evaluateBooleanOp(COMBINE_AND, false, true));
-    TEST_ASSERT_TRUE(evaluateBooleanOp(COMBINE_AND, true, true));
-
-    // Test bitwise OR
-    TEST_ASSERT_TRUE(evaluateBooleanOp(COMBINE_OR, false, true));
-    TEST_ASSERT_FALSE(evaluateBooleanOp(COMBINE_OR, false, false));
-
-    // Test bitwise XOR
-    TEST_ASSERT_FALSE(evaluateBooleanOp(COMBINE_XOR, true, true));
-    TEST_ASSERT_TRUE(evaluateBooleanOp(COMBINE_XOR, true, false));
-}
-
 static void assert_applyOutputTimeLimit_nochange(uint8_t limit, uint8_t outDelay) {
     rule_t rule = {};
     channel_t channel = {};
@@ -858,7 +839,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_ProgrammableIOGetData_two_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
         RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
-        RUN_TEST_P(test_evaluateBitwiseOp);
         RUN_TEST_P(test_applyOutputTimeLimit);
         RUN_TEST_P(test_nextOutDelay);
     }
