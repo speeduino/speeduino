@@ -109,7 +109,7 @@ static inline void processChannel(channel_t &channel, const config13& page13, ge
  * Use programmableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
-TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, getDataFn pGetData)
+TESTABLE_INLINE_STATIC void programmableIOControl(const config13& page13, getDataFn pGetData)
 {
   for (auto& channel: state.channels)
   {
@@ -118,9 +118,9 @@ TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, getDataF
 }
 
 // LCOV_EXCL_START
-void checkProgrammableIO(const config13& page13)
+void programmableIOControl(const config13& page13)
 {
-  checkProgrammableIO(page13, programmableIOGetData);
+  programmableIOControl(page13, programmableIOGetData);
 }
 // LCOV_EXCL_STOP
 
