@@ -106,7 +106,7 @@ static inline void processChannel(channel_t &channel, const config13& page13, ge
 
 /** Check all (8) programmable I/O:s and carry out action on output pin as needed.
  * Compare 2 (16 bit) vars in a way configured by @ref cmpOperation (see also @ref config13.operation).
- * Use ProgrammableIOGetData() to get 2 vars to compare.
+ * Use programmableIOGetData() to get 2 vars to compare.
  * Skip all programmable I/O:s where output pin is set 0 (meaning: not programmed).
  */
 TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, getDataFn pGetData)
@@ -120,7 +120,7 @@ TESTABLE_INLINE_STATIC void checkProgrammableIO(const config13& page13, getDataF
 // LCOV_EXCL_START
 void checkProgrammableIO(const config13& page13)
 {
-  checkProgrammableIO(page13, ProgrammableIOGetData);
+  checkProgrammableIO(page13, programmableIOGetData);
 }
 // LCOV_EXCL_STOP
 
@@ -128,7 +128,7 @@ void checkProgrammableIO(const config13& page13)
  * @param index - Field index/number (?)
  * @return 16 bit (int) result
  */
-TESTABLE_INLINE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
+TESTABLE_INLINE_STATIC int16_t programmableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
 {
   int16_t result;
   if ( index < LOG_ENTRY_SIZE )
@@ -145,9 +145,9 @@ TESTABLE_INLINE_STATIC int16_t ProgrammableIOGetData(uint16_t index, byte (*pGet
 }
 
 // LCOV_EXCL_START
-int16_t ProgrammableIOGetData(uint16_t index)
+int16_t programmableIOGetData(uint16_t index)
 {
-  return ProgrammableIOGetData(index, getTSLogEntry);
+  return programmableIOGetData(index, getTSLogEntry);
 }
 
 uint8_t getProgrammableIOOutputStatus(void)
