@@ -13,7 +13,7 @@ extern state_t state;
 
 // Forward declare the testable functions
 extern void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index));
-extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
+extern int16_t programmableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
 extern bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive);
 extern uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule);
 
@@ -56,30 +56,30 @@ static void test_ProgrammableIOGetData_single_byte_entry(void)
 {
     static const byte logData[] = { 0x22, 0xAA, 0xBB, 0xCC };
     mockLogEntryData = logData;
-    TEST_ASSERT_EQUAL_INT16(0x22, ProgrammableIOGetData(0, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(0x22, programmableIOGetData(0, mockGetLogEntry));
 }
 
 static void test_ProgrammableIOGetData_two_byte_entry(void)
 {
     static const byte logData[] = { 0, 0, 0, 0, 0x34, 0x12 }; // Little-endian representation of 0x1234
     mockLogEntryData = logData;
-    TEST_ASSERT_EQUAL_INT16(0x1234, ProgrammableIOGetData(4, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(0x1234, programmableIOGetData(4, mockGetLogEntry));
 }
 
 static void test_ProgrammableIOGetData_special_indices(void)
 {
     runSecsX10 = 1000U;
-    TEST_ASSERT_EQUAL_INT16(32768, ProgrammableIOGetData(239U, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(32768, programmableIOGetData(239U, mockGetLogEntry));
 
     runSecsX10 = 40000U;
-    TEST_ASSERT_EQUAL_INT16(40000, ProgrammableIOGetData(239U, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(40000, programmableIOGetData(239U, mockGetLogEntry));
 
     static const byte logData[] = { 0, 0, 0, 0, 0, 0, 12, 18 }; // Little-endian representation of 0x1234
     mockLogEntryData = logData;
-    TEST_ASSERT_EQUAL_INT16(temperatureRemoveOffset(logData[6]), ProgrammableIOGetData(6, mockGetLogEntry));
-    TEST_ASSERT_EQUAL_INT16(temperatureRemoveOffset(logData[7]), ProgrammableIOGetData(7, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(temperatureRemoveOffset(logData[6]), programmableIOGetData(6, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(temperatureRemoveOffset(logData[7]), programmableIOGetData(7, mockGetLogEntry));
 
-    TEST_ASSERT_EQUAL_INT16(-1, ProgrammableIOGetData(LOG_ENTRY_SIZE, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(-1, programmableIOGetData(LOG_ENTRY_SIZE, mockGetLogEntry));
 }
 
 static void test_initialiseProgrammableIO_disabled(void)
