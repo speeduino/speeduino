@@ -102,6 +102,14 @@ static void test_getComparisonData_virtual_state_channel_out_of_range(void)
     TEST_ASSERT_EQUAL_INT16(0, op.getComparisonData(state, mockGetData));
 }
 
+static void test_evaluate_with_mock_data(void)
+{
+    state_t state{};
+    compOperation_t op{ COMPARATOR_EQUAL, 5, 51 }; // Should match mockGetData(5)
+
+    TEST_ASSERT_TRUE(op.evaluate(state, mockGetData));
+}
+
 void testCompOperation(void) 
 {
     SET_UNITY_FILENAME() {
@@ -117,5 +125,6 @@ void testCompOperation(void)
         RUN_TEST_P(test_getComparisonData_direct_data_lookup);
         RUN_TEST_P(test_getComparisonData_virtual_state_channel);
         RUN_TEST_P(test_getComparisonData_virtual_state_channel_out_of_range);
+        RUN_TEST_P(test_evaluate_with_mock_data);
     }
 }
