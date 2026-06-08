@@ -26,11 +26,6 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& pa
   }
 }
 
-static inline bool evaluateComparisonOp(const compOperation_t& operation, getDataFn pGetData)
-{
-  return operation.evaluate(operation.getComparisonData(state, pGetData), operation.target);
-}
-
 TESTABLE_INLINE_STATIC bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs)
 {
   switch (compType) {
@@ -53,11 +48,11 @@ TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const chann
 
 static bool evaluateRule(const rule_t& rule, getDataFn pGetData) noexcept
 {
-  bool firstCheck = evaluateComparisonOp(rule.firstOp, pGetData);
+  bool firstCheck = rule.firstOp.evaluate(state, pGetData);
 
   if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
-    bool secondCheck = evaluateComparisonOp(rule.secondOp, pGetData);
+    bool secondCheck = rule.secondOp.evaluate(state, pGetData);
     firstCheck = evaluateBooleanOp(rule.combineOpType, firstCheck, secondCheck);
   }
 
