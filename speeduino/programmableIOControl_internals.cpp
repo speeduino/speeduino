@@ -4,14 +4,21 @@
 
 namespace programmableIOControl_details {
 
-void channel_t::initialize(const rule_t& rule, uint8_t index) 
+void channel_t::initialize(const config13& page13, uint8_t index) 
 {
+    rule_t rule(page13, index);
     isPinValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
     isRuleActive = false;
     activationDelayCount = 0;
     outputDelayCount = 0;
     isOutputActive = isPinValid && rule.isOutputInverted;
     _index = index;
+
+    if (isPinValid && rule.isPhysicalPin()) 
+    {
+      pinMode(rule.outputPin, OUTPUT);
+      digitalWrite(rule.outputPin, rule.isOutputInverted);
+    }
 }
 
 uint8_t state_t::compressedOutputStatus(void) const
