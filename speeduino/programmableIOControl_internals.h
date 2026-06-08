@@ -85,6 +85,8 @@ struct rule_t {
   bool hasMaxLimit(void) const {
     return (limitType==LimitingType::Max) && (outputTimeLimit != 0);
   }
+
+  bool evaluateCombineOp(bool lhs, bool rhs) const;
 };
 
 // The struct representing the state of each programmable I/O channel, used for processing the 
