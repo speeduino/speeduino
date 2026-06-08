@@ -29,7 +29,7 @@ int16_t compOperation_t::getComparisonData(const state_t& state, getDataFn pGetD
   int16_t data = 0;
   if ( isVirtualData() )
   {
-    if ( (dataIndex - REUSE_RULES) < _countof(state.channels) ) 
+    if ( (dataIndex - REUSE_RULES) < _countof(state_t::channels) ) 
     { 
       data = state.channels[dataIndex - REUSE_RULES].isRuleActive; 
     }
@@ -56,6 +56,12 @@ bool compOperation_t::evaluate(int16_t lhs, int16_t rhs) const
     case COMPARATOR_XOR: return (lhs ^ rhs) != 0;
     default: return false; // Invalid comparator type
   }
+}
+
+bool compOperation_t::evaluate(const state_t& state, getDataFn pGetData) const
+{
+  int16_t lhs = getComparisonData(state, pGetData);
+  return evaluate(lhs, target);
 }
 
 } // namespace programmableIOControl_details
