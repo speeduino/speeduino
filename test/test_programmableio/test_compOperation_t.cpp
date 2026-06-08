@@ -3,6 +3,11 @@
 
 using namespace programmableIOControl_details;
 
+static int16_t mockGetData(uint16_t index)
+{
+    return (int16_t)(index * 10 + 1);
+}
+
 static void test_equality(void)
 {
     compOperation_t opEqual{ COMPARATOR_EQUAL, 1, 2  };
@@ -71,6 +76,32 @@ static void test_invalid_comparator(void)
     TEST_ASSERT_FALSE(opInvalid.evaluate(5, 3));
 }
 
+static void test_getComparisonData_direct_data_lookup(void)
+{
+    compOperation_t op{ COMPARATOR_EQUAL, 5, 0 };
+    state_t state{};
+
+    TEST_ASSERT_EQUAL_INT16(51, op.getComparisonData(state, mockGetData));
+}
+
+static void test_getComparisonData_virtual_state_channel(void)
+{
+    compOperation_t op{ COMPARATOR_EQUAL, static_cast<uint8_t>(REUSE_RULES + 2), 0 };
+    state_t state{};
+    state.channels[2].isRuleActive = true;
+
+    TEST_ASSERT_EQUAL_INT16(1, op.getComparisonData(state, mockGetData));
+}
+
+static void test_getComparisonData_virtual_state_channel_out_of_range(void)
+{
+    state_t state{};
+    const uint8_t invalidIndex = static_cast<uint8_t>(REUSE_RULES + _countof(state.channels));
+    compOperation_t op{ COMPARATOR_EQUAL, invalidIndex, 0 };
+
+    TEST_ASSERT_EQUAL_INT16(0, op.getComparisonData(state, mockGetData));
+}
+
 void testCompOperation(void) 
 {
     SET_UNITY_FILENAME() {
@@ -83,5 +114,8 @@ void testCompOperation(void)
         RUN_TEST_P(test_and);
         RUN_TEST_P(test_xor);
         RUN_TEST_P(test_invalid_comparator);
+        RUN_TEST_P(test_getComparisonData_direct_data_lookup);
+        RUN_TEST_P(test_getComparisonData_virtual_state_channel);
+        RUN_TEST_P(test_getComparisonData_virtual_state_channel_out_of_range);
     }
 }

@@ -24,6 +24,24 @@ uint8_t state_t::compressedOutputStatus(void) const
   return status;    
 }
 
+int16_t compOperation_t::getComparisonData(const state_t& state, getDataFn pGetData) const
+{
+  int16_t data = 0;
+  if ( isVirtualData() )
+  {
+    if ( (dataIndex - REUSE_RULES) < _countof(state.channels) ) 
+    { 
+      data = state.channels[dataIndex - REUSE_RULES].isRuleActive; 
+    }
+  }
+  else 
+  { 
+    data = pGetData(dataIndex); 
+  }
+
+  return data;
+}
+
 bool compOperation_t::evaluate(int16_t lhs, int16_t rhs) const
 {
   switch (opType)
