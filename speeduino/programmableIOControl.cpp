@@ -14,15 +14,9 @@ TESTABLE_STATIC state_t state; // The current state of the programmable I/O syst
 
 void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& page13)
 {
-  for (uint8_t y = 0; y < _countof(state_t::channels); y++)
+  for (uint8_t y = 0; y < _countof(state_t::channels); ++y)
   {
-    rule_t rule(page13, y);
-    state.channels[y].initialize(rule, y);
-    if (state.channels[y].isPinValid && rule.isPhysicalPin()) 
-    {
-      pinMode(rule.outputPin, OUTPUT);
-      digitalWrite(rule.outputPin, rule.isOutputInverted);
-    }
+    state.channels[y].initialize(page13, y);
   }
 }
 
