@@ -26,28 +26,9 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& pa
   }
 }
 
-TESTABLE_INLINE_STATIC int16_t getComparisonData(uint8_t request, getDataFn pGetData)
-{
-  int16_t data = 0;
-  if ( request >= REUSE_RULES )
-  {
-    request -= REUSE_RULES;
-    if ( request <= _countof(state.channels) ) 
-    { 
-      data = state.channels[request].isRuleActive; 
-    }
-  }
-  else 
-  { 
-    data = pGetData(request); 
-  }
-
-  return data;
-}
-
 static inline bool evaluateComparisonOp(const compOperation_t& operation, getDataFn pGetData)
 {
-  return operation.evaluate(getComparisonData(operation.dataIndex, pGetData), operation.target);
+  return operation.evaluate(operation.getComparisonData(state, pGetData), operation.target);
 }
 
 TESTABLE_INLINE_STATIC bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs)
