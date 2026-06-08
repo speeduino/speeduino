@@ -65,7 +65,7 @@ static inline bool evaluateComparisonOp(const compOperation_t& operation, int16_
   return evaluateComparisonOp(operation.opType, getComparisonData(operation.dataIndex, getData), operation.target);
 }
 
-TESTABLE_INLINE_STATIC bool evaluateBitwiseOp(uint8_t compType, bool lhs, bool rhs)
+TESTABLE_INLINE_STATIC bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs)
 {
   switch (compType) {
     case COMBINE_AND: return lhs && rhs;
@@ -92,7 +92,7 @@ TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &ch
   if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
     bool secondCheck = evaluateComparisonOp(rule.secondOp, getData);
-    firstCheck = evaluateBitwiseOp(rule.combineOpType, firstCheck, secondCheck);
+    firstCheck = evaluateBooleanOp(rule.combineOpType, firstCheck, secondCheck);
   }
 
   return applyOutputTimeLimit(rule, channel, firstCheck);
