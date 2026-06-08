@@ -24,4 +24,20 @@ uint8_t state_t::compressedOutputStatus(void) const
   return status;    
 }
 
+bool compOperation_t::evaluate(int16_t lhs, int16_t rhs) const
+{
+  switch (opType)
+  {
+    case COMPARATOR_EQUAL: return lhs == rhs;
+    case COMPARATOR_NOT_EQUAL: return lhs != rhs;
+    case COMPARATOR_GREATER: return lhs > rhs;
+    case COMPARATOR_GREATER_EQUAL: return lhs >= rhs;
+    case COMPARATOR_LESS: return lhs < rhs;
+    case COMPARATOR_LESS_EQUAL: return lhs <= rhs;
+    case COMPARATOR_AND: return (lhs & rhs) != 0;
+    case COMPARATOR_XOR: return (lhs ^ rhs) != 0;
+    default: return false; // Invalid comparator type
+  }
 }
+
+} // namespace programmableIOControl_details
