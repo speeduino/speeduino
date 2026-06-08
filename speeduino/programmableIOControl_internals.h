@@ -10,6 +10,9 @@
 namespace programmableIOControl_details
 {
 
+// Forward declares
+struct state_t;
+
 // Defined here for unit testing, but only used in programmableIOControl.cpp
 constexpr uint8_t COMPARATOR_EQUAL = 0;
 constexpr uint8_t COMPARATOR_NOT_EQUAL = 1;
@@ -37,13 +40,8 @@ struct compOperation_t {
   bool isVirtualData() const {
     return dataIndex >= REUSE_RULES;
   }
-  uint8_t getDataIndex() const {
-    if (!isVirtualData()) {
-      return dataIndex;
-    }
-    return dataIndex - REUSE_RULES;
-  }
   bool evaluate(int16_t lhs, int16_t rhs) const;
+  int16_t getComparisonData(const state_t& state, getDataFn pGetData) const;
 };
 
 enum class LimitingType : uint8_t {

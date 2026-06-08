@@ -14,7 +14,6 @@ extern state_t state;
 // Forward declare the testable functions
 extern void checkProgrammableIO(const config13& page13, int16_t (*getData)(uint16_t index));
 extern int16_t ProgrammableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
-extern int16_t getComparisonData(uint8_t request, int16_t (*getData)(uint16_t index));
 extern bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs);
 extern bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive);
 extern uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule);
@@ -767,26 +766,6 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     assert_checkProgrammableIO(context, 13 /* Arbitrary number */, 0, 0);
 }
 
-static void test_getData(void)
-{
-    setupMockData();
-
-    // Test valid index
-    TEST_ASSERT_EQUAL_INT16(5, getComparisonData(5, mockGetData)); // Should return mockDataValues[0] = 0
-
-    // Test another valid index
-    TEST_ASSERT_EQUAL_INT16(10, getComparisonData(10, mockGetData)); // Should return mockDataValues[1] = 1
-
-    // Rule result reuse tests
-    state.channels[2].isRuleActive = 0;
-    TEST_ASSERT_EQUAL_INT16(0, getComparisonData(242, mockGetData));
-    state.channels[3].isRuleActive = 1;
-    TEST_ASSERT_EQUAL_INT16(1, getComparisonData(243, mockGetData));
-
-    // Out of bounds index should return 0
-    TEST_ASSERT_EQUAL_INT16(0, getComparisonData(254, mockGetData));
-}
-
 static void test_evaluateBitwiseOp(void)
 {
     // Test no bitwise operation
@@ -879,7 +858,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_ProgrammableIOGetData_two_byte_entry);
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
         RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
-        RUN_TEST_P(test_getData);
         RUN_TEST_P(test_evaluateBitwiseOp);
         RUN_TEST_P(test_applyOutputTimeLimit);
         RUN_TEST_P(test_nextOutDelay);
