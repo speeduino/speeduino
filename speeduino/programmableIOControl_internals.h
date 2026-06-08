@@ -42,6 +42,7 @@ struct compOperation_t {
   }
   bool evaluate(int16_t lhs, int16_t rhs) const;
   int16_t getComparisonData(const state_t& state, getDataFn pGetData) const;
+  bool evaluate(const state_t& state, getDataFn pGetData) const;
 };
 
 enum class LimitingType : uint8_t {
