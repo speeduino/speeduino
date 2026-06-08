@@ -64,4 +64,14 @@ bool compOperation_t::evaluate(const state_t& state, getDataFn pGetData) const
   return evaluate(lhs, target);
 }
 
+bool rule_t::evaluateCombineOp(bool lhs, bool rhs) const
+{
+  switch (combineOpType) {
+    case COMBINE_AND: return lhs && rhs;
+    case COMBINE_OR: return lhs || rhs;
+    case COMBINE_XOR: return lhs != rhs;
+    default: return false; // Invalid bitwise operator type
+  }
+}
+
 } // namespace programmableIOControl_details

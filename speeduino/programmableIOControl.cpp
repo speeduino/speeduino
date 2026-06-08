@@ -26,16 +26,6 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& pa
   }
 }
 
-TESTABLE_INLINE_STATIC bool evaluateBooleanOp(uint8_t compType, bool lhs, bool rhs)
-{
-  switch (compType) {
-    case COMBINE_AND: return lhs && rhs;
-    case COMBINE_OR: return lhs || rhs;
-    case COMBINE_XOR: return lhs != rhs;
-    default: return false; // Invalid bitwise operator type
-  }
-}
-
 static inline bool outputDelayExpired(const rule_t& rule, const channel_t& channel)
 {
   return (channel.outputDelayCount > rule.outputTimeLimit);
@@ -53,7 +43,7 @@ static bool evaluateRule(const rule_t& rule, getDataFn pGetData) noexcept
   if ((rule.combineOpType != COMBINE_DISABLED) && (rule.secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
     bool secondCheck = rule.secondOp.evaluate(state, pGetData);
-    firstCheck = evaluateBooleanOp(rule.combineOpType, firstCheck, secondCheck);
+    firstCheck = rule.evaluateCombineOp(firstCheck, secondCheck);
   }
 
   return firstCheck;
