@@ -3,14 +3,13 @@
 #include "../test_utils.h"
 #include "src/pins/boardOutputPin.h"
 #include "src/controllers/tacho/tachoController.h"
+#include "src/controllers/tacho/tachoController_detail.h"
 
-namespace tachoControl_detail
-{
-  extern boardOutputPin_t tach_pin;
-  extern tacho_control_state state;
+namespace tachoController {
+  extern detail::tacho_control_state state;
 }
 
-using namespace tachoControl_detail;
+using namespace tachoController;
 extern uint16_t TACHO_SWEEP_RAMP_MS;
 extern uint16_t TACHO_SWEEP_TIME_MS;
 
@@ -47,9 +46,9 @@ struct tacho_test_context
 static void test_initTacho_setsInactiveFlag(void)
 {
   tacho_test_context context;
-  state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::ACTIVE;
+  state.tachoOutputFlag = detail::TachoOutputStatus::ACTIVE;
   context.initialiseTachoControl();
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 }
 
 static void test_tachoOutputOnOff(void)
@@ -60,25 +59,25 @@ static void test_tachoOutputOnOff(void)
   context.page6.tachoMode = 1U;
   context.initialiseTachoControl();
   TEST_ASSERT_TRUE(state.modeDwell);
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 
   // IRL, these will set the pin
   tachoOutputOn();
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
   tachoOutputOff();
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 
   // Fixed timing
   context.page6.tachoMode = 0U;
   context.initialiseTachoControl();
   TEST_ASSERT_FALSE(state.modeDwell);
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 
   tachoOutputOn();
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::READY, state.tachoOutputFlag);
-  state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::INACTIVE;
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::READY, state.tachoOutputFlag);
+  state.tachoOutputFlag = detail::TachoOutputStatus::INACTIVE;
   tachoOutputOff(); // Does nothing in fixed timing mode
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 }
 
 static void test_tacho_sweep_post_ramp_branch(void)
@@ -119,10 +118,10 @@ static void test_tacho_ready_full_speed_to_active(void)
   context.initialiseTachoControl();
   TEST_ASSERT_FALSE(state.tachoAlt);
   
-  state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::READY;
+  state.tachoOutputFlag = tachoController::detail::TachoOutputStatus::READY;
 
   context.tachoControl();
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::ACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(tachoController::detail::TachoOutputStatus::ACTIVE, state.tachoOutputFlag);
   // tachoEndTime = (uint8_t)ms_counter + tachoDuration ; ms_counter is 1 after oneMSInterval()
   TEST_ASSERT_EQUAL_UINT8((uint8_t)(1U + 5U), state.tachoEndTime);
   // Alt flag flipped
@@ -135,11 +134,11 @@ static void test_tacho_ready_half_speed_skips(void)
   context.page2.tachoDiv = 1U;          // Half speed
   context.initialiseTachoControl();
   TEST_ASSERT_FALSE(state.tachoAlt);
-  state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::READY;
+  state.tachoOutputFlag = tachoController::detail::TachoOutputStatus::READY;
 
   context.tachoControl();
   // tachoAlt false + tachoDiv != 0 hits the else branch -> set TACHO_INACTIVE
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(tachoController::detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
   TEST_ASSERT_TRUE(state.tachoAlt);
 }
 
@@ -151,10 +150,10 @@ static void test_tacho_active_to_inactive_at_endtime(void)
   context.run_n_intervals(9);
   // Now ms_counter == 9. Schedule the tacho end at the next tick (ms_counter == 10).
   state.tachoEndTime = 10U;
-  state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::ACTIVE;
+  state.tachoOutputFlag = tachoController::detail::TachoOutputStatus::ACTIVE;
 
   context.tachoControl();
-  TEST_ASSERT_EQUAL(tachoControl_detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
+  TEST_ASSERT_EQUAL(tachoController::detail::TachoOutputStatus::INACTIVE, state.tachoOutputFlag);
 }
 
 static void test_tacho_sweep_disables_when_running(void)
@@ -201,12 +200,12 @@ static void test_tacho_sweep_pulse_marks_ready(void)
   // Run more iterations until accum overflows; oneMSInterval also flips READY -> ACTIVE
   // on the same call once ms_counter reaches TACHO_SWEEP_TIME_MS the sweep stops, so
   // bound the loop conservatively.
-  bool sawPulse = (state.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::READY) || (state.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::ACTIVE);
+  bool sawPulse = (state.tachoOutputFlag == tachoController::detail::TachoOutputStatus::READY) || (state.tachoOutputFlag == tachoController::detail::TachoOutputStatus::ACTIVE);
   TEST_ASSERT_FALSE(sawPulse);
   for (unsigned i = 0U; i < 200U && !sawPulse; ++i)
   {
     context.tachoControl();
-    sawPulse = (state.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::READY) || (state.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::ACTIVE);
+    sawPulse = (state.tachoOutputFlag == tachoController::detail::TachoOutputStatus::READY) || (state.tachoOutputFlag == tachoController::detail::TachoOutputStatus::ACTIVE);
   }
   TEST_ASSERT_TRUE(sawPulse);
 
@@ -216,7 +215,7 @@ static void test_tacho_sweep_pulse_marks_ready(void)
   state.tachoSweepAccum = 0U;
   state.controlCounter = 1001UL;  // > TACHO_SWEEP_RAMP_MS (1000) is true -> use clamp
   context.tachoControl();
-  sawPulse = (state.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::READY) || (state.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::ACTIVE);
+  sawPulse = (state.tachoOutputFlag == tachoController::detail::TachoOutputStatus::READY) || (state.tachoOutputFlag == tachoController::detail::TachoOutputStatus::ACTIVE);
   TEST_ASSERT_TRUE(sawPulse);
 }
 

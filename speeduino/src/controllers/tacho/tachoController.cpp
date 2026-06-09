@@ -1,12 +1,12 @@
 #include "tachoController.h"
-#include "board_definition.h"
-#include "../../../board_definition.h"
-#include "../../pins/fastOutputPin.h"
-#include "../../pins/outputPin.h"
+#include "tachoController_detail.h"
 #include "../../../maths.h"
 #include "../../../unit_testing.h"
 
-namespace tachoControl_detail
+namespace tachoController 
+{
+
+namespace detail
 {
     tacho_control_state::tacho_control_state(void)
     : tachoSweepEnabled(false)
@@ -15,12 +15,13 @@ namespace tachoControl_detail
     , modeDwell(false)
     {
     }
+  }
 
-  TESTABLE_STATIC boardOutputPin_t tach_pin;
-  TESTABLE_STATIC tacho_control_state state;
+  TESTABLE_STATIC detail::tacho_control_state state;
 }
 
-using namespace tachoControl_detail;
+using namespace tachoController;
+using namespace tachoController::detail;
 
 TESTABLE_CONSTEXPR uint16_t TACHO_SWEEP_TIME_MS = 1500;
 TESTABLE_CONSTEXPR uint16_t TACHO_SWEEP_RAMP_MS = TACHO_SWEEP_TIME_MS * 2 / 3;
@@ -28,11 +29,10 @@ TESTABLE_CONSTEXPR uint16_t TACHO_SWEEP_RAMP_MS = TACHO_SWEEP_TIME_MS * 2 / 3;
 void __attribute__((optimize("Os"))) initialiseTachoControl(uint8_t tachoPin, const config2 &page2, const config6 &page6, const statuses &current)
 {
     state = tacho_control_state();
-    tach_pin.setPin(tachoPin, OUTPUT);
+    state.tach_pin.setPin(tachoPin, OUTPUT);
+    
     //Set the tacho output default state
-    tach_pin.setPinHigh();
-
-    state = tachoControl_detail::tacho_control_state();
+    state.tach_pin.setPinHigh();
     state.tachoSweepEnabled = (page2.useTachoSweep != 0);
     /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
         tachoSweepIncr is also the number of tach pulses per second */
@@ -42,7 +42,7 @@ void __attribute__((optimize("Os"))) initialiseTachoControl(uint8_t tachoPin, co
     state.modeDwell = page6.tachoMode;
 }
 
-static void tachoSweep(const statuses &current, tachoControl_detail::tacho_control_state &tachoState)
+static void tachoSweep(const statuses &current, tacho_control_state &tachoState)
 {
   // See if we're in power-on sweep mode
   tachoState.tachoSweepEnabled =   tachoState.tachoSweepEnabled 
@@ -60,40 +60,44 @@ static void tachoSweep(const statuses &current, tachoControl_detail::tacho_contr
     // Each time it rolls over, it's time to pulse the Tach
     if( tachoState.tachoSweepAccum >= MILLI_PER_SEC ) 
     {  
-        tachoState.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::READY;
+        tachoState.tachoOutputFlag = TachoOutputStatus::READY;
         tachoState.tachoSweepAccum -= MILLI_PER_SEC;
     }
   }
 }
 
-static void tachoOutput(tachoControl_detail::tacho_control_state &tachoState)
+static void tachoOutput(tacho_control_state &tachoState)
 {
   //Tacho output check. This code will not do anything if tacho pulse duration is fixed to coil dwell.
-  if(tachoState.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::READY)
+  if(tachoState.tachoOutputFlag == TachoOutputStatus::READY)
   {
     //Check for half speed tacho
     if( (tachoState.tachoHalf) || (tachoState.tachoAlt) ) 
     { 
-      tach_pin.setPinLow();
+      tachoState.tach_pin.setPinLow();
       //controlCounter is cast down to a byte as the tacho duration can only be in the range of 1-6, so no extra resolution above that is required
       tachoState.tachoEndTime = (uint8_t)tachoState.controlCounter + tachoState.tachoDuration;
-      tachoState.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::ACTIVE;
+      tachoState.tachoOutputFlag = TachoOutputStatus::ACTIVE;
     }
     else
     {
       //Don't run on this pulse (Half speed tacho)
-      tachoState.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::INACTIVE;
+      tachoState.tachoOutputFlag = TachoOutputStatus::INACTIVE;
     }
     tachoState.tachoAlt = !tachoState.tachoAlt; //Flip the alternating value in case half speed tacho is in use. 
   }
-  else if(tachoState.tachoOutputFlag == tachoControl_detail::TachoOutputStatus::ACTIVE)
+  else if(tachoState.tachoOutputFlag == TachoOutputStatus::ACTIVE)
   {
     //If the tacho output is already active, check whether it's reached it's end time
     if((uint8_t)tachoState.controlCounter == tachoState.tachoEndTime)
     {
-      tach_pin.setPinHigh();
-      tachoState.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::INACTIVE;
+      tachoState.tach_pin.setPinHigh();
+      tachoState.tachoOutputFlag = TachoOutputStatus::INACTIVE;
     }
+  }
+  else
+  {
+    // Inactive - do nothing
   }
 }
 
@@ -108,5 +112,5 @@ void tachoControl(const statuses &current)
     }
 }
 
-void tachoOutputOn(void) { if(state.modeDwell) { tach_pin.setPinLow(); } else { state.tachoOutputFlag = tachoControl_detail::TachoOutputStatus::READY; } }
-void tachoOutputOff(void) { if(state.modeDwell) { tach_pin.setPinHigh(); } }
+void tachoOutputOn(void) { if(state.modeDwell) { state.tach_pin.setPinLow(); } else { state.tachoOutputFlag = TachoOutputStatus::READY; } }
+void tachoOutputOff(void) { if(state.modeDwell) { state.tach_pin.setPinHigh(); } }
