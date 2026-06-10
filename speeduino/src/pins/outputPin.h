@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <stdint.h>
+#include "../../board_definition.h"
 
 /** 
  * @brief A class for output pin operations. Must have same signature as fastOutputPin_t to allow for interchangeable use.
@@ -18,7 +19,13 @@ public:
 
   /** @brief Set the pin low */
   void setPinLow(void);
+  
+  /** @brief Is the pin set? */
+  bool isValid(void) const
+  {
+    return _pin != NOT_A_PIN;
+  }
 
 private:
-  uint8_t _pin = 0;
+  uint8_t _pin = NOT_A_PIN;
 };

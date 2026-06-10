@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <stdint.h>
+#include "../../board_definition.h"
 
 /** 
  * @brief A class for input pin operations. 
@@ -24,6 +25,12 @@ public:
     return !isPinHigh();
   }
 
+  /** @brief Is the pin set? */
+  bool isValid(void) const
+  {
+    return _pin != NOT_A_PIN;
+  }
+
 private:
-  uint8_t _pin = 0;
+  uint8_t _pin = NOT_A_PIN;
 };
