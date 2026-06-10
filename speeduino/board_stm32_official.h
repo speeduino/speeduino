@@ -7,8 +7,6 @@
 #include <HardwareSerial.h>
 #include "STM32RTC.h"
 #include <SPI.h>
-#include "src/pins/inputPin.h"
-#include "src/pins/outputPin.h"
 
 #define CORE_STM32
 
@@ -340,7 +338,9 @@ extern STM32_CAN Can0;
   #define SECONDARY_SERIAL_T HardwareSerial
 #endif
 
+class inputPin_t;
 using boardInputPin_t = inputPin_t;
+class outputPin_t;
 using boardOutputPin_t = outputPin_t;
 
 /** @brief Analog pin mapping */

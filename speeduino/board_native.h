@@ -6,8 +6,6 @@
 #include <limits>
 #include <USBAPI.h>
 #include "../lib/ArduinoFake/SoftwareTimer.h"
-#include "src/pins/inputPin.h"
-#include "src/pins/outputPin.h"
 
 /*
 ***********************************************************************************************************
@@ -137,7 +135,9 @@ constexpr const _Tp& min(const _Tp& __a, const _Tp& __b) {
 
 #define RTC_LIB_H <time.h>
 
+class inputPin_t;
 using boardInputPin_t = inputPin_t;
+class outputPin_t;
 using boardOutputPin_t = outputPin_t;
 
 /** @brief Analog pin mapping */

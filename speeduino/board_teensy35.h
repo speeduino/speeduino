@@ -3,8 +3,6 @@
 /** DO NOT INCLUDE DIRECTLY - should be included via board_definition.h */
 
 #include <Arduino.h>
-#include "src/pins/inputPin.h"
-#include "src/pins/outputPin.h"
 
 #define CORE_TEENSY35
 
@@ -179,7 +177,9 @@ static inline void IGN8_TIMER_DISABLE(void)  {FTM3_C7SC &= ~FTM_CSC_CHIE;}
 #include <FlexCAN_T4.h>
 #define NATIVE_CAN_AVAILABLE
 
+class inputPin_t;
 using boardInputPin_t = inputPin_t;
+class outputPin_t;
 using boardOutputPin_t = outputPin_t;
 
 /** @brief Analog pin mapping */
