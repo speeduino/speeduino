@@ -21,6 +21,12 @@ public:
     return !isPinHigh();
   }
 
+  /** @brief Is the pin set? */
+  bool isValid(void) const
+  {
+    return _port_pin.isValid();
+  }
+
 private:
   port_pin_t _port_pin;
 };

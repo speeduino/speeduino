@@ -27,6 +27,15 @@ struct port_pin_t
   /** @brief The return type of a "call" to digitalPinToBitMask() */
   using pin_mask_t = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectDigitalPinToBitMask));
 
-  port_register_t port = {nullptr};
+  static constexpr port_register_t NULL_PORT = {nullptr};
+
+  port_register_t port = NULL_PORT;
   pin_mask_t mask = {0};
+
+  /** @brief Is the port register initialised? */
+  bool isValid(void) const
+  {
+    return port!=port_pin_t::NULL_PORT;
+  }
 };
+

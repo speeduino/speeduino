@@ -5,12 +5,15 @@
 
 void inputPin_t::setPin(uint8_t pin, uint8_t mode) 
 {
-    pinMode(pin, mode);
-    _pin = pin;
+    if (pin!=NOT_A_PIN)
+    {
+        pinMode(pin, mode);
+        _pin = pin;
+    }
 }
 
 bool inputPin_t::isPinHigh(void) const {
-    return digitalRead(_pin) == HIGH;
+    return isValid() ? digitalRead(_pin) == HIGH : false;
 }
 
 // LCOV_EXCL_STOP

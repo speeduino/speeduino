@@ -81,3 +81,7 @@ void boardInitRTC(void);
 
 /** @brief The longest period of time (in uS) that the timer can permit */
 constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros((numeric_limits<COMPARE_TYPE>::max)());
+
+#if !defined(NOT_A_PIN)
+constexpr uint8_t NOT_A_PIN = UINT8_MAX; // Note that zero is a valid pin number, so we can't use that to indicate an unused pin
+#endif
