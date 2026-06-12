@@ -76,8 +76,9 @@ static void test_checkLaunchAndFlatShift_usesInvertedLaunchInput(void)
     config15 page15 = {};
 
     constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
+    pinMode(launchPin, OUTPUT);
     digitalWrite(launchPin, LOW);
+    pinMode(launchPin, INPUT);
 
     current.RPM = 9500;
     current.TPS = 50;
