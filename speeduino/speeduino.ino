@@ -301,7 +301,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_15HZ)) //Every 32 loops
     {
-      checkLaunchAndFlatShift(); //Check for launch control and flat shift being active
+      checkLaunchAndFlatShift(currentStatus, pinLaunch, configPage2, configPage6, configPage10, configPage15); //Check for launch control and flat shift being active
 
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(15);
