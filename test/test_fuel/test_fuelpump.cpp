@@ -2,6 +2,8 @@
 #include "globals.h"
 #include "auxiliaries.h"
 
+extern uint8_t fpPrimeTime;
+
 static void test_startPumpPriming_prime(void)
 {
     statuses current = {};

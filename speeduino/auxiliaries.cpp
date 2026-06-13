@@ -434,6 +434,8 @@ void fuelPumpOff(void)
   }
 }
 
+TESTABLE_STATIC uint8_t fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
+
 void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const config2 &page2)
 {
   if(page2.fpPrime!=0U)
