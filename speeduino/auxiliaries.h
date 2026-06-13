@@ -13,6 +13,7 @@ void initialiseAirCon(void);
 
 void initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin);
 void startPumpPriming(statuses &current, const config2 &page2);
+void stopPumpPriming(statuses &current, const config2 &page2);
 
 void nitrousControl(void);
 void fanControl(void);

@@ -261,19 +261,8 @@ void oneMSInterval(void)
     }
 
     //Check whether fuel pump priming is complete
-    if(currentStatus.fpPrimed == false)
-    {
-      //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
-      if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
-      {
-        currentStatus.fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0)
-        {
-          //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          fuelPumpOff();
-        }
-      }
-    }
+    stopPumpPriming(currentStatus, configPage2);
+    
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
     if(configPage2.flexEnabled == true)

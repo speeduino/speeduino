@@ -436,7 +436,7 @@ void fuelPumpOff(void)
 
 void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const config2 &page2)
 {
-  if(page2.fpPrime)
+  if(page2.fpPrime!=0U)
   {
     fpPrimeTime = current.secl;
     fuelPumpOn();
@@ -445,7 +445,25 @@ void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const c
   {
     fpPrimeTime = 0;
   }
-  current.fpPrimed = !page2.fpPrime;
+  current.fpPrimed = page2.fpPrime==0U;
+}
+
+void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const config2 &page2)
+{
+  //Check whether fuel pump priming is complete
+  if(current.fpPrimed == false)
+  {
+    //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
+    if( (current.secl - fpPrimeTime) >= page2.fpPrime)
+    {
+      current.fpPrimed = true; //Mark the priming as being completed
+      if(current.RPM == 0)
+      {
+        //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+        fuelPumpOff();
+      }
+    }
+  }
 }
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin)
