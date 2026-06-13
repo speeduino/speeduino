@@ -450,13 +450,18 @@ void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const c
   current.fpPrimed = page2.fpPrime==0U;
 }
 
+static inline bool primingTimeExpired(const statuses &current, const config2 &page2)
+{
+  return (current.secl>=fpPrimeTime) // Unlikely, but prevent unsigned overflow
+      && ((current.secl - fpPrimeTime) >= page2.fpPrime);
+}
+
 void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const config2 &page2)
 {
   //Check whether fuel pump priming is complete
   if(current.fpPrimed == false)
   {
-    //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
-    if( (current.secl - fpPrimeTime) >= page2.fpPrime)
+    if (primingTimeExpired(current, page2))
     {
       current.fpPrimed = true; //Mark the priming as being completed
       if(current.RPM == 0)
