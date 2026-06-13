@@ -434,19 +434,26 @@ void fuelPumpOff(void)
   }
 }
 
-bool __attribute__((optimize("Os"))) initialiseFuelPump(const config2 &page2, uint8_t pumpPin)
+void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const config2 &page2)
+{
+  if(page2.fpPrime)
+  {
+    fpPrimeTime = current.secl;
+    fuelPumpOn();
+  }
+  else
+  {
+    fpPrimeTime = 0;
+  }
+  current.fpPrimed = !page2.fpPrime;
+}
+
+void __attribute__((optimize("Os"))) initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin)
 {
   pump_pin.setPin(pumpPin, OUTPUT);
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
-  //Begin priming the fuel pump. This is turned off in the low resolution, 1s interrupt in timers.ino
-  //First check that the priming time is not 0
-  if(page2.fpPrime>0U)
-  {
-    fuelPumpOn();
-    return false; // Priming not complete
-  }
-  return true; //If the user has set 0 for the pump priming, immediately mark the priming as being completed
+  startPumpPriming(current, page2);
 }
 
 

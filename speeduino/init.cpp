@@ -124,7 +124,6 @@ static void processResetStorageRequest(void) {
  */
 void initialiseAll(void)
 {   
-    currentStatus.fpPrimed = false;
     currentStatus.injPrimed = false;
 
     pinMode(LED_BUILTIN, OUTPUT);
@@ -240,7 +239,6 @@ void initialiseAll(void)
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.fuelPumpOn = false;
     currentStatus.engineProtect.reset();
-    fpPrimeTime = 0;
     ms_counter = 0;
     fixedCrankingOverride = 0;
     toothHistoryIndex = 0;
@@ -865,7 +863,7 @@ void initialiseAll(void)
         break;
     }
     
-    currentStatus.fpPrimed = initialiseFuelPump(configPage2, pinFuelPump);
+    initialiseFuelPump(currentStatus, configPage2, pinFuelPump);
 
     interrupts();
     initialiseCLT();
