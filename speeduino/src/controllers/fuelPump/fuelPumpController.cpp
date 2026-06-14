@@ -1,45 +1,43 @@
 #include "fuelPumpController.h"
-#include "../../../board_definition.h"
-#include "../../pins/fastOutputPin.h"
-#include "../../pins/outputPin.h"
-#include "../../../globals.h"
+#include "fuelPumpController_detail.h"
 
-static boardOutputPin_t pump_pin;
-TESTABLE_STATIC uint8_t fpPrimeTime = 0; ///< The time (in seconds, based on @ref statuses.secl) that the fuel pump started priming
+TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
 
 void fuelPumpOn(void)
 {
-  ATOMIC() { 
-    pump_pin.setPinHigh();
-    currentStatus.fuelPumpOn = true;
-  }
+    if (!pump_state.isPumpOn)
+    {
+        pump_state.pump_pin.setPinHigh();
+        pump_state.isPumpOn = true;
+    }
 }
 void fuelPumpOff(void)
 {
-  ATOMIC() { 
-    pump_pin.setPinLow();
-    currentStatus.fuelPumpOn = false;
-  }
+    if (pump_state.isPumpOn)
+    {
+        pump_state.pump_pin.setPinLow();
+        pump_state.isPumpOn = false;
+    }
 }
 
 void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const config2 &page2)
 {
   if(page2.fpPrime!=0U)
   {
-    fpPrimeTime = current.secl;
+    pump_state.fpPrimeTime = current.secl;
     fuelPumpOn();
   }
   else
   {
-    fpPrimeTime = 0;
+    pump_state.fpPrimeTime = 0;
   }
   current.fpPrimed = page2.fpPrime==0U;
 }
 
 static inline bool primingTimeExpired(const statuses &current, const config2 &page2)
 {
-  return (current.secl>=fpPrimeTime) // Unlikely, but prevent unsigned overflow
-      && ((current.secl - fpPrimeTime) >= page2.fpPrime);
+  return (current.secl>=pump_state.fpPrimeTime) // Unlikely, but prevent unsigned overflow
+      && ((current.secl - pump_state.fpPrimeTime) >= page2.fpPrime);
 }
 
 void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const config2 &page2)
@@ -61,7 +59,8 @@ void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const co
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin)
 {
-  pump_pin.setPin(pumpPin, OUTPUT);
+  pump_state.pump_pin.setPin(pumpPin, OUTPUT);
+  pump_state.isPumpOn = true; // This forces fuelPumpOff() to run.
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
   startPumpPriming(current, page2);

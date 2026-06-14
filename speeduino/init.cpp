@@ -238,7 +238,6 @@ void initialiseAll(void)
     currentStatus.flatShiftingHard = false;
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
-    currentStatus.fuelPumpOn = false;
     currentStatus.engineProtect.reset();
     ms_counter = 0;
     fixedCrankingOverride = 0;

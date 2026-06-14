@@ -222,7 +222,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     if ( currentStatus.decoder.isEngineRunning(currentLoopTime) )
     {
       currentStatus.setRpm(currentStatus.decoder.getRPM());
-      if( (currentStatus.RPM > 0) && (currentStatus.fuelPumpOn == false) )
+      if( (currentStatus.RPM > 0) )
       {
         fuelPumpOn();
       }
