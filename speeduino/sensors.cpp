@@ -757,9 +757,7 @@ static inline void readBat(void)
   if( (currentStatus.battery10 < 55U) && (tempReading > 70) && (currentStatus.RPM == 0U) )
   {
     //Re-prime the fuel pump
-    fpPrimeTime = currentStatus.secl;
-    currentStatus.fpPrimed = false;
-    fuelPumpOn();
+    startPumpPriming(currentStatus, configPage2);
 
     //Redo the stepper homing
     if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
