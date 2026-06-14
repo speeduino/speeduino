@@ -30,6 +30,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/fastInputPin.h"
 #include "src/pins/inputPin.h"
 #include "src/pins/pinMapping.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
 uint8_t statusSensors = 0;
 

@@ -35,6 +35,7 @@
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
 #include "maths.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options

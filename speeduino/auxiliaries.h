@@ -11,10 +11,6 @@ void vvtControl(void);
 void initialiseFan(uint8_t fanPin);
 void initialiseAirCon(void);
 
-void initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin);
-void startPumpPriming(statuses &current, const config2 &page2);
-void stopPumpPriming(statuses &current, const config2 &page2);
-
 void nitrousControl(void);
 void fanControl(void);
 void airConControl(void);
@@ -24,9 +20,6 @@ void vvt1On(void);
 void vvt1Off(void);
 void vvt2On(void);
 void vvt2Off(void);
-
-void fuelPumpOn(void);
-void fuelPumpOff(void);
 
 void fanOn(void);
 void fanOff(void);

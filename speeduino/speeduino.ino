@@ -56,6 +56,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
 #include "src/controllers/launch/launchController.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
 #define CRANK_RUN_HYSTER    15
 

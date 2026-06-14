@@ -1,6 +1,5 @@
 #include "../test_utils.h"
-#include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
 extern uint8_t fpPrimeTime;
 
