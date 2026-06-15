@@ -43,16 +43,13 @@ static inline bool primingTimeExpired(const statuses &current, const config2 &pa
 void __attribute__((optimize("Os"))) stopPumpPriming(const statuses &current, const config2 &page2)
 {
   //Check whether fuel pump priming is complete
-  if(pump_state.isPrimingComplete == false)
+  if(!pump_state.isPrimingComplete && primingTimeExpired(current, page2))
   {
-    if (primingTimeExpired(current, page2))
+    pump_state.isPrimingComplete = true; //Mark the priming as being completed
+    if(current.RPM == 0)
     {
-      pump_state.isPrimingComplete = true; //Mark the priming as being completed
-      if(current.RPM == 0)
-      {
-        //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-        fuelPumpOff();
-      }
+      //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
+      fuelPumpOff();
     }
   }
 }
