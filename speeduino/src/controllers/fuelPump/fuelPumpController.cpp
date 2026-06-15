@@ -31,7 +31,7 @@ void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const c
   {
     pump_state.fpPrimeTime = 0;
   }
-  current.fpPrimed = page2.fpPrime==0U;
+  pump_state.isPrimingComplete = page2.fpPrime==0U;
 }
 
 static inline bool primingTimeExpired(const statuses &current, const config2 &page2)
@@ -43,11 +43,11 @@ static inline bool primingTimeExpired(const statuses &current, const config2 &pa
 void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const config2 &page2)
 {
   //Check whether fuel pump priming is complete
-  if(current.fpPrimed == false)
+  if(pump_state.isPrimingComplete == false)
   {
     if (primingTimeExpired(current, page2))
     {
-      current.fpPrimed = true; //Mark the priming as being completed
+      pump_state.isPrimingComplete = true; //Mark the priming as being completed
       if(current.RPM == 0)
       {
         //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
@@ -59,6 +59,7 @@ void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const co
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin)
 {
+  pump_state = fuelPumpController::detsil::pump_state_t();
   pump_state.pump_pin.setPin(pumpPin, OUTPUT);
   pump_state.isPumpOn = true; // This forces fuelPumpOff() to run.
   fuelPumpOff();  //Initialise program with the fuel pump in the off state

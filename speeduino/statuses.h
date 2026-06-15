@@ -51,8 +51,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool previousClutchTrigger : 1;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool fpPrimed : 1; ///< Tracks whether or not the fuel pump priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool injPrimed : 1; ///< Tracks whether or not the injector priming has been completed yet
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool tachoSweepEnabled : 1;
