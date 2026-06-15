@@ -20,7 +20,7 @@ void fuelPumpOff(void)
     }
 }
 
-void __attribute__((optimize("Os"))) startPumpPriming(statuses &current, const config2 &page2)
+void __attribute__((optimize("Os"))) startPumpPriming(const statuses &current, const config2 &page2)
 {
   if(page2.fpPrime!=0U)
   {
@@ -40,7 +40,7 @@ static inline bool primingTimeExpired(const statuses &current, const config2 &pa
       && ((current.secl - pump_state.fpPrimeTime) >= page2.fpPrime);
 }
 
-void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const config2 &page2)
+void __attribute__((optimize("Os"))) stopPumpPriming(const statuses &current, const config2 &page2)
 {
   //Check whether fuel pump priming is complete
   if(pump_state.isPrimingComplete == false)
@@ -57,7 +57,7 @@ void __attribute__((optimize("Os"))) stopPumpPriming(statuses &current, const co
   }
 }
 
-void __attribute__((optimize("Os"))) initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin)
+void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin)
 {
   pump_state = fuelPumpController::detsil::pump_state_t();
   pump_state.pump_pin.setPin(pumpPin, OUTPUT);
