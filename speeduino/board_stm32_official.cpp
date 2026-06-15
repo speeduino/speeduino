@@ -24,7 +24,7 @@ __attribute__((constructor)) static void fcrInitFlashChipSelect(void)
 }
 
 // The stm32duino generic F429VITx variant ships an EMPTY (weak) SystemClock_Config(), so the chip
-// would run on the 16MHz HSI reset clock with no 48MHz USB clock and USB never enumerates.
+// would run on the 16MHz High Speed Internal reset clock with no 48MHz USB clock and USB never enumerates.
 // Override it for the FCR Micro F4: 8MHz HSE -> 168MHz SYSCLK, PLLQ=7 -> 48MHz for USB FS.
 extern "C" void SystemClock_Config(void)
 {
