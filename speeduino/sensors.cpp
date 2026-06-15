@@ -92,10 +92,8 @@ static inline uint16_t readAnalogPin(uint8_t pin)
 {
   // Why do we read twice? Who knows.....
   analogRead(pin);
-  // max is a macro on some platforms - DO NOT place the call to analogRead as an inline parameter:
-  // (you might end up calling it twice)
-  int16_t tmp = (int16_t)analogRead(pin);
-  return (uint16_t)clamp(postProcessAnalogRead(tmp), (int16_t)0, (int16_t)1023);
+  // Read and clamp to 0-1023 range, which is the range of return values for analogRead()
+  return (uint16_t)clamp(postProcessAnalogRead(analogRead(pin)), (int16_t)0, (int16_t)1023);
 }
 
 
