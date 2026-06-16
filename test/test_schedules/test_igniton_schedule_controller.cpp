@@ -80,6 +80,59 @@ static void test_calculateIgnitionAngles_nonrotary(void)
     }
 }
 
+static void test_calculateIgnitionAngles_sequential_applies_individual_trim(void)
+{
+    ignition_test_context_t context;
+    CRANK_ANGLE_MAX_IGN = 720U;
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    context.page2.nCylinders = 4U;
+    context.current.maxIgnOutputs = 4U;
+    context.current.advance = 15U;
+    fakeDecoderStatus.syncStatus = SyncStatus::Full;
+
+    setup_ignition_channel_angles();
+
+    configPage13.ignTrim[0] = 1;
+    configPage13.ignTrim[1] = -2;
+    configPage13.ignTrim[2] = 3;
+    configPage13.ignTrim[3] = -4;
+
+    context.calculateIgnitionAngles();
+
+    TEST_ASSERT_EQUAL_INT16(704, ignitionSchedule1.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(77, ignitionSchedule2.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(162, ignitionSchedule3.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(259, ignitionSchedule4.dischargeAngle);
+
+    configPage13.ignTrim[0] = 0;
+    configPage13.ignTrim[1] = 0;
+    configPage13.ignTrim[2] = 0;
+    configPage13.ignTrim[3] = 0;
+}
+
+static void test_calculateIgnitionAngles_wasted_ignores_individual_trim(void)
+{
+    ignition_test_context_t context;
+    CRANK_ANGLE_MAX_IGN = 360U;
+    context.page4.sparkMode = IGN_MODE_WASTED;
+    context.page2.nCylinders = 4U;
+    context.current.maxIgnOutputs = 2U;
+    context.current.advance = 15U;
+
+    setup_ignition_channel_angles();
+
+    configPage13.ignTrim[0] = 5;
+    configPage13.ignTrim[1] = -5;
+
+    context.calculateIgnitionAngles();
+
+    TEST_ASSERT_EQUAL_INT16(345, ignitionSchedule1.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(30, ignitionSchedule2.dischargeAngle);
+
+    configPage13.ignTrim[0] = 0;
+    configPage13.ignTrim[1] = 0;
+}
+
 static void test_calculateIgnitionAngles_rotary(void)
 {
     ignition_test_context_t context;
@@ -488,6 +541,8 @@ void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_calculateIgnitionAngles_nonrotary);
+    RUN_TEST(test_calculateIgnitionAngles_sequential_applies_individual_trim);
+    RUN_TEST(test_calculateIgnitionAngles_wasted_ignores_individual_trim);
     RUN_TEST(test_calculateIgnitionAngles_rotary);
     RUN_TEST(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
     RUN_TEST(test_calculateIgnitionAngles_sync_state_transitions);
