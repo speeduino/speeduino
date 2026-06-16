@@ -16,6 +16,7 @@ struct ignition_test_context_t
 {
     config2 page2 = {};
     config4 page4 = {};
+    config13 page13 = {};
     statuses current = {};
 
     ignition_test_context_t() {
@@ -33,7 +34,7 @@ struct ignition_test_context_t
 
     void calculateIgnitionAngles(void)
     {
-        ::calculateIgnitionAngles(page2, page4, current);        
+        ::calculateIgnitionAngles(page2, page4, page13, current);        
     }
 };
 
@@ -92,10 +93,10 @@ static void test_calculateIgnitionAngles_sequential_applies_individual_trim(void
 
     setup_ignition_channel_angles();
 
-    configPage13.ignTrim[0] = 1;
-    configPage13.ignTrim[1] = -2;
-    configPage13.ignTrim[2] = 3;
-    configPage13.ignTrim[3] = -4;
+    context.page13.ignTrim[0] = 1;
+    context.page13.ignTrim[1] = -2;
+    context.page13.ignTrim[2] = 3;
+    context.page13.ignTrim[3] = -4;
 
     context.calculateIgnitionAngles();
 
@@ -103,11 +104,6 @@ static void test_calculateIgnitionAngles_sequential_applies_individual_trim(void
     TEST_ASSERT_EQUAL_INT16(77, ignitionSchedule2.dischargeAngle);
     TEST_ASSERT_EQUAL_INT16(162, ignitionSchedule3.dischargeAngle);
     TEST_ASSERT_EQUAL_INT16(259, ignitionSchedule4.dischargeAngle);
-
-    configPage13.ignTrim[0] = 0;
-    configPage13.ignTrim[1] = 0;
-    configPage13.ignTrim[2] = 0;
-    configPage13.ignTrim[3] = 0;
 }
 
 static void test_calculateIgnitionAngles_wasted_ignores_individual_trim(void)
@@ -121,16 +117,13 @@ static void test_calculateIgnitionAngles_wasted_ignores_individual_trim(void)
 
     setup_ignition_channel_angles();
 
-    configPage13.ignTrim[0] = 5;
-    configPage13.ignTrim[1] = -5;
+    context.page13.ignTrim[0] = 5;
+    context.page13.ignTrim[1] = -5;
 
     context.calculateIgnitionAngles();
 
     TEST_ASSERT_EQUAL_INT16(345, ignitionSchedule1.dischargeAngle);
     TEST_ASSERT_EQUAL_INT16(30, ignitionSchedule2.dischargeAngle);
-
-    configPage13.ignTrim[0] = 0;
-    configPage13.ignTrim[1] = 0;
 }
 
 static void test_calculateIgnitionAngles_rotary(void)

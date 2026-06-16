@@ -34,9 +34,10 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current);
  * 
  * @param page2 The tune
  * @param page4 The tune
+ * @param page13 The tune
  * @param current Current system state
  */
-void calculateIgnitionAngles(const config2 &page2, const config4 &page4, statuses &current);
+void calculateIgnitionAngles(const config2 &page2, const config4 &page4, const config13 &page13, statuses &current);
 
 /**
  * @brief Schedule all ignition channels

@@ -730,7 +730,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.dwell = correctionsDwell(computeDwell(currentStatus, configPage2, configPage4, dwellTable));
 
       // Convert the dwell time to dwell angle based on the current engine speed
-      calculateIgnitionAngles(configPage2, configPage4, currentStatus);
+      calculateIgnitionAngles(configPage2, configPage4, configPage13, currentStatus);
 
       //***********************************************************************************************
       //| BEGIN FUEL SCHEDULES
