@@ -35,6 +35,7 @@
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
 #include "maths.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -237,7 +238,6 @@ void initialiseAll(void)
     currentStatus.flatShiftingHard = false;
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
-    currentStatus.fuelPumpOn = false;
     currentStatus.engineProtect.reset();
     ms_counter = 0;
     fixedCrankingOverride = 0;
