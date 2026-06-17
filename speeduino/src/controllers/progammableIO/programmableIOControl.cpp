@@ -3,12 +3,12 @@
  * The config related to Programmable I/O is found on page13 (of type @ref config13).
  */
 #include "programmableIOControl.h"
-#include "programmableIOControl_internals.h"
-#include "logger.h"
-#include "units.h"
-#include "unit_testing.h"
-#include "globals.h"
-#include "preprocessor.h"
+#include "programmableIOControl_details.h"
+#include "../../../logger.h"
+#include "../../../units.h"
+#include "../../../unit_testing.h"
+#include "../../../globals.h"
+#include "../../../preprocessor.h"
 
 using namespace programmableIOControl_details;
 

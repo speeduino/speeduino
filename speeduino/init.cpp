@@ -9,7 +9,6 @@
 #include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
-#include "programmableIOControl.h"
 #include "scheduler_fuel_controller.h"
 #include "auxiliaries.h"
 #include "sensors.h"
@@ -40,6 +39,7 @@
 #include "src/controllers/boost/boostController.h"
 #include "src/controllers/aircon/airconController.h"
 #include "src/controllers/nitrous/nitrousController.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
