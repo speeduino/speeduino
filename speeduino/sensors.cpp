@@ -30,7 +30,6 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/fastInputPin.h"
 #include "src/pins/inputPin.h"
 #include "src/pins/pinMapping.h"
-#include "src/controllers/fuelPump/fuelPumpController.h"
 
 uint8_t statusSensors = 0;
 
@@ -746,31 +745,14 @@ static inline void readO2(void)
 
 static inline void readBat(void)
 {
-  int16_t tempReading = fastMap10Bit(readAnalogSensor(pinBat), 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
-
-  //Apply the offset calibration value to the reading
-  tempReading += configPage4.batVoltCorrect;
-  if(tempReading < 0){
-    tempReading=0;
-  }  //with negative overflow prevention
-
-
-  //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
-  //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
-  //Should that happen, we re-trigger the fuel pump priming and idle homing (If using a stepper)
-  if( (currentStatus.battery10 < 55U) && (tempReading > 70) && (currentStatus.RPM == 0U) )
-  {
-    //Re-prime the fuel pump
-    startPumpPriming(currentStatus, configPage2);
-
-    //Redo the stepper homing
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
-    {
-      initialiseIdle(true);
-    }
-  }
-
-  currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
+  // Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+  currentStatus.battery10 =
+    clamp( 
+      LOW_PASS_FILTER((int16_t)fastMap10Bit( readAnalogSensor(pinBat), 0, 245) + configPage4.batVoltCorrect, 
+                      configPage4.ADCFILTER_BAT,
+                      (int16_t)currentStatus.battery10),
+      (int16_t)0,
+      (int16_t)UINT8_MAX);
 }
 
 #if defined(ANALOG_ISR)
