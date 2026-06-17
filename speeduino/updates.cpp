@@ -67,7 +67,7 @@ TESTABLE_STATIC void upgradeV25toV26(void) {
 TESTABLE_STATIC void upgradeV26toV27(void) {
   if(loadEEPROMVersion() == 26U)
   {
-    for (uint8_t i = 0; i < sizeof(configPage13.ignTrim); i++)
+    for (uint8_t i = 0; i < _countof(configPage13.ignTrim); i++)
     {
       configPage13.ignTrim[i] = 0;
     }

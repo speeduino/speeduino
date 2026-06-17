@@ -317,16 +317,9 @@ static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const stat
 #endif
 }
 
-static inline bool hasIndividualIgnitionTrim(const config2 &page2, const config4 &page4, const statuses &current)
-{
-  return isFullSequentialIgnition(page4, current.decoder.getStatus())
-      && (current.maxIgnOutputs == page2.nCylinders)
-      && (current.maxIgnOutputs > 1U);
-}
-
 static inline void calculateNonRotaryIgnitionAngles(const config2 &page2, const config4 &page4, const config13 &page13, uint16_t dwellAngle, const statuses &current)
 {
-  const bool useIndividualTrim = hasIndividualIgnitionTrim(page2, page4, current);
+  const bool useIndividualTrim = isFullSequentialIgnition(page4, current.decoder.getStatus());
 
   switch (current.maxIgnOutputs)
   {
