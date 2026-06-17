@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "programmableIOControl_internals.h"
+#include "src/controllers/progammableIO/programmableIOControl_details.h"
 
 using namespace programmableIOControl_details;
 

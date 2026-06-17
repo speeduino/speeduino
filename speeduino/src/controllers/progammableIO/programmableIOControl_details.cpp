@@ -1,6 +1,6 @@
-#include "programmableIOControl_internals.h"
-#include "bit_manip.h"
-#include "globals.h"
+#include "programmableIOControl_details.h"
+#include "../../../bit_manip.h"
+#include "../../../globals.h"
 
 namespace programmableIOControl_details {
 

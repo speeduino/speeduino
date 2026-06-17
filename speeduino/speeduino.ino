@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
-#include "programmableIOControl.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
 #include "comms_CAN.h"
