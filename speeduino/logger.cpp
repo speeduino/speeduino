@@ -9,7 +9,7 @@
 #include "decoder_init.h"
 #include "scheduledIO_inj.h"
 #include "resetControl.h"
-#include "programmableIOControl.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 
 static byte setStatusBit(byte status, uint8_t index, bool bit)
 {
