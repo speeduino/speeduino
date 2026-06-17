@@ -4,8 +4,8 @@
  */
 
 #include <stdint.h>
-#include "config_pages.h"
-#include "preprocessor.h"
+#include "../../../config_pages.h"
+#include "../../../preprocessor.h"
 
 namespace programmableIOControl_details
 {

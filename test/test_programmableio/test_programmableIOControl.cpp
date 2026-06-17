@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "../test_utils.h"
-#include "programmableIOControl.h"
-#include "programmableIOControl_internals.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
+#include "src/controllers/progammableIO/programmableIOControl_details.h"
 #include "units.h"
 #include "logger.h"
 #include "globals.h"

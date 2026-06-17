@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "config_pages.h"
+#include "../../../config_pages.h"
 
 /** @brief Initialise the programmable I/O system.
  * @param page13 The tune

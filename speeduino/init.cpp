@@ -9,7 +9,6 @@
 #include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
-#include "programmableIOControl.h"
 #include "scheduler_fuel_controller.h"
 #include "auxiliaries.h"
 #include "sensors.h"
@@ -36,6 +35,7 @@
 #include "maths.h"
 #include "elapsed_time.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
