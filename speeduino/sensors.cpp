@@ -80,17 +80,20 @@ TESTABLE_INLINE_STATIC int16_t fastMap10Bit(uint16_t value, int16_t rangeMin, in
   return rangeMin + (int16_t)fromStartOfRange;
 }
 
-//
-static inline uint16_t readAnalogPin(uint8_t pin) 
+TESTABLE_STATIC int16_t postProcessAnalogRead(int16_t pinValue)
+{
+#if defined(BOARD_ANALOG_SCALE_NUM) && defined(BOARD_ANALOG_SCALE_DEN)
+  pinValue = (int16_t)(((uint32_t)pinValue * BOARD_ANALOG_SCALE_NUM) / BOARD_ANALOG_SCALE_DEN);
+#endif
+  return pinValue;
+}
+
+static inline uint16_t readAnalogPin(uint8_t pin)
 {
   // Why do we read twice? Who knows.....
   analogRead(pin);
-  // According to the docs, analogRead result should be in range 0-1023
-  // Clip the result to zero minimum to prevent rollover just in case
-  int tmp = analogRead(pin);
-  // max is a macro on some platforms - DO NOT place the call to analogRead as an inline parameter:
-  // (you might end up calling it twice)
-  return max(0, tmp);
+  // Read and clamp to 0-1023 range, which is the range of return values for analogRead()
+  return (uint16_t)clamp(postProcessAnalogRead(analogRead(pin)), (int16_t)0, (int16_t)1023);
 }
 
 
