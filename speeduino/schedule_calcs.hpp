@@ -50,7 +50,7 @@ static inline uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *p
   return pCache->pwDegrees;
 }
 
-static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
+static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
   int16_t delta = eventAngle - crankAngle;
   if ( (isRunning(schedule)) || (schedule._status == OFF)) {
     while(delta < 0) { delta += (int16_t)maxAngle; }
@@ -59,13 +59,13 @@ static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(cons
   return delta > 0 ? angleToTimeMicroSecPerDegree((uint16_t)delta) : 0U;
 }
 
-static inline __attribute__((always_inline)) uint16_t _adjustToTDC(int16_t angle, uint16_t angleOffset, uint16_t maxAngle) {
+static FORCE_INLINE uint16_t _adjustToTDC(int16_t angle, uint16_t angleOffset, uint16_t maxAngle) {
   angle = angle - (int16_t)angleOffset;
   if( angle < 0) { return angle + (int16_t)maxAngle; }
   return angle;
 }
 
-static inline __attribute__((always_inline)) uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t angleOffset, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
+static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t angleOffset, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
   if (angleOffset==0U) { // Optimize for zero channel angle - no need to adjust start & crank angles
     return _calculateAngularTime(schedule, eventAngle, crankAngle, maxAngle);
   }
