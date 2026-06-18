@@ -131,7 +131,7 @@ protected:
  * @brief Is the schedule running?
  * I.e. the action has started, but not finished. E.g. injector is open
  */
-static inline bool isRunning(const Schedule &schedule) {
+static inline bool isRunning(const Schedule &schedule) noexcept {
   // Using flags and bitwise AND (&) to check multiple states is much quicker
   // than a logical or (||) (one less branch & 30% less instructions)
   static constexpr uint8_t flags = RUNNING | RUNNING_WITHNEXT;
