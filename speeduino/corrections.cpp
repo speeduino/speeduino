@@ -164,7 +164,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
   uint16_t crankingPercent = NO_FUEL_CORRECTION;
 
   //Check if we are actually cranking
-  if ( currentStatus.engineIsCranking )
+  if ( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
   {
     crankingPercent = lookUpCrankingEnrichmentPct();
     crankingEnrichTaper = 0U;
@@ -201,7 +201,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
 
   uint8_t ASEValue = NO_FUEL_CORRECTION;
 
-  if (currentStatus.engineIsCranking) {
+  if (currentStatus.rotationStatus==EngineRotationStatus::Cranking) {
     // Engine is cranking - mark ASE as inactive and ready to run 
     currentStatus.aseIsActive = false;
     aseTaper = 0U; 
@@ -515,7 +515,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionAccel(void)
 // ============================= Flood Clear =============================
 
 static inline bool isFloodClearActive(const statuses &current, const config4 &page4) {
-  return current.engineIsCranking
+  return current.rotationStatus==EngineRotationStatus::Cranking
       && (current.TPS >= page4.floodClear);
 }
 
@@ -891,7 +891,7 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
  */
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
-  if ( currentStatus.engineIsCranking )
+  if ( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
   { 
     if ( configPage2.crkngAddCLTAdv == 0U ) { 
       advance = configPage4.CrankAng; //Use the fixed cranking ignition angle
@@ -976,7 +976,7 @@ static inline int8_t applyIdleAdvanceAdjust(int8_t advance, int8_t adjustment) {
 static inline bool isIdleAdvanceOn(void) {
   return (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) 
       && (runSecsX10 >= TIME_TWENTY_MILLIS.toUser( configPage2.idleAdvDelay ))
-      && currentStatus.engineIsRunning
+      && currentStatus.rotationStatus==EngineRotationStatus::Running
       /* When Idle advance is the only idle speed control mechanism, activate as soon as not cranking. 
       When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
       */

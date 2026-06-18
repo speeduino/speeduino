@@ -106,8 +106,8 @@ static byte buildStatus5(const statuses &current)
 byte buildEngineStatus(const statuses &current)
 {
   bool bits[] = {
-    current.engineIsRunning,
-    current.engineIsCranking,
+    current.rotationStatus==EngineRotationStatus::Running,
+    current.rotationStatus==EngineRotationStatus::Cranking,
     current.aseIsActive,
     current.wueIsActive,
     current.isAcceleratingTPS,

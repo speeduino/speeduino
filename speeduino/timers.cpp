@@ -102,7 +102,7 @@ void oneMSInterval(void)
   // See if we're in power-on sweep mode
   if( currentStatus.tachoSweepEnabled )
   {
-    if( (currentStatus.engineIsRunning) || (currentStatus.engineIsCranking) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    if( (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
@@ -210,7 +210,7 @@ void oneMSInterval(void)
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
 
-    if ( currentStatus.engineIsRunning ) { runSecsX10++; }
+    if ( currentStatus.rotationStatus==EngineRotationStatus::Running ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
     if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
@@ -242,7 +242,7 @@ void oneMSInterval(void)
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need to update the run time counter.
-    if (currentStatus.engineIsRunning)
+    if (currentStatus.rotationStatus!=EngineRotationStatus::Stopped)
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
       if (currentStatus.runSecs <= (UINT8_MAX-1U)) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.

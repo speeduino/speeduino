@@ -26,6 +26,17 @@ enum class SchedulerCutStatus : uint8_t
 };
 
 
+/** @brief The engine rotation status */
+enum class EngineRotationStatus : uint8_t
+{
+  /** Not rotating */
+  Stopped, 
+  /** Rotating below the cranking threshold. */
+  Cranking, 
+  /** Rotating above the cranking threshold. */
+  Running, 
+};
+
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -167,12 +178,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
 
-  // Engine status fields as defined in the INI.  
-  // TODO: engine has 3 states: Off, Cranking, Running. Need to capture this better 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineIsRunning : 1; ///< Is engine running (true) or not (false) 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineIsCranking : 1; ///< Is engine cranking (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -183,7 +188,8 @@ struct statuses {
   bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool isDeceleratingTPS : 1; ///< Are we decelerating (true) or not (false), based on TPS
-  
+  EngineRotationStatus rotationStatus;
+
   // TODO: make all pulse widths uint16_t
   unsigned int PW1; ///< In uS
   unsigned int PW2; ///< In uS

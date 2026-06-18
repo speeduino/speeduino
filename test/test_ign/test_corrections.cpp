@@ -59,7 +59,7 @@ static void test_correctionCLTadvance(void) {
 
 static void test_correctionCrankingFixedTiming_nocrank_inactive(void) {
     setup_clt_advance_table();
-    currentStatus.engineIsCranking = false;
+    currentStatus.rotationStatus = EngineRotationStatus::Running;
     configPage2.crkngAddCLTAdv = 0;
     configPage4.CrankAng = 8;
 
@@ -68,7 +68,7 @@ static void test_correctionCrankingFixedTiming_nocrank_inactive(void) {
 
 static void test_correctionCrankingFixedTiming_crank_fixed(void) {
     setup_clt_advance_table();
-    currentStatus.engineIsCranking = true;
+    currentStatus.rotationStatus = EngineRotationStatus::Cranking;
     configPage2.crkngAddCLTAdv = 0;
 
     configPage4.CrankAng = 8;
@@ -80,7 +80,7 @@ static void test_correctionCrankingFixedTiming_crank_fixed(void) {
 
 static void test_correctionCrankingFixedTiming_crank_coolant(void) {
     setup_clt_advance_table();
-    currentStatus.engineIsCranking = true;
+    currentStatus.rotationStatus = EngineRotationStatus::Cranking;
     configPage2.crkngAddCLTAdv = 1;
     
     configPage4.CrankAng = 8;
@@ -292,7 +292,7 @@ static void setup_correctionIdleAdvance(void) {
     configPage9.idleAdvStartDelay = 0U;
 
     runSecsX10 = configPage2.idleAdvDelay * 5;
-    currentStatus.engineIsRunning = true;
+    currentStatus.rotationStatus = EngineRotationStatus::Running;
     // int idleRPMdelta = (currentStatus.CLIdleTarget - (currentStatus.RPM / 10) ) + 50;
     currentStatus.CLIdleTarget = 100;
     currentStatus.setRpm( (configPage2.idleAdvRPM * 100U) - 1U);
@@ -338,7 +338,7 @@ static void test_correctionIdleAdvance_inactive_notrunning(void) {
     setup_correctionIdleAdvance();
     
     TEST_ASSERT_EQUAL(23, correctionIdleAdvance(8));
-    currentStatus.engineIsRunning = false;
+    currentStatus.rotationStatus = EngineRotationStatus::Stopped;
     TEST_ASSERT_EQUAL(8, correctionIdleAdvance(8));
 }
 

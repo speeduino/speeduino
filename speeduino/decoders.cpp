@@ -658,7 +658,7 @@ static void triggerPri_missingTooth(void)
      
 
       //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
+      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
       {
         int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) )
@@ -965,7 +965,7 @@ static void triggerPri_DualWheel(void)
       }
 
       //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
+      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
       {
         int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
         uint16_t currentTooth;
@@ -1178,7 +1178,7 @@ static void triggerPri_BasicDistributor(void)
 
     decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
-    if ( configPage4.ignCranklock && currentStatus.engineIsCranking )
+    if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
     {
       endCoilCharge(1U);
       endCoilCharge(2U);
@@ -1526,7 +1526,7 @@ static void triggerPri_4G63(void)
 
     if (decoderStatus.syncStatus==SyncStatus::Full)
     {
-      if ( currentStatus.engineIsCranking && configPage4.ignCranklock && (currentStatus.startRevolutions >= configPage4.StgCycles))
+      if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock && (currentStatus.startRevolutions >= configPage4.StgCycles))
       {
         if(configPage2.nCylinders == 4)
         {
@@ -2626,7 +2626,6 @@ static void triggerPri_Miata9905(void)
     toothLastMinusOneToothTime = toothLastToothTime;
     toothLastToothTime = curTime;
 
-    //if ( currentStatus.engineIsCranking && configPage4.ignCranklock)
     if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
     {
       if( (toothCurrentCount == 1) || (toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
@@ -2642,7 +2641,7 @@ static void triggerSec_Miata9905(void)
   curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
-  if(currentStatus.engineIsCranking || (decoderStatus.syncStatus!=SyncStatus::Full) )
+  if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) || (decoderStatus.syncStatus!=SyncStatus::Full) )
   {
     triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
   }
@@ -2854,7 +2853,7 @@ static void triggerPri_MazdaAU(void)
     if (decoderStatus.syncStatus==SyncStatus::Full)
     {
       // Locked cranking timing is available, fixed at 12* BTDC
-      if ( currentStatus.engineIsCranking && configPage4.ignCranklock )
+      if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock )
       {
         if( toothCurrentCount == 1 ) { endCoilCharge(1U); }
         else if( toothCurrentCount == 3 ) { endCoilCharge(2U); }
@@ -3381,7 +3380,7 @@ static void triggerPri_Subaru67(void)
   if ( decoderStatus.syncStatus==SyncStatus::Full )
   {
     //Locked timing during cranking. This is fixed at 10* BTDC.
-    if ( currentStatus.engineIsCranking && configPage4.ignCranklock)
+    if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock)
     {
       if( (toothCurrentCount == 1) || (toothCurrentCount == 7) ) { endCoilCharge(1U); endCoilCharge(3U); }
       else if( (toothCurrentCount == 4) || (toothCurrentCount == 10) ) { endCoilCharge(2U); endCoilCharge(4U); }
@@ -3403,7 +3402,7 @@ static void triggerPri_Subaru67(void)
 
 
     //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
+    if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
     {
       int16_t crankAngle = toothAngles[(toothCurrentCount - 1)] + configPage4.triggerAngle;
       if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
@@ -3615,7 +3614,7 @@ static void triggerPri_Daihatsu(void)
         setFilter(curGap); //Recalc the new filter value
       }
 
-      if ( configPage4.ignCranklock && currentStatus.engineIsCranking )
+      if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
       {
         //This locks the cranking timing to 0 degrees BTDC (All the triggers allow for)
         if(toothCurrentCount == 1) { endCoilCharge(1U); }
@@ -4815,7 +4814,7 @@ static void triggerPri_NGC(void)
     toothLastToothTime = curTime;
 
     //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (currentStatus.engineIsCranking == false) ) 
+    if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
     {
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
@@ -5326,7 +5325,7 @@ static void triggerPri_Renix(void)
 
 
       //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
+      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
       {
         int16_t crankAngle = ( (toothCurrentCount - 1) * triggerToothAngle ) + configPage4.triggerAngle;
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
@@ -5555,7 +5554,7 @@ static void triggerPri_RoverMEMS(void)
     toothLastToothTime = curTime;
 
     //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (!currentStatus.engineIsCranking) ) 
+    if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
     {  
       int16_t crankAngle = ( (toothCurrentCount-1) * triggerToothAngle ) + configPage4.triggerAngle;
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (revolutionOne == true))

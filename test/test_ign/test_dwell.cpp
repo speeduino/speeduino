@@ -7,7 +7,7 @@ static void test_computeDwell_cranking(void) {
     config4 p4 = {};
     table3d4RpmLoad table = {};
 
-    cur.engineIsCranking = true;
+    cur.rotationStatus = EngineRotationStatus::Cranking;
     p4.dwellCrank = 43; // 4.3 ms stored as ms*10
 
     TEST_ASSERT_EQUAL_UINT16(4300U, computeDwell(cur, p2, p4, table));
@@ -19,7 +19,7 @@ static void test_computeDwell_map(void) {
     config4 p4 = {};
     table3d4RpmLoad table = {};
 
-    cur.engineIsCranking = false;
+    cur.rotationStatus = EngineRotationStatus::Running;
     p2.useDwellMap = true;
 
     // Fill the dwell table with a constant value of 55 (5.5 ms -> 5500 us)
@@ -34,7 +34,7 @@ static void test_computeDwell_running(void) {
     config4 p4 = {};
     table3d4RpmLoad table = {};
 
-    cur.engineIsCranking = false;
+    cur.rotationStatus = EngineRotationStatus::Running;
     p2.useDwellMap = false;
     p4.dwellRun = 60; // 6.0 ms -> 6000 us
 
