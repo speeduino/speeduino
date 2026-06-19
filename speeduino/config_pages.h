@@ -851,7 +851,7 @@ struct config13 : public config_page_t {
   uint8_t firstDataIn[8]; ///< Set of first I/O vars to compare
   uint8_t secondDataIn[8];///< Set of second I/O vars to compare
   uint8_t outputTimeLimit[8]; ///< Output delay for each programmable I/O, kindOfLimiting bit dependent(Unit: 0.1S)
-  uint8_t unused_13[8]; // Unused
+  int8_t ignTrim[8]; ///< Per-cylinder ignition trim in degrees. 0 = no trim
   int16_t firstTarget[8]; ///< first  target value to compare with numeric comp
   int16_t secondTarget[8];///< second target value to compare with bitwise op
   //89bytes

@@ -64,9 +64,22 @@ TESTABLE_STATIC void upgradeV25toV26(void) {
   }
 }
 
+TESTABLE_STATIC void upgradeV26toV27(void) {
+  if(loadEEPROMVersion() == 26U)
+  {
+    for (uint8_t i = 0; i < _countof(configPage13.ignTrim); i++)
+    {
+      configPage13.ignTrim[i] = 0;
+    }
+
+    saveAllPages();
+    saveEEPROMVersion(27);
+  }
+}
+
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    26
+  #define CURRENT_DATA_VERSION    27
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
@@ -845,6 +858,7 @@ void doUpdates(void)
     saveEEPROMVersion(25);
   }
   upgradeV25toV26();
+  upgradeV26toV27();
   //Move this #endif to only do latest updates to safe ROM space on small devices.
   #endif
 
