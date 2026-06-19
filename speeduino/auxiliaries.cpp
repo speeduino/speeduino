@@ -587,7 +587,7 @@ static void setVvtPidTunings(integerPID &pid, const config10 &page10, bool isRev
   pid.setTunings(PidTuningParameters(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD) * multiplier, millis(), 33);
 }
 
-static void configureVvtPid(integerPID &pid, const config10 &page10, bool isReverse, int16_t currentAngle)
+static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isReverse, int16_t currentAngle)
 {
   pid.setOutputLimits(page10.vvtCLminDuty, page10.vvtCLmaxDuty);
   setVvtPidTunings(pid, page10, isReverse);
@@ -621,10 +621,10 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
-      configureVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1Angle);
+      initialiseVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1Angle);
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        configureVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2Angle);
+        initialiseVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2Angle);
       }
     }
 
