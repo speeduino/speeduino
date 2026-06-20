@@ -13,7 +13,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 #include "comms_CAN.h"
 #include "maths.h"
 #include "units.h"
-#include "programmableIOControl.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 
 CAN_message_t inMsg;
 CAN_message_t outMsg;
@@ -762,7 +762,7 @@ void obd_response(uint8_t PIDmode, uint8_t requestedPIDlow, uint8_t requestedPID
     else if (requestedPIDhigh == 0x78)
     {
       int16_t tempValue;
-      tempValue = ProgrammableIOGetData(requestedPIDlow);
+      tempValue = programmableIOGetData(requestedPIDlow);
       outMsg.buf[0] =  0x06;                 // sending 6 bytes
       outMsg.buf[1] =  0x62;                 // Same as query, except that 40h is added to the mode value. So:62h = custom mode
       outMsg.buf[2] =  requestedPIDlow;      // PID code

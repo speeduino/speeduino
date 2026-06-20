@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "storage.h"
 #include "crankMaths.h"
 #include "init.h"
-#include "programmableIOControl.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 #include "engineProtection.h"
 #include "secondaryTables.h"
 #include "comms_CAN.h"
@@ -313,7 +313,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ)) //10 hertz
     {
-      checkProgrammableIO(currentStatus, configPage13);
+      programmableIOControl(configPage13);
       
       // Air conditioning control
       airConControl();
