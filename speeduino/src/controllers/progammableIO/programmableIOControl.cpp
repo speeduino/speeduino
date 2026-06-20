@@ -20,19 +20,14 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(const config13& pa
   }
 }
 
-static inline bool outputDelayExpired(const rule_t& rule, const channel_t& channel)
+TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const channel_t& channel, bool ruleActive)
 {
-  return (channel.outputDelayCount > rule.outputTimeLimit);
-}
-
-TESTABLE_INLINE_STATIC bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive)
-{
-  return ruleActive && !(rule.hasMaxLimit() && outputDelayExpired(rule, channel));
+  return ruleActive && !(channel.hasMaxLimit() && channel.outputDelayExpired());
 }
 
 TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &channel, getDataFn pGetData) noexcept
 {
-  return applyOutputTimeLimit(rule, channel, rule.evaluate(state, pGetData));
+  return applyOutputTimeLimit(channel, rule.evaluate(state, pGetData));
 }
 
 static inline void updateChannelStatus(channel_t& channel, bool ruleActive) noexcept
@@ -45,24 +40,24 @@ static inline void updateChannelStatus(channel_t& channel, bool ruleActive) noex
   }
 }
 
-static inline void processChannelActive(channel_t &channel, const rule_t &rule)
+static inline void processChannelActive(channel_t &channel)
 {
   ++channel.activationDelayCount;
-  if (channel.activationDelayCount > rule.activationDelay)
+  if (channel.activationDelayExpired())
   {
-    if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
+    if (channel.isOutputActive && !channel.outputDelayExpired()) { ++channel.outputDelayCount; }
     updateChannelStatus(channel, true);
   }
 }
 
-TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule)
+TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel)
 {
-  if (rule.limitType==LimitingType::Max)
+  if (channel.limitType==LimitingType::Max)
   {
     //Released before Maximum time, set delay to maximum to flip the output next
     if (channel.isOutputActive)
     {
-      return rule.outputTimeLimit + 1; 
+      return channel.outputTimeLimit + 1; 
     }
   
     return 1; //Reset the counter for next time
@@ -70,12 +65,12 @@ TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const channel_t& channel, const rule
   return channel.outputDelayCount + 1;
 }
 
-static inline void processChannelInactive(channel_t &channel, const rule_t &rule)
+static inline void processChannelInactive(channel_t &channel)
 {
-  channel.outputDelayCount = nextOutDelay(channel, rule);
-  if (outputDelayExpired(rule, channel))
+  channel.outputDelayCount = nextOutDelay(channel);
+  if (channel.outputDelayExpired())
   {
-    if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
+    if(channel.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
     updateChannelStatus(channel, false);
   }
 
@@ -89,11 +84,11 @@ static inline void processChannel(channel_t &channel, const config13& page13, ge
     rule_t rule(page13, channel._index);
     if (isRuleActive(rule, channel, pGetData))
     {
-      processChannelActive(channel, rule);
+      processChannelActive(channel);
     }
     else
     {
-      processChannelInactive(channel, rule);
+      processChannelInactive(channel);
     }
   }
 }

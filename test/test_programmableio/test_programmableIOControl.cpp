@@ -14,8 +14,8 @@ extern state_t state;
 // Forward declare the testable functions
 extern void programmableIOControl(const config13& page13, int16_t (*getData)(uint16_t index));
 extern int16_t programmableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
-extern bool applyOutputTimeLimit(const rule_t& rule, const channel_t& channel, bool ruleActive);
-extern uint8_t nextOutDelay(const channel_t& channel, const rule_t& rule);
+extern bool applyOutputTimeLimit(const channel_t& channel, bool ruleActive);
+extern uint8_t nextOutDelay(const channel_t& channel);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -453,15 +453,18 @@ static void test_checkProgrammableIO_output_delay_time(void)
     context.page13.outputPin[0] = 1;
     constexpr testOperation equalityOp = { COMBINE_DISABLED, { COMPARATOR_EQUAL, 5, 5 }, { COMPARATOR_EQUAL, 5, 5 } };
     setupTestOp(equalityOp, context.page13, 0);
-    context.page13.kindOfLimiting = 1; // Switch to time limit mode
-    context.page13.outputTimeLimit[0] = 3;
-    state.channels[0].activationDelayCount = context.page13.outputTimeLimit[0]+1; // Set delay above time limit
-    state.channels[0].outputDelayCount = context.page13.outputTimeLimit[0]-1;
+
+    state.channels[0].outputTimeLimit = 3;
+    state.channels[0].activationDelayCount = state.channels[0].outputTimeLimit+1; // Set delay above time limit
+    state.channels[0].outputDelayCount = state.channels[0].outputTimeLimit-1;
+    state.channels[0].limitType = LimitingType::Max;
+
     programmableIOControl(context.page13, mockGetData);
+
     TEST_ASSERT_TRUE(state.channels[0].isRuleActive);
     TEST_ASSERT_TRUE(state.channels[0].isOutputActive);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0]+2, state.channels[0].activationDelayCount);
-    TEST_ASSERT_EQUAL(context.page13.outputTimeLimit[0], state.channels[0].outputDelayCount);
+    TEST_ASSERT_EQUAL(state.channels[0].outputTimeLimit+2, state.channels[0].activationDelayCount);
+    TEST_ASSERT_EQUAL(state.channels[0].outputTimeLimit, state.channels[0].outputDelayCount);
 
     for (auto &channel : state.channels) {
         channel.isRuleActive = false;
@@ -486,17 +489,14 @@ static void test_checkProgrammableIO_time_limit_disables_output(void)
     setupMockData();
 
     context.page13.outputPin[0] = 128; // Cascade rule
-    state.channels[0].isPinValid = true;
     context.page13.operation[0].firstCompType = 0; // EQUAL
     context.page13.firstDataIn[0] = 5;
     context.page13.firstTarget[0] = 5;
-    context.page13.outputDelay[0] = 0;
     context.page13.outputTimeLimit[0] = 1;
+    context.page13.outputDelay[0] = context.page13.outputTimeLimit[0] + 1;
     context.page13.kindOfLimiting = 1;
 
-    state.channels[0].isRuleActive = false;
-    state.channels[0].outputDelayCount = context.page13.outputTimeLimit[0] + 1;
-
+    initialiseProgrammableIO(context.page13);
     programmableIOControl(context.page13, mockGetData);
 
     TEST_ASSERT_FALSE(state.channels[0].isRuleActive);
@@ -774,15 +774,14 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
 }
 
 static void assert_applyOutputTimeLimit_nochange(uint8_t limit, uint8_t outDelay) {
-    rule_t rule = {};
     channel_t channel = {};
-    rule.outputTimeLimit = limit;
+    channel.outputTimeLimit = limit;
     channel.outputDelayCount = outDelay;
-    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
-    TEST_ASSERT_TRUE(applyOutputTimeLimit(rule, channel, true)); 
-    rule.limitType = LimitingType::Max;
-    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
-    TEST_ASSERT_TRUE(applyOutputTimeLimit(rule, channel, true)); 
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(channel, false)); 
+    TEST_ASSERT_TRUE(applyOutputTimeLimit(channel, true)); 
+    channel.limitType = LimitingType::Max;
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(channel, false)); 
+    TEST_ASSERT_TRUE(applyOutputTimeLimit(channel, true)); 
 }
 
 static void test_applyOutputTimeLimit(void) {
@@ -791,34 +790,31 @@ static void test_applyOutputTimeLimit(void) {
     assert_applyOutputTimeLimit_nochange(5, 5);
     assert_applyOutputTimeLimit_nochange(6, 5);
 
-    rule_t rule = {};
     channel_t channel = {};
 
-    rule.outputTimeLimit = 5;
-    channel.outputDelayCount = rule.outputTimeLimit + 1;
-    rule.limitType = LimitingType::Max;
-    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, false)); 
-    TEST_ASSERT_FALSE(applyOutputTimeLimit(rule, channel, true));     
+    channel.outputTimeLimit = 5;
+    channel.outputDelayCount = channel.outputTimeLimit + 1;
+    channel.limitType = LimitingType::Max;
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(channel, false)); 
+    TEST_ASSERT_FALSE(applyOutputTimeLimit(channel, true));     
 }
 
 static void test_nextOutDelay(void)
 {
     channel_t channel;
-    rule_t rule;
 
-    rule.limitType = LimitingType::Min;
+    channel.limitType = LimitingType::Min;
 
-
-    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel));
     channel.outputDelayCount = 5;
-    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(channel));
 
-    rule.limitType = LimitingType::Max;
-    rule.outputTimeLimit = 6;
+    channel.limitType = LimitingType::Max;
+    channel.outputTimeLimit = 6;
     channel.isOutputActive = true;
-    TEST_ASSERT_EQUAL_UINT8(7, nextOutDelay(channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(7, nextOutDelay(channel));
     channel.isOutputActive = false;
-    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel, rule));
+    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel));
 }
 
 void testProgrammableIOControl(void) 
