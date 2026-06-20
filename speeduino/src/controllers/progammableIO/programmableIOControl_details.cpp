@@ -6,8 +6,8 @@ namespace programmableIOControl_details {
 
 void channel_t::initialize(const config13& page13, uint8_t index) 
 {
-    rule_t rule(page13, index);
-    isPinValid = rule.outputPin>0 && (rule.isCascadeRule() || !pinIsUsed(rule.outputPin));
+    outputPin = page13.outputPin[index];
+    isPinValid = outputPin>0 && (!isPhysicalPin() || !pinIsUsed(outputPin));
     isRuleActive = false;
     activationDelayCount = 0;
     outputDelayCount = 0;
@@ -15,10 +15,10 @@ void channel_t::initialize(const config13& page13, uint8_t index)
     isOutputActive = isPinValid && isOutputInverted;
     _index = index;
 
-    if (isPinValid && rule.isPhysicalPin()) 
+    if (isPinValid && isPhysicalPin()) 
     {
-      pinMode(rule.outputPin, OUTPUT);
-      digitalWrite(rule.outputPin, isOutputInverted);
+      pinMode(outputPin, OUTPUT);
+      digitalWrite(outputPin, isOutputInverted);
     }
 }
 

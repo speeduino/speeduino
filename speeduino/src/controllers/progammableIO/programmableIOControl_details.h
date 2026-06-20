@@ -55,7 +55,6 @@ enum class LimitingType : uint8_t {
 // so for now we keep using config13 for the tune and convert to programmableOutputRule for processing
 struct rule_t {
   LimitingType limitType; ///< Select which kind of output limiting are active (0 - minimum | 1 - maximum)
-  uint8_t outputPin;   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
   uint8_t activationDelay; ///< Output write delay for each programmable I/O (Unit: 0.1S)
   uint8_t outputTimeLimit; ///< Output delay for each programmable I/O, kindOfLimiting bit dependent(Unit: 0.1S)
   uint8_t combineOpType;
@@ -65,7 +64,6 @@ struct rule_t {
   rule_t() = default;
   rule_t(const config13& page13, uint8_t index) 
    : limitType(BIT_CHECK(page13.kindOfLimiting, index) ? LimitingType::Max : LimitingType::Min),
-     outputPin(page13.outputPin[index]),
      activationDelay(page13.outputDelay[index]),
      outputTimeLimit(page13.outputTimeLimit[index]),
      combineOpType(page13.operation[index].bitwise),
@@ -74,12 +72,6 @@ struct rule_t {
   {
   }
 
-  bool isCascadeRule(void) const {
-    return outputPin >= 128U;
-  }
-  bool isPhysicalPin(void) const {
-    return !isCascadeRule();
-  }
   bool hasMaxLimit(void) const {
     return (limitType==LimitingType::Max) && (outputTimeLimit != 0);
   }
@@ -99,12 +91,17 @@ struct channel_t
   uint8_t _index : 3;
   uint8_t activationDelayCount = 0;
   uint8_t outputDelayCount = 0;
+  uint8_t outputPin = 0;   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
 
   channel_t()
   : isPinValid(false), isRuleActive(false), isOutputActive(false), _index(0U)
   {}
 
   void initialize(const config13& page13, uint8_t index);
+
+  bool isPhysicalPin(void) const {
+    return outputPin < 128U;
+  }
 };
 
 // The struct representing the current state of the programmable I/O system

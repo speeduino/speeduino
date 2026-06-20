@@ -35,11 +35,11 @@ TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const channel_t &ch
   return applyOutputTimeLimit(rule, channel, rule.evaluate(state, pGetData));
 }
 
-static inline void updateChannelStatus(channel_t& channel, const rule_t& rule, bool ruleActive) noexcept
+static inline void updateChannelStatus(channel_t& channel, bool ruleActive) noexcept
 {
   channel.isOutputActive = channel.isOutputInverted ? !ruleActive : ruleActive;
-  if (rule.isPhysicalPin()) { 
-    digitalWrite(rule.outputPin, channel.isOutputActive); 
+  if (channel.isPhysicalPin()) { 
+    digitalWrite(channel.outputPin, channel.isOutputActive); 
   } else {
     channel.isRuleActive = channel.isOutputActive;
   }
@@ -51,7 +51,7 @@ static inline void processChannelActive(channel_t &channel, const rule_t &rule)
   if (channel.activationDelayCount > rule.activationDelay)
   {
     if (channel.isOutputActive && !outputDelayExpired(rule, channel)) { ++channel.outputDelayCount; }
-    updateChannelStatus(channel, rule, true);
+    updateChannelStatus(channel, true);
   }
 }
 
@@ -76,7 +76,7 @@ static inline void processChannelInactive(channel_t &channel, const rule_t &rule
   if (outputDelayExpired(rule, channel))
   {
     if(rule.limitType==LimitingType::Min) { channel.outputDelayCount = 0; }
-    updateChannelStatus(channel, rule, false);
+    updateChannelStatus(channel, false);
   }
 
   channel.activationDelayCount = 0;
