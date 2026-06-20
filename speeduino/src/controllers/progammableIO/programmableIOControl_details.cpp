@@ -14,7 +14,10 @@ void channel_t::initialize(const config13& page13, uint8_t index)
     isOutputInverted = BIT_CHECK(page13.outputInverted, index);     
     isOutputActive = isPinValid && isOutputInverted;
     _index = index;
-
+    limitType = BIT_CHECK(page13.kindOfLimiting, index) ? LimitingType::Max : LimitingType::Min;
+    outputTimeLimit = page13.outputTimeLimit[index];
+    activationDelay = page13.outputDelay[index];
+          
     if (isPinValid && isPhysicalPin()) 
     {
       pinMode(outputPin, OUTPUT);
