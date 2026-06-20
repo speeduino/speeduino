@@ -54,7 +54,6 @@ enum class LimitingType : uint8_t {
 // Ideally the tune would also be able to use this struct directly, but that would require some refactoring of how the config pages are stored and accessed, 
 // so for now we keep using config13 for the tune and convert to programmableOutputRule for processing
 struct rule_t {
-  bool isOutputInverted; ///< Invert (on/off) value before writing to output pin (for all programmable I/O:s).
   LimitingType limitType; ///< Select which kind of output limiting are active (0 - minimum | 1 - maximum)
   uint8_t outputPin;   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
   uint8_t activationDelay; ///< Output write delay for each programmable I/O (Unit: 0.1S)
@@ -65,8 +64,7 @@ struct rule_t {
 
   rule_t() = default;
   rule_t(const config13& page13, uint8_t index) 
-   : isOutputInverted(BIT_CHECK(page13.outputInverted, index)),
-     limitType(BIT_CHECK(page13.kindOfLimiting, index) ? LimitingType::Max : LimitingType::Min),
+   : limitType(BIT_CHECK(page13.kindOfLimiting, index) ? LimitingType::Max : LimitingType::Min),
      outputPin(page13.outputPin[index]),
      activationDelay(page13.outputDelay[index]),
      outputTimeLimit(page13.outputTimeLimit[index]),
@@ -97,6 +95,7 @@ struct channel_t
   bool isPinValid : 1;
   bool isRuleActive : 1;
   bool isOutputActive : 1;
+  bool isOutputInverted : 1; ///< Invert (on/off) value before writing to output pin (for all programmable I/O:s).
   uint8_t _index : 3;
   uint8_t activationDelayCount = 0;
   uint8_t outputDelayCount = 0;

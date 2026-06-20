@@ -11,13 +11,14 @@ void channel_t::initialize(const config13& page13, uint8_t index)
     isRuleActive = false;
     activationDelayCount = 0;
     outputDelayCount = 0;
-    isOutputActive = isPinValid && rule.isOutputInverted;
+    isOutputInverted = BIT_CHECK(page13.outputInverted, index);     
+    isOutputActive = isPinValid && isOutputInverted;
     _index = index;
 
     if (isPinValid && rule.isPhysicalPin()) 
     {
       pinMode(rule.outputPin, OUTPUT);
-      digitalWrite(rule.outputPin, rule.isOutputInverted);
+      digitalWrite(rule.outputPin, isOutputInverted);
     }
 }
 
