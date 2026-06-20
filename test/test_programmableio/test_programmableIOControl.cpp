@@ -202,6 +202,7 @@ static void test_checkProgrammableIO_disabled_pin(void)
     setupMockData();
 
     // Call programmableIOControl
+    initialiseProgrammableIO(context.page13);
     programmableIOControl(context.page13, mockGetData);
 
     // No changes should occur since no pins are valid
@@ -235,6 +236,7 @@ static void test_checkProgrammableIO_skips_invalid_pins(void)
     context.page13.firstTarget[2] = 10;
 
     // Call programmableIOControl
+    initialiseProgrammableIO(context.page13);
     programmableIOControl(context.page13, mockGetData);
 
     // Only valid pins should have outputs set
@@ -260,6 +262,7 @@ static void test_checkProgrammableIO_all_cascade_rules(void)
     }
 
     // Call programmableIOControl
+    initialiseProgrammableIO(context.page13);
     programmableIOControl(context.page13, mockGetData);
 
     // All cascade rules should be triggered
@@ -285,6 +288,7 @@ static void test_checkProgrammableIO_processes_all_eight_pins(void)
     }
 
     // Call programmableIOControl
+    initialiseProgrammableIO(context.page13);
     programmableIOControl(context.page13, mockGetData);
 
     // Verify all 8 pins were processed (all bits set in currentRuleStatus)
@@ -365,7 +369,7 @@ static void test_checkProgrammableIO_all_comparators(void)
         setupMockData();
 
         setupTestOp(operation, context.page13, 0);
-
+        initialiseProgrammableIO(context.page13);
         programmableIOControl(context.page13, mockGetData);
         
         char szMsg[128];
@@ -405,7 +409,7 @@ static void test_checkProgrammableIO_all_comparators(void)
         state.channels[0].isRuleActive = true;
 
         setupTestOp(operation, context.page13, 0);
-
+        initialiseProgrammableIO(context.page13);
         programmableIOControl(context.page13, mockGetData);
         
         char szMsg[128];
@@ -430,6 +434,7 @@ static void test_checkProgrammableIO_output_delay_time(void)
     context.page13.outputDelay[0] = 2;
     context.page13.outputTimeLimit[0] = 0;
     context.page13.kindOfLimiting = 0;
+    initialiseProgrammableIO(context.page13);
 
     programmableIOControl(context.page13, mockGetData);
     TEST_ASSERT_FALSE(state.channels[0].isRuleActive);
@@ -520,6 +525,7 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES(void)
     context.page13.operation[1].firstCompType = COMPARATOR_EQUAL; // EQUAL (compare with target)
     context.page13.firstDataIn[1] = REUSE_RULES; // REUSE_RULES + rule_index 0
     context.page13.firstTarget[1] = 1;   // Target = 1 (true)
+    initialiseProgrammableIO(context.page13);
 
     // First call to process pin 0
     programmableIOControl(context.page13, mockGetData);
@@ -554,6 +560,7 @@ static void test_checkProgrammableIO_cascade_REUSE_RULES_out_of_bounds(void)
     context.page13.operation[0].firstCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.firstDataIn[0] = REUSE_RULES + 10; // REUSE_RULES + 10 (out of bounds)
     context.page13.firstTarget[0] = 0;   // Target = 0
+    initialiseProgrammableIO(context.page13);
 
     // Call programmableIOControl
     programmableIOControl(context.page13, mockGetData);
@@ -608,6 +615,7 @@ static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
     context.page13.operation[0].secondCompType = COMPARATOR_EQUAL; // EQUAL
     context.page13.secondDataIn[0] = REUSE_RULES + 9; // Out-of-range reuse index, skip second comparator
     context.page13.secondTarget[0] = 1;
+    initialiseProgrammableIO(context.page13);
 
     programmableIOControl(context.page13, mockGetData);
     TEST_ASSERT_TRUE(state.channels[0].isRuleActive);
