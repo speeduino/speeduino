@@ -36,9 +36,10 @@ int16_t compOperation_t::getComparisonData(const state_t& state, getDataFn pGetD
   int16_t data = 0;
   if ( isVirtualData() )
   {
-    if ( (dataIndex - REUSE_RULES) < _countof(state_t::channels) ) 
+    uint8_t realIndex = dataIndex - REUSE_RULES; 
+    if ( realIndex < _countof(state_t::channels) ) 
     { 
-      data = state.channels[dataIndex - REUSE_RULES].isRuleActive; 
+      data = state.channels[realIndex].isRuleActive; 
     }
   }
   else 
