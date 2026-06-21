@@ -38,6 +38,25 @@ processing_channel_t::processing_channel_t(const config13 &page13, channel_state
 {
 }
 
+void processing_channel_t::incrementOutputDelay(void)
+{
+  if (limitType==LimitingType::Max)
+  {
+    //Released before Maximum time, set delay to maximum to flip the output next
+    if (_channel_state.isOutputActive)
+    {
+      _channel_state.outputDelayCount = outputTimeLimit + 1; 
+    }
+    else
+    {
+      _channel_state.outputDelayCount = 1; //Reset the counter for next time
+    }
+  }
+  else
+  {
+    ++_channel_state.outputDelayCount;
+  }
+}
 
 uint8_t state_t::compressedOutputStatus(void) const
 {

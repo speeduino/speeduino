@@ -42,7 +42,7 @@ static inline void updateChannelStatus(processing_channel_t& channel, bool ruleA
 
 static inline void processChannelActive(processing_channel_t &channel)
 {
-  ++channel._channel_state.activationDelayCount;
+  channel.incrementActivationDelay();
   if (channel.activationDelayExpired())
   {
     if (channel._channel_state.isOutputActive && !channel.outputDelayExpired()) { ++channel._channel_state.outputDelayCount; }
@@ -50,24 +50,9 @@ static inline void processChannelActive(processing_channel_t &channel)
   }
 }
 
-TESTABLE_INLINE_STATIC uint8_t nextOutDelay(const processing_channel_t& channel)
-{
-  if (channel.limitType==LimitingType::Max)
-  {
-    //Released before Maximum time, set delay to maximum to flip the output next
-    if (channel._channel_state.isOutputActive)
-    {
-      return channel.outputTimeLimit + 1; 
-    }
-  
-    return 1; //Reset the counter for next time
-  }
-  return channel._channel_state.outputDelayCount + 1;
-}
-
 static inline void processChannelInactive(processing_channel_t &channel)
 {
-  channel._channel_state.outputDelayCount = nextOutDelay(channel);
+  channel.incrementOutputDelay();
   if (channel.outputDelayExpired())
   {
     if(channel.limitType==LimitingType::Min) { channel._channel_state.outputDelayCount = 0; }

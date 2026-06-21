@@ -122,6 +122,12 @@ struct processing_channel_t
   bool activationDelayExpired(void) const {
     return _channel_state.activationDelayCount > activationDelay;
   }
+
+  void incrementOutputDelay(void);
+
+  void incrementActivationDelay(void) {
+    ++_channel_state.activationDelayCount;
+  }
 };
 
 // The struct representing the current state of the programmable I/O system
