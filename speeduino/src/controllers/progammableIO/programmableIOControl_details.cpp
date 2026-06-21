@@ -4,26 +4,40 @@
 
 namespace programmableIOControl_details {
 
-void channel_t::initialize(const config13& page13, uint8_t index) 
+void channel_state_t::initialize(const config13& page13, uint8_t index) 
 {
-    outputPin = page13.outputPin[index];
-    isPinValid = outputPin>0 && (!isPhysicalPin() || !pinIsUsed(outputPin));
+    _index = index;
     isRuleActive = false;
     activationDelayCount = 0;
     outputDelayCount = 0;
-    isOutputInverted = BIT_CHECK(page13.outputInverted, index);     
-    isOutputActive = isPinValid && isOutputInverted;
-    _index = index;
-    limitType = BIT_CHECK(page13.kindOfLimiting, index) ? LimitingType::Max : LimitingType::Min;
-    outputTimeLimit = page13.outputTimeLimit[index];
-    activationDelay = page13.outputDelay[index];
+    processing_channel_t pChannel(page13, *this);
+    isOutputActive = pChannel.isPinValid && pChannel.isOutputInverted;
           
-    if (isPinValid && isPhysicalPin()) 
+    if (pChannel.isPinValid && pChannel.isPhysicalPin()) 
     {
-      pinMode(outputPin, OUTPUT);
-      digitalWrite(outputPin, isOutputInverted);
+      pinMode(pChannel.outputPin, OUTPUT);
+      digitalWrite(pChannel.outputPin, pChannel.isOutputInverted);
     }
 }
+
+static inline bool isValidOutputPin(uint8_t pin)
+{
+  return (pin>0U)
+      && ((pin>128U) || !pinIsUsed(pin))
+  ;
+}
+
+processing_channel_t::processing_channel_t(const config13 &page13, channel_state_t& channel_state)
+: _channel_state(channel_state)
+, outputPin(page13.outputPin[channel_state._index])
+, isPinValid(isValidOutputPin(page13.outputPin[channel_state._index]))
+, isOutputInverted(BIT_CHECK(page13.outputInverted, channel_state._index))
+, limitType(BIT_CHECK(page13.kindOfLimiting, channel_state._index) ? LimitingType::Max : LimitingType::Min)
+, outputTimeLimit(page13.outputTimeLimit[channel_state._index])
+, activationDelay(page13.outputDelay[channel_state._index])
+{
+}
+
 
 uint8_t state_t::compressedOutputStatus(void) const
 {
