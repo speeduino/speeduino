@@ -15,7 +15,6 @@ extern state_t state;
 extern void programmableIOControl(const config13& page13, int16_t (*getData)(uint16_t index));
 extern int16_t programmableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum));
 extern bool applyOutputTimeLimit(const processing_channel_t& channel, bool ruleActive);
-extern uint8_t nextOutDelay(const processing_channel_t& channel);
 
 struct programmableIOTestContext_t {
     config13 page13 = {};
@@ -807,23 +806,27 @@ static void test_applyOutputTimeLimit(void) {
     TEST_ASSERT_FALSE(applyOutputTimeLimit(channel, true));     
 }
 
-static void test_nextOutDelay(void)
+static void test_incrementOutputDelay(void)
 {
     channel_state_t state_channel;
     processing_channel_t channel(config13(), state_channel) ;
     
     channel.limitType = LimitingType::Min;
 
-    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel));
+    channel.incrementOutputDelay();
+    TEST_ASSERT_EQUAL_UINT8(1, channel._channel_state.outputDelayCount);
     channel._channel_state.outputDelayCount = 5;
-    TEST_ASSERT_EQUAL_UINT8(6, nextOutDelay(channel));
+    channel.incrementOutputDelay();
+    TEST_ASSERT_EQUAL_UINT8(6, channel._channel_state.outputDelayCount);
 
     channel.limitType = LimitingType::Max;
     channel.outputTimeLimit = 6;
     channel._channel_state.isOutputActive = true;
-    TEST_ASSERT_EQUAL_UINT8(7, nextOutDelay(channel));
+    channel.incrementOutputDelay();
+    TEST_ASSERT_EQUAL_UINT8(7, channel._channel_state.outputDelayCount);
     channel._channel_state.isOutputActive = false;
-    TEST_ASSERT_EQUAL_UINT8(1, nextOutDelay(channel));
+    channel.incrementOutputDelay();
+    TEST_ASSERT_EQUAL_UINT8(1, channel._channel_state.outputDelayCount);
 }
 
 void testProgrammableIOControl(void) 
@@ -853,6 +856,6 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_ProgrammableIOGetData_special_indices);
         RUN_TEST_P(test_FlatShiftBlink_EveryHalfSecond);
         RUN_TEST_P(test_applyOutputTimeLimit);
-        RUN_TEST_P(test_nextOutDelay);
+        RUN_TEST_P(test_incrementOutputDelay);
     }
 }
