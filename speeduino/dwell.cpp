@@ -3,7 +3,7 @@
 uint16_t computeDwell(const statuses &current, const config2 &page2, const config4 &page4, const table3d4RpmLoad &dwellTable)
 {
     uint16_t dwell;
-    if ( current.engineIsCranking )
+    if ( current.rotationStatus==EngineRotationStatus::Cranking )
     {
         dwell = page4.dwellCrank; //use cranking dwell
     }

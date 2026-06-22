@@ -271,9 +271,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       ignitionCount = 0;
       stopPumpPriming(currentStatus, configPage2); //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
-      currentStatus.engineIsCranking = false; //Clear cranking bit (Can otherwise get stuck 'on' even with 0 rpm)
       currentStatus.wueIsActive = false; //Same as above except for WUE
-      currentStatus.engineIsRunning = false; //Same as above except for RUNNING status
+      currentStatus.rotationStatus = EngineRotationStatus::Stopped;
       currentStatus.aseIsActive = false; //Same as above except for ASE status
       currentStatus.isAcceleratingTPS = false; //Same as above but the accel enrich (If using MAP accel enrich a stall will cause this to trigger)
       currentStatus.isDeceleratingTPS = false; //Same as above but the decel enleanment
@@ -481,21 +480,21 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         //Check whether running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
         {
-          currentStatus.engineIsRunning = true; //Sets the engine running bit
-          //Only need to do anything if we're transitioning from cranking to running
-          if( currentStatus.engineIsCranking )
+          bool crankToRun = currentStatus.rotationStatus==EngineRotationStatus::Cranking;
+          currentStatus.rotationStatus = EngineRotationStatus::Running;
+
+         //Only need to do anything if we're transitioning from cranking to running
+          if( crankToRun )
           {
-            currentStatus.engineIsCranking = false;
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, HIGH); }
           }
         }
         else
         {  
-          if( !currentStatus.engineIsRunning || (currentStatus.RPM < (currentStatus.crankRPM - CRANK_RUN_HYSTER)) )
+          if( (currentStatus.rotationStatus!=EngineRotationStatus::Running) || (currentStatus.RPM < (currentStatus.crankRPM - CRANK_RUN_HYSTER)) )
           {
             //Sets the engine cranking bit, clears the engine running bit
-            currentStatus.engineIsCranking = true;
-            currentStatus.engineIsRunning = false;
+            currentStatus.rotationStatus = EngineRotationStatus::Cranking;
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinIgnBypass, LOW); }
 
@@ -799,7 +798,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //Same as above, except for ignition
 
       //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( configPage4.ignCranklock && currentStatus.engineIsCranking && (currentStatus.decoder.getFeatures().hasFixedCrankingTiming) )
+      if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && (currentStatus.decoder.getFeatures().hasFixedCrankingTiming) )
       {
         fixedCrankingOverride = currentStatus.dwell * 3;
         //This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time

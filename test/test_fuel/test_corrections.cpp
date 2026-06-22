@@ -107,7 +107,7 @@ static void setup_correctionCranking(void) {
 static void test_corrections_cranking_inactive(void) {
   setup_correctionCranking();
   
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
 
@@ -117,7 +117,7 @@ static void test_corrections_cranking_inactive(void) {
 static void test_corrections_cranking_cranking(void) {
   setup_correctionCranking();
   
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
 
@@ -133,11 +133,11 @@ static void test_corrections_cranking_taper_noase(void) {
   currentStatus.ASEValue = 100U;
 
   // Reset taper
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   (void)correctionCranking();
 
   // Advance taper to halfway
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
     (void)correctionCranking();
   }
@@ -165,11 +165,11 @@ static void test_corrections_cranking_taper_withase(void) {
   currentStatus.ASEValue = 50U;
 
   // Reset taper
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   (void)correctionCranking();
 
   // Advance taper to halfway
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
     (void)correctionCranking();
   }
@@ -201,7 +201,7 @@ extern uint8_t correctionASE(void);
 static void test_corrections_ASE_inactive_cranking(void)
 {
   initialiseCorrections();
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
 
   // Taper finished
   TEST_ASSERT_EQUAL(100U, correctionASE());
@@ -214,7 +214,7 @@ extern table2D_u8_u8_4 ASECountTable; ///< 4 bin After Start duration map (2D)
 static inline void setup_correctionASE(void) {
   initialiseCorrections();
 
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.LOOP_TIMER = 0;
   BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ;
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
@@ -260,7 +260,7 @@ static void test_corrections_ASE_taper(void) {
   currentStatus.runSecs = 9;
 
   // Advance taper to halfway
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   for (uint8_t index=0; index<configPage2.aseTaperTime/2U; ++index) {
     (void)correctionASE();
   }
@@ -290,7 +290,7 @@ static void test_corrections_ASE(void)
 uint8_t correctionFloodClear(void);
 
 static void test_corrections_floodclear_no_crank_inactive(void) {
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
@@ -298,7 +298,7 @@ static void test_corrections_floodclear_no_crank_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear - 10;
 
@@ -306,7 +306,7 @@ static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_above_threshold_active(void) {
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
@@ -1597,7 +1597,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.launchingHard = false;
   currentStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.ASEValue = 100U;
 
   configPage2.dfcoEnabled = 0;

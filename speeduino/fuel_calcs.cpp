@@ -156,7 +156,7 @@ TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, cons
 
 // Apply the pwLimit if staging is disabled and engine is not cranking
 TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, const config10 &page10, const statuses &current) {
-  if( (!current.engineIsCranking) && (page10.stagingEnabled == false) ) { 
+  if( (current.rotationStatus!=EngineRotationStatus::Cranking) && (page10.stagingEnabled == false) ) { 
     return min(pw, pwLimit);
   }
   return pw;
