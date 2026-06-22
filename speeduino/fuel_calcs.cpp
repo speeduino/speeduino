@@ -3,10 +3,12 @@
 #include "unit_testing.h"
 #include "globals.h"
 #include "decoders.h"
+#include "units.h"
+#include "scheduler_fuel_controller.h"
 
-TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const decoder_status_t &decoderStatus) {
+TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
-  if ((page2.strokes == FOUR_STROKE) && ((page2.injLayout != INJ_SEQUENTIAL) || (decoderStatus.syncStatus==SyncStatus::Partial)))
+  if ((page2.strokes == FOUR_STROKE) && (current.injLayout != INJ_SEQUENTIAL))
   {
     //Default is 1 squirt per revolution, so we halve the given req-fuel figure (Which would be over 2 revolutions)
     //The req_fuel calculation above gives the total required fuel (At VE 100%) in the full cycle.
@@ -131,8 +133,8 @@ static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const
   return intermediate;
 }
 
-TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
-  uint16_t REQ_FUEL = calculateRequiredFuel(page2, decoderStatus);
+TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
+  uint16_t REQ_FUEL = calculateRequiredFuel(page2, current);
 
   //Standard float version of the calculation
   //return (REQ_FUEL * (float)(VE/100.0) * (float)(MAP/100.0) * (float)(TPS/100.0) * (float)(corrections/100.0) + injOpenTime);
@@ -237,252 +239,12 @@ TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint
   return { primaryPw, 0U };
 }
 
-
-void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, statuses &current) {
-  current.PW1 = current.PW2 = current.PW3 = current.PW4 = current.PW5 = current.PW6 = current.PW7 = current.PW8 = 0U;
-
-  #define ASSIGN_PULSEWIDTH_OR_ZERO(index, pw) \
-    current.PW ## index = ((current.maxInjOutputs) >= (uint8_t)(index)) ? (pw) : 0U
-
-  // The PW calcs already applied the logic to enable staging or not. If there is a valid
-  // secondary PW, staging is enabled 
-  if (pulse_widths.secondary!=0U) {
-    //Allocate the primary and secondary pulse widths based on the fuel configuration
-    switch (page2.nCylinders) {
-      case 1:
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.secondary);
-#endif
-        break;
-
-      case 2:
-        //Primary pulsewidth on channels 1 and 2, secondary on channels 3 and 4
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 4
-        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
-#endif
-        break;
-
-      case 3:
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
-#endif
-        //6 channels required for 'normal' 3 cylinder staging support
-#if INJ_CHANNELS >= 4
-        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 5
-        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 6
-        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
-#endif
-        break;
-
-      case 4:
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-        if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
-        {
-#if INJ_CHANNELS >= 3
-          ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 4
-          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
-#endif
-        // Staging with 4 cylinders semi/sequential requires 8 total channels
-#if INJ_CHANNELS >= 5
-          ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 6
-          ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 7
-          ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 8
-          ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.secondary);
-#endif
-        } else {
-#if INJ_CHANNELS >= 3
-          ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 4
-          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
-#endif
-        }
-        break;
-        
-      case 5:
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 4
-        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
-#endif
-        //No easily supportable 5 cylinder staging option unless there are at least 5 channels
-          if (page2.injLayout != INJ_SEQUENTIAL) {
-#if INJ_CHANNELS >= 5
-        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
-#endif
-          } else {
-#if INJ_CHANNELS >= 5
-        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
-#endif
-          }
-#if INJ_CHANNELS >= 6
-        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
-#endif
-        break;
-
-      case 6:
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
-#endif
-        // 6 cylinder staging only if not sequential
-        if (page2.injLayout != INJ_SEQUENTIAL) {
-#if INJ_CHANNELS >= 4
-        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 5
-        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 6
-        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
-#endif
-        } else {
-#if INJ_CHANNELS >= 4
-          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 5
-          ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 6
-          ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.primary);
-#endif
-          //If there are 8 channels, then the 6 cylinder sequential option is available by using channels 7 + 8 for staging
-#if INJ_CHANNELS >= 7
-          ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 8
-          ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.secondary);
-#endif
-        }
-        break;
-
-      case 8:
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-        ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 4
-        ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
-#endif
-        //8 cylinder staging only if not sequential
-        if (page2.injLayout != INJ_SEQUENTIAL)
-        {
-#if INJ_CHANNELS >= 5
-          ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 6
-          ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 7
-          ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 8
-          ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.secondary);
-#endif
-        } else {
-#if INJ_CHANNELS >= 5
-        ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 6
-        ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 7
-        ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 8
-        ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.primary);
-#endif          
-        }
-        break;
-
-      default:
-        //Assume 4 cylinder non-seq for default
-        ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-        ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-          ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.secondary);
-#endif
-#if INJ_CHANNELS >= 4
-          ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.secondary);
-#endif
-       break;
-    }
-  }
-  else if (pulse_widths.primary!=0U)
-  { 
-    ASSIGN_PULSEWIDTH_OR_ZERO(1, pulse_widths.primary);
-#if INJ_CHANNELS >= 2
-    ASSIGN_PULSEWIDTH_OR_ZERO(2, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 3
-    ASSIGN_PULSEWIDTH_OR_ZERO(3, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 4
-    ASSIGN_PULSEWIDTH_OR_ZERO(4, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 5
-    ASSIGN_PULSEWIDTH_OR_ZERO(5, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 6
-    ASSIGN_PULSEWIDTH_OR_ZERO(6, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 7
-    ASSIGN_PULSEWIDTH_OR_ZERO(7, pulse_widths.primary);
-#endif
-#if INJ_CHANNELS >= 8
-    ASSIGN_PULSEWIDTH_OR_ZERO(8, pulse_widths.primary);
-#endif
-  } else {
-    //No pulse widths to apply
-  } 
-}
-
 TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
   // Convert injector open time from tune to microseconds & apply voltage correction if required
   return page2.injOpen * current.batCorrection; 
 }
 
-pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current) {
+pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
   if (current.corrections!=0U) {
     uint16_t pwLimit = calculatePWLimit(page2, current);
     uint16_t injOpenTime = calculateOpenTime(page2, current);
@@ -490,7 +252,6 @@ pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const
                                                               page2,
                                                               page6,
                                                               page10, 
-                                                              decoderStatus,
                                                               current),
                                         pwLimit,
                                         page10,

@@ -8,13 +8,13 @@
 #endif
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
 
  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
 // #if defined(__MK64FX512__)         // use for Teensy 3.5 only 

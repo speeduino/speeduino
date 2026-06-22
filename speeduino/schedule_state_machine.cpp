@@ -3,27 +3,27 @@
 #include "preprocessor.h"
 
 BEGIN_LTO_ALWAYS_INLINE(void) defaultPendingToRunning(Schedule *schedule) {
-  schedule->pStartCallback();
-  schedule->Status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
-  SET_COMPARE(schedule->_compare, schedule->_counter + schedule->duration);
+  schedule->_pStartCallback();
+  schedule->_status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
+  SET_COMPARE(schedule->_compare, schedule->_counter + schedule->_duration);
 }
 END_LTO_INLINE()
 
 BEGIN_LTO_ALWAYS_INLINE(void) defaultRunningToOff(Schedule *schedule) {
-  schedule->pEndCallback();
-  schedule->Status = OFF;
+  schedule->_pEndCallback();
+  schedule->_status = OFF;
 }
 END_LTO_INLINE()
 
 BEGIN_LTO_ALWAYS_INLINE(void) defaultRunningToPending(Schedule *schedule) {
-  schedule->pEndCallback();
-  SET_COMPARE(schedule->_compare, schedule->nextStartCompare);
-  schedule->Status = PENDING;
+  schedule->_pEndCallback();
+  SET_COMPARE(schedule->_compare, schedule->_nextStartCompare);
+  schedule->_status = PENDING;
 }
 END_LTO_INLINE()
 
 static inline bool hasNextSchedule(const Schedule &schedule) {
-  return schedule.Status==RUNNING_WITHNEXT;
+  return schedule._status==RUNNING_WITHNEXT;
 }
 
 BEGIN_LTO_ALWAYS_INLINE(void) movetoNextState(Schedule &schedule, 
@@ -31,7 +31,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) movetoNextState(Schedule &schedule,
                     scheduleStateTranstionFunc runningToOff,
                     scheduleStateTranstionFunc runningToPending)
 {
-  if (schedule.Status == PENDING) //Check to see if this schedule is turn on
+  if (schedule._status == PENDING) //Check to see if this schedule is turn on
   {
     pendingToRunning(&schedule);
   }

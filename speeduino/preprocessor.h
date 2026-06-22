@@ -77,3 +77,9 @@
     returnType __attribute__((always_inline)) // cppcheck-suppress misra-c2012-20.7
 #define END_LTO_INLINE() \
     _Pragma("GCC diagnostic pop")
+
+#if !defined(UNIT_TEST)
+#define FORCE_INLINE inline __attribute__((always_inline))
+#else
+#define FORCE_INLINE inline
+#endif

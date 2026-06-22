@@ -52,18 +52,18 @@ static inline int16_t ignitionLimits(int16_t angle) {
     return nudge(0, CRANK_ANGLE_MAX_IGN-1, angle, CRANK_ANGLE_MAX_IGN);
 }
 
-/**
- * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_INJ]
- * 
- * @param angle A crank angle in degrees
- * @return int16_t 
- */
-static inline int16_t injectorLimits(int16_t angle)
+/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ] */
+static inline uint16_t injectorLimits(uint16_t angle)
 {
-    int16_t tempAngle = angle;
-    if(tempAngle < 0) { tempAngle = tempAngle + CRANK_ANGLE_MAX_INJ; }
-    while(tempAngle > CRANK_ANGLE_MAX_INJ ) { tempAngle -= CRANK_ANGLE_MAX_INJ; }
-    return tempAngle;
+    while(angle >= (uint16_t)CRANK_ANGLE_MAX_INJ ) { angle -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
+    return angle;
+}
+
+/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ] */
+static inline uint16_t injectorLimits(int16_t angle)
+{
+    while(angle < 0) { angle += CRANK_ANGLE_MAX_INJ; }
+    return injectorLimits((uint16_t)angle);
 }
 
 /**
@@ -71,7 +71,7 @@ static inline int16_t injectorLimits(int16_t angle)
  * 
  * @param revolutionTime The crank revolution time.
  */
-void setAngleConverterRevolutionTime(uint32_t revolutionTime);
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept;
 
 /**
  * @brief Converts angular degrees to the time interval that amount of rotation
@@ -83,7 +83,7 @@ void setAngleConverterRevolutionTime(uint32_t revolutionTime);
  * @param angle Angle in degrees
  * @return Time interval in uS
  */
-uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
+uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) noexcept;
 
 /**
  * @brief Converts angular degrees to the equivalent timer ticks at current RPM.
@@ -91,7 +91,7 @@ uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
  * @param angle Angle in degrees
  * @return Number of timer ticks 
  */
-COMPARE_TYPE angleToTimerTicks(uint16_t angle);
+COMPARE_TYPE angleToTimerTicks(uint16_t angle) noexcept;
 
 /**
  * @brief Converts a time interval in microsecods to the equivalent degrees of angular (crank)
@@ -102,6 +102,6 @@ COMPARE_TYPE angleToTimerTicks(uint16_t angle);
  * @param time Time interval in uS
  * @return Angle in degrees
  */
-uint16_t timeToAngleDegPerMicroSec(uint32_t time);
+uint16_t timeToAngleDegPerMicroSec(uint32_t time) noexcept;
 
 #endif

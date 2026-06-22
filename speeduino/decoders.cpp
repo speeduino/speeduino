@@ -38,7 +38,6 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler.h"
 #include "crankMaths.h"
 #include "timers.h"
-#include "schedule_calcs.h"
 #include "unit_testing.h"
 #include "atomic.h"
 #include "decoder_init.h"

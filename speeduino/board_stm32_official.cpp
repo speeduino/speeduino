@@ -3,11 +3,11 @@
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
 
 #if defined(BOARD_FCR_MICRO_F4)
 extern "C" void __real_pinMode(uint8_t pin, uint8_t mode);

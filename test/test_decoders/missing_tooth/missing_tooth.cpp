@@ -1,7 +1,7 @@
 #include <decoders.h>
 #include <globals.h>
 #include <unity.h>
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
 
