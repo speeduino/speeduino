@@ -152,6 +152,32 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
 #undef SET_FUEL_CHANNEL
 }
 
+static inline bool haveSwitchedToBatteryPower(uint8_t originalBatteryVoltage, const statuses &current)
+{
+  return (originalBatteryVoltage < 55U)
+      && (current.battery10 > 70)
+      && (current.RPM == 0U)
+      ;
+}
+
+// The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
+// If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
+// Should that happen, we re-trigger the fuel pump priming and idle homing (If using a stepper)
+static void onPowerSourceSwitch(uint8_t originalBatteryVoltage, const statuses &current, const config2 &page2, const config6 &page6)
+{
+  if( haveSwitchedToBatteryPower(originalBatteryVoltage, current) )
+  {
+    //Re-prime the fuel pump
+    startPumpPriming(current, page2);
+
+    //Redo the stepper homing
+    if(isStepperIac(page6) )
+    {
+      initialiseIdle(true);
+    }
+  }
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -177,6 +203,8 @@ static inline void setFuelSchedules(const statuses &current, const uint16_t (&in
  */
 BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 {
+  uint8_t originalBatteryVoltage = currentStatus.battery10;
+
       if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
       currentStatus.LOOP_TIMER = getAndClearTimerMask();
 
@@ -801,6 +829,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
+    onPowerSourceSwitch(originalBatteryVoltage, currentStatus, configPage2, configPage6);
 } //loop()
 END_LTO_INLINE()
 
