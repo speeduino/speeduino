@@ -27,7 +27,6 @@ FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress mi
 FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
 
-
 static __attribute__((optimize("Os"))) void setupSequentialCallbacks(void)
 {
   #define SET_CALLBACKS(index) setCallbacks(fuelSchedule ## index, openInjector ## index, closeInjector ## index);\
@@ -189,7 +188,7 @@ static inline void changeFuellingToFullSequential(const config2 &page2, statuses
     if( !isAnyFuelScheduleRunning() )
     {
       CRANK_ANGLE_MAX_INJ = 720;
-      current.numPrimaryInjOutputs = page2.nCylinders;
+      current.injOutputs.primary = page2.nCylinders;
       current.injLayout = INJ_SEQUENTIAL;
       setupCallbacks(INJ_SEQUENTIAL, page2.nCylinders, 0U);
     }
@@ -203,7 +202,7 @@ static inline void changeFuellingToSemiSequential(const config2 &page2, const co
     if( !isAnyFuelScheduleRunning() )
     {
       CRANK_ANGLE_MAX_INJ = 360;
-      current.numPrimaryInjOutputs = page2.nCylinders/2U;
+      current.injOutputs.primary = page2.nCylinders/2U;
       current.injLayout = INJ_SEMISEQUENTIAL;
       setupCallbacks(INJ_SEMISEQUENTIAL, page2.nCylinders, page4.inj4cylPairing);
     }
@@ -387,7 +386,7 @@ static inline void assignPrimaryPws(const pulseWidths &pulse_widths, const confi
 {
   #define ASSIGN_PRIMARY_PW(index) fuelSchedule ## index .pw = applyFuelTrim(trimTables[index-1U], pulse_widths.primary, page6, current);
 
-  switch (current.numPrimaryInjOutputs)
+  switch (current.injOutputs.primary)
   {
   case 8:
 #if INJ_CHANNELS >= 8
@@ -442,12 +441,12 @@ static inline void assignPrimaryPws(const pulseWidths &pulse_widths, const confi
 static inline void assignSecondaryPws(const pulseWidths &pulse_widths, const statuses &current)
 {
   #define ASSIGN_SECONDARY_PW(index) \
-    if ((index>current.numPrimaryInjOutputs) && (index<=getTotalInjChannelCount(current))) \
+    if (current.injOutputs.isSecondaryInjector(index)) \
     { \
       fuelSchedule ## index .pw = pulse_widths.secondary; \
     }
 
-  if (current.numSecondaryInjOutputs>0U)
+  if (current.injOutputs.secondary>0U)
   {
 #if INJ_CHANNELS >= 2
     ASSIGN_SECONDARY_PW(2);
@@ -593,27 +592,27 @@ void __attribute__((optimize("Os"))) beginInjectorPriming(const statuses &curren
     constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
 
     primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
-    if ( getTotalInjChannelCount(current) >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
 #if (INJ_CHANNELS >= 2)
-    if ( getTotalInjChannelCount(current) >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( getTotalInjChannelCount(current) >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( getTotalInjChannelCount(current) >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( getTotalInjChannelCount(current) >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( getTotalInjChannelCount(current) >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( getTotalInjChannelCount(current) >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( getTotalInjChannelCount(current) >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
 #endif
   }
 }
@@ -655,18 +654,18 @@ static __attribute__((optimize("Os"))) void clampInjectionChannelAngles(void)
 
 static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &current, const config2 &page2, const config10 &page10)
 {
-  current.numPrimaryInjOutputs = 1; // Disable all injectors expect channel 1
-  current.numSecondaryInjOutputs = 0;
+  current.injOutputs.primary = 1; // Disable all injectors expect channel 1
+  current.injOutputs.secondary = 0;
 
   switch (page2.nCylinders) {
   case 1:
       fuelSchedule1.channelDegrees = 0;
-      current.numPrimaryInjOutputs = 1;
+      current.injOutputs.primary = 1;
 
       //Check if injector staging is enabled
       if(page10.stagingEnabled == true)
       {
-        current.numSecondaryInjOutputs = 1;
+        current.injOutputs.secondary = 1;
 #if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = fuelSchedule1.channelDegrees;
 #endif
@@ -675,7 +674,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 
   case 2:
       fuelSchedule1.channelDegrees = 0;
-      current.numPrimaryInjOutputs = 2;
+      current.injOutputs.primary = 2;
 
       //The below are true regardless of whether this is running sequential or not
 #if (INJ_CHANNELS >= 2)
@@ -695,7 +694,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       //Check if injector staging is enabled
       if(page10.stagingEnabled == true)
       {
-        current.numSecondaryInjOutputs = 2;
+        current.injOutputs.secondary = 2;
 
 #if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
@@ -708,7 +707,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       break;
 
   case 3:
-      current.numPrimaryInjOutputs = 3;
+      current.injOutputs.primary = 3;
 
       //For alternating injection, the squirt occurs at different times for each channel
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) )
@@ -783,14 +782,14 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if(page10.stagingEnabled == true)
       {
         #if INJ_CHANNELS >= 6
-          current.numSecondaryInjOutputs = 3;
+          current.injOutputs.secondary = 3;
 
           fuelSchedule4.channelDegrees = fuelSchedule1.channelDegrees;
           fuelSchedule5.channelDegrees = fuelSchedule2.channelDegrees;
           fuelSchedule6.channelDegrees = fuelSchedule3.channelDegrees;
         #else
           //Staged output is on channel 4
-          current.numSecondaryInjOutputs = 1;
+          current.injOutputs.secondary = 1;
 #if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = fuelSchedule1.channelDegrees;
 #endif
@@ -799,7 +798,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       break;
   case 4:
       fuelSchedule1.channelDegrees = 0;
-      current.numPrimaryInjOutputs = 2;
+      current.injOutputs.primary = 2;
 
       //For alternating injection, the squirt occurs at different times for each channel
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) || (page2.strokes == TWO_STROKE) )
@@ -837,24 +836,24 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule4.channelDegrees = 540;
 #endif
 
-        current.numPrimaryInjOutputs = 4;
+        current.injOutputs.primary = 4;
       }
       else
       {
         //Should never happen, but default values
-        current.numPrimaryInjOutputs = 2;
+        current.injOutputs.primary = 2;
       }
 
       //Check if injector staging is enabled
       if(page10.stagingEnabled == true)
       {
-        current.numPrimaryInjOutputs = 4;
+        current.injOutputs.primary = 4;
 
         if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
         {
           //Staging with 4 cylinders semi/sequential requires 8 total channels
           #if INJ_CHANNELS >= 8
-            current.numSecondaryInjOutputs = 4;
+            current.injOutputs.secondary = 4;
 
             fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
             fuelSchedule6.channelDegrees = fuelSchedule2.channelDegrees;
@@ -864,7 +863,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
             //This is an invalid config as there are not enough outputs to support sequential + staging
             //Put the staging output to the non-existent channel 5
             #if (INJ_CHANNELS >= 5)
-            current.numSecondaryInjOutputs = 1;
+            current.injOutputs.secondary = 1;
             fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
             #endif
           #endif
@@ -882,7 +881,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 
       break;
   case 5:
-      current.numPrimaryInjOutputs = 4; //Is updated below to 5 if there are enough channels
+      current.injOutputs.primary = 4; //Is updated below to 5 if there are enough channels
 
       //For alternating injection, the squirt occurs at different times for each channel
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) || (page2.strokes == TWO_STROKE) )
@@ -932,16 +931,16 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule4.channelDegrees = 432;
         fuelSchedule5.channelDegrees = 576;
 
-        current.numPrimaryInjOutputs = 5;
+        current.injOutputs.primary = 5;
       }
   #endif
 
   #if INJ_CHANNELS >= 6
-        if(page10.stagingEnabled == true) { current.numSecondaryInjOutputs = 1; }
+        if(page10.stagingEnabled == true) { current.injOutputs.secondary = 1; }
   #endif
       break;
   case 6:
-      current.numPrimaryInjOutputs = 3;
+      current.injOutputs.primary = 3;
 
       //For alternating injection, the squirt occurs at different times for each channel
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) )
@@ -986,17 +985,17 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule5.channelDegrees = 480;
         fuelSchedule6.channelDegrees = 600;
 
-        current.numPrimaryInjOutputs = 6;
+        current.injOutputs.primary = 6;
       }
       else if(page10.stagingEnabled == true) //Check if injector staging is enabled
       {
-        current.numSecondaryInjOutputs = 3;
+        current.injOutputs.secondary = 3;
 
         if( (page2.injLayout == INJ_SEQUENTIAL) || (page2.injLayout == INJ_SEMISEQUENTIAL) )
         {
           //Staging with 6 cylinders semi/sequential requires 7 total channels
           #if INJ_CHANNELS >= 7
-            current.numSecondaryInjOutputs = 4;
+            current.injOutputs.secondary = 4;
 
             fuelSchedule5.channelDegrees = fuelSchedule1.channelDegrees;
             fuelSchedule6.channelDegrees = fuelSchedule2.channelDegrees;
@@ -1012,7 +1011,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
   #endif
       break;
   case 8:
-      current.numPrimaryInjOutputs = 4;
+      current.injOutputs.primary = 4;
 
       //For alternating injection, the squirt occurs at different times for each channel
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) )
@@ -1069,7 +1068,7 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule7.channelDegrees = 540;
         fuelSchedule8.channelDegrees = 630;
 
-        current.numPrimaryInjOutputs = 8;
+        current.injOutputs.primary = 8;
       }
   #endif
 
@@ -1106,7 +1105,7 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calulateNumSquirts(const
   return (std::max)((uint8_t)1, nSquirts);
 }
 
-TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2)
+TESTABLE_STATIC __attribute__((optimize("Os"))) uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2)
 {
   // Default
   uint16_t maxAngle = (page2.strokes == FOUR_STROKE ? 720 : 360) / squirtsPerCycle;
