@@ -178,7 +178,7 @@ static void test_beginInjectorPriming_floodclear(void)
     current.TPS = page4.floodClear+1;
     set_all_schedules_off();
 
-    current.numPrimaryInjOutputs = channel;
+    current.injOutputs.primary = channel;
     beginInjectorPriming(current, page4);
 
     RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, false); }, {});
@@ -207,7 +207,7 @@ static void test_beginInjectorPriming(void)
     current.coolant = COOLANT_TEMP;
     set_all_schedules_off();
 
-    current.numPrimaryInjOutputs = channel;
+    current.injOutputs.primary = channel;
     beginInjectorPriming(current, page4);
 
     RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, channel>=1); }, {});

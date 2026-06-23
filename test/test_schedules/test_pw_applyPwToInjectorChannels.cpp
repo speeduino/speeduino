@@ -37,8 +37,8 @@ static statuses getRandomPW(void) {
 }
 
 static statuses setPrimarySecondaryChannels(statuses current, uint8_t primary, uint8_t secondary) {
-  current.numPrimaryInjOutputs = INJ_CHANNELS>=primary ? primary : INJ_CHANNELS;
-  current.numSecondaryInjOutputs = INJ_CHANNELS>=(primary+secondary) ? secondary : (INJ_CHANNELS>primary ? INJ_CHANNELS-primary : 0U);
+  current.injOutputs.primary = INJ_CHANNELS>=primary ? primary : INJ_CHANNELS;
+  current.injOutputs.secondary = INJ_CHANNELS>=(primary+secondary) ? secondary : (INJ_CHANNELS>primary ? INJ_CHANNELS-primary : 0U);
   return current;
 }
 
@@ -104,10 +104,10 @@ static void zeroTrimTables(void)
 
 static inline uint16_t getExpectedChannelPw(const statuses &current, const pulseWidths &widths, uint8_t channel, uint8_t trimPct)
 {
-  if (channel<=current.numPrimaryInjOutputs) {
+  if (channel<=current.injOutputs.primary) {
     return percentageApprox((uint8_t)(100U+trimPct), widths.primary);
   }
-  if (channel<=getTotalInjChannelCount(current)) {
+  if (channel<=current.injOutputs.getTotalInjectors()) {
     // Secondary channels do NOT have trims applied
     return widths.secondary;
   }
@@ -126,7 +126,7 @@ static void test_noTrim_inner(void)
   pulseWidths pulseWidths = { 333, 777 };
 
   char szMsg[128];
-  snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
+  snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.injOutputs.primary, current.injOutputs.secondary);
   TEST_MESSAGE(szMsg);
   applyPwToInjectorChannels(pulseWidths, page2, page4, page6, current);
   TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, 0U), true);
@@ -160,7 +160,7 @@ static void test_withTrim_inner(void)
 #endif
 
   char szMsg[128];
-  snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
+  snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.injOutputs.primary, current.injOutputs.secondary);
   TEST_MESSAGE(szMsg);
   applyPwToInjectorChannels(pulseWidths, page2, page4, page6, current);
   TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, -50), true);
