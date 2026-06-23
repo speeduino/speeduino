@@ -18,9 +18,15 @@ extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2
 extern bool canUseCycleAverage(const statuses &current, const config2 &page2);
 
 static decoder_status_t decoderStatus;
+static int16_t crankAngle;
 static decoder_status_t getDecoderStatus(void)
 {
     return decoderStatus;
+}
+
+static int16_t getCrankAngle(void)
+{
+    return crankAngle;
 }
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
@@ -164,7 +170,7 @@ struct cycleMinmumMAPReading_test_data {
 
   cycleMinmumMAPReading_test_data(void)
   {
-    current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+    current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).setGetCrankAngle(getCrankAngle).build();
   }  
 };
 
@@ -172,8 +178,11 @@ static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
   test_data.current.setRpm(4300U);
   test_data.current.startRevolutions = 0U;
   test_data.page2.mapSwitchPoint = 15; 
+  test_data.page2.strokes = FOUR_STROKE;
   test_data.cycle_min.cycleStartIndex = 0;
   test_data.cycle_min.mapMinimum = UINT16_MAX;
+  test_data.cycle_min.mapMaximum = 0U;
+  crankAngle = 0;
 }
 
 static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
@@ -223,6 +232,52 @@ static void test_cycleMinimumMAPReading(void) {
 
   TEST_ASSERT_NOT_EQUAL_UINT(test_data.sensorReadings.mapADC, test_data.cycle_min.mapMinimum);
   TEST_ASSERT_EQUAL_UINT(300, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(300, test_data.cycle_min.mapMaximum);
+  TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
+}
+
+static void test_cycleMinimumMAPReading_twoStrokePseudoMAP(void) {
+  cycleMinmumMAPReading_test_data test_data;
+  setup_cycle_minimum(test_data);
+
+  test_data.page2.strokes = TWO_STROKE;
+  test_data.page2.mapMin = 0;
+  test_data.page2.mapMax = 200;
+  test_data.cycle_min.cycleStartIndex = test_data.current.startRevolutions;
+
+  crankAngle = 0;
+  test_data.sensorReadings.mapADC = 100;
+  test_data.sensorReadings.emapADC = 200;
+  TEST_ASSERT_FALSE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(test_data.cycle_min.twoStrokeMinSampled);
+  TEST_ASSERT_EQUAL_UINT(100, test_data.cycle_min.twoStrokeMinADC);
+
+  crankAngle = 140;
+  test_data.sensorReadings.mapADC = 400;
+  test_data.sensorReadings.emapADC = 500;
+  TEST_ASSERT_FALSE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_TRUE(test_data.cycle_min.twoStrokeMaxSampled);
+  TEST_ASSERT_EQUAL_UINT(400, test_data.cycle_min.twoStrokeMaxADC);
+
+  crankAngle = 220;
+  test_data.sensorReadings.mapADC = 50;
+  test_data.sensorReadings.emapADC = 170;
+  TEST_ASSERT_FALSE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+  TEST_ASSERT_EQUAL_UINT(50, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(400, test_data.cycle_min.mapMaximum);
+
+  ++test_data.current.startRevolutions;
+  test_data.sensorReadings.mapADC = 300;
+  test_data.sensorReadings.emapADC = 500;
+  TEST_ASSERT_TRUE(cycleMinimumMAPReading(test_data.current, test_data.page2, test_data.cycle_min, test_data.sensorReadings));
+
+  TEST_ASSERT_EQUAL_UINT(50U, test_data.sensorReadings.mapADC);
+  TEST_ASSERT_TRUE(test_data.cycle_min.hasTwoStrokePseudoMAP);
+  TEST_ASSERT_EQUAL_UINT(177U, test_data.cycle_min.twoStrokePseudoMAP);
+  TEST_ASSERT_EQUAL_UINT(300U, test_data.cycle_min.mapMinimum);
+  TEST_ASSERT_EQUAL_UINT(300U, test_data.cycle_min.mapMaximum);
+  TEST_ASSERT_FALSE(test_data.cycle_min.twoStrokeMinSampled);
+  TEST_ASSERT_FALSE(test_data.cycle_min.twoStrokeMaxSampled);
   TEST_ASSERT_EQUAL_UINT8(test_data.current.startRevolutions, test_data.cycle_min.cycleStartIndex);
 }
 
@@ -486,6 +541,7 @@ static void test_storeLastMAPReadings_basic(void) {
 }
 
 extern void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current);
+extern void applyTwoStrokePseudoMAP(const config2 &page2, map_algorithm_t &algorithmState, statuses &current);
 
 static void test_setMAPValuesFromReadings_no_emap(void) {
   map_adc_readings_t readings = {};
@@ -528,6 +584,24 @@ static void test_setMAPValuesFromReadings_with_emap(void) {
   TEST_ASSERT_EQUAL_INT(35, current.EMAP);
 }
 
+static void test_applyTwoStrokePseudoMAP(void) {
+  config2 page2 = {};
+  statuses current = {};
+  map_algorithm_t alg = {};
+  current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+
+  page2.mapSample = MAPSamplingCycleMinimum;
+  page2.strokes = TWO_STROKE;
+  current.MAP = 44U;
+  alg.cycle_min.twoStrokePseudoMAP = 177U;
+  alg.cycle_min.hasTwoStrokePseudoMAP = true;
+
+  applyTwoStrokePseudoMAP(page2, alg, current);
+
+  TEST_ASSERT_EQUAL_UINT(177U, current.MAP);
+  TEST_ASSERT_FALSE(alg.cycle_min.hasTwoStrokePseudoMAP);
+}
+
 void test_map_sampling(void) {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_instantaneous);
@@ -537,6 +611,7 @@ void test_map_sampling(void) {
     RUN_TEST_P(test_cycleAverageMAPReading_nosamples);
     RUN_TEST_P(test_cycleMinimumMAPReading_fallback_instantaneous);
     RUN_TEST_P(test_cycleMinimumMAPReading);
+    RUN_TEST_P(test_cycleMinimumMAPReading_twoStrokePseudoMAP);
     RUN_TEST_P(test_canUseEventAverage);
     RUN_TEST_P(test_eventAverageMAPReading_fallback_instantaneous);
     RUN_TEST_P(test_eventAverageMAPReading);
@@ -550,5 +625,6 @@ void test_map_sampling(void) {
     RUN_TEST_P(test_storeLastMAPReadings_basic);
     RUN_TEST_P(test_setMAPValuesFromReadings_no_emap);
     RUN_TEST_P(test_setMAPValuesFromReadings_with_emap);
+    RUN_TEST_P(test_applyTwoStrokePseudoMAP);
   }    
 }
