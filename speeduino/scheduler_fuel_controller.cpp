@@ -662,7 +662,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if ( (page2.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
       {
         CRANK_ANGLE_MAX_INJ = 720;
-        current.nSquirts = 1;
       }
 
       //Check if injector staging is enabled
@@ -682,7 +681,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if ( (page2.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
       {
         CRANK_ANGLE_MAX_INJ = 720;
-        current.nSquirts = 1;
       }
       //The below are true regardless of whether this is running sequential or not
 #if (INJ_CHANNELS >= 2)
@@ -730,8 +728,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 
         if(page2.injType == INJ_TYPE_PORT)
         { 
-          //Force nSquirts to 2 for individual port injection. This prevents TunerStudio forcing the value to 3 even when this isn't wanted. 
-          current.nSquirts = 2;
           if(page2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 360; }
           else { CRANK_ANGLE_MAX_INJ = 180; }
         }
@@ -761,8 +757,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       }
       else if (page2.injLayout == INJ_SEQUENTIAL)
       {
-        current.nSquirts = 1;
-
         if(page2.strokes == TWO_STROKE)
         {
           fuelSchedule1.channelDegrees = 0;
@@ -859,7 +853,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         current.numPrimaryInjOutputs = 4;
 
         CRANK_ANGLE_MAX_INJ = 720;
-        current.nSquirts = 1;
       }
       else
       {
@@ -957,7 +950,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         current.numPrimaryInjOutputs = 5;
 
         CRANK_ANGLE_MAX_INJ = 720;
-        current.nSquirts = 1;
       }
   #endif
 
@@ -1014,7 +1006,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         current.numPrimaryInjOutputs = 6;
 
         CRANK_ANGLE_MAX_INJ = 720;
-        current.nSquirts = 1;
       }
       else if(page10.stagingEnabled == true) //Check if injector staging is enabled
       {
@@ -1100,7 +1091,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         current.numPrimaryInjOutputs = 8;
 
         CRANK_ANGLE_MAX_INJ = 720;
-        current.nSquirts = 1;
       }
   #endif
 
@@ -1122,12 +1112,23 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
   }
 }
 
-static __attribute__((optimize("Os"))) uint8_t calulateDefaultSquirts(const config2 &page2)
+TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calulateNumSquirts(const config2 &page2)
 {
   uint8_t nSquirts = 2U;
   if (page2.divider != 0)
   { 
     nSquirts = page2.nCylinders / page2.divider; //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
+  }
+  if ( (page2.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
+  {
+    nSquirts = 1U;
+  }
+  // Force nSquirts to 2 for individual port injection.
+  // This prevents TunerStudio forcing the value to 3 even when this isn't wanted. 
+  if ((page2.nCylinders==3U) && (page2.injType == INJ_TYPE_PORT)
+  && ((page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED)))
+  {
+    nSquirts = 2;
   }
 
   //Safety check. Should never happen as TS will give an error, but leave in case tune is manually altered etc. 
@@ -1142,7 +1143,7 @@ void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, 
   setupCallbacks(page2.injLayout, page2.nCylinders, page4.inj4cylPairing);
   current.injLayout = page2.injLayout;
 
-  current.nSquirts = calulateDefaultSquirts(page2);
+  current.nSquirts = calulateNumSquirts(page2);
   initFuelScheduleAngles(current, page2, page10);
   clampInjectionChannelAngles();
 }
