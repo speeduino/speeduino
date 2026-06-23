@@ -655,8 +655,6 @@ static __attribute__((optimize("Os"))) void clampInjectionChannelAngles(void)
 
 static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &current, const config2 &page2, const config10 &page10)
 {
-  CRANK_ANGLE_MAX_INJ = (page2.strokes == FOUR_STROKE ? 720 : 360) / current.nSquirts;
-
   current.numPrimaryInjOutputs = 1; // Disable all injectors expect channel 1
   current.numSecondaryInjOutputs = 0;
 
@@ -664,11 +662,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
   case 1:
       fuelSchedule1.channelDegrees = 0;
       current.numPrimaryInjOutputs = 1;
-
-      if ( (page2.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
-      {
-        CRANK_ANGLE_MAX_INJ = 720;
-      }
 
       //Check if injector staging is enabled
       if(page10.stagingEnabled == true)
@@ -684,10 +677,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       fuelSchedule1.channelDegrees = 0;
       current.numPrimaryInjOutputs = 2;
 
-      if ( (page2.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
-      {
-        CRANK_ANGLE_MAX_INJ = 720;
-      }
       //The below are true regardless of whether this is running sequential or not
 #if (INJ_CHANNELS >= 2)
       if (page2.engineType == EVEN_FIRE ) { fuelSchedule2.channelDegrees = 180; }
@@ -731,12 +720,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 #if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = 240;
 #endif
-
-        if(page2.injType == INJ_TYPE_PORT)
-        { 
-          if(page2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = 360; }
-          else { CRANK_ANGLE_MAX_INJ = 180; }
-        }
         
         //Adjust the injection angles based on the number of squirts
         if (current.nSquirts > 2)
@@ -772,7 +755,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 #if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 240;
 #endif
-          CRANK_ANGLE_MAX_INJ = 360;
         }
         else
         {
@@ -783,7 +765,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 #if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 480;
 #endif
-          CRANK_ANGLE_MAX_INJ = 720;
         }
       }
       else
@@ -857,8 +838,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
 #endif
 
         current.numPrimaryInjOutputs = 4;
-
-        CRANK_ANGLE_MAX_INJ = 720;
       }
       else
       {
@@ -954,8 +933,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule5.channelDegrees = 576;
 
         current.numPrimaryInjOutputs = 5;
-
-        CRANK_ANGLE_MAX_INJ = 720;
       }
   #endif
 
@@ -1010,8 +987,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule6.channelDegrees = 600;
 
         current.numPrimaryInjOutputs = 6;
-
-        CRANK_ANGLE_MAX_INJ = 720;
       }
       else if(page10.stagingEnabled == true) //Check if injector staging is enabled
       {
@@ -1095,8 +1070,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         fuelSchedule8.channelDegrees = 630;
 
         current.numPrimaryInjOutputs = 8;
-
-        CRANK_ANGLE_MAX_INJ = 720;
       }
   #endif
 
@@ -1107,14 +1080,6 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       fuelSchedule2.channelDegrees = 180;
 #endif
       break;
-  }
-
-  //Special case:
-  //3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are not evenly divisible into 360
-  //This is ONLY the case on 4 stroke systems
-  if( (current.nSquirts == 3) || (current.nSquirts == 5) )
-  {
-    if(page2.strokes == FOUR_STROKE) { CRANK_ANGLE_MAX_INJ = (720U / current.nSquirts); }
   }
 }
 
@@ -1141,6 +1106,38 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calulateNumSquirts(const
   return max((uint8_t)1, nSquirts);
 }
 
+TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2)
+{
+  // Default
+  uint16_t maxAngle = (page2.strokes == FOUR_STROKE ? 720 : 360) / squirtsPerCycle;
+
+  // Special cases
+  if (page2.nCylinders==3U)
+  {
+    if (page2.injLayout == INJ_SEQUENTIAL)
+    {
+      maxAngle = (page2.strokes == FOUR_STROKE) ? 720 : 360;
+    }
+    else if ((page2.injType == INJ_TYPE_PORT)
+        && ( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) ))
+    { 
+      maxAngle = (page2.strokes == FOUR_STROKE) ? 360 : 180;
+    }
+    else
+    {
+      // Use default
+    }
+  }
+  // 3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are 
+  // not evenly divisible into 360. This is ONLY the case on 4 stroke systems
+  if ((page2.strokes == FOUR_STROKE) && ( (squirtsPerCycle == 3) || (squirtsPerCycle == 5) ))
+  {
+    maxAngle = 720U / squirtsPerCycle;
+  }
+
+  return maxAngle;
+}
+
 void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10, const pinNumbers_t &pins)
 {
   initialiseInjectionIO(page4, pins);
@@ -1150,6 +1147,7 @@ void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, 
   current.injLayout = page2.injLayout;
 
   current.nSquirts = calulateNumSquirts(page2);
+  CRANK_ANGLE_MAX_INJ = calculateMaxInjAngle(current.nSquirts, page2);
   initFuelScheduleAngles(current, page2, page10);
   clampInjectionChannelAngles();
 }
