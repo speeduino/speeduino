@@ -3,6 +3,8 @@
 
 extern uint8_t calulateNumSquirts(const config2 &page2);
 extern uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2);
+extern uint8_t calcNumPrimaryInjectors(config2 &page2);
+extern uint8_t calcNumSecondaryInjectors(uint16_t primary, const config2 &page2, config10 &page10);
 
 static void test_calulateNumSquirts_default_no_divider(void)
 {
@@ -173,6 +175,90 @@ static void test_calculateMaxInjAngle_four_stroke_five_squirts_tracks_720(void)
   TEST_ASSERT_EQUAL_UINT16(144U, calculateMaxInjAngle(5, page2));
 }
 
+static void assert_calcNumPrimaryInjectors_nonsequential(config2 &page2)
+{
+    page2.nCylinders = 0;
+    TEST_ASSERT_EQUAL(1, calcNumPrimaryInjectors(page2));
+    page2.nCylinders = 2;
+    TEST_ASSERT_EQUAL(2, calcNumPrimaryInjectors(page2));
+    page2.nCylinders = 5;
+    TEST_ASSERT_EQUAL(INJ_CHANNELS>=5 ? 5 : INJ_CHANNELS, calcNumPrimaryInjectors(page2));
+    page2.nCylinders = 6;
+    TEST_ASSERT_EQUAL(3, calcNumPrimaryInjectors(page2));
+}
+
+static void test_calcNumPrimaryInjectors_nonsequential(void)
+{
+    config2 page2 = {};
+    page2.injLayout = INJ_PAIRED;
+    assert_calcNumPrimaryInjectors_nonsequential(page2);
+    page2.injLayout = INJ_SEMISEQUENTIAL;
+    assert_calcNumPrimaryInjectors_nonsequential(page2);
+    page2.injLayout = INJ_BANKED;
+    assert_calcNumPrimaryInjectors_nonsequential(page2);
+}
+
+static void test_calcNumPrimaryInjectors_sequential(void)
+{
+    config2 page2 = {};
+    page2.injLayout = INJ_SEQUENTIAL;
+    
+    page2.nCylinders = 0;
+    TEST_ASSERT_EQUAL(1, calcNumPrimaryInjectors(page2));
+    
+    page2.nCylinders = 2;
+    TEST_ASSERT_EQUAL(2, calcNumPrimaryInjectors(page2));
+    
+    page2.nCylinders = 5;
+    TEST_ASSERT_EQUAL(INJ_CHANNELS>=5 ? 5 : INJ_CHANNELS, calcNumPrimaryInjectors(page2));
+
+    page2.nCylinders = 6;
+    TEST_ASSERT_EQUAL(INJ_CHANNELS>=6 ? 6 : 4, calcNumPrimaryInjectors(page2));
+
+    page2.nCylinders = INJ_CHANNELS+1;
+    TEST_ASSERT_EQUAL(INJ_CHANNELS, calcNumPrimaryInjectors(page2));
+}
+
+static void test_calcNumSecondaryInjectors_stagingdisabled(void)
+{
+    config2 page2 = {};
+    config10 page10 = {};
+
+    page10.stagingEnabled = false;
+    TEST_ASSERT_EQUAL(0, calcNumSecondaryInjectors(INJ_CHANNELS/2, page2, page10));
+    TEST_ASSERT_FALSE(page10.stagingEnabled);
+}
+
+static void test_calcNumSecondaryInjectors_stagingenabled_nospareinjectors(void)
+{
+    config2 page2 = {};
+    config10 page10 = {};
+
+    page10.stagingEnabled = true;
+    TEST_ASSERT_EQUAL(0, calcNumSecondaryInjectors(INJ_CHANNELS, page2, page10));
+    TEST_ASSERT_FALSE(page10.stagingEnabled);
+}
+
+static void test_calcNumSecondaryInjectors_stagingenabled_mirrorprimary(void)
+{
+    config2 page2 = {};
+    config10 page10 = {};
+
+    page10.stagingEnabled = true;
+    TEST_ASSERT_EQUAL(INJ_CHANNELS/2, calcNumSecondaryInjectors(INJ_CHANNELS/2, page2, page10));
+    TEST_ASSERT_TRUE(page10.stagingEnabled);
+}
+
+static void test_calcNumSecondaryInjectors_stagingenabled_1spare(void)
+{
+    config2 page2 = {};
+    config10 page10 = {};
+
+    page10.stagingEnabled = true;
+    TEST_ASSERT_EQUAL(1, calcNumSecondaryInjectors(INJ_CHANNELS-1, page2, page10));
+    TEST_ASSERT_TRUE(page10.stagingEnabled);
+}
+
 void testFuelController(void)
 {
   SET_UNITY_FILENAME() {
@@ -191,5 +277,11 @@ void testFuelController(void)
     RUN_TEST_P(test_calculateMaxInjAngle_three_cyl_port_paired_four_stroke_special);
     RUN_TEST_P(test_calculateMaxInjAngle_four_stroke_three_squirts_tracks_720);
     RUN_TEST_P(test_calculateMaxInjAngle_four_stroke_five_squirts_tracks_720);
+    RUN_TEST_P(test_calcNumPrimaryInjectors_nonsequential);
+    RUN_TEST_P(test_calcNumPrimaryInjectors_sequential);
+    RUN_TEST_P(test_calcNumSecondaryInjectors_stagingdisabled);
+    RUN_TEST_P(test_calcNumSecondaryInjectors_stagingenabled_nospareinjectors);
+    RUN_TEST_P(test_calcNumSecondaryInjectors_stagingenabled_mirrorprimary);
+    RUN_TEST_P(test_calcNumSecondaryInjectors_stagingenabled_1spare);
   }
 }
