@@ -665,7 +665,7 @@ static void cylinder4_stroke2_seq_nostage(void)
   configPage2.injLayout = INJ_SEQUENTIAL;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
+	const bool enabled[] = {true, true, true, true, false, false, false, false};
 	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
   assert_fuel_schedules(180U, enabled, angle, __LINE__);
   }
@@ -720,12 +720,13 @@ static void assert_5cylinder_4stroke_seq_nostage(int assertLineNum)
 #if INJ_CHANNELS >= 5
 	const bool enabled[] = {true, true, true, true, true, false, false, false};
 	const uint16_t angle[] = {0,144,288,432,576,0,0,0};
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 #else
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	const uint16_t angle[] = {0,72,144,216,0,0,0,0};
+  TEST_ASSERT_EQUAL(INJ_PAIRED, currentStatus.injLayout);
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder5_stroke4_seq_nostage(void)
@@ -742,7 +743,7 @@ static void cylinder5_stroke4_semiseq_nostage(void)
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
+	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, false, false, false};
 	const uint16_t angle[] = {0,72,144,216,288,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
   }
@@ -757,7 +758,7 @@ static void cylinder5_stroke4_seq_staged(void)
 	const uint16_t angle[] = {0,144,288,432,576,0,0,0};
 #else
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	const uint16_t angle[] = {0,72,144,216,0,0,0,0};
 #endif
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
 }
@@ -795,15 +796,16 @@ void run_5_cylinder_4stroke_tests(void)
 
 static void assert_6cylinder_4stroke_seq_nostage(int assertLineNum)
 {
+	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
 #if INJ_CHANNELS >= 6
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
-	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 #else
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	// const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+  TEST_ASSERT_EQUAL(INJ_PAIRED, currentStatus.injLayout);
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder6_stroke4_seq_nostage(void)
@@ -829,13 +831,8 @@ static void cylinder6_stroke4_seq_staged(void)
   configPage2.injLayout = INJ_SEQUENTIAL;
   enableStaging();
   initialiseAll(); //Run the main initialise function
-#if INJ_CHANNELS >= 8
-	const bool enabled[] = {true, true, true, true, true, true, false, false};
+	const bool enabled[] = {true, true, true, INJ_CHANNELS>=6, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
 	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
-#else
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-#endif
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
 }
 
@@ -873,15 +870,15 @@ void run_6_cylinder_4stroke_tests(void)
 
 static void assert_8cylinder_4stroke_seq_nostage(int assertLineNum)
 {
+	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
 #if INJ_CHANNELS >= 8
 	const bool enabled[] = {true, true, true, true, true, true, true, true};
-	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 #else
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+  TEST_ASSERT_EQUAL(INJ_PAIRED, currentStatus.injLayout);
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 }
 
 static void cylinder8_stroke4_seq_nostage(void)
@@ -977,7 +974,7 @@ static void cylinder_5_NoinjTiming_paired(void) {
 
   initialiseAll(); //Run the main initialise function
 
-  const bool enabled[] = {true, true, true, true, false, false, false, false};
+  const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, false, false, false};
   assert_fuel_schedules(720U, enabled, zeroAngles, __LINE__);
 }
 
