@@ -5,6 +5,11 @@ extern uint8_t calulateNumSquirts(const config2 &page2);
 extern uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2);
 extern uint8_t calcNumPrimaryInjectors(config2 &page2);
 extern uint8_t calcNumSecondaryInjectors(uint16_t primary, const config2 &page2, config10 &page10);
+extern uint16_t calcAngularCylinderSeparation(const statuses &current, const config2 &page2);
+extern uint16_t getOddfireAngle(const config2 &page2, uint8_t channel);
+extern bool useEvenFire(const config2 &page2);
+extern uint16_t getEvenFireAngle(const statuses &current, const config2 &page2, uint8_t channel);
+extern uint16_t calcScheduleAngle(const statuses &current, const config2 &page2, uint8_t channel);
 
 static void test_calulateNumSquirts_default_no_divider(void)
 {
@@ -259,6 +264,124 @@ static void test_calcNumSecondaryInjectors_stagingenabled_1spare(void)
     TEST_ASSERT_TRUE(page10.stagingEnabled);
 }
 
+static void test_calcAngularCylinderSeparation(void)
+{
+  statuses current = {};
+  config2 page2 = {};
+  page2.injLayout = INJ_SEQUENTIAL;
+
+  current.injOutputs.primary = 1;
+  page2.nCylinders = 1;
+  CRANK_ANGLE_MAX_INJ = 360;
+  TEST_ASSERT_EQUAL(0, calcAngularCylinderSeparation(current, page2));
+
+  current.injOutputs.primary = 2;
+  CRANK_ANGLE_MAX_INJ = 360;
+  TEST_ASSERT_EQUAL(180, calcAngularCylinderSeparation(current, page2));
+}
+
+static void assert_calcAngularCylinderSeparation_specialcases(const statuses &current, config2 &page2)
+{
+  page2.nCylinders = 5;
+  TEST_ASSERT_EQUAL(360/5, calcAngularCylinderSeparation(current, page2));
+  page2.nCylinders = 6;
+  TEST_ASSERT_EQUAL(720/6, calcAngularCylinderSeparation(current, page2));
+  
+}
+static void test_calcAngularCylinderSeparation_specialcases(void)
+{
+  statuses current = {};
+  config2 page2 = {};
+  current.injOutputs.primary = 1;
+  page2.strokes = FOUR_STROKE;
+
+  page2.injLayout = INJ_SEMISEQUENTIAL;
+  assert_calcAngularCylinderSeparation_specialcases(current, page2);
+  page2.injLayout = INJ_PAIRED;
+  assert_calcAngularCylinderSeparation_specialcases(current, page2);
+  page2.strokes = TWO_STROKE;
+  page2.injLayout = INJ_SEQUENTIAL;
+  assert_calcAngularCylinderSeparation_specialcases(current, page2);
+}
+
+static config2 setup_oddfire(void)
+{
+  config2 page2 = {};
+  page2.engineType = ODD_FIRE;
+  page2.injTiming = true;
+  page2.nCylinders = 2;
+  page2.oddfire2 = 5;
+  page2.oddfire3 = 15;
+  page2.oddfire4 = 25;
+  return page2;
+}
+
+static void test_getOddfireAngle(void)
+{
+  config2 page2 = setup_oddfire();
+  TEST_ASSERT_EQUAL(0, getOddfireAngle(page2, 0));
+  TEST_ASSERT_EQUAL(0, getOddfireAngle(page2, 1));
+  TEST_ASSERT_EQUAL(0, getOddfireAngle(page2, 5));
+
+  TEST_ASSERT_EQUAL(page2.oddfire2, getOddfireAngle(page2, 2));
+  TEST_ASSERT_EQUAL(page2.oddfire3, getOddfireAngle(page2, 3));
+  TEST_ASSERT_EQUAL(page2.oddfire4, getOddfireAngle(page2, 4));
+}
+
+static config2 setup_evenfire(void)
+{
+  config2 page2 = {};
+  page2.engineType = EVEN_FIRE;
+  page2.nCylinders = 2;
+  return page2;
+}
+
+static void test_useEvenFire(void)
+{
+  config2 page2 = setup_evenfire();
+  TEST_ASSERT_TRUE(useEvenFire(page2));
+  page2 = setup_oddfire();
+  TEST_ASSERT_FALSE(useEvenFire(page2));
+  page2.engineType = EVEN_FIRE;
+  TEST_ASSERT_TRUE(useEvenFire(page2));
+}
+
+static void test_getEvenFireAngle(void)
+{
+  statuses current = {};
+  config2 page2 = {};
+  CRANK_ANGLE_MAX_INJ = 360;
+
+  page2.nCylinders = 2;
+  current.injOutputs.primary = 4;
+  TEST_ASSERT_EQUAL(180, getEvenFireAngle(current, page2, 2));
+  TEST_ASSERT_EQUAL(270, getEvenFireAngle(current, page2, 4));
+
+  page2.nCylinders = 4;
+  current.injOutputs.primary = 4;
+  TEST_ASSERT_EQUAL(90, getEvenFireAngle(current, page2, 2));
+}
+
+static void test_calcScheduleAngle(void)
+{
+  statuses current = {};
+  config2 page2 = setup_evenfire();
+
+  CRANK_ANGLE_MAX_INJ = 360;
+  current.injOutputs.primary = 8;
+
+  page2.injTiming = false;
+  TEST_ASSERT_EQUAL(0, calcScheduleAngle(current, page2, 4));
+  page2.injTiming = true;
+  TEST_ASSERT_NOT_EQUAL(0, calcScheduleAngle(current, page2, 4));
+
+  // Test injector limits clamp
+  TEST_ASSERT_UINT16_WITHIN(CRANK_ANGLE_MAX_INJ-1, 0, calcScheduleAngle(current, page2, 16));
+
+  // Test oddfire path
+  TEST_ASSERT_NOT_EQUAL(0, calcScheduleAngle(current, setup_oddfire(), 2));
+}
+
 void testFuelController(void)
 {
   SET_UNITY_FILENAME() {
@@ -283,5 +406,11 @@ void testFuelController(void)
     RUN_TEST_P(test_calcNumSecondaryInjectors_stagingenabled_nospareinjectors);
     RUN_TEST_P(test_calcNumSecondaryInjectors_stagingenabled_mirrorprimary);
     RUN_TEST_P(test_calcNumSecondaryInjectors_stagingenabled_1spare);
+    RUN_TEST_P(test_calcAngularCylinderSeparation);
+    RUN_TEST_P(test_calcAngularCylinderSeparation_specialcases);
+    RUN_TEST_P(test_getOddfireAngle);
+    RUN_TEST_P(test_useEvenFire);
+    RUN_TEST_P(test_getEvenFireAngle);
+    RUN_TEST_P(test_calcScheduleAngle);
   }
 }
