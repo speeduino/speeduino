@@ -338,7 +338,6 @@ static void cylinder3_stroke4_seq_nostage(void)
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
   assert_3cylinder_4stroke_seq_nostage(__LINE__);
-
 }
 
 static void cylinder3_stroke4_semiseq_nostage_tb(void)
@@ -456,7 +455,7 @@ static void cylinder3_stroke2_semiseq_nostage_tb(void)
   configPage2.injType = INJ_TYPE_TBODY;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,80,40,0,0,0,0,0};
+	const uint16_t angle[] = {0,40,80,0,0,0,0,0};
   assert_fuel_schedules(360U/3U, enabled, angle, __LINE__);
 }
 
@@ -467,7 +466,7 @@ static void cylinder3_stroke2_semiseq_nostage_port(void)
   configPage2.injType = INJ_TYPE_PORT;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,60,0,0,0,0,0};
+	const uint16_t angle[] = {0,60,120,0,0,0,0,0};
   assert_fuel_schedules(360U/2U, enabled, angle, __LINE__);
 }
 
@@ -498,7 +497,7 @@ static void cylinder3_stroke2_semiseq_staged_tb(void)
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
   TEST_IGNORE_MESSAGE("Fix code so test passes :-()");
 #else
-	const uint16_t angle[] = {0,80,40,0,0,0,0,0};
+	const uint16_t angle[] = {0,40,80,0,0,0,0,0};
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 #endif
   assert_fuel_schedules(360U/3U, enabled, angle, __LINE__);
@@ -515,7 +514,7 @@ static void cylinder3_stroke2_semiseq_staged_port(void)
 	const bool enabled[] = {true, true, true, true, true, true, false, false};
   TEST_IGNORE_MESSAGE("Fix code so test passes :-()");
 #else
-	const uint16_t angle[] = {0,120,60,0,0,0,0,0};
+	const uint16_t angle[] = {0,60,120,0,0,0,0,0};
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
 #endif
   assert_fuel_schedules(360U/2U, enabled, angle, __LINE__);
@@ -666,7 +665,7 @@ static void cylinder4_stroke2_seq_nostage(void)
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	const uint16_t angle[] = {0,45,90,135,0,0,0,0};
   assert_fuel_schedules(180U, enabled, angle, __LINE__);
   }
 
@@ -676,7 +675,7 @@ static void cylinder4_stroke2_semiseq_nostage(void)
   configPage10.stagingEnabled = false;
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	const uint16_t angle[] = {0,90,0,0,0,0,0,0};
   assert_fuel_schedules(180U, enabled, angle, __LINE__);
   }
 
@@ -686,7 +685,7 @@ static void cylinder4_stroke2_seq_staged(void)
   enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=5, INJ_CHANNELS>=6, INJ_CHANNELS>=7, INJ_CHANNELS>=8};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	const uint16_t angle[] = {0,45,90,135,0,45,90,135};
   assert_fuel_schedules(180U, enabled, angle, __LINE__);
 }
 
@@ -696,7 +695,7 @@ static void cylinder4_stroke2_semiseq_staged(void)
   enableStaging();
   initialiseAll(); //Run the main initialise function
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
+	const uint16_t angle[] = {0,90,0,90,0,0,0,0};
   assert_fuel_schedules(180U, enabled, angle, __LINE__);
 }
 
@@ -737,7 +736,6 @@ static void cylinder5_stroke4_seq_nostage(void)
   assert_5cylinder_4stroke_seq_nostage(__LINE__);
 }
 
-
 static void cylinder5_stroke4_semiseq_nostage(void)
 {
   configPage2.injLayout = INJ_SEMISEQUENTIAL;
@@ -746,7 +744,7 @@ static void cylinder5_stroke4_semiseq_nostage(void)
 	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, false, false, false};
 	const uint16_t angle[] = {0,72,144,216,288,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
-  }
+}
 
 static void cylinder5_stroke4_seq_staged(void)
 {
@@ -824,7 +822,7 @@ static void cylinder6_stroke4_semiseq_nostage(void)
 	const bool enabled[] = {true, true, true, false, false, false, false, false};
 	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
-  }
+}
 
 static void cylinder6_stroke4_seq_staged(void)
 {
@@ -835,7 +833,6 @@ static void cylinder6_stroke4_seq_staged(void)
 	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
   assert_fuel_schedules(720U, enabled, angle, __LINE__);
 }
-
 
 static void cylinder6_stroke4_semiseq_staged(void)
 {
@@ -870,12 +867,13 @@ void run_6_cylinder_4stroke_tests(void)
 
 static void assert_8cylinder_4stroke_seq_nostage(int assertLineNum)
 {
-	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
 #if INJ_CHANNELS >= 8
 	const bool enabled[] = {true, true, true, true, true, true, true, true};
+	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
   TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, currentStatus.injLayout);
 #else
 	const bool enabled[] = {true, true, true, true, false, false, false, false};
+	const uint16_t angle[] = {0,180,360,540,0,0,0,0};
   TEST_ASSERT_EQUAL(INJ_PAIRED, currentStatus.injLayout);
 #endif
   assert_fuel_schedules(720U, enabled, angle, assertLineNum);
@@ -1228,23 +1226,22 @@ static void run_partial_sync_tests(void)
 void testFuelScheduleInit()
 {
   SET_UNITY_FILENAME() {
+    run_1_cylinder_4stroke_tests();
+    run_1_cylinder_2stroke_tests();
+    run_2_cylinder_4stroke_tests();
+    run_2_cylinder_2stroke_tests();
+    run_3_cylinder_4stroke_tests();
+    run_3_cylinder_2stroke_tests();
+    run_4_cylinder_4stroke_tests();
+    run_4_cylinder_2stroke_tests();
+    run_5_cylinder_4stroke_tests();
+    run_6_cylinder_4stroke_tests();
+    run_8_cylinder_4stroke_tests();
 
-  run_1_cylinder_4stroke_tests();
-  run_1_cylinder_2stroke_tests();
-  run_2_cylinder_4stroke_tests();
-  run_2_cylinder_2stroke_tests();
-  run_3_cylinder_4stroke_tests();
-  run_3_cylinder_2stroke_tests();
-  run_4_cylinder_4stroke_tests();
-  run_4_cylinder_2stroke_tests();
-  run_5_cylinder_4stroke_tests();
-  run_6_cylinder_4stroke_tests();
-  run_8_cylinder_4stroke_tests();
+    run_no_inj_timing_tests();
 
-  run_no_inj_timing_tests();
+    run_oddfire_tests();
 
-  run_oddfire_tests();
-
-  run_partial_sync_tests();
+    run_partial_sync_tests();
   }
 }
