@@ -8,9 +8,19 @@
 #include "decoders.h"
 #include "scheduler.h"
 #include "scheduler_fuel_controller.h"
+#include "pages.h"
+
+void prepareForInitialiseAll(uint8_t boardId) {
+  setTuneToEmpty();
+  // This is required to prevent initialiseAll() also
+  // calling setTuneToEmpty & thus blatting any
+  // configuration made in step 2.
+  configPage2.pinMapping = boardId;
+  currentStatus.initialisationComplete = false;
+}
 
 extern decoder_status_t decoderStatus;
-void prepareForInitialiseAll(uint8_t boardId);
+// void prepareForInitialiseAll(uint8_t boardId);
 extern void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
 
 static void __attribute__((noinline)) assert_fuel_channel(bool enabled, uint16_t angle, uint8_t cmdBit, const FuelSchedule &schedule, int assertLineNum)
