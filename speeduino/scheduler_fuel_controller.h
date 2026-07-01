@@ -12,9 +12,15 @@
 #include "fuel_calcs.h"
 
 extern FuelSchedule fuelSchedule1;
+#if (INJ_CHANNELS >= 2)
 extern FuelSchedule fuelSchedule2;
+#endif
+#if (INJ_CHANNELS >= 3)
 extern FuelSchedule fuelSchedule3;
+#endif
+#if (INJ_CHANNELS >= 4)
 extern FuelSchedule fuelSchedule4;
+#endif
 #if INJ_CHANNELS >= 5
 extern FuelSchedule fuelSchedule5;
 #endif
@@ -57,4 +63,10 @@ void stopFuelSchedulers(void);
 void beginInjectorPriming(const statuses &current, const config4 &page4);
 
 /** @brief Initialise this module */
-void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4);
+void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10);
+
+// Unit test support
+struct injectorAngleCalcCache {
+  uint16_t pw = 0U;
+  uint16_t pwDegrees = 0U;
+};

@@ -324,12 +324,18 @@ void DashMessage(uint16_t DashMessageID)
       outMsg.len = 8;
       outMsg.buf[0] = highByte(fuelSchedule1.pw);
       outMsg.buf[1] = lowByte(fuelSchedule1.pw);
+#if (INJ_CHANNELS >= 2)
       outMsg.buf[2] = highByte(fuelSchedule2.pw);
       outMsg.buf[3] = lowByte(fuelSchedule2.pw);
+#endif
+#if (INJ_CHANNELS >= 3)
       outMsg.buf[4] = highByte(fuelSchedule3.pw);
       outMsg.buf[5] = lowByte(fuelSchedule3.pw);
+#endif
+#if (INJ_CHANNELS >= 4)
       outMsg.buf[6] = highByte(fuelSchedule4.pw);
       outMsg.buf[7] = lowByte(fuelSchedule4.pw);
+#endif
     break;
 
     case CAN_HALTECH_LAMBDA:

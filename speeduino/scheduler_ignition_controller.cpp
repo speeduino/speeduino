@@ -1,10 +1,8 @@
 #include "scheduler_ignition_controller.h"
 #include "scheduledIO_ign.h"
-#include "schedule_calcs.hpp"
 #include "scheduledIO_ign.h"
 #include "globals.h"
 #include "unit_testing.h"
-
 
 IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #if IGN_CHANNELS >= 2
@@ -204,7 +202,7 @@ static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryTyp
   }
 }
 
-static void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
+TESTABLE_STATIC void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
 {
   switch(sparkMode)
   {
@@ -244,10 +242,223 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(voi
 #endif
 }
 
-void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
+static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current, const config2 &page2, config4 &page4)
 {
+  CRANK_ANGLE_MAX_IGN = 360;
+
+  switch (page2.nCylinders) {
+  case 1:
+      ignitionSchedule1.channelDegrees = 0;
+      current.maxIgnOutputs = 1;
+
+      //Sequential ignition works identically on a 1 cylinder whether it's odd or even fire. 
+      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
+      break;
+
+  case 2:
+      ignitionSchedule1.channelDegrees = 0;
+      current.maxIgnOutputs = 2;
+#if IGN_CHANNELS >= 2
+      if (page2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
+      else { ignitionSchedule2.channelDegrees = page2.oddfire2; }
+#endif
+
+      //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
+      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) ) { CRANK_ANGLE_MAX_IGN = 720; }
+      break;
+
+  case 3:
+      ignitionSchedule1.channelDegrees = 0;
+      current.maxIgnOutputs= 3;
+      if (page2.engineType == EVEN_FIRE )
+      {
+        //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
+        if( ( (page4.sparkMode == IGN_MODE_SEQUENTIAL) || (page4.sparkMode == IGN_MODE_SINGLE) ) && (page2.strokes == FOUR_STROKE) )
+        {
+#if IGN_CHANNELS >= 2
+          ignitionSchedule2.channelDegrees = 240;
+#endif
+#if IGN_CHANNELS >= 3
+          ignitionSchedule3.channelDegrees = 480;
+#endif
+
+          CRANK_ANGLE_MAX_IGN = 720;
+        }
+        else
+        {
+#if IGN_CHANNELS >= 2
+          ignitionSchedule2.channelDegrees = 120;
+#endif
+#if IGN_CHANNELS >= 3
+          ignitionSchedule3.channelDegrees = 240;
+#endif
+        }
+      }
+      else
+      {
+#if IGN_CHANNELS >= 2
+        ignitionSchedule2.channelDegrees = page2.oddfire2;
+#endif
+#if IGN_CHANNELS >= 3
+        ignitionSchedule3.channelDegrees = page2.oddfire3;
+#endif
+      }
+      break;
+  case 4:
+      ignitionSchedule1.channelDegrees = 0;
+      current.maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
+      if (page2.engineType == EVEN_FIRE )
+      {
+#if IGN_CHANNELS >= 2
+        ignitionSchedule2.channelDegrees = 180;
+#endif
+
+        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
+        {
+#if IGN_CHANNELS >= 3
+          ignitionSchedule3.channelDegrees = 360;
+#endif
+#if IGN_CHANNELS >= 4
+          ignitionSchedule4.channelDegrees = 540;
+#endif
+
+          CRANK_ANGLE_MAX_IGN = 720;
+          current.maxIgnOutputs= 4;
+        }
+        if(page4.sparkMode == IGN_MODE_ROTARY)
+        {
+          //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
+#if IGN_CHANNELS >= 3
+          ignitionSchedule3.channelDegrees = 0;
+#endif
+#if IGN_CHANNELS >= 4
+          ignitionSchedule4.channelDegrees = 180;
+#endif
+          current.maxIgnOutputs= 4;
+
+          page4.IgInv = GOING_LOW; //Force Going Low ignition mode (Going high is never used for rotary)
+        }
+      }
+      else
+      {
+#if IGN_CHANNELS >= 2
+        ignitionSchedule2.channelDegrees = page2.oddfire2;
+#endif
+#if IGN_CHANNELS >= 3
+        ignitionSchedule3.channelDegrees = page2.oddfire3;
+#endif
+#if IGN_CHANNELS >= 4
+        ignitionSchedule4.channelDegrees = page2.oddfire4;
+#endif
+        current.maxIgnOutputs= 4;
+      }
+      break;
+  case 5:
+      ignitionSchedule1.channelDegrees = 0;
+#if IGN_CHANNELS >= 2
+      ignitionSchedule2.channelDegrees = 72;
+#endif
+#if IGN_CHANNELS >= 3
+      ignitionSchedule3.channelDegrees = 144;
+#endif
+#if IGN_CHANNELS >= 4
+      ignitionSchedule4.channelDegrees = 216;
+#endif
+#if (IGN_CHANNELS >= 5)
+      ignitionSchedule5.channelDegrees = 288;
+#endif
+      current.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
+
+      if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
+      {
+#if IGN_CHANNELS >= 2
+        ignitionSchedule2.channelDegrees = 144;
+#endif
+#if IGN_CHANNELS >= 3
+        ignitionSchedule3.channelDegrees = 288;
+#endif
+#if IGN_CHANNELS >= 4
+        ignitionSchedule4.channelDegrees = 432;
+#endif
+#if (IGN_CHANNELS >= 5)
+        ignitionSchedule5.channelDegrees = 576;
+#endif
+
+        CRANK_ANGLE_MAX_IGN = 720;
+      }
+      break;
+  case 6:
+      ignitionSchedule1.channelDegrees = 0;
+#if IGN_CHANNELS >= 2
+      ignitionSchedule2.channelDegrees = 120;
+#endif
+#if IGN_CHANNELS >= 3
+      ignitionSchedule3.channelDegrees = 240;
+#endif
+      current.maxIgnOutputs= 3;
+
+  #if IGN_CHANNELS >= 6
+      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL))
+      {
+      ignitionSchedule4.channelDegrees = 360;
+      ignitionSchedule5.channelDegrees = 480;
+      ignitionSchedule6.channelDegrees = 600;
+      CRANK_ANGLE_MAX_IGN = 720;
+      current.maxIgnOutputs= 6;
+      }
+  #endif
+      break;
+  case 8:
+      ignitionSchedule1.channelDegrees = 0;
+#if IGN_CHANNELS >= 2
+      ignitionSchedule2.channelDegrees = 90;
+#endif
+#if IGN_CHANNELS >= 3
+      ignitionSchedule3.channelDegrees = 180;
+#endif
+#if IGN_CHANNELS >= 4
+      ignitionSchedule4.channelDegrees = 270;
+#endif
+      current.maxIgnOutputs= 4;
+
+      if( (page4.sparkMode == IGN_MODE_SINGLE))
+      {
+        current.maxIgnOutputs= 4;
+        CRANK_ANGLE_MAX_IGN = 360;
+      }
+  
+  #if IGN_CHANNELS >= 8
+      if( (page4.sparkMode == IGN_MODE_SEQUENTIAL))
+      {
+      ignitionSchedule5.channelDegrees = 360;
+      ignitionSchedule6.channelDegrees = 450;
+      ignitionSchedule7.channelDegrees = 540;
+      ignitionSchedule8.channelDegrees = 630;
+      current.maxIgnOutputs= 8;
+      CRANK_ANGLE_MAX_IGN = 720;
+      }
+  #endif
+      break;
+  default: //Handle this better!!!
+    break;
+  }
+}
+
+void __attribute__((optimize("Os"))) dischargeAllCoils(void)
+{
+  //End all coil charges to ensure no stray sparks on startup
+  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  {
+    endCoilCharge(index);
+  }
+}
+
+void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10)
+{
+  dischargeAllCoils();
   resetIgnitionSchedulers();
-  setCallbacks(sparkMode, numCylinders, rotaryMode);
+  initScheduleAngles(current, page2, page4);
+  setCallbacks(page4.sparkMode, page2.nCylinders, page10.rotaryType);
 }
 
 TESTABLE_INLINE_STATIC bool isAnyIgnScheduleRunning(void) {
@@ -330,6 +541,31 @@ TESTABLE_INLINE_STATIC void matchIgnitionSchedulersToSyncState(const config2 &pa
   } else {
     // Ignition layout matches current sync - nothing to do but keep MISRA checker happy
   }
+}
+
+static inline int16_t _calculateSparkAngle(const IgnitionSchedule &schedule, int8_t advance) {
+  int16_t angle = (int16_t)(schedule.channelDegrees==0U ? CRANK_ANGLE_MAX_IGN : schedule.channelDegrees) - advance;
+  if(angle > CRANK_ANGLE_MAX_IGN) {angle -= CRANK_ANGLE_MAX_IGN;}
+  return angle;
+}
+
+static inline int16_t _calculateCoilChargeAngle(uint16_t dwellAngle, int16_t dischargeAngle) {
+  if (dischargeAngle>(int16_t)dwellAngle) {
+    return dischargeAngle - (int16_t)dwellAngle;
+  }
+  return dischargeAngle + CRANK_ANGLE_MAX_IGN - (int16_t)dwellAngle;
+}
+
+TESTABLE_INLINE_STATIC void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance)
+{
+  schedule.dischargeAngle = _calculateSparkAngle(schedule,  advance);
+  schedule.chargeAngle = _calculateCoilChargeAngle(dwellAngle, schedule.dischargeAngle);
+}
+
+TESTABLE_STATIC void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, uint16_t dwellAngle, int16_t rotarySplitDegrees, IgnitionSchedule &trailing) 
+{
+  trailing.dischargeAngle = (int16_t)ignitionLimits(leading.dischargeAngle + rotarySplitDegrees);
+  trailing.chargeAngle = (int16_t)ignitionLimits(trailing.dischargeAngle - (int16_t)dwellAngle); 
 }
 
 static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
@@ -425,6 +661,11 @@ TESTABLE_INLINE_STATIC void setIgnitionScheduleDuration(IgnitionSchedule &schedu
 {
   // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
   setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
+}
+
+TESTABLE_INLINE_STATIC uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
+{
+  return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
 }
 
 static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellDuration, byte channelMask, uint8_t channelIdx)

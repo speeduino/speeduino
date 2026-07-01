@@ -17,11 +17,16 @@ void initInjIoControl(InjIoControlMode controlMode)
     _controlMode = controlMode;
 }
 
+// LCOV_EXCL_START
+// Exclude simple wrapper function from code coverage
+
 /** @brief Injector open/close status bits */
 char getInjectorStatus(void)
 {
     return injStatusMask;
 }
+
+// LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
