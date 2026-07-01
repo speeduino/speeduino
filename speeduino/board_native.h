@@ -27,8 +27,12 @@ constexpr auto ticksToMicros = software_timer_t::ticksToMicros;
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
+#if !defined(IGN_CHANNELS)
 #define IGN_CHANNELS 8
+#endif
+#if !defined(INJ_CHANNELS)
 #define INJ_CHANNELS 8
+#endif
 #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
 
 #define BOARD_MAX_DIGITAL_PINS NUM_DIGITAL_PINS
@@ -51,24 +55,52 @@ static inline bool pinIsReserved(uint8_t pin) { return pin==0U; } //Forbidden pi
 extern std::array<software_timer_t, INJ_CHANNELS> fuelTimers;
 
 DEFINE_TIMER_VARS(FUEL, 1, fuelTimers)
+#if INJ_CHANNELS>=2
 DEFINE_TIMER_VARS(FUEL, 2, fuelTimers)
+#endif
+#if INJ_CHANNELS>=3
 DEFINE_TIMER_VARS(FUEL, 3, fuelTimers)
+#endif
+#if INJ_CHANNELS>=4
 DEFINE_TIMER_VARS(FUEL, 4, fuelTimers)
+#endif
+#if INJ_CHANNELS>=5
 DEFINE_TIMER_VARS(FUEL, 5, fuelTimers)
+#endif
+#if INJ_CHANNELS>=6
 DEFINE_TIMER_VARS(FUEL, 6, fuelTimers)
+#endif
+#if INJ_CHANNELS>=7
 DEFINE_TIMER_VARS(FUEL, 7, fuelTimers)
+#endif
+#if INJ_CHANNELS>=8
 DEFINE_TIMER_VARS(FUEL, 8, fuelTimers)
+#endif
 
 extern std::array<software_timer_t, IGN_CHANNELS> ignitionTimers;
 
 DEFINE_TIMER_VARS(IGN, 1, ignitionTimers)
+#if IGN_CHANNELS>=2
 DEFINE_TIMER_VARS(IGN, 2, ignitionTimers)
+#endif
+#if IGN_CHANNELS>=3
 DEFINE_TIMER_VARS(IGN, 3, ignitionTimers)
+#endif
+#if IGN_CHANNELS>=4
 DEFINE_TIMER_VARS(IGN, 4, ignitionTimers)
+#endif
+#if IGN_CHANNELS>=5
 DEFINE_TIMER_VARS(IGN, 5, ignitionTimers)
+#endif
+#if IGN_CHANNELS>=6
 DEFINE_TIMER_VARS(IGN, 6, ignitionTimers)
+#endif
+#if IGN_CHANNELS>=7
 DEFINE_TIMER_VARS(IGN, 7, ignitionTimers)
+#endif
+#if IGN_CHANNELS>=8
 DEFINE_TIMER_VARS(IGN, 8, ignitionTimers)
+#endif
 
 /*
 ***********************************************************************************************************
