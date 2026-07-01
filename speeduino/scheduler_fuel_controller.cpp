@@ -3,9 +3,15 @@
 #include "units.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#if (INJ_CHANNELS >= 2)
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
+#if (INJ_CHANNELS >= 3)
 FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
+#if (INJ_CHANNELS >= 4)
 FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
 #if (INJ_CHANNELS >= 5)
 FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
@@ -61,33 +67,53 @@ static __attribute__((optimize("Os"))) void setupSemiSequentialCallbacks(uint8_t
     if(inj4cylPairing == INJ_PAIR_13_24)
     {
       setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
+#if (INJ_CHANNELS >= 2)
       setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
+#endif
     }
     else
     {
       setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+#if (INJ_CHANNELS >= 2)
       setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
+#endif
     }
   }
   else if( nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
   {
     setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
+#if (INJ_CHANNELS >= 2)
     setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
+#endif
+#if (INJ_CHANNELS >= 3)
     setCallbacks(fuelSchedule3, openInjector3and5, closeInjector3and5);
+#endif
+#if (INJ_CHANNELS >= 4)
     setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
+#endif
   }
   else if( nCylinders == 6 )
   {
     setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+#if (INJ_CHANNELS >= 2)
     setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
+#endif
+#if (INJ_CHANNELS >= 3)
     setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
+#endif
   }
   else if( nCylinders == 8 )
   {
     setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
+#if (INJ_CHANNELS >= 2)
     setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
+#endif
+#if (INJ_CHANNELS >= 3)
     setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
+#endif
+#if (INJ_CHANNELS >= 4)
     setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
+#endif
   }
   else
   {
@@ -131,9 +157,15 @@ TESTABLE_INLINE_STATIC bool changeToFullSequentialInjection(const config2 &page2
 
 TESTABLE_INLINE_STATIC bool isAnyFuelScheduleRunning(void) {
   return isRunning(fuelSchedule1)
+#if (INJ_CHANNELS >= 2)
       || isRunning(fuelSchedule2)
+#endif
+#if (INJ_CHANNELS >= 3)
       || isRunning(fuelSchedule3)
+#endif
+#if (INJ_CHANNELS >= 4)
       || isRunning(fuelSchedule4)
+#endif
 #if INJ_CHANNELS >= 5      
       || isRunning(fuelSchedule5)
 #endif
@@ -480,9 +512,15 @@ END_LTO_INLINE()
 static void __attribute__((optimize("Os"))) resetFuelSchedules(void)
 {
   fuelSchedule1.reset();
+#if (INJ_CHANNELS >= 2)
   fuelSchedule2.reset();
+#endif
+#if (INJ_CHANNELS >= 3)
   fuelSchedule3.reset();
+#endif
+#if (INJ_CHANNELS >= 4)
   fuelSchedule4.reset();
+#endif
 #if INJ_CHANNELS >= 5
   fuelSchedule5.reset();
 #endif
@@ -635,7 +673,9 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if(page10.stagingEnabled == true)
       {
         current.numSecondaryInjOutputs = 1;
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = fuelSchedule1.channelDegrees;
+#endif
       }
       break;
 
@@ -649,14 +689,18 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         current.nSquirts = 1;
       }
       //The below are true regardless of whether this is running sequential or not
+#if (INJ_CHANNELS >= 2)
       if (page2.engineType == EVEN_FIRE ) { fuelSchedule2.channelDegrees = 180; }
       else { fuelSchedule2.channelDegrees = page2.oddfire2; }
+#endif
 
       if (!page2.injTiming) 
       { 
         //For simultaneous, all squirts happen at the same time
         fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 0; 
+#endif
       }
 
       //Check if injector staging is enabled
@@ -664,9 +708,13 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       {
         current.numSecondaryInjOutputs = 2;
 
+#if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
+#endif
         //Phase this either 180 or 360 degrees out from inj3 (In reality this will always be 180 as you can't have sequential and staged currently)
+#if (INJ_CHANNELS >= 4)
         fuelSchedule4.channelDegrees = fuelSchedule3.channelDegrees + (uint16_t)(CRANK_ANGLE_MAX_INJ / 2U); 
+#endif
       }
       break;
 
@@ -677,8 +725,12 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) )
       {
         fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 120;
+#endif
+#if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = 240;
+#endif
 
         if(page2.injType == INJ_TYPE_PORT)
         { 
@@ -691,16 +743,24 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         //Adjust the injection angles based on the number of squirts
         if (current.nSquirts > 2)
         {
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / current.nSquirts;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = (fuelSchedule3.channelDegrees * 2) / current.nSquirts;
+#endif
         }
 
         if (!page2.injTiming) 
         { 
           //For simultaneous, all squirts happen at the same time
           fuelSchedule1.channelDegrees = 0;
-          fuelSchedule2.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
+         fuelSchedule2.channelDegrees = 0;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 0; 
+#endif
         } 
       }
       else if (page2.injLayout == INJ_SEQUENTIAL)
@@ -710,15 +770,23 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         if(page2.strokes == TWO_STROKE)
         {
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 120;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 240;
+#endif
           CRANK_ANGLE_MAX_INJ = 360;
         }
         else
         {
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 240;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 480;
+#endif
           CRANK_ANGLE_MAX_INJ = 720;
         }
       }
@@ -726,8 +794,12 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       {
         //Should never happen, but default values
         fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 120;
+#endif
+#if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = 240;
+#endif
       }
 
       //Check if injector staging is enabled
@@ -742,7 +814,9 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         #else
           //Staged output is on channel 4
           current.numSecondaryInjOutputs = 1;
+#if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = fuelSchedule1.channelDegrees;
+#endif
         #endif
       }
       break;
@@ -753,26 +827,38 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       //For alternating injection, the squirt occurs at different times for each channel
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) || (page2.strokes == TWO_STROKE) )
       {
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 180;
+#endif
 
         if (!page2.injTiming) 
         { 
           //For simultaneous, all squirts happen at the same time
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 0; 
+#endif
         }
         else if (current.nSquirts > 2)
         {
           //Adjust the injection angles based on the number of squirts
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / current.nSquirts;
+#endif
         }
         else { } //Do nothing, default values are correct
       }
       else if (page2.injLayout == INJ_SEQUENTIAL)
       {
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 180;
+#endif
+#if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = 360;
+#endif
+#if (INJ_CHANNELS >= 4)
         fuelSchedule4.channelDegrees = 540;
+#endif
 
         current.numPrimaryInjOutputs = 4;
 
@@ -811,8 +897,12 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         }
         else
         {
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = fuelSchedule1.channelDegrees;
+#endif
+#if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = fuelSchedule2.channelDegrees;
+#endif
         }
       }
 
@@ -827,9 +917,15 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         { 
           //For simultaneous, all squirts happen at the same time
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 0;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 0;
+#endif
+#if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = 0;
+#endif
 #if (INJ_CHANNELS >= 5)
           fuelSchedule5.channelDegrees = 0; 
 #endif
@@ -837,9 +933,15 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
         else
         {
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 72;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 144;
+#endif
+#if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = 216;
+#endif
 #if (INJ_CHANNELS >= 5)
           fuelSchedule5.channelDegrees = 288;
 #endif
@@ -874,20 +976,32 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) )
       {
         fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 120;
+#endif
+#if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = 240;
+#endif
         if (!page2.injTiming)
         {
           //For simultaneous, all squirts happen at the same time
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 0;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 0;
+#endif
         }
         else if (current.nSquirts > 2)
         {
           //Adjust the injection angles based on the number of squirts
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / current.nSquirts;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = (fuelSchedule3.channelDegrees * 2) / current.nSquirts;
+#endif
         }
       }
 
@@ -936,24 +1050,42 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       if( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) )
       {
         fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
         fuelSchedule2.channelDegrees = 90;
+#endif
+#if (INJ_CHANNELS >= 3)
         fuelSchedule3.channelDegrees = 180;
+#endif
+#if (INJ_CHANNELS >= 4)
         fuelSchedule4.channelDegrees = 270;
+#endif
 
         if (!page2.injTiming)
         {
           //For simultaneous, all squirts happen at the same time
           fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = 0;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = 0;
+#endif
+#if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = 0;
+#endif
         }
         else if (current.nSquirts > 2)
         {
           //Adjust the injection angles based on the number of squirts
+#if (INJ_CHANNELS >= 2)
           fuelSchedule2.channelDegrees = (fuelSchedule2.channelDegrees * 2) / current.nSquirts;
+#endif
+#if (INJ_CHANNELS >= 3)
           fuelSchedule3.channelDegrees = (fuelSchedule3.channelDegrees * 2) / current.nSquirts;
+#endif
+#if (INJ_CHANNELS >= 4)
           fuelSchedule4.channelDegrees = (fuelSchedule4.channelDegrees * 2) / current.nSquirts;
+#endif
         }
       }
 
@@ -979,7 +1111,9 @@ static __attribute__((optimize("Os"))) void initFuelScheduleAngles(statuses &cur
       break;
   default: //Handle this better!!!
       fuelSchedule1.channelDegrees = 0;
+#if (INJ_CHANNELS >= 2)
       fuelSchedule2.channelDegrees = 180;
+#endif
       break;
   }
 
