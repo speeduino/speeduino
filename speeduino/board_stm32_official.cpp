@@ -156,9 +156,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
   #endif
 
   STM_FUEL_INTERRUPT(1)
+  #if (INJ_CHANNELS >= 2)
   STM_FUEL_INTERRUPT(2)
+  #endif
+  #if (INJ_CHANNELS >= 3)
   STM_FUEL_INTERRUPT(3)
+  #endif
+  #if (INJ_CHANNELS >= 4)
   STM_FUEL_INTERRUPT(4)
+  #endif
   #if (INJ_CHANNELS >= 5)
   STM_FUEL_INTERRUPT(5)
   #endif
@@ -173,9 +179,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
   #endif
 
   STM_IGNITION_INTERRUPT(1)
+  #if (IGN_CHANNELS >= 2)
   STM_IGNITION_INTERRUPT(2)
+  #endif
+  #if (IGN_CHANNELS >= 3)
   STM_IGNITION_INTERRUPT(3)
+  #endif
+  #if (IGN_CHANNELS >= 4)
   STM_IGNITION_INTERRUPT(4)
+  #endif
   #if (IGN_CHANNELS >= 5)
   STM_IGNITION_INTERRUPT(5)
   #endif
@@ -316,9 +328,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
     //Attach interrupt functions
     //Injection
     Timer3.attachInterrupt(1, FUEL_INTERRUPT_NAME(1));
+    #if (INJ_CHANNELS >= 2)
     Timer3.attachInterrupt(2, FUEL_INTERRUPT_NAME(2));
+    #endif
+    #if (INJ_CHANNELS >= 3)
     Timer3.attachInterrupt(3, FUEL_INTERRUPT_NAME(3));
+    #endif
+    #if (INJ_CHANNELS >= 4)
     Timer3.attachInterrupt(4, FUEL_INTERRUPT_NAME(4));
+    #endif
     #if (INJ_CHANNELS >= 5)
     Timer5.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
@@ -356,9 +374,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
     //Ignition
     Timer2.attachInterrupt(1, IGNITION_INTERRUPT_NAME(1)); 
+    #if (IGN_CHANNELS >= 2)
     Timer2.attachInterrupt(2, IGNITION_INTERRUPT_NAME(2));
+    #endif
+    #if (IGN_CHANNELS >= 3)
     Timer2.attachInterrupt(3, IGNITION_INTERRUPT_NAME(3));
+    #endif
+    #if (IGN_CHANNELS >= 4)
     Timer2.attachInterrupt(4, IGNITION_INTERRUPT_NAME(4));
+    #endif
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution

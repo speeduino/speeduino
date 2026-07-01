@@ -95,6 +95,7 @@ static void test_calculateIgnitionAngles_rotary(void)
 
 static void test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary(void)
 {
+#if IGN_CHANNELS >= 5
     ignition_test_context_t context;
     CRANK_ANGLE_MAX_IGN = 720;
     context.current.maxIgnOutputs = 5U;  // Not 4
@@ -105,6 +106,9 @@ static void test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary(voi
 
     // Even though sparkMode is ROTARY, if maxIgnOutputs != 4, non-rotary path is used
     TEST_ASSERT_NOT_EQUAL(0U, ignitionSchedule5.chargeAngle + ignitionSchedule5.dischargeAngle);
+#else
+    TEST_IGNORE_MESSAGE("Skipping - not enough ignition channels");
+#endif
 }
 
 static void test_calculateIgnitionAngles_sync_state_transitions(void)

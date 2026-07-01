@@ -496,18 +496,24 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
     {
       adjustCrankAngle(ignitionSchedule1, crankAngle);
     }
+#if IGN_CHANNELS >= 2
     else if ( (currentTooth == ignitionEndTeeth[1]) )
     {
       adjustCrankAngle(ignitionSchedule2, crankAngle);
     }
+#endif
+#if IGN_CHANNELS >= 3
     else if ( (currentTooth == ignitionEndTeeth[2]) )
     {
       adjustCrankAngle(ignitionSchedule3, crankAngle);
     }
+#endif
+#if IGN_CHANNELS >= 4
     else if ( (currentTooth == ignitionEndTeeth[3]) )
     {
       adjustCrankAngle(ignitionSchedule4, crankAngle);
     }
+#endif
 #if IGN_CHANNELS >= 5
     else if ( (currentTooth == ignitionEndTeeth[4]) )
     {
@@ -858,9 +864,15 @@ static void triggerSetEndTeeth_missingTooth(void)
   if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
 
   ignitionEndTeeth[0] = calcEndTeeth_missingTooth(ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcEndTeeth_missingTooth(ignitionSchedule2, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcEndTeeth_missingTooth(ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
   ignitionEndTeeth[3] = calcEndTeeth_missingTooth(ignitionSchedule4, toothAdder);
+#endif
 #if IGN_CHANNELS >= 5
   ignitionEndTeeth[4] = calcEndTeeth_missingTooth(ignitionSchedule5, toothAdder);
 #endif
@@ -1086,9 +1098,15 @@ static void triggerSetEndTeeth_DualWheel(void)
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
 
   ignitionEndTeeth[0] = calcEndTeeth_DualWheel(ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcEndTeeth_DualWheel(ignitionSchedule2, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcEndTeeth_DualWheel(ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
   ignitionEndTeeth[3] = calcEndTeeth_DualWheel(ignitionSchedule4, toothAdder);
+#endif
 #if IGN_CHANNELS >= 5
   ignitionEndTeeth[4] = calcEndTeeth_DualWheel(ignitionSchedule5, toothAdder);
 #endif
@@ -3262,9 +3280,15 @@ static uint16_t __attribute__((noinline)) calcEndTooth_Nissan360(const IgnitionS
 void triggerSetEndTeeth_Nissan360(void)
 {
   ignitionEndTeeth[0] = calcEndTooth_Nissan360(ignitionSchedule1);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcEndTooth_Nissan360(ignitionSchedule2);
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcEndTooth_Nissan360(ignitionSchedule3);
+#endif
+#if (IGN_CHANNELS >= 4)
   ignitionEndTeeth[3] = calcEndTooth_Nissan360(ignitionSchedule4);
+#endif
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
@@ -4605,9 +4629,15 @@ static void triggerSetEndTeeth_FordST170(void)
    if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
 
   ignitionEndTeeth[0] = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
   ignitionEndTeeth[3] = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder);
+#endif
 
   // Removed ign channels >4 as an ST170 engine is a 4 cylinder
 }
@@ -4972,10 +5002,16 @@ static void triggerSetEndTeeth_NGC(void)
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
   
   ignitionEndTeeth[0] = calcSetEndTeeth_NGC(ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcSetEndTeeth_NGC(ignitionSchedule2, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcSetEndTeeth_NGC(ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
   ignitionEndTeeth[3] = calcSetEndTeeth_NGC(ignitionSchedule4, toothAdder);
-  #if IGN_CHANNELS >= 6
+#endif
+#if IGN_CHANNELS >= 6
   ignitionEndTeeth[4] = calcSetEndTeeth_NGC(ignitionSchedule5, toothAdder);
   ignitionEndTeeth[5] = calcSetEndTeeth_NGC(ignitionSchedule6, toothAdder);
   #endif
@@ -5358,10 +5394,16 @@ static void triggerSetEndTeeth_Renix(void)
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
 
   ignitionEndTeeth[0] = calcEndTeeth_Renix(ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcEndTeeth_Renix(ignitionSchedule2, toothAdder);
   currentStatus.canin[1] = ignitionEndTeeth[1];
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcEndTeeth_Renix(ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
   ignitionEndTeeth[3] = calcEndTeeth_Renix(ignitionSchedule4, toothAdder);
+#endif
 #if IGN_CHANNELS >= 5
   ignitionEndTeeth[4] = calcEndTeeth_Renix(ignitionSchedule5, toothAdder);
 #endif
@@ -5713,9 +5755,15 @@ static void triggerSetEndTeeth_RoverMEMS(void)
   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
 
   tempIgnitionEndTooth[1] = calcEndTooth_RoverMEMS(ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
   tempIgnitionEndTooth[2] = calcEndTooth_RoverMEMS(ignitionSchedule2, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 3)
   tempIgnitionEndTooth[3] = calcEndTooth_RoverMEMS(ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
   tempIgnitionEndTooth[4] = calcEndTooth_RoverMEMS(ignitionSchedule4, toothAdder);
+#endif
 
   // take into account the missing teeth on the Rover flywheels
   int tempCount=0;
@@ -6054,8 +6102,12 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionS
 static void triggerSetEndTeeth_SuzukiK6A(void)
 {
   ignitionEndTeeth[0] = calcEndTeeth_SuzukiK6A(ignitionSchedule1);
+#if (IGN_CHANNELS >= 2)
   ignitionEndTeeth[1] = calcEndTeeth_SuzukiK6A(ignitionSchedule2);
+#endif
+#if (IGN_CHANNELS >= 3)
   ignitionEndTeeth[2] = calcEndTeeth_SuzukiK6A(ignitionSchedule3);
+#endif
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
