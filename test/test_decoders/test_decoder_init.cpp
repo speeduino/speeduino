@@ -83,9 +83,9 @@ static void test_buildDecoder_all(void)
 
 static void test_buildDecoder_attachesInterrupts(void)
 {
-    pinTrigger = 11;
-    pinTrigger2 = 12;
-    pinTrigger3 = 13;
+    pinNumbers.pinTrigger = 11;
+    pinNumbers.pinTrigger2 = 12;
+    pinNumbers.pinTrigger3 = 13;
 
     configPage4.TrigSpeed = CRANK_SPEED;
     configPage4.sparkMode = IGN_MODE_SEQUENTIAL;

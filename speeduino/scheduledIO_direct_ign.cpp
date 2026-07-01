@@ -1,12 +1,13 @@
 #include "scheduledIO_direct_ign.h"
 #include "board_definition.h"
+#include "scheduledIO_direct_ign.h"
 #include "src/pins/fastOutputPin.h"
 #include "preprocessor.h"
 
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
  
-static fastOutputPin_t pins[IGN_CHANNELS];
+static fastOutputPin_t pins[_countof(coil_pins_t::_elements)];
 
 static inline void coilLow(uint8_t channel)
 {
@@ -24,11 +25,11 @@ using channelFunc = void(*)(uint8_t);
 static channelFunc coilChargingFn = coilHigh;
 static channelFunc coilDischargingFn = coilLow;
 
-void initIgnDirectIO(const config4 &page4, const uint8_t (&pinNumbers)[_countof(pins)])
+void initIgnDirectIO(const config4 &page4, const coil_pins_t &coilPins)
 {
     for (uint8_t i = 0; i < _countof(pins); i++)
     {
-        pins[i].setPin(pinNumbers[i], OUTPUT);
+        pins[i].setPin(coilPins[i], OUTPUT);
     }
     if (page4.IgInv == GOING_HIGH)
     {

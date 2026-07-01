@@ -151,7 +151,7 @@ static bool isWmiTankEmpty(void)
 {
   if (configPage10.wmiEmptyEnabled) 
   {
-    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinWMIEmpty) : !digitalRead(pinWMIEmpty);
+    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinNumbers.pinWMIEmpty) : !digitalRead(pinNumbers.pinWMIEmpty);
   }
   return true;
 }
@@ -199,9 +199,9 @@ Air Conditioning Control
 void __attribute__((optimize("Os"))) initialiseAirCon(void)
 {
   if( (configPage15.airConEnable) &&
-      !pinIsReserved(pinAirConRequest) &&
-      !pinIsReserved(pinAirConComp) &&
-      !pinIsOutput(pinAirConRequest))
+      !pinIsReserved(pinNumbers.pinAirConRequest) &&
+      !pinIsReserved(pinNumbers.pinAirConComp) &&
+      !pinIsOutput(pinNumbers.pinAirConRequest))
   {
     // Hold the A/C off until a few seconds after cranking
     acAfterEngineStartDelay = 0;
@@ -218,14 +218,14 @@ void __attribute__((optimize("Os"))) initialiseAirCon(void)
     currentStatus.airconTurningOn = false;
     currentStatus.airconCltLockout = false;
     currentStatus.airconFanOn = false;
-    aircon_req_pin.setPin(pinAirConRequest, getAirConRequestPinMode(configPage15));
-    aircon_comp_pin.setPin(pinAirConComp, OUTPUT);
+    aircon_req_pin.setPin(pinNumbers.pinAirConRequest, getAirConRequestPinMode(configPage15));
+    aircon_comp_pin.setPin(pinNumbers.pinAirConComp, OUTPUT);
   
     airConOff();
 
-    if((configPage15.airConFanEnabled) && (pinIsReserved(pinAirConFan)))
+    if((configPage15.airConFanEnabled) && (pinIsReserved(pinNumbers.pinAirConFan)))
     {
-      aircon_fan_pin.setPin(pinAirConFan, OUTPUT);
+      aircon_fan_pin.setPin(pinNumbers.pinAirConFan, OUTPUT);
       airConFanOff();
       acStandAloneFanIsEnabled = true;
     }
@@ -577,8 +577,8 @@ static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint
 
 void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
-  boost_pin.setPin(pinBoost, OUTPUT);
-  initialiseVvtPins(pinVVT_1, pinVVT_2);
+  boost_pin.setPin(pinNumbers.pinBoost, OUTPUT);
+  initialiseVvtPins(pinNumbers.pinVVT_1, pinNumbers.pinVVT_2);
   initialiseN2oPins(configPage10);
 
   //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
@@ -1205,11 +1205,11 @@ void wmiControl(void)
       vvt2_pwm_state = false;
       vvt2_max_pwm = false;
       if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
-      digitalWrite(pinWMIEnabled, LOW);
+      digitalWrite(pinNumbers.pinWMIEnabled, LOW);
     }
     else
     {
-      digitalWrite(pinWMIEnabled, HIGH);
+      digitalWrite(pinNumbers.pinWMIEnabled, HIGH);
       if (wmiPW >= 200)
       {
         // Make sure water pump is on (100% duty)

@@ -29,6 +29,7 @@
 #include "statuses.h"
 #include "config_pages.h"
 #include "atomic.h"
+#include "src/pins/pinNumbers_t.h"
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
@@ -92,91 +93,7 @@ extern volatile byte HWTest_INJ_Pulsed; /**< Each bit in this variable represent
 extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 extern volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 
-extern byte pinInjector1; //Output pin injector 1
-extern byte pinInjector2; //Output pin injector 2
-extern byte pinInjector3; //Output pin injector 3
-extern byte pinInjector4; //Output pin injector 4
-extern byte pinInjector5; //Output pin injector 5
-extern byte pinInjector6; //Output pin injector 6
-extern byte pinInjector7; //Output pin injector 7
-extern byte pinInjector8; //Output pin injector 8
-extern byte pinCoil1; //Pin for coil 1
-extern byte pinCoil2; //Pin for coil 2
-extern byte pinCoil3; //Pin for coil 3
-extern byte pinCoil4; //Pin for coil 4
-extern byte pinCoil5; //Pin for coil 5
-extern byte pinCoil6; //Pin for coil 6
-extern byte pinCoil7; //Pin for coil 7
-extern byte pinCoil8; //Pin for coil 8
-extern byte pinTrigger; //The CAS pin
-extern byte pinTrigger2; //The Cam Sensor pin known as secondary input
-extern byte pinTrigger3;	//the 2nd cam sensor pin known as tertiary input
-extern byte pinTPS;//TPS input pin
-extern byte pinMAP; //MAP sensor pin
-extern byte pinEMAP; //EMAP sensor pin
-extern byte pinMAP2; //2nd MAP sensor (Currently unused)
-extern byte pinIAT; //IAT sensor pin
-extern byte pinCLT; //CLS sensor pin
-extern byte pinO2; //O2 Sensor pin
-extern byte pinO2_2; //second O2 pin
-extern byte pinBat; //Battery voltage pin
-extern byte pinDisplayReset; // OLED reset pin
-extern byte pinTachOut; //Tacho output
-extern byte pinFuelPump; //Fuel pump on/off
-extern byte pinIdle1; //Single wire idle control
-extern byte pinIdle2; //2 wire idle control (Not currently used)
-extern byte pinIdleUp; //Input for triggering Idle Up
-extern byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
-extern byte pinCTPS; //Input for triggering closed throttle state
-extern byte pinFuel2Input; //Input for switching to the 2nd fuel table
-extern byte pinSpark2Input; //Input for switching to the 2nd ignition table
-extern byte pinSpareTemp1; // Future use only
-extern byte pinSpareTemp2; // Future use only
-extern byte pinSpareOut1; //Generic output
-extern byte pinSpareOut2; //Generic output
-extern byte pinSpareOut3; //Generic output
-extern byte pinSpareOut4; //Generic output
-extern byte pinSpareOut5; //Generic output
-extern byte pinSpareOut6; //Generic output
-extern byte pinSpareHOut1; //spare high current output
-extern byte pinSpareHOut2; // spare high current output
-extern byte pinSpareLOut1; // spare low current output
-extern byte pinSpareLOut2; // spare low current output
-extern byte pinSpareLOut3;
-extern byte pinSpareLOut4;
-extern byte pinSpareLOut5;
-extern byte pinBoost;
-extern byte pinVVT_1;		// vvt output 1
-extern byte pinVVT_2;		// vvt output 2
-extern byte pinFan;       // Cooling fan output
-extern byte pinStepperDir; //Direction pin for the stepper motor driver
-extern byte pinStepperStep; //Step pin for the stepper motor driver
-extern byte pinStepperEnable; //Turning the DRV8825 driver on/off
-extern byte pinLaunch;
-extern byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
-extern byte pinFlex; //Pin with the flex sensor attached
-extern byte pinVSS; 
-extern byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
-extern byte pinResetControl; // Output pin used control resetting the Arduino
-extern byte pinFuelPressure;
-extern byte pinOilPressure;
-extern byte pinWMIEmpty; // Water tank empty sensor
-extern byte pinWMIIndicator; // No water indicator bulb
-extern byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid
-extern byte pinMC33810_1_CS;
-extern byte pinMC33810_2_CS;
-extern byte pinSDEnable; //Input for manually enabling SD logging
-#ifdef USE_SPI_EEPROM
-  extern byte pinSPIFlash_CS;
-#endif
-extern byte pinAirConComp;    // Air conditioning compressor output
-extern byte pinAirConFan;    // Stand-alone air conditioning fan output
-extern byte pinAirConRequest; // Air conditioning request input
-
-/* global variables */ // from speeduino.ino
-//#ifndef UNIT_TEST
-
-//#endif
+extern pinNumbers_t pinNumbers;
 
 extern struct statuses currentStatus; //The global status object
 extern struct config2 configPage2;

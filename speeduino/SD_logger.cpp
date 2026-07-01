@@ -642,7 +642,7 @@ void checkForSDStart()
 
     if((configPage13.onboard_log_trigger_Epin) && (SD_status == SD_STATUS_READY) )
     {
-      if(digitalRead(pinSDEnable) == LOW)
+      if(digitalRead(pinNumbers.pinSDEnable) == LOW)
       {
         beginSDLogging(); //Setup the log file, preallocation, header row
       }
@@ -696,7 +696,7 @@ void checkForSDStop()
     //External Pin
     if(configPage13.onboard_log_trigger_Epin)
     {
-      if(digitalRead(pinSDEnable) == LOW)
+      if(digitalRead(pinNumbers.pinSDEnable) == LOW)
       {
         log_Epin = true;
       }
