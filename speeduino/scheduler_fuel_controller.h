@@ -12,9 +12,15 @@
 #include "fuel_calcs.h"
 
 extern FuelSchedule fuelSchedule1;
+#if (INJ_CHANNELS >= 2)
 extern FuelSchedule fuelSchedule2;
+#endif
+#if (INJ_CHANNELS >= 3)
 extern FuelSchedule fuelSchedule3;
+#endif
+#if (INJ_CHANNELS >= 4)
 extern FuelSchedule fuelSchedule4;
+#endif
 #if INJ_CHANNELS >= 5
 extern FuelSchedule fuelSchedule5;
 #endif
