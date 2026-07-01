@@ -455,4 +455,40 @@ static inline uint8_t fast_map(const uint8_t from, const uint8_t fromLow, const 
   }
 }
 
+/**
+ * @brief Check if a value is within a range (inclusive bounds).
+ *
+ * Checks whether the compare value is within the range [lower, upper].
+ * The bounds are inclusive, so the function returns true if compare equals
+ * either lower or upper.
+ *
+ * @tparam T Any type that supports operator>= and operator<=
+ * @param compare The value to check
+ * @param lower The lower bound of the range (inclusive)
+ * @param upper The upper bound of the range (inclusive)
+ * @return true if compare is within [lower, upper], false otherwise
+ */
+template <typename T>
+static inline bool isWithinInclusive(const T& compare, const T& lower, const T& upper) {
+  return (compare >= lower) && (compare <= upper);
+}
+
+/**
+ * @brief Check if a value is within a range (exclusive bounds).
+ *
+ * Checks whether the compare value is within the range (lower, upper).
+ * The bounds are exclusive, so the function returns false if compare equals
+ * either lower or upper.
+ *
+ * @tparam T Any type that supports operator< and operator>
+ * @param compare The value to check
+ * @param lower The lower bound of the range (exclusive)
+ * @param upper The upper bound of the range (exclusive)
+ * @return true if compare is within (lower, upper), false otherwise
+ */
+template <typename T>
+static inline bool isWithinExclusive(const T& compare, const T& lower, const T& upper) {
+  return (compare > lower) && (compare < upper);
+}
+
 #endif
