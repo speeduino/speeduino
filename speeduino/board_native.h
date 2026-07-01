@@ -28,9 +28,11 @@ constexpr auto ticksToMicros = software_timer_t::ticksToMicros;
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
 #if !defined(IGN_CHANNELS)
+#warning Using default IGN_CHANNELS
 #define IGN_CHANNELS 8
 #endif
 #if !defined(INJ_CHANNELS)
+#warning Using default INJ_CHANNELS
 #define INJ_CHANNELS 8
 #endif
 #define TS_SERIAL_BUFFER_SIZE 517 //Size of the serial buffer used by new comms protocol. For SD transfers this must be at least 512 + 1 (flag) + 4 (sector)
