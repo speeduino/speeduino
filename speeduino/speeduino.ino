@@ -515,9 +515,15 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if(currentStatus.RPM < 250)
         {
           ignitionSchedule1.chargeAngle -= 5;
+#if IGN_CHANNELS >= 2
           ignitionSchedule2.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 3          
           ignitionSchedule3.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 4          
           ignitionSchedule4.chargeAngle -= 5;
+#endif
 #if IGN_CHANNELS >= 5
           ignitionSchedule5.chargeAngle -= 5;
 #endif
