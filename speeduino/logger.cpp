@@ -306,7 +306,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 95: statusValue = lowByte(currentStatus.vvt1Angle); break; //2 bytes for vvt1Angle
     case 96: statusValue = highByte(currentStatus.vvt1Angle); break;
     case 97: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 98: statusValue = lowByte(currentStatus.vvt1Duty); break;
+    case 98: statusValue = currentStatus.vvt1Duty; break;
     case 99: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 100: statusValue = highByte(currentStatus.flexBoostCorrection); break;
     case 101: statusValue = currentStatus.baroCorrection; break;
@@ -322,7 +322,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 111: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
     case 112: statusValue = highByte(currentStatus.vvt2Angle); break;
     case 113: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 114: statusValue = lowByte(currentStatus.vvt2Duty); break;
+    case 114: statusValue = currentStatus.vvt2Duty; break;
     case 115: statusValue = currentStatus.outputsStatus; break;
     case 116: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 117: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
