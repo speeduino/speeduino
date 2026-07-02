@@ -6,9 +6,11 @@ void runAllTests(void)
 {
     extern void testFuelController(void);
     extern void testFuelScheduleInit(void);
+    extern void testInjCalcs(void);
 
     testFuelController();
     testFuelScheduleInit();
+    testInjCalcs();
 }
 
 TEST_HARNESS(runAllTests)
