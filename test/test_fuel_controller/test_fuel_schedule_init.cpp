@@ -1,6 +1,6 @@
 #include <unity.h>
 #include "../test_utils.h"
-#include "../test_schedules/channel_test_helpers.h"
+#include "../channel_test_helpers.h"
 #include "../fake_decoder_status.h"
 #include "decoder_builder.h"
 #include "scheduler_fuel_controller.h"
