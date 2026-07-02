@@ -7,10 +7,12 @@ void runAllTests(void)
     extern void testFuelController(void);
     extern void testFuelScheduleInit(void);
     extern void testInjCalcs(void);
+    extern void testApplyPwToInjectorChannels(void);
 
     testFuelController();
     testFuelScheduleInit();
     testInjCalcs();
+    testApplyPwToInjectorChannels();
 }
 
 TEST_HARNESS(runAllTests)
