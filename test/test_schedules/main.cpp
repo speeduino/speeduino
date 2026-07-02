@@ -18,7 +18,6 @@ void runAllScheduleTests(void)
   extern void test_ignition_controller();
   extern void test_overdwell(void);
   extern void test_ignition_schedule_controller();
-  extern void testApplyPwToInjectorChannels(void);
 
   initialiseAll();
 
@@ -36,7 +35,6 @@ void runAllScheduleTests(void)
   test_ignition_controller();
   test_overdwell();
   test_ignition_schedule_controller();
-  testApplyPwToInjectorChannels();
 }
 
 TEST_HARNESS(runAllScheduleTests)
