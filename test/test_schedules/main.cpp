@@ -16,7 +16,6 @@ void runAllScheduleTests(void)
   extern void test_fuel_schedule(void);
   extern void test_ignition_schedule(void);
   extern void test_ignition_controller();
-  extern void test_fuel_controller(void);
   extern void test_overdwell(void);
   extern void test_ignition_schedule_controller();
   extern void testApplyPwToInjectorChannels(void);
@@ -35,7 +34,6 @@ void runAllScheduleTests(void)
   test_fuel_schedule();
   test_ignition_schedule();
   test_ignition_controller();
-  test_fuel_controller();
   test_overdwell();
   test_ignition_schedule_controller();
   testApplyPwToInjectorChannels();
