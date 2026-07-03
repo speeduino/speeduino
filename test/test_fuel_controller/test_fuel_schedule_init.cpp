@@ -6,57 +6,7 @@
 #include "scheduler_fuel_controller.h"
 #include "src/pins/pinNumbers_t.h"
 
-extern decoder_status_t fakeDecoderStatus;
 extern void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
-
-static void __attribute__((noinline)) assert_fuel_channel(const statuses &current, bool enabled, uint16_t angle, uint8_t cmdBit, const FuelSchedule &schedule, int assertLineNum)
-{
-  if (enabled)
-  {
-    char msg[64];
-
-    sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled. Max:%" PRIu8), cmdBit+1, current.injOutputs.getTotalInjectors());
-    UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT8(current.injOutputs.getTotalInjectors(), cmdBit+1U, assertLineNum, msg);
-    sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), cmdBit+1);
-    UNITY_TEST_ASSERT_EQUAL_INT(angle, schedule.channelDegrees, assertLineNum, msg);
-    sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), cmdBit+1);
-    UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, assertLineNum, msg);
-    sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), cmdBit+1);
-    UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, assertLineNum, msg);
-    sprintf_P(msg, PSTR("injAngle"));
-    UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ, angle, assertLineNum, msg);
-  }
-}
-
-static void __attribute__((noinline)) assert_num_inj_channels(const statuses &current, const bool (&enabled)[8], int assertLineNum)
-{
-  uint8_t expectedOutputs=0;
-  for (uint8_t i=0; i<8; i++) {
-    if (enabled[i]) {
-      ++expectedOutputs;
-    }
-  }
-  UNITY_TEST_ASSERT_EQUAL_UINT8(expectedOutputs, current.injOutputs.getTotalInjectors(), assertLineNum, nullptr);
-}
-
-static void __attribute__((noinline)) assert_fuel_schedules(const statuses &current, uint16_t crankAngle, const bool (&enabled)[8], const uint16_t (&angle)[8], int assertLineNum)
-{
-  char msg[32];
-
-  strcpy_P(msg, PSTR("CRANK_ANGLE_MAX_INJ"));
-  UNITY_TEST_ASSERT_EQUAL_INT16(crankAngle, CRANK_ANGLE_MAX_INJ, assertLineNum, msg);
-
-  assert_num_inj_channels(current, enabled, assertLineNum);
-
-  RUNIF_INJCHANNEL1(assert_fuel_channel(current, enabled[0], angle[0], fuelSchedule1, assertLineNum), {});
-  RUNIF_INJCHANNEL2(assert_fuel_channel(current, enabled[1], angle[1], fuelSchedule2, assertLineNum), {});
-  RUNIF_INJCHANNEL3(assert_fuel_channel(current, enabled[2], angle[2], fuelSchedule3, assertLineNum), {});
-  RUNIF_INJCHANNEL4(assert_fuel_channel(current, enabled[3], angle[3], fuelSchedule4, assertLineNum), {});
-  RUNIF_INJCHANNEL5(assert_fuel_channel(current, enabled[4], angle[4], fuelSchedule5, assertLineNum), {});
-  RUNIF_INJCHANNEL6(assert_fuel_channel(current, enabled[5], angle[5], fuelSchedule6, assertLineNum), {});
-  RUNIF_INJCHANNEL7(assert_fuel_channel(current, enabled[6], angle[6], fuelSchedule7, assertLineNum), {});
-  RUNIF_INJCHANNEL8(assert_fuel_channel(current, enabled[7], angle[7], fuelSchedule8, assertLineNum), {});
-}
 
 struct init_context_t
 {
@@ -78,28 +28,101 @@ struct init_context_t
   {
     initialiseFuelSchedules(current, page2, page4, page10, pins);
   }
+
+  const init_context_t& setAssertLine(int assertLineNum) const
+  {
+    _assertLine = assertLineNum;
+    return *this;
+  }
+  const init_context_t& assertPrimaryChannels(uint8_t expected) const
+  {
+    UNITY_TEST_ASSERT_EQUAL_UINT8(expected, current.injOutputs.primary, _assertLine, "primary");
+    return *this;
+  }
+  const init_context_t& assertSecondaryChannels(uint8_t expected) const
+  {
+    UNITY_TEST_ASSERT_EQUAL_UINT8(expected, current.injOutputs.secondary, _assertLine, "secondary");
+    UNITY_TEST_ASSERT( (expected>0 && page10.stagingEnabled)
+                    || (expected==0 && !page10.stagingEnabled), _assertLine, "stagingEnabled");
+    return *this;
+  }
+  const init_context_t& assertMaxCrank(uint16_t expected) const
+  {
+    UNITY_TEST_ASSERT_EQUAL_UINT16(expected, CRANK_ANGLE_MAX_INJ, _assertLine, "CRANK_ANGLE_MAX_INJ");
+    return *this;
+  }
+
+  const init_context_t& assertFuelChannels(const bool (&enabled)[8], const uint16_t (&angle)[8]) const
+  {
+    #define ASSERT_CHANNEL(channel) \
+      CONCAT(RUNIF_INJCHANNEL, channel) \
+      (assert_fuel_channel(enabled[channel-1], angle[channel-1], channel, fuelSchedule ## channel), {});
+
+    ASSERT_CHANNEL(1);
+    ASSERT_CHANNEL(2);
+    ASSERT_CHANNEL(3);
+    ASSERT_CHANNEL(4);
+    ASSERT_CHANNEL(5);
+    ASSERT_CHANNEL(6);
+    ASSERT_CHANNEL(7);
+    ASSERT_CHANNEL(8);
+
+    return *this;
+  }
+
+private:
+  void assert_fuel_channel(bool enabled, uint16_t angle, uint8_t channelIndex, const FuelSchedule &schedule) const
+  {
+    char msg[64];
+    if (enabled)
+    {
+      sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled"), channelIndex);
+      UNITY_TEST_ASSERT_SMALLER_OR_EQUAL_UINT8(current.injOutputs.getTotalInjectors(), channelIndex, _assertLine, msg);
+      sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), channelIndex);
+      UNITY_TEST_ASSERT_EQUAL_UINT16(angle, schedule.channelDegrees, _assertLine, msg);
+      sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), channelIndex);
+      UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, _assertLine, msg);
+      sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), channelIndex);
+      UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, _assertLine, msg);
+      sprintf_P(msg, PSTR("injAngle"));
+      UNITY_TEST_ASSERT_SMALLER_THAN_UINT16(CRANK_ANGLE_MAX_INJ, angle, _assertLine, msg);
+    }
+    else 
+    {
+      sprintf_P(msg, PSTR("channel%" PRIu8 ".InjChannelIsEnabled"), channelIndex);
+      UNITY_TEST_ASSERT_SMALLER_THAN_UINT8(channelIndex, current.injOutputs.getTotalInjectors(), _assertLine, msg);
+    }
+  }
+  mutable int _assertLine = INT_MAX;
 };
 
-static void assert_injlayout(uint8_t layout, const init_context_t &context)
+static init_context_t assert_injlayout(uint8_t layout, const init_context_t &context)
 {
   TEST_ASSERT_EQUAL(layout, context.current.injLayout);
   TEST_ASSERT_EQUAL(layout, context.page2.injLayout);
+  return context;
 }
 
 static void assert_1channel_0stage_over720(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, false, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(1)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, false, false, false, false, false, false, false},
+                        {0,0,0,0,0,0,0,0});
 }
 
 static void assert_1channel_1stage_over720(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(1)
+    .assertSecondaryChannels(1)
+    .assertFuelChannels({true, true, false, false, false, false, false, false},
+	                      {0,0,0,0,0,0,0,0});
 }
 
 static void enableStaging(init_context_t &context)
@@ -180,18 +203,24 @@ static void run_1_cylinder_4stroke_tests(void)
 
 static void assert_1channel_0stage_over360(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, false, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, assertLineNum);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+ context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(1)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, false, false, false, false, false, false, false},
+	                      {0,0,0,0,0,0,0,0});
 }
 
 static void assert_1channel_1stage_over360(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, assertLineNum);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+ context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(1)
+    .assertSecondaryChannels(1)
+    .assertFuelChannels({true, true, false, false, false, false, false, false},
+	                      {0,0,0,0,0,0,0,0});
 }
 
 static init_context_t setup1_cylinder_2stroke(void)
@@ -272,12 +301,14 @@ static init_context_t setup2_cylinder_4stroke(void)
   return context;
 }
 
-static void assert_2channel_0stage_over720(int assertLineNum, const init_context_t &context)
+static void assert_2channel_0stage_over720(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+ context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, false, false, false, false, false, false}, angles);
 }
 
 static void cylinder2_stroke4_seq_nostage(void)
@@ -288,16 +319,19 @@ static void cylinder2_stroke4_seq_nostage(void)
 
   context.initialise();
 
-  assert_2channel_0stage_over720(__LINE__, context);
+  assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
   assert_injlayout(INJ_SEQUENTIAL, context);
 }
 
 static void assert_2chennel_0stage_over360(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, assertLineNum);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+ context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, false, false, false, false, false, false},
+	                      {0,180,0,0,0,0,0,0});
 }
 
 static void cylinder2_stroke4_semiseq_nostage(void)
@@ -314,10 +348,13 @@ static void cylinder2_stroke4_semiseq_nostage(void)
 
 static void assert_2channel_2stage_over720(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,360,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+ context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(2)
+    .assertFuelChannels({true, true, true, true, false, false, false, false},
+	                      {0,180,0,360,0,0,0,0});
 }
 
 static void cylinder2_stroke4_seq_staged(void)
@@ -334,10 +371,13 @@ static void cylinder2_stroke4_seq_staged(void)
 
 static void assert_2channel_2staged_over360(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,180,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, assertLineNum);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+ context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(2)
+    .assertFuelChannels({true, true, true, true, false, false, false, false},
+	                      {0,180,0,180,0,0,0,0});
 }
 
 static void cylinder2_stroke4_semiseq_staged(void)
@@ -373,10 +413,13 @@ static init_context_t setup_2_cylinder_2stroke(void)
 
 static void assert_2channel_0stage_over180(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 180U, enabled, angle, __LINE__);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(180)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, false, false, false, false, false, false},
+	                      {0, (uint16_t)(context.page2.nCylinders==2U ? 0U : 90U),0,0,0,0,0,0});
 }
 
 static void cylinder2_stroke2_seq_nostage(void)
@@ -405,10 +448,13 @@ static void cylinder2_stroke2_semiseq_nostage(void)
 
 static void assert_2channel_2stage_over180(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,0,0,90,0,0,0,0};
-  assert_fuel_schedules(context.current, 180U, enabled, angle, __LINE__);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(180)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(2)
+    .assertFuelChannels({true, true, true, true, false, false, false, false},
+	                      {0,(uint16_t)(context.page2.nCylinders==2U ? 0U : 90U),0,90,0,0,0,0});
 }
 
 static void cylinder2_stroke2_seq_staged(void)
@@ -454,71 +500,107 @@ static init_context_t setup_3_cylinder_4stroke(void)
   return context;
 }
 
-static void assert_3cylinder_4stroke_seq_nostage(int assertLineNum, const init_context_t &context)
+static void assert_3channel_0stage_over720(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
 {
-	const bool enabled[] = {true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, false, false, false, false, false};
-	const uint16_t angle[] = {0,240,480,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, context.current.injLayout);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, false, false, false, false, false}, angles);
 }
 
 static void cylinder3_stroke4_seq_nostage(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  context.page2.injTiming = true;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-  assert_3cylinder_4stroke_seq_nostage(__LINE__, context);
+
+  assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
+  assert_injlayout(INJ_SEQUENTIAL, context);
+}
+
+static void assert_3channel_0stage_over240(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720U/3U)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, false, false, false, false, false},
+	                      {0,80,160,0,0,0,0,0});
 }
 
 static void cylinder3_stroke4_semiseq_nostage_tb(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  context.page2.injTiming = true;
   context.page10.stagingEnabled = false;
   context.page2.injType = INJ_TYPE_TBODY;
+
   context.initialise();
-	const bool enabled[] = {true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, false, false, false, false, false};
-	const uint16_t angle[] = {0,80,160,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U/3U, enabled, angle, __LINE__);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+
+  assert_3channel_0stage_over240(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
-static void assert_3cylinder_semiseq_nostage(int assertLineNum, const init_context_t &context)
+static void assert_3channel_0stage_over360(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
 {
- 	const bool enabled[] = {true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, assertLineNum); //Special case as 3 squirts per cycle MUST be over 720 degrees
-  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, context.current.injLayout);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, false, false, false, false, false}, angles);
 }
 
 static void cylinder3_stroke4_semiseq_nostage_port(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  context.page2.injTiming = true;
   context.page10.stagingEnabled = false;
   context.page2.injType = INJ_TYPE_PORT;
+
   context.initialise();
-  assert_3cylinder_semiseq_nostage(__LINE__, context);
+
+  assert_3channel_0stage_over360(__LINE__, context, {0,120,240,0,0,0,0,0});
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+}
+
+static void assert_3channel_3stage_over720(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(INJ_CHANNELS>=6 ? 3 : 1)
+    .assertFuelChannels({true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false},
+	                      {0,240,480,0,240,480,0,0});
 }
 
 static void cylinder3_stroke4_seq_staged(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  context.page2.injTiming = true;
   enableStaging(context);
+
   context.initialise();
-	const bool enabled[] = {true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-	const uint16_t angle[] = {0,240,480,0,240,480,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, context.current.injLayout);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+
+	assert_3channel_3stage_over720(__LINE__, context);
+  assert_injlayout(INJ_SEQUENTIAL, context);
+}
+
+static void assert_3channel_3stage_over240(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(240)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(INJ_CHANNELS>=6 ? 3 : 1)
+    .assertFuelChannels({true, INJ_CHANNELS>=3, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false},
+	                      {0,80,160,0,80,160,0,0});
 }
 
 static void cylinder3_stroke4_semiseq_staged_tb(void)
@@ -527,14 +609,22 @@ static void cylinder3_stroke4_semiseq_staged_tb(void)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   enableStaging(context);
   context.page2.injType = INJ_TYPE_TBODY;
-  context.initialise();
-	const uint16_t angle[] = {0,80,160,0,80,160,0,0};
-	const bool enabled[] = {true, INJ_CHANNELS>=3, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-  assert_fuel_schedules(context.current, 720U/3U, enabled, angle, __LINE__); //Special case as 3 squirts per cycle MUST be over 720 degrees
-  TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, context.current.injLayout);
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+   context.initialise();
+
+  assert_3channel_3stage_over240(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
+static void assert_3channel_3stage_over360(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(INJ_CHANNELS>=6 ? 3 : 1)
+    .assertFuelChannels({true, INJ_CHANNELS>=3, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false},
+	                      {0,120,240,0,120,240,0,0});
+}
 
 static void cylinder3_stroke4_semiseq_staged_port(void)
 {
@@ -542,10 +632,11 @@ static void cylinder3_stroke4_semiseq_staged_port(void)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   enableStaging(context);
   context.page2.injType = INJ_TYPE_PORT;
+
   context.initialise();
-	const uint16_t angle[] = {0,120,240,0,120,240,0,0};
-	const bool enabled[] = {true, INJ_CHANNELS>=3, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-  assert_fuel_schedules(context.current, 720U/2U, enabled, angle, __LINE__); //Special case as 3 squirts per cycle MUST be over 720 degrees
+
+  assert_3channel_3stage_over360(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
 static void run_3_cylinder_4stroke_tests(void)
@@ -575,9 +666,20 @@ static void cylinder3_stroke2_seq_nostage(void)
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page10.stagingEnabled = false;
   context.initialise();
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, __LINE__);
+
+  assert_3channel_0stage_over360(__LINE__, context, {0,120,240,0,0,0,0,0});
+  assert_injlayout(INJ_SEQUENTIAL, context);
+}
+
+static void assert_3channel_0stage_over120(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(120)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, false, false, false, false, false},
+	                      {0,40,80,0,0,0,0,0});
 }
 
 static void cylinder3_stroke2_semiseq_nostage_tb(void)
@@ -586,10 +688,22 @@ static void cylinder3_stroke2_semiseq_nostage_tb(void)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page10.stagingEnabled = false;
   context.page2.injType = INJ_TYPE_TBODY;
+
   context.initialise();
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,40,80,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U/3U, enabled, angle, __LINE__);
+
+  assert_3channel_0stage_over120(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+}
+
+static void assert_3channel_0stage_over180(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(180)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, false, false, false, false, false},
+	                      {0,60,120,0,0,0,0,0});
 }
 
 static void cylinder3_stroke2_semiseq_nostage_port(void)
@@ -598,10 +712,11 @@ static void cylinder3_stroke2_semiseq_nostage_port(void)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page10.stagingEnabled = false;
   context.page2.injType = INJ_TYPE_PORT;
+
   context.initialise();
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,60,120,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 360U/2U, enabled, angle, __LINE__);
+
+  assert_3channel_0stage_over180(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
 static void cylinder3_stroke2_seq_staged(void)
@@ -609,10 +724,22 @@ static void cylinder3_stroke2_seq_staged(void)
   auto context = setup_3_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   enableStaging(context);
+  
   context.initialise();
-	const bool enabled[] = {true, true, true, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-	const uint16_t angle[] = {0,120,240,0,120,240,0,0};
-  assert_fuel_schedules(context.current, 360U, enabled, angle, __LINE__);
+
+	assert_3channel_3stage_over360(__LINE__, context);
+  assert_injlayout(INJ_SEQUENTIAL, context);
+}
+
+static void assert_3channel_3stage_over120(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(120)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(INJ_CHANNELS>=6 ? 3 : 1)
+    .assertFuelChannels({true, true, true, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false},
+	                      {0,40,80,0,40,80,0,0});
 }
 
 static void cylinder3_stroke2_semiseq_staged_tb(void)
@@ -621,10 +748,23 @@ static void cylinder3_stroke2_semiseq_staged_tb(void)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   enableStaging(context);
   context.page2.injType = INJ_TYPE_TBODY;
+  
   context.initialise();
-	const uint16_t angle[] = {0,40,80,0,40,80,0,0};
-	const bool enabled[] = {true, true, true, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-  assert_fuel_schedules(context.current, 360U/3U, enabled, angle, __LINE__);
+
+	assert_3channel_3stage_over120(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+}
+
+
+static void assert_3channel_3stage_over180(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(180)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(INJ_CHANNELS>=6 ? 3 : 1)
+    .assertFuelChannels({true, true, true, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false},
+	                      {0,60,120,0,60,120,0,0});
 }
 
 static void cylinder3_stroke2_semiseq_staged_port(void)
@@ -633,10 +773,11 @@ static void cylinder3_stroke2_semiseq_staged_port(void)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   enableStaging(context);
   context.page2.injType = INJ_TYPE_PORT;
+
   context.initialise();
-	const uint16_t angle[] = {0,60,120,0,60,120,0,0};
-	const bool enabled[] = {true, true, true, INJ_CHANNELS>=4, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-  assert_fuel_schedules(context.current, 360U/2U, enabled, angle, __LINE__);
+
+	assert_3channel_3stage_over180(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
 static void run_3_cylinder_2stroke_tests(void)
@@ -660,19 +801,25 @@ static init_context_t setup_4_cylinder_4stroke(void)
   return context;
 }
 
-static void assert_4cylinder_4stroke_seq_nostage(int assertLineNum, const statuses &current)
+static void assert_4channel_0stage_over720(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
 {
-  const bool enabled[] = {true, true, true, true, false, false, false, false};
-  const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-  assert_fuel_schedules(current, 720U, enabled, angle, assertLineNum);
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, current.injLayout);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(4)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, true, false, false, false, false}, angles);
 }
 
-static void assert_4cylinder_4stroke_paired_nostage(int assertLineNum, const statuses &current)
+static void assert_2channel_0stage_over360(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_fuel_schedules(current, 360U, enabled, angle, assertLineNum);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(2)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, false, false, false, false, false, false},
+	                      {0,180,0,0,0,0,0,0});
 }
 
 static void cylinder4_stroke4_seq_nostage(void)
@@ -680,15 +827,21 @@ static void cylinder4_stroke4_seq_nostage(void)
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page10.stagingEnabled = false;
+ 
   context.initialise();
-  assert_4cylinder_4stroke_seq_nostage(__LINE__, context.current);
+ 
+  assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
 }
 
-static void assert_4cylinder_4stroke_semiseq_nostage(int assertLineNum, const statuses &current)
+static void assert_4channel_4stage_over720(int assertLineNum, const init_context_t &context)
 {
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_fuel_schedules(current, 360U, enabled, angle, assertLineNum);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(4)
+    .assertSecondaryChannels(INJ_CHANNELS>=8 ? 4 : 0)
+    .assertFuelChannels({true, true, true, true, INJ_CHANNELS>=5, INJ_CHANNELS>=8, INJ_CHANNELS>=8, INJ_CHANNELS>=8},
+	                      {0,180,360,540,0,180,360,540});
 }
 
 static void cylinder4_stroke4_seq_staged(void)
@@ -696,10 +849,11 @@ static void cylinder4_stroke4_seq_staged(void)
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   enableStaging(context);
+
   context.initialise();
-	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, INJ_CHANNELS>=8, INJ_CHANNELS>=8, INJ_CHANNELS>=8};
-	const uint16_t angle[] = {0,180,360,540,0,180,360,540};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
+	
+  assert_4channel_4stage_over720(__LINE__, context);
+  assert_injlayout(INJ_SEQUENTIAL, context);
 }
 
 static void cylinder4_stroke4_paired_nostage(void)  
@@ -707,8 +861,11 @@ static void cylinder4_stroke4_paired_nostage(void)
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_PAIRED;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-  assert_4cylinder_4stroke_paired_nostage(__LINE__, context.current);
+
+  assert_2channel_0stage_over360(__LINE__, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder4_stroke4_paired_staged(void)  
@@ -716,8 +873,11 @@ static void cylinder4_stroke4_paired_staged(void)
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_PAIRED;
   enableStaging(context);
+
   context.initialise();
+  
   assert_2channel_2staged_over360(__LINE__, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder4_stroke4_semiseq_nostage(uint8_t pairMode)
@@ -726,8 +886,11 @@ static void cylinder4_stroke4_semiseq_nostage(uint8_t pairMode)
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page4.inj4cylPairing = pairMode;
   context.page10.stagingEnabled = false;
+  
   context.initialise();
-  assert_4cylinder_4stroke_paired_nostage(__LINE__, context.current);
+  
+  assert_2channel_0stage_over360(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
 static void cylinder4_stroke4_semiseq_pair1324_nostage(void)
@@ -784,15 +947,27 @@ static init_context_t setup_4_cylinder_2stroke(void)
   return context;
 }
 
+static void assert_4channel_0stage_over180(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(180)
+    .assertPrimaryChannels(4)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, true, false, false, false, false},
+	                      {0,45,90,135,0,0,0,0});
+}
+
 static void cylinder4_stroke2_seq_nostage(void)
 {
   auto context = setup_4_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page10.stagingEnabled = false;
+  
   context.initialise();
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,45,90,135,0,0,0,0};
-  assert_fuel_schedules(context.current, 180U, enabled, angle, __LINE__);
+
+  assert_4channel_0stage_over180(__LINE__, context);
+  assert_injlayout(INJ_SEQUENTIAL, context);
 }
 
 static void cylinder4_stroke2_semiseq_nostage(void)
@@ -800,10 +975,22 @@ static void cylinder4_stroke2_semiseq_nostage(void)
   auto context = setup_4_cylinder_2stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,90,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 180U, enabled, angle, __LINE__);
+
+  assert_2channel_0stage_over180(__LINE__, context);
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+}
+
+static void assert_4channel_4stage_over180(int assertLineNum, const init_context_t &context)
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(180)
+    .assertPrimaryChannels(4)
+    .assertSecondaryChannels(INJ_CHANNELS>=5 ? 4 : 0)
+    .assertFuelChannels({true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=5, INJ_CHANNELS>=6, INJ_CHANNELS>=7, INJ_CHANNELS>=8},
+	                      {0,45,90,135,0,45,90,135});
 }
 
 static void cylinder4_stroke2_seq_staged(void)
@@ -811,10 +998,11 @@ static void cylinder4_stroke2_seq_staged(void)
   auto context = setup_4_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   enableStaging(context);
+  
   context.initialise();
-	const bool enabled[] = {true, INJ_CHANNELS>=2, INJ_CHANNELS>=3, INJ_CHANNELS>=4, INJ_CHANNELS>=5, INJ_CHANNELS>=6, INJ_CHANNELS>=7, INJ_CHANNELS>=8};
-	const uint16_t angle[] = {0,45,90,135,0,45,90,135};
-  assert_fuel_schedules(context.current, 180U, enabled, angle, __LINE__);
+	
+  assert_4channel_4stage_over180(__LINE__, context);
+  assert_injlayout(INJ_SEQUENTIAL, context);
 }
 
 static void cylinder4_stroke2_semiseq_staged(void)
@@ -822,10 +1010,11 @@ static void cylinder4_stroke2_semiseq_staged(void)
   auto context = setup_4_cylinder_2stroke();
   context.page2.injLayout = INJ_PAIRED;
   enableStaging(context);
+
   context.initialise();
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,90,0,90,0,0,0,0};
-  assert_fuel_schedules(context.current, 180U, enabled, angle, __LINE__);
+	
+  assert_2channel_2stage_over180(__LINE__, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 void run_4_cylinder_2stroke_tests(void)
@@ -847,17 +1036,24 @@ static init_context_t setup_5_cylinder_4stroke(void)
   return context;
 }
 
-static void assert_5cylinder_4stroke_seq_nostage(int assertLineNum, const statuses &current)
+static void assert_5channel_0stage_over720(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
 {
-	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, false, false, false};
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(INJ_CHANNELS>=5 ? 5 : INJ_CHANNELS)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, true, INJ_CHANNELS>=5, false, false, false}, angles);
+}
+
+static void assert_5channel_0stage_over720_default_angles(int assertLineNum, const init_context_t &context)
+{
+  assert_5channel_0stage_over720(assertLineNum, context,
 #if INJ_CHANNELS>=5
-  const uint16_t angle[] = {0,144,288,432,576,0,0,0};
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, current.injLayout);
+    {0,144U,288U,432U,576U,0,0,0});
 #else
-  const uint16_t angle[] = {0,72,144,216,0,0,0,0};
-  TEST_ASSERT_EQUAL(INJ_PAIRED, current.injLayout);
+    {0,72U,144U,216U,288U,0,0,0});
 #endif
-  assert_fuel_schedules(current, 720U, enabled, angle, assertLineNum);
 }
 
 static void cylinder5_stroke4_seq_nostage(void)
@@ -865,8 +1061,11 @@ static void cylinder5_stroke4_seq_nostage(void)
   auto context = setup_5_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-  assert_5cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  
+  assert_5channel_0stage_over720_default_angles(__LINE__, context);
+  assert_injlayout(INJ_CHANNELS>=5 ? INJ_SEQUENTIAL : INJ_PAIRED, context);
 }
 
 static void cylinder5_stroke4_semiseq_nostage(void)
@@ -874,10 +1073,21 @@ static void cylinder5_stroke4_semiseq_nostage(void)
   auto context = setup_5_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, false, false, false};
-	const uint16_t angle[] = {0,72,144,216,288,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
+  
+  assert_5channel_0stage_over720(__LINE__, context, {0,72U,144U,216U,288U,0,0,0});
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+}
+
+static void assert_5channel_1stage_over720(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
+{
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(INJ_CHANNELS>=5 ? 5 : 4)
+    .assertSecondaryChannels(INJ_CHANNELS>=6 ? 1 : 0)
+    .assertFuelChannels({true, true, true, true, INJ_CHANNELS>=5, INJ_CHANNELS>=6, false, false}, angles);
 }
 
 static void cylinder5_stroke4_seq_staged(void)
@@ -885,14 +1095,17 @@ static void cylinder5_stroke4_seq_staged(void)
   auto context = setup_5_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   enableStaging(context);
+
   context.initialise();
-	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, INJ_CHANNELS>=6, false, false};
+ 
+  assert_5channel_1stage_over720(__LINE__, context, 
 #if INJ_CHANNELS>=5
-	const uint16_t angle[] = {0,144,288,432,576,0,0,0};
+    {0,144,288,432,576,0,0,0}
 #else
-	const uint16_t angle[] = {0,72,144,216,288,0,0,0};
+    {0,72,144,216,0,0,0,0}
 #endif
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
+);
+  assert_injlayout(INJ_CHANNELS>=5 ? INJ_SEQUENTIAL : INJ_PAIRED, context);
 }
 
 static void cylinder5_stroke4_semiseq_staged(void)
@@ -900,10 +1113,11 @@ static void cylinder5_stroke4_semiseq_staged(void)
   auto context = setup_5_cylinder_4stroke();
   context.page2.injLayout = INJ_PAIRED;
   enableStaging(context);
+
   context.initialise();
-	const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, INJ_CHANNELS>=6, false, false};
-	const uint16_t angle[] = {0,72,144,216,288,360,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
+
+  assert_5channel_1stage_over720(__LINE__, context, {0,72,144,216,288,360,0,0});
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_5_cylinder_4stroke_tests(void)
@@ -925,19 +1139,15 @@ static init_context_t setup_6_cylinder_4stroke(void)
   return context;
 }
 
-static void assert_6cylinder_4stroke_seq_nostage(int assertLineNum, const init_context_t &context)
+static void assert_6channel_0stage_over720(int assertLineNum, const init_context_t &context)
 {
-#if INJ_CHANNELS >= 6
-	const bool enabled[] = {true, true, true, true, true, true, false, false};
-	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, context.current.injLayout);
-#else
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
-  TEST_ASSERT_EQUAL(INJ_PAIRED, context.current.injLayout);
-#endif
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
-  assert_fuel_schedules(context.current, 720U, enabled, angle, assertLineNum);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(INJ_CHANNELS>=6 ? 6 : 3)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, INJ_CHANNELS>=6, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false},
+	                      {0,120,240,360,480,600,0,0});
 }
 
 static void cylinder6_stroke4_seq_nostage(void)
@@ -945,8 +1155,11 @@ static void cylinder6_stroke4_seq_nostage(void)
   auto context = setup_6_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-  assert_6cylinder_4stroke_seq_nostage(__LINE__, context);
+
+  assert_6channel_0stage_over720(__LINE__, context);
+  assert_injlayout(INJ_CHANNELS>=6 ? INJ_SEQUENTIAL : INJ_PAIRED, context);
 }
 
 static void cylinder6_stroke4_semiseq_nostage(void)
@@ -954,11 +1167,11 @@ static void cylinder6_stroke4_semiseq_nostage(void)
   auto context = setup_6_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+	
+  assert_3channel_0stage_over720(__LINE__, context, {0,120,240,0,0,0,0,0});
+  assert_injlayout(INJ_SEMISEQUENTIAL, context);
 }
 
 static void cylinder6_stroke4_seq_staged(void)
@@ -966,11 +1179,11 @@ static void cylinder6_stroke4_seq_staged(void)
   auto context = setup_6_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   enableStaging(context);
+
   context.initialise();
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
-	const uint16_t angle[] = {0,120,240,360,480,600,0,0};
-	const bool enabled[] = {true, true, true, INJ_CHANNELS>=6, INJ_CHANNELS>=6, INJ_CHANNELS>=6, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
+
+  assert_6channel_0stage_over720(__LINE__, context);
+  assert_injlayout(INJ_CHANNELS>=6 ? INJ_SEQUENTIAL : INJ_PAIRED, context);
 }
 
 static void cylinder6_stroke4_semiseq_staged(void)
@@ -978,18 +1191,20 @@ static void cylinder6_stroke4_semiseq_staged(void)
   auto context = setup_6_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   enableStaging(context);
+  
   context.initialise();
-#if INJ_CHANNELS >= 7
-	const uint16_t angle[] = {0,120,240,360,0,120,240,0};
-	const bool enabled[] = {true, true, true, true, true, true, false, false};
-  TEST_ASSERT_TRUE(context.page10.stagingEnabled);
+
+#if INJ_CHANNELS >= 6
   TEST_IGNORE_MESSAGE("Fix code so test passes :-()");
 #else
-	const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-	const bool enabled[] = {true, true, true, false, false, false, false, false};
-  TEST_ASSERT_FALSE(context.page10.stagingEnabled);
+  context
+    .setAssertLine(__LINE__)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(3)
+    .assertSecondaryChannels(INJ_CHANNELS >= 6 ? 3 : 0)
+    .assertFuelChannels({true, true, true, false, false, false, false, false},
+	                      {0,120,240,360,0,120,240,0});
 #endif
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
 }
 
 static void run_6_cylinder_4stroke_tests(void)
@@ -1011,18 +1226,19 @@ static init_context_t setup_8_cylinder_4stroke(void)
   return context;
 }
 
-static void assert_8cylinder_4stroke_seq_nostage(int assertLineNum, const statuses &current)
+static void assert_8channel_0stage_over720(int assertLineNum, const init_context_t &context)
 {
-#if INJ_CHANNELS >= 8
-	const bool enabled[] = {true, true, true, true, true, true, true, true};
-	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
-  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, current.injLayout);
-#else
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-	const uint16_t angle[] = {0,180,360,540,0,0,0,0};
-  TEST_ASSERT_EQUAL(INJ_PAIRED, current.injLayout);
+#if INJ_CHANNELS==4
+  assert_4channel_0stage_over720(assertLineNum, context, {0,180,360,540,0,0,0,0});
+#elif INJ_CHANNELS==8
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(720)
+    .assertPrimaryChannels(8)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, true, INJ_CHANNELS>=8, INJ_CHANNELS>=8, INJ_CHANNELS>=8, INJ_CHANNELS>=8},
+	                      {0,90,180,270,360,450,540,630});
 #endif
-  assert_fuel_schedules(current, 720U, enabled, angle, assertLineNum);
 }
 
 static void cylinder8_stroke4_seq_nostage(void)
@@ -1030,15 +1246,22 @@ static void cylinder8_stroke4_seq_nostage(void)
   auto context = setup_8_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-  assert_8cylinder_4stroke_seq_nostage(__LINE__, context.current);
+
+  assert_8channel_0stage_over720(__LINE__, context);
+  assert_injlayout(INJ_CHANNELS>=8 ? INJ_SEQUENTIAL : INJ_PAIRED, context);
 }
 
-static void assert_8cylinder_4stroke_paired_nostage(int assertLineNum, const statuses &current)
+static void assert_4channel_0stage_over360(int assertLineNum, const init_context_t &context)
 {
-	const uint16_t angle[] = {0,90,180,270,360,450,540,630};
-	const bool enabled[] = {true, true, true, true, false, false, false, false};
-  assert_fuel_schedules(current, 360U, enabled, angle, assertLineNum);
+  context
+    .setAssertLine(assertLineNum)
+    .assertMaxCrank(360)
+    .assertPrimaryChannels(4)
+    .assertSecondaryChannels(0)
+    .assertFuelChannels({true, true, true, true, false, false, false, false},
+	                      {0,90,180,270,360,450,540,630});
 }
 
 static void cylinder8_stroke4_paired_nostage(void)
@@ -1047,8 +1270,11 @@ static void cylinder8_stroke4_paired_nostage(void)
   context.page2.divider = context.page2.nCylinders/2U;
   context.page2.injLayout = INJ_PAIRED;
   context.page10.stagingEnabled = false;
+
   context.initialise();
-  assert_8cylinder_4stroke_paired_nostage(__LINE__, context.current);
+  
+  assert_4channel_0stage_over360(__LINE__, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_8_cylinder_4stroke_tests(void)
@@ -1059,101 +1285,83 @@ static void run_8_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder8_stroke4_paired_nostage);
 }
 
-static init_context_t setup_no_inj_timing(void)
+static init_context_t setup_no_inj_timing(uint8_t nCylinders)
 {
   init_context_t context;
   context.page2.strokes = FOUR_STROKE;
   context.page2.engineType = EVEN_FIRE;
   context.page2.injTiming = false;
   context.page10.stagingEnabled = false;
+  context.page2.injLayout = INJ_PAIRED;
+  context.page2.nCylinders = nCylinders;
+  context.page2.divider = nCylinders;
   return context;
 }
 
 static constexpr uint16_t zeroAngles[] = {0,0,0,0,0,0,0,0};
 
 static void cylinder_1_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 1;
-  context.page2.divider = 1;
+  auto context = setup_no_inj_timing(1);
 
   context.initialise();
 
-  const bool enabled[] = {true, false, false, false, false, false, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, zeroAngles, __LINE__);
+  assert_1channel_0stage_over720(__LINE__, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder_2_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 2;
-  context.page2.divider = 2;
+  auto context = setup_no_inj_timing(2);
 
   context.initialise();
 
-  const bool enabled[] = {true, true, false, false, false, false, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, zeroAngles, __LINE__);
+  assert_2channel_0stage_over720(__LINE__, context, zeroAngles);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder_3_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 3;
-  context.page2.divider = 3;
+  auto context = setup_no_inj_timing(3);
   context.page2.injType = INJ_TYPE_PORT;
 
   context.initialise();
 
-  const bool enabled[] = {true, true, true, false, false, false, false, false};
-  assert_fuel_schedules(context.current, 360U, enabled, zeroAngles, __LINE__);
+  assert_3channel_0stage_over360(__LINE__, context, zeroAngles);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder_4_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 4;
-  context.page2.divider = 4;
+  auto context = setup_no_inj_timing(4);
 
   context.initialise();
 
-  const bool enabled[] = {true, true, false, false, false, false, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, zeroAngles, __LINE__);
+  assert_2channel_0stage_over720(__LINE__, context, zeroAngles);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder_5_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 5;
-  context.page2.divider = 5;
+  auto context = setup_no_inj_timing(5);
 
   context.initialise();
 
-  const bool enabled[] = {true, true, true, true, INJ_CHANNELS>=5, false, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, zeroAngles, __LINE__);
-}
+  assert_5channel_0stage_over720(__LINE__, context, zeroAngles);
+  assert_injlayout(INJ_PAIRED, context);
+ }
 
 static void cylinder_6_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 6;
-  context.page2.divider = 6;
+  auto context = setup_no_inj_timing(6);
 
   context.initialise();
 
-  const bool enabled[] = {true, true, true, false, false, false, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, zeroAngles, __LINE__);
+  assert_3channel_0stage_over720(__LINE__, context, zeroAngles);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder_8_NoinjTiming_paired(void) {
-  auto context = setup_no_inj_timing();
-  context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = 8;
-  context.page2.divider = 8;
+  auto context = setup_no_inj_timing(8);
 
   context.initialise();
 
-  const bool enabled[] = {true, true, true, true, false, false, false, false};
-  assert_fuel_schedules(context.current, 720U, enabled, zeroAngles, __LINE__);
+  assert_4channel_0stage_over720(__LINE__, context, zeroAngles);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_no_inj_timing_tests(void)
@@ -1189,9 +1397,7 @@ static void cylinder_2_oddfire(void)
 
   context.initialise();
 
-	const bool enabled[] = {true, true, false, false, false, false, false, false};
-	const uint16_t angle[] = {0,13,0,0,0,0,0,0};
-  assert_fuel_schedules(context.current, 720U, enabled, angle, __LINE__);
+  assert_2channel_0stage_over720(__LINE__, context, {0,13,0,0,0,0,0,0});
 }
 
 static void cylinder_1_oddfire(void)
@@ -1205,35 +1411,35 @@ static void cylinder_3_oddfire(void)
 {
   auto context = setup_oddfire(3);
   context.initialise();
-  assert_3cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 }
 
 static void cylinder_4_oddfire(void)
 {
   auto context = setup_oddfire(4);
   context.initialise();
-  assert_4cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
 }
 
 static void cylinder_5_oddfire(void)
 {
   auto context = setup_oddfire(5);
   context.initialise();
-  assert_5cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_5channel_0stage_over720_default_angles(__LINE__, context);
 }
 
 static void cylinder_6_oddfire(void)
 {
   auto context = setup_oddfire(6);
   context.initialise();
-  assert_6cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_6channel_0stage_over720(__LINE__, context);
 }
 
 static void cylinder_8_oddfire(void)
 {
   auto context = setup_oddfire(8);
   context.initialise();
-  assert_8cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_8channel_0stage_over720(__LINE__, context);
 }
 
 static void run_oddfire_tests()
@@ -1286,16 +1492,16 @@ static void test_partial_sync_2_cylinder(void)
   auto context = setupPartialSyncTest(2);
 
   // Confirm initial state
-  assert_2channel_0stage_over720(__LINE__, context);
+  assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
   // Confirm no change
-  assert_2channel_0stage_over720(__LINE__, context);
+  assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_2channel_0stage_over720(__LINE__, context);
+  assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
 }
 
 static void test_partial_sync_3_cylinder(void)
@@ -1303,16 +1509,16 @@ static void test_partial_sync_3_cylinder(void)
   auto context = setupPartialSyncTest(3);
 
   // Confirm initial state
-  assert_3cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
   // Confirm no change
-  assert_3cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_3cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 }
 
 static void test_partial_sync_4_cylinder(void)
@@ -1320,16 +1526,16 @@ static void test_partial_sync_4_cylinder(void)
   auto context = setupPartialSyncTest(4);
 
   // Confirm initial state
-  assert_4cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_4cylinder_4stroke_semiseq_nostage(__LINE__, context.current);
+  assert_2channel_0stage_over360(__LINE__, context);
   TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, context.current.injLayout);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_4cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
   TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, context.current.injLayout);
 }
 
@@ -1338,17 +1544,17 @@ static void test_partial_sync_5_cylinder(void)
   auto context = setupPartialSyncTest(5);
 
   // Confirm initial state
-  assert_5cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_5channel_0stage_over720_default_angles(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
   // Confirm no change
-  assert_5cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_5channel_0stage_over720_default_angles(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
   // Confirm no change
-  assert_5cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_5channel_0stage_over720_default_angles(__LINE__, context);
 }
 
 static void test_partial_sync_6_cylinder(void)
@@ -1357,15 +1563,15 @@ static void test_partial_sync_6_cylinder(void)
   auto context = setupPartialSyncTest(6);
 
   // Confirm initial state
-  assert_6cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_6channel_0stage_over720(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_3cylinder_semiseq_nostage(__LINE__, context);
+  assert_3channel_0stage_over360(__LINE__, context, {0,120,240,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_6cylinder_4stroke_seq_nostage(__LINE__, context);
+  assert_6channel_0stage_over720(__LINE__, context);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
 #endif
@@ -1377,19 +1583,19 @@ static void test_partial_sync_8_cylinder(void)
   auto context = setupPartialSyncTest(8);
 
   // Confirm initial state
-  assert_8cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_8channel_0stage_over720(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_8cylinder_4stroke_paired_nostage(__LINE__, context.current);
+  assert_4channel_0stage_over360(__LINE__, context);
   TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, context.current.injLayout);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_8cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_8channel_0stage_over720(__LINE__, context);
   // Deliberate repeat
   matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
-  assert_8cylinder_4stroke_seq_nostage(__LINE__, context.current);
+  assert_8channel_0stage_over720(__LINE__, context);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
 #endif
