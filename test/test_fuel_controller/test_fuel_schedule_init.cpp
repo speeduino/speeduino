@@ -29,6 +29,26 @@ struct init_context_t
     initialiseFuelSchedules(current, page2, page4, page10, pins);
   }
 
+  void enableStaging(void)
+  {
+    page10.stagingEnabled = true;
+    page10.stagedInjSizePri = 250;
+    page10.stagedInjSizeSec = 500;
+  }
+
+  void setup_4stroke(uint8_t nCylinders)
+  {
+    setup_numcylinders(nCylinders);
+    page2.strokes = FOUR_STROKE;
+  }
+
+  void setup_2stroke(uint8_t nCylinders)
+  {
+    setup_numcylinders(nCylinders);
+    page2.strokes = TWO_STROKE;
+  }
+
+
   const init_context_t& setAssertLine(int assertLineNum) const
   {
     _assertLine = assertLineNum;
@@ -71,6 +91,15 @@ struct init_context_t
   }
 
 private:
+  void setup_numcylinders(uint8_t nCylinders)
+  {
+    page2.nCylinders = nCylinders;
+    page2.divider = page2.nCylinders;
+    page2.nCylinders = page2.nCylinders;
+    page2.engineType = EVEN_FIRE;
+    page2.injTiming = true;
+  }
+
   void assert_fuel_channel(bool enabled, uint16_t angle, uint8_t channelIndex, const FuelSchedule &schedule) const
   {
     char msg[64];
@@ -125,21 +154,10 @@ static void assert_1channel_1stage_over720(int assertLineNum, const init_context
 	                      {0,0,0,0,0,0,0,0});
 }
 
-static void enableStaging(init_context_t &context)
-{
-  context.page10.stagingEnabled = true;
-  context.page10.stagedInjSizePri = 250;
-  context.page10.stagedInjSizeSec = 500;
-}
-
 static init_context_t setup1_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 1;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.divider = 1;
-  context.page2.injTiming = true;
+  context.setup_4stroke(1);
   return context;
 }
 
@@ -172,7 +190,7 @@ static void cylinder1_stroke4_seq_staged(void)
   auto context = setup1_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
   context.page2.injTiming = true;
-  enableStaging(context);
+  context.enableStaging();
   
   context.initialise();
   
@@ -185,7 +203,7 @@ static void cylinder1_stroke4_semiseq_staged(void)
   auto context = setup1_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page2.injTiming = true;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
   
@@ -226,11 +244,7 @@ static void assert_1channel_1stage_over360(int assertLineNum, const init_context
 static init_context_t setup1_cylinder_2stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 1;
-  context.page2.strokes = TWO_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.divider = 1;
-  context.page2.injTiming = true;
+  context.setup_2stroke(1);
   return context;
 }
 
@@ -262,7 +276,7 @@ static void cylinder1_stroke2_seq_staged(void)
 {
   auto context = setup1_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 	
@@ -274,7 +288,7 @@ static void cylinder1_stroke2_semiseq_staged(void)
 {
   auto context = setup1_cylinder_2stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 
@@ -293,11 +307,8 @@ static void run_1_cylinder_2stroke_tests(void)
 static init_context_t setup2_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 2;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
+  context.setup_4stroke(2);
   context.page2.divider = 1;
-  context.page2.injTiming = true;
   return context;
 }
 
@@ -361,7 +372,7 @@ static void cylinder2_stroke4_seq_staged(void)
 {
   auto context = setup2_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 
@@ -384,7 +395,7 @@ static void cylinder2_stroke4_semiseq_staged(void)
 {
   auto context = setup2_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
   
@@ -403,11 +414,8 @@ static void run_2_cylinder_4stroke_tests(void)
 static init_context_t setup_2_cylinder_2stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 2;
-  context.page2.strokes = TWO_STROKE;
-  context.page2.engineType = EVEN_FIRE;
+  context.setup_2stroke(2);
   context.page2.divider = 1;
-  context.page2.injTiming = true;
   return context;
 } 
 
@@ -461,7 +469,7 @@ static void cylinder2_stroke2_seq_staged(void)
 {
   auto context = setup_2_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   
   context.initialise();
 	  
@@ -473,7 +481,7 @@ static void cylinder2_stroke2_semiseq_staged(void)
 {
   auto context = setup_2_cylinder_2stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
  
   context.initialise();
   
@@ -492,11 +500,8 @@ static void run_2_cylinder_2stroke_tests(void)
 static init_context_t setup_3_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 3;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.divider = 1; //3 squirts per cycle for a 3 cylinder
-  context.page2.injTiming = true;
+  context.setup_4stroke(3);
+  context.page2.divider = 1;
   return context;
 }
 
@@ -584,7 +589,7 @@ static void cylinder3_stroke4_seq_staged(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 
@@ -607,7 +612,7 @@ static void cylinder3_stroke4_semiseq_staged_tb(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   context.page2.injType = INJ_TYPE_TBODY;
    context.initialise();
 
@@ -630,7 +635,7 @@ static void cylinder3_stroke4_semiseq_staged_port(void)
 {
   auto context = setup_3_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   context.page2.injType = INJ_TYPE_PORT;
 
   context.initialise();
@@ -652,10 +657,7 @@ static void run_3_cylinder_4stroke_tests(void)
 static init_context_t setup_3_cylinder_2stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 3;
-  context.page2.strokes = TWO_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
+  context.setup_2stroke(3);
   context.page2.divider = 1;
   return context;
 }
@@ -723,7 +725,7 @@ static void cylinder3_stroke2_seq_staged(void)
 {
   auto context = setup_3_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   
   context.initialise();
 
@@ -746,7 +748,7 @@ static void cylinder3_stroke2_semiseq_staged_tb(void)
 {
   auto context = setup_3_cylinder_2stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   context.page2.injType = INJ_TYPE_TBODY;
   
   context.initialise();
@@ -771,7 +773,7 @@ static void cylinder3_stroke2_semiseq_staged_port(void)
 {
   auto context = setup_3_cylinder_2stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   context.page2.injType = INJ_TYPE_PORT;
 
   context.initialise();
@@ -793,10 +795,7 @@ static void run_3_cylinder_2stroke_tests(void)
 static init_context_t setup_4_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 4;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
+  context.setup_4stroke(4);
   context.page2.divider = 2;
   return context;
 }
@@ -848,7 +847,7 @@ static void cylinder4_stroke4_seq_staged(void)
 {
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 	
@@ -872,7 +871,7 @@ static void cylinder4_stroke4_paired_staged(void)
 {
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_PAIRED;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
   
@@ -908,7 +907,7 @@ static void cylinder4_stroke4_semiseq_staged(uint8_t pairMode)
   auto context = setup_4_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
   context.page4.inj4cylPairing = pairMode;
-  enableStaging(context);
+  context.enableStaging();
   context.initialise();
   // assert_2channel_2staged_over360(__LINE__, context);
   TEST_IGNORE_MESSAGE("TODO: make this work");
@@ -939,10 +938,7 @@ static void run_4_cylinder_4stroke_tests(void)
 static init_context_t setup_4_cylinder_2stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 4;
-  context.page2.strokes = TWO_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
+  context.setup_2stroke(4);
   context.page2.divider = 2;
   return context;
 }
@@ -997,7 +993,7 @@ static void cylinder4_stroke2_seq_staged(void)
 {
   auto context = setup_4_cylinder_2stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   
   context.initialise();
 	
@@ -1009,7 +1005,7 @@ static void cylinder4_stroke2_semiseq_staged(void)
 {
   auto context = setup_4_cylinder_2stroke();
   context.page2.injLayout = INJ_PAIRED;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 	
@@ -1028,11 +1024,7 @@ void run_4_cylinder_2stroke_tests(void)
 static init_context_t setup_5_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 5;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
-  context.page2.divider = 5;
+  context.setup_4stroke(5);
   return context;
 }
 
@@ -1094,7 +1086,7 @@ static void cylinder5_stroke4_seq_staged(void)
 {
   auto context = setup_5_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
  
@@ -1112,7 +1104,7 @@ static void cylinder5_stroke4_semiseq_staged(void)
 {
   auto context = setup_5_cylinder_4stroke();
   context.page2.injLayout = INJ_PAIRED;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 
@@ -1131,11 +1123,7 @@ static void run_5_cylinder_4stroke_tests(void)
 static init_context_t setup_6_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 6;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
-  context.page2.divider = 6;
+  context.setup_4stroke(6);
   return context;
 }
 
@@ -1178,7 +1166,7 @@ static void cylinder6_stroke4_seq_staged(void)
 {
   auto context = setup_6_cylinder_4stroke();
   context.page2.injLayout = INJ_SEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
 
   context.initialise();
 
@@ -1190,7 +1178,7 @@ static void cylinder6_stroke4_semiseq_staged(void)
 {
   auto context = setup_6_cylinder_4stroke();
   context.page2.injLayout = INJ_SEMISEQUENTIAL;
-  enableStaging(context);
+  context.enableStaging();
   
   context.initialise();
 
@@ -1218,11 +1206,7 @@ static void run_6_cylinder_4stroke_tests(void)
 static init_context_t setup_8_cylinder_4stroke(void)
 {
   init_context_t context;
-  context.page2.nCylinders = 8;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
-  context.page2.divider = 8;
+  context.setup_4stroke(8);
   return context;
 }
 
@@ -1288,13 +1272,9 @@ static void run_8_cylinder_4stroke_tests(void)
 static init_context_t setup_no_inj_timing(uint8_t nCylinders)
 {
   init_context_t context;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.engineType = EVEN_FIRE;
+  context.setup_4stroke(nCylinders);
   context.page2.injTiming = false;
-  context.page10.stagingEnabled = false;
   context.page2.injLayout = INJ_PAIRED;
-  context.page2.nCylinders = nCylinders;
-  context.page2.divider = nCylinders;
   return context;
 }
 
@@ -1378,13 +1358,9 @@ static void run_no_inj_timing_tests(void)
 static init_context_t setup_oddfire(uint8_t nCylinders)
 {
   init_context_t context;
-  context.page2.strokes = FOUR_STROKE;
+  context.setup_4stroke(nCylinders);
   context.page2.engineType = ODD_FIRE;
-  context.page2.injTiming = true;
   context.page2.injLayout = INJ_SEQUENTIAL;
-  context.page2.nCylinders = nCylinders;
-  context.page10.stagingEnabled = false;
-  context.page2.divider = nCylinders;
   context.page2.oddfire2 = 13;
   context.page2.oddfire3 = 111;
   context.page2.oddfire4 = 217;
@@ -1456,13 +1432,8 @@ static void run_oddfire_tests()
 static init_context_t setupPartialSyncTest(uint8_t cylinders)
 {
   init_context_t context;
-  context.page2.nCylinders = cylinders;
-  context.page2.engineType = EVEN_FIRE;
-  context.page2.injTiming = true;
+  context.setup_4stroke(cylinders);
   context.page2.injLayout = INJ_SEQUENTIAL;
-  context.page2.strokes = FOUR_STROKE;
-  context.page2.divider = cylinders;
-  context.page10.stagingEnabled = false;
   context.current.decoder = decoder_builder_t().setGetStatus(getFakeDecoderStatus).build();
     
   context.initialise();
