@@ -2,6 +2,8 @@
 #include "scheduler_fuel_controller.h"
 #include "units.h"
 #include "../channel_test_helpers.h"
+#include "../fake_decoder_status.h"
+#include "decoder_builder.h"
 
 extern uint8_t calulateNumSquirts(const config2 &page2);
 extern uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2);
@@ -18,8 +20,8 @@ extern table2D_u8_u16_4 injectorAngleTable;
 extern void setFuelChannelSchedule(FuelSchedule &schedule, uint8_t channel, uint16_t crankAngle, byte injChannelMask, uint16_t injAngle, injectorAngleCalcCache *pCache);
 extern table2D_u8_u8_4 PrimingPulseTable;
 extern uint16_t setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask, uint16_t injAngle);
-extern bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
-extern bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
+extern bool changeToFullSequentialInjection(const statuses &current, const config2 &page2);
+extern bool changeToSemiSequentialInjection(const statuses &current, const config2 &page2);
 extern void validateInjectionSetup(config2 &page2, config6 &page6);
 
 static void test_calulateNumSquirts_default_no_divider(void)
@@ -604,73 +606,88 @@ static void test_setFuelChannelSchedules_returnsInjectionAngle(void)
   TEST_ASSERT_EQUAL(355U, setFuelChannelSchedules(0, 0, 355));
 }
 
-static void setup_changeToFullSequentialInjection(config2 &page2, decoder_status_t &decoderStatus)
+static void setup_changeToFullSequentialInjection(statuses &current, config2 &page2, uint8_t nCylinders)
 {
+  current.injLayout = INJ_SEMISEQUENTIAL;
+  current.decoder = decoder_builder_t().setGetStatus(getFakeDecoderStatus).build();
+  page2.nCylinders = nCylinders;
   page2.injLayout = INJ_SEQUENTIAL;
-  decoderStatus.syncStatus=SyncStatus::Full;
-  CRANK_ANGLE_MAX_INJ = 360U;
+  fakeDecoderStatus.syncStatus=SyncStatus::Full;
 }
 
 static void test_changeToFullSequentialInjection(void)
 {
+  statuses current = {};
   config2 page2 = {};
-  decoder_status_t decoderStatus = {};
 
-  setup_changeToFullSequentialInjection(page2, decoderStatus);
-  TEST_ASSERT_TRUE(changeToFullSequentialInjection(page2, decoderStatus));
+  setup_changeToFullSequentialInjection(current, page2, 1);
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
+  setup_changeToFullSequentialInjection(current, page2, 2);
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
+  setup_changeToFullSequentialInjection(current, page2, 3);
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
+  setup_changeToFullSequentialInjection(current, page2, 4);
+  TEST_ASSERT_TRUE(changeToFullSequentialInjection(current, page2));
+  setup_changeToFullSequentialInjection(current, page2, 5);
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
+  setup_changeToFullSequentialInjection(current, page2, 6);
+  TEST_ASSERT_TRUE(changeToFullSequentialInjection(current, page2));
+  setup_changeToFullSequentialInjection(current, page2, 8);
+  TEST_ASSERT_TRUE(changeToFullSequentialInjection(current, page2));
 
-  setup_changeToFullSequentialInjection(page2, decoderStatus);
+  setup_changeToFullSequentialInjection(current, page2, 4);
   page2.injLayout = INJ_SEMISEQUENTIAL;
-  TEST_ASSERT_FALSE(changeToFullSequentialInjection(page2, decoderStatus));
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
 
-  setup_changeToFullSequentialInjection(page2, decoderStatus);
-  decoderStatus.syncStatus=SyncStatus::Partial;
-  TEST_ASSERT_FALSE(changeToFullSequentialInjection(page2, decoderStatus));
+  setup_changeToFullSequentialInjection(current, page2, 4);
+  fakeDecoderStatus.syncStatus=SyncStatus::Partial;
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
 
-  setup_changeToFullSequentialInjection(page2, decoderStatus);
-  CRANK_ANGLE_MAX_INJ = 720U;
-  TEST_ASSERT_FALSE(changeToFullSequentialInjection(page2, decoderStatus));
+  setup_changeToFullSequentialInjection(current, page2, 4);
+  current.injLayout = INJ_SEQUENTIAL;
+  TEST_ASSERT_FALSE(changeToFullSequentialInjection(current, page2));
 }
 
-static void setup_changeToSemiSequentialInjection(config2 &page2, decoder_status_t &decoderStatus)
+static void setup_changeToSemiSequentialInjection(statuses &current, config2 &page2, uint8_t nCylinders)
 {
+  current.injLayout = INJ_SEQUENTIAL;
+  current.decoder = decoder_builder_t().setGetStatus(getFakeDecoderStatus).build();
   page2.injLayout = INJ_SEQUENTIAL;
-  page2.nCylinders = 4;
-  decoderStatus.syncStatus=SyncStatus::Partial;
-  CRANK_ANGLE_MAX_INJ = 720U;
+  page2.nCylinders = nCylinders;
+  fakeDecoderStatus.syncStatus=SyncStatus::Partial;
 }
 
 static void test_changeToSemiSequentialInjection(void)
 {
   config2 page2 = {};
-  decoder_status_t decoderStatus = {};
+  statuses current = {};
 
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
-  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(page2, decoderStatus));
+  setup_changeToSemiSequentialInjection(current, page2, 1);
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
+  setup_changeToSemiSequentialInjection(current, page2, 2);
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
+  setup_changeToSemiSequentialInjection(current, page2, 3);
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
+  setup_changeToSemiSequentialInjection(current, page2, 4);
+  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(current, page2));
+  setup_changeToSemiSequentialInjection(current, page2, 5);
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
+  setup_changeToSemiSequentialInjection(current, page2, 6);
+  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(current, page2));
+  setup_changeToSemiSequentialInjection(current, page2, 8);
+  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(current, page2));
 
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
-  page2.nCylinders = 6;
-  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(page2, decoderStatus));
-
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
-  page2.nCylinders = 8;
-  TEST_ASSERT_TRUE(changeToSemiSequentialInjection(page2, decoderStatus));
-
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
-  page2.nCylinders = 1;
-  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
-
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
+  setup_changeToSemiSequentialInjection(current, page2, 4);
   page2.injLayout = INJ_SEMISEQUENTIAL;
-  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
 
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
-  decoderStatus.syncStatus=SyncStatus::Full;
-  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+  setup_changeToSemiSequentialInjection(current, page2, 4);
+  fakeDecoderStatus.syncStatus=SyncStatus::Full;
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
 
-  setup_changeToSemiSequentialInjection(page2, decoderStatus);
-  CRANK_ANGLE_MAX_INJ = 360U;
-  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
+  setup_changeToSemiSequentialInjection(current, page2, 4);
+  current.injLayout = INJ_SEMISEQUENTIAL;
+  TEST_ASSERT_FALSE(changeToSemiSequentialInjection(current, page2));
 }
 
 static void assert_validateInjectionSetup_injLayout_semi(uint8_t nCylinders, uint8_t expectedLayout)
