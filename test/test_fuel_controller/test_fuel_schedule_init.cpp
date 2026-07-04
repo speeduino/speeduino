@@ -13,6 +13,7 @@ struct init_context_t
   statuses current = {};
   config2 page2 = {};
   config4 page4 = {};
+  config6 page6 = {};
   config10 page10 = {};
   pinNumbers_t pins = {};
 
@@ -26,7 +27,7 @@ struct init_context_t
 
   void initialise(void)
   {
-    initialiseFuelSchedules(current, page2, page4, page10, pins);
+    initialiseFuelSchedules(current, page2, page4, page6, page10, pins);
   }
 
   void enableStaging(void)
@@ -95,7 +96,7 @@ private:
   {
     page2.nCylinders = nCylinders;
     page2.divider = page2.nCylinders;
-    page2.nCylinders = page2.nCylinders;
+    page2.nInjectors = page2.nCylinders;
     page2.engineType = EVEN_FIRE;
     page2.injTiming = true;
   }
@@ -182,7 +183,7 @@ static void cylinder1_stroke4_semiseq_nostage(void)
   context.initialise();
   
   assert_1channel_0stage_over720(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder1_stroke4_seq_staged(void)
@@ -208,7 +209,7 @@ static void cylinder1_stroke4_semiseq_staged(void)
   context.initialise();
   
   assert_1channel_1stage_over720(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_1_cylinder_4stroke_tests(void)
@@ -269,7 +270,7 @@ static void cylinder1_stroke2_semiseq_nostage(void)
   context.initialise();
   
   assert_1channel_0stage_over360(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder1_stroke2_seq_staged(void)
@@ -293,7 +294,7 @@ static void cylinder1_stroke2_semiseq_staged(void)
   context.initialise();
 
   assert_1channel_1stage_over360(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_1_cylinder_2stroke_tests(void)
@@ -354,7 +355,7 @@ static void cylinder2_stroke4_semiseq_nostage(void)
   context.initialise();
 
   assert_2chennel_0stage_over360(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void assert_2channel_2stage_over720(int assertLineNum, const init_context_t &context)
@@ -400,7 +401,7 @@ static void cylinder2_stroke4_semiseq_staged(void)
   context.initialise();
   
   assert_2channel_2staged_over360(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_2_cylinder_4stroke_tests(void)
@@ -451,7 +452,7 @@ static void cylinder2_stroke2_semiseq_nostage(void)
   context.initialise();
   
   assert_2channel_0stage_over180(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void assert_2channel_2stage_over180(int assertLineNum, const init_context_t &context)
@@ -486,7 +487,7 @@ static void cylinder2_stroke2_semiseq_staged(void)
   context.initialise();
   
   assert_2channel_2stage_over180(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_2_cylinder_2stroke_tests(void)
@@ -548,7 +549,7 @@ static void cylinder3_stroke4_semiseq_nostage_tb(void)
   context.initialise();
 
   assert_3channel_0stage_over240(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void assert_3channel_0stage_over360(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
@@ -571,7 +572,7 @@ static void cylinder3_stroke4_semiseq_nostage_port(void)
   context.initialise();
 
   assert_3channel_0stage_over360(__LINE__, context, {0,120,240,0,0,0,0,0});
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void assert_3channel_3stage_over720(int assertLineNum, const init_context_t &context)
@@ -617,7 +618,7 @@ static void cylinder3_stroke4_semiseq_staged_tb(void)
    context.initialise();
 
   assert_3channel_3stage_over240(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void assert_3channel_3stage_over360(int assertLineNum, const init_context_t &context)
@@ -641,7 +642,7 @@ static void cylinder3_stroke4_semiseq_staged_port(void)
   context.initialise();
 
   assert_3channel_3stage_over360(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_3_cylinder_4stroke_tests(void)
@@ -694,7 +695,7 @@ static void cylinder3_stroke2_semiseq_nostage_tb(void)
   context.initialise();
 
   assert_3channel_0stage_over120(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void assert_3channel_0stage_over180(int assertLineNum, const init_context_t &context)
@@ -718,7 +719,7 @@ static void cylinder3_stroke2_semiseq_nostage_port(void)
   context.initialise();
 
   assert_3channel_0stage_over180(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void cylinder3_stroke2_seq_staged(void)
@@ -754,7 +755,7 @@ static void cylinder3_stroke2_semiseq_staged_tb(void)
   context.initialise();
 
 	assert_3channel_3stage_over120(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 
@@ -779,7 +780,7 @@ static void cylinder3_stroke2_semiseq_staged_port(void)
   context.initialise();
 
 	assert_3channel_3stage_over180(__LINE__, context);
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_PAIRED, context);
 }
 
 static void run_3_cylinder_2stroke_tests(void)
@@ -1069,7 +1070,7 @@ static void cylinder5_stroke4_semiseq_nostage(void)
   context.initialise();
   
   assert_5channel_0stage_over720(__LINE__, context, {0,72U,144U,216U,288U,0,0,0});
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_CHANNELS>=5 ? INJ_SEMISEQUENTIAL : INJ_PAIRED, context);
 }
 
 static void assert_5channel_1stage_over720(int assertLineNum, const init_context_t &context, const uint16_t (&angles)[8])
@@ -1159,7 +1160,7 @@ static void cylinder6_stroke4_semiseq_nostage(void)
   context.initialise();
 	
   assert_3channel_0stage_over720(__LINE__, context, {0,120,240,0,0,0,0,0});
-  assert_injlayout(INJ_SEMISEQUENTIAL, context);
+  assert_injlayout(INJ_CHANNELS>=5 ? INJ_SEMISEQUENTIAL : INJ_PAIRED, context);
 }
 
 static void cylinder6_stroke4_seq_staged(void)

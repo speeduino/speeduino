@@ -20,6 +20,7 @@ extern table2D_u8_u8_4 PrimingPulseTable;
 extern uint16_t setFuelChannelSchedules(uint16_t crankAngle, byte injChannelMask, uint16_t injAngle);
 extern bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
 extern bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus);
+extern void validateInjectionSetup(config2 &page2, config6 &page6);
 
 static void test_calulateNumSquirts_default_no_divider(void)
 {
@@ -672,6 +673,181 @@ static void test_changeToSemiSequentialInjection(void)
   TEST_ASSERT_FALSE(changeToSemiSequentialInjection(page2, decoderStatus));
 }
 
+static void assert_validateInjectionSetup_injLayout_semi(uint8_t nCylinders, uint8_t expectedLayout)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+  page2.nInjectors = nCylinders;
+  page2.injLayout = INJ_SEMISEQUENTIAL;
+  page2.nCylinders = nCylinders;
+  validateInjectionSetup(page2, page6);
+  char buffer[100];
+  snprintf(buffer, sizeof(buffer), "nCylinders=%" PRIu8 ", channels=%" PRIu8, nCylinders, (uint8_t)INJ_CHANNELS);
+  TEST_ASSERT_EQUAL_MESSAGE(expectedLayout, page2.injLayout, buffer);
+}
+
+static void assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(uint8_t nCylinders)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+  page2.nInjectors = nCylinders-1;
+  page2.nCylinders = nCylinders;
+  page2.injLayout = INJ_SEMISEQUENTIAL;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_PAIRED, page2.injLayout);
+}
+
+static void test_validateInjectionSetup_nInjector_clamp(void)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+
+  page2.nInjectors = 0;  
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(1, page2.nInjectors);
+
+  page2.nInjectors = INJ_CHANNELS - 1;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_CHANNELS - 1, page2.nInjectors);
+
+  page2.nInjectors = INJ_CHANNELS;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_CHANNELS, page2.nInjectors);
+
+  page2.nInjectors = INJ_CHANNELS + 1;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_CHANNELS, page2.nInjectors);
+}
+
+static void test_validateInjectionSetup_injLayout(void)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+
+  page2.nInjectors = INJ_CHANNELS;
+  page2.injLayout = INJ_SEQUENTIAL;
+
+  page2.nCylinders = page2.nInjectors;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, page2.injLayout);
+
+  page2.nCylinders = page2.nInjectors-1;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, page2.injLayout);
+
+  page2.nCylinders = page2.nInjectors+1;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(INJ_PAIRED, page2.injLayout);
+
+  assert_validateInjectionSetup_injLayout_semi(1, INJ_PAIRED);
+  assert_validateInjectionSetup_injLayout_semi(2, INJ_PAIRED);
+  assert_validateInjectionSetup_injLayout_semi(3, INJ_PAIRED);
+  assert_validateInjectionSetup_injLayout_semi(4, INJ_CHANNELS>=4 ? INJ_SEMISEQUENTIAL : INJ_PAIRED);
+  assert_validateInjectionSetup_injLayout_semi(5, INJ_CHANNELS>=5 ? INJ_SEMISEQUENTIAL : INJ_PAIRED);
+  assert_validateInjectionSetup_injLayout_semi(6, INJ_CHANNELS>=6 ? INJ_SEMISEQUENTIAL : INJ_PAIRED);
+  assert_validateInjectionSetup_injLayout_semi(8, INJ_CHANNELS>=8 ? INJ_SEMISEQUENTIAL : INJ_PAIRED);
+
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(1);
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(2);
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(3);
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(4);
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(5);
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(6);
+  assert_validateInjectionSetup_injLayout_semi_notenoughinjectors(8);
+}
+
+static void assert_validateInjectionSetup_no_oddfire(uint8_t nCylinders)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+  page2.nInjectors = INJ_CHANNELS;
+  page2.injLayout = INJ_SEQUENTIAL;
+  page2.engineType = ODD_FIRE;
+  page2.nCylinders = nCylinders;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(EVEN_FIRE, page2.engineType);
+}
+
+static void test_validateInjectionSetup_oddfire(void)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+
+  page2.nInjectors = INJ_CHANNELS;
+  page2.injLayout = INJ_SEQUENTIAL;
+  page2.engineType = ODD_FIRE;
+  page2.nCylinders = 2;
+
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_EQUAL(ODD_FIRE, page2.engineType);
+
+  assert_validateInjectionSetup_no_oddfire(1);
+  assert_validateInjectionSetup_no_oddfire(3);
+  assert_validateInjectionSetup_no_oddfire(4);
+  assert_validateInjectionSetup_no_oddfire(5);
+  assert_validateInjectionSetup_no_oddfire(6);
+  assert_validateInjectionSetup_no_oddfire(8);
+}
+
+static void test_validateInjectionSetup_trim(void)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+
+  page2.nInjectors = INJ_CHANNELS;
+
+  page2.injLayout = INJ_SEQUENTIAL;
+  page6.fuelTrimEnabled = true;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_TRUE(page6.fuelTrimEnabled);
+
+  page2.injLayout = INJ_SEMISEQUENTIAL;
+  page6.fuelTrimEnabled = true;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_FALSE(page6.fuelTrimEnabled);
+
+  page2.injLayout = INJ_PAIRED;
+  page6.fuelTrimEnabled = true;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_FALSE(page6.fuelTrimEnabled);
+}
+
+static void assert_injTiming_untouched(uint8_t injLayout)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+  page2.nInjectors = INJ_CHANNELS;
+  page2.nCylinders = page2.nInjectors;
+  page2.injLayout = injLayout;
+  page2.injTiming = true;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_TRUE(page2.injTiming);
+  TEST_ASSERT_EQUAL(injLayout, page2.injLayout);
+
+  page2.injTiming = false;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_FALSE(page2.injTiming);
+  TEST_ASSERT_EQUAL(injLayout, page2.injLayout);
+}
+
+static void test_validateInjectionSetup_injtiming(void)
+{
+  config2 page2 = {};
+  config6 page6 = {};
+
+  page2.nInjectors = INJ_CHANNELS;
+  page2.nCylinders = page2.nInjectors;
+
+  page2.injLayout = INJ_SEQUENTIAL;
+  page2.injTiming = false;
+  validateInjectionSetup(page2, page6);
+  TEST_ASSERT_TRUE(page2.injTiming);
+  TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, page2.injLayout);
+
+  assert_injTiming_untouched(INJ_SEMISEQUENTIAL);
+  assert_injTiming_untouched(INJ_PAIRED);
+}
+
 void testFuelController(void)
 {
   SET_UNITY_FILENAME() {
@@ -713,5 +889,10 @@ void testFuelController(void)
     RUN_TEST_P(test_setFuelChannelSchedules_returnsInjectionAngle);
     RUN_TEST_P(test_changeToFullSequentialInjection);
     RUN_TEST_P(test_changeToSemiSequentialInjection);
+    RUN_TEST_P(test_validateInjectionSetup_nInjector_clamp);
+    RUN_TEST_P(test_validateInjectionSetup_injLayout);
+    RUN_TEST_P(test_validateInjectionSetup_oddfire);
+    RUN_TEST_P(test_validateInjectionSetup_trim);
+    RUN_TEST_P(test_validateInjectionSetup_injtiming);
  }
 }
