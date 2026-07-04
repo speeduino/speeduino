@@ -133,27 +133,27 @@ static __attribute__((optimize("Os"))) void setupCallbacks(uint8_t injLayout, ui
   }
 }
 
-static inline bool isSwitchableCylinderCount(const config2 &page2)
+static inline bool isSwitchableConfig(const config2 &page2)
 {
-  return (page2.nCylinders==4U)
+  return (page2.injLayout == INJ_SEQUENTIAL) 
+      && ((page2.nCylinders==4U)
       || (page2.nCylinders==6U)
-      || (page2.nCylinders==8U)
+      || (page2.nCylinders==8U))
       ;
 }
 
-TESTABLE_INLINE_STATIC bool changeToSemiSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
+TESTABLE_INLINE_STATIC bool changeToSemiSequentialInjection(const statuses &current, const config2 &page2)
 {
-  return (page2.injLayout == INJ_SEQUENTIAL) 
-      && isSwitchableCylinderCount(page2)
-      && (decoderStatus.syncStatus==SyncStatus::Partial)
-      && (CRANK_ANGLE_MAX_INJ != 360U);
+  return isSwitchableConfig(page2)
+      && (current.injLayout == INJ_SEQUENTIAL)
+      && (current.decoder.getStatus().syncStatus==SyncStatus::Partial);
 }
 
-TESTABLE_INLINE_STATIC bool changeToFullSequentialInjection(const config2 &page2, const decoder_status_t &decoderStatus)
+TESTABLE_INLINE_STATIC bool changeToFullSequentialInjection(const statuses &current, const config2 &page2)
 {
-  return (page2.injLayout == INJ_SEQUENTIAL) 
-      && (decoderStatus.syncStatus==SyncStatus::Full)
-      && (CRANK_ANGLE_MAX_INJ!=720U);
+  return isSwitchableConfig(page2)
+      && (current.injLayout == INJ_SEMISEQUENTIAL)
+      && (current.decoder.getStatus().syncStatus==SyncStatus::Full);
 }
 
 TESTABLE_INLINE_STATIC bool isAnyFuelScheduleRunning(void) {
@@ -190,7 +190,7 @@ static inline void changeFuellingToFullSequential(const config2 &page2, statuses
       CRANK_ANGLE_MAX_INJ = 720;
       current.injOutputs.primary = page2.nCylinders;
       current.injLayout = INJ_SEQUENTIAL;
-      setupCallbacks(INJ_SEQUENTIAL, page2.nCylinders, 0U);
+      setupCallbacks(current.injLayout, page2.nCylinders, 0U);
     }
   }
 }
@@ -204,7 +204,7 @@ static inline void changeFuellingToSemiSequential(const config2 &page2, const co
       CRANK_ANGLE_MAX_INJ = 360;
       current.injOutputs.primary = page2.nCylinders/2U;
       current.injLayout = INJ_SEMISEQUENTIAL;
-      setupCallbacks(INJ_SEMISEQUENTIAL, page2.nCylinders, page4.inj4cylPairing);
+      setupCallbacks(current.injLayout, page2.nCylinders, page4.inj4cylPairing);
     }
   }
 }
@@ -216,15 +216,14 @@ static inline void changeFuellingToSemiSequential(const config2 &page2, const co
 // Then
 //  change to semi-sequential fuelling *and* change back once sync is restored
 TESTABLE_STATIC void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current) {
-  if (isSwitchableCylinderCount(page2))
+  if (isSwitchableConfig(page2))
   {
-    if (changeToFullSequentialInjection(page2, current.decoder.getStatus())) {
+    if (changeToFullSequentialInjection(current, page2)) {
       changeFuellingToFullSequential(page2, current);
-    } else if(changeToSemiSequentialInjection(page2, current.decoder.getStatus())) { 
+    } else if(changeToSemiSequentialInjection(current, page2)) { 
       changeFuellingToSemiSequential(page2, page4, current);
     } else {
-      // Injection layout matches current sync
-      current.injLayout = page2.injLayout;
+      // Injection layout matches current sync - do nothing
     }
   }
 }
