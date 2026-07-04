@@ -546,9 +546,15 @@ static void __attribute__((optimize("Os"))) resetFuelSchedules(void)
 void __attribute__((optimize("Os"))) startFuelSchedulers(void)
 {
   FUEL1_TIMER_ENABLE();
+#if INJ_CHANNELS >= 2
   FUEL2_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 3
   FUEL3_TIMER_ENABLE();
+#endif
+#if INJ_CHANNELS >= 4
   FUEL4_TIMER_ENABLE();
+#endif
 #if INJ_CHANNELS >= 5
   FUEL5_TIMER_ENABLE();
 #endif
@@ -566,9 +572,15 @@ void __attribute__((optimize("Os"))) startFuelSchedulers(void)
 void __attribute__((optimize("Os"))) stopFuelSchedulers(void)
 {
   FUEL1_TIMER_DISABLE();
+#if INJ_CHANNELS >= 2
   FUEL2_TIMER_DISABLE();
+#endif
+#if INJ_CHANNELS >= 3
   FUEL3_TIMER_DISABLE();
+#endif
+#if INJ_CHANNELS >= 4
   FUEL4_TIMER_DISABLE();
+#endif
 #if INJ_CHANNELS >= 5
   FUEL5_TIMER_DISABLE();
 #endif
@@ -858,24 +870,51 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) num_injector_t calcNumInjectors(
   return num_injector_t { .primary = primary, .secondary = calcNumSecondaryInjectors(primary, page2, page10) };
 }
 
-TESTABLE_STATIC __attribute__((optimize("Os"))) void validateInjectionSetup(config2 &page2)
+TESTABLE_STATIC __attribute__((optimize("Os"))) void validateInjectionSetup(config2 &page2, config6 &page6)
 {
-  if (page2.injLayout==INJ_SEQUENTIAL)
-  {
-    if (page2.nCylinders>INJ_CHANNELS)
-    {
+  // Clamp the number of injectors to the number of channels available.
+  page2.nInjectors = clamp(page2.nInjectors, (uint8_t)1U, (uint8_t)INJ_CHANNELS);
+
+  // Sequential only applies if enough channels.
+  if (page2.injLayout == INJ_SEQUENTIAL) {
+    // If those conditions aren't met, revert to paired injection.
+    if (page2.nCylinders>INJ_CHANNELS) {
       page2.injLayout = INJ_PAIRED;
     }
   }
+
+  if (page2.injLayout == INJ_SEMISEQUENTIAL) {
+    // Semi-sequential only valid for 4,5,6,8 cylinders and enough injectors and channels
+    // If those conditions aren't met, revert to paired injection.
+    if (!(page2.nCylinders==4U || page2.nCylinders==5U || page2.nCylinders==6U || page2.nCylinders==8U)
+        || (page2.nInjectors<page2.nCylinders)) {
+      page2.injLayout = INJ_PAIRED;
+    }
+  }
+  
+  // Oddfire only supported on 2 cylinders (not sure why, should go up to 4 cylinders?)
+  if ((page2.engineType == ODD_FIRE) && (page2.nCylinders!=2U))
+  {
+    page2.engineType = EVEN_FIRE;
+  }
+
+  // Fuel trims are only applied in sequential mode.
+  page6.fuelTrimEnabled = page6.fuelTrimEnabled && page2.injLayout == INJ_SEQUENTIAL;
+
+  if (page2.injLayout == INJ_SEQUENTIAL)
+  {
+    // Force injection timing when sequential
+    page2.injTiming = true;
+  }
 }
 
-void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, config2 &page2, const config4 &page4, config10 &page10, const pinNumbers_t &pins)
+void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, config2 &page2, const config4 &page4, config6 &page6, config10 &page10, const pinNumbers_t &pins)
 {
   initialiseInjectionIO(page4, pins);
   closeAllInjectors();
   resetFuelSchedules();
  
-  validateInjectionSetup(page2);
+  validateInjectionSetup(page2, page6);
   current.injLayout = page2.injLayout;
 
   // Ordering of the calls below is critical for correctness.
