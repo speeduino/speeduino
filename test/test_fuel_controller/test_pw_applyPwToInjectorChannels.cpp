@@ -123,12 +123,13 @@ static void test_noTrim_inner(void)
   config2 page2 = {};
   config4 page4 = {};
   config6 page6 = {};
+  config10 page10 = {};
   pulseWidths pulseWidths = { 333, 777 };
 
   char szMsg[128];
   snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.injOutputs.primary, current.injOutputs.secondary);
   TEST_MESSAGE(szMsg);
-  applyPwToInjectorChannels(pulseWidths, page2, page4, page6, current);
+  applyPwToInjectorChannels(pulseWidths, page2, page4, page6, page10, current);
   TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, 0U), true);
   TEST_PW2(getExpectedChannelPw(current, pulseWidths, 2, 0U), true);
   TEST_PW3(getExpectedChannelPw(current, pulseWidths, 3, 0U), true);
@@ -145,7 +146,8 @@ static void test_withTrim_inner(void)
   config2 page2 = {};
   config4 page4 = {};
   config6 page6 = {};
-  pulseWidths pulseWidths = { 333, 777 };
+  config10 page10 = {};
+ pulseWidths pulseWidths = { 333, 777 };
   page6.fuelTrimEnabled = true;
   zeroTrimTables();
   setupTrimTable(trimTables[0], -50);
@@ -162,7 +164,7 @@ static void test_withTrim_inner(void)
   char szMsg[128];
   snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.injOutputs.primary, current.injOutputs.secondary);
   TEST_MESSAGE(szMsg);
-  applyPwToInjectorChannels(pulseWidths, page2, page4, page6, current);
+  applyPwToInjectorChannels(pulseWidths, page2, page4, page6, page10, current);
   TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, -50), true);
   TEST_PW2(getExpectedChannelPw(current, pulseWidths, 2, 50), true);
   TEST_PW3(getExpectedChannelPw(current, pulseWidths, 3, 33), true);
