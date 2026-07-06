@@ -6,7 +6,7 @@
 #include "scheduler_fuel_controller.h"
 #include "src/pins/pinNumbers_t.h"
 
-extern void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
+extern void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, const config10 &page10, statuses &current);
 
 struct init_context_t
 {
@@ -52,7 +52,7 @@ struct init_context_t
 
   void matchFuelSchedulersToSyncState(void)
   {
-    ::matchFuelSchedulersToSyncState(page2, page4, current);
+    ::matchFuelSchedulersToSyncState(page2, page4, page10, current);
   }
 
   const init_context_t& setAssertLine(int assertLineNum) const
@@ -1501,6 +1501,7 @@ static void test_partial_sync_3_cylinder(void)
 static void test_partial_sync_4_cylinder(void)
 {
   auto context = setupPartialSyncTest(4);
+  context.page2.divider = context.page2.nCylinders / 2U;
 
   // Confirm initial state
   assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
@@ -1538,6 +1539,7 @@ static void test_partial_sync_6_cylinder(void)
 {
 #if INJ_CHANNELS>=6
   auto context = setupPartialSyncTest(6);
+  context.page2.divider = context.page2.nCylinders / 2U;
 
   // Confirm initial state
   assert_6channel_0stage_over720(__LINE__, context);
@@ -1558,6 +1560,7 @@ static void test_partial_sync_8_cylinder(void)
 {
 #if INJ_CHANNELS>=8
   auto context = setupPartialSyncTest(8);
+  context.page2.divider = context.page2.nCylinders / 2U;
 
   // Confirm initial state
   assert_8channel_0stage_over720(__LINE__, context);
