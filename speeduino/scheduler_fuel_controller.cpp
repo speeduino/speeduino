@@ -133,29 +133,6 @@ static __attribute__((optimize("Os"))) void setupCallbacks(uint8_t injLayout, ui
   }
 }
 
-static inline bool isSwitchableConfig(const config2 &page2)
-{
-  return (page2.injLayout == INJ_SEQUENTIAL) 
-      && ((page2.nCylinders==4U)
-      || (page2.nCylinders==6U)
-      || (page2.nCylinders==8U))
-      ;
-}
-
-TESTABLE_INLINE_STATIC bool changeToSemiSequentialInjection(const statuses &current, const config2 &page2)
-{
-  return isSwitchableConfig(page2)
-      && (current.injLayout == INJ_SEQUENTIAL)
-      && (current.decoder.getStatus().syncStatus==SyncStatus::Partial);
-}
-
-TESTABLE_INLINE_STATIC bool changeToFullSequentialInjection(const statuses &current, const config2 &page2)
-{
-  return isSwitchableConfig(page2)
-      && (current.injLayout == INJ_SEMISEQUENTIAL)
-      && (current.decoder.getStatus().syncStatus==SyncStatus::Full);
-}
-
 TESTABLE_INLINE_STATIC bool isAnyFuelScheduleRunning(void) {
   return isRunning(fuelSchedule1)
 #if (INJ_CHANNELS >= 2)
@@ -180,52 +157,6 @@ TESTABLE_INLINE_STATIC bool isAnyFuelScheduleRunning(void) {
       || isRunning(fuelSchedule8)
 #endif
       ;
-}
-
-static inline void changeFuellingToFullSequential(const config2 &page2, statuses &current)
-{
-  ATOMIC() {
-    if( !isAnyFuelScheduleRunning() )
-    {
-      CRANK_ANGLE_MAX_INJ = 720;
-      current.injOutputs.primary = page2.nCylinders;
-      current.injLayout = INJ_SEQUENTIAL;
-      setupCallbacks(current.injLayout, page2.nCylinders, 0U);
-    }
-  }
-}
-
-static inline void changeFuellingToSemiSequential(const config2 &page2, const config4 &page4, statuses &current)
-{
-  ATOMIC()
-  {
-    if( !isAnyFuelScheduleRunning() )
-    {
-      CRANK_ANGLE_MAX_INJ = 360;
-      current.injOutputs.primary = page2.nCylinders/2U;
-      current.injLayout = INJ_SEMISEQUENTIAL;
-      setupCallbacks(current.injLayout, page2.nCylinders, page4.inj4cylPairing);
-    }
-  }
-}
-
-// If:
-// 1. The users has chosen sequential injection; and
-// 2. We have an even number of cylinders; and
-// 3. Thue engine only has half sync; 
-// Then
-//  change to semi-sequential fuelling *and* change back once sync is restored
-TESTABLE_STATIC void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current) {
-  if (isSwitchableConfig(page2))
-  {
-    if (changeToFullSequentialInjection(current, page2)) {
-      changeFuellingToFullSequential(page2, current);
-    } else if(changeToSemiSequentialInjection(current, page2)) { 
-      changeFuellingToSemiSequential(page2, page4, current);
-    } else {
-      // Injection layout matches current sync - do nothing
-    }
-  }
 }
 
 TESTABLE_STATIC table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &configPage2.injAng);
@@ -495,14 +426,6 @@ static inline void zeroAllChannels(void)
 #undef ASSIGN_ZERO_PW
 }
 
-BEGIN_LTO_ALWAYS_INLINE(void) applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, statuses &current) {
-  matchFuelSchedulersToSyncState(page2, page4, current);
-  zeroAllChannels();
-  assignPrimaryPws(pulse_widths, page6, current);
-  assignSecondaryPws(pulse_widths, current);
-}
-END_LTO_INLINE()
-
 static void __attribute__((optimize("Os"))) resetFuelSchedules(void)
 {
   fuelSchedule1.reset();
@@ -641,7 +564,7 @@ TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t calcAngularCylin
   uint16_t separationAngle = CRANK_ANGLE_MAX_INJ/(current.injOutputs.primary);
   
   // Special cases
-  if ((page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) || (page2.strokes == TWO_STROKE))
+  if ((current.injLayout == INJ_SEMISEQUENTIAL) || (current.injLayout == INJ_PAIRED) || (page2.strokes == TWO_STROKE))
   {
     if (page2.nCylinders==5U)
     {
@@ -755,21 +678,21 @@ static inline __attribute__((optimize("Os"))) void initInjectorAngles(const stat
 #endif
 }
 
-TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calulateNumSquirts(const config2 &page2)
+TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calulateNumSquirts(const statuses &current, const config2 &page2)
 {
   uint8_t nSquirts = 2U;
   if (page2.divider != 0)
   { 
     nSquirts = page2.nCylinders / page2.divider; //The number of squirts being requested. This is manually overridden below for sequential setups (Due to TS req_fuel calc limitations)
   }
-  if ( (page2.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
+  if ( (current.injLayout == INJ_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
   {
     nSquirts = 1U;
   }
   // Force nSquirts to 2 for individual port injection.
   // This prevents TunerStudio forcing the value to 3 even when this isn't wanted. 
   if ((page2.nCylinders==3U) && (page2.injType == INJ_TYPE_PORT)
-  && ((page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED)))
+  && ((current.injLayout == INJ_SEMISEQUENTIAL) || (current.injLayout == INJ_PAIRED)))
   {
     nSquirts = 2;
   }
@@ -778,20 +701,20 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calulateNumSquirts(const
   return (std::max)((uint8_t)1, nSquirts);
 }
 
-TESTABLE_STATIC __attribute__((optimize("Os"))) uint16_t calculateMaxInjAngle(uint8_t squirtsPerCycle, const config2 &page2)
+TESTABLE_STATIC __attribute__((optimize("Os"))) uint16_t calculateMaxInjAngle(const statuses &current, const config2 &page2)
 {
   // Default
-  uint16_t maxAngle = (page2.strokes == FOUR_STROKE ? 720 : 360) / squirtsPerCycle;
+  uint16_t maxAngle = (page2.strokes == FOUR_STROKE ? 720 : 360) / current.nSquirts;
 
   // Special cases
   if (page2.nCylinders==3U)
   {
-    if (page2.injLayout == INJ_SEQUENTIAL)
+    if (current.injLayout == INJ_SEQUENTIAL)
     {
       maxAngle = (page2.strokes == FOUR_STROKE) ? 720 : 360;
     }
     else if ((page2.injType == INJ_TYPE_PORT)
-        && ( (page2.injLayout == INJ_SEMISEQUENTIAL) || (page2.injLayout == INJ_PAIRED) ))
+        && ( (current.injLayout == INJ_SEMISEQUENTIAL) || (current.injLayout == INJ_PAIRED) ))
     { 
       maxAngle = (page2.strokes == FOUR_STROKE) ? 360 : 180;
     }
@@ -802,27 +725,27 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint16_t calculateMaxInjAngle(ui
   }
   // 3 or 5 squirts per cycle MUST be tracked over 720 degrees. This is because the angles for them (Eg 720/3=240) are 
   // not evenly divisible into 360. This is ONLY the case on 4 stroke systems
-  if ((page2.strokes == FOUR_STROKE) && ( (squirtsPerCycle == 3) || (squirtsPerCycle == 5) ))
+  if ((page2.strokes == FOUR_STROKE) && ( (current.nSquirts == 3) || (current.nSquirts == 5) ))
   {
-    maxAngle = 720U / squirtsPerCycle;
+    maxAngle = 720U / current.nSquirts;
   }
 
   return maxAngle;
 }
 
-TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint8_t calcNumPrimaryInjectors(config2 &page2)
+TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint8_t calcNumPrimaryInjectors(const statuses &current, const config2 &page2)
 {
   uint8_t primary = (page2.nCylinders==1U) 
                  || (page2.nCylinders==2U)
                  || (page2.nCylinders==3U)
                  || (page2.nCylinders==5U)
-                 || (page2.injLayout == INJ_SEQUENTIAL)           
+                 || (current.injLayout == INJ_SEQUENTIAL)           
                  ? page2.nCylinders : page2.nCylinders/2U;
 
   return clamp(primary, (uint8_t)1, (uint8_t)INJ_CHANNELS);
 }
 
-TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calcNumSecondaryInjectors(uint16_t primary, const config2 &page2, config10 &page10)
+TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calcNumSecondaryInjectors(uint16_t primary, const config2 &page2, const config10 &page10)
 {
   uint8_t spareInjectors = INJ_CHANNELS - primary;
 
@@ -844,40 +767,46 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t calcNumSecondaryInjector
       }
     }
   }
-  // Turn off staging if not enough injectors
-  page10.stagingEnabled = page10.stagingEnabled && secondary>0;
 
   return secondary;
 }
 
-TESTABLE_STATIC __attribute__((optimize("Os"))) num_injector_t calcNumInjectors(config2 &page2, config10 &page10)
+TESTABLE_STATIC __attribute__((optimize("Os"))) num_injector_t calcNumInjectors(const statuses &current, const config2 &page2, const config10 &page10)
 {
-  uint8_t primary = calcNumPrimaryInjectors(page2);
+  uint8_t primary = calcNumPrimaryInjectors(current, page2);
   return num_injector_t { .primary = primary, .secondary = calcNumSecondaryInjectors(primary, page2, page10) };
+}
+
+static __attribute__((optimize("Os"))) uint8_t validateInjLayout(uint8_t layout, const config2 &page2)
+{
+  // Sequential only applies if enough channels.
+  if (layout == INJ_SEQUENTIAL) {
+    // If those conditions aren't met, revert to paired injection.
+    if (page2.nCylinders>INJ_CHANNELS) {
+      layout = INJ_PAIRED;
+    }
+  }
+
+  if (layout == INJ_SEMISEQUENTIAL) {
+    // Semi-sequential only valid for 4,5,6,8 cylinders and enough injectors and channels
+    // If those conditions aren't met, revert to paired injection.
+    if (!(page2.nCylinders==4U || page2.nCylinders==5U || page2.nCylinders==6U || page2.nCylinders==8U)
+        || (page2.nInjectors<page2.nCylinders)) {
+      layout = INJ_PAIRED;
+    }
+  }
+
+  return layout;
 }
 
 TESTABLE_STATIC __attribute__((optimize("Os"))) void validateInjectionSetup(config2 &page2, config6 &page6)
 {
   // Clamp the number of injectors to the number of channels available.
   page2.nInjectors = clamp(page2.nInjectors, (uint8_t)1U, (uint8_t)INJ_CHANNELS);
-
-  // Sequential only applies if enough channels.
-  if (page2.injLayout == INJ_SEQUENTIAL) {
-    // If those conditions aren't met, revert to paired injection.
-    if (page2.nCylinders>INJ_CHANNELS) {
-      page2.injLayout = INJ_PAIRED;
-    }
-  }
-
-  if (page2.injLayout == INJ_SEMISEQUENTIAL) {
-    // Semi-sequential only valid for 4,5,6,8 cylinders and enough injectors and channels
-    // If those conditions aren't met, revert to paired injection.
-    if (!(page2.nCylinders==4U || page2.nCylinders==5U || page2.nCylinders==6U || page2.nCylinders==8U)
-        || (page2.nInjectors<page2.nCylinders)) {
-      page2.injLayout = INJ_PAIRED;
-    }
-  }
   
+  //
+  page2.injLayout = validateInjLayout(page2.injLayout, page2);
+
   // Oddfire only supported on 2 cylinders (not sure why, should go up to 4 cylinders?)
   if ((page2.engineType == ODD_FIRE) && (page2.nCylinders!=2U))
   {
@@ -894,6 +823,15 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateInjectionSetup(conf
   }
 }
 
+void __attribute__((optimize("Os"))) configureFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10)
+{
+  current.nSquirts = calulateNumSquirts(current, page2);
+  CRANK_ANGLE_MAX_INJ = calculateMaxInjAngle(current, page2);
+  current.injOutputs = calcNumInjectors(current, page2, page10);
+  initInjectorAngles(current, page2);
+  setupCallbacks(current.injLayout, page2.nCylinders, page4.inj4cylPairing);
+}
+
 void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, config2 &page2, const config4 &page4, config6 &page6, config10 &page10, const pinNumbers_t &pins)
 {
   initialiseInjectionIO(page4, pins);
@@ -903,10 +841,81 @@ void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, 
   validateInjectionSetup(page2, page6);
   current.injLayout = page2.injLayout;
 
-  // Ordering of the calls below is critical for correctness.
-  current.nSquirts = calulateNumSquirts(page2);
-  CRANK_ANGLE_MAX_INJ = calculateMaxInjAngle(current.nSquirts, page2);
-  current.injOutputs = calcNumInjectors(page2, page10);
-  initInjectorAngles(current, page2);
-  setupCallbacks(page2.injLayout, page2.nCylinders, page4.inj4cylPairing);
- }
+  configureFuelSchedules(current, page2, page4, page10);
+
+  // Turn off staging if no secondary injectors
+  page10.stagingEnabled = page10.stagingEnabled && current.injOutputs.secondary>0;
+}
+
+static inline bool isSwitchableConfig(const config2 &page2)
+{
+  return (page2.injLayout == INJ_SEQUENTIAL) 
+      && ((page2.nCylinders==4U)
+      || (page2.nCylinders==6U)
+      || (page2.nCylinders==8U))
+      ;
+}
+
+TESTABLE_INLINE_STATIC bool changeToSemiSequentialInjection(const statuses &current, const config2 &page2)
+{
+  return isSwitchableConfig(page2)
+      && (current.injLayout == INJ_SEQUENTIAL)
+      && (current.decoder.getStatus().syncStatus==SyncStatus::Partial);
+}
+
+TESTABLE_INLINE_STATIC bool changeToFullSequentialInjection(const statuses &current, const config2 &page2)
+{
+  return isSwitchableConfig(page2)
+      && (current.injLayout == INJ_SEMISEQUENTIAL)
+      && (current.decoder.getStatus().syncStatus==SyncStatus::Full);
+}
+
+static inline void changeFuellingToFullSequential(const config2 &page2, const config4 &page4, const config10 &page10, statuses &current)
+{
+  ATOMIC() {
+    if( !isAnyFuelScheduleRunning() )
+    {
+      current.injLayout = INJ_SEQUENTIAL;
+      configureFuelSchedules(current, page2, page4, page10);
+    }
+  }
+}
+
+static inline void changeFuellingToSemiSequential(const config2 &page2, const config4 &page4, const config10 &page10, statuses &current)
+{
+  ATOMIC()
+  {
+    if( !isAnyFuelScheduleRunning() )
+    {
+      current.injLayout = INJ_SEMISEQUENTIAL;
+      configureFuelSchedules(current, page2, page4, page10);
+    }
+  }
+}
+
+// If:
+// 1. The users has chosen sequential injection; and
+// 2. We have an even number of cylinders; and
+// 3. Thue engine only has half sync; 
+// Then
+//  change to semi-sequential fuelling *and* change back once sync is restored
+TESTABLE_STATIC void matchFuelSchedulersToSyncState(const config2 &page2, const config4 &page4, const config10 &page10, statuses &current) {
+  if (isSwitchableConfig(page2))
+  {
+    if (changeToFullSequentialInjection(current, page2)) {
+      changeFuellingToFullSequential(page2, page4, page10, current);
+    } else if(changeToSemiSequentialInjection(current, page2)) { 
+      changeFuellingToSemiSequential(page2, page4, page10, current);
+    } else {
+      // Injection layout matches current sync - do nothing
+    }
+  }
+}
+
+BEGIN_LTO_ALWAYS_INLINE(void) applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, const config10 &page10, statuses &current) {
+  matchFuelSchedulersToSyncState(page2, page4, page10, current);
+  zeroAllChannels();
+  assignPrimaryPws(pulse_widths, page6, current);
+  assignSecondaryPws(pulse_widths, current);
+}
+END_LTO_INLINE()
