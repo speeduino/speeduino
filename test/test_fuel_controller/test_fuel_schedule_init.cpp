@@ -106,6 +106,15 @@ private:
     page2.injTiming = true;
   }
 
+  void assert_callbacks_not_equal(const FuelSchedule &schedule1, const FuelSchedule &schedule2) const
+  {
+    if (&schedule1!=&schedule2)
+    {
+      UNITY_TEST_ASSERT(schedule1._pStartCallback!=schedule2._pStartCallback, _assertLine, "_pStartCallback unique");
+      UNITY_TEST_ASSERT(schedule1._pEndCallback!=schedule2._pEndCallback, _assertLine, "_pEndCallback unique");
+    }
+  }
+
   void assert_fuel_channel(bool enabled, uint16_t angle, uint8_t channelIndex, const FuelSchedule &schedule) const
   {
     char msg[64];
@@ -121,6 +130,16 @@ private:
       UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, _assertLine, msg);
       sprintf_P(msg, PSTR("injAngle"));
       UNITY_TEST_ASSERT_SMALLER_THAN_UINT16(CRANK_ANGLE_MAX_INJ, angle, _assertLine, msg);
+
+      // Are the channel callbacks unique?
+      RUNIF_INJCHANNEL1({ assert_callbacks_not_equal(schedule, fuelSchedule1); }, {});
+      RUNIF_INJCHANNEL2({ assert_callbacks_not_equal(schedule, fuelSchedule2); }, {});
+      RUNIF_INJCHANNEL3({ assert_callbacks_not_equal(schedule, fuelSchedule3); }, {});
+      RUNIF_INJCHANNEL4({ assert_callbacks_not_equal(schedule, fuelSchedule4); }, {});
+      RUNIF_INJCHANNEL5({ assert_callbacks_not_equal(schedule, fuelSchedule5); }, {});
+      RUNIF_INJCHANNEL6({ assert_callbacks_not_equal(schedule, fuelSchedule6); }, {});
+      RUNIF_INJCHANNEL7({ assert_callbacks_not_equal(schedule, fuelSchedule7); }, {});
+      RUNIF_INJCHANNEL8({ assert_callbacks_not_equal(schedule, fuelSchedule8); }, {});
     }
     else 
     {
