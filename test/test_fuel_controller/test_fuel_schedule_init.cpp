@@ -50,6 +50,11 @@ struct init_context_t
   }
 
 
+  void matchFuelSchedulersToSyncState(void)
+  {
+    ::matchFuelSchedulersToSyncState(page2, page4, current);
+  }
+
   const init_context_t& setAssertLine(int assertLineNum) const
   {
     _assertLine = assertLineNum;
@@ -1450,12 +1455,12 @@ static void test_partial_sync_1_cylinder(void)
   assert_1channel_0stage_over720(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   // Confirm no change
   assert_1channel_0stage_over720(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_1channel_0stage_over720(__LINE__, context);
 }
 
@@ -1467,12 +1472,12 @@ static void test_partial_sync_2_cylinder(void)
   assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   // Confirm no change
   assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_2channel_0stage_over720(__LINE__, context, {0,180,0,0,0,0,0,0});
 }
 
@@ -1484,12 +1489,12 @@ static void test_partial_sync_3_cylinder(void)
   assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   // Confirm no change
   assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
 }
 
@@ -1501,12 +1506,12 @@ static void test_partial_sync_4_cylinder(void)
   assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_2channel_0stage_over360(__LINE__, context);
   TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, context.current.injLayout);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
   TEST_ASSERT_EQUAL(INJ_SEQUENTIAL, context.current.injLayout);
 }
@@ -1519,12 +1524,12 @@ static void test_partial_sync_5_cylinder(void)
   assert_5channel_0stage_over720_default_angles(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   // Confirm no change
   assert_5channel_0stage_over720_default_angles(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   // Confirm no change
   assert_5channel_0stage_over720_default_angles(__LINE__, context);
 }
@@ -1538,11 +1543,11 @@ static void test_partial_sync_6_cylinder(void)
   assert_6channel_0stage_over720(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_3channel_0stage_over360(__LINE__, context, {0,120,240,0,0,0,0,0});
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_6channel_0stage_over720(__LINE__, context);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
@@ -1558,15 +1563,15 @@ static void test_partial_sync_8_cylinder(void)
   assert_8channel_0stage_over720(__LINE__, context);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Partial;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_4channel_0stage_over360(__LINE__, context);
   TEST_ASSERT_EQUAL(INJ_SEMISEQUENTIAL, context.current.injLayout);
 
   fakeDecoderStatus.syncStatus = SyncStatus::Full;
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_8channel_0stage_over720(__LINE__, context);
   // Deliberate repeat
-  matchFuelSchedulersToSyncState(context.page2, context.page4, context.current);
+  context.matchFuelSchedulersToSyncState();
   assert_8channel_0stage_over720(__LINE__, context);
 #else
   TEST_IGNORE_MESSAGE("Skipping - not enough injectors");
