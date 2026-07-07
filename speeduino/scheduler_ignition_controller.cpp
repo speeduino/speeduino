@@ -244,8 +244,19 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(voi
 #endif
 }
 
+void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
+{
+  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  {
+    endCoilCharge(index);
+  }
+}
+
 void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
 {
+  //End all coil charges to ensure no stray sparks on startup
+  stopAllCoilsCharging();
+
   resetIgnitionSchedulers();
   setCallbacks(sparkMode, numCylinders, rotaryMode);
 }

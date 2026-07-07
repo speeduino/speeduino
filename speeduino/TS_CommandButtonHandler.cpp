@@ -15,6 +15,8 @@
 #ifdef USE_MC33810
   #include "acc_mc33810.h"
 #endif
+#include "scheduler_fuel_controller.h"
+#include "scheduler_ignition_controller.h"
 
 static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
 {
@@ -38,41 +40,8 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
       currentStatus.isTestModeActive = false;
-      endCoil1Charge();
-      endCoil2Charge();
-      endCoil3Charge();
-      endCoil4Charge();
-      #if IGN_CHANNELS >= 5
-      endCoil5Charge();
-      #endif
-      #if IGN_CHANNELS >= 6
-      endCoil6Charge();
-      #endif
-      #if IGN_CHANNELS >= 7
-      endCoil7Charge();
-      #endif
-      #if IGN_CHANNELS >= 8
-      endCoil8Charge();
-      #endif
-
-
-      closeInjector1();
-      closeInjector2();
-      closeInjector3();
-      closeInjector4();
-      #if INJ_CHANNELS >= 5
-      closeInjector5();
-      #endif
-      #if INJ_CHANNELS >= 6
-      closeInjector6();
-      #endif
-      #if INJ_CHANNELS >= 7
-      closeInjector7();
-      #endif
-      #if INJ_CHANNELS >= 8
-      closeInjector8();
-      #endif
-
+      stopAllCoilsCharging();
+      closeAllInjectors();
       HWTest_INJ_Pulsed = 0;
       HWTest_IGN_Pulsed = 0;
       break;
