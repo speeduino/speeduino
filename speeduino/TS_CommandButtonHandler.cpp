@@ -55,6 +55,22 @@ static void injectorPulse(const statuses &current, uint8_t injector)
 }
 
 /**
+ * @brief Given 3 command indexes, calculate the channel number
+ * 
+ * @note THIS ASSUMES THE COMMAND INDICES ARE REGULARLY SPACED. 
+ * 
+ * @param cmd Command index to convert to channel. E.g. TS_CMD_IGN5_ON
+ * @param baseCmd2 First command index. E.g. TS_CMD_IGN2_ON
+ * @param baseCmd1 First command index. E.g. TS_CMD_IGN1_ON
+ * @return uint8_t 
+ */
+static uint8_t computeChannel(uint16_t cmd, uint16_t baseCmd2, uint16_t baseCmd1)
+{
+  uint16_t stride = baseCmd2-baseCmd1;
+  return 1+((cmd-baseCmd1)/stride);
+}
+
+/**
  * @brief 
  * 
  * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
@@ -81,99 +97,99 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ1_ON: // cmd group is for injector1 on actions
-      injectorOn(currentStatus, 1);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ1_OFF: // cmd group is for injector1 off actions
-      injectorOff(currentStatus, 1);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ1_PULSED: // cmd group is for injector1 50% dc actions
-      injectorPulse(currentStatus, 1);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ2_ON: // cmd group is for injector2 on actions
-      injectorOn(currentStatus, 2);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ2_OFF: // cmd group is for injector2 off actions
-      injectorOff(currentStatus, 2);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ2_PULSED: // cmd group is for injector2 50%dc actions
-      injectorPulse(currentStatus, 2);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ3_ON: // cmd group is for injector3 on actions
-      injectorOn(currentStatus, 3);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ3_OFF: // cmd group is for injector3 off actions
-      injectorOff(currentStatus, 3);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ3_PULSED: // cmd group is for injector3 50%dc actions
-      injectorPulse(currentStatus, 3);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ4_ON: // cmd group is for injector4 on actions
-      injectorOn(currentStatus, 4);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ4_OFF: // cmd group is for injector4 off actions
-      injectorOff(currentStatus, 4);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ4_PULSED: // cmd group is for injector4 50% dc actions
-      injectorPulse(currentStatus, 4);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ5_ON: // cmd group is for injector5 on actions
-      injectorOn(currentStatus, 5);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ5_OFF: // cmd group is for injector5 off actions
-      injectorOff(currentStatus, 5);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ5_PULSED: // cmd group is for injector5 50%dc actions
-      injectorPulse(currentStatus, 5);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ6_ON: // cmd group is for injector6 on actions
-      injectorOn(currentStatus, 6);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ6_OFF: // cmd group is for injector6 off actions
-      injectorOff(currentStatus, 6);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ6_PULSED: // cmd group is for injector6 50% dc actions
-      injectorPulse(currentStatus, 6);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ7_ON: // cmd group is for injector7 on actions
-      injectorOn(currentStatus, 7);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ7_OFF: // cmd group is for injector7 off actions
-      injectorOff(currentStatus, 7);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ7_PULSED: // cmd group is for injector7 50%dc actions
-      injectorPulse(currentStatus, 7);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_INJ8_ON: // cmd group is for injector8 on actions
-      injectorOn(currentStatus, 8);
+      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ8_OFF: // cmd group is for injector8 off actions
-      injectorOff(currentStatus, 8);
+      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ8_PULSED: // cmd group is for injector8 50% dc actions
-      injectorPulse(currentStatus, 8);
+      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_IGN1_ON: // cmd group is for spark1 on actions
