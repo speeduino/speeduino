@@ -87,6 +87,17 @@ static void coilOff(const statuses &current, uint8_t channel)
   }
 }
 
+static void coilPulse(const statuses &current, uint8_t channel)
+{
+  if( current.isTestModeActive ) 
+  { 
+    BIT_SET(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+  }
+  if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1))) 
+  { 
+    endCoilCharge(channel); //Ensure this output is turned off (Otherwise the output may stay on permanently)
+  }
+}
 
 /**
  * @brief 
@@ -156,8 +167,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN1_PULSED: // cmd group is for spark1 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN1_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoilCharge(1); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 1);
       break;
 
     case TS_CMD_IGN2_ON: // cmd group is for spark2 on actions
@@ -169,8 +179,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN2_PULSED: // cmd group is for spark2 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN2_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoilCharge(2); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 2);
       break;
 
     case TS_CMD_IGN3_ON: // cmd group is for spark3 on actions
@@ -182,8 +191,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN3_PULSED: // cmd group is for spark3 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN3_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoilCharge(3); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 3);
       break;
 
     case TS_CMD_IGN4_ON: // cmd group is for spark4 on actions
@@ -195,8 +203,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN4_PULSED: // cmd group is for spark4 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN4_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoilCharge(4); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 4);
       break;
 
     case TS_CMD_IGN5_ON: // cmd group is for spark5 on actions
@@ -208,8 +215,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN5_PULSED: // cmd group is for spark4 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN5_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoilCharge(5); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 5);
       break;
 
     case TS_CMD_IGN6_ON: // cmd group is for spark6 on actions
@@ -221,8 +227,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN6_PULSED: // cmd group is for spark6 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN6_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoilCharge(6); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 6);
       break;
 
     case TS_CMD_IGN7_ON: // cmd group is for spark7 on actions
@@ -234,8 +239,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN7_PULSED: // cmd group is for spark7 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN7_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoilCharge(7); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 7);
       break;
 
     case TS_CMD_IGN8_ON: // cmd group is for spark8 on actions
@@ -247,8 +251,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN8_PULSED: // cmd group is for spark8 50%dc actions
-      if( currentStatus.isTestModeActive ) { BIT_SET(HWTest_IGN_Pulsed, IGN8_CMD_BIT); }
-      if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoilCharge(8); } //Ensure this output is turned off (Otherwise the output may stay on permanently)
+      coilPulse(currentStatus, 8);
       break;
 
     //VSS Calibration routines
