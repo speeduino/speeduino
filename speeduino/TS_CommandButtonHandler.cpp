@@ -158,99 +158,36 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
-    case TS_CMD_IGN1_ON: // cmd group is for spark1 on actions
+    case TS_CMD_IGN1_ON:
+    case TS_CMD_IGN2_ON:
+    case TS_CMD_IGN3_ON:
+    case TS_CMD_IGN4_ON:
+    case TS_CMD_IGN5_ON:
+    case TS_CMD_IGN6_ON:
+    case TS_CMD_IGN7_ON:
+    case TS_CMD_IGN8_ON:
       coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
       break;
 
-    case TS_CMD_IGN1_OFF: // cmd group is for spark1 off actions
+    case TS_CMD_IGN1_OFF:
+    case TS_CMD_IGN2_OFF:
+    case TS_CMD_IGN3_OFF:
+    case TS_CMD_IGN4_OFF:
+    case TS_CMD_IGN5_OFF:
+    case TS_CMD_IGN6_OFF:
+    case TS_CMD_IGN7_OFF:
+    case TS_CMD_IGN8_OFF:
       coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
       break;
 
-    case TS_CMD_IGN1_PULSED: // cmd group is for spark1 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN2_ON: // cmd group is for spark2 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN2_OFF: // cmd group is for spark2 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN2_PULSED: // cmd group is for spark2 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN3_ON: // cmd group is for spark3 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN3_OFF: // cmd group is for spark3 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN3_PULSED: // cmd group is for spark3 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN4_ON: // cmd group is for spark4 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN4_OFF: // cmd group is for spark4 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN4_PULSED: // cmd group is for spark4 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN5_ON: // cmd group is for spark5 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN5_OFF: // cmd group is for spark5 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN5_PULSED: // cmd group is for spark4 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN6_ON: // cmd group is for spark6 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN6_OFF: // cmd group is for spark6 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN6_PULSED: // cmd group is for spark6 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN7_ON: // cmd group is for spark7 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN7_OFF: // cmd group is for spark7 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN7_PULSED: // cmd group is for spark7 50%dc actions
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
-      break;
-
-    case TS_CMD_IGN8_ON: // cmd group is for spark8 on actions
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
-      break;
-
-    case TS_CMD_IGN8_OFF: // cmd group is for spark8 off actions
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
-      break;
-
-    case TS_CMD_IGN8_PULSED: // cmd group is for spark8 50%dc actions
+    case TS_CMD_IGN1_PULSED:
+    case TS_CMD_IGN2_PULSED:
+    case TS_CMD_IGN3_PULSED:
+    case TS_CMD_IGN4_PULSED:
+    case TS_CMD_IGN5_PULSED:
+    case TS_CMD_IGN6_PULSED:
+    case TS_CMD_IGN7_PULSED:
+    case TS_CMD_IGN8_PULSED:
       coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
       break;
 
