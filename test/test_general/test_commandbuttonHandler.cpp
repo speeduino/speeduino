@@ -1,5 +1,6 @@
 #include "../test_utils.h"
 #include "globals.h"
+#include "sensors.h"
 #include "TS_CommandButtonHandler.h"
 #include "scheduledIO_direct_inj.h"
 #include "scheduledIO_direct_ign.h"
@@ -112,27 +113,109 @@ static void test_handler_inj_on_inactive_does_not_open(void)
   // No state change to verify positively, but the case path is now covered
 }
 
-static void test_handler_vss_ratio1_with_vss(void)
+static void setup_vss(uint16_t vss)
 {
   reset_test_mode_state();
-  currentStatus.vss = 50U;
+  currentStatus.vss = vss;
   currentStatus.RPM = 2000U;
-  configPage2.vssRatio1 = 0U;
+  currentStatus.vssUiRefresh = false;
+}
 
-  TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_VSS_RATIO1));
-  // Expected: (50 * 10000) / 2000 = 250
-  TEST_ASSERT_EQUAL_UINT16(250U, configPage2.vssRatio1);
+static void test_handler_vss_ratio_with_vss(uint16_t ratioCmd, uint16_t config2::* pRatio)
+{
+  setup_vss(250);
+  configPage2.*pRatio = 0U;
+  TEST_ASSERT_TRUE(TS_CommandButtonsHandler(ratioCmd));
   TEST_ASSERT_TRUE(currentStatus.vssUiRefresh);
+  TEST_ASSERT_EQUAL_UINT16((currentStatus.vss*10000UL)/currentStatus.RPM, configPage2.*pRatio);
+}
+
+static void test_handler_vss_ratio_no_vss_no_change(uint16_t ratioCmd, uint16_t config2::* pRatio)
+{
+  setup_vss(0);
+  configPage2.*pRatio = 999U;
+  TEST_ASSERT_TRUE(TS_CommandButtonsHandler(ratioCmd));
+  TEST_ASSERT_FALSE(currentStatus.vssUiRefresh);
+  TEST_ASSERT_EQUAL_UINT16(999, configPage2.*pRatio);
+}
+
+static void test_handler_vss_ratio1_with_vss(void)
+{
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO1, &config2::vssRatio1);
+}
+
+static void test_handler_vss_ratio2_with_vss(void)
+{
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO2, &config2::vssRatio2);
+}
+
+static void test_handler_vss_ratio3_with_vss(void)
+{
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO3, &config2::vssRatio3);
+}
+
+static void test_handler_vss_ratio4_with_vss(void)
+{
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO4, &config2::vssRatio4);
+}
+
+static void test_handler_vss_ratio5_with_vss(void)
+{
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO5, &config2::vssRatio5);
+}
+
+static void test_handler_vss_ratio6_with_vss(void)
+{
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO6, &config2::vssRatio6);
 }
 
 static void test_handler_vss_ratio1_no_vss_no_change(void)
 {
-  reset_test_mode_state();
-  currentStatus.vss = 0U;
-  configPage2.vssRatio1 = 999U;
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO1, &config2::vssRatio1);
+}
+static void test_handler_vss_ratio2_no_vss_no_change(void)
+{
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO2, &config2::vssRatio2);
+}
+static void test_handler_vss_ratio3_no_vss_no_change(void)
+{
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO3, &config2::vssRatio3);
+}
+static void test_handler_vss_ratio4_no_vss_no_change(void)
+{
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO4, &config2::vssRatio4);
+}
+static void test_handler_vss_ratio5_no_vss_no_change(void)
+{
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO5, &config2::vssRatio5);
+}
+static void test_handler_vss_ratio6_no_vss_no_change(void)
+{
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO6, &config2::vssRatio6);
+}
 
-  TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_VSS_RATIO1));
-  TEST_ASSERT_EQUAL_UINT16(999U, configPage2.vssRatio1);
+static void test_vss_60km_internal_pin(void)
+{
+    configPage2.vssMode = VSS_MODE_INTERNAL_PIN;
+    currentStatus.canin[configPage2.vssAuxCh] = 360;
+    currentStatus.vssUiRefresh = false;
+
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_VSS_60KMH));
+    TEST_ASSERT_TRUE(currentStatus.vssUiRefresh);
+    TEST_ASSERT_EQUAL_UINT16(6, configPage2.vssPulsesPerKm);
+}
+
+static void test_vss_60km_external(void)
+{
+    vssPulse();
+    vssPulse();
+    configPage2.vssMode = VSS_MODE_EXTERNAL_KM;
+    configPage2.vssPulsesPerKm = 0;
+    currentStatus.vssUiRefresh = false;
+
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_VSS_60KMH));
+    TEST_ASSERT_TRUE(currentStatus.vssUiRefresh);
+    TEST_ASSERT_NOT_EQUAL_UINT16(0, configPage2.vssPulsesPerKm);
 }
 
 // ============================ Per-channel INJ/IGN ===========================
@@ -166,6 +249,21 @@ static void test_handler_inj_n_pulsed_sets_bit(uint8_t channel)
     TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
 }
 
+static void test_handler_inj_n_inactive_pulsed_nochange(uint8_t channel)
+{
+    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+
+    TS_CommandButtonsHandler(TS_CMD_TEST_DSBL);
+
+    HWTest_INJ_Pulsed = 0U;
+    assert_inj_pulse(channel); 
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
+
+    HWTest_INJ_Pulsed = 0xFFU;
+    assert_inj_pulse(channel); 
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
+}
+
 static void test_handler_inj_n_off_clears_bit(uint8_t channel)
 {
     uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
@@ -174,6 +272,24 @@ static void test_handler_inj_n_off_clears_bit(uint8_t channel)
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
     assert_inj_pulse(channel); 
+
+    HWTest_INJ_Pulsed = 0xFFU;
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
+}
+
+static void test_handler_inj_n_off_inactive_nochange(uint8_t channel)
+{
+    uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
+    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+
+    TS_CommandButtonsHandler(TS_CMD_TEST_DSBL);
+
+    HWTest_INJ_Pulsed = 0xFFU;
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
+
+    HWTest_INJ_Pulsed = 0U;
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
     TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
 }
@@ -184,6 +300,9 @@ static void test_handler_inj_n_on_returns_true(uint8_t channel)
 
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
+
+    TS_CommandButtonsHandler(TS_CMD_TEST_DSBL);
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
 }
 
@@ -200,17 +319,26 @@ static void test_handler_inj_n_on_returns_true(uint8_t channel)
     { \
         test_handler_inj_n_on_returns_true(N); \
     } \
+    static void test_handler_inj##N##_inactive_pulsed_nochange(void) \
+    { \
+        test_handler_inj_n_inactive_pulsed_nochange(N); \
+    } \
+    static void test_handler_inj##N##_off_inactive_nochange(void) \
+    { \
+        test_handler_inj_n_off_inactive_nochange(N); \
+    } \
     static void test_handler_inj##N(void) \
     { \
         RUN_TEST_P(test_handler_inj##N##_pulsed_sets_bit); \
         RUN_TEST_P(test_handler_inj##N##_off_clears_bit); \
         RUN_TEST_P(test_handler_inj##N##_on_returns_true); \
+        RUN_TEST_P(test_handler_inj##N##_inactive_pulsed_nochange); \
+        RUN_TEST_P(test_handler_inj##N##_off_inactive_nochange); \
     }
 
 static void assert_ign_pulse(uint8_t channel)
 {
-    uint16_t cmd = createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel);
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd)); 
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel))); 
 }
 
 static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
@@ -224,6 +352,21 @@ static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
     TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
 }
 
+static void test_handler_ign_n_inactive_pulsed_nochange(uint8_t channel)
+{
+    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+
+    TS_CommandButtonsHandler(TS_CMD_TEST_DSBL);
+
+    HWTest_IGN_Pulsed = 0U;
+    assert_ign_pulse(channel);
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+
+    HWTest_IGN_Pulsed = 0xFFU;
+    assert_ign_pulse(channel);
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+}
+
 static void test_handler_ign_n_off_clears_bit(uint8_t channel)
 {
     uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
@@ -232,16 +375,37 @@ static void test_handler_ign_n_off_clears_bit(uint8_t channel)
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
     assert_ign_pulse(channel);
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+}
+
+static void test_handler_ign_n_off_inactive_nochange(uint8_t channel)
+{
+    uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
+    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+
+    TS_CommandButtonsHandler(TS_CMD_TEST_DSBL);
+
+    HWTest_IGN_Pulsed = 0xFFU;
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+
+    HWTest_IGN_Pulsed = 0U;
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
     TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_on_returns_true(uint8_t channel)
 {
-    uint16_t onCmd = createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel);
+    uint16_t onCmd = createCmd(TS_CMD_IGN2_ON, TS_CMD_IGN1_ON, channel);
 
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
+
+    TS_CommandButtonsHandler(TS_CMD_TEST_DSBL);
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
 }
 
@@ -258,11 +422,21 @@ static void test_handler_ign_n_on_returns_true(uint8_t channel)
   {                                                                           \
     test_handler_ign_n_on_returns_true(N);                                    \
   }                                                                           \
-  static void test_handler_ign##N(void)                                       \
+  static void test_handler_ign##N##n_inactive_pulsed_nochange(void)           \
+  {                                                                           \
+      test_handler_ign_n_inactive_pulsed_nochange(N);                         \
+  }                                                                           \
+  static void test_handler_ign##N##_off_inactive_nochange(void)               \
+  {                                                                           \
+      test_handler_ign_n_off_inactive_nochange(N);                            \
+  }                                                                           \
+   static void test_handler_ign##N(void)                                      \
   {                                                                           \
     RUN_TEST_P(test_handler_ign##N##_pulsed_sets_bit);                        \
     RUN_TEST_P(test_handler_ign##N##_off_clears_bit);                         \
     RUN_TEST_P(test_handler_ign##N##_on_returns_true);                        \
+    RUN_TEST_P(test_handler_ign##N##n_inactive_pulsed_nochange);              \
+    RUN_TEST_P(test_handler_ign##N##_off_inactive_nochange);                  \
   }
 
 DECLARE_INJ_PULSED_TEST(1)
@@ -325,7 +499,19 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_ign1_pulsed_inactive_no_bit_set);
     RUN_TEST(test_handler_inj_on_inactive_does_not_open);
     RUN_TEST(test_handler_vss_ratio1_with_vss);
+    RUN_TEST(test_handler_vss_ratio2_with_vss);
+    RUN_TEST(test_handler_vss_ratio3_with_vss);
+    RUN_TEST(test_handler_vss_ratio4_with_vss);
+    RUN_TEST(test_handler_vss_ratio5_with_vss);
+    RUN_TEST(test_handler_vss_ratio6_with_vss);
     RUN_TEST(test_handler_vss_ratio1_no_vss_no_change);
+    RUN_TEST(test_handler_vss_ratio2_no_vss_no_change);
+    RUN_TEST(test_handler_vss_ratio3_no_vss_no_change);
+    RUN_TEST(test_handler_vss_ratio4_no_vss_no_change);
+    RUN_TEST(test_handler_vss_ratio5_no_vss_no_change);
+    RUN_TEST(test_handler_vss_ratio6_no_vss_no_change);
+    RUN_TEST(test_vss_60km_internal_pin);
+    RUN_TEST(test_vss_60km_external);
 
     test_handler_inj1();
 #if INJ_CHANNELS >= 2
