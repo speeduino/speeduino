@@ -24,6 +24,23 @@ static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
       || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
 }
 
+static void injectorOn(const statuses &current, uint8_t injector)
+{
+  if( current.isTestModeActive )
+  {
+    openInjector(injector);
+  }
+}
+
+static void injectorOff(const statuses &current, uint8_t injector)
+{
+  if( current.isTestModeActive )
+  { 
+    closeInjector(injector); 
+    BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+  }
+}
+
 /**
  * @brief 
  * 
@@ -51,11 +68,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ1_ON: // cmd group is for injector1 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(1); }
+      injectorOn(currentStatus, 1);
       break;
 
     case TS_CMD_INJ1_OFF: // cmd group is for injector1 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(1); BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT); }
+      injectorOff(currentStatus, 1);
       break;
 
     case TS_CMD_INJ1_PULSED: // cmd group is for injector1 50% dc actions
@@ -64,11 +81,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ2_ON: // cmd group is for injector2 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(2); }
+      injectorOn(currentStatus, 2);
       break;
 
     case TS_CMD_INJ2_OFF: // cmd group is for injector2 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(2); BIT_CLEAR(HWTest_INJ_Pulsed, INJ2_CMD_BIT); }
+      injectorOff(currentStatus, 2);
       break;
 
     case TS_CMD_INJ2_PULSED: // cmd group is for injector2 50%dc actions
@@ -77,11 +94,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ3_ON: // cmd group is for injector3 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(3); }
+      injectorOn(currentStatus, 3);
       break;
 
     case TS_CMD_INJ3_OFF: // cmd group is for injector3 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(3); BIT_CLEAR(HWTest_INJ_Pulsed, INJ3_CMD_BIT); }
+      injectorOff(currentStatus, 3);
       break;
 
     case TS_CMD_INJ3_PULSED: // cmd group is for injector3 50%dc actions
@@ -90,11 +107,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ4_ON: // cmd group is for injector4 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(4); }
+      injectorOn(currentStatus, 4);
       break;
 
     case TS_CMD_INJ4_OFF: // cmd group is for injector4 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(4); BIT_CLEAR(HWTest_INJ_Pulsed, INJ4_CMD_BIT); }
+      injectorOff(currentStatus, 4);
       break;
 
     case TS_CMD_INJ4_PULSED: // cmd group is for injector4 50% dc actions
@@ -103,11 +120,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ5_ON: // cmd group is for injector5 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(5); }
+      injectorOn(currentStatus, 5);
       break;
 
     case TS_CMD_INJ5_OFF: // cmd group is for injector5 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(5); BIT_CLEAR(HWTest_INJ_Pulsed, INJ5_CMD_BIT); }
+      injectorOff(currentStatus, 5);
       break;
 
     case TS_CMD_INJ5_PULSED: // cmd group is for injector5 50%dc actions
@@ -116,11 +133,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ6_ON: // cmd group is for injector6 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(6); }
+      injectorOn(currentStatus, 6);
       break;
 
     case TS_CMD_INJ6_OFF: // cmd group is for injector6 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(6); BIT_CLEAR(HWTest_INJ_Pulsed, INJ6_CMD_BIT); }
+      injectorOff(currentStatus, 6);
       break;
 
     case TS_CMD_INJ6_PULSED: // cmd group is for injector6 50% dc actions
@@ -129,11 +146,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ7_ON: // cmd group is for injector7 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(7); }
+      injectorOn(currentStatus, 7);
       break;
 
     case TS_CMD_INJ7_OFF: // cmd group is for injector7 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(7); BIT_CLEAR(HWTest_INJ_Pulsed, INJ7_CMD_BIT); }
+      injectorOff(currentStatus, 7);
       break;
 
     case TS_CMD_INJ7_PULSED: // cmd group is for injector7 50%dc actions
@@ -142,11 +159,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_INJ8_ON: // cmd group is for injector8 on actions
-      if( currentStatus.isTestModeActive ){ openInjector(8); }
+      injectorOn(currentStatus, 8);
       break;
 
     case TS_CMD_INJ8_OFF: // cmd group is for injector8 off actions
-      if( currentStatus.isTestModeActive ){ closeInjector(8); BIT_CLEAR(HWTest_INJ_Pulsed, INJ8_CMD_BIT); }
+      injectorOff(currentStatus, 8);
       break;
 
     case TS_CMD_INJ8_PULSED: // cmd group is for injector8 50% dc actions
