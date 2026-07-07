@@ -143,57 +143,124 @@ static void test_handler_vss_ratio1_no_vss_no_change(void)
 // sure every case label compiles, dispatches and updates the bitmask the way
 // the channel-1 case does.
 
+static void test_handler_inj_n_pulsed_sets_bit(uint8_t channel)
+{
+    constexpr uint16_t MULTIPLIER = TS_CMD_INJ2_PULSED - TS_CMD_INJ1_PULSED;
+    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
+    uint16_t cmd = TS_CMD_INJ1_PULSED + channel_offset;
+    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+
+    reset_test_mode_state();
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    HWTest_INJ_Pulsed = 0U;
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd)); 
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
+}
+
+static void test_handler_inj_n_off_clears_bit(uint8_t channel)
+{
+    constexpr uint16_t MULTIPLIER = TS_CMD_INJ2_PULSED - TS_CMD_INJ1_PULSED;
+    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
+    uint16_t cmd = TS_CMD_INJ1_PULSED + channel_offset;
+    uint16_t offCmd = TS_CMD_INJ1_OFF + channel_offset;
+    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+    
+    reset_test_mode_state();
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    TS_CommandButtonsHandler(cmd);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
+}
+
+static void test_handler_inj_n_on_returns_true(uint8_t channel)
+{
+    constexpr uint16_t MULTIPLIER = TS_CMD_INJ2_PULSED - TS_CMD_INJ1_PULSED;
+    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
+    uint16_t cmd = TS_CMD_INJ1_ON + channel_offset;
+
+    reset_test_mode_state();
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd));
+}
+
 #define DECLARE_INJ_PULSED_TEST(N)                                            \
-  static void test_handler_inj##N##_pulsed_sets_bit(void)                     \
-  {                                                                           \
-    reset_test_mode_state();                                                  \
-    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
-    HWTest_INJ_Pulsed = 0U;                                                   \
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_INJ##N##_PULSED));       \
-    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, INJ##N##_CMD_BIT));         \
-  }                                                                           \
-  static void test_handler_inj##N##_off_clears_bit(void)                      \
-  {                                                                           \
-    reset_test_mode_state();                                                  \
-    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
-    TS_CommandButtonsHandler(TS_CMD_INJ##N##_PULSED);                         \
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_INJ##N##_OFF));          \
-    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, INJ##N##_CMD_BIT));        \
-  }                                                                           \
-  static void test_handler_inj##N##_on_returns_true(void)                     \
-  {                                                                           \
-    reset_test_mode_state();                                                  \
-    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_INJ##N##_ON));           \
-  }
+    static void test_handler_inj##N##_pulsed_sets_bit(void)  \
+    { \
+        test_handler_inj_n_pulsed_sets_bit(N); \
+    } \
+    static void test_handler_inj##N##_off_clears_bit(void)  \
+    { \
+        test_handler_inj_n_off_clears_bit(N); \
+    } \
+    static void test_handler_inj##N##_on_returns_true(void) \
+    { \
+        test_handler_inj_n_on_returns_true(N); \
+    }
+
+static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
+{
+    constexpr uint16_t MULTIPLIER = TS_CMD_IGN2_PULSED - TS_CMD_IGN1_PULSED;
+    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
+    uint16_t cmd = TS_CMD_IGN1_PULSED + channel_offset;
+    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+
+    reset_test_mode_state();
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    HWTest_IGN_Pulsed = 0U;
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd));
+    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+}
+
+static void test_handler_ign_n_off_clears_bit(uint8_t channel)
+{
+    constexpr uint16_t MULTIPLIER = TS_CMD_IGN2_PULSED - TS_CMD_IGN1_PULSED;
+    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
+    uint16_t cmd = TS_CMD_IGN1_PULSED + channel_offset;
+    uint16_t offCmd = TS_CMD_IGN1_OFF + channel_offset;
+    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+
+    reset_test_mode_state();
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    TS_CommandButtonsHandler(cmd);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
+}
+
+static void test_handler_ign_n_on_returns_true(uint8_t channel)
+{
+    constexpr uint16_t MULTIPLIER = TS_CMD_IGN2_PULSED - TS_CMD_IGN1_PULSED;
+    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
+    uint16_t onCmd = TS_CMD_IGN1_ON + channel_offset;
+    
+    reset_test_mode_state();
+    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
+}
 
 #define DECLARE_IGN_PULSED_TEST(N)                                            \
   static void test_handler_ign##N##_pulsed_sets_bit(void)                     \
   {                                                                           \
-    reset_test_mode_state();                                                  \
-    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
-    HWTest_IGN_Pulsed = 0U;                                                   \
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_IGN##N##_PULSED));       \
-    TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, IGN##N##_CMD_BIT));         \
+    test_handler_ign_n_pulsed_sets_bit(N);                                    \
   }                                                                           \
   static void test_handler_ign##N##_off_clears_bit(void)                      \
   {                                                                           \
-    reset_test_mode_state();                                                  \
-    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
-    TS_CommandButtonsHandler(TS_CMD_IGN##N##_PULSED);                         \
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_IGN##N##_OFF));          \
-    TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, IGN##N##_CMD_BIT));        \
+    test_handler_ign_n_off_clears_bit(N);                                     \
   }                                                                           \
   static void test_handler_ign##N##_on_returns_true(void)                     \
   {                                                                           \
-    reset_test_mode_state();                                                  \
-    TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);                               \
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(TS_CMD_IGN##N##_ON));           \
+    test_handler_ign_n_on_returns_true(N);                                    \
   }
 
+DECLARE_INJ_PULSED_TEST(1)
+#if INJ_CHANNELS >= 2
 DECLARE_INJ_PULSED_TEST(2)
+#endif
+#if INJ_CHANNELS >= 3
 DECLARE_INJ_PULSED_TEST(3)
+#endif
+#if INJ_CHANNELS >= 4
 DECLARE_INJ_PULSED_TEST(4)
+#endif
 #if INJ_CHANNELS >= 5
 DECLARE_INJ_PULSED_TEST(5)
 #endif
@@ -207,9 +274,16 @@ DECLARE_INJ_PULSED_TEST(7)
 DECLARE_INJ_PULSED_TEST(8)
 #endif
 
+DECLARE_IGN_PULSED_TEST(1)
+#if IGN_CHANNELS >= 2
 DECLARE_IGN_PULSED_TEST(2)
+#endif
+#if IGN_CHANNELS >= 3
 DECLARE_IGN_PULSED_TEST(3)
+#endif
+#if IGN_CHANNELS >= 4
 DECLARE_IGN_PULSED_TEST(4)
+#endif
 #if IGN_CHANNELS >= 5
 DECLARE_IGN_PULSED_TEST(5)
 #endif
@@ -239,15 +313,24 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_vss_ratio1_with_vss);
     RUN_TEST(test_handler_vss_ratio1_no_vss_no_change);
 
+    RUN_TEST(test_handler_inj1_on_returns_true);
+    RUN_TEST(test_handler_inj1_off_clears_bit);
+    RUN_TEST(test_handler_inj1_pulsed_sets_bit);
+#if INJ_CHANNELS >= 2
     RUN_TEST(test_handler_inj2_on_returns_true);
     RUN_TEST(test_handler_inj2_off_clears_bit);
     RUN_TEST(test_handler_inj2_pulsed_sets_bit);
+#endif
+#if INJ_CHANNELS >= 3
     RUN_TEST(test_handler_inj3_on_returns_true);
     RUN_TEST(test_handler_inj3_off_clears_bit);
     RUN_TEST(test_handler_inj3_pulsed_sets_bit);
+#endif
+#if INJ_CHANNELS >= 4
     RUN_TEST(test_handler_inj4_on_returns_true);
     RUN_TEST(test_handler_inj4_off_clears_bit);
     RUN_TEST(test_handler_inj4_pulsed_sets_bit);
+#endif
 #if INJ_CHANNELS >= 5
     RUN_TEST(test_handler_inj5_on_returns_true);
     RUN_TEST(test_handler_inj5_off_clears_bit);
@@ -269,15 +352,24 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_inj8_pulsed_sets_bit);
 #endif
 
+    RUN_TEST(test_handler_ign1_on_returns_true);
+    RUN_TEST(test_handler_ign1_off_clears_bit);
+    RUN_TEST(test_handler_ign1_pulsed_sets_bit);
+#if IGN_CHANNELS >= 2
     RUN_TEST(test_handler_ign2_on_returns_true);
     RUN_TEST(test_handler_ign2_off_clears_bit);
     RUN_TEST(test_handler_ign2_pulsed_sets_bit);
+#endif
+#if IGN_CHANNELS >= 3
     RUN_TEST(test_handler_ign3_on_returns_true);
     RUN_TEST(test_handler_ign3_off_clears_bit);
     RUN_TEST(test_handler_ign3_pulsed_sets_bit);
+#endif
+#if IGN_CHANNELS >= 4
     RUN_TEST(test_handler_ign4_on_returns_true);
     RUN_TEST(test_handler_ign4_off_clears_bit);
     RUN_TEST(test_handler_ign4_pulsed_sets_bit);
+#endif
 #if IGN_CHANNELS >= 5
     RUN_TEST(test_handler_ign5_on_returns_true);
     RUN_TEST(test_handler_ign5_off_clears_bit);
