@@ -70,6 +70,24 @@ static uint8_t computeChannel(uint16_t cmd, uint16_t baseCmd2, uint16_t baseCmd1
   return 1+((cmd-baseCmd1)/stride);
 }
 
+static void coilOn(const statuses &current, uint8_t channel)
+{
+  if( current.isTestModeActive )
+  { 
+    beginCoilCharge(channel); 
+  }
+}
+
+static void coilOff(const statuses &current, uint8_t channel)
+{
+  if( current.isTestModeActive ) 
+  {
+    endCoilCharge(channel);
+    BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+  }
+}
+
+
 /**
  * @brief 
  * 
@@ -130,11 +148,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN1_ON: // cmd group is for spark1 on actions
-      if( currentStatus.isTestModeActive ){ beginCoilCharge(1); }
+      coilOn(currentStatus, 1);
       break;
 
     case TS_CMD_IGN1_OFF: // cmd group is for spark1 off actions
-        if( currentStatus.isTestModeActive ) { endCoilCharge(1); BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT); }
+      coilOff(currentStatus, 1);
       break;
 
     case TS_CMD_IGN1_PULSED: // cmd group is for spark1 50%dc actions
@@ -143,11 +161,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN2_ON: // cmd group is for spark2 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(2); }
+      coilOn(currentStatus, 2);
       break;
 
     case TS_CMD_IGN2_OFF: // cmd group is for spark2 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(2); BIT_CLEAR(HWTest_IGN_Pulsed, IGN2_CMD_BIT); }
+      coilOff(currentStatus, 2);
       break;
 
     case TS_CMD_IGN2_PULSED: // cmd group is for spark2 50%dc actions
@@ -156,11 +174,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN3_ON: // cmd group is for spark3 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(3); }
+      coilOn(currentStatus, 3);
       break;
 
     case TS_CMD_IGN3_OFF: // cmd group is for spark3 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(3); BIT_CLEAR(HWTest_IGN_Pulsed, IGN3_CMD_BIT); }
+      coilOff(currentStatus, 3);
       break;
 
     case TS_CMD_IGN3_PULSED: // cmd group is for spark3 50%dc actions
@@ -169,11 +187,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN4_ON: // cmd group is for spark4 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(4); }
+      coilOn(currentStatus, 4);
       break;
 
     case TS_CMD_IGN4_OFF: // cmd group is for spark4 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(4); BIT_CLEAR(HWTest_IGN_Pulsed, IGN4_CMD_BIT); }
+      coilOff(currentStatus, 4);
       break;
 
     case TS_CMD_IGN4_PULSED: // cmd group is for spark4 50%dc actions
@@ -182,11 +200,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN5_ON: // cmd group is for spark5 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(5); }
+      coilOn(currentStatus, 5);
       break;
 
     case TS_CMD_IGN5_OFF: // cmd group is for spark5 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(5); BIT_CLEAR(HWTest_IGN_Pulsed, IGN5_CMD_BIT); }
+      coilOff(currentStatus, 5);
       break;
 
     case TS_CMD_IGN5_PULSED: // cmd group is for spark4 50%dc actions
@@ -195,11 +213,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN6_ON: // cmd group is for spark6 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(6); }
+      coilOn(currentStatus, 6);
       break;
 
     case TS_CMD_IGN6_OFF: // cmd group is for spark6 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(6); BIT_CLEAR(HWTest_IGN_Pulsed, IGN6_CMD_BIT); }
+      coilOff(currentStatus, 6);
       break;
 
     case TS_CMD_IGN6_PULSED: // cmd group is for spark6 50%dc actions
@@ -208,11 +226,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN7_ON: // cmd group is for spark7 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(7); }
+      coilOn(currentStatus, 7);
       break;
 
     case TS_CMD_IGN7_OFF: // cmd group is for spark7 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(7); BIT_CLEAR(HWTest_IGN_Pulsed, IGN7_CMD_BIT); }
+      coilOff(currentStatus, 7);
       break;
 
     case TS_CMD_IGN7_PULSED: // cmd group is for spark7 50%dc actions
@@ -221,11 +239,11 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       break;
 
     case TS_CMD_IGN8_ON: // cmd group is for spark8 on actions
-      if( currentStatus.isTestModeActive ) { beginCoilCharge(8); }
+      coilOn(currentStatus, 8);
       break;
 
     case TS_CMD_IGN8_OFF: // cmd group is for spark8 off actions
-      if( currentStatus.isTestModeActive ) { endCoilCharge(8); BIT_CLEAR(HWTest_IGN_Pulsed, IGN8_CMD_BIT); }
+      coilOff(currentStatus, 8);
       break;
 
     case TS_CMD_IGN8_PULSED: // cmd group is for spark8 50%dc actions
