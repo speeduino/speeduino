@@ -143,44 +143,48 @@ static void test_handler_vss_ratio1_no_vss_no_change(void)
 // sure every case label compiles, dispatches and updates the bitmask the way
 // the channel-1 case does.
 
+static uint16_t createCmd(uint16_t reference, uint16_t base, uint8_t channel)
+{
+    uint16_t multiplier = reference - base;
+    uint8_t channel_offset = (channel - 1U) * multiplier;
+    return base + channel_offset;
+}
+
+static void assert_inj_pulse(uint8_t channel)
+{
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(createCmd(TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED, channel))); 
+}
+
 static void test_handler_inj_n_pulsed_sets_bit(uint8_t channel)
 {
-    constexpr uint16_t MULTIPLIER = TS_CMD_INJ2_PULSED - TS_CMD_INJ1_PULSED;
-    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
-    uint16_t cmd = TS_CMD_INJ1_PULSED + channel_offset;
     uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
 
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
     HWTest_INJ_Pulsed = 0U;
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd)); 
+    assert_inj_pulse(channel); 
     TEST_ASSERT_TRUE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
 }
 
 static void test_handler_inj_n_off_clears_bit(uint8_t channel)
 {
-    constexpr uint16_t MULTIPLIER = TS_CMD_INJ2_PULSED - TS_CMD_INJ1_PULSED;
-    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
-    uint16_t cmd = TS_CMD_INJ1_PULSED + channel_offset;
-    uint16_t offCmd = TS_CMD_INJ1_OFF + channel_offset;
+    uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
     uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
     
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
-    TS_CommandButtonsHandler(cmd);
+    assert_inj_pulse(channel); 
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
     TEST_ASSERT_FALSE(BIT_CHECK(HWTest_INJ_Pulsed, bit));
 }
 
 static void test_handler_inj_n_on_returns_true(uint8_t channel)
 {
-    constexpr uint16_t MULTIPLIER = TS_CMD_INJ2_PULSED - TS_CMD_INJ1_PULSED;
-    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
-    uint16_t cmd = TS_CMD_INJ1_ON + channel_offset;
+    uint16_t onCmd = createCmd(TS_CMD_INJ2_ON, TS_CMD_INJ1_ON, channel);
 
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd));
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
 }
 
 #define DECLARE_INJ_PULSED_TEST(N)                                            \
@@ -195,43 +199,47 @@ static void test_handler_inj_n_on_returns_true(uint8_t channel)
     static void test_handler_inj##N##_on_returns_true(void) \
     { \
         test_handler_inj_n_on_returns_true(N); \
+    } \
+    static void test_handler_inj##N(void) \
+    { \
+        RUN_TEST_P(test_handler_inj##N##_pulsed_sets_bit); \
+        RUN_TEST_P(test_handler_inj##N##_off_clears_bit); \
+        RUN_TEST_P(test_handler_inj##N##_on_returns_true); \
     }
+
+static void assert_ign_pulse(uint8_t channel)
+{
+    uint16_t cmd = createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel);
+    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd)); 
+}
 
 static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
 {
-    constexpr uint16_t MULTIPLIER = TS_CMD_IGN2_PULSED - TS_CMD_IGN1_PULSED;
-    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
-    uint16_t cmd = TS_CMD_IGN1_PULSED + channel_offset;
     uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
 
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
     HWTest_IGN_Pulsed = 0U;
-    TEST_ASSERT_TRUE(TS_CommandButtonsHandler(cmd));
+    assert_ign_pulse(channel);
     TEST_ASSERT_TRUE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_off_clears_bit(uint8_t channel)
 {
-    constexpr uint16_t MULTIPLIER = TS_CMD_IGN2_PULSED - TS_CMD_IGN1_PULSED;
-    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
-    uint16_t cmd = TS_CMD_IGN1_PULSED + channel_offset;
-    uint16_t offCmd = TS_CMD_IGN1_OFF + channel_offset;
+    uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
     uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
 
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
-    TS_CommandButtonsHandler(cmd);
+    assert_ign_pulse(channel);
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(offCmd));
     TEST_ASSERT_FALSE(BIT_CHECK(HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_on_returns_true(uint8_t channel)
 {
-    constexpr uint16_t MULTIPLIER = TS_CMD_IGN2_PULSED - TS_CMD_IGN1_PULSED;
-    uint8_t channel_offset = (channel - 1U) * MULTIPLIER;
-    uint16_t onCmd = TS_CMD_IGN1_ON + channel_offset;
-    
+    uint16_t onCmd = createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel);
+
     reset_test_mode_state();
     TS_CommandButtonsHandler(TS_CMD_TEST_ENBL);
     TEST_ASSERT_TRUE(TS_CommandButtonsHandler(onCmd));
@@ -249,6 +257,12 @@ static void test_handler_ign_n_on_returns_true(uint8_t channel)
   static void test_handler_ign##N##_on_returns_true(void)                     \
   {                                                                           \
     test_handler_ign_n_on_returns_true(N);                                    \
+  }                                                                           \
+  static void test_handler_ign##N(void)                                       \
+  {                                                                           \
+    RUN_TEST_P(test_handler_ign##N##_pulsed_sets_bit);                        \
+    RUN_TEST_P(test_handler_ign##N##_off_clears_bit);                         \
+    RUN_TEST_P(test_handler_ign##N##_on_returns_true);                        \
   }
 
 DECLARE_INJ_PULSED_TEST(1)
@@ -313,82 +327,50 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_vss_ratio1_with_vss);
     RUN_TEST(test_handler_vss_ratio1_no_vss_no_change);
 
-    RUN_TEST(test_handler_inj1_on_returns_true);
-    RUN_TEST(test_handler_inj1_off_clears_bit);
-    RUN_TEST(test_handler_inj1_pulsed_sets_bit);
+    test_handler_inj1();
 #if INJ_CHANNELS >= 2
-    RUN_TEST(test_handler_inj2_on_returns_true);
-    RUN_TEST(test_handler_inj2_off_clears_bit);
-    RUN_TEST(test_handler_inj2_pulsed_sets_bit);
+    test_handler_inj2();
 #endif
 #if INJ_CHANNELS >= 3
-    RUN_TEST(test_handler_inj3_on_returns_true);
-    RUN_TEST(test_handler_inj3_off_clears_bit);
-    RUN_TEST(test_handler_inj3_pulsed_sets_bit);
+    test_handler_inj3();
 #endif
 #if INJ_CHANNELS >= 4
-    RUN_TEST(test_handler_inj4_on_returns_true);
-    RUN_TEST(test_handler_inj4_off_clears_bit);
-    RUN_TEST(test_handler_inj4_pulsed_sets_bit);
+    test_handler_inj4();
 #endif
 #if INJ_CHANNELS >= 5
-    RUN_TEST(test_handler_inj5_on_returns_true);
-    RUN_TEST(test_handler_inj5_off_clears_bit);
-    RUN_TEST(test_handler_inj5_pulsed_sets_bit);
+    test_handler_inj5();
 #endif
 #if INJ_CHANNELS >= 6
-    RUN_TEST(test_handler_inj6_on_returns_true);
-    RUN_TEST(test_handler_inj6_off_clears_bit);
-    RUN_TEST(test_handler_inj6_pulsed_sets_bit);
+    test_handler_inj6();
 #endif
 #if INJ_CHANNELS >= 7
-    RUN_TEST(test_handler_inj7_on_returns_true);
-    RUN_TEST(test_handler_inj7_off_clears_bit);
-    RUN_TEST(test_handler_inj7_pulsed_sets_bit);
+    test_handler_inj7();
 #endif
 #if INJ_CHANNELS >= 8
-    RUN_TEST(test_handler_inj8_on_returns_true);
-    RUN_TEST(test_handler_inj8_off_clears_bit);
-    RUN_TEST(test_handler_inj8_pulsed_sets_bit);
+    test_handler_inj8();
 #endif
 
-    RUN_TEST(test_handler_ign1_on_returns_true);
-    RUN_TEST(test_handler_ign1_off_clears_bit);
-    RUN_TEST(test_handler_ign1_pulsed_sets_bit);
+    test_handler_ign1();
 #if IGN_CHANNELS >= 2
-    RUN_TEST(test_handler_ign2_on_returns_true);
-    RUN_TEST(test_handler_ign2_off_clears_bit);
-    RUN_TEST(test_handler_ign2_pulsed_sets_bit);
+    test_handler_ign2();
 #endif
 #if IGN_CHANNELS >= 3
-    RUN_TEST(test_handler_ign3_on_returns_true);
-    RUN_TEST(test_handler_ign3_off_clears_bit);
-    RUN_TEST(test_handler_ign3_pulsed_sets_bit);
+    test_handler_ign3();
 #endif
 #if IGN_CHANNELS >= 4
-    RUN_TEST(test_handler_ign4_on_returns_true);
-    RUN_TEST(test_handler_ign4_off_clears_bit);
-    RUN_TEST(test_handler_ign4_pulsed_sets_bit);
+    test_handler_ign4();
 #endif
 #if IGN_CHANNELS >= 5
-    RUN_TEST(test_handler_ign5_on_returns_true);
-    RUN_TEST(test_handler_ign5_off_clears_bit);
-    RUN_TEST(test_handler_ign5_pulsed_sets_bit);
+    test_handler_ign5();
 #endif
 #if IGN_CHANNELS >= 6
-    RUN_TEST(test_handler_ign6_on_returns_true);
-    RUN_TEST(test_handler_ign6_off_clears_bit);
-    RUN_TEST(test_handler_ign6_pulsed_sets_bit);
+    test_handler_ign6();
 #endif
 #if IGN_CHANNELS >= 7
-    RUN_TEST(test_handler_ign7_on_returns_true);
-    RUN_TEST(test_handler_ign7_off_clears_bit);
-    RUN_TEST(test_handler_ign7_pulsed_sets_bit);
+    test_handler_ign7();
 #endif
 #if IGN_CHANNELS >= 8
-    RUN_TEST(test_handler_ign8_on_returns_true);
-    RUN_TEST(test_handler_ign8_off_clears_bit);
-    RUN_TEST(test_handler_ign8_pulsed_sets_bit);
+    test_handler_ign8();
 #endif
   }
 }
