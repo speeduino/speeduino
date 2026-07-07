@@ -96,99 +96,36 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       currentStatus.isTestModeActive = true;
       break;
 
-    case TS_CMD_INJ1_ON: // cmd group is for injector1 on actions
+    case TS_CMD_INJ1_ON:
+    case TS_CMD_INJ2_ON:
+    case TS_CMD_INJ3_ON:
+    case TS_CMD_INJ4_ON:
+    case TS_CMD_INJ5_ON:
+    case TS_CMD_INJ6_ON:
+    case TS_CMD_INJ7_ON:
+    case TS_CMD_INJ8_ON:
       injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
-    case TS_CMD_INJ1_OFF: // cmd group is for injector1 off actions
+    case TS_CMD_INJ1_OFF:
+    case TS_CMD_INJ2_OFF:
+    case TS_CMD_INJ3_OFF:
+    case TS_CMD_INJ4_OFF:
+    case TS_CMD_INJ5_OFF:
+    case TS_CMD_INJ6_OFF:
+    case TS_CMD_INJ7_OFF:
+    case TS_CMD_INJ8_OFF:
       injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
-    case TS_CMD_INJ1_PULSED: // cmd group is for injector1 50% dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ2_ON: // cmd group is for injector2 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ2_OFF: // cmd group is for injector2 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ2_PULSED: // cmd group is for injector2 50%dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ3_ON: // cmd group is for injector3 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ3_OFF: // cmd group is for injector3 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ3_PULSED: // cmd group is for injector3 50%dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ4_ON: // cmd group is for injector4 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ4_OFF: // cmd group is for injector4 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ4_PULSED: // cmd group is for injector4 50% dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ5_ON: // cmd group is for injector5 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ5_OFF: // cmd group is for injector5 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ5_PULSED: // cmd group is for injector5 50%dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ6_ON: // cmd group is for injector6 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ6_OFF: // cmd group is for injector6 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ6_PULSED: // cmd group is for injector6 50% dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ7_ON: // cmd group is for injector7 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ7_OFF: // cmd group is for injector7 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ7_PULSED: // cmd group is for injector7 50%dc actions
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
-      break;
-
-    case TS_CMD_INJ8_ON: // cmd group is for injector8 on actions
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
-      break;
-
-    case TS_CMD_INJ8_OFF: // cmd group is for injector8 off actions
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
-      break;
-
-    case TS_CMD_INJ8_PULSED: // cmd group is for injector8 50% dc actions
+    case TS_CMD_INJ1_PULSED:
+    case TS_CMD_INJ2_PULSED:
+    case TS_CMD_INJ3_PULSED:
+    case TS_CMD_INJ4_PULSED:
+    case TS_CMD_INJ5_PULSED:
+    case TS_CMD_INJ6_PULSED:
+    case TS_CMD_INJ7_PULSED:
+    case TS_CMD_INJ8_PULSED:
       injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
