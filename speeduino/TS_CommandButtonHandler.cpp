@@ -99,6 +99,16 @@ static void coilPulse(const statuses &current, uint8_t channel)
   }
 }
 
+static void computeVssRatio(statuses &current, config2 &page2, uint16_t config2::* pRatio)
+{
+  if(current.vss > 0)
+  {
+    (page2.*pRatio) = (current.vss * 10000UL) / current.RPM;
+    savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+    current.vssUiRefresh = true;
+  }
+}
+
 /**
  * @brief 
  * 
@@ -217,58 +227,29 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
 
     //Calculate the RPM to speed ratio for each gear
     case TS_CMD_VSS_RATIO1:
-      if(currentStatus.vss > 0)
-      {
-        configPage2.vssRatio1 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
-        savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        currentStatus.vssUiRefresh = true;
-      }
+      computeVssRatio(currentStatus, configPage2, &config2::vssRatio1);
       break;
 
     case TS_CMD_VSS_RATIO2:
-      if(currentStatus.vss > 0)
-      {
-        configPage2.vssRatio2 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
-        savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        currentStatus.vssUiRefresh = true;
-      }
+      computeVssRatio(currentStatus, configPage2, &config2::vssRatio2);
       break;
 
     case TS_CMD_VSS_RATIO3:
-      if(currentStatus.vss > 0)
-      {
-        configPage2.vssRatio3 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
-        savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        currentStatus.vssUiRefresh = true;
-      }
+      computeVssRatio(currentStatus, configPage2, &config2::vssRatio3);
       break;
 
     case TS_CMD_VSS_RATIO4: 
-      if(currentStatus.vss > 0)
-      {
-        configPage2.vssRatio4 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
-        savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        currentStatus.vssUiRefresh = true;
-      }
+      computeVssRatio(currentStatus, configPage2, &config2::vssRatio4);
       break;
 
     case TS_CMD_VSS_RATIO5:
-      if(currentStatus.vss > 0)
-      {
-        configPage2.vssRatio5 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
-        savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        currentStatus.vssUiRefresh = true;
-      }
+      computeVssRatio(currentStatus, configPage2, &config2::vssRatio5);
       break;
 
     case TS_CMD_VSS_RATIO6:
-      if(currentStatus.vss > 0)
-      {
-        configPage2.vssRatio6 = (currentStatus.vss * 10000UL) / currentStatus.RPM;
-        savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-        currentStatus.vssUiRefresh = true;
-      }
+      computeVssRatio(currentStatus, configPage2, &config2::vssRatio6);
       break;
+      
 // LCOV_EXCL_START
     //STM32 Commands
     case TS_CMD_STM32_REBOOT: //
