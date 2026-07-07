@@ -336,7 +336,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
         currentStatus.vssUiRefresh = true;
       }
       break;
-
+// LCOV_EXCL_START
     //STM32 Commands
     case TS_CMD_STM32_REBOOT: //
       doSystemReset();
@@ -351,6 +351,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       formatExFat();
       break;
 #endif
+// LCOV_EXCL_STOP
 
     default:
       return false;
