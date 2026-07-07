@@ -1197,10 +1197,7 @@ static void triggerPri_BasicDistributor(void)
 
     if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
     {
-      endCoilCharge(1U);
-      endCoilCharge(2U);
-      endCoilCharge(3U);
-      endCoilCharge(4U);
+      stopAllCoilsCharging();
     }
 
     if(configPage2.perToothIgn == true)

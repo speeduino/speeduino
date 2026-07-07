@@ -506,8 +506,17 @@ void __attribute__((optimize("Os"))) beginInjectorPriming(const statuses &curren
   }
 }
 
+void __attribute__((optimize("Os"))) closeAllInjectors(void)
+{
+  for (uint8_t index=1; index<=INJ_CHANNELS; ++index)
+  {
+    closeInjector(index);
+  }
+}
+
 void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4)
 {
+  closeAllInjectors();
   resetFuelSchedules();
   setupCallbacks(page2.injLayout, page2.nCylinders, page4.inj4cylPairing);
   current.injLayout = page2.injLayout;

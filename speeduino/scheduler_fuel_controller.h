@@ -58,3 +58,6 @@ void beginInjectorPriming(const statuses &current, const config4 &page4);
 
 /** @brief Initialise this module */
 void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4);
+
+/** @brief Utility function to close all injectors */
+void closeAllInjectors(void);

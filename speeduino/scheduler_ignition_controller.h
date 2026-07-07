@@ -63,3 +63,6 @@ void stopIgnitionSchedulers(void);
 
 /** @brief Initialise all ignition schedules */
 void initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode);
+
+/** @brief Utility function to stop charging all ignition coils */
+void stopAllCoilsCharging(void);
