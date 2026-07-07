@@ -39,7 +39,7 @@ jobs:
         source PIO/bin/activate
         pip install platformio
        
-    - name: Run Code Coverage Tests
+    - name: Run Code Coverage Tests (8x8)
       # We want the coverage to reflect the status of the
       # unit tests: so even if the tests fail or outright
       # crash, continue the rest of the workflow.
@@ -48,6 +48,13 @@ jobs:
         source PIO/bin/activate
         export PLATFORMIO_BUILD_FLAGS="-D INJ_CHANNELS=8 -D IGN_CHANNELS=8"
         platformio test -e ${{ env.PIO_ENV }} ${{ vars.PIO_CMD_PARAMS }}
+        
+    - name: Run Code Coverage Tests (Other)
+      continue-on-error: true
+      # Set NO_MULTI_CHANNEL=1 to skip this step and only run the 8x8 coverage tests.
+      if: ${{ !vars.NO_MULTI_CHANNEL }}
+      run: |       
+        source PIO/bin/activate
         mv .pio/build .pio/build88
         export PLATFORMIO_BUILD_FLAGS="-D INJ_CHANNELS=4 -D IGN_CHANNELS=4"
         platformio test -e ${{ env.PIO_ENV }} ${{ vars.PIO_CMD_PARAMS }}
