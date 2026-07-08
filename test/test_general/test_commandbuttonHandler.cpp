@@ -195,7 +195,7 @@ static void assert_inj_pulse(test_context_t &context, uint8_t channel)
 
 static void test_handler_inj_n_pulsed_sets_bit(uint8_t channel)
 {
-    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_ENBL);
@@ -206,7 +206,7 @@ static void test_handler_inj_n_pulsed_sets_bit(uint8_t channel)
 
 static void test_handler_inj_n_inactive_pulsed_nochange(uint8_t channel)
 {
-    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_DSBL);
@@ -223,7 +223,7 @@ static void test_handler_inj_n_inactive_pulsed_nochange(uint8_t channel)
 static void test_handler_inj_n_off_clears_bit(uint8_t channel)
 {
     uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
-    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
     
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_ENBL);
@@ -237,7 +237,7 @@ static void test_handler_inj_n_off_clears_bit(uint8_t channel)
 static void test_handler_inj_n_off_inactive_nochange(uint8_t channel)
 {
     uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
-    uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_DSBL);
@@ -300,7 +300,7 @@ static void assert_ign_pulse(test_context_t &context, uint8_t channel)
 
 static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
 {
-    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_ENBL);
@@ -311,7 +311,7 @@ static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
 
 static void test_handler_ign_n_inactive_pulsed_nochange(uint8_t channel)
 {
-    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_DSBL);
@@ -328,7 +328,7 @@ static void test_handler_ign_n_inactive_pulsed_nochange(uint8_t channel)
 static void test_handler_ign_n_off_clears_bit(uint8_t channel)
 {
     uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
-    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_ENBL);
@@ -342,7 +342,7 @@ static void test_handler_ign_n_off_clears_bit(uint8_t channel)
 static void test_handler_ign_n_off_inactive_nochange(uint8_t channel)
 {
     uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
-    uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
+    uint8_t bit = channel - 1U;
 
     test_context_t context;
     context.handleTsCommand(TS_CMD_TEST_DSBL);

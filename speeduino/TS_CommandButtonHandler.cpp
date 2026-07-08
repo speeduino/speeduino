@@ -38,7 +38,7 @@ static void injectorOff(const statuses &current, uint8_t injector)
   if( current.isTestModeActive )
   { 
     closeInjector(injector); 
-    BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+    BIT_CLEAR(HWTest_INJ_Pulsed, injector-1); 
   }
 }
 
@@ -46,10 +46,10 @@ static void injectorPulse(const statuses &current, uint8_t injector)
 {
   if( current.isTestModeActive ) 
   { 
-    BIT_SET(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+    BIT_SET(HWTest_INJ_Pulsed, injector-1); 
   }
   
-  if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1))) 
+  if(!BIT_CHECK(HWTest_INJ_Pulsed, injector-1)) 
   { 
     closeInjector(injector); //Ensure this output is turned off (Otherwise the output may stay on permanently)
   }
@@ -84,7 +84,7 @@ static void coilOff(const statuses &current, uint8_t channel)
   if( current.isTestModeActive ) 
   {
     endCoilCharge(channel);
-    BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+    BIT_CLEAR(HWTest_IGN_Pulsed, channel-1); 
   }
 }
 
@@ -92,9 +92,9 @@ static void coilPulse(const statuses &current, uint8_t channel)
 {
   if( current.isTestModeActive ) 
   { 
-    BIT_SET(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+    BIT_SET(HWTest_IGN_Pulsed, channel-1); 
   }
-  if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1))) 
+  if(!BIT_CHECK(HWTest_IGN_Pulsed, channel-1)) 
   { 
     endCoilCharge(channel); //Ensure this output is turned off (Otherwise the output may stay on permanently)
   }
