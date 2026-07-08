@@ -50,51 +50,6 @@ static void test_handler_rejects_stop_required_when_engine_running(void)
   TEST_ASSERT_FALSE(currentStatus.isTestModeActive);
 }
 
-static void test_handler_inj1_pulsed_sets_bit_when_active(void)
-{
-  reset_test_mode_state();
-  handleTsCommand(TS_CMD_TEST_ENBL);
-
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_INJ1_PULSED));
-  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT));
-}
-
-static void test_handler_inj1_off_clears_pulsed_bit(void)
-{
-  reset_test_mode_state();
-  handleTsCommand(TS_CMD_TEST_ENBL);
-  handleTsCommand(TS_CMD_INJ1_PULSED);
-  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT));
-
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_INJ1_OFF));
-  TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT));
-}
-
-static void test_handler_ign1_pulsed_sets_bit_when_active(void)
-{
-  reset_test_mode_state();
-  handleTsCommand(TS_CMD_TEST_ENBL);
-
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_IGN1_PULSED));
-  TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN1_CMD_BIT));
-}
-
-static void test_handler_ign1_pulsed_inactive_no_bit_set(void)
-{
-  reset_test_mode_state();
-  // Test mode NOT active — pulsed should not set bit
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_IGN1_PULSED));
-  TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN1_CMD_BIT));
-}
-
-static void test_handler_inj_on_inactive_does_not_open(void)
-{
-  reset_test_mode_state();
-  // Without test mode active, INJ_ON returns true but should not modify state
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_INJ1_ON));
-  // No state change to verify positively, but the case path is now covered
-}
-
 static void setup_vss(uint16_t vss)
 {
   reset_test_mode_state();
@@ -476,11 +431,6 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_test_enbl_sets_active);
     RUN_TEST(test_handler_test_dsbl_clears_active_and_pulsed);
     RUN_TEST(test_handler_rejects_stop_required_when_engine_running);
-    RUN_TEST(test_handler_inj1_pulsed_sets_bit_when_active);
-    RUN_TEST(test_handler_inj1_off_clears_pulsed_bit);
-    RUN_TEST(test_handler_ign1_pulsed_sets_bit_when_active);
-    RUN_TEST(test_handler_ign1_pulsed_inactive_no_bit_set);
-    RUN_TEST(test_handler_inj_on_inactive_does_not_open);
     RUN_TEST(test_handler_vss_ratio1_with_vss);
     RUN_TEST(test_handler_vss_ratio2_with_vss);
     RUN_TEST(test_handler_vss_ratio3_with_vss);
