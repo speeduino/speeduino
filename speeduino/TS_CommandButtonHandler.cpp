@@ -287,61 +287,71 @@ static uint8_t nextPulseCount(uint8_t current, uint8_t max)
   return current;
 }
 
+static void openPulsedInjectors(const statuses &current)
+{
+  for (uint8_t inj=0; inj<INJ_CHANNELS; ++inj)
+  {
+    if(BIT_CHECK(current.HWTest_INJ_Pulsed, inj))
+    { 
+      openInjector(inj+1);
+    }
+  }
+  testInjectorPulseCount = 0;
+}
+
+static void closePulsedInjectors(const statuses &current, const config13 &page13)
+{
+  if (current.HWTest_INJ_Pulsed!=0)
+  {
+    testInjectorPulseCount = nextPulseCount(testInjectorPulseCount, page13.hwTestInjDuration);
+    if (testInjectorPulseCount==0U)
+    {
+      closeAllInjectors();
+    }
+  }
+}
+
+static void beginChargingPulsedCoils(const statuses &current)
+{
+  for (uint8_t ign=0; ign<IGN_CHANNELS; ++ign)
+  {
+    if(BIT_CHECK(current.HWTest_IGN_Pulsed, ign))
+    { 
+      beginCoilCharge(ign+1);
+    }
+  }
+  testIgnitionPulseCount = 0;
+}
+
+static void dischargePulsedCoils(const statuses &current, const config13 &page13)
+{
+  if (current.HWTest_IGN_Pulsed!=0U)
+  {
+    testIgnitionPulseCount = nextPulseCount(testIgnitionPulseCount, page13.hwTestIgnDuration);
+    if (testIgnitionPulseCount==0U)
+    {
+      stopAllCoilsCharging();
+    }
+  }
+}
+
 void pulsedCommandController(const statuses &current, const config13 &page13)
 {
   if( current.isTestModeActive )
   {
+    // Pulse fuel and ignition test outputs are set at 30Hz
+    if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_30HZ)
+        && (current.RPM == 0))
+    {
+      openPulsedInjectors(current);
+      beginChargingPulsedCoils(current);
+    }
+
     // Turn off any of the pulsed testing outputs if they are active and have been running for long enough
     if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1KHZ))
     {
-      //Check for pulsed injector output test
-      if (current.HWTest_INJ_Pulsed!=0)
-      {
-        testInjectorPulseCount = nextPulseCount(testInjectorPulseCount, page13.hwTestInjDuration);
-        if (testInjectorPulseCount==0U)
-        {
-          closeAllInjectors();
-        }
-      }
-
-      //Check for pulsed ignition output test
-      if (current.HWTest_IGN_Pulsed!=0U)
-      {
-        testIgnitionPulseCount = nextPulseCount(testIgnitionPulseCount, page13.hwTestIgnDuration);
-        if (testIgnitionPulseCount==0U)
-        {
-          stopAllCoilsCharging();
-        }
-      }
+      closePulsedInjectors(current, page13);
+      dischargePulsedCoils(current, page13);
     }    
-
-    //Pulse fuel and ignition test outputs are set at 30Hz
-    if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_30HZ))
-    {
-      if( (current.isTestModeActive) && (current.RPM == 0) )
-      {
-        //Check for pulsed injector output test
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
-        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
-        testInjectorPulseCount = 0;
-
-        //Check for pulsed ignition output test
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
-        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
-        testIgnitionPulseCount = 0;
-      }
-    }
   }
 }
