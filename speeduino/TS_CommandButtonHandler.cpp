@@ -113,6 +113,25 @@ static void computeVssRatio(statuses &current, config2 &page2, uint16_t config2:
   }
 }
 
+static uint16_t calcPulsesPerKm(const statuses &current, const config2 &page2)
+{
+  if(page2.vssMode == VSS_MODE_INTERNAL_PIN)
+  {
+    //Calculate the ratio of VSS reading from Aux/CAN input and actual VSS (assuming that actual VSS is really 60km/h).
+    return (current.canin[page2.vssAuxCh] / 60);
+  }
+
+  //Calibrate the actual pulses per distance
+  uint32_t calibrationGap = vssGetPulseGap(0);
+  if( calibrationGap > 0 )
+  {
+    return MICROS_PER_MIN / calibrationGap;
+  }
+
+  // No update, so return original value
+  return page2.vssPulsesPerKm;
+}
+
 /**
  * @brief 
  * 
@@ -207,26 +226,9 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
 
     //VSS Calibration routines
     case TS_CMD_VSS_60KMH:
-      {
-        if(page2.vssMode == VSS_MODE_INTERNAL_PIN)
-        {
-          //Calculate the ratio of VSS reading from Aux/CAN input and actual VSS (assuming that actual VSS is really 60km/h).
-          page2.vssPulsesPerKm = (current.canin[page2.vssAuxCh] / 60);
-          savePage(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-          current.vssUiRefresh = true;
-        }
-        else
-        {
-          //Calibrate the actual pulses per distance
-          uint32_t calibrationGap = vssGetPulseGap(0);
-          if( calibrationGap > 0 )
-          {
-            page2.vssPulsesPerKm = MICROS_PER_MIN / calibrationGap;
-            savePage(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-            current.vssUiRefresh = true;
-          }
-        }
-      }
+      page2.vssPulsesPerKm = calcPulsesPerKm(current, page2);
+      savePage(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
+      current.vssUiRefresh = true;
       break;
 
     //Calculate the RPM to speed ratio for each gear
