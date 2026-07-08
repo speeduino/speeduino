@@ -103,11 +103,11 @@ static void coilPulse(const statuses &current, uint8_t channel)
   }
 }
 
-static void computeVssRatio(statuses &current, config2 &page2, uint16_t config2::* pRatio)
+static void computeVssRatio(statuses &current, config2 &page2, uint8_t ratioIndex)
 {
   if(current.vss > 0)
   {
-    (page2.*pRatio) = (current.vss * 10000UL) / current.RPM;
+    page2.vssRatios[ratioIndex] = (current.vss * 10000UL) / current.RPM;
     savePage(1); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
     current.vssUiRefresh = true;
   }
@@ -233,27 +233,27 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
 
     //Calculate the RPM to speed ratio for each gear
     case TS_CMD_VSS_RATIO1:
-      computeVssRatio(current, page2, &config2::vssRatio1);
+      computeVssRatio(current, page2, 0);
       break;
 
     case TS_CMD_VSS_RATIO2:
-      computeVssRatio(current, page2, &config2::vssRatio2);
+      computeVssRatio(current, page2, 1);
       break;
 
     case TS_CMD_VSS_RATIO3:
-      computeVssRatio(current, page2, &config2::vssRatio3);
+      computeVssRatio(current, page2, 2);
       break;
 
     case TS_CMD_VSS_RATIO4: 
-      computeVssRatio(current, page2, &config2::vssRatio4);
+      computeVssRatio(current, page2, 3);
       break;
 
     case TS_CMD_VSS_RATIO5:
-      computeVssRatio(current, page2, &config2::vssRatio5);
+      computeVssRatio(current, page2, 4);
       break;
 
     case TS_CMD_VSS_RATIO6:
-      computeVssRatio(current, page2, &config2::vssRatio6);
+      computeVssRatio(current, page2, 5);
       break;
       
 // LCOV_EXCL_START

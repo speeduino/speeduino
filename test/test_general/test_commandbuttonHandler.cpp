@@ -73,77 +73,77 @@ static test_context_t setup_vss(uint16_t vss)
     return context;
 }
 
-static void test_handler_vss_ratio_with_vss(uint16_t ratioCmd, uint16_t config2::* pRatio)
+static void test_handler_vss_ratio_with_vss(uint16_t ratioCmd, uint8_t vssIndex)
 {
   auto context = setup_vss(250);
-  context.page2.*pRatio = 0U;
+  context.page2.vssRatios[vssIndex] = 0U;
   TEST_ASSERT_TRUE(context.handleTsCommand(ratioCmd));
   TEST_ASSERT_TRUE(context.current.vssUiRefresh);
-  TEST_ASSERT_EQUAL_UINT16((context.current.vss*10000UL)/context.current.RPM, context.page2.*pRatio);
+  TEST_ASSERT_EQUAL_UINT16((context.current.vss*10000UL)/context.current.RPM, context.page2.vssRatios[vssIndex]);
 }
 
-static void test_handler_vss_ratio_no_vss_no_change(uint16_t ratioCmd, uint16_t config2::* pRatio)
+static void test_handler_vss_ratio_no_vss_no_change(uint16_t ratioCmd, uint8_t vssIndex)
 {
   auto context = setup_vss(0);
-  context.page2.*pRatio = 999U;
+  context.page2.vssRatios[vssIndex] = 999U;
   TEST_ASSERT_TRUE(context.handleTsCommand(ratioCmd));
   TEST_ASSERT_FALSE(context.current.vssUiRefresh);
-  TEST_ASSERT_EQUAL_UINT16(999, context.page2.*pRatio);
+  TEST_ASSERT_EQUAL_UINT16(999, context.page2.vssRatios[vssIndex]);
 }
 
 static void test_handler_vss_ratio1_with_vss(void)
 {
-    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO1, &config2::vssRatio1);
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO1, 0);
 }
 
 static void test_handler_vss_ratio2_with_vss(void)
 {
-    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO2, &config2::vssRatio2);
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO2, 1);
 }
 
 static void test_handler_vss_ratio3_with_vss(void)
 {
-    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO3, &config2::vssRatio3);
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO3, 2);
 }
 
 static void test_handler_vss_ratio4_with_vss(void)
 {
-    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO4, &config2::vssRatio4);
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO4, 3);
 }
 
 static void test_handler_vss_ratio5_with_vss(void)
 {
-    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO5, &config2::vssRatio5);
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO5, 4);
 }
 
 static void test_handler_vss_ratio6_with_vss(void)
 {
-    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO6, &config2::vssRatio6);
+    test_handler_vss_ratio_with_vss(TS_CMD_VSS_RATIO6, 5);
 }
 
 static void test_handler_vss_ratio1_no_vss_no_change(void)
 {
-    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO1, &config2::vssRatio1);
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO1, 0);
 }
 static void test_handler_vss_ratio2_no_vss_no_change(void)
 {
-    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO2, &config2::vssRatio2);
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO2, 1);
 }
 static void test_handler_vss_ratio3_no_vss_no_change(void)
 {
-    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO3, &config2::vssRatio3);
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO3, 2);
 }
 static void test_handler_vss_ratio4_no_vss_no_change(void)
 {
-    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO4, &config2::vssRatio4);
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO4, 3);
 }
 static void test_handler_vss_ratio5_no_vss_no_change(void)
 {
-    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO5, &config2::vssRatio5);
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO5, 4);
 }
 static void test_handler_vss_ratio6_no_vss_no_change(void)
 {
-    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO6, &config2::vssRatio6);
+    test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO6, 5);
 }
 
 static void test_vss_60km_internal_pin(void)
