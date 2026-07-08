@@ -274,6 +274,19 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
   return true;
 }
 
+static uint8_t nextPulseCount(uint8_t current, uint8_t max)
+{
+  if(current >= max)
+  {
+    current = 0;
+  }
+  else 
+  { 
+    ++current;
+  }
+  return current;
+}
+
 void pulsedCommandController(const statuses &current, const config13 &page13)
 {
   if( current.isTestModeActive )
@@ -284,28 +297,20 @@ void pulsedCommandController(const statuses &current, const config13 &page13)
       //Check for pulsed injector output test
       if (current.HWTest_INJ_Pulsed!=0)
       {
-        if(testInjectorPulseCount >= page13.hwTestInjDuration)
+        testInjectorPulseCount = nextPulseCount(testInjectorPulseCount, page13.hwTestInjDuration);
+        if (testInjectorPulseCount==0U)
         {
           closeAllInjectors();
-          testInjectorPulseCount = 0;
-        }
-        else 
-        { 
-          ++testInjectorPulseCount;
         }
       }
 
       //Check for pulsed ignition output test
       if (current.HWTest_IGN_Pulsed!=0U)
       {
-        if(testIgnitionPulseCount >= page13.hwTestIgnDuration)
+        testIgnitionPulseCount = nextPulseCount(testIgnitionPulseCount, page13.hwTestIgnDuration);
+        if (testIgnitionPulseCount==0U)
         {
           stopAllCoilsCharging();
-          testIgnitionPulseCount = 0;
-        }
-        else 
-        { 
-          ++testIgnitionPulseCount;
         }
       }
     }    
