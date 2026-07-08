@@ -133,7 +133,7 @@ void legacySerialCommand(void)
       if(primarySerial.available() >= 2)
       {
         byte cmdGroup = (byte)Serial.read();
-        (void)TS_CommandButtonsHandler(word(cmdGroup, primarySerial.read()));
+        (void)handleTsCommand(word(cmdGroup, primarySerial.read()));
         serialStatusFlag = SERIAL_INACTIVE;
       }
       break;

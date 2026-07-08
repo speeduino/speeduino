@@ -18,10 +18,10 @@
 #include "scheduler_fuel_controller.h"
 #include "scheduler_ignition_controller.h"
 
-static bool commandRequiresStoppedEngine(uint16_t buttonCommand)
+static bool commandRequiresStoppedEngine(uint16_t command)
 {
-  return ((buttonCommand >= TS_CMD_INJ1_ON) && (buttonCommand <= TS_CMD_IGN8_PULSED)) 
-      || ((buttonCommand == TS_CMD_TEST_ENBL) || (buttonCommand == TS_CMD_TEST_DSBL));
+  return ((command >= TS_CMD_INJ1_ON) && (command <= TS_CMD_IGN8_PULSED)) 
+      || ((command == TS_CMD_TEST_ENBL) || (command == TS_CMD_TEST_DSBL));
 }
 
 static void injectorOn(const statuses &current, uint8_t injector)
@@ -112,16 +112,16 @@ static void computeVssRatio(statuses &current, config2 &page2, uint16_t config2:
 /**
  * @brief 
  * 
- * @param buttonCommand The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
+ * @param command The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
  */
-bool TS_CommandButtonsHandler(uint16_t buttonCommand)
+bool handleTsCommand(uint16_t command)
 {
-  if (commandRequiresStoppedEngine(buttonCommand) && currentStatus.RPM != 0)
+  if (commandRequiresStoppedEngine(command) && currentStatus.RPM != 0)
   {
     return false;
   }
   
-  switch (buttonCommand)
+  switch (command)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
       currentStatus.isTestModeActive = false;
@@ -143,7 +143,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_INJ6_ON:
     case TS_CMD_INJ7_ON:
     case TS_CMD_INJ8_ON:
-      injectorOn(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
+      injectorOn(currentStatus, computeChannel(command, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ1_OFF:
@@ -154,7 +154,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_INJ6_OFF:
     case TS_CMD_INJ7_OFF:
     case TS_CMD_INJ8_OFF:
-      injectorOff(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
+      injectorOff(currentStatus, computeChannel(command, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ1_PULSED:
@@ -165,7 +165,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_INJ6_PULSED:
     case TS_CMD_INJ7_PULSED:
     case TS_CMD_INJ8_PULSED:
-      injectorPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
+      injectorPulse(currentStatus, computeChannel(command, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_IGN1_ON:
@@ -176,7 +176,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_IGN6_ON:
     case TS_CMD_IGN7_ON:
     case TS_CMD_IGN8_ON:
-      coilOn(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
+      coilOn(currentStatus, computeChannel(command, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
       break;
 
     case TS_CMD_IGN1_OFF:
@@ -187,7 +187,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_IGN6_OFF:
     case TS_CMD_IGN7_OFF:
     case TS_CMD_IGN8_OFF:
-      coilOff(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
+      coilOff(currentStatus, computeChannel(command, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
       break;
 
     case TS_CMD_IGN1_PULSED:
@@ -198,7 +198,7 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
     case TS_CMD_IGN6_PULSED:
     case TS_CMD_IGN7_PULSED:
     case TS_CMD_IGN8_PULSED:
-      coilPulse(currentStatus, computeChannel(buttonCommand, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
+      coilPulse(currentStatus, computeChannel(command, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
       break;
 
     //VSS Calibration routines

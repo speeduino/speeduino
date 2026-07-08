@@ -641,7 +641,7 @@ void processSerialCommand(void)
     }
 
     case 'E': // receive command button commands
-      (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
+      (void)handleTsCommand(word(serialPayload[1], serialPayload[2]));
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 

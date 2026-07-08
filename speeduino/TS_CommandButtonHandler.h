@@ -3,6 +3,8 @@
  * Header file for the TunerStudio command handler
  * The command handler manages all the inputs FROM TS which are issued when a command button is clicked by the user
  */
+#include "statuses.h"
+#include "config_pages.h"
 
 static constexpr uint16_t TS_CMD_TEST_DSBL    = 256;
 static constexpr uint16_t TS_CMD_TEST_ENBL    = 257;
@@ -70,5 +72,10 @@ static constexpr uint16_t TS_CMD_VSS_RATIO4 = 39172U;
 static constexpr uint16_t TS_CMD_VSS_RATIO5 = 39173U;
 static constexpr uint16_t TS_CMD_VSS_RATIO6 = 39174U;
 
-/* the maximum id number is 65,535 */
-bool TS_CommandButtonsHandler(uint16_t buttonCommand);
+/**
+ * @brief Process a command from TunerStudio
+ * 
+ * @param command One of the above commands. 
+ * @return true if the command was processed, false otherwise
+ */
+bool handleTsCommand(uint16_t command);
