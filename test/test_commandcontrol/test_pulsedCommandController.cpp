@@ -8,12 +8,12 @@ extern uint8_t testIgnitionPulseCount;
 extern byte HWTest_INJ_Pulsed;
 extern byte HWTest_IGN_Pulsed;
 
-struct complete_command_context_t
+struct pulsed_controller_context_t
 {
     statuses current;
     config13 page13;
 
-    complete_command_context_t()
+    pulsed_controller_context_t()
     {
         current.RPM = 0U;
         current.isTestModeActive = false;
@@ -29,9 +29,9 @@ struct complete_command_context_t
     }
 };
 
-static complete_command_context_t setup_start_pulse(void)
+static pulsed_controller_context_t setup_start_pulse(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_30HZ);
   context.current.setRpm(0);
@@ -70,7 +70,7 @@ static void test_start_pulse(void)
   }
 }
 
-static void assert_pulse_does_nothing(complete_command_context_t &context)
+static void assert_pulse_does_nothing(pulsed_controller_context_t &context)
 {
   testInjectorPulseCount = 99;
   testIgnitionPulseCount = 99;
@@ -105,7 +105,7 @@ static void test_no_timer_does_nothing(void)
 
 static void test_no_pulsed_outputs_does_nothing(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   context.page13.hwTestInjDuration = 10;
   context.page13.hwTestIgnDuration = 5;
@@ -119,7 +119,7 @@ static void test_no_pulsed_outputs_does_nothing(void)
 
 static void test_inj_pulse_count(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   HWTest_INJ_Pulsed = 0xFF; // All injection outputs pulsed
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1KHZ);
@@ -139,7 +139,7 @@ static void test_inj_pulse_count(void)
 
 static void test_ign_pulse_count(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   HWTest_IGN_Pulsed = 0xFF; // All ignition outputs pulsed
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1KHZ);
@@ -159,7 +159,7 @@ static void test_ign_pulse_count(void)
 
 static void test_30hz_inj_outputs(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   context.current.RPM = 0; // Engine must be stopped for 30Hz outputs
   HWTest_INJ_Pulsed = 0x01; // Only INJ1 pulsed
@@ -177,7 +177,7 @@ static void test_30hz_inj_outputs(void)
 
 static void test_30hz_ign_outputs(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   context.current.RPM = 0; // Engine must be stopped for 30Hz outputs
   HWTest_IGN_Pulsed = 0x01; // Only IGN1 pulsed
@@ -193,7 +193,7 @@ static void test_30hz_ign_outputs(void)
 
 static void test_engine_running_no_30hz_output(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   context.current.RPM = 5000; // Engine running
   HWTest_INJ_Pulsed = 0xFF;
@@ -211,7 +211,7 @@ static void test_engine_running_no_30hz_output(void)
 
 static void test_both_timers_active(void)
 {
-  complete_command_context_t context;
+  pulsed_controller_context_t context;
   context.current.isTestModeActive = true;
   context.current.RPM = 0;
   HWTest_INJ_Pulsed = 0x03; // INJ1 and INJ2 pulsed
@@ -228,7 +228,7 @@ static void test_both_timers_active(void)
   TEST_ASSERT_EQUAL_UINT8(0x03, HWTest_IGN_Pulsed);
 }
 
-void testCompleteTsCommand(void)
+void testPulsedCommandController(void)
 {
   SET_UNITY_FILENAME()
   {
