@@ -5,75 +5,87 @@
 #include "scheduledIO_direct_inj.h"
 #include "scheduledIO_direct_ign.h"
 
-static void reset_test_mode_state(void)
+struct test_context_t
 {
-  currentStatus.RPM = 0U;
-  currentStatus.isTestModeActive = false;
-  currentStatus.HWTest_INJ_Pulsed = 0U;
-  currentStatus.HWTest_IGN_Pulsed = 0U;
-}
+    statuses current;
+    config2 page2;
+
+    test_context_t()
+    {
+        current.RPM = 0U;
+        current.isTestModeActive = false;
+        current.HWTest_INJ_Pulsed = 0U;
+        current.HWTest_IGN_Pulsed = 0U;
+    }
+
+    bool handleTsCommand(uint16_t command)
+    {
+        return ::handleTsCommand(command, current, page2);
+    }
+};
 
 static void test_handler_unknown_command_returns_false(void)
 {
-  reset_test_mode_state();
-  TEST_ASSERT_FALSE(handleTsCommand(0xFFFFU));
+    test_context_t context;
+    TEST_ASSERT_FALSE(context.handleTsCommand(0xFFFFU));
 }
 
 static void test_handler_test_enbl_sets_active(void)
 {
-  reset_test_mode_state();
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_TEST_ENBL));
-  TEST_ASSERT_TRUE(currentStatus.isTestModeActive);
+    test_context_t context;
+    TEST_ASSERT_TRUE(context.handleTsCommand(TS_CMD_TEST_ENBL));
+    TEST_ASSERT_TRUE(context.current.isTestModeActive);
 }
 
 static void test_handler_test_dsbl_clears_active_and_pulsed(void)
 {
-  reset_test_mode_state();
-  // First enable & flag pulsed bits, then disable
-  handleTsCommand(TS_CMD_TEST_ENBL);
-  currentStatus.HWTest_INJ_Pulsed = 0xFFU;
-  currentStatus.HWTest_IGN_Pulsed = 0xFFU;
+    test_context_t context;
+    // First enable & flag pulsed bits, then disable
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    context.current.HWTest_INJ_Pulsed = 0xFFU;
+    context.current.HWTest_IGN_Pulsed = 0xFFU;
 
-  TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_TEST_DSBL));
-  TEST_ASSERT_FALSE(currentStatus.isTestModeActive);
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.HWTest_INJ_Pulsed);
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.HWTest_IGN_Pulsed);
+    TEST_ASSERT_TRUE(context.handleTsCommand(TS_CMD_TEST_DSBL));
+    TEST_ASSERT_FALSE(context.current.isTestModeActive);
+    TEST_ASSERT_EQUAL_UINT8(0U, context.current.HWTest_INJ_Pulsed);
+    TEST_ASSERT_EQUAL_UINT8(0U, context.current.HWTest_IGN_Pulsed);
 }
 
 static void test_handler_rejects_stop_required_when_engine_running(void)
 {
-  reset_test_mode_state();
-  currentStatus.RPM = 1000U;  // engine running
-  // INJ1_ON is in the stop-required range
-  TEST_ASSERT_FALSE(handleTsCommand(TS_CMD_INJ1_ON));
-  // Verify the command did not flip test mode on
-  TEST_ASSERT_FALSE(currentStatus.isTestModeActive);
+    test_context_t context;
+    context.current.RPM = 1000U;  // engine running
+    // INJ1_ON is in the stop-required range
+    TEST_ASSERT_FALSE(context.handleTsCommand(TS_CMD_INJ1_ON));
+    // Verify the command did not flip test mode on
+    TEST_ASSERT_FALSE(context.current.isTestModeActive);
 }
 
-static void setup_vss(uint16_t vss)
+static test_context_t setup_vss(uint16_t vss)
 {
-  reset_test_mode_state();
-  currentStatus.vss = vss;
-  currentStatus.RPM = 2000U;
-  currentStatus.vssUiRefresh = false;
+    test_context_t context;
+    context.current.vss = vss;
+    context.current.RPM = 2000U;
+    context.current.vssUiRefresh = false;
+    return context;
 }
 
 static void test_handler_vss_ratio_with_vss(uint16_t ratioCmd, uint16_t config2::* pRatio)
 {
-  setup_vss(250);
-  configPage2.*pRatio = 0U;
-  TEST_ASSERT_TRUE(handleTsCommand(ratioCmd));
-  TEST_ASSERT_TRUE(currentStatus.vssUiRefresh);
-  TEST_ASSERT_EQUAL_UINT16((currentStatus.vss*10000UL)/currentStatus.RPM, configPage2.*pRatio);
+  auto context = setup_vss(250);
+  context.page2.*pRatio = 0U;
+  TEST_ASSERT_TRUE(context.handleTsCommand(ratioCmd));
+  TEST_ASSERT_TRUE(context.current.vssUiRefresh);
+  TEST_ASSERT_EQUAL_UINT16((context.current.vss*10000UL)/context.current.RPM, context.page2.*pRatio);
 }
 
 static void test_handler_vss_ratio_no_vss_no_change(uint16_t ratioCmd, uint16_t config2::* pRatio)
 {
-  setup_vss(0);
-  configPage2.*pRatio = 999U;
-  TEST_ASSERT_TRUE(handleTsCommand(ratioCmd));
-  TEST_ASSERT_FALSE(currentStatus.vssUiRefresh);
-  TEST_ASSERT_EQUAL_UINT16(999, configPage2.*pRatio);
+  auto context = setup_vss(0);
+  context.page2.*pRatio = 999U;
+  TEST_ASSERT_TRUE(context.handleTsCommand(ratioCmd));
+  TEST_ASSERT_FALSE(context.current.vssUiRefresh);
+  TEST_ASSERT_EQUAL_UINT16(999, context.page2.*pRatio);
 }
 
 static void test_handler_vss_ratio1_with_vss(void)
@@ -133,13 +145,14 @@ static void test_handler_vss_ratio6_no_vss_no_change(void)
 
 static void test_vss_60km_internal_pin(void)
 {
-    configPage2.vssMode = VSS_MODE_INTERNAL_PIN;
-    currentStatus.canin[configPage2.vssAuxCh] = 360;
-    currentStatus.vssUiRefresh = false;
+    test_context_t context;
+    context.page2.vssMode = VSS_MODE_INTERNAL_PIN;
+    context.current.canin[context.page2.vssAuxCh] = 360;
+    context.current.vssUiRefresh = false;
 
-    TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_VSS_60KMH));
-    TEST_ASSERT_TRUE(currentStatus.vssUiRefresh);
-    TEST_ASSERT_EQUAL_UINT16(6, configPage2.vssPulsesPerKm);
+    TEST_ASSERT_TRUE(context.handleTsCommand(TS_CMD_VSS_60KMH));
+    TEST_ASSERT_TRUE(context.current.vssUiRefresh);
+    TEST_ASSERT_EQUAL_UINT16(6, context.page2.vssPulsesPerKm);
 }
 
 static void test_vss_60km_external(void)
@@ -147,13 +160,14 @@ static void test_vss_60km_external(void)
     vssPulse();
     delay(1);
     vssPulse();
-    configPage2.vssMode = VSS_MODE_EXTERNAL_KM;
-    configPage2.vssPulsesPerKm = 0;
-    currentStatus.vssUiRefresh = false;
+    test_context_t context;
+    context.page2.vssMode = VSS_MODE_EXTERNAL_KM;
+    context.page2.vssPulsesPerKm = 0;
+    context.current.vssUiRefresh = false;
 
-    TEST_ASSERT_TRUE(handleTsCommand(TS_CMD_VSS_60KMH));
-    TEST_ASSERT_TRUE(currentStatus.vssUiRefresh);
-    TEST_ASSERT_NOT_EQUAL_UINT16(0, configPage2.vssPulsesPerKm);
+    TEST_ASSERT_TRUE(context.handleTsCommand(TS_CMD_VSS_60KMH));
+    TEST_ASSERT_TRUE(context.current.vssUiRefresh);
+    TEST_ASSERT_NOT_EQUAL_UINT16(0, context.page2.vssPulsesPerKm);
 }
 
 // ============================ Per-channel INJ/IGN ===========================
@@ -171,35 +185,36 @@ static uint16_t createCmd(uint16_t reference, uint16_t base, uint8_t channel)
     return base + channel_offset;
 }
 
-static void assert_inj_pulse(uint8_t channel)
+static void assert_inj_pulse(test_context_t &context, uint8_t channel)
 {
-    TEST_ASSERT_TRUE(handleTsCommand(createCmd(TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED, channel))); 
+    TEST_ASSERT_TRUE(context.handleTsCommand(createCmd(TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED, channel))); 
 }
 
 static void test_handler_inj_n_pulsed_sets_bit(uint8_t channel)
 {
     uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
 
-    reset_test_mode_state();
-    handleTsCommand(TS_CMD_TEST_ENBL);
-    currentStatus.HWTest_INJ_Pulsed = 0U;
-    assert_inj_pulse(channel); 
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, bit));
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    context.current.HWTest_INJ_Pulsed = 0U;
+    assert_inj_pulse(context, channel); 
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_INJ_Pulsed, bit));
 }
 
 static void test_handler_inj_n_inactive_pulsed_nochange(uint8_t channel)
 {
     uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
 
-    handleTsCommand(TS_CMD_TEST_DSBL);
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_DSBL);
 
-    currentStatus.HWTest_INJ_Pulsed = 0U;
-    assert_inj_pulse(channel); 
-    TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, bit));
+    context.current.HWTest_INJ_Pulsed = 0U;
+    assert_inj_pulse(context, channel); 
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.HWTest_INJ_Pulsed, bit));
 
-    currentStatus.HWTest_INJ_Pulsed = 0xFFU;
-    assert_inj_pulse(channel); 
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, bit));
+    context.current.HWTest_INJ_Pulsed = 0xFFU;
+    assert_inj_pulse(context, channel); 
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_INJ_Pulsed, bit));
 }
 
 static void test_handler_inj_n_off_clears_bit(uint8_t channel)
@@ -207,13 +222,13 @@ static void test_handler_inj_n_off_clears_bit(uint8_t channel)
     uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
     uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
     
-    reset_test_mode_state();
-    handleTsCommand(TS_CMD_TEST_ENBL);
-    assert_inj_pulse(channel); 
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    assert_inj_pulse(context, channel); 
 
-    currentStatus.HWTest_INJ_Pulsed = 0xFFU;
-    TEST_ASSERT_TRUE(handleTsCommand(offCmd));
-    TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, bit));
+    context.current.HWTest_INJ_Pulsed = 0xFFU;
+    TEST_ASSERT_TRUE(context.handleTsCommand(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.HWTest_INJ_Pulsed, bit));
 }
 
 static void test_handler_inj_n_off_inactive_nochange(uint8_t channel)
@@ -221,27 +236,28 @@ static void test_handler_inj_n_off_inactive_nochange(uint8_t channel)
     uint16_t offCmd = createCmd(TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF, channel);
     uint8_t bit = INJ1_CMD_BIT + (channel - 1U);
 
-    handleTsCommand(TS_CMD_TEST_DSBL);
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_DSBL);
 
-    currentStatus.HWTest_INJ_Pulsed = 0xFFU;
-    TEST_ASSERT_TRUE(handleTsCommand(offCmd));
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, bit));
+    context.current.HWTest_INJ_Pulsed = 0xFFU;
+    TEST_ASSERT_TRUE(context.handleTsCommand(offCmd));
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_INJ_Pulsed, bit));
 
-    currentStatus.HWTest_INJ_Pulsed = 0U;
-    TEST_ASSERT_TRUE(handleTsCommand(offCmd));
-    TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, bit));
+    context.current.HWTest_INJ_Pulsed = 0U;
+    TEST_ASSERT_TRUE(context.handleTsCommand(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.HWTest_INJ_Pulsed, bit));
 }
 
 static void test_handler_inj_n_on_returns_true(uint8_t channel)
 {
     uint16_t onCmd = createCmd(TS_CMD_INJ2_ON, TS_CMD_INJ1_ON, channel);
 
-    reset_test_mode_state();
-    handleTsCommand(TS_CMD_TEST_ENBL);
-    TEST_ASSERT_TRUE(handleTsCommand(onCmd));
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    TEST_ASSERT_TRUE(context.handleTsCommand(onCmd));
 
-    handleTsCommand(TS_CMD_TEST_DSBL);
-    TEST_ASSERT_TRUE(handleTsCommand(onCmd));
+    context.handleTsCommand(TS_CMD_TEST_DSBL);
+    TEST_ASSERT_TRUE(context.handleTsCommand(onCmd));
 }
 
 #define DECLARE_INJ_PULSED_TEST(N)                                            \
@@ -274,35 +290,36 @@ static void test_handler_inj_n_on_returns_true(uint8_t channel)
         RUN_TEST_P(test_handler_inj##N##_off_inactive_nochange); \
     }
 
-static void assert_ign_pulse(uint8_t channel)
+static void assert_ign_pulse(test_context_t &context, uint8_t channel)
 {
-    TEST_ASSERT_TRUE(handleTsCommand(createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel))); 
+    TEST_ASSERT_TRUE(context.handleTsCommand(createCmd(TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED, channel))); 
 }
 
 static void test_handler_ign_n_pulsed_sets_bit(uint8_t channel)
 {
     uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
 
-    reset_test_mode_state();
-    handleTsCommand(TS_CMD_TEST_ENBL);
-    currentStatus.HWTest_IGN_Pulsed = 0U;
-    assert_ign_pulse(channel);
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    context.current.HWTest_IGN_Pulsed = 0U;
+    assert_ign_pulse(context, channel);
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_inactive_pulsed_nochange(uint8_t channel)
 {
     uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
 
-    handleTsCommand(TS_CMD_TEST_DSBL);
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_DSBL);
 
-    currentStatus.HWTest_IGN_Pulsed = 0U;
-    assert_ign_pulse(channel);
-    TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    context.current.HWTest_IGN_Pulsed = 0U;
+    assert_ign_pulse(context, channel);
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 
-    currentStatus.HWTest_IGN_Pulsed = 0xFFU;
-    assert_ign_pulse(channel);
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    context.current.HWTest_IGN_Pulsed = 0xFFU;
+    assert_ign_pulse(context, channel);
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_off_clears_bit(uint8_t channel)
@@ -310,13 +327,13 @@ static void test_handler_ign_n_off_clears_bit(uint8_t channel)
     uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
     uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
 
-    reset_test_mode_state();
-    handleTsCommand(TS_CMD_TEST_ENBL);
-    assert_ign_pulse(channel);
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    assert_ign_pulse(context, channel);
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 
-    TEST_ASSERT_TRUE(handleTsCommand(offCmd));
-    TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    TEST_ASSERT_TRUE(context.handleTsCommand(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_off_inactive_nochange(uint8_t channel)
@@ -324,27 +341,28 @@ static void test_handler_ign_n_off_inactive_nochange(uint8_t channel)
     uint16_t offCmd = createCmd(TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF, channel);
     uint8_t bit = IGN1_CMD_BIT + (channel - 1U);
 
-    handleTsCommand(TS_CMD_TEST_DSBL);
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_DSBL);
 
-    currentStatus.HWTest_IGN_Pulsed = 0xFFU;
-    TEST_ASSERT_TRUE(handleTsCommand(offCmd));
-    TEST_ASSERT_TRUE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    context.current.HWTest_IGN_Pulsed = 0xFFU;
+    TEST_ASSERT_TRUE(context.handleTsCommand(offCmd));
+    TEST_ASSERT_TRUE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 
-    currentStatus.HWTest_IGN_Pulsed = 0U;
-    TEST_ASSERT_TRUE(handleTsCommand(offCmd));
-    TEST_ASSERT_FALSE(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, bit));
+    context.current.HWTest_IGN_Pulsed = 0U;
+    TEST_ASSERT_TRUE(context.handleTsCommand(offCmd));
+    TEST_ASSERT_FALSE(BIT_CHECK(context.current.HWTest_IGN_Pulsed, bit));
 }
 
 static void test_handler_ign_n_on_returns_true(uint8_t channel)
 {
     uint16_t onCmd = createCmd(TS_CMD_IGN2_ON, TS_CMD_IGN1_ON, channel);
 
-    reset_test_mode_state();
-    handleTsCommand(TS_CMD_TEST_ENBL);
-    TEST_ASSERT_TRUE(handleTsCommand(onCmd));
+    test_context_t context;
+    context.handleTsCommand(TS_CMD_TEST_ENBL);
+    TEST_ASSERT_TRUE(context.handleTsCommand(onCmd));
 
-    handleTsCommand(TS_CMD_TEST_DSBL);
-    TEST_ASSERT_TRUE(handleTsCommand(onCmd));
+    context.handleTsCommand(TS_CMD_TEST_DSBL);
+    TEST_ASSERT_TRUE(context.handleTsCommand(onCmd));
 }
 
 #define DECLARE_IGN_PULSED_TEST(N)                                            \

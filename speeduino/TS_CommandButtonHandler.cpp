@@ -4,7 +4,6 @@
  * The command handler manages all the inputs FROM TS which are issued when a command button is clicked by the user
  */
 
-#include "globals.h"
 #include "TS_CommandButtonHandler.h"
 #include "sensors.h"
 #include "storage.h"
@@ -12,9 +11,6 @@
 #include "pages.h"
 #include "scheduledIO_ign.h"
 #include "scheduledIO_inj.h"
-#ifdef USE_MC33810
-  #include "acc_mc33810.h"
-#endif
 #include "scheduler_fuel_controller.h"
 #include "scheduler_ignition_controller.h"
 
@@ -114,9 +110,9 @@ static void computeVssRatio(statuses &current, config2 &page2, uint16_t config2:
  * 
  * @param command The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
  */
-bool handleTsCommand(uint16_t command)
+bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
 {
-  if (commandRequiresStoppedEngine(command) && currentStatus.RPM != 0)
+  if (commandRequiresStoppedEngine(command) && current.RPM != 0)
   {
     return false;
   }
@@ -124,15 +120,15 @@ bool handleTsCommand(uint16_t command)
   switch (command)
   {
     case TS_CMD_TEST_DSBL: // cmd is stop
-      currentStatus.isTestModeActive = false;
+      current.isTestModeActive = false;
       stopAllCoilsCharging();
       closeAllInjectors();
-      currentStatus.HWTest_INJ_Pulsed = 0;
-      currentStatus.HWTest_IGN_Pulsed = 0;
+      current.HWTest_INJ_Pulsed = 0;
+      current.HWTest_IGN_Pulsed = 0;
       break;
 
     case TS_CMD_TEST_ENBL: // cmd is enable
-      currentStatus.isTestModeActive = true;
+      current.isTestModeActive = true;
       break;
 
     case TS_CMD_INJ1_ON:
@@ -143,7 +139,7 @@ bool handleTsCommand(uint16_t command)
     case TS_CMD_INJ6_ON:
     case TS_CMD_INJ7_ON:
     case TS_CMD_INJ8_ON:
-      injectorOn(currentStatus, computeChannel(command, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
+      injectorOn(current, computeChannel(command, TS_CMD_INJ2_ON, TS_CMD_INJ1_ON));
       break;
 
     case TS_CMD_INJ1_OFF:
@@ -154,7 +150,7 @@ bool handleTsCommand(uint16_t command)
     case TS_CMD_INJ6_OFF:
     case TS_CMD_INJ7_OFF:
     case TS_CMD_INJ8_OFF:
-      injectorOff(currentStatus, computeChannel(command, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
+      injectorOff(current, computeChannel(command, TS_CMD_INJ2_OFF, TS_CMD_INJ1_OFF));
       break;
 
     case TS_CMD_INJ1_PULSED:
@@ -165,7 +161,7 @@ bool handleTsCommand(uint16_t command)
     case TS_CMD_INJ6_PULSED:
     case TS_CMD_INJ7_PULSED:
     case TS_CMD_INJ8_PULSED:
-      injectorPulse(currentStatus, computeChannel(command, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
+      injectorPulse(current, computeChannel(command, TS_CMD_INJ2_PULSED, TS_CMD_INJ1_PULSED));
       break;
 
     case TS_CMD_IGN1_ON:
@@ -176,7 +172,7 @@ bool handleTsCommand(uint16_t command)
     case TS_CMD_IGN6_ON:
     case TS_CMD_IGN7_ON:
     case TS_CMD_IGN8_ON:
-      coilOn(currentStatus, computeChannel(command, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
+      coilOn(current, computeChannel(command, TS_CMD_IGN2_ON, TS_CMD_IGN1_ON));
       break;
 
     case TS_CMD_IGN1_OFF:
@@ -187,7 +183,7 @@ bool handleTsCommand(uint16_t command)
     case TS_CMD_IGN6_OFF:
     case TS_CMD_IGN7_OFF:
     case TS_CMD_IGN8_OFF:
-      coilOff(currentStatus, computeChannel(command, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
+      coilOff(current, computeChannel(command, TS_CMD_IGN2_OFF, TS_CMD_IGN1_OFF));
       break;
 
     case TS_CMD_IGN1_PULSED:
@@ -198,18 +194,18 @@ bool handleTsCommand(uint16_t command)
     case TS_CMD_IGN6_PULSED:
     case TS_CMD_IGN7_PULSED:
     case TS_CMD_IGN8_PULSED:
-      coilPulse(currentStatus, computeChannel(command, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
+      coilPulse(current, computeChannel(command, TS_CMD_IGN2_PULSED, TS_CMD_IGN1_PULSED));
       break;
 
     //VSS Calibration routines
     case TS_CMD_VSS_60KMH:
       {
-        if(configPage2.vssMode == VSS_MODE_INTERNAL_PIN)
+        if(page2.vssMode == VSS_MODE_INTERNAL_PIN)
         {
           //Calculate the ratio of VSS reading from Aux/CAN input and actual VSS (assuming that actual VSS is really 60km/h).
-          configPage2.vssPulsesPerKm = (currentStatus.canin[configPage2.vssAuxCh] / 60);
+          page2.vssPulsesPerKm = (current.canin[page2.vssAuxCh] / 60);
           savePage(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-          currentStatus.vssUiRefresh = true;
+          current.vssUiRefresh = true;
         }
         else
         {
@@ -217,9 +213,9 @@ bool handleTsCommand(uint16_t command)
           uint32_t calibrationGap = vssGetPulseGap(0);
           if( calibrationGap > 0 )
           {
-            configPage2.vssPulsesPerKm = MICROS_PER_MIN / calibrationGap;
+            page2.vssPulsesPerKm = MICROS_PER_MIN / calibrationGap;
             savePage(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
-            currentStatus.vssUiRefresh = true;
+            current.vssUiRefresh = true;
           }
         }
       }
@@ -227,27 +223,27 @@ bool handleTsCommand(uint16_t command)
 
     //Calculate the RPM to speed ratio for each gear
     case TS_CMD_VSS_RATIO1:
-      computeVssRatio(currentStatus, configPage2, &config2::vssRatio1);
+      computeVssRatio(current, page2, &config2::vssRatio1);
       break;
 
     case TS_CMD_VSS_RATIO2:
-      computeVssRatio(currentStatus, configPage2, &config2::vssRatio2);
+      computeVssRatio(current, page2, &config2::vssRatio2);
       break;
 
     case TS_CMD_VSS_RATIO3:
-      computeVssRatio(currentStatus, configPage2, &config2::vssRatio3);
+      computeVssRatio(current, page2, &config2::vssRatio3);
       break;
 
     case TS_CMD_VSS_RATIO4: 
-      computeVssRatio(currentStatus, configPage2, &config2::vssRatio4);
+      computeVssRatio(current, page2, &config2::vssRatio4);
       break;
 
     case TS_CMD_VSS_RATIO5:
-      computeVssRatio(currentStatus, configPage2, &config2::vssRatio5);
+      computeVssRatio(current, page2, &config2::vssRatio5);
       break;
 
     case TS_CMD_VSS_RATIO6:
-      computeVssRatio(currentStatus, configPage2, &config2::vssRatio6);
+      computeVssRatio(current, page2, &config2::vssRatio6);
       break;
       
 // LCOV_EXCL_START

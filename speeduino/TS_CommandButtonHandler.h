@@ -78,4 +78,4 @@ static constexpr uint16_t TS_CMD_VSS_RATIO6 = 39174U;
  * @param command One of the above commands. 
  * @return true if the command was processed, false otherwise
  */
-bool handleTsCommand(uint16_t command);
+bool handleTsCommand(uint16_t command, statuses &current, config2 &page2);
