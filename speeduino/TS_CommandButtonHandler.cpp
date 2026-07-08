@@ -14,6 +14,9 @@
 #include "scheduler_fuel_controller.h"
 #include "scheduler_ignition_controller.h"
 
+// None of the code in this file is performance critical, so optimize for size.
+#pragma GCC optimize("Os")
+
 TESTABLE_STATIC uint8_t testInjectorPulseCount = 0;
 TESTABLE_STATIC uint8_t testIgnitionPulseCount = 0;
 TESTABLE_STATIC byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
