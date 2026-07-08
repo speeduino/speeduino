@@ -7,8 +7,6 @@ void setup_oneMsInterval(void)
   initialiseTimers();
   ms_counter = 0UL;
   runSecsX10 = 0;
-  currentStatus.HWTest_INJ_Pulsed = 0;
-  currentStatus.HWTest_IGN_Pulsed = 0;
 
   // Default the global config state to "do nothing" branches inside oneMSInterval().
   configPage2.tachoDiv = 0U;

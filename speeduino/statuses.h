@@ -333,8 +333,6 @@ struct statuses {
   decoder_t decoder; ///< The current decoder
 
   uint8_t LOOP_TIMER; ///< The timer flags currently in effect
-  volatile byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
-  volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 };
 
 static inline uint8_t getTotalInjChannelCount(const statuses &current)

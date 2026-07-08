@@ -16,6 +16,8 @@
 
 TESTABLE_STATIC uint8_t testInjectorPulseCount = 0;
 TESTABLE_STATIC uint8_t testIgnitionPulseCount = 0;
+TESTABLE_STATIC byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
+TESTABLE_STATIC byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 
 static bool commandRequiresStoppedEngine(uint16_t command)
 {
@@ -31,23 +33,23 @@ static void injectorOn(const statuses &current, uint8_t injector)
   }
 }
 
-static void injectorOff(statuses &current, uint8_t injector)
+static void injectorOff(const statuses &current, uint8_t injector)
 {
   if( current.isTestModeActive )
   { 
     closeInjector(injector); 
-    BIT_CLEAR(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+    BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
   }
 }
 
-static void injectorPulse(statuses &current, uint8_t injector)
+static void injectorPulse(const statuses &current, uint8_t injector)
 {
   if( current.isTestModeActive ) 
   { 
-    BIT_SET(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+    BIT_SET(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
   }
   
-  if(!BIT_CHECK(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1))) 
+  if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1))) 
   { 
     closeInjector(injector); //Ensure this output is turned off (Otherwise the output may stay on permanently)
   }
@@ -77,22 +79,22 @@ static void coilOn(const statuses &current, uint8_t channel)
   }
 }
 
-static void coilOff(statuses &current, uint8_t channel)
+static void coilOff(const statuses &current, uint8_t channel)
 {
   if( current.isTestModeActive ) 
   {
     endCoilCharge(channel);
-    BIT_CLEAR(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+    BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
   }
 }
 
-static void coilPulse(statuses &current, uint8_t channel)
+static void coilPulse(const statuses &current, uint8_t channel)
 {
   if( current.isTestModeActive ) 
   { 
-    BIT_SET(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+    BIT_SET(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
   }
-  if(!BIT_CHECK(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1))) 
+  if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1))) 
   { 
     endCoilCharge(channel); //Ensure this output is turned off (Otherwise the output may stay on permanently)
   }
@@ -126,8 +128,8 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
       current.isTestModeActive = false;
       stopAllCoilsCharging();
       closeAllInjectors();
-      current.HWTest_INJ_Pulsed = 0;
-      current.HWTest_IGN_Pulsed = 0;
+      HWTest_INJ_Pulsed = 0;
+      HWTest_IGN_Pulsed = 0;
       break;
 
     case TS_CMD_TEST_ENBL: // cmd is enable
@@ -287,11 +289,11 @@ static uint8_t nextPulseCount(uint8_t current, uint8_t max)
   return current;
 }
 
-static void openPulsedInjectors(const statuses &current)
+static void openPulsedInjectors(void)
 {
   for (uint8_t inj=0; inj<INJ_CHANNELS; ++inj)
   {
-    if(BIT_CHECK(current.HWTest_INJ_Pulsed, inj))
+    if(BIT_CHECK(HWTest_INJ_Pulsed, inj))
     { 
       openInjector(inj+1);
     }
@@ -299,9 +301,9 @@ static void openPulsedInjectors(const statuses &current)
   testInjectorPulseCount = 0;
 }
 
-static void closePulsedInjectors(const statuses &current, const config13 &page13)
+static void closePulsedInjectors(const config13 &page13)
 {
-  if (current.HWTest_INJ_Pulsed!=0)
+  if (HWTest_INJ_Pulsed!=0)
   {
     testInjectorPulseCount = nextPulseCount(testInjectorPulseCount, page13.hwTestInjDuration);
     if (testInjectorPulseCount==0U)
@@ -311,11 +313,11 @@ static void closePulsedInjectors(const statuses &current, const config13 &page13
   }
 }
 
-static void beginChargingPulsedCoils(const statuses &current)
+static void beginChargingPulsedCoils(void)
 {
   for (uint8_t ign=0; ign<IGN_CHANNELS; ++ign)
   {
-    if(BIT_CHECK(current.HWTest_IGN_Pulsed, ign))
+    if(BIT_CHECK(HWTest_IGN_Pulsed, ign))
     { 
       beginCoilCharge(ign+1);
     }
@@ -323,9 +325,9 @@ static void beginChargingPulsedCoils(const statuses &current)
   testIgnitionPulseCount = 0;
 }
 
-static void dischargePulsedCoils(const statuses &current, const config13 &page13)
+static void dischargePulsedCoils(const config13 &page13)
 {
-  if (current.HWTest_IGN_Pulsed!=0U)
+  if (HWTest_IGN_Pulsed!=0U)
   {
     testIgnitionPulseCount = nextPulseCount(testIgnitionPulseCount, page13.hwTestIgnDuration);
     if (testIgnitionPulseCount==0U)
@@ -343,15 +345,15 @@ void pulsedCommandController(const statuses &current, const config13 &page13)
     if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_30HZ)
         && (current.RPM == 0))
     {
-      openPulsedInjectors(current);
-      beginChargingPulsedCoils(current);
+      openPulsedInjectors();
+      beginChargingPulsedCoils();
     }
 
     // Turn off any of the pulsed testing outputs if they are active and have been running for long enough
     if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1KHZ))
     {
-      closePulsedInjectors(current, page13);
-      dischargePulsedCoils(current, page13);
+      closePulsedInjectors(page13);
+      dischargePulsedCoils(page13);
     }    
   }
 }
