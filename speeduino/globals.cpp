@@ -33,9 +33,7 @@ int16_t CRANK_ANGLE_MAX_IGN = 360;
 int16_t CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the system track over. Typically 720 divided by the number of squirts per cycle (Eg 360 for wasted 2 squirt and 720 for sequential single squirt)
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
-volatile byte HWTest_INJ = 0; /**< Each bit in this variable represents one of the injector channels and it's HW test status */
 volatile byte HWTest_INJ_Pulsed = 0; /**< Each bit in this variable represents one of the injector channels and it's pulsed HW test status */
-volatile byte HWTest_IGN = 0; /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
 volatile byte HWTest_IGN_Pulsed = 0; 
 
 /// Various pin numbering (Injectors, Ign outputs, CAS, Cam, Sensors. etc.) assignments
