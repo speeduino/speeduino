@@ -17,12 +17,12 @@ static void test_pulse_emitted_at_30Hz(void)
 
   // 33 ticks reaches the 30Hz boundary which fires the openInjectorN()/beginCoilNCharge().
   // Just verify the call path runs without crashing — the line coverage is the goal.
-  HWTest_INJ_Pulsed = setBits(INJ_CHANNELS);
-  HWTest_IGN_Pulsed = setBits(IGN_CHANNELS);
+  currentStatus.HWTest_INJ_Pulsed = setBits(INJ_CHANNELS);
+  currentStatus.HWTest_IGN_Pulsed = setBits(IGN_CHANNELS);
   run_n_intervals(33);
  
-  HWTest_INJ_Pulsed = 0;
-  HWTest_IGN_Pulsed = 0;
+  currentStatus.HWTest_INJ_Pulsed = 0;
+  currentStatus.HWTest_IGN_Pulsed = 0;
   run_n_intervals(33);
  
   TEST_PASS();
@@ -45,14 +45,14 @@ static void test_auto_close_inj(void)
 
   // Once testInjectorPulseCount reaches hwTestInjDuration the close path runs and
   // testInjectorPulseCount resets to 0. Run > duration and verify the counter wraps.
-  HWTest_INJ_Pulsed = setBits(INJ_CHANNELS);
+  currentStatus.HWTest_INJ_Pulsed = setBits(INJ_CHANNELS);
   assert_inj_pulses();
 
-  HWTest_INJ_Pulsed = 0b00000001;
+  currentStatus.HWTest_INJ_Pulsed = 0b00000001;
   assert_inj_pulses();
 
-  HWTest_INJ_Pulsed = 0;
-  BIT_SET(HWTest_INJ_Pulsed, INJ_CHANNELS-1);
+  currentStatus.HWTest_INJ_Pulsed = 0;
+  BIT_SET(currentStatus.HWTest_INJ_Pulsed, INJ_CHANNELS-1);
   assert_inj_pulses();  
 }
 
@@ -71,14 +71,14 @@ static void test_auto_end_ign(void)
   currentStatus.RPM = 0U;
   configPage13.hwTestIgnDuration = 2U;
 
-  HWTest_IGN_Pulsed = setBits(IGN_CHANNELS);
+  currentStatus.HWTest_IGN_Pulsed = setBits(IGN_CHANNELS);
   assert_ign_pulses();
 
-  HWTest_IGN_Pulsed = 0b00000001;
+  currentStatus.HWTest_IGN_Pulsed = 0b00000001;
   assert_ign_pulses();
 
-  HWTest_IGN_Pulsed = 0;
-  BIT_SET(HWTest_IGN_Pulsed, IGN_CHANNELS-1);
+  currentStatus.HWTest_IGN_Pulsed = 0;
+  BIT_SET(currentStatus.HWTest_IGN_Pulsed, IGN_CHANNELS-1);
   assert_ign_pulses();
 }
 
@@ -87,7 +87,7 @@ static void test_skipped_when_rpm_nonzero(void)
   setup_oneMsInterval();
   currentStatus.isTestModeActive = true;
   currentStatus.RPM = 1000U;             // Engine spinning -> the 30Hz test pulse
-  BIT_SET(HWTest_INJ_Pulsed, INJ1_CMD_BIT);
+  BIT_SET(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT);
   configPage13.hwTestInjDuration = 5U;
 
   // Even with isTestModeActive, RPM != 0 means the 30Hz openInjector branch is

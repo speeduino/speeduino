@@ -170,25 +170,25 @@ void oneMSInterval(void)
     if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
     {
       //Check for pulsed injector output test
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
+      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
       testInjectorPulseCount = 0;
 
       //Check for pulsed ignition output test
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
+      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
       testIgnitionPulseCount = 0;
     }
 
@@ -312,18 +312,18 @@ void oneMSInterval(void)
   if( currentStatus.isTestModeActive )
   {
     //Check for pulsed injector output test
-    if( (HWTest_INJ_Pulsed > 0)  )
+    if( (currentStatus.HWTest_INJ_Pulsed > 0)  )
     {
       if(testInjectorPulseCount >= configPage13.hwTestInjDuration)
       {
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector1(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector2(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector3(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector4(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector5(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector6(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector7(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector8(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector1(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector2(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector3(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector4(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector5(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector6(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector7(); }
+        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector8(); }
         
         testInjectorPulseCount = 0;
       }
@@ -332,18 +332,18 @@ void oneMSInterval(void)
     
 
     //Check for pulsed ignition output test
-    if( (HWTest_IGN_Pulsed > 0) )
+    if( (currentStatus.HWTest_IGN_Pulsed > 0) )
     {
       if(testIgnitionPulseCount >= configPage13.hwTestIgnDuration)
       {
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoil1Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoil2Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoil3Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoil4Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoil5Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoil6Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoil7Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoil8Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoil1Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoil2Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoil3Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoil4Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoil5Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoil6Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoil7Charge(); }
+        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoil8Charge(); }
 
         testIgnitionPulseCount = 0;
       }

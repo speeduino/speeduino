@@ -32,23 +32,23 @@ static void injectorOn(const statuses &current, uint8_t injector)
   }
 }
 
-static void injectorOff(const statuses &current, uint8_t injector)
+static void injectorOff(statuses &current, uint8_t injector)
 {
   if( current.isTestModeActive )
   { 
     closeInjector(injector); 
-    BIT_CLEAR(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+    BIT_CLEAR(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
   }
 }
 
-static void injectorPulse(const statuses &current, uint8_t injector)
+static void injectorPulse(statuses &current, uint8_t injector)
 {
   if( current.isTestModeActive ) 
   { 
-    BIT_SET(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
+    BIT_SET(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1)); 
   }
   
-  if(!BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1))) 
+  if(!BIT_CHECK(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT+(injector-1))) 
   { 
     closeInjector(injector); //Ensure this output is turned off (Otherwise the output may stay on permanently)
   }
@@ -78,22 +78,22 @@ static void coilOn(const statuses &current, uint8_t channel)
   }
 }
 
-static void coilOff(const statuses &current, uint8_t channel)
+static void coilOff(statuses &current, uint8_t channel)
 {
   if( current.isTestModeActive ) 
   {
     endCoilCharge(channel);
-    BIT_CLEAR(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+    BIT_CLEAR(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
   }
 }
 
-static void coilPulse(const statuses &current, uint8_t channel)
+static void coilPulse(statuses &current, uint8_t channel)
 {
   if( current.isTestModeActive ) 
   { 
-    BIT_SET(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
+    BIT_SET(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1)); 
   }
-  if(!BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1))) 
+  if(!BIT_CHECK(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT+(channel-1))) 
   { 
     endCoilCharge(channel); //Ensure this output is turned off (Otherwise the output may stay on permanently)
   }
@@ -127,8 +127,8 @@ bool TS_CommandButtonsHandler(uint16_t buttonCommand)
       currentStatus.isTestModeActive = false;
       stopAllCoilsCharging();
       closeAllInjectors();
-      HWTest_INJ_Pulsed = 0;
-      HWTest_IGN_Pulsed = 0;
+      currentStatus.HWTest_INJ_Pulsed = 0;
+      currentStatus.HWTest_IGN_Pulsed = 0;
       break;
 
     case TS_CMD_TEST_ENBL: // cmd is enable
