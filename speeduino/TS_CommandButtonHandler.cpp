@@ -17,6 +17,62 @@
 // None of the code in this file is performance critical, so optimize for size.
 #pragma GCC optimize("Os")
 
+// Code below relies on these
+static_assert(TS_CMD_VSS_RATIO2==TS_CMD_VSS_RATIO1+1, "");
+static_assert(TS_CMD_VSS_RATIO3==TS_CMD_VSS_RATIO2+1, "");
+static_assert(TS_CMD_VSS_RATIO4==TS_CMD_VSS_RATIO3+1, "");
+static_assert(TS_CMD_VSS_RATIO5==TS_CMD_VSS_RATIO4+1, "");
+static_assert(TS_CMD_VSS_RATIO6==TS_CMD_VSS_RATIO5+1, "");
+static_assert(TS_CMD_VSS_RATIO6==TS_CMD_VSS_RATIO5+1, "");
+
+static_assert(TS_CMD_INJ2_ON-TS_CMD_INJ1_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+static_assert(TS_CMD_INJ3_ON-TS_CMD_INJ2_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+static_assert(TS_CMD_INJ4_ON-TS_CMD_INJ3_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+static_assert(TS_CMD_INJ5_ON-TS_CMD_INJ4_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+static_assert(TS_CMD_INJ6_ON-TS_CMD_INJ5_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+static_assert(TS_CMD_INJ7_ON-TS_CMD_INJ6_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+static_assert(TS_CMD_INJ8_ON-TS_CMD_INJ7_ON==TS_CMD_INJ3_ON-TS_CMD_INJ2_ON, "");
+
+static_assert(TS_CMD_INJ2_OFF-TS_CMD_INJ1_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+static_assert(TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+static_assert(TS_CMD_INJ4_OFF-TS_CMD_INJ3_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+static_assert(TS_CMD_INJ5_OFF-TS_CMD_INJ4_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+static_assert(TS_CMD_INJ6_OFF-TS_CMD_INJ5_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+static_assert(TS_CMD_INJ7_OFF-TS_CMD_INJ6_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+static_assert(TS_CMD_INJ8_OFF-TS_CMD_INJ7_OFF==TS_CMD_INJ3_OFF-TS_CMD_INJ2_OFF, "");
+
+static_assert(TS_CMD_INJ2_PULSED-TS_CMD_INJ1_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+static_assert(TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+static_assert(TS_CMD_INJ4_PULSED-TS_CMD_INJ3_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+static_assert(TS_CMD_INJ5_PULSED-TS_CMD_INJ4_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+static_assert(TS_CMD_INJ6_PULSED-TS_CMD_INJ5_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+static_assert(TS_CMD_INJ7_PULSED-TS_CMD_INJ6_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+static_assert(TS_CMD_INJ8_PULSED-TS_CMD_INJ7_PULSED==TS_CMD_INJ3_PULSED-TS_CMD_INJ2_PULSED, "");
+
+static_assert(TS_CMD_IGN2_ON-TS_CMD_IGN1_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+static_assert(TS_CMD_IGN3_ON-TS_CMD_IGN2_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+static_assert(TS_CMD_IGN4_ON-TS_CMD_IGN3_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+static_assert(TS_CMD_IGN5_ON-TS_CMD_IGN4_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+static_assert(TS_CMD_IGN6_ON-TS_CMD_IGN5_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+static_assert(TS_CMD_IGN7_ON-TS_CMD_IGN6_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+static_assert(TS_CMD_IGN8_ON-TS_CMD_IGN7_ON==TS_CMD_IGN3_ON-TS_CMD_IGN2_ON, "");
+
+static_assert(TS_CMD_IGN2_OFF-TS_CMD_IGN1_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+static_assert(TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+static_assert(TS_CMD_IGN4_OFF-TS_CMD_IGN3_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+static_assert(TS_CMD_IGN5_OFF-TS_CMD_IGN4_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+static_assert(TS_CMD_IGN6_OFF-TS_CMD_IGN5_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+static_assert(TS_CMD_IGN7_OFF-TS_CMD_IGN6_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+static_assert(TS_CMD_IGN8_OFF-TS_CMD_IGN7_OFF==TS_CMD_IGN3_OFF-TS_CMD_IGN2_OFF, "");
+
+static_assert(TS_CMD_IGN2_PULSED-TS_CMD_IGN1_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+static_assert(TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+static_assert(TS_CMD_IGN4_PULSED-TS_CMD_IGN3_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+static_assert(TS_CMD_IGN5_PULSED-TS_CMD_IGN4_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+static_assert(TS_CMD_IGN6_PULSED-TS_CMD_IGN5_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+static_assert(TS_CMD_IGN7_PULSED-TS_CMD_IGN6_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+static_assert(TS_CMD_IGN8_PULSED-TS_CMD_IGN7_PULSED==TS_CMD_IGN3_PULSED-TS_CMD_IGN2_PULSED, "");
+
 TESTABLE_STATIC uint8_t testInjectorPulseCount = 0;
 TESTABLE_STATIC uint8_t testIgnitionPulseCount = 0;
 TESTABLE_STATIC byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
@@ -233,29 +289,14 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
 
     //Calculate the RPM to speed ratio for each gear
     case TS_CMD_VSS_RATIO1:
-      computeVssRatio(current, page2, 0);
-      break;
-
     case TS_CMD_VSS_RATIO2:
-      computeVssRatio(current, page2, 1);
-      break;
-
     case TS_CMD_VSS_RATIO3:
-      computeVssRatio(current, page2, 2);
-      break;
-
-    case TS_CMD_VSS_RATIO4: 
-      computeVssRatio(current, page2, 3);
-      break;
-
+    case TS_CMD_VSS_RATIO4:
     case TS_CMD_VSS_RATIO5:
-      computeVssRatio(current, page2, 4);
+    case TS_CMD_VSS_RATIO6:
+      computeVssRatio(current, page2, command-TS_CMD_VSS_RATIO1);
       break;
 
-    case TS_CMD_VSS_RATIO6:
-      computeVssRatio(current, page2, 5);
-      break;
-      
 // LCOV_EXCL_START
     //STM32 Commands
     case TS_CMD_STM32_REBOOT: //
