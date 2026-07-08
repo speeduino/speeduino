@@ -169,7 +169,7 @@ static void computeVssRatio(statuses &current, config2 &page2, uint8_t ratioInde
   }
 }
 
-static uint16_t calcPulsesPerKm(const statuses &current, const config2 &page2)
+TESTABLE_STATIC uint16_t calcPulsesPerKm(const statuses &current, const config2 &page2, uint32_t (*pGetGap)(byte))
 {
   if(page2.vssMode == VSS_MODE_INTERNAL_PIN)
   {
@@ -178,7 +178,7 @@ static uint16_t calcPulsesPerKm(const statuses &current, const config2 &page2)
   }
 
   //Calibrate the actual pulses per distance
-  uint32_t calibrationGap = vssGetPulseGap(0);
+  uint32_t calibrationGap = pGetGap(0);
   if( calibrationGap > 0 )
   {
     return MICROS_PER_MIN / calibrationGap;
@@ -282,7 +282,7 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
 
     //VSS Calibration routines
     case TS_CMD_VSS_60KMH:
-      page2.vssPulsesPerKm = calcPulsesPerKm(current, page2);
+      page2.vssPulsesPerKm = calcPulsesPerKm(current, page2, vssGetPulseGap);
       savePage(veSetPage); // Need to manually save the new config value as it will not trigger a burn in tunerStudio due to use of ControllerPriority
       current.vssUiRefresh = true;
       break;

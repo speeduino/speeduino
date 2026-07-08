@@ -7,6 +7,12 @@
 
 extern byte HWTest_INJ_Pulsed;
 extern byte HWTest_IGN_Pulsed;
+extern uint16_t calcPulsesPerKm(const statuses &current, const config2 &page2, uint32_t (*pGetGap)(byte));
+
+static uint32_t fakeVssPulseGap(byte)
+{
+    return 1000000U;
+}
 
 struct test_context_t
 {
@@ -144,6 +150,35 @@ static void test_handler_vss_ratio5_no_vss_no_change(void)
 static void test_handler_vss_ratio6_no_vss_no_change(void)
 {
     test_handler_vss_ratio_no_vss_no_change(TS_CMD_VSS_RATIO6, 5);
+}
+
+static void test_calc_pulses_per_km_internal_pin(void)
+{
+    test_context_t context;
+    context.page2.vssMode = VSS_MODE_INTERNAL_PIN;
+    context.page2.vssAuxCh = 2U;
+    context.current.canin[2U] = 360U;
+
+    TEST_ASSERT_EQUAL_UINT16(6U, calcPulsesPerKm(context.current, context.page2, fakeVssPulseGap));
+}
+
+static void test_calc_pulses_per_km_uses_calibration_gap(void)
+{
+    test_context_t context;
+    context.page2.vssMode = VSS_MODE_EXTERNAL_KM;
+    context.page2.vssPulsesPerKm = 1234U;
+
+    TEST_ASSERT_EQUAL_UINT16(MICROS_PER_MIN / 1000000U,
+                             calcPulsesPerKm(context.current, context.page2, fakeVssPulseGap));
+}
+
+static void test_calc_pulses_per_km_falls_back_to_config_value(void)
+{
+    test_context_t context;
+    context.page2.vssMode = VSS_MODE_EXTERNAL_KM;
+    context.page2.vssPulsesPerKm = 1234U;
+
+    TEST_ASSERT_EQUAL_UINT16(1234U, calcPulsesPerKm(context.current, context.page2, [](byte) -> uint32_t { return 0U; }));
 }
 
 static void test_vss_60km_internal_pin(void)
@@ -464,6 +499,9 @@ void testTSCommandHandler(void)
     RUN_TEST(test_handler_vss_ratio4_no_vss_no_change);
     RUN_TEST(test_handler_vss_ratio5_no_vss_no_change);
     RUN_TEST(test_handler_vss_ratio6_no_vss_no_change);
+    RUN_TEST(test_calc_pulses_per_km_internal_pin);
+    RUN_TEST(test_calc_pulses_per_km_uses_calibration_gap);
+    RUN_TEST(test_calc_pulses_per_km_falls_back_to_config_value);
     RUN_TEST(test_vss_60km_internal_pin);
     RUN_TEST(test_vss_60km_external);
 
