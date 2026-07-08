@@ -14,6 +14,9 @@
 #include "scheduler_fuel_controller.h"
 #include "scheduler_ignition_controller.h"
 
+TESTABLE_STATIC uint8_t testInjectorPulseCount = 0;
+TESTABLE_STATIC uint8_t testIgnitionPulseCount = 0;
+
 static bool commandRequiresStoppedEngine(uint16_t command)
 {
   return ((command >= TS_CMD_INJ1_ON) && (command <= TS_CMD_IGN8_PULSED)) 
@@ -269,4 +272,71 @@ bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
   }
 
   return true;
+}
+
+void pulsedCommandController(const statuses &current, const config13 &page13)
+{
+  if( current.isTestModeActive )
+  {
+    // Turn off any of the pulsed testing outputs if they are active and have been running for long enough
+    if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1KHZ))
+    {
+      //Check for pulsed injector output test
+      if (current.HWTest_INJ_Pulsed!=0)
+      {
+        if(testInjectorPulseCount >= page13.hwTestInjDuration)
+        {
+          closeAllInjectors();
+          testInjectorPulseCount = 0;
+        }
+        else 
+        { 
+          ++testInjectorPulseCount;
+        }
+      }
+
+      //Check for pulsed ignition output test
+      if (current.HWTest_IGN_Pulsed!=0U)
+      {
+        if(testIgnitionPulseCount >= page13.hwTestIgnDuration)
+        {
+          stopAllCoilsCharging();
+          testIgnitionPulseCount = 0;
+        }
+        else 
+        { 
+          ++testIgnitionPulseCount;
+        }
+      }
+    }    
+
+    //Pulse fuel and ignition test outputs are set at 30Hz
+    if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_30HZ))
+    {
+      if( (current.isTestModeActive) && (current.RPM == 0) )
+      {
+        //Check for pulsed injector output test
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
+        if(BIT_CHECK(current.HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
+        testInjectorPulseCount = 0;
+
+        //Check for pulsed ignition output test
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
+        if(BIT_CHECK(current.HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
+        testIgnitionPulseCount = 0;
+      }
+    }
+  }
 }

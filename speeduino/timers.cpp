@@ -36,8 +36,6 @@ TESTABLE_STATIC volatile uint8_t tachoEndTime; //The time (in ms) that the tacho
 volatile TachoOutputStatus tachoOutputFlag;
 volatile uint16_t tachoSweepIncr;
 TESTABLE_STATIC volatile uint16_t tachoSweepAccum;
-TESTABLE_STATIC volatile uint8_t testInjectorPulseCount = 0;
-TESTABLE_STATIC volatile uint8_t testIgnitionPulseCount = 0;
 
 void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
@@ -165,33 +163,6 @@ void oneMSInterval(void)
   if (loop33ms == 33)
   {
     loop33ms = 0;
-
-    //Pulse fuel and ignition test outputs are set at 30Hz
-    if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
-    {
-      //Check for pulsed injector output test
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
-      if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
-      testInjectorPulseCount = 0;
-
-      //Check for pulsed ignition output test
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
-      if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
-      testIgnitionPulseCount = 0;
-    }
-
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
 
@@ -307,51 +278,6 @@ void oneMSInterval(void)
       currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
   }
-
-  //Turn off any of the pulsed testing outputs if they are active and have been running for long enough
-  if( currentStatus.isTestModeActive )
-  {
-    //Check for pulsed injector output test
-    if( (currentStatus.HWTest_INJ_Pulsed > 0)  )
-    {
-      if(testInjectorPulseCount >= configPage13.hwTestInjDuration)
-      {
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector1(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector2(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector3(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector4(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector5(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector6(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector7(); }
-        if(BIT_CHECK(currentStatus.HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector8(); }
-        
-        testInjectorPulseCount = 0;
-      }
-      else { testInjectorPulseCount++; }
-    }
-    
-
-    //Check for pulsed ignition output test
-    if( (currentStatus.HWTest_IGN_Pulsed > 0) )
-    {
-      if(testIgnitionPulseCount >= configPage13.hwTestIgnDuration)
-      {
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoil1Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoil2Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoil3Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoil4Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoil5Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoil6Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoil7Charge(); }
-        if(BIT_CHECK(currentStatus.HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoil8Charge(); }
-
-        testIgnitionPulseCount = 0;
-      }
-      else { testIgnitionPulseCount++; }
-    }
-    
-  }
-
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms
