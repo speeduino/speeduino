@@ -195,9 +195,13 @@ static void test_vss_60km_internal_pin(void)
 
 static void test_vss_60km_external(void)
 {
-    vssPulse();
-    delay(1);
-    vssPulse();
+    for (uint8_t i=0; i<VSS_SAMPLES; ++i)
+    {
+        // Semi-random delay. This should help vssPulse() capture realistic times
+        delayMicroseconds(3333UL+(i*1000UL));
+        vssPulse();
+    }
+    
     test_context_t context;
     context.page2.vssMode = VSS_MODE_EXTERNAL_KM;
     context.page2.vssPulsesPerKm = 0;
