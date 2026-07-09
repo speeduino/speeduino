@@ -4,15 +4,15 @@
  * The command handler manages all the inputs FROM TS which are issued when a command button is clicked by the user
  */
 
-#include "TS_CommandButtonHandler.h"
-#include "sensors.h"
-#include "storage.h"
-#include "SD_logger.h"
-#include "pages.h"
-#include "scheduledIO_ign.h"
-#include "scheduledIO_inj.h"
-#include "scheduler_fuel_controller.h"
-#include "scheduler_ignition_controller.h"
+#include "tsCommandController.h"
+#include "../../../sensors.h"
+#include "../../../storage.h"
+#include "../../../SD_logger.h"
+#include "../../../pages.h"
+#include "../../../scheduledIO_ign.h"
+#include "../../../scheduledIO_inj.h"
+#include "../../../scheduler_fuel_controller.h"
+#include "../../../scheduler_ignition_controller.h"
 
 // None of the code in this file is performance critical, so optimize for size.
 #pragma GCC optimize("Os")

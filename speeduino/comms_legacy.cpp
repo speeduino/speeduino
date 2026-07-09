@@ -14,7 +14,7 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "preprocessor.h"
 #include "decoders.h"
-#include "TS_CommandButtonHandler.h"
+#include "src/controllers/tsCommand/tsCommandController.h"
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"

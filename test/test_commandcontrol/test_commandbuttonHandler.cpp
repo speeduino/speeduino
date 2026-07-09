@@ -1,7 +1,7 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "sensors.h"
-#include "TS_CommandButtonHandler.h"
+#include "src/controllers/tsCommand/tsCommandController.h"
 #include "scheduledIO_direct_inj.h"
 #include "scheduledIO_direct_ign.h"
 

@@ -1,7 +1,7 @@
 
 #include "../test_utils.h"
 #include "sensors.h"
-#include "TS_CommandButtonHandler.h"
+#include "src/controllers/tsCommand/tsCommandController.h"
 
 extern uint8_t testInjectorPulseCount;
 extern uint8_t testIgnitionPulseCount;
