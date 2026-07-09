@@ -14,6 +14,5 @@ void statuses::setRpm(uint16_t rpm)
   {
     this->RPM = rpm;
     this->RPMdiv100 = div100(rpm);
-    this->longRPM = rpm;
   }
 }

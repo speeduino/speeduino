@@ -70,9 +70,8 @@ struct statuses {
     
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
-  long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
   uint16_t baroADC;
-  long MAP;     ///< Manifold absolute pressure. Has to be a long for PID calcs (Boost control)
+  uint16_t MAP;     ///< Manifold absolute pressure.
   uint16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
   uint8_t baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   uint8_t TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
@@ -221,9 +220,9 @@ struct statuses {
   volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
-  int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt1TargetAngle;
-  long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
+  int16_t vvt1Angle; 
+  uint8_t vvt1TargetAngle;
+  uint8_t vvt1Duty; 
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -273,9 +272,9 @@ struct statuses {
 
   byte fanDuty;
   byte wmiPW;
-  int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt2TargetAngle;
-  long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
+  int16_t vvt2Angle; 
+  uint8_t vvt2TargetAngle;
+  uint8_t vvt2Duty; 
   byte outputsStatus;
 
   // SD card status fields.
