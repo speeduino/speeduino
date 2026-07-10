@@ -240,7 +240,7 @@ static inline uint8_t checkForStepping(void)
       timeCheck = iacCoolTime_uS;
     }
 
-    if(micros() > (idleStepper.stepStartTime + timeCheck) )
+    if( (micros() - idleStepper.stepStartTime) > timeCheck )
     {         
       if(idleStepper.stepperStatus == STEPPING)
       {
