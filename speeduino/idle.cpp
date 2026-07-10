@@ -609,7 +609,7 @@ void idleControl(void)
         {
           //Currently cranking. Use the cranking table
           idleStepper.targetIdleStep = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
-          if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
+          //Note: Idle Up amount is added to targetIdleStep after this if/else block, common to all engine states. Adding it here as well would apply it twice.
 
           //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
           if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
