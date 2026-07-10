@@ -416,7 +416,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
 {
   matchIgnitionSchedulersToSyncState(page2, page4, current);
 
-  uint16_t dwellAngle = timeToAngleDegPerMicroSec(current.dwell);
+  uint16_t dwellAngle = timeToAngle(current.dwell);
 
   if((current.maxIgnOutputs==4U) && (page4.sparkMode == IGN_MODE_ROTARY))
   {
@@ -435,7 +435,7 @@ END_LTO_INLINE()
 TESTABLE_INLINE_STATIC void setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
   // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
-  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
+  setSchedule(schedule, delay, duration, angleToTime((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
 }
 
 static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellDuration, byte channelMask, uint8_t channelIdx)

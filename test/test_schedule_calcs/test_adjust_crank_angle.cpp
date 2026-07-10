@@ -57,7 +57,7 @@ void test_adjust_crank_angle_pending_above_minrevolutions()
 
   adjustCrankAngle(subject.schedule, newCrankAngle);
   TEST_ASSERT_EQUAL(101, subject.schedule._counter);
-  TEST_ASSERT_EQUAL(subject.schedule._counter+uS_TO_TIMER_COMPARE(angleToTimeMicroSecPerDegree(chargeAngle-newCrankAngle)), subject.schedule._compare);
+  TEST_ASSERT_EQUAL(subject.schedule._counter+uS_TO_TIMER_COMPARE(angleToTime(chargeAngle-newCrankAngle)), subject.schedule._compare);
 }
 
 void test_adjust_crank_angle_pending_above_minrevolutions_negative_angle()
@@ -86,7 +86,7 @@ void test_adjust_crank_angle_running()
 
   adjustCrankAngle(subject.schedule, newCrankAngle);
   TEST_ASSERT_EQUAL(101, subject.schedule._counter);
-  TEST_ASSERT_EQUAL(subject.schedule._counter+uS_TO_TIMER_COMPARE(angleToTimeMicroSecPerDegree(chargeAngle-newCrankAngle)), subject.schedule._compare);
+  TEST_ASSERT_EQUAL(subject.schedule._counter+uS_TO_TIMER_COMPARE(angleToTime(chargeAngle-newCrankAngle)), subject.schedule._compare);
 }
 
 void test_adjust_crank_angle_running_negative_angle()

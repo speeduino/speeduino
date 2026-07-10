@@ -44,7 +44,7 @@ static inline uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *p
   // 1% of a revolution at max RPM should be plenty accurate.
   constexpr int16_t PW_DELTA_THRESHOLD = MIN_REVOLUTION_TIME/100U; // in µS
   if (abs((int16_t)pCache->pw-(int16_t)pw)>PW_DELTA_THRESHOLD) {
-    pCache->pwDegrees = timeToAngleDegPerMicroSec(pw);
+    pCache->pwDegrees = timeToAngle(pw);
     pCache->pw = pw;
   }
   return pCache->pwDegrees;
@@ -56,7 +56,7 @@ static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uin
     while(delta < 0) { delta += (int16_t)maxAngle; }
   } 
 
-  return delta > 0 ? angleToTimeMicroSecPerDegree((uint16_t)delta) : 0U;
+  return delta > 0 ? angleToTime((uint16_t)delta) : 0U;
 }
 
 static FORCE_INLINE uint16_t _adjustToTDC(int16_t angle, uint16_t angleOffset, uint16_t maxAngle) {
@@ -105,7 +105,7 @@ static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, in
       return 0U;
     }
   }
-  return angleToTimeMicroSecPerDegree((uint16_t)delta);
+  return angleToTime((uint16_t)delta);
 }
 
 static inline int16_t _calculateSparkAngle(const IgnitionSchedule &schedule, int8_t advance) {

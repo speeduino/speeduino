@@ -83,7 +83,7 @@ void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept;
  * @param angle Angle in degrees
  * @return Time interval in uS
  */
-uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) noexcept;
+uint32_t angleToTime(uint16_t angle) noexcept;
 
 /**
  * @brief Converts angular degrees to the equivalent timer ticks at current RPM.
@@ -97,11 +97,11 @@ COMPARE_TYPE angleToTimerTicks(uint16_t angle) noexcept;
  * @brief Converts a time interval in microsecods to the equivalent degrees of angular (crank)
  * rotation at current RPM.
  *
- * Inverse of angleToTimeMicroSecPerDegree
+ * Inverse of angleToTime
  *
  * @param time Time interval in uS
  * @return Angle in degrees
  */
-uint16_t timeToAngleDegPerMicroSec(uint32_t time) noexcept;
+uint16_t timeToAngle(uint32_t time) noexcept;
 
 #endif

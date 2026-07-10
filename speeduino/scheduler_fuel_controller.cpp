@@ -214,7 +214,7 @@ TESTABLE_INLINE_STATIC void setFuelChannelSchedule(FuelSchedule &schedule, uint8
     if (timeOut>0U)
     {
       // Only queue up the next schedule if the maximum time between squirts (Based on CRANK_ANGLE_MAX_INJ) is less than the max timer period
-      setSchedule(schedule, timeOut, schedule.pw, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
+      setSchedule(schedule, timeOut, schedule.pw, angleToTime((uint16_t)CRANK_ANGLE_MAX_INJ) < MAX_TIMER_PERIOD);
     }
   }
 }
