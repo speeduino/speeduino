@@ -30,7 +30,7 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
     schedule.pw = parameters.pw;
 
     schedule._status = PENDING;
-    uint16_t openAngle = _calculateOpenAngle(schedule, timeToAngleDegPerMicroSec(parameters.pw), injAngle);
+    uint16_t openAngle = _calculateOpenAngle(schedule, timeToAngle(parameters.pw), injAngle);
     sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, openAngle);
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, parameters.crankAngle, openAngle), msg);
     
