@@ -5,26 +5,8 @@
 #include "scheduledIO_direct_inj.h"
 #include "scheduledIO_direct_ign.h"
 
-static void ensure_io_initialised(void)
-{
-  // Cases like TS_CMD_TEST_DSBL or TS_CMD_INJ1_OFF call closeInjectorN()/endCoilN()
-  // unconditionally, which dereferences the static port pointers inside
-  // fastOutputPin_t. Those must be wired to real pins (any free pin numbers
-  // will do under ArduinoFake) before driving the handler. Array size tracks
-  // INJ_CHANNELS / IGN_CHANNELS so the test compiles on AVR (4/5) and native (8/8).
-  uint8_t inj_pins[INJ_CHANNELS];
-  uint8_t ign_pins[IGN_CHANNELS];
-  for (uint8_t i = 0U; i < (uint8_t)INJ_CHANNELS; ++i) { inj_pins[i] = (uint8_t)(50U + i); }
-  for (uint8_t i = 0U; i < (uint8_t)IGN_CHANNELS; ++i) { ign_pins[i] = (uint8_t)(60U + i); }
-  initInjDirectIO(inj_pins);
-  config4 page4 = {};
-  page4.IgInv = GOING_HIGH;
-  initIgnDirectIO(page4, ign_pins);
-}
-
 static void reset_test_mode_state(void)
 {
-  ensure_io_initialised();
   currentStatus.RPM = 0U;
   currentStatus.isTestModeActive = false;
   HWTest_INJ_Pulsed = 0U;
