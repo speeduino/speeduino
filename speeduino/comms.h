@@ -37,9 +37,9 @@ bool isRxTimeout(void);
  * Serial comms can send data quicker than we can write it to permanent storage.
  * This is used to manually throttle the writes so that we don't stall the main loop. 
  * 
- * @param time Absolute time in µS 
+ * @param delay_uS How long from now (in µS) before storage writes can resume
  */
-void setStorageWriteTimeout(uint32_t time);
+void setStorageWriteTimeout(uint32_t delay_uS);
 
 /** @brief Test if the timeout set by @ref setStorageWriteTimeout has expired */
 bool storageWriteTimeoutExpired(void);

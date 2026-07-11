@@ -5,6 +5,7 @@ A full copy of the license may be found in the projects root directory
 */
 #include <Arduino.h>
 #include "idle.h"
+#include "elapsed_time.h"
 #include "maths.h"
 #include "timers.h"
 #include "preprocessor.h"
@@ -240,7 +241,7 @@ static inline uint8_t checkForStepping(void)
       timeCheck = iacCoolTime_uS;
     }
 
-    if( (micros() - idleStepper.stepStartTime) > timeCheck )
+    if( hasIntervalElapsed(micros(), idleStepper.stepStartTime, timeCheck) )
     {         
       if(idleStepper.stepperStatus == STEPPING)
       {

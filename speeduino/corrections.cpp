@@ -25,6 +25,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 
 #include "globals.h"
 #include "corrections.h"
+#include "elapsed_time.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
@@ -313,13 +314,13 @@ static inline uint16_t calcDeccelEnrichment(void) {
 }
 
 static inline bool aeTimeoutExpired(void) {
-  return micros() >= currentStatus.AEEndTime;
+  // aeTime is stored as mS / 10, so multiply it by 10000 to get it in uS
+  return hasIntervalElapsed(micros(), currentStatus.AEStartTime, TIME_TENTH_MILLIS.toUser(configPage2.aeTime));
 }
 
-//Set the time in the future where the enrichment will be turned off. 
+//Record when the enrichment started: it will be turned off once aeTime has elapsed.
 static inline void updateAeTimeout(void) {
-  // taeTime is stored as mS / 10, so multiply it by 10000 to get it in uS
-  currentStatus.AEEndTime = micros() + TIME_TENTH_MILLIS.toUser(configPage2.aeTime); 
+  currentStatus.AEStartTime = micros();
 }
 
 using aeTimeoutExpiredCallback_t = void (*)(void);

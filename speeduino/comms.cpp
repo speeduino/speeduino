@@ -9,6 +9,7 @@ A full copy of the license may be found in the projects root directory
 #include "globals.h"
 #include "comms.h"
 #include "comms_secondary.h"
+#include "elapsed_time.h"
 #include "storage.h"
 #include "maths.h"
 #include "decoders.h"
@@ -103,7 +104,8 @@ static uint32_t SDreadCompletedSectors = 0;
 static uint8_t serialPayload[TS_SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 Stream* pPrimarySerial;
-static uint32_t deferEEPROMWritesUntil = 0; //!< Point in time that we can resume writing pages
+static uint32_t deferEEPROMWritesStart = 0; //!< Time (µS) at which the current EEPROM write deferral began
+static uint32_t deferEEPROMWritesDelay = 0; //!< How long (µS) after deferEEPROMWritesStart before page writing can resume
 static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
 
 #if defined(CORE_AVR)
@@ -327,7 +329,7 @@ static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffe
     {
       setPageValue(pageNum, (offset + i), buffer[i]);
     }
-    setStorageWriteTimeout(micros() + EEPROM_DEFER_DELAY);
+    setStorageWriteTimeout(EEPROM_DEFER_DELAY);
     return true;
   }
 
@@ -612,7 +614,7 @@ void processSerialCommand(void)
 
     case 'B': // Same as above, but for the comms compat mode. Slows down the burn rate and increases the defer time
       currentStatus.commCompat = true; //Force the compat mode
-      setStorageWriteTimeout(deferEEPROMWritesUntil + (EEPROM_DEFER_DELAY/4U)); //Add 25% more to the EEPROM defer time
+      deferEEPROMWritesDelay += EEPROM_DEFER_DELAY/4U; //Add 25% more to the EEPROM defer time
       burnSinglePage(serialPayload[2]);      
       sendReturnCodeMsg(SERIAL_RC_BURN_OK);
       break;
@@ -1188,12 +1190,13 @@ void sendCompositeLog(void)
   (void)serialWrite(CRC32_val);
 }
 
-void setStorageWriteTimeout(uint32_t time) {
-  deferEEPROMWritesUntil = time;
+void setStorageWriteTimeout(uint32_t delay_uS) {
+  deferEEPROMWritesStart = micros();
+  deferEEPROMWritesDelay = delay_uS;
 }
 
 bool storageWriteTimeoutExpired(void) {
-  return micros() > deferEEPROMWritesUntil;
+  return hasIntervalElapsed(micros(), deferEEPROMWritesStart, deferEEPROMWritesDelay);
 }
 
 #if defined(CORE_AVR)
