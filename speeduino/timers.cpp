@@ -25,20 +25,20 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "src/pins/outputPin.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
 
-volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
-volatile byte loop5ms;
-volatile byte loop20ms;
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+TESTABLE_STATIC volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+TESTABLE_STATIC volatile byte loop5ms;
+TESTABLE_STATIC volatile byte loop20ms;
+TESTABLE_STATIC volatile byte loop33ms;
+TESTABLE_STATIC volatile byte loop66ms;
+TESTABLE_STATIC volatile byte loop100ms;
+TESTABLE_STATIC volatile byte loop250ms;
+TESTABLE_STATIC volatile int loopSec;
+TESTABLE_STATIC volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 volatile uint16_t tachoSweepIncr;
-volatile uint16_t tachoSweepAccum;
-volatile uint8_t testInjectorPulseCount = 0;
-volatile uint8_t testIgnitionPulseCount = 0;
+TESTABLE_STATIC volatile uint16_t tachoSweepAccum;
+TESTABLE_STATIC volatile uint8_t testInjectorPulseCount = 0;
+TESTABLE_STATIC volatile uint8_t testIgnitionPulseCount = 0;
 
 void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
@@ -53,7 +53,7 @@ void __attribute__((optimize("Os"))) initialiseTimers(void)
 }
 
 static boardOutputPin_t tach_pin;
-static volatile uint8_t TIMER_mask;
+TESTABLE_STATIC volatile uint8_t TIMER_mask;
 
 uint8_t getAndClearTimerMask(void)
 {
@@ -62,7 +62,9 @@ uint8_t getAndClearTimerMask(void)
     TIMER_mask = 0U;
     return mask;
   }
+  // LCOV_EXCL_START
   return 0U; // Suppress false compiler warning
+  // LCOV_EXCL_STOP
 }
 
 void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
