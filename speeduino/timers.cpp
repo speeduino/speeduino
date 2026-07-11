@@ -35,7 +35,7 @@ TESTABLE_STATIC volatile byte loop250ms;
 TESTABLE_STATIC volatile int loopSec;
 TESTABLE_STATIC volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
-TESTABLE_STATIC volatile uint16_t tachoSweepIncr;
+volatile uint16_t tachoSweepIncr;
 TESTABLE_STATIC volatile uint16_t tachoSweepAccum;
 TESTABLE_STATIC volatile uint8_t testInjectorPulseCount = 0;
 TESTABLE_STATIC volatile uint8_t testIgnitionPulseCount = 0;
