@@ -19,13 +19,13 @@ static byte setStatusBit(byte status, uint8_t index, bool bit)
 }
 
 // Templated recursion terminates here
-static inline byte setStatusBits(byte status, bool (&bits)[1])
+static inline byte setStatusBits(byte status, bool (&bits)[1]) noexcept
 {
   return setStatusBit(status, 0U, bits[0U]);
 }
 
 template <uint8_t N>
-static inline byte setStatusBits(byte status, bool (&bits)[N])
+static inline byte setStatusBits(byte status, bool (&bits)[N]) noexcept
 {
   using shorter_t = bool(&)[N-1U];
   // Recurse 
