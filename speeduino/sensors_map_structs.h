@@ -43,6 +43,13 @@ struct map_cycle_average_t {
 struct map_cycle_min_t {
   uint8_t cycleStartIndex;
   uint16_t mapMinimum;
+  uint16_t mapMaximum;
+  uint16_t twoStrokeMinADC;
+  uint16_t twoStrokeMaxADC;
+  uint16_t twoStrokePseudoMAP;
+  bool twoStrokeMinSampled;
+  bool twoStrokeMaxSampled;
+  bool hasTwoStrokePseudoMAP;
 };
 
 // Working state for the event average sampling algorithm
