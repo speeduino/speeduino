@@ -117,7 +117,7 @@ static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second paus
 /** @brief Has the current receive operation timed out? */
 bool isRxTimeout(void) 
 {
-  return (millis() - serialReceiveStartTime) > SERIAL_TIMEOUT;
+  return hasIntervalElapsed(millis(), serialReceiveStartTime, SERIAL_TIMEOUT);
 }
 
 // ====================================== Endianness Support =============================

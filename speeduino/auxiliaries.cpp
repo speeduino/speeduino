@@ -5,6 +5,7 @@ A full copy of the license may be found in the projects root directory
 */
 #include "auxiliaries.h"
 #include "globals.h"
+#include "elapsed_time.h"
 #include "maths.h"
 #include "src/PID/integerPID.h"
 #include "src/PID/integerPID_ideal.h"
@@ -934,7 +935,7 @@ void vvtControl(void)
     if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
 
     constexpr uint32_t VVT_TIME_DELAY_MULTIPLIER = 50;
-    if( (vvtIsHot == true) || ((runSecsX10 - vvtWarmTime) >= (configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER)) ) 
+    if( (vvtIsHot == true) || hasIntervalElapsed(runSecsX10, vvtWarmTime, configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER) )
     {
       vvtIsHot = true;
 

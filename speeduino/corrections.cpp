@@ -1111,10 +1111,10 @@ static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
 {
   uint8_t tmpKnockRetard = curKnockRetard;
   //Check whether we are in knock recovery
-  if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
+  if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_duration * 100000UL) ) //knock_duration is in seconds*10
   {
     //Calculate how many recovery steps have occurred since the 
-    uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
+    uint32_t timeInRecovery = timeElapsed(micros(), knockStartTime) - (configPage10.knock_duration * 100000UL);
     uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
     uint8_t recoveryTimingAdj = 0;
     if(recoverySteps > knockLastRecoveryStep) 
@@ -1161,7 +1161,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
         if(currentStatus.knockPulseDetected)
         {
           //Check if the latest event was far enough after the initial knock event to pull further timing
-          if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+          if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL) )
           {
             //Recalculate the amount timing being pulled
             currentStatus.knockCount++;
@@ -1190,7 +1190,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
     {
       //Check if additional knock events occurred
       //Additional knock events are when the step time has passed and the voltage remains above the threshold
-      if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+      if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL) )
       {
         //Sufficient time has passed, check the current knock value
         uint16_t tmpKnockReading = getAnalogKnock();
