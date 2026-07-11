@@ -6,9 +6,11 @@ void runAllTests(void)
 {
     extern void testStatusBuilders(void);
     extern void testGetEntry(void);
+    extern void testStartStop(void);
 
     testStatusBuilders();
     testGetEntry();
+    testStartStop();
 }
 
 TEST_HARNESS(runAllTests)

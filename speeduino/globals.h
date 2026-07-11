@@ -35,7 +35,7 @@
 #ifndef UNIT_TEST 
 constexpr uint8_t TOOTH_LOG_SIZE = 127U;
 #else
-constexpr uint8_t TOOTH_LOG_SIZE = 1U;
+constexpr uint8_t TOOTH_LOG_SIZE = 2U;
 #endif
 
 #define INJ1_CMD_BIT      0
