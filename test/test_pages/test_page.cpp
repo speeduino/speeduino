@@ -231,7 +231,7 @@ static uint16_t sumEntitySizes(uint8_t pageNum)
 static void test_sumEntity_matches_pageSize(void)
 {
     // Page sizes as defined in the .ini file
-    constexpr uint16_t ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 256 };
+    constexpr uint16_t ini_page_sizes[] = { 0, 128, 288, 288, 128, 288, 128, 240, 384, 192, 192, 288, 192, 128, 288, 256, 128 };
 
     for (uint8_t pageNum=MIN_PAGE_NUM; pageNum<MAX_PAGE_NUM; ++pageNum)
     {

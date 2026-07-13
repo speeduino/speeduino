@@ -24,8 +24,9 @@ constexpr uint8_t wmiMapPage    = 12;
 constexpr uint8_t progOutsPage  = 13;
 constexpr uint8_t ignMap2Page   = 14;
 constexpr uint8_t boostvvtPage2 = 15;
+constexpr uint8_t scatterPage   = 16; ///< RAM-only scatter offset array page (no burn command)
 constexpr uint8_t MIN_PAGE_NUM  = veSetPage;
-constexpr uint8_t MAX_PAGE_NUM  = (boostvvtPage2+1U);
+constexpr uint8_t MAX_PAGE_NUM  = (scatterPage+1U);
 
 /** @brief Fill the tune (config pages & tables) with zeroes. */
 void setTuneToEmpty(void);

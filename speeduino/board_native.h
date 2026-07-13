@@ -27,6 +27,7 @@ constexpr auto ticksToMicros = software_timer_t::ticksToMicros;
 #define FPU_MAX_SIZE 32 //Size of the FPU buffer. 0 means no FPU.
 constexpr uint16_t BLOCKING_FACTOR = 121;
 constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
+constexpr uint16_t SCATTER_ARRAY_SIZE = 32;
 #if !defined(IGN_CHANNELS)
 #warning Using default IGN_CHANNELS
 #define IGN_CHANNELS 8
