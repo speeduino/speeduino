@@ -508,17 +508,59 @@ TESTABLE_INLINE_STATIC uint16_t correctionAccel(void)
 
 // ============================= Flood Clear =============================
 
-static inline bool isFloodClearActive(const statuses &current, const config4 &page4) {
-  return current.rotationStatus==EngineRotationStatus::Cranking
+/*
+Flood clear is safety-critical (it is also used to build oil pressure by cranking without fuel),
+so once triggered it LATCHES: the fuel cut is held even if the engine momentarily spins past the
+cranking RPM threshold on residual fuel. The latch is only released once the throttle has been held
+below FLOOD_CLEAR_RELEASE_TPS for longer than FLOOD_CLEAR_RELEASE_TIME_MS, or the ECU is restarted.
+The latch must survive between crank attempts, so it is deliberately NOT reset in
+initialiseCorrections() (that runs on every stall detection).
+*/
+static constexpr uint8_t FLOOD_CLEAR_RELEASE_TPS = 2U; //1% in 0.5% TPS units
+static constexpr uint16_t FLOOD_CLEAR_RELEASE_TIME_MS = 3000U;
+TESTABLE_STATIC bool floodClearLatched = false;
+static uint32_t floodClearTpsHighMs; //Last time the TPS was at or above FLOOD_CLEAR_RELEASE_TPS
+
+static inline bool isFloodClearEnabled(const config4 &page4) {
+  //A threshold of 0 would match any TPS reading and permanently cut all cranking fuel, so treat 0 as disabled
+  return page4.floodClear > 0U;
+}
+
+static inline bool isFloodClearTriggered(const statuses &current, const config4 &page4) {
+  return isFloodClearEnabled(page4)
+      && current.rotationStatus==EngineRotationStatus::Cranking
       && (current.TPS >= page4.floodClear);
 }
 
-/** Simple check to see whether we are cranking with the TPS above the flood clear threshold.
-@return 100 (not cranking and thus no need for flood-clear) or 0 (Engine cranking and TPS above @ref config4.floodClear limit).
+bool isFloodClearActive(void) {
+  return floodClearLatched;
+}
+
+TESTABLE_INLINE_STATIC void updateFloodClear(uint32_t nowMs)
+{
+  if (isFloodClearTriggered(currentStatus, configPage4)) { floodClearLatched = true; }
+
+  if (currentStatus.TPS >= FLOOD_CLEAR_RELEASE_TPS) { floodClearTpsHighMs = nowMs; }
+  else if ((nowMs - floodClearTpsHighMs) > FLOOD_CLEAR_RELEASE_TIME_MS) { floodClearLatched = false; }
+}
+
+/** Latch or release the flood clear state. Called at the TPS read rate from the main loop,
+including while the engine is not rotating, so the release timer keeps running once cranking stops. */
+void updateFloodClear(void)
+{
+  updateFloodClear(millis());
+}
+
+/** Cut all fuel whilst the flood clear latch is set.
+Latched by cranking with the TPS at or above the @ref config4.floodClear threshold; released by
+updateFloodClear() once the throttle has been held closed for long enough.
+@return 100 (latch not set) or 0 (Flood clear latched: no fuel).
 */
 TESTABLE_INLINE_STATIC uint8_t correctionFloodClear(void)
 {
-  return isFloodClearActive(currentStatus, configPage4) ? 0U : NO_FUEL_CORRECTION;
+  //The trigger is also evaluated here so the cut starts on the same loop that the cranking state & TPS first match
+  if (isFloodClearTriggered(currentStatus, configPage4)) { floodClearLatched = true; }
+  return floodClearLatched ? 0U : NO_FUEL_CORRECTION;
 }
 
 /** Battery Voltage correction.

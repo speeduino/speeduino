@@ -1,6 +1,7 @@
 #include "scheduler_fuel_controller.h"
 #include "scheduledIO_inj.h"
 #include "units.h"
+#include "corrections.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
@@ -474,7 +475,11 @@ TESTABLE_CONSTEXPR table2D_u8_u8_4 PrimingPulseTable(&configPage2.primeBins, &co
 void __attribute__((optimize("Os"))) beginInjectorPriming(const statuses &current, const config4 &page4)
 {
   uint16_t primingValue = (uint16_t)table2D_getValue(&PrimingPulseTable, temperatureAddOffset(current.coolant));
-  if( (primingValue > 0U) && (current.TPS <= page4.floodClear) )
+  //No priming whilst the flood clear latch is set, or when the TPS is at or above the flood clear
+  //threshold (a threshold of 0 disables flood clear). The TPS comparison uses >= so that at exactly
+  //the threshold flood clear wins, matching correctionFloodClear()
+  bool floodClearBlocksPriming = isFloodClearActive() || ((page4.floodClear > 0U) && (current.TPS >= page4.floodClear));
+  if( (primingValue > 0U) && (floodClearBlocksPriming == false) )
   {
     constexpr uint32_t PRIMING_DELAY = 100U; // 100us
     // The prime pulse value is in ms*2, so need to multiply by 500 to get to µS

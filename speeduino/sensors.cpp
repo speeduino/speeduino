@@ -99,12 +99,19 @@ static inline uint16_t readAnalogPin(uint8_t pin)
 
 #if defined(ANALOG_ISR)
 static volatile uint16_t AnChannel[16];
+//16 bit reads are not atomic on 8 bit AVR, so guard against the ADC ISR updating the value mid-read
+static inline uint16_t readAnChannelAtomic(uint8_t pin) {
+  noInterrupts();
+  uint16_t value = AnChannel[pin-A0];
+  interrupts();
+  return value;
+}
 static inline uint16_t readAnalogSensor(uint8_t pin) {
-  return AnChannel[pin-A0];
+  return readAnChannelAtomic(pin);
 }
 static inline uint16_t readMAPSensor(uint8_t pin) {
 #if defined(ANALOG_ISR_MAP)
-  return AnChannel[pin-A0];
+  return readAnChannelAtomic(pin);
 #else
   return readAnalogPin(pin);
 #endif
@@ -189,8 +196,10 @@ void initialiseADC(void)
      BIT_CLEAR(ADCSRA,ADPS1);
      BIT_CLEAR(ADCSRA,ADPS0);
   #endif
-#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core, change analog read to 12 bit
+#elif defined(ARDUINO_ARCH_STM32) //STM32GENERIC core and ST STM32duino core can default to 12 bit, reduce to the 10 bit range the rest of the code expects
   analogReadResolution(10); //use 10bits for analog reading on STM32 boards
+#elif defined(CORE_TEENSY)
+  analogReadResolution(10); //Teensy cores default to 10 bit, but set it explicitly so a core default change cannot silently rescale every analog sensor
 #endif
 
   //The following checks the aux inputs and initialises pins if required
@@ -606,7 +615,14 @@ static inline void readTPS(void)
 }
 
 
-void initialiseTPS(void) { 
+void initialiseTPS(void) {
+#if defined(ANALOG_ISR)
+  //Interrupts are disabled for most of initialiseAll(), so the free-running ADC ISR may not have
+  //refreshed every channel yet. Re-enable it and allow one full 16 channel conversion cycle
+  //(~1.7ms at the 125KHz ADC clock) so the TPS reading below is real rather than stale/zero.
+  BIT_SET(ADCSRA,ADIE);
+  delay(3);
+#endif
   readTPS((uint8_t)fastMap10Bit(readAnalogSensor(pinTPS), 0U, 255U)); // Need to read tps to detect flood clear state
 }
 

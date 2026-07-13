@@ -233,6 +233,10 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     //-----------------------------------------------------------------------------------------------------
     readPolledSensors(currentStatus.LOOP_TIMER);
 
+    //The flood clear latch/release must be evaluated even when the engine is not rotating, so the
+    //release timer keeps running once a crank attempt ends
+    if(BIT_CHECK(currentStatus.LOOP_TIMER, TPS_READ_TIMER_BIT)) { updateFloodClear(); }
+
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
       #if defined(NATIVE_CAN_AVAILABLE)
@@ -418,7 +422,10 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     if ((currentStatus.decoder.getStatus().syncStatus!=SyncStatus::None) && (currentStatus.RPM > 0))
     {
         //Check whether running or cranking
-        if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
+        //Whilst flood clear is latched the engine must not be allowed to enter the running state:
+        //residual fuel can spin it past the cranking threshold, but fuel stays cut until the
+        //throttle has been held closed long enough to release the latch
+        if( (currentStatus.RPM > currentStatus.crankRPM) && (isFloodClearActive() == false) ) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
         {
           bool crankToRun = currentStatus.rotationStatus==EngineRotationStatus::Cranking;
           currentStatus.rotationStatus = EngineRotationStatus::Running;

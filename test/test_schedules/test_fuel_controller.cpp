@@ -166,6 +166,8 @@ static void assert_isPriming(FuelSchedule &schedule, bool priming)
   }
 }
 
+extern bool floodClearLatched;
+
 static void test_beginInjectorPriming_floodclear(void)
 {
   stopFuelSchedulers();
@@ -190,6 +192,68 @@ static void test_beginInjectorPriming_floodclear(void)
     RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, false); }, {});
     RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, false); }, {});
   }
+}
+
+static void test_beginInjectorPriming_floodclear_at_threshold(void)
+{
+  //TPS exactly at the threshold: flood clear must win & suppress priming (matches correctionFloodClear())
+  constexpr int16_t COOLANT_TEMP = 200;
+  stopFuelSchedulers();
+  populate_2dtable(&PrimingPulseTable, PRIMING_PULSE_WIDTH, temperatureAddOffset(COOLANT_TEMP));
+
+  statuses current = {};
+  config4 page4 = {};
+  page4.floodClear = 90;
+  current.TPS = page4.floodClear;
+  current.coolant = COOLANT_TEMP;
+  current.numPrimaryInjOutputs = 1;
+  set_all_schedules_off();
+
+  beginInjectorPriming(current, page4);
+
+  RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, false); }, {});
+}
+
+static void test_beginInjectorPriming_floodclear_latched(void)
+{
+  //Whilst the flood clear latch is set, priming must be suppressed even with the throttle closed
+  constexpr int16_t COOLANT_TEMP = 200;
+  stopFuelSchedulers();
+  populate_2dtable(&PrimingPulseTable, PRIMING_PULSE_WIDTH, temperatureAddOffset(COOLANT_TEMP));
+
+  statuses current = {};
+  config4 page4 = {};
+  page4.floodClear = 90;
+  current.TPS = 0;
+  current.coolant = COOLANT_TEMP;
+  current.numPrimaryInjOutputs = 1;
+  set_all_schedules_off();
+
+  floodClearLatched = true;
+  beginInjectorPriming(current, page4);
+  floodClearLatched = false;
+
+  RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, false); }, {});
+}
+
+static void test_beginInjectorPriming_floodclear_disabled(void)
+{
+  //A flood clear threshold of 0 disables the feature: priming must happen even at WOT
+  constexpr int16_t COOLANT_TEMP = 200;
+  stopFuelSchedulers();
+  populate_2dtable(&PrimingPulseTable, PRIMING_PULSE_WIDTH, temperatureAddOffset(COOLANT_TEMP));
+
+  statuses current = {};
+  config4 page4 = {};
+  page4.floodClear = 0;
+  current.TPS = 200; //WOT
+  current.coolant = COOLANT_TEMP;
+  current.numPrimaryInjOutputs = 1;
+  set_all_schedules_off();
+
+  beginInjectorPriming(current, page4);
+
+  RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, true); }, {});
 }
 
 static void test_beginInjectorPriming(void)
@@ -305,6 +369,9 @@ void test_fuel_controller(void)
     RUN_TEST_P(test_setFuelChannelSchedule_ignores_zero_timeout);
     RUN_TEST_P(test_lookupInjectorAngle_clamp_max_inj);
     RUN_TEST_P(test_beginInjectorPriming_floodclear);
+    RUN_TEST_P(test_beginInjectorPriming_floodclear_at_threshold);
+    RUN_TEST_P(test_beginInjectorPriming_floodclear_latched);
+    RUN_TEST_P(test_beginInjectorPriming_floodclear_disabled);
     RUN_TEST_P(test_beginInjectorPriming);
     RUN_TEST_P(test_setFuelChannelSchedules_returnsInjectionAngle);
     RUN_TEST_P(test_changeToFullSequentialInjection);
