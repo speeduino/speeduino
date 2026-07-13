@@ -13,7 +13,8 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
+#include "scheduler_ignition_controller.h"
 #include "auxiliaries.h"
 #include "comms.h"
 #include "maths.h"
@@ -22,24 +23,22 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "scheduledIO_inj.h"
 #include "src/pins/fastOutputPin.h"
 #include "src/pins/outputPin.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
-volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
-volatile byte loop5ms;
-volatile byte loop20ms;
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
-
-volatile unsigned int dwellLimit_uS;
-
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+TESTABLE_STATIC volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+TESTABLE_STATIC volatile byte loop5ms;
+TESTABLE_STATIC volatile byte loop20ms;
+TESTABLE_STATIC volatile byte loop33ms;
+TESTABLE_STATIC volatile byte loop66ms;
+TESTABLE_STATIC volatile byte loop100ms;
+TESTABLE_STATIC volatile byte loop250ms;
+TESTABLE_STATIC volatile int loopSec;
+TESTABLE_STATIC volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 volatile uint16_t tachoSweepIncr;
-volatile uint16_t tachoSweepAccum;
-volatile uint8_t testInjectorPulseCount = 0;
-volatile uint8_t testIgnitionPulseCount = 0;
+TESTABLE_STATIC volatile uint16_t tachoSweepAccum;
+TESTABLE_STATIC volatile uint8_t testInjectorPulseCount = 0;
+TESTABLE_STATIC volatile uint8_t testIgnitionPulseCount = 0;
 
 void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
@@ -54,6 +53,19 @@ void __attribute__((optimize("Os"))) initialiseTimers(void)
 }
 
 static boardOutputPin_t tach_pin;
+TESTABLE_STATIC volatile uint8_t TIMER_mask;
+
+uint8_t getAndClearTimerMask(void)
+{
+  ATOMIC() {
+    uint8_t mask = TIMER_mask;
+    TIMER_mask = 0U;
+    return mask;
+  }
+  // LCOV_EXCL_START
+  return 0U; // Suppress false compiler warning
+  // LCOV_EXCL_STOP
+}
 
 void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
 {
@@ -71,13 +83,6 @@ void tachoPulseLow(void)
   tach_pin.setPinLow();
 }
 
-static inline void applyOverDwellCheck(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
-  //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  if ((isRunning(schedule)) && (schedule.startTime < targetOverdwellTime)) { 
-    schedule.pEndCallback(); schedule.Status = OFF; 
-  }
-}
-
 void oneMSInterval(void)
 {
   BIT_SET(TIMER_mask, BIT_TIMER_1KHZ);
@@ -92,41 +97,14 @@ void oneMSInterval(void)
   loop250ms++;
   loopSec++;
 
-  //Overdwell check
-  uint32_t targetOverdwellTime = micros() - dwellLimit_uS; //Set a target time in the past that all coil charging must have begun after. If the coil charge began before this time, it's been running too long
-  bool isCrankLocked = configPage4.ignCranklock && (currentStatus.RPM < currentStatus.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
-  if ((configPage4.useDwellLim == 1) && (isCrankLocked != true)) 
-  {
-    applyOverDwellCheck(ignitionSchedule1, targetOverdwellTime);
-#if IGN_CHANNELS >= 2
-    applyOverDwellCheck(ignitionSchedule2, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 3
-    applyOverDwellCheck(ignitionSchedule3, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 4
-    applyOverDwellCheck(ignitionSchedule4, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 5
-    applyOverDwellCheck(ignitionSchedule5, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 6
-    applyOverDwellCheck(ignitionSchedule6, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 7
-    applyOverDwellCheck(ignitionSchedule7, targetOverdwellTime);
-#endif
-#if IGN_CHANNELS >= 8
-    applyOverDwellCheck(ignitionSchedule8, targetOverdwellTime);
-#endif
-  }
+  applyOverDwellProtection(configPage4, currentStatus);
 
   //Tacho is flagged as being ready for a pulse by the ignition outputs, or the sweep interval upon startup
 
   // See if we're in power-on sweep mode
   if( currentStatus.tachoSweepEnabled )
   {
-    if( (currentStatus.engineIsRunning) || (currentStatus.engineIsCranking) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    if( (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
@@ -234,12 +212,12 @@ void oneMSInterval(void)
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
 
-    if ( currentStatus.engineIsRunning ) { runSecsX10++; }
+    if ( currentStatus.rotationStatus==EngineRotationStatus::Running ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
     if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
     { 
-      beginInjectorPriming(); 
+      beginInjectorPriming(currentStatus, configPage4); 
       currentStatus.injPrimed = true; 
     }
     seclx10++;
@@ -261,13 +239,12 @@ void oneMSInterval(void)
     loopSec = 0; //Reset counter.
     BIT_SET(TIMER_mask, BIT_TIMER_1HZ);
 
-    dwellLimit_uS = (1000 * configPage4.dwellLimit); //Update uS value in case setting has changed
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10);
 
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need to update the run time counter.
-    if (currentStatus.engineIsRunning)
+    if (currentStatus.rotationStatus!=EngineRotationStatus::Stopped)
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
       if (currentStatus.runSecs <= (UINT8_MAX-1U)) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
@@ -287,19 +264,8 @@ void oneMSInterval(void)
     }
 
     //Check whether fuel pump priming is complete
-    if(currentStatus.fpPrimed == false)
-    {
-      //fpPrimeTime is the time that the pump priming started. This is 0 on startup, but can be changed if the unit has been running on USB power and then had the ignition turned on (Which starts the priming again)
-      if( (currentStatus.secl - fpPrimeTime) >= configPage2.fpPrime)
-      {
-        currentStatus.fpPrimed = true; //Mark the priming as being completed
-        if(currentStatus.RPM == 0)
-        {
-          //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-          fuelPumpOff();
-        }
-      }
-    }
+    stopPumpPriming(currentStatus, configPage2);
+    
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
     if(configPage2.flexEnabled == true)

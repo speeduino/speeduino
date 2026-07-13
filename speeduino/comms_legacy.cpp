@@ -19,11 +19,13 @@ A full copy of the license may be found in the projects root directory
 #include "page_crc.h"
 #include "logger.h"
 #include "board_definition.h"
+#include "scheduler_fuel_controller.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
 #include "units.h"
 #include "sensors.h"
+#include "resetControl.h"
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
@@ -393,7 +395,7 @@ void legacySerialCommand(void)
       break;
 
     case 'U': //User wants to reset the Arduino (probably for FW update)
-      if (resetControl != RESET_CONTROL_DISABLED)
+      if (getResetControlMode() != ResetControlMode::Disabled)
       {
       #ifndef SMALL_FLASH_MODE
         if (serialStatusFlag == SERIAL_INACTIVE) { primarySerial.println(F("Comms halted. Next byte will reset the Arduino.")); }
@@ -765,10 +767,10 @@ void sendValuesLegacy(void)
 
   bytestosend -= primarySerial.write(currentStatus.secl>>8);
   bytestosend -= primarySerial.write(currentStatus.secl);
-  bytestosend -= primarySerial.write(currentStatus.PW1>>8);
-  bytestosend -= primarySerial.write(currentStatus.PW1);
-  bytestosend -= primarySerial.write(currentStatus.PW2>>8);
-  bytestosend -= primarySerial.write(currentStatus.PW2);
+  bytestosend -= primarySerial.write(fuelSchedule1.pw>>8);
+  bytestosend -= primarySerial.write(fuelSchedule1.pw);
+  bytestosend -= primarySerial.write(fuelSchedule2.pw>>8);
+  bytestosend -= primarySerial.write(fuelSchedule2.pw);
   bytestosend -= primarySerial.write(currentStatus.RPM>>8);
   bytestosend -= primarySerial.write(currentStatus.RPM);
 
@@ -1131,7 +1133,7 @@ void sendPageASCII(void)
 
     case seqFuelPage:
       primarySerial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(&trim1Table, trim1Table.type_key);
+      serial_print_3dtable(&trimTables[0], trimTable3d::type_key);
       break;
 
     case canbusPage:
@@ -1175,7 +1177,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
   if (currentStatus.isToothLog1Full) //Sanity check. Flagging system means this should always be true
   {
       serialStatusFlag = SERIAL_TRANSMIT_TOOTH_INPROGRESS_LEGACY; 
-      for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; ++x)
+      for (uint8_t x = startOffset; x < _countof(toothHistory); ++x)
       {
         primarySerial.write(toothHistory[x] >> 24);
         primarySerial.write(toothHistory[x] >> 16);
@@ -1189,7 +1191,7 @@ void sendToothLog_legacy(byte startOffset) /* Blocking */
   else 
   { 
     //TunerStudio has timed out, send a LOG of all 0s
-    for(uint16_t x = 0U; x < (4U*TOOTH_LOG_SIZE); ++x)
+    for(uint16_t x = 0U; x < sizeof(toothHistory); ++x)
     {
       primarySerial.write(static_cast<byte>(0x00)); //GCC9 fix
     }
@@ -1203,7 +1205,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
   {
       serialStatusFlag = SERIAL_TRANSMIT_COMPOSITE_INPROGRESS_LEGACY;
 
-      for (uint8_t x = startOffset; x < TOOTH_LOG_SIZE; ++x)
+      for (uint8_t x = startOffset; x < _countof(toothHistory); ++x)
       {
         //Check whether the tx buffer still has space
         if(primarySerial.availableForWrite() < 4) 
@@ -1229,7 +1231,7 @@ void sendCompositeLog_legacy(byte startOffset) /* Non-blocking */
   else 
   { 
     //TunerStudio has timed out, send a LOG of all 0s
-    for(uint16_t x = 0U; x < (5U*TOOTH_LOG_SIZE); ++x)
+    for(uint16_t x = 0U; x < (5U*_countof(toothHistory)); ++x)
     {
       primarySerial.write(static_cast<byte>(0x00)); //GCC9 fix
     }

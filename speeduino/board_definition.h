@@ -9,7 +9,8 @@
 
 #include <stdint.h>
 #include <Arduino.h>
-#include "type_traits.h"
+#include "src/stdlib/type_traits.h"
+#include "src/stdlib/limits.h"
 #include "storage_api.h"
 
 /**
@@ -26,7 +27,7 @@ void initBoard(uint32_t baudRate);
  * 
  * This is called *after* the pins are assigned and therefore after initBoard()
  */
-void boardInitPins(void);
+void boardInitPins(uint8_t boardID);
 
 /** @brief Calculate free RAM for display in TunerStudio */
 uint16_t freeRam(void);
@@ -80,3 +81,7 @@ void boardInitRTC(void);
 
 /** @brief The longest period of time (in uS) that the timer can permit */
 constexpr uint32_t MAX_TIMER_PERIOD = ticksToMicros((numeric_limits<COMPARE_TYPE>::max)());
+
+#if !defined(NOT_A_PIN)
+constexpr uint8_t NOT_A_PIN = UINT8_MAX; // Note that zero is a valid pin number, so we can't use that to indicate an unused pin
+#endif

@@ -2,20 +2,26 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "../test_utils.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "channel_test_helpers.h"
+#include "scheduler_ignition_controller.h"
 
 #define TIMEOUT 1000
 #define DURATION 1000
 
+static void test_status_pending_to_running(Schedule &schedule)
+{
+    setSchedule(schedule, TIMEOUT, DURATION, true);
+    while(schedule._status == PENDING) /*Wait*/ ;
+    TEST_ASSERT_EQUAL(RUNNING, schedule._status);
+    while(schedule._status != OFF) /*Wait*/ ;
+}
+
 static void test_status_pending_to_running_inj(FuelSchedule &schedule)
 {
-    initialiseFuelSchedulers();
+    schedule.reset();
     startFuelSchedulers();
-    setFuelSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_status_pending_to_running(schedule);
     stopFuelSchedulers();
 }
 
@@ -61,12 +67,9 @@ static void test_status_pending_to_running_inj8(void)
 
 static void test_status_pending_to_running_ign(IgnitionSchedule &schedule)
 {
-    initialiseIgnitionSchedulers();
+    schedule.reset();
     startIgnitionSchedulers();
-    setIgnitionSchedule(schedule, TIMEOUT, DURATION);
-    while(schedule.Status == PENDING) /*Wait*/ ;
-    TEST_ASSERT_EQUAL(RUNNING, schedule.Status);
-    while(schedule.Status != OFF) /*Wait*/ ;
+    test_status_pending_to_running(schedule);
     stopIgnitionSchedulers();
 }
 

@@ -4,12 +4,13 @@
 #include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include "board_eeprom_adapter.hpp"
+#include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -61,7 +62,7 @@ void initBoard(uint32_t /*baudRate*/)
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
       PIT_TCTRL0 = 0;
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
@@ -391,7 +392,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   //Primary trigger
   setPinHysteresis(pinTrigger);

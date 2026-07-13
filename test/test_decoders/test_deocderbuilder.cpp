@@ -170,7 +170,7 @@ static void test_setIsEngineRunning(void)
     assert_decoder_builder( builder );
 }
 
-static decoder_status_t fakeGetStatus(void)
+static decoder_status_t fakeGetStatus(void) noexcept
 {
     return decoder_status_t{ .validTrigger = true, .toothAngleIsCorrect  = false, .syncStatus = SyncStatus::Full };
 }

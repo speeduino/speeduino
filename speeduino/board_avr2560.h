@@ -7,8 +7,6 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
-#include "src/pins/fastInputPin.h"
-#include "src/pins/fastOutputPin.h"
 
 /*
 ***********************************************************************************************************
@@ -173,8 +171,16 @@ static inline void IGN8_TIMER_DISABLE(void) { TIMSK3 &= ~(1 << OCIE3B); } //Repl
 */
 #define SECONDARY_SERIAL_T HardwareSerial
 
+class fastInputPin_t;
 using boardInputPin_t = fastInputPin_t;
+class fastOutputPin_t;
 using boardOutputPin_t = fastOutputPin_t;
 
 /** @brief Analog pin mapping */
 constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14 };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. Serial buffer is 64 bytes long, so the threshold is set at half this as a reasonable figure 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 32U;

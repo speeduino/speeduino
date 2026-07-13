@@ -50,9 +50,9 @@ class TickEventGuard
 {
 public:
     /** @brief Halt tick event generation */
-    TickEventGuard(void);
+    TickEventGuard(void) noexcept;
     /** @brief Resume tick event generation */
-    ~TickEventGuard();
+    ~TickEventGuard() noexcept;
 private:
     bool _stopped = false;
 };

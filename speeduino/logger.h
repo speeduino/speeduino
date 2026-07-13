@@ -11,11 +11,7 @@
 
 #include "globals.h" // Needed for FPU_MAX_SIZE
 
-#ifndef UNIT_TEST // Scope guard for unit testing
-  #define LOG_ENTRY_SIZE      138 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-#else
-  #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-#endif
+constexpr uint8_t LOG_ENTRY_SIZE = 138; /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
 byte getTSLogEntry(uint16_t byteNum);
 int16_t getReadableLogEntry(uint16_t logIndex);

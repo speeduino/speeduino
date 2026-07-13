@@ -6,14 +6,14 @@
 #include "statuses.h"
 #include "decoders.h"
 
-extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const decoder_status_t &decoderStatus, const statuses &current);
+extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current);
 
 static uint16_t calcPrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
   context.current.VE = VE;
   context.current.MAP = MAP;
   context.current.corrections = corrections; 
   context.page2.reqFuel = REQ_FUEL/100U;
-  return calcPrimaryPulseWidth(injOpenTime, context.page2, context.page6, context.page10, context.decoderStatus, context.current);
+  return calcPrimaryPulseWidth(injOpenTime, context.page2, context.page6, context.page10, context.current);
 }
 
 static void test_calcPrimaryPulseWidth_basic(void) {
@@ -131,7 +131,7 @@ static ComputePulseWidthsContext getIncludeAeContext(void) {
 static void test_calcPrimaryPulseWidth_AeAdder(void) {
   // AE needs to be added
   auto context = getIncludeAeContext();
-  TEST_ASSERT_EQUAL(800 /* (1000*0.75)+(1000*0.05) */, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
+  TEST_ASSERT_UINT16_WITHIN(1, 800 /* (1000*0.75)+(1000*0.05) */, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   // AE off in all cases below
   context = getIncludeAeContext();

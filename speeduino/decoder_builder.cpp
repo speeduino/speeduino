@@ -7,7 +7,7 @@ static void nullTriggerHandler (void){return;} //initialisation function for tri
 static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
 static int16_t nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
-static decoder_status_t nullGetStatus(void) { return decoder_status_t{}; }
+static decoder_status_t nullGetStatus(void) noexcept { return decoder_status_t{}; }
 static decoder_features_t nullGetFeatures(void) { return decoder_features_t(); }
 
 decoder_builder_t::decoder_builder_t(void)

@@ -7,14 +7,15 @@
 #include "sensors_map_structs.h"
 #include "units.h"
 #include "fuel_calcs.h"
+#include "src/PID/PID.h"
 
 extern byte correctionWUE(void);
 extern table2D_u8_u8_10 WUETable; ///< 10 bin Warm Up Enrichment map (2D)
 
 static void setup_wue_table(void) {
   initialiseCorrections();
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, CLT_READ_TIMER_BIT) ;
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ;
 
   //Set some fake values in the table axis. Target value will fall between points 6 and 7
   TEST_DATA_P uint8_t bins[] = { 
@@ -89,8 +90,8 @@ extern table2D_u8_u8_4 crankingEnrichTable; ///< 4 bin cranking Enrichment map (
 static void setup_correctionCranking(void) {
   initialiseCorrections();
 
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
 
@@ -107,7 +108,7 @@ static void setup_correctionCranking(void) {
 static void test_corrections_cranking_inactive(void) {
   setup_correctionCranking();
   
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
 
@@ -117,7 +118,7 @@ static void test_corrections_cranking_inactive(void) {
 static void test_corrections_cranking_cranking(void) {
   setup_correctionCranking();
   
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   currentStatus.aseIsActive = false;
   configPage10.crankingEnrichTaper = 0U;
 
@@ -133,11 +134,11 @@ static void test_corrections_cranking_taper_noase(void) {
   currentStatus.ASEValue = 100U;
 
   // Reset taper
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   (void)correctionCranking();
 
   // Advance taper to halfway
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
     (void)correctionCranking();
   }
@@ -165,11 +166,11 @@ static void test_corrections_cranking_taper_withase(void) {
   currentStatus.ASEValue = 50U;
 
   // Reset taper
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   (void)correctionCranking();
 
   // Advance taper to halfway
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   for (uint8_t index=0; index<configPage10.crankingEnrichTaper/2U; ++index) {
     (void)correctionCranking();
   }
@@ -201,7 +202,7 @@ extern uint8_t correctionASE(void);
 static void test_corrections_ASE_inactive_cranking(void)
 {
   initialiseCorrections();
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
 
   // Taper finished
   TEST_ASSERT_EQUAL(100U, correctionASE());
@@ -214,9 +215,9 @@ extern table2D_u8_u8_4 ASECountTable; ///< 4 bin After Start duration map (2D)
 static inline void setup_correctionASE(void) {
   initialiseCorrections();
 
-  currentStatus.engineIsCranking = false;
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ) ;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ;
   constexpr int16_t COOLANT_INITIAL = temperatureRemoveOffset(150); 
   currentStatus.coolant = COOLANT_INITIAL;
   currentStatus.runSecs = 3;
@@ -260,7 +261,7 @@ static void test_corrections_ASE_taper(void) {
   currentStatus.runSecs = 9;
 
   // Advance taper to halfway
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   for (uint8_t index=0; index<configPage2.aseTaperTime/2U; ++index) {
     (void)correctionASE();
   }
@@ -290,7 +291,7 @@ static void test_corrections_ASE(void)
 uint8_t correctionFloodClear(void);
 
 static void test_corrections_floodclear_no_crank_inactive(void) {
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
@@ -298,7 +299,7 @@ static void test_corrections_floodclear_no_crank_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear - 10;
 
@@ -306,7 +307,7 @@ static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
 }
 
 static void test_corrections_floodclear_crank_above_threshold_active(void) {
-  currentStatus.engineIsCranking = true;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
@@ -328,8 +329,10 @@ static void setup_valid_ego_cycle(void) {
   ignitionCount = AFRnextCycle + (configPage6.egoCount/2U); 
 }
 
+extern PID egoPID;
 static void setup_ego_simple(void) {
   initialiseCorrections();
+  egoPID.resetIntegral(0);
 
   configPage6.egoType = EGO_TYPE_NARROW;
   configPage6.egoAlgorithm = EGO_ALGORITHM_SIMPLE;
@@ -342,7 +345,7 @@ static void setup_ego_simple(void) {
   currentStatus.coolant = temperatureRemoveOffset(configPage6.egoTemp) + 1; 
 
   configPage6.egoRPM = 30U;
-  setRpm(currentStatus, configPage6.egoRPM*100U + 1U);
+  currentStatus.setRpm( configPage6.egoRPM*100U + 1U);
 
   configPage6.egoTPSMax = 33;
   currentStatus.TPS = configPage6.egoTPSMax - 1U;
@@ -400,7 +403,7 @@ static void test_corrections_closedloop_off_invalidconditions_coolant(void) {
 static void test_corrections_closedloop_off_invalidconditions_rpm(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  setRpm(currentStatus, (configPage6.egoRPM*100U) - 1U);
+  currentStatus.setRpm( (configPage6.egoRPM*100U) - 1U);
   TEST_ASSERT_EQUAL(100U, correctionAFRClosedLoop());
 }
 
@@ -679,8 +682,8 @@ extern table2D_u8_u8_6 injectorVCorrectionTable; ///< 6 bin injector voltage cor
 static void setup_battery_correction(void) {
   initialiseCorrections();
   
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BAT_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110 };
   TEST_DATA_P uint8_t values[] = { 115, 110, 105, 100, 95, 90 };
@@ -760,7 +763,7 @@ static void setup_DFCO_on_taper_off_no_delay()
 
   //Sets all the required conditions to have the DFCO be active
   configPage2.dfcoEnabled = 1; //Ensure DFCO option is turned on
-  setRpm(currentStatus, 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
+  currentStatus.setRpm( 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
   currentStatus.TPS = 0; //Set the simulated TPS to 0 
   currentStatus.coolant = 80;
   configPage4.dfcoRPM = 150; //DFCO enable RPM = 1500
@@ -788,7 +791,7 @@ static void test_corrections_dfco_off_RPM()
   setup_DFCO_on_taper_off_no_delay();
 
   TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
-  setRpm(currentStatus, 1000); //Set the current simulated RPM below the threshold + hyster
+  currentStatus.setRpm( 1000); //Set the current simulated RPM below the threshold + hyster
   TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
 }
 
@@ -808,7 +811,7 @@ static void test_corrections_dfco_off_delay()
   //The steup function below simulates a 2 second delay
   setup_DFCO_on_taper_off_no_delay();
 
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   configPage2.dfcoDelay = 5;
   
   for (uint8_t index = 0; index < configPage2.dfcoDelay; ++index) {
@@ -855,7 +858,7 @@ static inline void reset_dfco_taper(void) {
 }
 
 static inline void advance_dfco_taper(uint8_t count) {
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   for (uint8_t index = 0; index < count; ++index) {
     (void)correctionDFCOfuel();
   }
@@ -871,19 +874,19 @@ static void test_correctionDFCOfuel_taper()
 
   // 50% test
   advance_dfco_taper(configPage9.dfcoTaperTime/2);
-  BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_CLEAR(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   TEST_ASSERT_EQUAL(50, correctionDFCOfuel());
 
   // 75% test
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
-  BIT_CLEAR(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_CLEAR(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   TEST_ASSERT_EQUAL(25, correctionDFCOfuel());
 
   // Advance taper to 100%
   advance_dfco_taper(configPage9.dfcoTaperTime/4);
 
   // 100% & beyond test
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
   TEST_ASSERT_EQUAL(0, correctionDFCOfuel());
@@ -983,8 +986,8 @@ static void setup_TAE()
 {
   setup_AE();
 
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, TPS_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, TPS_READ_TIMER_BIT);
   configPage2.aeMode = AE_MODE_TPS; //Set AE to TPS
 
   TEST_DATA_P uint8_t bins[] = { 0, 8, 22, 97 };
@@ -999,7 +1002,7 @@ extern uint16_t correctionAccel(void);
 
 static void disable_AE_taper(void) {
   //Disable the taper
-  setRpm(currentStatus, 2000U);
+  currentStatus.setRpm( 2000U);
   configPage2.aeTaperMin = 50; //5000
   configPage2.aeTaperMax = 60; //6000
 }
@@ -1072,7 +1075,7 @@ static void test_corrections_TAE_50pc_rpm_taper()
   setup_TAE();
 
   //RPM is 50% of the way through the taper range
-  setRpm(currentStatus, 3000U);
+  currentStatus.setRpm( 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1092,7 +1095,7 @@ static void test_corrections_TAE_110pc_rpm_taper()
   setup_TAE();
 
   //RPM is 110% of the way through the taper range, which should result in no additional AE
-  setRpm(currentStatus, 5400U);
+  currentStatus.setRpm( 5400U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1112,7 +1115,7 @@ static void test_corrections_TAE_under_threshold()
   setup_TAE();
 
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
-  setRpm(currentStatus, 3000U);
+  currentStatus.setRpm( 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1202,8 +1205,8 @@ static void setup_MAE(void)
   setup_AE();
 
   configPage2.aeMode = AE_MODE_MAP; //Set AE to TPS
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, MAP_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, MAP_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 0, 15, 19, 50 };
   TEST_DATA_P uint8_t values[] = { 70, 103, 124, 136 };
@@ -1306,7 +1309,7 @@ static void test_corrections_MAE_50pc_rpm_taper()
   setup_MAE();
 
   //RPM is 50% of the way through the taper range
-  setRpm(currentStatus, 3000U);
+  currentStatus.setRpm( 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1326,7 +1329,7 @@ static void test_corrections_MAE_110pc_rpm_taper()
   setup_MAE();
 
   //RPM is 110% of the way through the taper range, which should result in no additional AE
-  setRpm(currentStatus, 5400U);
+  currentStatus.setRpm( 5400U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1346,7 +1349,7 @@ static void test_corrections_MAE_under_threshold()
   setup_MAE();
 
   //RPM is 50% of the way through the taper range, but TPS value will be below threshold
-  setRpm(currentStatus, 3000U);
+  currentStatus.setRpm( 3000U);
   configPage2.aeTaperMin = 10; //1000
   configPage2.aeTaperMax = 50; //5000
 
@@ -1462,7 +1465,7 @@ static void setup_afrtarget(table3d16RpmLoad &afrLookUpTable,
   memset(&current, 0, sizeof(current));
   current.runSecs = page6.ego_sdelay + 2U;
   current.fuelLoad = 60;
-  setRpm(current, 3100U);
+  current.setRpm( 3100U);
   current.O2 = 75U;
 }
 
@@ -1541,8 +1544,8 @@ extern table2D_u8_u8_8 baroFuelTable; ///< 8 bin baro correction curve (2D)
 
 static void setup_baro_correction(void) {
   initialiseCorrections();
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT);
 
   TEST_DATA_P uint8_t bins[] = { 60, 70, 80, 90, 100, 110, 120, 130 };
   TEST_DATA_P uint8_t values[] = { 120, 110, 100, 90, 80, 70, 70, 70 };
@@ -1573,8 +1576,8 @@ static void test_corrections_baro(void)
 static void test_corrections_correctionsFuel_ae_modes(void) {
   setup_TAE();
   // Makes no sense in real life, but this is an artifical test
-  BIT_SET(LOOP_TIMER, BIT_TIMER_4HZ);
-  BIT_SET(LOOP_TIMER, BIT_TIMER_10HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ);
+  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
   populate_2dtable(&injectorVCorrectionTable, (uint8_t)100U, (uint8_t)100U);
   populate_2dtable(&baroFuelTable, (uint8_t)100U, (uint8_t)100U);
   populate_2dtable(&IATDensityCorrectionTable, (uint8_t)100U, (uint8_t)100U);
@@ -1582,7 +1585,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   populate_2dtable(&fuelTempTable, (uint8_t)100U, (uint8_t)100U);
 
   //Disable the taper
-  setRpm(currentStatus, 2000U);
+  currentStatus.setRpm( 2000U);
   configPage2.aeTaperMin = 50; //5000
   configPage2.aeTaperMax = 60; //6000
   configPage2.decelAmount = 33U;
@@ -1597,7 +1600,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.launchingHard = false;
   currentStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
-  currentStatus.engineIsCranking = false;
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.ASEValue = 100U;
 
   configPage2.dfcoEnabled = 0;
@@ -1666,9 +1669,9 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   populate_2dtable(&flexFuelTable, (uint8_t)255, (uint8_t)100);
   populate_2dtable(&fuelTempTable, (uint8_t)255, (uint8_t)100);
 
-  LOOP_TIMER = 0;
-  BIT_SET(LOOP_TIMER, IAT_READ_TIMER_BIT);
-  BIT_SET(LOOP_TIMER, BARO_READ_TIMER_BIT);
+  currentStatus.LOOP_TIMER = 0;
+  BIT_SET(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT);
+  BIT_SET(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT);
 
   configPage2.flexEnabled = 1;
   configPage2.dfcoEnabled = 0;

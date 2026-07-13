@@ -35,14 +35,11 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "fuel_calcs.h"
 #include "unit_testing.h"
 
-static long PID_O2;
-static long PID_output;
-static long PID_AFRTarget;
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
 * Comes from Arduino (?) PID library.
 */
-static PID egoPID(&PID_O2, &PID_output, &PID_AFRTarget, configPage6.egoKP, configPage6.egoKI, configPage6.egoKD, REVERSE);
+TESTABLE_STATIC PID egoPID;
 
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
@@ -77,20 +74,17 @@ static constexpr uint8_t NO_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 // (yes, it's the same as NO_FUEL_CORRECTION, but captures a slightly different concept)
 static constexpr uint8_t BASELINE_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 
+static void setEgoPidTunings(const config6 &page6) {
+  egoPID.setOutputLimits(-page6.egoLimit, page6.egoLimit); 
+  egoPID.setTunings(PidTuningParameters(page6.egoKP, page6.egoKI, page6.egoKD) * -1); 
+}
 
 /** Initialise instances and vars related to corrections (at ECU boot-up).
  */
 void initialiseCorrections(void)
 {
-  PID_output = 0L;
-  PID_O2 = 0L;
-  PID_AFRTarget = 0L;
-  // Toggling between modes resets the PID internal state
-  // This is required by the unit tests
-  // TODO: modify PID code to provide a method to reset it. 
-  egoPID.SetMode(AUTOMATIC);
-  egoPID.SetMode(MANUAL);
-  egoPID.SetMode(AUTOMATIC);
+  setEgoPidTunings(configPage6);
+  egoPID.resetIntegral(currentStatus.O2);
 
   currentStatus.flexIgnCorrection = 0;
   //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
@@ -119,7 +113,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionWUE(void)
   uint8_t WUEValue = currentStatus.wueCorrection;
 
   // Only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
     if (currentStatus.coolant >= temperatureRemoveOffset(WUETable.axis[WUETable.size()-1U]))
     {
       //This prevents us doing the 2D lookup if we're already up to temp
@@ -164,7 +158,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
   uint16_t crankingPercent = NO_FUEL_CORRECTION;
 
   //Check if we are actually cranking
-  if ( currentStatus.engineIsCranking )
+  if ( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
   {
     crankingPercent = lookUpCrankingEnrichmentPct();
     crankingEnrichTaper = 0U;
@@ -175,7 +169,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
     crankingPercent = (uint16_t) map( crankingEnrichTaper, 
                                       0U, configPage10.crankingEnrichTaper, 
                                       computeCrankingTaperStartPct(lookUpCrankingEnrichmentPct()), NO_FUEL_CORRECTION); //Taper from start value to 100%
-    if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { ++crankingEnrichTaper; }
+    if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++crankingEnrichTaper; }
   } else {
     // Not cranking and taper not in effect, so no cranking enrichment needed.
     // just need to keep MISRA checker happy.
@@ -201,14 +195,14 @@ TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
 
   uint8_t ASEValue = NO_FUEL_CORRECTION;
 
-  if (currentStatus.engineIsCranking) {
+  if (currentStatus.rotationStatus==EngineRotationStatus::Cranking) {
     // Engine is cranking - mark ASE as inactive and ready to run 
     currentStatus.aseIsActive = false;
     aseTaper = 0U; 
     ASEValue = NO_FUEL_CORRECTION;
   } else if (aseTaper!=ASE_COMPLETE) {
     // ASE hasn't started or isn't complete.
-    if ( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ))
+    if ( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ))
     {
       // We only update ASE every 100ms for performance reasons - coolant
       // doesn't change temperature that quickly. 
@@ -424,7 +418,7 @@ static inline uint16_t correctionAccelModeMap(void) {
   uint16_t aeCorrection = currentStatus.AEamount;
 
   // No point in updating faster than the MAP sensor is read
-  if (BIT_CHECK(LOOP_TIMER, MAP_READ_TIMER_BIT)) {
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, MAP_READ_TIMER_BIT)) {
     currentStatus.mapDOT = computeMapDot();
 
     aeCorrection = correctionAccel(mapOnTimeoutExpired, mapShouldResetAe, mapShouldStartAe, mapComputeAe);
@@ -481,7 +475,7 @@ static inline uint16_t correctionAccelModeTps(void) {
   uint16_t aeCorrection = currentStatus.AEamount;
 
   // No point in updating faster than the TPS is read
-  if (BIT_CHECK(LOOP_TIMER, TPS_READ_TIMER_BIT)) {
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, TPS_READ_TIMER_BIT)) {
     currentStatus.tpsDOT = computeTPSDOT();
 
     aeCorrection = correctionAccel(tpsOnTimeoutExpired, tpsShouldResetAe, tpsShouldStartAe, tpsComputeAe);
@@ -515,7 +509,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionAccel(void)
 // ============================= Flood Clear =============================
 
 static inline bool isFloodClearActive(const statuses &current, const config4 &page4) {
-  return current.engineIsCranking
+  return current.rotationStatus==EngineRotationStatus::Cranking
       && (current.TPS >= page4.floodClear);
 }
 
@@ -534,7 +528,7 @@ TESTABLE_INLINE_STATIC byte correctionBatVoltage(void)
 {
   // No point in updating more often than the sensor is read
   uint8_t correction = currentStatus.batCorrection;
-  if( BIT_CHECK(LOOP_TIMER, BAT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT) ) { 
     correction = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
   }
   return correction;
@@ -546,7 +540,7 @@ This corrects for changes in air density from movement of the temperature.
 TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
 {
   // Performance: only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, IAT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT) ) { 
     return table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
   }
   return currentStatus.iatCorrection;
@@ -560,7 +554,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
 TESTABLE_INLINE_STATIC uint8_t correctionBaro(void)
 {
   // No point in updating more often than the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, BARO_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT) ) { 
     return (uint8_t)table2D_getValue(&baroFuelTable, currentStatus.baro);
   }
   return currentStatus.baroCorrection;
@@ -594,7 +588,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionDFCOfuel(void)
       scaleValue = (uint8_t)map(dfcoTaper, 
                                 configPage9.dfcoTaperTime, 0, 
                                 NO_FUEL_CORRECTION, configPage9.dfcoTaperFuel);
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { --dfcoTaper; }
+      if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { --dfcoTaper; }
     }
     else { scaleValue = 0; } //Taper ended or disabled, disable fuel
   }
@@ -627,7 +621,7 @@ TESTABLE_INLINE_STATIC bool correctionDFCO(void)
       {
         if( dfcoDelay < configPage2.dfcoDelay )
         {
-          if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
+          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
         }
         else { DFCOValue = true; }
       }
@@ -704,17 +698,12 @@ static inline uint8_t computeSimpleCorrection(const statuses &current, const con
 }
 
 static inline uint8_t computePIDCorrection(const statuses &current, const config6 &page6) {
-  //Set the limits again, just in case the user has changed them since the last loop. 
-  //Note that these are sent to the PID library as (Eg:) -15 and +15
-  egoPID.SetOutputLimits(-page6.egoLimit, page6.egoLimit); 
   //Set the PID values again, just in case the user has changed them since the last loop
-  egoPID.SetTunings(page6.egoKP, page6.egoKI, page6.egoKD); 
-  PID_O2 = (long)(current.O2);
-  PID_AFRTarget = (long)(current.afrTarget);
+  setEgoPidTunings(page6);
+  egoPID.setSetPoint(current.afrTarget);
 
-  (void)egoPID.Compute();
   // Can't do this in one step: MISRA compliance.
-  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)PID_output;
+  int8_t correction = (int8_t)BASELINE_FUEL_CORRECTION + (int8_t)egoPID.compute(current.O2);
   return (uint8_t)correction;
 }
 
@@ -722,7 +711,7 @@ static inline bool nextAfrCycleHasStarted(void) {
   //Check whether ignitionCount has exceeded AFRnextCycle.
   //This method prevents any issues when AFRnextCycle overflows but these variables 
   //cannot be more than UINT16_HALF_RANGE apart
-  return (((uint16_t)(ignitionCount - AFRnextCycle)) < UINT16_HALF_RANGE);
+  return (((uint16_t)(ignitionCount - AFRnextCycle)) < (UINT16_MAX/2U));
 }
 
 static inline void setNextAfrCycle(void) {
@@ -737,8 +726,8 @@ static inline bool isAfrClosedLoopOperational(const statuses &current, const con
       && (current.O2 > page6.ego_min) 
       && (current.runSecs > page6.ego_sdelay) 
       && (!current.isDFCOActive) 
-      && (current.MAP <= (long)MAP.toUser( page9.egoMAPMax)) 
-      && (current.MAP >= (long)MAP.toUser( page9.egoMAPMin))
+      && (current.MAP <= MAP.toUser(page9.egoMAPMax)) 
+      && (current.MAP >= MAP.toUser(page9.egoMAPMin))
       ;
 }
 
@@ -880,7 +869,7 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
 {
   static int8_t cachedValue = 0U;  // Setting this to non-zero will use additional RAM for static initialisation
   // Performance: only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
     cachedValue = IGNITION_ADVANCE_SMALL.toUser(table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant)));
   }
   return advance + cachedValue;
@@ -891,7 +880,7 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
  */
 int8_t correctionCrankingFixedTiming(int8_t advance)
 {
-  if ( currentStatus.engineIsCranking )
+  if ( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
   { 
     if ( configPage2.crkngAddCLTAdv == 0U ) { 
       advance = configPage4.CrankAng; //Use the fixed cranking ignition angle
@@ -922,7 +911,7 @@ static inline bool isWMIAdvanceEnabled(void) {
 static inline bool isWMIAdvanceOperational(void) {
   return (currentStatus.TPS >= configPage10.wmiTPS) 
       && (currentStatus.RPM >= RPM_COARSE.toUser(configPage10.wmiRPM)) 
-      && (currentStatus.MAP >= (int32_t)MAP.toUser(configPage10.wmiMAP)) 
+      && (currentStatus.MAP >= MAP.toUser(configPage10.wmiMAP)) 
       && (temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT);
 }
 
@@ -943,7 +932,7 @@ TESTABLE_INLINE_STATIC int8_t correctionIATretard(int8_t advance)
 {
   static uint8_t cachedValue = 0U; // Setting this to non-zero will use additional RAM for static initialisation
   // Performance: only update as fast as the sensor is read
-  if( BIT_CHECK(LOOP_TIMER, IAT_READ_TIMER_BIT)) { 
+  if( BIT_CHECK(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT)) { 
     cachedValue = (uint8_t)table2D_getValue(&IATRetardTable, (uint8_t)currentStatus.IAT); // TODO: check if this needs converted
   }
   return (int16_t)advance - (int16_t)cachedValue;
@@ -976,7 +965,7 @@ static inline int8_t applyIdleAdvanceAdjust(int8_t advance, int8_t adjustment) {
 static inline bool isIdleAdvanceOn(void) {
   return (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) 
       && (runSecsX10 >= TIME_TWENTY_MILLIS.toUser( configPage2.idleAdvDelay ))
-      && currentStatus.engineIsRunning
+      && currentStatus.rotationStatus==EngineRotationStatus::Running
       /* When Idle advance is the only idle speed control mechanism, activate as soon as not cranking. 
       When some other mechanism is also present, wait until the engine is no more than 200 RPM below idle target speed on first time
       */
@@ -1001,7 +990,7 @@ TESTABLE_INLINE_STATIC int8_t correctionIdleAdvance(int8_t advance)
     {
       if( idleAdvDelayCount < configPage9.idleAdvStartDelay )
       {
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { ++idleAdvDelayCount; }
+        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++idleAdvDelayCount; }
       }
       else
       {
@@ -1040,12 +1029,12 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftRevLimit(int8_t advance)
       if( softLimitTime < configPage4.SoftLimMax )
       {
         advance = calculateSoftRevLimitAdvance(advance);
-        if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { 
+        if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { 
           ++softLimitTime; 
         }
       }
     }
-    else if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_10HZ) ) { 
+    else if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { 
       softLimitTime = 0; //Only reset time at runSecsX10 update rate
     } else {
       // Nothing to do, keep MISRA checker happy.
@@ -1218,7 +1207,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
     else
     {
       //If not is not currently active, we read the analog pin every 30Hz
-      if( BIT_CHECK(LOOP_TIMER, BIT_TIMER_30HZ) ) 
+      if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_30HZ) ) 
       { 
         uint16_t tmpKnockReading = getAnalogKnock();
 
@@ -1302,7 +1291,7 @@ uint16_t correctionsDwell(uint16_t dwell)
   //**************************************************************************************************************************
   //Pull battery voltage based dwell correction and apply if needed
   static uint8_t dwellCorrection = ONE_HUNDRED_PCT;
-  if (BIT_CHECK(LOOP_TIMER, BAT_READ_TIMER_BIT)) { // Performance: only update as fast as the sensor is read
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT)) { // Performance: only update as fast as the sensor is read
     dwellCorrection = (uint8_t)table2D_getValue(&dwellVCorrectionTable, currentStatus.battery10);
   }
   if (dwellCorrection != ONE_HUNDRED_PCT) { 

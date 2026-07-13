@@ -45,7 +45,7 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const confi
 {
   return (page6.engineProtectType != PROTECT_CUT_OFF)
       && (page6.boostCutEnabled) 
-      && (current.MAP > (long)MAP.toUser(page6.boostLimit));
+      && (current.MAP > MAP.toUser(page6.boostLimit));
 }
 
 static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
@@ -69,7 +69,7 @@ static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &pag
 
 static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-    return (current.MAP >= (long)MAP.toUser(page9.afrProtectMinMAP))
+    return (current.MAP >= MAP.toUser(page9.afrProtectMinMAP))
           && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
           && (current.TPS >= page9.afrProtectMinTPS) 
           && (current.O2 >= getAfrO2Limit(current, page9)); 
@@ -378,7 +378,7 @@ TESTABLE_STATIC bool supportPendingIgnitionCut(const config2 &page2, const confi
 TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, bool supportPendingIgnitionCut)
 {
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
-  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, current.maxInjOutputs); ++channel)
+  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, getTotalInjChannelCount(current)); ++channel)
   {  
     if( rollingCutRandFunc() < cutPercent )
     {
@@ -389,11 +389,6 @@ TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCutPercentage(const status
       cutState = channelOn(cutState, supportPendingIgnitionCut, channel);
     }
   }
-  byte ignMask = 1U << current.maxIgnOutputs; 
-  cutState.ignitionChannels = cutState.ignitionChannels & (ignMask - 1U); //Mask off unused ignition channels
-  byte injMask = 1U << current.maxInjOutputs;
-  cutState.fuelChannels = cutState.fuelChannels & (injMask - 1U); //Mask off unused fuel channels
-
   cutState.status = SchedulerCutStatus::Rolling;
   return cutState;
 }
@@ -432,34 +427,46 @@ TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCut(const statuses &curren
   }
 }
 
+statuses::scheduler_cut_t maskUnusedChannels(statuses::scheduler_cut_t cutState, const statuses &current)
+{
+  // Whatever the cut state is, ensure that any channels above the max outputs configured are masked off.  
+  cutState.ignitionChannels = cutState.ignitionChannels & setBits(current.maxIgnOutputs); //Mask off unused ignition channels
+  cutState.fuelChannels = cutState.fuelChannels & setBits(getTotalInjChannelCount(current)); //Mask off unused fuel channels
+  return cutState;
+}
+
 BEGIN_LTO_ALWAYS_INLINE(statuses::scheduler_cut_t) calculateFuelIgnitionChannelCut(const statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9)
 {
+  statuses::scheduler_cut_t cutState = CUT_NONE;
   if ((current.decoder.getStatus().syncStatus==SyncStatus::None) || (current.startRevolutions < page4.StgCycles))
   {
-      return CUT_FULL_BOTH;
+    cutState = CUT_FULL_BOTH;
   }
-  if (page6.engineProtectType==PROTECT_CUT_OFF)
+  else if (page6.engineProtectType!=PROTECT_CUT_OFF)
   {
-    //Make sure all channels are turned on
-    return CUT_NONE;
-  }
+    // Determine the absolute max RPM
+    uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
 
-  // Determine the absolute max RPM
-  uint16_t maxAllowedRPM = getMaxRpm(current, page4, page6, page9);
-
-  // Full cut is always applied if RPM exceeds max allowed
-  // regardless of page2.hardCutType
-  if (current.RPM >= maxAllowedRPM)
-  {
-    return applyFullCut(page6);
-  }
-  else if (useRollingCut(current, page2, maxAllowedRPM))
-  { 
-    return applyRollingCut(current, page2, page4, page6, maxAllowedRPM);
+    // Full cut is always applied if RPM exceeds max allowed
+    // regardless of page2.hardCutType
+    if (current.RPM >= maxAllowedRPM)
+    {
+        cutState = applyFullCut(page6);
+    }
+    else if (useRollingCut(current, page2, maxAllowedRPM))
+    { 
+        cutState = applyRollingCut(current, page2, page4, page6, maxAllowedRPM);
+    }
+    else
+    {
+      // Nothing to do - default CUT_NONE will apply no cuts
+    }
   }
   else
   {
-    return CUT_NONE;
+    // Nothing to do - default CUT_NONE will apply no cuts
   }
+
+  return maskUnusedChannels(cutState, current);
 }
 END_LTO_INLINE()

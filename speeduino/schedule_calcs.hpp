@@ -1,3 +1,4 @@
+#pragma once
 // Note that all functions with an underscore prefix are NOT part 
 // of the public API. They are only here so we can inline them.
 
@@ -6,7 +7,15 @@
 #include "maths.h"
 #include "timers.h"
 
-static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t injChannelDegrees, uint16_t injAngle)
+/**
+ * @brief Compute the injector open angle for an injection channel
+ * 
+ * @param pwDegrees How many crank degrees the calculated PW will take at the current speed
+ * @param tdcOffset The number of crank degrees until cylinder is at TDC (at rest)
+ * @param injAngle The requested injection angle
+ * @return uint16_t 
+ */
+static inline uint16_t _calculateOpenAngle(FuelSchedule &schedule, uint16_t pwDegrees, uint16_t injAngle)
 {
   // 0<=injAngle<=720°
   // 0<=injChannelDegrees<=720°
@@ -14,95 +23,155 @@ static inline uint16_t calculateInjectorStartAngle(uint16_t pwDegrees, int16_t i
   // 45<=CRANK_ANGLE_MAX_INJ<=720
   // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
 
-  uint16_t startAngle = (uint16_t)injAngle + (uint16_t)injChannelDegrees;
+  uint16_t startAngle = injAngle + schedule.channelDegrees;
   
   while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
   startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
-  while (startAngle>(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
+  while (startAngle>=(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
 
   return startAngle;
 }
 
-static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int openAngle, int crankAngle)
+struct injectorAngleCalcCache {
+  uint16_t pw = 0U;
+  uint16_t pwDegrees = 0U;
+};
+
+static inline uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *pCache) {
+  // We can afford to be a bit loose updating the cache since injection timing doesn't 
+  // need to be precise (the PW calcs liberally use approximations)
+  //
+  // 1% of a revolution at max RPM should be plenty accurate.
+  constexpr int16_t PW_DELTA_THRESHOLD = MIN_REVOLUTION_TIME/100U; // in µS
+  if (abs((int16_t)pCache->pw-(int16_t)pw)>PW_DELTA_THRESHOLD) {
+    pCache->pwDegrees = timeToAngle(pw);
+    pCache->pw = pw;
+  }
+  return pCache->pwDegrees;
+}
+
+static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
+  int16_t delta = eventAngle - crankAngle;
+  if ( (isRunning(schedule)) || (schedule._status == OFF)) {
+    while(delta < 0) { delta += (int16_t)maxAngle; }
+  } 
+
+  return delta > 0 ? angleToTime((uint16_t)delta) : 0U;
+}
+
+static FORCE_INLINE uint16_t _adjustToTDC(int16_t angle, uint16_t angleOffset, uint16_t maxAngle) {
+  angle = angle - (int16_t)angleOffset;
+  if( angle < 0) { return angle + (int16_t)maxAngle; }
+  return angle;
+}
+
+static FORCE_INLINE uint32_t _calculateAngularTime(const Schedule &schedule, uint16_t angleOffset, uint16_t eventAngle, uint16_t crankAngle, uint16_t maxAngle) {
+  if (angleOffset==0U) { // Optimize for zero channel angle - no need to adjust start & crank angles
+    return _calculateAngularTime(schedule, eventAngle, crankAngle, maxAngle);
+  }
+  // Realign the current crank angle and the desired start angle around 0 degrees for the given cylinder/output
+  // Eg: If cylinder 2 TDC is 180 degrees after cylinder 1 (E.g. a standard 4 cylinder engine), then
+  // adjusted crank angle is 180* less than the current crank angle and adjusted start angle is the desired open angle less 180*. 
+  // Thus the cylinder is being treated relative to its own TDC, regardless of its offset
+  //
+  // This is done to avoid very small or very large deltas between crank angle and start angle.
+  return _calculateAngularTime(schedule, 
+            _adjustToTDC(eventAngle, angleOffset, maxAngle),
+            _adjustToTDC(crankAngle, angleOffset, maxAngle),
+            maxAngle);
+}
+
+/**
+ * @brief Calculate the time in uS from now to when the injector should be opened.
+ * 
+ * @param schedule The ignition channel
+ * @param openAngle The angle at which to open the injector
+ * @param crankAngle The current crank angle
+ * @return uint32_t 
+ */
+static inline uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t crankAngle, uint16_t openAngle)
 {
   int16_t delta = openAngle - crankAngle;
 
   if (delta<0)
   {
-    if (schedule.Status != PENDING)
+    if (schedule._status != PENDING)
     {
       while(delta < 0) { delta += CRANK_ANGLE_MAX_INJ; }
     }
     else
     {
       delta = 0;
-    }
-  }
-  return angleToTimeMicroSecPerDegree((uint16_t)delta);
-}
-
-static inline void calculateIgnitionAngle(const uint16_t dwellAngle, const uint16_t channelIgnDegrees, int8_t advance, int *pEndAngle, int *pStartAngle)
-{
-  *pEndAngle = (int16_t)(channelIgnDegrees==0U ? (uint16_t)CRANK_ANGLE_MAX_IGN : channelIgnDegrees) - (int16_t)advance;
-  if(*pEndAngle > CRANK_ANGLE_MAX_IGN) {*pEndAngle -= CRANK_ANGLE_MAX_IGN;}
-  *pStartAngle = *pEndAngle - dwellAngle;
-  if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
-}
-
-static inline void calculateIgnitionTrailingRotary(uint16_t dwellAngle, int rotarySplitDegrees, int leadIgnitionAngle, int *pEndAngle, int *pStartAngle)
-{
-  *pEndAngle = leadIgnitionAngle + rotarySplitDegrees;
-  *pStartAngle = *pEndAngle - dwellAngle;
-  if(*pStartAngle > CRANK_ANGLE_MAX_IGN) {*pStartAngle -= CRANK_ANGLE_MAX_IGN;}
-  if(*pStartAngle < 0) {*pStartAngle += CRANK_ANGLE_MAX_IGN;}
-}
-
-static inline __attribute__((always_inline)) uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t startAngle, int16_t crankAngle) 
-{
-  int16_t delta = startAngle - crankAngle;
-  if (delta < 0)
-  {
-    if ((isRunning(schedule)) && (delta>-CRANK_ANGLE_MAX_IGN)) 
-    { 
-      // Must be >0
-      delta = delta + CRANK_ANGLE_MAX_IGN; 
-    }
-    else
-    {
       return 0U;
     }
   }
-
-  return angleToTimeMicroSecPerDegree(delta);
+  return angleToTime((uint16_t)delta);
 }
 
-static inline uint16_t _adjustToIgnChannel(int angle, int channelInjDegrees) 
-{
-  angle = angle - channelInjDegrees;
-  if( angle < 0) { return angle + CRANK_ANGLE_MAX_IGN; }
+static inline int16_t _calculateSparkAngle(const IgnitionSchedule &schedule, int8_t advance) {
+  int16_t angle = (int16_t)(schedule.channelDegrees==0U ? CRANK_ANGLE_MAX_IGN : schedule.channelDegrees) - advance;
+  if(angle > CRANK_ANGLE_MAX_IGN) {angle -= CRANK_ANGLE_MAX_IGN;}
   return angle;
 }
 
-static inline uint32_t calculateIgnitionTimeout(const IgnitionSchedule &schedule, int startAngle, int channelIgnDegrees, int crankAngle)
-{
-  if (channelIgnDegrees == 0) 
-  {
-      return _calculateIgnitionTimeout(schedule, startAngle, crankAngle);
+static inline int16_t _calculateCoilChargeAngle(uint16_t dwellAngle, int16_t dischargeAngle) {
+  if (dischargeAngle>(int16_t)dwellAngle) {
+    return dischargeAngle - (int16_t)dwellAngle;
   }
-  return _calculateIgnitionTimeout(schedule, _adjustToIgnChannel(startAngle, channelIgnDegrees), _adjustToIgnChannel(crankAngle, channelIgnDegrees));
+  return dischargeAngle + CRANK_ANGLE_MAX_IGN - (int16_t)dwellAngle;
 }
 
-#define MIN_CYCLES_FOR_ENDCOMPARE 6U
-
-static inline void adjustCrankAngle(IgnitionSchedule &schedule, int endAngle, int crankAngle) 
+static inline void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance)
 {
-  if( isRunning(schedule) ) { 
-    SET_COMPARE(schedule._compare, schedule._counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( (uint16_t)ignitionLimits( endAngle - crankAngle ) ) ) ); 
-  }
-  else if(currentStatus.startRevolutions > MIN_CYCLES_FOR_ENDCOMPARE) { 
-    schedule.endCompare = schedule._counter + uS_TO_TIMER_COMPARE( angleToTimeMicroSecPerDegree( ignitionLimits( (endAngle - crankAngle) ) ) ); 
-    schedule.endScheduleSetByDecoder = true; 
-  } else {
-    // Nothing to do
+  schedule.dischargeAngle = _calculateSparkAngle(schedule,  advance);
+  schedule.chargeAngle = _calculateCoilChargeAngle(dwellAngle, schedule.dischargeAngle);
+}
+
+
+static inline void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, uint16_t dwellAngle, int16_t rotarySplitDegrees, IgnitionSchedule &trailing) 
+{
+  trailing.dischargeAngle = (int16_t)ignitionLimits(leading.dischargeAngle + rotarySplitDegrees);
+  trailing.chargeAngle = (int16_t)ignitionLimits(trailing.dischargeAngle - (int16_t)dwellAngle); 
+}
+
+static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedule, int16_t crankAngle)
+{
+  return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
+}
+
+/**
+ * @brief Adjust the crank angle used to originally set the schedule.
+ * 
+ * The assumption here is that we have a more accurate crank angle than
+ * was originally passed to calculateIgnitionTimeout. So we can increase the
+ * spark accuracy
+ * 
+ * @param schedule The schedule to modify 
+ * @param crankAngle The new crank angle in degrees
+ */
+static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAngle) {
+  constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
+
+  crankAngle = ignitionLimits(crankAngle);
+  ATOMIC() { // Prevent race conditions with the timer interrupt.
+    // We only want to adjust the crank angle if we are running and the coil is charging or we are waiting for the timer to fire.
+    if( isRunning(schedule) ) {
+      if  (schedule.dischargeAngle>crankAngle) { 
+        // Coil is charging so change the charge time so the spark fires at
+        // the requested crank angle (this could reduce dwell time & potentially
+        // result in a weaker spark).
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.dischargeAngle-crankAngle )); 
+      } 
+    }
+    else if( (schedule._status==PENDING) ) {
+      if ((currentStatus.startRevolutions > MIN_CYCLES_FOR_CORRECTION) && (schedule.chargeAngle>crankAngle)) {
+        // We are waiting for the timer to fire & start charging the coil.
+        // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
+        // the spark fires at the requested crank angle.
+        SET_COMPARE(schedule._compare, schedule._counter + angleToTimerTicks( schedule.chargeAngle-crankAngle )); 
+      }
+    } else {
+      // Unknown state, so no adjustment possible
+    }
   }
 }

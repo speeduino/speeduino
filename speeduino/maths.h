@@ -15,6 +15,18 @@
 
 uint8_t random1to100(void) noexcept;
 
+/** @brief Self-explanatory */
+static constexpr uint32_t MICROS_PER_SEC = UINT32_C(1000000);
+
+/** @brief Self-explanatory */
+static constexpr uint32_t MICROS_PER_MIN = MICROS_PER_SEC*60U;
+
+/** @brief Self-explanatory */
+static constexpr uint32_t MICROS_PER_HOUR = MICROS_PER_MIN*60U;
+
+/** @brief Self-explanatory */
+static constexpr uint32_t MILLI_PER_SEC = MICROS_PER_SEC/1000;
+
 /**
  * @defgroup group-rounded-div Rounding integer division
  * 
@@ -106,6 +118,10 @@ TESTABLE_STATIC_CONSTEXPR uint16_t div_round_closest_u16(uint16_t n) {
     // assuming d is a constant.    
     return (uint16_t)((n + DIV_ROUND_CORRECT(divisor, uint16_t)) / divisor);
 }
+
+/** @brief Rounding up \em unsigned integer division */
+#define UDIV_ROUND_UP(n, d, t) ((t)((n) + (t)((d)+1U))/(t)(d))
+
 ///@}
 
 /** @brief Test whether the parameter is an integer or not. */
@@ -275,7 +291,7 @@ static inline uint32_t percentageApprox(uint16_t percent, uint32_t value) {
 /**
  * @brief Slightly faster version of percentageApprox(uint16_t, uint32_t), since we know percent<256.
  */
-static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) {
+static inline uint32_t percentageApprox(uint8_t percent, uint32_t value) noexcept {
     if (percent<(UINT8_C(1)<<UINT8_C(7))) {
         return _percentageApprox<9U>(percent, value);
     }

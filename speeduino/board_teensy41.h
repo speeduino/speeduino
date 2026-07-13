@@ -4,8 +4,6 @@
 
 #include <Arduino.h>
 #include <limits>
-#include "src/pins/inputPin.h"
-#include "src/pins/outputPin.h"
 
 #define CORE_TEENSY41
 
@@ -220,8 +218,18 @@ static inline void IGN8_TIMER_DISABLE(void)  {TMR4_CSCTRL3 &= ~TMR_CSCTRL_TCF1EN
 #include <FlexCAN_T4.h>
 #define NATIVE_CAN_AVAILABLE //Disable for now as it causes lockup 
 
+class inputPin_t;
 using boardInputPin_t = inputPin_t;
+class outputPin_t;
 using boardOutputPin_t = outputPin_t;
 
 /** @brief Analog pin mapping */
 constexpr uint8_t ANALOG_PINS[] = { _ANALOG_PINS_A0_A14, A15, A16 };
+
+/** @brief When the serial buffer is filled to greater than this threshold
+ * value, the serial processing operations will be performed more urgently 
+ * in order to avoid it overflowing. 
+ */
+constexpr uint8_t SERIAL_BUFFER_THRESHOLD = 0U;
+
+#define MC33810_SUPPORT

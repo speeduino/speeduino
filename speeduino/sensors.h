@@ -1,7 +1,10 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include "globals.h"
+#include "timers.h"
+#include "config_pages.h"
+#include "statuses.h"
+#include "table2d.h"
 
 // The following are alpha values for the ADC filters.
 // Their values are from 0 to 240, with 0 being no filtering and 240 being maximum
@@ -20,7 +23,7 @@
 #define VSS_GEAR_HYSTERESIS 10U
 #define VSS_SAMPLES         4U //Must be a power of 2 and smaller than 255
 
-extern volatile byte flexCounter;
+extern volatile uint8_t flexCounter;
 extern volatile uint32_t flexPulseWidth;
 
 #define BIT_SENSORS_AUX_ENBL        0

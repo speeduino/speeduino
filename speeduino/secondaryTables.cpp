@@ -4,6 +4,7 @@
 #include "maths.h"
 #include "unit_testing.h"
 #include "globals.h"
+#include "units.h"
 
 /**
  * @brief Looks up and returns the VE value from the secondary fuel table
@@ -23,7 +24,7 @@ static inline bool fuelModeCondSwitchRpmActive(const config10 &page10, const sta
 
 static inline bool fuelModeCondSwitchMapActive(const config10 &page10, const statuses &current) {
   return (page10.fuel2SwitchVariable == FUEL2_CONDITION_MAP)
-      && ((uint16_t)(int16_t)current.MAP > page10.fuel2SwitchValue);
+      && (current.MAP > page10.fuel2SwitchValue);
 }
 
 static inline bool fuelModeCondSwitchTpsActive(const config10 &page10, const statuses &current) {
@@ -85,7 +86,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
 // The bounds of the spark table vary depending on the mode (see the INI file).
 // int16_t is wide enough to capture the full range of the table.
 static inline int16_t lookupSpark2(const config10 &page10, const table3d16RpmLoad &sparkLookupTable, const statuses &current) {
-  return (int16_t)get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM) - INT16_C(OFFSET_IGNITION);  
+  return IGNITION_ADVANCE_LARGE.toUser(get3DTableValue(&sparkLookupTable, getLoad(page10.spark2Algorithm, current), current.RPM));  
 }
 
 static inline int8_t constrainAdvance(int16_t advance)
@@ -101,7 +102,7 @@ static inline bool sparkModeCondSwitchRpmActive(const config10 &page10, const st
 
 static inline bool sparkModeCondSwitchMapActive(const config10 &page10, const statuses &current) {
   return (page10.spark2SwitchVariable == SPARK2_CONDITION_MAP)
-      && ((uint16_t)(int16_t)current.MAP > page10.spark2SwitchValue);
+      && (current.MAP > page10.spark2SwitchValue);
 }
 
 static inline bool sparkModeCondSwitchTpsActive(const config10 &page10, const statuses &current) {
@@ -131,7 +132,7 @@ static inline bool isFixedTimingOn(const config2 &page2, const statuses &current
             // Fixed timing is in effect
     return  (page2.fixAngEnable == 1U)
             // Cranking, so the cranking advance angle is in effect
-            || (current.engineIsCranking);
+            || (current.rotationStatus==EngineRotationStatus::Cranking);
 }
 
 void calculateSecondarySpark(const config2 &page2, const config10 &page10, const table3d16RpmLoad &sparkLookupTable, statuses &current)

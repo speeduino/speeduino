@@ -18,7 +18,6 @@ A full copy of the license may be found in the projects root directory
 #include "pages.h"
 #include "decoder_init.h"
 #include "auxiliaries.h"
-#include "utilities.h"
 #include "unit_testing.h"
 #include "sensors_map_structs.h"
 #include "units.h"
@@ -81,17 +80,20 @@ TESTABLE_INLINE_STATIC int16_t fastMap10Bit(uint16_t value, int16_t rangeMin, in
   return rangeMin + (int16_t)fromStartOfRange;
 }
 
-//
-static inline uint16_t readAnalogPin(uint8_t pin) 
+TESTABLE_STATIC int16_t postProcessAnalogRead(int16_t pinValue)
+{
+#if defined(BOARD_ANALOG_SCALE_NUM) && defined(BOARD_ANALOG_SCALE_DEN)
+  pinValue = (int16_t)(((uint32_t)pinValue * BOARD_ANALOG_SCALE_NUM) / BOARD_ANALOG_SCALE_DEN);
+#endif
+  return pinValue;
+}
+
+static inline uint16_t readAnalogPin(uint8_t pin)
 {
   // Why do we read twice? Who knows.....
   analogRead(pin);
-  // According to the docs, analogRead result should be in range 0-1023
-  // Clip the result to zero minimum to prevent rollover just in case
-  int tmp = analogRead(pin);
-  // max is a macro on some platforms - DO NOT place the call to analogRead as an inline parameter:
-  // (you might end up calling it twice)
-  return max(0, tmp);
+  // Read and clamp to 0-1023 range, which is the range of return values for analogRead()
+  return (uint16_t)clamp(postProcessAnalogRead(analogRead(pin)), (int16_t)0, (int16_t)1023);
 }
 
 
@@ -743,33 +745,14 @@ static inline void readO2(void)
 
 static inline void readBat(void)
 {
-  int16_t tempReading = fastMap10Bit(readAnalogSensor(pinBat), 0, 245); //Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
-
-  //Apply the offset calibration value to the reading
-  tempReading += configPage4.batVoltCorrect;
-  if(tempReading < 0){
-    tempReading=0;
-  }  //with negative overflow prevention
-
-
-  //The following is a check for if the voltage has jumped up from under 5.5v to over 7v.
-  //If this occurs, it's very likely that the system has gone from being powered by USB to being powered from the 12v power source.
-  //Should that happen, we re-trigger the fuel pump priming and idle homing (If using a stepper)
-  if( (currentStatus.battery10 < 55U) && (tempReading > 70) && (currentStatus.RPM == 0U) )
-  {
-    //Re-prime the fuel pump
-    fpPrimeTime = currentStatus.secl;
-    currentStatus.fpPrimed = false;
-    fuelPumpOn();
-
-    //Redo the stepper homing
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OL) )
-    {
-      initialiseIdle(true);
-    }
-  }
-
-  currentStatus.battery10 = LOW_PASS_FILTER(tempReading, configPage4.ADCFILTER_BAT, currentStatus.battery10);
+  // Get the current raw Battery value. Permissible values are from 0v to 24.5v (245)
+  currentStatus.battery10 =
+    clamp( 
+      LOW_PASS_FILTER((int16_t)fastMap10Bit( readAnalogSensor(pinBat), 0, 245) + configPage4.batVoltCorrect, 
+                      configPage4.ADCFILTER_BAT,
+                      (int16_t)currentStatus.battery10),
+      (int16_t)0,
+      (int16_t)UINT8_MAX);
 }
 
 #if defined(ANALOG_ISR)
@@ -833,7 +816,10 @@ static inline uint16_t getSpeed(void)
     }
 
     pulseTime = fast_div(vssTotalTime,  VSS_SAMPLES - 1UL);
-    if ( (micros() - vssTimes[vssIndex]) > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
+    noInterrupts();
+    uint32_t timeSinceLastPulse = (micros() - vssTimes[vssIndex]);
+    interrupts();
+    if ( timeSinceLastPulse > MICROS_PER_SEC ) { tempSpeed = 0; } // Check that the car hasn't come to a stop. Is true if last pulse was more than 1 second ago
     else 
     {
       tempSpeed = fast_div(MICROS_PER_HOUR, pulseTime * configPage2.vssPulsesPerKm); //Convert the pulse gap into km/h

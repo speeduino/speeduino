@@ -25,7 +25,7 @@ static decoder_status_t getDecoderStatus(void)
 
 static void enable_cycle_average(statuses &current, config2 &page2) {
   current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
-  setRpm(current, 4300U);
+  current.setRpm( 4300U);
   page2.mapSwitchPoint = 15; 
   current.startRevolutions = 55;
   decoderStatus.syncStatus = SyncStatus::Full;
@@ -46,11 +46,11 @@ static void test_canUseCycleAverge(void) {
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
   current.startRevolutions = 55;
 
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint-1U));
+  current.setRpm( RPM_COARSE.toUser(page2.mapSwitchPoint-1U));
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint));
+  current.setRpm( RPM_COARSE.toUser(page2.mapSwitchPoint));
   TEST_ASSERT_FALSE(canUseCycleAverage(current, page2));
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
+  current.setRpm( RPM_COARSE.toUser(page2.mapSwitchPoint+1U));
   TEST_ASSERT_TRUE(canUseCycleAverage(current, page2));
 }
 
@@ -169,7 +169,7 @@ struct cycleMinmumMAPReading_test_data {
 };
 
 static void setup_cycle_minimum(cycleMinmumMAPReading_test_data &test_data) {
-  setRpm(test_data.current, 4300U);
+  test_data.current.setRpm(4300U);
   test_data.current.startRevolutions = 0U;
   test_data.page2.mapSwitchPoint = 15; 
   test_data.cycle_min.cycleStartIndex = 0;
@@ -180,7 +180,7 @@ static void test_cycleMinimumMAPReading_fallback_instantaneous(void) {
   cycleMinmumMAPReading_test_data test_data;
   setup_cycle_minimum(test_data);
 
-  setRpm(test_data.current, RPM_COARSE.toUser(test_data.page2.mapSwitchPoint - 1U));
+  test_data.current.setRpm(RPM_COARSE.toUser(test_data.page2.mapSwitchPoint - 1U));
   test_data.sensorReadings.mapADC = 300;
   test_data.sensorReadings.emapADC = 500;  
   test_data.cycle_min.mapMinimum = UINT16_MAX;
@@ -244,7 +244,7 @@ struct eventAverageMAPReading_test_data {
 static eventAverageMAPReading_test_data setup_event_average(void) {
   eventAverageMAPReading_test_data context;
 
-  setRpm(context.current, 4300U);
+  context.current.setRpm( 4300U);
   context.page2.mapSwitchPoint = 15; 
   context.current.startRevolutions = 55;
   decoderStatus.syncStatus = SyncStatus::Full;
@@ -272,11 +272,11 @@ static void test_canUseEventAverage(void) {
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
   context.current.startRevolutions = 55;
 
-  setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint-1U));
+  context.current.setRpm( RPM_COARSE.toUser(context.page2.mapSwitchPoint-1U));
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint));
+  context.current.setRpm( RPM_COARSE.toUser(context.page2.mapSwitchPoint));
   TEST_ASSERT_FALSE(canUseEventAverage(context.current, context.page2));
-  setRpm(context.current, RPM_COARSE.toUser(context.page2.mapSwitchPoint+1U));
+  context.current.setRpm( RPM_COARSE.toUser(context.page2.mapSwitchPoint+1U));
   TEST_ASSERT_TRUE(canUseEventAverage(context.current, context.page2));
 
   context.current.engineProtect.rpm = true;
@@ -400,7 +400,7 @@ static void test_applyMapAlgorithm_cycleAverage_fallback_instantaneous(void) {
   page2.mapSample = MAPSamplingCycleAverage;
   page2.mapSwitchPoint = 15;
   // Ensure canUseCycleAverage is false (low RPM and no sync)
-  setRpm(current, 0U);
+  current.setRpm( 0U);
   decoderStatus.syncStatus = SyncStatus::None;
   alg.cycle_average.sampleCount = 0;
 
@@ -418,7 +418,7 @@ static void test_applyMapAlgorithm_cycleAverage_accumulate(void) {
   page2.mapSample = MAPSamplingCycleAverage;
   page2.mapSwitchPoint = 15;
   // Enable cycle averaging
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
+  current.setRpm( RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
   decoderStatus.syncStatus = SyncStatus::Full;
   current.startRevolutions = 55;
   // Force accumulate path
@@ -438,7 +438,7 @@ static void test_applyMapAlgorithm_cycleMinimum_endCycle_true(void) {
   page2.mapSample = MAPSamplingCycleMinimum;
   page2.mapSwitchPoint = 15;
   // Ensure RPM above switch point
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
+  current.setRpm( RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
   // Force end-cycle by making stored cycleStartIndex different
   alg.cycle_min.cycleStartIndex = (uint8_t)(current.startRevolutions - 2U);
   alg.cycle_min.mapMinimum = 123;
@@ -455,7 +455,7 @@ static void test_applyMapAlgorithm_eventAverage_accumulate(void) {
   page2.mapSample = MAPSamplingIgnitionEventAverage;
   page2.mapSwitchPoint = 15;
   // Enable event average conditions
-  setRpm(current, RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
+  current.setRpm( RPM_COARSE.toUser(page2.mapSwitchPoint + 1U));
   decoderStatus.syncStatus = SyncStatus::Full;
   current.startRevolutions = 55;
   // Ensure engine protect flags cleared

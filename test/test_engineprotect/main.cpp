@@ -5,12 +5,7 @@
 #include "decoder_builder.h"
 #include "decoder_init.h"
 #include "units.h"
-
-static decoder_status_t decoderStatus;
-static decoder_status_t getDecoderStatus(void)
-{
-    return decoderStatus;
-}
+#include "../fake_decoder_status.h"
 
 extern bool checkOilPressureLimit(const statuses &current, const config6 &page6, const config10 &page10, uint32_t currMillis);
 extern table2D_u8_u8_4 oilPressureProtectTable;
@@ -112,12 +107,15 @@ struct engineProtection_test_context_t
 
     engineProtection_test_context_t(void)
     {
-        current.decoder = decoder_builder_t().setGetStatus(getDecoderStatus).build();
+        current.decoder = decoder_builder_t().setGetStatus(getFakeDecoderStatus).build();
+        current.numPrimaryInjOutputs = 4;
+        current.numSecondaryInjOutputs = 4;
+        current.maxIgnOutputs = 8;
     }
 
     void setSyncStatus(SyncStatus syncStatus)
     {
-        decoderStatus.syncStatus = syncStatus;
+        fakeDecoderStatus.syncStatus = syncStatus;
     }
 
     void setOilPressureActive(void)
@@ -125,7 +123,7 @@ struct engineProtection_test_context_t
         resetInternalState();
         setup_oil_protect_table();
         current.oilPressure = oilPressureProtectTable.values[0]-10; // below table min
-        setRpm(current, 0U);
+        current.setRpm( 0U);
         page6.engineProtectType = PROTECT_CUT_IGN;
         page10.oilPressureProtEnbl = 1;
         page10.oilPressureEnable = 1;
@@ -145,7 +143,7 @@ struct engineProtection_test_context_t
         resetInternalState();
         afrProtectedActivateTime = 1;
         current.MAP = 200; // kPa-like units; ensure above any small min*2
-        setRpm(current, 5000);
+        current.setRpm( 5000);
         current.TPS = 50;
         current.O2 = 20;
         current.afrTarget = 10;
@@ -165,7 +163,7 @@ struct engineProtection_test_context_t
         page4.HardRevLim = 80;
         page4.SoftRevLim = 60;
         page4.SoftLimMax = 5;
-        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim));
+        current.setRpm( RPM_COARSE.toUser(page4.HardRevLim));
     }
 
     void setBeyondStaging(void)
@@ -190,7 +188,7 @@ struct engineProtection_test_context_t
         populateRollingCutTable();
         page2.hardCutType = HARD_CUT_ROLLING;
         page4.HardRevLim = 50; // div100 -> 1000 RPM
-        setRpm(current, RPM_COARSE.toUser(page4.HardRevLim) - SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]));
+        current.setRpm( RPM_COARSE.toUser(page4.HardRevLim) - SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]));
         current.schedulerCutState = { 0x00, 0xFF, 0xFF, SchedulerCutStatus::None };
     }
 
@@ -204,7 +202,7 @@ struct engineProtection_test_context_t
         populateCoolantProtectTable();
 
         current.coolant = 0;
-        setRpm(current, RPM_COARSE.toUser(coolantProtectTable.values[0]+1U)); // greater -> trigger
+        current.setRpm( RPM_COARSE.toUser(coolantProtectTable.values[0]+1U)); // greater -> trigger
     }
 };
 
@@ -237,7 +235,7 @@ static void test_checkOilPressureLimit_basic(void) {
 
     context.setOilPressureActive(); 
     context.current.oilPressure = 60; // above table min
-    setRpm(context.current, 0U);
+    context.current.setRpm( 0U);
     TEST_ASSERT_FALSE(checkOilPressureLimit(context.current, context.page6, context.page10, millis()));
 
     // PROTECT_CUT_IGN type should trigger
@@ -681,7 +679,7 @@ static void test_checkRpmLimit_disabled(void) {
 
     // soft limit active and RPM < soft rev lim should not trigger
     context.setRpmActive(HARD_REV_FIXED);
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim-1U));
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.SoftRevLim-1U));
     softLimitTime = context.page4.SoftLimMax + 1;
     TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 }
@@ -691,7 +689,7 @@ static void test_checkRpmLimit_fixed_and_softlimit(void) {
     context.setRpmActive(HARD_REV_FIXED);
 
     // below hard limit
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim - 1U));
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.HardRevLim - 1U));
     softLimitTime = 0;
     TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 
@@ -701,13 +699,13 @@ static void test_checkRpmLimit_fixed_and_softlimit(void) {
 
     // soft limit active and RPM >= soft rev lim should trigger
     context.setRpmActive(HARD_REV_FIXED);
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim));
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.SoftRevLim));
     softLimitTime = context.page4.SoftLimMax + 1;
     TEST_ASSERT_TRUE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 
     // soft limit equality should not trigger
     context.setRpmActive(HARD_REV_FIXED);
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.SoftRevLim));
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.SoftRevLim));
     softLimitTime = context.page4.SoftLimMax;
     TEST_ASSERT_FALSE(checkRpmLimit(context.current, context.page4, context.page6, context.page9));
 }
@@ -740,7 +738,7 @@ static void test_checkCoolantLimit_trigger_and_equal(void) {
     TEST_ASSERT_TRUE(checkCoolantLimit(context.current, context.page6, context.page9));
 
     context.setCoolantActive();
-    setRpm(context.current, RPM_COARSE.toUser(coolantProtectTable.values[0]));
+    context.current.setRpm( RPM_COARSE.toUser(coolantProtectTable.values[0]));
     TEST_ASSERT_FALSE(checkCoolantLimit(context.current, context.page6, context.page9));
 }
 
@@ -861,7 +859,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_ignition_only(void)
     context.setHardCutRolling();
 
     context.current.maxIgnOutputs = 1;
-    context.current.maxInjOutputs = 1;
+    context.current.numPrimaryInjOutputs = 1;
+    context.current.numSecondaryInjOutputs = 0;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
     auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
@@ -877,7 +876,8 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_both(void)
     context.setHardCutRolling();
 
     context.current.maxIgnOutputs = 1;
-    context.current.maxInjOutputs = 1;
+    context.current.numPrimaryInjOutputs = 1;
+    context.current.numSecondaryInjOutputs = 0;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -893,9 +893,10 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_multi_channel_fullc
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    setRpm(context.current, context.current.RPM * 2U); // ensure rpmDelta >= 0 for full cut
+    context.current.setRpm( context.current.RPM * 2U); // ensure rpmDelta >= 0 for full cut
     context.current.maxIgnOutputs = 4;
-    context.current.maxInjOutputs = 4;
+    context.current.numPrimaryInjOutputs = 2;
+    context.current.numSecondaryInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -911,7 +912,7 @@ static void test_calculateFuelIgnitionChannelCut_fullcut_updates_rollingCutLastR
     engineProtection_test_context_t context;
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim) + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) + 1U);
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.HardRevLim) + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) + 1U);
 
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -927,9 +928,10 @@ static void test_calculateFuelIgnitionChannelCut_pending_ignition_clears_determi
     context.setRpmActive(HARD_REV_FIXED);
 
     context.page2.strokes = FOUR_STROKE;
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim-1U)); // between (maxAllowed + axis[0]*10) and maxAllowed
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.HardRevLim-1U)); // between (maxAllowed + axis[0]*10) and maxAllowed
     context.current.maxIgnOutputs = 2;
-    context.current.maxInjOutputs = 2;
+    context.current.numPrimaryInjOutputs = 1;
+    context.current.numSecondaryInjOutputs = 1;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Prepare a schedulerCutState where ignition channels are pending
@@ -953,7 +955,7 @@ static void test_calculateFuelIgnitionChannelCut_no_rolling_cut_does_not_update_
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    setRpm(context.current, (context.page4.HardRevLim*100U) + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) - 1); // below threshold
+    context.current.setRpm( (context.page4.HardRevLim*100U) + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) - 1); // below threshold
     
     rollingCutLastRev = 0;
     context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
@@ -970,24 +972,24 @@ static void test_useRollingCut(void)
     // Test with HARD_CUT_FULL
     context.setHardCutRolling();
     context.page2.hardCutType = HARD_CUT_FULL;
-    setRpm(context.current, maxRPM);
+    context.current.setRpm( maxRPM);
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[2]));
+    context.current.setRpm( maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[2]));
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
 
     context.setHardCutRolling();
-    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) - 1); // below threshold    
+    context.current.setRpm( maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0]) - 1); // below threshold    
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0])); // exactly at threshold - should NOT trigger (needs >)
+    context.current.setRpm( maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0])); // exactly at threshold - should NOT trigger (needs >)
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0])+1); // just above threshold - cut
+    context.current.setRpm( maxRPM + SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[0])+1); // just above threshold - cut
     TEST_ASSERT_TRUE(useRollingCut(context.current, context.page2, maxRPM));
 
-    setRpm(context.current, maxRPM); // At max - no rolling cut
+    context.current.setRpm( maxRPM); // At max - no rolling cut
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM+1); // Above max - no rolling cut
+    context.current.setRpm( maxRPM+1); // Above max - no rolling cut
     TEST_ASSERT_FALSE(useRollingCut(context.current, context.page2, maxRPM));
-    setRpm(context.current, maxRPM - 1); // just below threshold - cut
+    context.current.setRpm( maxRPM - 1); // just below threshold - cut
     TEST_ASSERT_TRUE(useRollingCut(context.current, context.page2, maxRPM));
 }
 
@@ -1043,22 +1045,22 @@ static void test_calcRollingCutPercentage(void)
     context.setHardCutRolling();    
     constexpr uint16_t maxRPM = 5000U;
     
-    setRpm(context.current, maxRPM);
+    context.current.setRpm( maxRPM);
     TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
-    setRpm(context.current, maxRPM+1);
+    context.current.setRpm( maxRPM+1);
     TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
-    setRpm(context.current, maxRPM+1000);
+    context.current.setRpm( maxRPM+1000);
     TEST_ASSERT_EQUAL_UINT8(101U, calcRollingCutPercentage(context.current, maxRPM));
     
-    setRpm(context.current, maxRPM+SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[2]));
+    context.current.setRpm( maxRPM+SIGNED_RPM_MEDIUM.toUser(rollingCutTable.axis[2]));
     TEST_ASSERT_EQUAL_UINT8(rollingCutTable.values[2], calcRollingCutPercentage(context.current, maxRPM));
     
     // Test division underflow.
-    setRpm(context.current, maxRPM+(INT8_MIN*11));
+    context.current.setRpm( maxRPM+(INT8_MIN*11));
     TEST_ASSERT_EQUAL_UINT8(rollingCutTable.values[0], calcRollingCutPercentage(context.current, maxRPM));
 
     // RPM just below max -> table lookup
-    setRpm(context.current, maxRPM-1U);
+    context.current.setRpm( maxRPM-1U);
     TEST_ASSERT_GREATER_THAN(0, calcRollingCutPercentage(context.current, maxRPM));
 }
 
@@ -1206,17 +1208,14 @@ static void test_applyRollingCutPercentage_all_cut(void)
     // Inject deterministic RNG that always triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_low);
 
-    context.current.maxInjOutputs = 5;
-    context.current.maxIgnOutputs = 4;
-
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
     assert_applyRollingCutPercentage(context, 0b00000000, 0b00000000, SchedulerCutStatus::Rolling);
 
     context.page6.engineProtectType = PROTECT_CUT_IGN;
-    assert_applyRollingCutPercentage(context, 0b00011111, 0b00000000, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b11111111, 0b00000000, SchedulerCutStatus::Rolling);
 
     context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    assert_applyRollingCutPercentage(context, 0b00000000, 0b00001111, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b00000000, 0b11111111, SchedulerCutStatus::Rolling);
 }
 
 static void test_applyRollingCutPercentage_all_on(void)
@@ -1226,33 +1225,12 @@ static void test_applyRollingCutPercentage_all_on(void)
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
 
-    context.current.maxInjOutputs = 3;
-    context.current.maxIgnOutputs = 2;
-
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
-    assert_applyRollingCutPercentage(context, 0b00000111, 0b00000011, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b11111111, 0b11111111, SchedulerCutStatus::Rolling);
     context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    assert_applyRollingCutPercentage(context, 0b00000111, 0b00000011, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b11111111, 0b11111111, SchedulerCutStatus::Rolling);
     context.page6.engineProtectType = PROTECT_CUT_IGN;
-    assert_applyRollingCutPercentage(context, 0b00000111, 0b00000011, SchedulerCutStatus::Rolling);
-
-    context.current.maxInjOutputs = 4;
-    context.current.maxIgnOutputs = 5;
-    context.page6.engineProtectType = PROTECT_CUT_BOTH;
-    assert_applyRollingCutPercentage(context, 0b00001111, 0b00011111, SchedulerCutStatus::Rolling);
-    context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    assert_applyRollingCutPercentage(context, 0b00001111, 0b00011111, SchedulerCutStatus::Rolling);
-    context.page6.engineProtectType = PROTECT_CUT_IGN;
-    assert_applyRollingCutPercentage(context, 0b00001111, 0b00011111, SchedulerCutStatus::Rolling);
-
-    context.current.maxInjOutputs = 2;
-    context.current.maxIgnOutputs = 1;
-    context.page6.engineProtectType = PROTECT_CUT_BOTH;
-    assert_applyRollingCutPercentage(context, 0b00000011, 0b00000001, SchedulerCutStatus::Rolling);
-    context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    assert_applyRollingCutPercentage(context, 0b00000011, 0b00000001, SchedulerCutStatus::Rolling);
-    context.page6.engineProtectType = PROTECT_CUT_IGN;
-    assert_applyRollingCutPercentage(context, 0b00000011, 0b00000001, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b11111111, 0b11111111, SchedulerCutStatus::Rolling);
 }
 
 static void test_applyRollingCutPercentage_half_on(void)
@@ -1262,17 +1240,14 @@ static void test_applyRollingCutPercentage_half_on(void)
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_flipper);
 
-    context.current.maxInjOutputs = 5;
-    context.current.maxIgnOutputs = 3;
-
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
-    assert_applyRollingCutPercentage(context, 0b00001010, 0b00000010, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b10101010, 0b10101010, SchedulerCutStatus::Rolling);
 
     context.page6.engineProtectType = PROTECT_CUT_FUEL;
-    assert_applyRollingCutPercentage(context, 0b00010101, 0b00000111, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b10101010, 0b11111111, SchedulerCutStatus::Rolling);
 
     context.page6.engineProtectType = PROTECT_CUT_IGN;
-    assert_applyRollingCutPercentage(context, 0b00011111, 0b00000010, SchedulerCutStatus::Rolling);
+    assert_applyRollingCutPercentage(context, 0b11111111, 0b10101010, SchedulerCutStatus::Rolling);
 }
 
 static void test_applyPendingIgnitionCuts(void)
@@ -1307,6 +1282,9 @@ static void test_applyRollingCut_no_revolutions_elapsed(void)
     // Ensure rollingCutLastRev is set to the current rev so no cut should be applied
     resetInternalState();
     rollingCutLastRev = 100U;
+    context.current.maxIgnOutputs = 8;
+    context.current.numPrimaryInjOutputs = 8;
+    context.current.numSecondaryInjOutputs = 0;
     context.current.startRevolutions = 100U;
     context.current.schedulerCutState.fuelChannels = 0xAA;
     context.current.schedulerCutState.ignitionChannels = 0x55;
@@ -1325,8 +1303,6 @@ static void test_applyRollingCut_revolutions_elapsed_forced_cuts(void)
     engineProtection_test_context_t context;
 
     // Configure outputs and scheduler state
-    context.current.maxInjOutputs = 4;
-    context.current.maxIgnOutputs = 4;
     context.current.schedulerCutState.fuelChannels = 0xFF;
     context.current.schedulerCutState.ignitionChannels = 0xFF;
 
@@ -1356,8 +1332,6 @@ static void test_applyRollingCut_revolutions_elapsed_forced_no_cuts(void)
 {
     engineProtection_test_context_t context;
 
-    context.current.maxInjOutputs = 3;
-    context.current.maxIgnOutputs = 2;
     context.current.schedulerCutState.fuelChannels = 0xFF;
     context.current.schedulerCutState.ignitionChannels = 0xFF;
 
@@ -1375,7 +1349,7 @@ static void test_applyRollingCut_revolutions_elapsed_forced_no_cuts(void)
     auto result = applyRollingCut(context.current, context.page2, context.page4, context.page6, maxAllowedRPM);
 
     // All channels should be turned on (masked to configured counts)
-    TEST_ASSERT_EQUAL_HEX8((1U << context.current.maxInjOutputs) - 1U, result.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8((1U << getTotalInjChannelCount(context.current)) - 1U, result.fuelChannels);
     TEST_ASSERT_EQUAL_HEX8((1U << context.current.maxIgnOutputs) - 1U, result.ignitionChannels);
     TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, result.status);
     TEST_ASSERT_EQUAL_UINT32(context.current.startRevolutions, rollingCutLastRev);
@@ -1388,9 +1362,10 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_all_channels
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
 
-    setRpm(context.current, context.current.RPM * 2U); // ensure full-cut condition if rpmDelta >= 0
+    context.current.setRpm( context.current.RPM * 2U); // ensure full-cut condition if rpmDelta >= 0
     context.current.maxIgnOutputs = 4;
-    context.current.maxInjOutputs = 4;
+    context.current.numPrimaryInjOutputs = 2;
+    context.current.numSecondaryInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Inject deterministic RNG that always triggers cuts
@@ -1408,13 +1383,10 @@ static void test_calculateFuelIgnitionChannelCut_rolling_cut_forced_no_channel_c
     engineProtection_test_context_t context;
     context.setRpmActive(HARD_REV_FIXED);
     context.setHardCutRolling();
-
-    context.current.maxIgnOutputs = 2;
-    context.current.maxInjOutputs = 2;
     context.page6.engineProtectType = PROTECT_CUT_BOTH;
 
     // Ensure rpm sits in table-driven partial-cut zone (not full 100%)
-    setRpm(context.current, RPM_COARSE.toUser(context.page4.HardRevLim) - RPM_MEDIUM.toUser(rollingCutTable.axis[1] * -1)); // use mid axis
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.HardRevLim) - RPM_MEDIUM.toUser(rollingCutTable.axis[1] * -1)); // use mid axis
 
     // Inject deterministic RNG that never triggers cuts
     rollingCutRandFunc_override_t rngOverride(deterministic_rand_high);
@@ -1513,7 +1485,102 @@ static void test_checkAFRLimit_all_boundaries_at_exact_limits(void)
     TEST_ASSERT_TRUE(checkAFRLimitActive);
 }
 
-void runAllTests(void)
+static void test_FullCut_masks_unused(void)
+{
+    engineProtection_test_context_t context;
+    context.setRpmActive(HARD_REV_FIXED);
+
+    context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
+
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
+
+    context.page6.engineProtectType = PROTECT_CUT_IGN;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 0;
+    context.current.maxIgnOutputs = 3;
+    onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0x1F, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
+
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 3;
+    context.current.maxIgnOutputs = 8;
+    onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
+
+    context.page6.engineProtectType = PROTECT_CUT_FUEL;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 0;
+    context.current.maxIgnOutputs = 3;
+    onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0x00, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x07, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Full, onOff.status);
+}
+
+static void test_NoCut_masks_unused(void)
+{
+    engineProtection_test_context_t context;
+    context.setBeyondStaging();
+    context.page6.engineProtectType = PROTECT_CUT_OFF;
+
+    context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
+    
+    context.current.numPrimaryInjOutputs = 4;
+    context.current.numSecondaryInjOutputs = 4;
+    context.current.maxIgnOutputs = 8;
+    auto onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0xFF, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::None, onOff.status);
+
+    context.current.numPrimaryInjOutputs = 4;
+    context.current.numSecondaryInjOutputs = 1;
+    context.current.maxIgnOutputs = 3;
+    onOff = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0x1F, onOff.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0x07, onOff.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::None, onOff.status);
+}
+
+static void test_RollingCut_masks_unused(void)
+{
+    rollingCutRandFunc_override_t rngOverride(deterministic_rand_flipper);
+    engineProtection_test_context_t context;
+    context.setRpmActive(HARD_REV_FIXED);
+    context.setHardCutRolling();
+    context.current.setRpm( RPM_COARSE.toUser(context.page4.HardRevLim) - RPM_MEDIUM.toUser(rollingCutTable.axis[0] * -1)+1); 
+
+    context.page6.engineProtectType = PROTECT_CUT_BOTH;
+    context.current.engineProtect = checkEngineProtection(context.current, context.page4, context.page6, context.page9, context.page10);
+
+    // Ensure rollingCutLastRev is 5 revolutions earlier so rolling cut is applied
+    rollingCutLastRev = context.current.startRevolutions - 5;
+    auto cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0b10101010, cut.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0b10101010, cut.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, cut.status);
+
+    // Ensure rollingCutLastRev is 5 revolutions earlier so rolling cut is applied
+    rollingCutLastRev = context.current.startRevolutions - 5;
+    context.current.numPrimaryInjOutputs = 5;
+    context.current.numSecondaryInjOutputs = 0;
+    context.current.maxIgnOutputs = 3;
+    cut = calculateFuelIgnitionChannelCut(context.current, context.page2, context.page4, context.page6, context.page9);
+    TEST_ASSERT_EQUAL_HEX8(0b00001010, cut.fuelChannels);
+    TEST_ASSERT_EQUAL_HEX8(0b00000010, cut.ignitionChannels);
+    TEST_ASSERT_EQUAL(SchedulerCutStatus::Rolling, cut.status);
+}
+
+ void runAllTests(void)
 {
     SET_UNITY_FILENAME() {
 
@@ -1575,6 +1642,9 @@ void runAllTests(void)
     RUN_TEST_P(test_applyRollingCut_no_revolutions_elapsed);
     RUN_TEST_P(test_applyRollingCut_revolutions_elapsed_forced_cuts);
     RUN_TEST_P(test_applyRollingCut_revolutions_elapsed_forced_no_cuts);
+    RUN_TEST_P(test_FullCut_masks_unused);
+    RUN_TEST_P(test_NoCut_masks_unused);
+    RUN_TEST_P(test_RollingCut_masks_unused);
     }
 }
 

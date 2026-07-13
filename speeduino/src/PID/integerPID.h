@@ -1,69 +1,69 @@
 #pragma once
 
 #include <stdint.h>
+#include "PidCore.h"
 
 class integerPID
 {
 public:
-
-  //Constants used in some of the functions below
-  #define AUTOMATIC	1
-  #define MANUAL	0
-  #define DIRECT  0
-  #define REVERSE  1
   
-  //commonly used functions **************************************************************************
-    integerPID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
-        int16_t, int16_t, int16_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
+  /** @brief Default construction */
+  integerPID(void); 
 
+  /** @name Configuration methods */
+  ///@{
 
-    void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
+  /** @brief Set the output limits */
+  void setOutputLimits(int32_t min, int32_t max); 
 
-    bool Compute(unsigned long now, long FeedForwardTerm = 0);   // * performs the PID calculation at provided time.
-    bool Compute(long FeedForwardTerm = 0);                      // * legacy wrapper that calls millis().
-    void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
-										  //it's likely the user will want to change this depending on
-										  //the application
-
-
-
-  //available but not commonly used functions ********************************************************
-    void SetTunings(int16_t, int16_t,       // * While most users will set the tunings once in the
-                    int16_t);       	  //   constructor, this function gives the user the option
-                                          //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
-										  //   means the output will increase when error is positive. REVERSE
-										  //   means the opposite.  it's very unlikely that this will be needed
-										  //   once it is set in the constructor.
-  void SetSampleTime(uint16_t);              // * sets the frequency, in Milliseconds, with which
-                                          //   the PID calculation is performed.  default is 100
-
-
-
-  void Initialize();
-  void ResetIntegeral();
-
-  private:
-
-
-  int16_t dispKp;
-  int16_t dispKi;
-  int16_t dispKd;
-	int16_t  kp;                  // * (P)roportional Tuning Parameter
-  int16_t  ki;                  // * (I)ntegral Tuning Parameter
-  int16_t  kd;                  // * (D)erivative Tuning Parameter
-
-	int controllerDirection;
-
-    long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
-    long *myOutput;             //   This creates a hard link between the variables and the
-    long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
-                                  //   what these values are.  with pointers we'll just know.
-
-	unsigned long lastTime;
-	long outputSum, lastInput, lastMinusOneInput;
+  /** @brief Set the controller set point */
+  void setSetPoint(int32_t setpoint) { _setpoint = setpoint; } 
   
-	uint16_t SampleTime;
-	long outMin, outMax;
-	bool inAuto;
+  /**
+   * @brief Set the PID tuning parameters
+   * 
+   * @param pidParams P, I & D terms
+   * @param nowMs Current time in milliseconds
+   * @param minComputeInterval Minimum time that should elapse between computations (in milliseconds)
+   */
+  void setTunings(const PidTuningParameters &pidParams, uint32_t nowMs, uint16_t minComputeInterval);
+
+  /** @brief (Optional) Set the feed forward term (predictive bias) */
+  void setFeedForwardTerm(int32_t feedForwardTerm);
+
+  ///@}
+  
+  /** @brief Activates the controller. Must be called before compute() will have any effect. */
+  void activate(int32_t input);
+
+  /**
+   * @brief Compute the new output.
+   *  
+   * @param nowMs Current time in milliseconds
+   * @param input The input value
+   * @param pOutput A correction to be applied to the input; only valid when true is returned.
+   * @return true if a calculation occurred, false otherwise 
+   */
+  bool compute(uint32_t nowMs, int32_t input, int32_t* pOutput);
+
+  /** @brief (Optional) Reset the controller */
+  void reset(int32_t input);
+
+  /** @brief (Optional) Reset the integral term */
+  void resetIntegeral(void);
+
+private:
+
+  // TODO: shrink these to int16_t if possible
+  int32_t _setpoint = 0;
+  int32_t _feedForwardTerm = 0;
+
+	uint32_t _lastTime = 0;
+  // TODO: shrink these to int16_t if possible
+  int32_t _lastInput = 0;
+  
+	uint16_t _sampleTime = 0;
+	bool _isActive = false;
+
+  PidCore _pidCore;
 };

@@ -8,12 +8,13 @@
 #endif
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include "board_eeprom_adapter.hpp"
+#include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
 
  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
 // #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
@@ -38,7 +39,7 @@ void initBoard(uint32_t baudRate)
     ***********************************************************************************************************
     * Idle
     */
-    if ((configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
         //FlexTimer 2, compare channel 0 is used for idle
         FTM2_MODE |= FTM_MODE_WPDIS; // Write Protection Disable
@@ -440,9 +441,12 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t boardID)
 {
-  // Do nothing
+  if (boardID==55U)
+  {
+    pSecondarySerial = &Serial1; //Header that is broken out on Dropbear boards is attached to Serial1
+  }
 }
 
 static uint16_t getEepromWriteBlockSize(const statuses &current)

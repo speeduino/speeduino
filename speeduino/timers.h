@@ -21,6 +21,17 @@ Hence we will preload the timer with 131 cycles to leave 125 until overflow (1ms
 
 #include <stdint.h>
 
+constexpr uint8_t BIT_TIMER_1HZ = 0;
+constexpr uint8_t BIT_TIMER_4HZ = 1;
+constexpr uint8_t BIT_TIMER_10HZ = 2;
+constexpr uint8_t BIT_TIMER_15HZ = 3;
+constexpr uint8_t BIT_TIMER_30HZ = 4;
+constexpr uint8_t BIT_TIMER_50HZ = 5;
+constexpr uint8_t BIT_TIMER_200HZ = 6;
+constexpr uint8_t BIT_TIMER_1KHZ = 7;
+
+uint8_t getAndClearTimerMask(void);
+
 void initTacho(uint8_t tachoPin);
 void tachoPulseHigh(void);
 void tachoPulseLow(void);
@@ -33,8 +44,6 @@ extern volatile uint16_t tachoSweepIncr;
 #define TACHO_SWEEP_TIME_MS 1500
 #define TACHO_SWEEP_RAMP_MS (TACHO_SWEEP_TIME_MS * 2 / 3)
 #define MS_PER_SEC  1000
-
-extern volatile unsigned int dwellLimit_uS;
 
 void oneMSInterval(void);
 void initialiseTimers(void);

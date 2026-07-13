@@ -1,3 +1,4 @@
+#include "scheduledIO_direct_ign.h"
 #include "board_definition.h"
 #include "src/pins/fastOutputPin.h"
 #include "preprocessor.h"
@@ -7,47 +8,48 @@
  
 static fastOutputPin_t pins[IGN_CHANNELS];
 
-template <uint8_t channel>
-static void channel_High(void)
+static inline void coilLow(uint8_t channel)
 {
-    if (channel<=_countof(pins))
-    {
-        pins[channel-1U].setPinHigh();
-    }
+    INTERNAL_TEST_ASSERT(channel>0 && channel<=_countof(pins));
+    pins[channel-1U].setPinLow();
 }
 
-template <uint8_t channel>
-static void channel_Low(void)
+static inline void coilHigh(uint8_t channel)
 {
-    if (channel<=_countof(pins))
-    {
-        pins[channel-1U].setPinLow();
-    }
+    INTERNAL_TEST_ASSERT(channel>0 && channel<=_countof(pins));
+    pins[channel-1U].setPinHigh();
 }
 
-void initIgnDirectIO(const uint8_t (&pinNumbers)[IGN_CHANNELS])
+using channelFunc = void(*)(uint8_t);
+static channelFunc coilChargingFn = coilHigh;
+static channelFunc coilDischargingFn = coilLow;
+
+void initIgnDirectIO(const config4 &page4, const uint8_t (&pinNumbers)[_countof(pins)])
 {
     for (uint8_t i = 0; i < _countof(pins); i++)
     {
         pins[i].setPin(pinNumbers[i], OUTPUT);
     }
+    if (page4.IgInv == GOING_HIGH)
+    {
+        coilChargingFn = coilLow;
+        coilDischargingFn = coilHigh;
+    }
+    else
+    {
+        coilChargingFn = coilHigh;
+        coilDischargingFn = coilLow;
+    }
 }
 
-void coil1Low_DIRECT(void)  { channel_Low<1U>(); }
-void coil1High_DIRECT(void) { channel_High<1U>(); }
-void coil2Low_DIRECT(void)  { channel_Low<2U>(); }
-void coil2High_DIRECT(void) { channel_High<2U>(); }
-void coil3Low_DIRECT(void)  { channel_Low<3U>(); }
-void coil3High_DIRECT(void) { channel_High<3U>(); }
-void coil4Low_DIRECT(void)  { channel_Low<4U>(); }
-void coil4High_DIRECT(void) { channel_High<4U>(); }
-void coil5Low_DIRECT(void)  { channel_Low<5U>(); }
-void coil5High_DIRECT(void) { channel_High<5U>(); }
-void coil6Low_DIRECT(void)  { channel_Low<6U>(); }
-void coil6High_DIRECT(void) { channel_High<6U>(); }
-void coil7Low_DIRECT(void)  { channel_Low<7U>(); }
-void coil7High_DIRECT(void) { channel_High<7U>(); }
-void coil8Low_DIRECT(void)  { channel_Low<8U>(); }
-void coil8High_DIRECT(void) { channel_High<8U>(); }
+void coilCharging_DIRECT(uint8_t channel) 
+{ 
+    coilChargingFn(channel);
+}
+
+void coilStopCharging_DIRECT(uint8_t channel) 
+{
+    coilDischargingFn(channel);
+}
 
 // LCOV_EXCL_STOP

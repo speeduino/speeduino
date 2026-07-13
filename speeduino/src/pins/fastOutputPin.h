@@ -18,6 +18,12 @@ public:
   /** @brief Set the pin low */
   void setPinLow(void);
 
+  /** @brief Is the pin set? */
+  bool isValid(void) const
+  {
+    return _port_pin.isValid();
+  }
+  
 private:
   port_pin_t _port_pin;
 };

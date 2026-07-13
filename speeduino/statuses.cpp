@@ -1,12 +1,18 @@
 #include "statuses.h"
 #include "atomic.h"
+#include "decoder_builder.h"
 
-void setRpm(statuses &status, uint16_t rpm)
+statuses::statuses(void)
+{
+  (void)memset(this, 0, sizeof(*this));
+  decoder = decoder_builder_t().build();
+}
+
+void statuses::setRpm(uint16_t rpm)
 {
   ATOMIC()
   {
-    status.RPM = rpm;
-    status.RPMdiv100 = div100(rpm);
-    status.longRPM = rpm;
+    this->RPM = rpm;
+    this->RPMdiv100 = div100(rpm);
   }
 }

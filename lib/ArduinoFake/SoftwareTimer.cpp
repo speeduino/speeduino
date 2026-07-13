@@ -153,11 +153,11 @@ void software_timer_t::onNextTick(counter_t nextTick)
     }
 }
 
-TickEventGuard::TickEventGuard(void)
+TickEventGuard::TickEventGuard(void) noexcept
 : _stopped(getTicker().stop())
 {
 }
-TickEventGuard::~TickEventGuard()
+TickEventGuard::~TickEventGuard() noexcept
 {
     if (_stopped) {
         getTicker().start();

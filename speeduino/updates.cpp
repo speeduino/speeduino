@@ -14,6 +14,7 @@
 #include "updates.h"
 #include "pages.h"
 #include "comms_CAN.h"
+#include "scheduler.h"
 #include "units.h"
 #include "unit_testing.h"
 
@@ -435,7 +436,7 @@ void doUpdates(void)
     constexpr uint16_t EEPROM_CALIBRATION_IAT_OLD = 3071U;
     constexpr uint16_t EEPROM_CALIBRATION_CLT_OLD = 3583U;
 
-    for(uint16_t x=0U; x<((uint16_t)CALIBRATION_TABLE_SIZE/16U); ++x) //Each calibration table is 512 bytes long
+    for(uint16_t x=0U; x<decltype(cltCalibrationTable)::size(); ++x) //Each calibration table is 512 bytes long
     {
       uint16_t y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
       cltCalibrationTable.values[x] = getStorageAPI().read(y);
@@ -466,7 +467,7 @@ void doUpdates(void)
     for(int i=0; i<6; i++)
     {
       configPage10.wmiAdvBins[i] = i*100/2;
-      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+      configPage10.wmiAdvAdj[i] = IGNITION_ADVANCE_LARGE.toRaw(0);
     }
 
     //Programmable outputs added. Set all to disabled
@@ -502,8 +503,6 @@ void doUpdates(void)
     saveEEPROMVersion(16);
   }
 
-  //Move this #endif to only do latest updates to safe ROM space on small devices.
-  #endif
   if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
@@ -598,14 +597,14 @@ void doUpdates(void)
     {
       multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
       multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
-      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
-      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
-      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
-      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
-      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
-      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
-      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
-      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+
+      for (auto& table : trimTables)
+      {
+        // Access the type of the table via the type since it's static
+        using table_t = typename type_traits::remove_reference<decltype(table)>::type;
+        multiplyTableLoad(&table, table_t::type_key, 4);
+      }
+
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
       { 
         for(uint8_t x = 0; x < 8; x++)
@@ -847,6 +846,8 @@ void doUpdates(void)
     saveEEPROMVersion(25);
   }
   upgradeV25toV26();
+  //Move this #endif to only do latest updates to safe ROM space on small devices.
+  #endif
 
   //Final check is always for 255 and 0 (Brand new arduino)
   if( (loadEEPROMVersion() == 0) || (loadEEPROMVersion() == 255) )

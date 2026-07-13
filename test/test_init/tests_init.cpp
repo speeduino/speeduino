@@ -3,6 +3,7 @@
 #include "init.h"
 #include "../test_utils.h"
 #include "storage.h"
+#include "resetControl.h"
 
 void prepareForInitialiseAll(uint8_t boardId);
 
@@ -184,7 +185,7 @@ void test_initialisation_outputs_PWM_idle(void)
 
   char msg[32];
   strcpy_P(msg, PSTR("Is PWM Idle"));
-  TEST_ASSERT_TRUE_MESSAGE(isIdlePWM, msg);
+  TEST_ASSERT_TRUE_MESSAGE(isPwmIac(configPage6), msg);
   strcpy_P(msg, PSTR("Idle 1"));
   TEST_ASSERT_EQUAL_MESSAGE(OUTPUT, getPinMode(pinIdle1), msg);
   strcpy_P(msg, PSTR("Idle 2"));
@@ -245,12 +246,12 @@ void test_initialisation_outputs_reset_control_use_board_default(void)
   TEST_IGNORE_MESSAGE("Test only works for Mega2560");
 #else
   prepareForInitialiseAll(9);
-  configPage4.resetControlConfig = RESET_CONTROL_PREVENT_WHEN_RUNNING;
+  configPage4.resetControlConfig = (byte)ResetControlMode::PreventWhenRunning;
   configPage4.resetControlPin = 0; // Flags to use board default
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_NOT_EQUAL(0, pinResetControl); 
-  TEST_ASSERT_EQUAL(resetControl, RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(ResetControlMode::PreventWhenRunning, getResetControlMode());
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));  
 #endif
 }
@@ -261,12 +262,12 @@ void test_initialisation_outputs_reset_control_override_board_default(void)
   TEST_IGNORE_MESSAGE("Test only works for Mega2560");
 #else
   prepareForInitialiseAll(9);
-  configPage4.resetControlConfig = RESET_CONTROL_PREVENT_WHEN_RUNNING;
+  configPage4.resetControlConfig = (byte)ResetControlMode::PreventWhenRunning;
   configPage4.resetControlPin = 45; // Use a different pin
   initialiseAll(); //Run the main initialise function
 
   TEST_ASSERT_EQUAL(45, pinResetControl);  
-  TEST_ASSERT_EQUAL(resetControl, RESET_CONTROL_PREVENT_WHEN_RUNNING);
+  TEST_ASSERT_EQUAL(ResetControlMode::PreventWhenRunning, getResetControlMode());
   TEST_ASSERT_EQUAL(OUTPUT, getPinMode(pinResetControl));
 #endif
 }

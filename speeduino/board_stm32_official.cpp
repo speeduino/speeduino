@@ -3,10 +3,56 @@
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"
+#include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
+
+#if defined(BOARD_FCR_MICRO_F4)
+extern "C" void __real_pinMode(uint8_t pin, uint8_t mode);
+extern "C" void __wrap_pinMode(uint8_t pin, uint8_t mode)
+{
+  if (pinIsReserved(pin)) { return; }
+  __real_pinMode(pin, mode);
+}
+
+__attribute__((constructor)) static void fcrInitFlashChipSelect(void)
+{
+  __real_pinMode((uint8_t)USE_SPI_EEPROM, OUTPUT);
+  digitalWrite((uint8_t)USE_SPI_EEPROM, HIGH);
+}
+
+// The stm32duino generic F429VITx variant ships an EMPTY (weak) SystemClock_Config(), so the chip
+// would run on the 16MHz High Speed Internal reset clock with no 48MHz USB clock and USB never enumerates.
+// Override it for the FCR Micro F4: 8MHz HSE -> 168MHz SYSCLK, PLLQ=7 -> 48MHz for USB FS.
+extern "C" void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {};
+
+  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
+
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState       = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState   = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource  = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM       = 8;    // 8MHz HSE / 8 = 1MHz PLL input
+  RCC_OscInitStruct.PLL.PLLN       = 336;  // 1MHz * 336 = 336MHz VCO
+  RCC_OscInitStruct.PLL.PLLP       = RCC_PLLP_DIV2; // 336/2 = 168MHz SYSCLK
+  RCC_OscInitStruct.PLL.PLLQ       = 7;    // 336/7 = 48MHz USB/SDIO clock
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) { Error_Handler(); }
+
+  RCC_ClkInitStruct.ClockType      = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+                                   | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource   = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider  = RCC_SYSCLK_DIV1; // 168MHz AHB
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;   // 42MHz APB1 (max 45)
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;   // 84MHz APB2 (max 90)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) { Error_Handler(); }
+}
+#endif
 
 #if defined(SRAM_AS_EEPROM) // Use 4K battery backed SRAM, requires a 3V continuous source (like battery) connected to Vbat pin
   #include "src/BackupSram/BackupSramAsEEPROM.h"
@@ -15,6 +61,8 @@
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"
     #if defined(STM32F407xx)
       SPIClass SPI_for_flash(PB5, PB4, PB3); //SPI1_MOSI, SPI1_MISO, SPI1_SCK
+    #elif defined(BOARD_FCR_MICRO_F4)
+      SPIClass SPI_for_flash(PC12, PC11, PC10); //SPI3_MOSI, SPI3_MISO, SPI3_SCK (FCR Micro F4)
     #else //Blue/Black Pills
       SPIClass SPI_for_flash(PB15, PB14, PB13);
     #endif
@@ -108,9 +156,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
   #endif
 
   STM_FUEL_INTERRUPT(1)
+  #if (INJ_CHANNELS >= 2)
   STM_FUEL_INTERRUPT(2)
+  #endif
+  #if (INJ_CHANNELS >= 3)
   STM_FUEL_INTERRUPT(3)
+  #endif
+  #if (INJ_CHANNELS >= 4)
   STM_FUEL_INTERRUPT(4)
+  #endif
   #if (INJ_CHANNELS >= 5)
   STM_FUEL_INTERRUPT(5)
   #endif
@@ -125,9 +179,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
   #endif
 
   STM_IGNITION_INTERRUPT(1)
+  #if (IGN_CHANNELS >= 2)
   STM_IGNITION_INTERRUPT(2)
+  #endif
+  #if (IGN_CHANNELS >= 3)
   STM_IGNITION_INTERRUPT(3)
+  #endif
+  #if (IGN_CHANNELS >= 4)
   STM_IGNITION_INTERRUPT(4)
+  #endif
   #if (IGN_CHANNELS >= 5)
   STM_IGNITION_INTERRUPT(5)
   #endif
@@ -170,7 +230,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Idle
     */
-    if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL))
+    if (isPwmIac(configPage6))
     {
         idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (TIMER_RESOLUTION * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
     } 
@@ -268,9 +328,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
     //Attach interrupt functions
     //Injection
     Timer3.attachInterrupt(1, FUEL_INTERRUPT_NAME(1));
+    #if (INJ_CHANNELS >= 2)
     Timer3.attachInterrupt(2, FUEL_INTERRUPT_NAME(2));
+    #endif
+    #if (INJ_CHANNELS >= 3)
     Timer3.attachInterrupt(3, FUEL_INTERRUPT_NAME(3));
+    #endif
+    #if (INJ_CHANNELS >= 4)
     Timer3.attachInterrupt(4, FUEL_INTERRUPT_NAME(4));
+    #endif
     #if (INJ_CHANNELS >= 5)
     Timer5.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer5.setPrescaleFactor(((Timer5.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
@@ -308,9 +374,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
 
     //Ignition
     Timer2.attachInterrupt(1, IGNITION_INTERRUPT_NAME(1)); 
+    #if (IGN_CHANNELS >= 2)
     Timer2.attachInterrupt(2, IGNITION_INTERRUPT_NAME(2));
+    #endif
+    #if (IGN_CHANNELS >= 3)
     Timer2.attachInterrupt(3, IGNITION_INTERRUPT_NAME(3));
+    #endif
+    #if (IGN_CHANNELS >= 4)
     Timer2.attachInterrupt(4, IGNITION_INTERRUPT_NAME(4));
+    #endif
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow((numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
     Timer4.setPrescaleFactor(((Timer4.getTimerClkFreq()/1000000) * TIMER_RESOLUTION)-1);   //4us resolution
@@ -416,7 +488,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(void)
+void boardInitPins(uint8_t)
 {
   // Do nothing
 }

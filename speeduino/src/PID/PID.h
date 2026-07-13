@@ -1,57 +1,47 @@
 #pragma once
 
 #include <stdint.h>
+#include "PidCore.h"
 
 class PID
 {
-  public:
+public:
 
-  //Constants used in some of the functions below
-  #define AUTOMATIC	1
-  #define MANUAL	0
-  #define DIRECT  0
-  #define REVERSE  1
+  /** @brief Default construction */
+  PID(void);
 
-  //commonly used functions **************************************************************************
-    PID(long*, long*, long*,        // * constructor.  links the PID to the Input, Output, and
-        uint8_t, uint8_t, uint8_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
+  /** @name Configuration methods */
+  ///@{
 
-    void SetMode(int Mode);               // * sets PID to either Manual (0) or Auto (non-0)
+  /** @brief Set the output limits */
+  void setOutputLimits(int32_t min, int32_t max);
 
-    bool Compute(void);                   //   called every time loop() cycles. ON/OFF and
-                                          //   calculation frequency can be set using SetMode
-                                          //   SetSampleTime respectively
+  /** @brief Set the PID parameters */
+  void setTunings(PidTuningParameters params);
 
-    void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
-										  //it's likely the user will want to change this depending on
-										  //the application
+  /** @brief Set the controller set point */
+  void setSetPoint(uint16_t setpoint) { _setpoint = setpoint; }
+  ///@}
 
+  /**
+   * @brief Initialize/reset the controller
+   * 
+   * @param input Current input value (same value as passed into compute())
+   */
+	void resetIntegral(int32_t input);
 
+  /**
+   * @brief Compute the next correction.
+   * 
+   * @param input The input value
+   * @return A correction to be applied to the input.
+   */
+  int32_t compute(int32_t input);
 
-  //available but not commonly used functions ********************************************************
-    void SetTunings(uint8_t, uint8_t,       // * While most users will set the tunings once in the
-                    uint8_t);         	  //   constructor, this function gives the user the option
-                                          //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
-										  //   means the output will increase when error is positive. REVERSE
-										  //   means the opposite.  it's very unlikely that this will be needed
-										  //   once it is set in the constructor.
-	void Initialize();
 private:
-  long kp;                  // * (P)roportional Tuning Parameter
-  long ki;                  // * (I)ntegral Tuning Parameter
-  long kd;                  // * (D)erivative Tuning Parameter
-
-	int controllerDirection;
-
-  long *myInput;              // * Pointers to the Input, Output, and Setpoint variables
-  long *myOutput;             //   This creates a hard link between the variables and the
-  long *mySetpoint;           //   PID, freeing the user from having to constantly tell us
-                                //   what these values are.  with pointers we'll just know.
-
-  long ITerm, lastInput;
-
-  long outMin, outMax;
-  bool inAuto;
+  int16_t _setpoint = 0;
+  int32_t _integralTerm;
+  int32_t _lastInput;
+  PidCore _pidCore;
 };
 

@@ -1,5 +1,20 @@
 #pragma once
 
+#include <stdint.h>
+
+enum class InjIoControlMode : uint8_t
+{
+    Direct,
+    MC33810
+};
+void initInjIoControl(InjIoControlMode controlMode);
+
+/** @brief Injector open/close status bits */
+char getInjectorStatus(void);
+
+void openInjector(uint8_t channel);
+void closeInjector(uint8_t channel);
+
 void openInjector1(void);
 void closeInjector1(void);
 

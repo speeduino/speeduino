@@ -2,6 +2,7 @@
 #define AUX_H
 
 #include "config_pages.h"
+#include "statuses.h"
 
 void initialiseAuxPWM(void);
 void boostControl(void);
@@ -9,7 +10,7 @@ void boostDisable(void);
 void vvtControl(void);
 void initialiseFan(uint8_t fanPin);
 void initialiseAirCon(void);
-bool initialiseFuelPump(const config2 &page2, uint8_t pumpPin);
+
 void nitrousControl(void);
 void fanControl(void);
 void airConControl(void);
@@ -19,9 +20,6 @@ void vvt1On(void);
 void vvt1Off(void);
 void vvt2On(void);
 void vvt2Off(void);
-
-void fuelPumpOn(void);
-void fuelPumpOff(void);
 
 void fanOn(void);
 void fanOff(void);

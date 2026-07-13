@@ -1,0 +1,40 @@
+{
+  "build": {
+    "arduino": {
+      "variant_h": "variant_generic.h"
+    },
+    "core": "stm32",
+    "cpu": "cortex-m4",
+    "extra_flags": "-DSTM32F429xx -DARDUINO_GENERIC_F429VITX -DSTM32F4",
+    "f_cpu": "168000000L",
+    "mcu": "stm32f429vit6",
+    "product_line": "STM32F429xx",
+    "variant": "STM32F4xx/F427V(G-I)T_F429V(E-G-I)T_F437V(G-I)T_F439V(G-I)T"
+  },
+  "debug": {
+    "default_tools": [
+      "stlink"
+    ],
+    "jlink_device": "STM32F429VI",
+    "openocd_target": "stm32f4x",
+    "svd_path": "STM32F429x.svd"
+  },
+  "frameworks": [
+    "arduino",
+    "cmsis",
+    "stm32cube"
+  ],
+  "name": "FCR Micro F4 (STM32F429VIT6, 256k RAM, 2M Flash)",
+  "upload": {
+    "maximum_ram_size": 196608,
+    "maximum_size": 2097152,
+    "protocol": "dfu",
+    "protocols": [
+      "stlink",
+      "dfu",
+      "jlink"
+    ]
+  },
+  "url": "https://www.st.com/en/microcontrollers-microprocessors/stm32f429vi.html",
+  "vendor": "FCR"
+}
