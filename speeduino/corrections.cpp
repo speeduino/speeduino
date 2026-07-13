@@ -518,6 +518,7 @@ initialiseCorrections() (that runs on every stall detection).
 */
 static constexpr uint8_t FLOOD_CLEAR_RELEASE_TPS = 2U; //1% in 0.5% TPS units
 static constexpr uint16_t FLOOD_CLEAR_RELEASE_TIME_MS = 3000U;
+static constexpr int8_t FLOOD_CLEAR_IGN_ANGLE = -5; //5 degrees ATDC, see correctionFloodClearIgnition()
 TESTABLE_STATIC bool floodClearLatched = false;
 static uint32_t floodClearTpsHighMs; //Last time the TPS was at or above FLOOD_CLEAR_RELEASE_TPS
 
@@ -915,6 +916,21 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
     cachedValue = IGNITION_ADVANCE_SMALL.toUser(table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant)));
   }
   return advance + cachedValue;
+}
+
+/** Ignition retard whilst the flood clear fuel cut is latched.
+ * With no fuel injected, the only combustion possible is from residual mixture in the cylinders.
+ * Firing slightly after TDC means any such burn happens with the piston already descending: it
+ * cannot kick back against the starter and produces almost no torque, so the engine cannot
+ * accelerate on residual fuel, whilst the plugs keep firing to dry themselves and the late burn
+ * helps vaporise and expel the excess fuel.
+ * Must be called last as an absolute override (note: has no effect when the decoder-level
+ * cranking timing lock (ignCranklock) is enabled, as that bypasses the advance value entirely).
+ */
+TESTABLE_INLINE_STATIC int8_t correctionFloodClearIgnition(int8_t advance)
+{
+  if (floodClearLatched) { advance = FLOOD_CLEAR_IGN_ANGLE; }
+  return advance;
 }
 
 /** Correct ignition timing to configured fixed value to use during craning.
@@ -1390,6 +1406,7 @@ int8_t correctionsIgn(int8_t base_advance)
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrides the regular fixed timing, must come last
+  advance = correctionFloodClearIgnition(advance); //Flood clear retard overrides even the fixed timings, must come after them
 
   return advance;
 }

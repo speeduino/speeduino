@@ -409,6 +409,26 @@ static void test_corrections_floodclear_release_timer_resets_on_throttle(void) {
   TEST_ASSERT_FALSE(floodClearLatched);
 }
 
+int8_t correctionFloodClearIgnition(int8_t advance);
+
+static void test_corrections_floodclear_ignition_retard(void) {
+  reset_floodclear();
+  //Pass-through when not latched
+  TEST_ASSERT_EQUAL(10, correctionFloodClearIgnition(10));
+  TEST_ASSERT_EQUAL(-20, correctionFloodClearIgnition(-20));
+
+  //Latch flood clear
+  configPage4.floodClear = 90;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  currentStatus.TPS = 180;
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+
+  //Absolute override to 5 degrees ATDC whilst latched
+  TEST_ASSERT_EQUAL(-5, correctionFloodClearIgnition(10));
+  TEST_ASSERT_EQUAL(-5, correctionFloodClearIgnition(-20));
+  reset_floodclear();
+}
+
 static void test_corrections_floodclear(void)
 {
   RUN_TEST_P(test_corrections_floodclear_no_crank_inactive);
@@ -419,6 +439,7 @@ static void test_corrections_floodclear(void)
   RUN_TEST_P(test_corrections_floodclear_latch_holds_past_crank_rpm);
   RUN_TEST_P(test_corrections_floodclear_release_requires_low_tps_time);
   RUN_TEST_P(test_corrections_floodclear_release_timer_resets_on_throttle);
+  RUN_TEST_P(test_corrections_floodclear_ignition_retard);
 }
 
 uint8_t correctionAFRClosedLoop(void);
