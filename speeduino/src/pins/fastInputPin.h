@@ -13,7 +13,7 @@ public:
   void setPin(uint8_t pin, uint8_t mode = INPUT);
 
   /** @brief Check if the pin is set high */
-  bool isPinHigh(void) const;
+  bool isPinHigh(void) const noexcept;
 
   /** @brief Check if the pin is set low */
   bool isPinLow(void) const

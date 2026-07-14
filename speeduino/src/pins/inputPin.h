@@ -14,13 +14,13 @@ class inputPin_t
 {
 public:
   /** @brief Set the input pin */
-  void setPin(uint8_t pin, uint8_t mode = INPUT);
+  void setPin(uint8_t pin, uint8_t mode = INPUT) noexcept;
 
   /** @brief Check if the pin is set high */
-  bool isPinHigh(void) const;
+  bool isPinHigh(void) const noexcept; 
 
   /** @brief Check if the pin is set low */
-  bool isPinLow(void) const
+  bool isPinLow(void) const noexcept
   {
     return !isPinHigh();
   }

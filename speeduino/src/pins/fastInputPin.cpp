@@ -14,7 +14,7 @@ void fastInputPin_t::setPin(uint8_t pin, uint8_t mode)
     }
 }
 
-bool fastInputPin_t::isPinHigh(void) const {
+bool fastInputPin_t::isPinHigh(void) const noexcept{
     return isValid() ? (*_port_pin.port & _port_pin.mask) != 0 : false;
 }
 
