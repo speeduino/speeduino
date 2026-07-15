@@ -12,16 +12,16 @@ class outputPin_t
 {
 public:
   /** @brief Set the output pin */
-  void setPin(uint8_t pin, uint8_t mode = OUTPUT);
+  void setPin(uint8_t pin, uint8_t mode = OUTPUT) noexcept;
 
   /** @brief Set the pin high */
-  void setPinHigh(void);
+  void setPinHigh(void) noexcept;
 
   /** @brief Set the pin low */
-  void setPinLow(void);
+  void setPinLow(void) noexcept;
   
   /** @brief Is the pin set? */
-  bool isValid(void) const
+  bool isValid(void) const noexcept
   {
     return _pin != NOT_A_PIN;
   }

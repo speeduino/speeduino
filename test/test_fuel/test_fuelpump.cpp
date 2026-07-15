@@ -126,6 +126,31 @@ static void test_pumpOff(void)
     TEST_ASSERT_FALSE(pump_state.isPumpOn);
 }
 
+constexpr uint8_t TEST_PUMP_PIN = 17;
+
+static void test_initialiseFuelPump_no_prime_pumpoff(void)
+{
+    statuses current = {};
+    config2 page2 = {};
+    page2.fpPrime = 0U;
+
+    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    TEST_ASSERT_FALSE(pump_state.isPumpOn);
+    TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_PUMP_PIN));
+}
+
+static void test_initialiseFuelPump_with_prime_pumpon(void)
+{
+    statuses current = {};
+    config2 page2 = {};
+    page2.fpPrime = 5U;
+
+    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    TEST_ASSERT_TRUE(pump_state.isPumpOn);
+    TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_PUMP_PIN));
+}
+
+
 void testFuelPump(void)
 {
   SET_UNITY_FILENAME() {
@@ -136,5 +161,7 @@ void testFuelPump(void)
     RUN_TEST_P(test_stopPumpPriming_prime_true);
     RUN_TEST_P(test_pumpOn);
     RUN_TEST_P(test_pumpOff);
+    RUN_TEST_P(test_initialiseFuelPump_no_prime_pumpoff);
+    RUN_TEST_P(test_initialiseFuelPump_with_prime_pumpon);
   }
 }

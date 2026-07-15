@@ -5,7 +5,7 @@
 // LCOV_EXCL_START
 // Exclude low level pin manipulation from coverage as it's not testable in a meaningful way
 
-void fastOutputPin_t::setPin(uint8_t pin, uint8_t mode)
+void fastOutputPin_t::setPin(uint8_t pin, uint8_t mode) noexcept
 {
     if (pin!=NOT_A_PIN)
     {
@@ -16,7 +16,7 @@ void fastOutputPin_t::setPin(uint8_t pin, uint8_t mode)
 }
 
 /** @brief Set the pin high */
-void fastOutputPin_t::setPinHigh(void)
+void fastOutputPin_t::setPinHigh(void) noexcept
 {
     if (isValid())
     {
@@ -25,7 +25,7 @@ void fastOutputPin_t::setPinHigh(void)
 }
 
 /** @brief Set the pin low */
-void fastOutputPin_t::setPinLow(void)
+void fastOutputPin_t::setPinLow(void) noexcept
 {
     if (isValid())
     {
