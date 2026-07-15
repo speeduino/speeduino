@@ -307,6 +307,7 @@ static void test_fanControl_pwm_aircon_request_turns_fan_on(void)
   fanControl();
   TEST_ASSERT_TRUE(currentStatus.fanOn);
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
+  TEST_ASSERT_GREATER_OR_EQUAL(configPage15.airConPwmFanMinDuty, currentStatus.fanDuty);
 #endif
 }
 
