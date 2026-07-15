@@ -19,12 +19,12 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/outputPin.h"
 #include "scheduler_fuel_controller.h"
 
-static long vvt1_pwm_value;
-static long vvt2_pwm_value;
+TESTABLE_STATIC long vvt1_pwm_value;
+TESTABLE_STATIC long vvt2_pwm_value;
 static volatile unsigned int vvt1_pwm_cur_value;
 static volatile unsigned int vvt2_pwm_cur_value;
-static volatile bool vvt1_pwm_state;
-static volatile bool vvt2_pwm_state;
+TESTABLE_STATIC volatile bool vvt1_pwm_state;
+TESTABLE_STATIC volatile bool vvt2_pwm_state;
 static volatile bool vvt1_max_pwm;
 static volatile bool vvt2_max_pwm;
 static volatile char nextVVT;
@@ -169,8 +169,8 @@ static volatile bool boost_pwm_state;
 static volatile unsigned int boost_pwm_cur_value = 0;
 
 static uint32_t vvtWarmTime;
-static bool vvtIsHot;
-static bool vvtTimeHold;
+TESTABLE_STATIC bool vvtIsHot;
+TESTABLE_STATIC bool vvtTimeHold;
 uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
