@@ -159,11 +159,6 @@ void initBoard(uint32_t baudRate)
     TCCR1B = TIMER_PRESCALER_256;   //Timer1 Control Reg B: Timer Prescaler set to 256. 1 tick = 16uS.
     TIFR1 = (1 << OCF1A) | (1<<OCF1B) | (1<<OCF1C) | (1<<TOV1) | (1<<ICF1); //Clear the compare flags, overflow flag and external input flag bits
 
-    if (isPwmIac(configPage6))
-    {
-      idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    }
-
     /*
     ***********************************************************************************************************
     * Timers

@@ -230,11 +230,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Idle
     */
-    if (isPwmIac(configPage6))
-    {
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (TIMER_RESOLUTION * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 5KHz
-    } 
-
     //This must happen at the end of the idle init
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer1.setMode(4, TIMER_OUTPUT_COMPARE);

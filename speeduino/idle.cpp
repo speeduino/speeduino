@@ -44,7 +44,7 @@ static unsigned int completedHomeSteps;
 
 static volatile bool idle_pwm_state;
 static bool lastDFCOValue;
-uint16_t idle_pwm_max_count; //Used for variable PWM frequency
+static uint16_t idle_pwm_max_count; //Used for variable PWM frequency
 static volatile unsigned int idle_pwm_cur_value;
 static int32_t idle_pid_target_value;
 static int32_t FeedForwardTerm;
@@ -112,6 +112,8 @@ void initialiseIdle(bool forcehoming)
   idle_pin.setPin(pinIdle1, OUTPUT);
   idle2_pin.setPin(pinIdle2, OUTPUT);
 
+  idle_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.idleFreq));
+  
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
   switch(configPage6.iacAlgorithm)
   {
