@@ -472,4 +472,10 @@ storage_api_t getBoardStorageApi(void)
   return getEEPROMStorageApi(getEepromWriteBlockSize);
 }
 
+/** @brief Get the PWM timer resolution in uS */
+uint8_t getPwmTimerResolution(void)
+{
+  return 32;
+}
+
 #endif

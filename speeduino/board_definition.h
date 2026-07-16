@@ -44,6 +44,9 @@ uint8_t getSystemTemp(void);
 /** @brief Get the storage API for the board */
 storage_api_t getBoardStorageApi(void);
 
+/** @brief Get the PWM timer resolution in uS */
+uint8_t getPwmTimerResolution(void);
+
 ///@cond 
 // Shared building blocks for the board headers
 #define _ANALOG_PINS_A0_A8  A0, A1, A2, A3, A4, A5, A6, A7, A8
