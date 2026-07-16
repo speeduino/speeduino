@@ -150,7 +150,7 @@ static bool isWmiTankEmpty(void)
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
-uint16_t fan_pwm_max_count; //Used for variable PWM frequency
+static uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 TESTABLE_STATIC long fan_pwm_value;
 #endif
@@ -432,16 +432,14 @@ void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
   currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
 
-  #if defined(PWM_FAN_AVAILABLE)
-    DISABLE_FAN_TIMER(); //disable FAN timer if available
-    if ( configPage2.fanEnable == 2 ) // PWM Fan control
-    {
-      #if defined(CORE_TEENSY)
-        fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.fanFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
-      fan_pwm_value = 0;
-    }
-  #endif
+#if defined(PWM_FAN_AVAILABLE)
+  DISABLE_FAN_TIMER(); //disable FAN timer if available
+  if ( configPage2.fanEnable == 2 ) // PWM Fan control
+  {
+    fan_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.fanFreq));
+    fan_pwm_value = 0;
+  }
+#endif
 }
 
 void fanControl(void)

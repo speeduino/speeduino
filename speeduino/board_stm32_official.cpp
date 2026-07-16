@@ -273,9 +273,6 @@ STM32RTC& rtc = STM32RTC::getInstance();
     ***********************************************************************************************************
     * Auxiliaries
     */
-    //2uS resolution Min 8Hz, Max 5KHz
-    fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (TIMER_RESOLUTION * configPage6.fanFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 4uS) it takes to complete 1 cycle
-
     //Need to be initialised last due to instant interrupt
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
     Timer1.setMode(1, TIMER_OUTPUT_COMPARE);

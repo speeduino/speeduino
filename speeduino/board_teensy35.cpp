@@ -173,8 +173,6 @@ void initBoard(uint32_t baudRate)
 
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM1);
-
-        fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.fanFreq * 2U));     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*
