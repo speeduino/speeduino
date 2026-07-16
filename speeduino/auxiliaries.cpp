@@ -172,7 +172,7 @@ static uint32_t vvtWarmTime;
 TESTABLE_STATIC bool vvtIsHot;
 TESTABLE_STATIC bool vvtTimeHold;
 static uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
-uint16_t boost_pwm_max_count; //Used for variable PWM frequency
+static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
@@ -605,6 +605,7 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
 
   setBoostPidTunings(configPage2, configPage6, configPage10);
+  boost_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.boostFreq));
 
   if( configPage6.vvtEnabled > 0)
   {

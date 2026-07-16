@@ -104,7 +104,6 @@ void initBoard(uint32_t /*baudRate*/)
     }
 
     //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
     #if defined(PWM_FAN_AVAILABLE)
       fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
     #endif

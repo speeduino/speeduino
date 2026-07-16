@@ -29,8 +29,6 @@ extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 void fanInterrupt(void);
 #endif
 
-extern uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-
 void boostInterrupt(void);
 void vvtInterrupt(void);
 
