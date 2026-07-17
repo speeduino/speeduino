@@ -33,13 +33,9 @@ static void test_initialiseIdle_onoff_cold_runs(void)
 
 static void test_initialiseIdle_pwm_open_loop(void)
 {
-#if !defined(CORE_AVR)
   prepare_idle(IAC_ALGORITHM_PWM_OL);
   initialiseIdle(false);
   TEST_PASS();
-#else
-  TEST_IGNORE_MESSAGE("Test hangs on SimAVR");
-#endif
 }
 
 static void test_initialiseIdle_pwm_closed_loop(void)

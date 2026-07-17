@@ -28,7 +28,7 @@ TESTABLE_STATIC volatile bool vvt2_pwm_state;
 static volatile bool vvt1_max_pwm;
 static volatile bool vvt2_max_pwm;
 static volatile char nextVVT;
-static byte boostCounter;
+TESTABLE_STATIC byte boostCounter;
 static byte vvtCounter;
 
 static fastInputPin_t n2o_arming_pin;
@@ -164,16 +164,16 @@ static uint8_t acRPMLockoutDelay;
 static uint8_t acAfterEngineStartDelay;
 static bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
-static long boost_pwm_target_value;
-static volatile bool boost_pwm_state;
-static volatile unsigned int boost_pwm_cur_value = 0;
+TESTABLE_STATIC long boost_pwm_target_value;
+TESTABLE_STATIC volatile bool boost_pwm_state;
+TESTABLE_STATIC volatile unsigned int boost_pwm_cur_value = 0;
 
 static uint32_t vvtWarmTime;
 TESTABLE_STATIC bool vvtIsHot;
 TESTABLE_STATIC bool vvtTimeHold;
 static uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
+TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
 static integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call

@@ -149,6 +149,10 @@ constexpr uint8_t IAC_ALGORITHM_STEP_CL = 5U;
 constexpr uint8_t IAC_ALGORITHM_PWM_OLCL  = 6U; //Openloop plus closedloop IAC control
 constexpr uint8_t IAC_ALGORITHM_STEP_OLCL  = 7U; //Openloop plus closedloop IAC control
 
+constexpr uint8_t BOOST_BY_GEAR_OFF      = 0U;
+constexpr uint8_t BOOST_BY_GEAR_PERCENT  = 1U;
+constexpr uint8_t BOOST_BY_GEAR_CONSTANT = 2U;
+
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
   MAPSamplingCycleAverage = 1, 

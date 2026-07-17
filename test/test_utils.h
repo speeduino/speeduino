@@ -38,6 +38,17 @@ constexpr void STR_LEN_CHECK(char const (&)[N])
     UnityDefaultTestRun(func, funcName, __LINE__); \
   }
 
+#define RUN_TEST_POSTFIX_P(func, postFix) \
+  { \
+    char funcName[256]; \
+    constexpr size_t bufferLen = _countof(funcName); \
+    STR_LEN_CHECK<bufferLen>(#func); \
+    strcpy_P(funcName, PSTR(#func)); \
+    strcat(funcName, postFix); \
+    UnityDefaultTestRun(func, funcName, __LINE__); \
+  }
+
+
 // ============================ SET_UNITY_FILENAME ============================ 
 
 static inline uint8_t ufname_set(const char *newFName)
