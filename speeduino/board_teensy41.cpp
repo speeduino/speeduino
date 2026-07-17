@@ -68,8 +68,6 @@ void initBoard(uint32_t /*baudRate*/)
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
       PIT_TCTRL0 |= PIT_TCTRL_TEN; // start Timer 1
       PIT_LDVAL0 = 1; //1 * 2uS = 2uS
-
-      idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*
@@ -102,13 +100,6 @@ void initBoard(uint32_t /*baudRate*/)
       PIT_TCTRL2 |= PIT_TCTRL_TEN; // start Timer 3
       PIT_LDVAL2 = 1; //1 * 2uS = 2uS
     }
-
-    //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
-    vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-    #if defined(PWM_FAN_AVAILABLE)
-      fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-    #endif
 
     //TODO: Configure timers here
 
@@ -423,6 +414,12 @@ static uint16_t getEepromWriteBlockSize(const statuses &current)
 storage_api_t getBoardStorageApi(void)
 {
   return getEEPROMStorageApi(getEepromWriteBlockSize);
+}
+
+/** @brief Get the PWM timer resolution in uS */
+uint8_t getPwmTimerResolution(void)
+{
+  return 2;
 }
 
 #endif

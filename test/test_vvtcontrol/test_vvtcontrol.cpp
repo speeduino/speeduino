@@ -63,8 +63,6 @@ static void setup_vvt_basic_tune(uint8_t mode)
   configPage10.vvtCLMinAng = INT8_MIN+5;
   configPage10.vvtCLMaxAng = UINT8_MAX-5;
   configPage10.vvtCLholdDuty = 100U;
-
-  vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.vvtFreq * 2U));
 }
 
 static void setup_vvt_onconditions(void)

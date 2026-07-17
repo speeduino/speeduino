@@ -150,7 +150,7 @@ static bool isWmiTankEmpty(void)
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
 volatile bool fan_pwm_state;
-uint16_t fan_pwm_max_count; //Used for variable PWM frequency
+static uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 volatile unsigned int fan_pwm_cur_value;
 TESTABLE_STATIC long fan_pwm_value;
 #endif
@@ -171,8 +171,8 @@ static volatile unsigned int boost_pwm_cur_value = 0;
 static uint32_t vvtWarmTime;
 TESTABLE_STATIC bool vvtIsHot;
 TESTABLE_STATIC bool vvtTimeHold;
-uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
-uint16_t boost_pwm_max_count; //Used for variable PWM frequency
+static uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
+static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 constexpr table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
 //Old PID method. Retained in case the new one has issues
@@ -432,16 +432,14 @@ void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
   currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
 
-  #if defined(PWM_FAN_AVAILABLE)
-    DISABLE_FAN_TIMER(); //disable FAN timer if available
-    if ( configPage2.fanEnable == 2 ) // PWM Fan control
-    {
-      #if defined(CORE_TEENSY)
-        fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.fanFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-      #endif
-      fan_pwm_value = 0;
-    }
-  #endif
+#if defined(PWM_FAN_AVAILABLE)
+  DISABLE_FAN_TIMER(); //disable FAN timer if available
+  if ( configPage2.fanEnable == 2 ) // PWM Fan control
+  {
+    fan_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.fanFreq));
+    fan_pwm_value = 0;
+  }
+#endif
 }
 
 void fanControl(void)
@@ -605,19 +603,13 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   if(configPage10.n2o_minTPS == 255) { configPage10.n2o_enable = 0; }
 
   setBoostPidTunings(configPage2, configPage6, configPage10);
+  boost_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.boostFreq));
 
   if( configPage6.vvtEnabled > 0)
   {
     currentStatus.vvt1Angle = 0;
     currentStatus.vvt2Angle = 0;
-
-    #if defined(CORE_AVR)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY35)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY41)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #endif
+    vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
 
     if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
     {
@@ -640,14 +632,8 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
   {
     // config wmi pwm output to use vvt output
-    #if defined(CORE_AVR)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (16U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY35)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #elif defined(CORE_TEENSY41)
-      vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-    #endif
-   currentStatus.wmiTankEmpty = false;
+    vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
+    currentStatus.wmiTankEmpty = false;
     currentStatus.wmiPW = 0;
     vvt1_pwm_value = 0;
     vvt2_pwm_value = 0;

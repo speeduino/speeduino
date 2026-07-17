@@ -2,6 +2,7 @@
 #include "test_fp_support.h"
 #include "maths.h"
 #include "../test_utils.h"
+#include "board_definition.h"
 
 static void test_nudge_i16(void)
 {
@@ -58,9 +59,19 @@ static void test_clamp(void)
   TEST_ASSERT_EQUAL_UINT32(200, clamp((uint32_t)250, (uint32_t)10, (uint32_t)200));
 }
 
+static void test_pwmFreqToTicks(void)
+{
+  auto resolution = getPwmTimerResolution();
+  TEST_ASSERT_EQUAL_UINT16(MICROS_PER_SEC/resolution, pwmFreqToTicks(0));
+  TEST_ASSERT_EQUAL_UINT16(MICROS_PER_SEC/resolution, pwmFreqToTicks(1));
+  TEST_ASSERT_NOT_EQUAL_UINT16(1, pwmFreqToTicks(512));
+  TEST_ASSERT_NOT_EQUAL_UINT16(1, pwmFreqToTicks(UINT16_MAX));
+}
+
 void testOther(void) {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_nudge_i16);
     RUN_TEST(test_clamp);
+    RUN_TEST(test_pwmFreqToTicks);
   }
 }

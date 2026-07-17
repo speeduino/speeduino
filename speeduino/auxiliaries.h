@@ -25,12 +25,8 @@ void fanOn(void);
 void fanOff(void);
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 void fanInterrupt(void);
 #endif
-
-extern uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
-extern uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 
 void boostInterrupt(void);
 void vvtInterrupt(void);
