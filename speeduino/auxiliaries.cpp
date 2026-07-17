@@ -171,7 +171,7 @@ TESTABLE_STATIC volatile unsigned int boost_pwm_cur_value = 0;
 static uint32_t vvtWarmTime;
 TESTABLE_STATIC bool vvtIsHot;
 TESTABLE_STATIC bool vvtTimeHold;
-static uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
+TESTABLE_STATIC uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
