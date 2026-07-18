@@ -92,28 +92,30 @@ static decoder_init_func_t getDecoderInitFunc(uint8_t decoderIndex)
 #elif SMALL_FLASH_DECODER==15
   return &triggerSetup_Harley;
 #elif SMALL_FLASH_DECODER==16
-  return &triggerSetup_ThirtySixMinus21;
+  return &triggerSetup_ThirtySixMinus222;
 #elif SMALL_FLASH_DECODER==17
-  return &triggerSetup_420a;
+  return &triggerSetup_ThirtySixMinus21;
 #elif SMALL_FLASH_DECODER==18
-  return &triggerSetup_Webber;
+  return &triggerSetup_420a;
 #elif SMALL_FLASH_DECODER==19
-  return &triggerSetup_FordST170;
+  return &triggerSetup_Webber;
 #elif SMALL_FLASH_DECODER==20
-  return &triggerSetup_DRZ400;
+  return &triggerSetup_FordST170;
 #elif SMALL_FLASH_DECODER==21
-  return &triggerSetup_NGC;
+  return &triggerSetup_DRZ400;
 #elif SMALL_FLASH_DECODER==22
-  return &triggerSetup_Vmax;
+  return &triggerSetup_NGC;
 #elif SMALL_FLASH_DECODER==23
-  return &triggerSetup_Renix;
+  return &triggerSetup_Vmax;
 #elif SMALL_FLASH_DECODER==24
-  return &triggerSetup_RoverMEMS;
+  return &triggerSetup_Renix;
 #elif SMALL_FLASH_DECODER==25
-  return &triggerSetup_SuzukiK6A;
+  return &triggerSetup_RoverMEMS;
 #elif SMALL_FLASH_DECODER==26
-  return &triggerSetup_HondaJ32;
+  return &triggerSetup_SuzukiK6A;
 #elif SMALL_FLASH_DECODER==27
+  return &triggerSetup_HondaJ32;
+#elif SMALL_FLASH_DECODER==28
   return &triggerSetup_FordTFI;
 #endif
   return initFunc;
