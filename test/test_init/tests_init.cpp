@@ -181,8 +181,6 @@ void test_initialisation_outputs_PWM_idle(void)
 
   initialiseAll(); //Run the main initialise function
 
-  bool isIdlePWM = (configPage6.iacAlgorithm > 0) && ((configPage6.iacAlgorithm <= 3) || (configPage6.iacAlgorithm == 6));
-
   char msg[32];
   strcpy_P(msg, PSTR("Is PWM Idle"));
   TEST_ASSERT_TRUE_MESSAGE(isPwmIac(configPage6), msg);
