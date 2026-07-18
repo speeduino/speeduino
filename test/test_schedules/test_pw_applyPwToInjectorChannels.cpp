@@ -125,7 +125,7 @@ static void test_noTrim_inner(void)
   pulseWidths pulseWidths = { 333, 777 };
 
   char szMsg[128];
-  sprintf(szMsg, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
+  snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
   TEST_MESSAGE(szMsg);
   applyPwToInjectorChannels(pulseWidths, page2, page4, page6, current);
   TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, 0U), true);
@@ -159,7 +159,7 @@ static void test_withTrim_inner(void)
 #endif
 
   char szMsg[128];
-  sprintf(szMsg, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
+  snprintf(szMsg, _countof(szMsg)-1, "cp:%" PRIu8 " cs:%" PRIu8, current.numPrimaryInjOutputs, current.numSecondaryInjOutputs);
   TEST_MESSAGE(szMsg);
   applyPwToInjectorChannels(pulseWidths, page2, page4, page6, current);
   TEST_PW(1, getExpectedChannelPw(current, pulseWidths, 1, -50), true);
@@ -180,10 +180,10 @@ void testApplyPwToInjectorChannels(void)
       for (secondaries=0; secondaries<=INJ_CHANNELS; ++secondaries)
       {    
         char szName[128];
-        sprintf(szName, "test_noTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
+        snprintf(szName, _countof(szName)-1, "test_noTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
         UnityDefaultTestRun(test_noTrim_inner, szName, __LINE__);
 
-        sprintf(szName, "test_withTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
+        snprintf(szName, _countof(szName)-1, "test_withTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
         UnityDefaultTestRun(test_withTrim_inner, szName, __LINE__);
       }
     }

@@ -11,9 +11,15 @@ static void test_start_stop(void)
     configPage4.triggerTeeth = 6; // Prevent division by zero
     configPage2.nCylinders = 4; // Needed to prevent division by zero.
     currentStatus.initialisationComplete = true;
+#if defined(STM32F407xx)
+    pinTrigger = PD3; //The CAS pin
+    pinTrigger2 = PD4; //The Cam Sensor pin
+    pinTrigger2 = PD5; //The Cam Sensor pin
+#else
     pinTrigger = 18;
     pinTrigger2 = 19;
     pinTrigger3 = 20;
+#endif
     currentStatus.decoder = buildDecoder(decoderToTest);
     currentStatus.decoder.primary.edge = CHANGE;
     currentStatus.decoder.secondary.edge = CHANGE;
@@ -77,6 +83,7 @@ void testStartStop(void)
     {
         if (DECODER_AUDI135!=decoder
             && DECODER_HARLEY!=decoder
+            && DECODER_NGC!=decoder // Only produces a valid trigger when primary is LOW
             && DECODER_RENIX!=decoder   // See issue #1347
             && DECODER_ROVERMEMS!=decoder) { // See issue #1348
             decoderToTest = decoder;

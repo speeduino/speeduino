@@ -2,6 +2,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include "preprocessor.h"
 
 #if defined(__AVR__)
 #include <Arduino.h>
@@ -94,7 +95,7 @@ comparative_execution_times<TParam> compare_executiontime(uint16_t iterations, T
     measure_executiontime<TLoop, TParam&>(iterations, from, to, step, timerB, paramB, pTestFunB);
 
     char buffer[128];
-    sprintf(buffer, "Timing: %" PRIu32 ", %" PRIu32, timerA.duration_micros(), timerB.duration_micros());
+    snprintf(buffer, _countof(buffer)-1, "Timing: %" PRIu32 ", %" PRIu32, timerA.duration_micros(), timerB.duration_micros());    
     TEST_MESSAGE(buffer);
 
     return comparative_execution_times<TParam> {
