@@ -104,8 +104,8 @@ static void test_getValue_withinBins(axis_t (&pAxisBin)[sizeT], value_t (&pCurve
         axis_t lookupValue = intermediate(testSubject.axis[i], testSubject.axis[i+1], binFrac);
         int32_t expected = (int32_t)map(lookupValue, testSubject.axis[i], testSubject.axis[i+1], testSubject.values[i], testSubject.values[i+1]);
         value_t result = table2D_getValue(&testSubject, lookupValue);
-        char szMsg[512];
-        sprintf(szMsg, "Loop: %" PRIu8 ", VT %s, AT %s, lookup: %" PRId32 ", data[i]: %" PRId32 ", data[i+1]: %" PRId32 ", binFrac %" PRIu8, 
+        char szMsg[512] = "";
+        snprintf(szMsg, _countof(szMsg)-1, "Loop: %" PRIu8 ", VT %s, AT %s, lookup: %" PRId32 ", data[i]: %" PRId32 ", data[i+1]: %" PRId32 ", binFrac %" PRIu8, 
                         i,
                         GetTypeName<value_t>(), GetTypeName<axis_t>(), 
                         (int32_t)lookupValue, (int32_t)expected, (int32_t)result, binFrac);
