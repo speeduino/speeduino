@@ -141,9 +141,9 @@ static void test_getValue_bin_edges(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)
     for (uint8_t i=0; i<sizeT; ++i) {
         value_t result = (value_t)table2D_getValue(&testSubject, testSubject.axis[i]);
         // char szMsg[64];
-        // sprintf(szMsg, "%d, %d lookup %d: %d", testSubject.values.typeIndicator, testSubject.axis.typeIndicator, i, axis[i]);
+        // snprintf(szMsg, _countof(szMsg)-1, "%d, %d lookup %d: %d", testSubject.values.typeIndicator, testSubject.axis.typeIndicator, i, axis[i]);
         TEST_ASSERT_EQUAL(testSubject.values[i], result);
-        // sprintf(szMsg, "%d, %d lookup %d", testSubject.values.typeIndicator, testSubject.axis.typeIndicator, i);
+        // snprintf(szMsg, _countof(szMsg)-1, "%d, %d lookup %d", testSubject.values.typeIndicator, testSubject.axis.typeIndicator, i);
         TEST_ASSERT_EQUAL(i==0  ? 1 : i, testSubject.cache.lastBinUpperIndex);
     }
 }
@@ -161,7 +161,7 @@ static void test_getValue_overMax(axis_t (&pAxisBin)[sizeT], value_t (&pCurve)[s
     axis_t lookupValue =(axis_t)(testSubject.axis[sizeT-1]+1);
     value_t result = table2D_getValue(&testSubject, lookupValue);
     char szMsg[256];
-    sprintf(szMsg, "VT %s, AT %s, sizeT: %" PRIu8 ", lookup: %" PRId32 ", data[sizeT-1]: %" PRId32, 
+    snprintf(szMsg, _countof(szMsg)-1, "VT %s, AT %s, sizeT: %" PRIu8 ", lookup: %" PRId32 ", data[sizeT-1]: %" PRId32, 
             GetTypeName<value_t>(), GetTypeName<axis_t>(), 
             sizeT, (int32_t)lookupValue, (int32_t)testSubject.values[sizeT-1]);
     TEST_ASSERT_EQUAL_MESSAGE(testSubject.values[sizeT-1], result, szMsg);
@@ -271,7 +271,7 @@ static void test_lookup_perf(void) {
     TEST_ASSERT_INT32_WITHIN(UINT32_MAX/2, UINT32_MAX/2, paramA);
 
     char buffer[128];
-    sprintf(buffer, "Timing: %" PRIu32, timerA.duration_micros());
+    snprintf(buffer, _countof(buffer)-1, "Timing: %" PRIu32, timerA.duration_micros());
     TEST_MESSAGE(buffer);
 }
 

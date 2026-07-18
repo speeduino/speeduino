@@ -119,7 +119,7 @@ static void run_ol_tests(void)
       {
         testPidType = pidType;
         char szPostFix[32];
-        sprintf(szPostFix, "_bt%" PRIu8 "_gt%" PRIu8 "_vss%" PRIu8 "_pid%c", testBoostType, testBoostByGearType, testVssMode, pidType ? 'F' : 'S');
+        snprintf(szPostFix, _countof(szPostFix)-1, "_bt%" PRIu8 "_gt%" PRIu8 "_vss%" PRIu8 "_pid%c", testBoostType, testBoostByGearType, testVssMode, pidType ? 'F' : 'S');
 
         RUN_TEST_POSTFIX_P(test_boost_ol_duty_clamp, szPostFix);
       }

@@ -39,7 +39,7 @@ static void assert_row(uint8_t rowNum, table_row_iterator row, const table3d8Rpm
     uint8_t indexRowStart = (axisSize - rowNum - UINT8_C(1))* axisSize;
     uint16_t address = indexRowStart + colNum;    
     char szMsg[32];
-    sprintf(szMsg, "[%" PRIu8 ",%" PRIu8 "][%" PRIu16 "]", rowNum, colNum, address);
+    snprintf(szMsg, _countof(szMsg)-1, "[%" PRIu8 ",%" PRIu8 "][%" PRIu16 "]", rowNum, colNum, address);
     TEST_ASSERT_EQUAL_MESSAGE(testTable.values.values[address], *row, szMsg);
     ++row;
     ++colNum;

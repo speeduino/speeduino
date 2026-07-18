@@ -80,7 +80,7 @@ static void test_percentApprox_u16(uint16_t percent, uint32_t value, uint32_t de
   uint32_t expected = ((uint32_t)percent*value)/100;
   uint32_t actual = percentageApprox(percent, value);
   char msg[64];
-  sprintf(msg, "pct:%" PRIu16 ", v:%" PRIu32 " Expected:%" PRIu32, percent, value, expected);
+  snprintf(msg, _countof(msg)-1, "pct:%" PRIu16 ", v:%" PRIu32 " Expected:%" PRIu32, percent, value, expected);
   TEST_ASSERT_UINT32_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
 
@@ -88,7 +88,7 @@ static void test_percentApprox_u8(uint8_t percent, uint32_t value, uint32_t delt
   uint32_t expected = ((uint32_t)percent*value)/100;
   uint32_t actual = percentageApprox(percent, value);
   char msg[64];
-  sprintf(msg, "pct:%" PRIu8 ", v:%" PRIu32 " Expected:%" PRIu32, percent, value, expected);
+  snprintf(msg, _countof(msg)-1, "pct:%" PRIu8 ", v:%" PRIu32 " Expected:%" PRIu32, percent, value, expected);
   TEST_ASSERT_UINT32_WITHIN_MESSAGE(delta, expected, actual, msg);
 }
 

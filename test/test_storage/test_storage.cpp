@@ -24,7 +24,7 @@ static void assert_entity(page_iterator_t iter, char expectedContent)
     for (uint16_t offset=0; offset<iter.entity.size; ++offset)
     {
         char szMsg[64];
-        sprintf(szMsg, "Page %" PRIu8 ", Offset %" PRIu16, iter.location.page, offset);
+        snprintf(szMsg, _countof(szMsg)-1, "Page %" PRIu8 ", Offset %" PRIu16, iter.location.page, offset);
         TEST_ASSERT_EQUAL_MESSAGE(expectedContent, getPageValue(iter.location.page, offset), szMsg);
     }
 }
