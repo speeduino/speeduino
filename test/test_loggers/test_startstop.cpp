@@ -83,6 +83,7 @@ void testStartStop(void)
     {
         if (DECODER_AUDI135!=decoder
             && DECODER_HARLEY!=decoder
+            && DECODER_NGC!=decoder // Only produces a valid trigger when primary is LOW
             && DECODER_RENIX!=decoder   // See issue #1347
             && DECODER_ROVERMEMS!=decoder) { // See issue #1348
             decoderToTest = decoder;
