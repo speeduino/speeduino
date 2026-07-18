@@ -190,6 +190,7 @@ static void test_vss_60km_internal_pin(void)
 static void test_vss_60km_external(void)
 {
     vssPulse();
+    delay(1);
     vssPulse();
     configPage2.vssMode = VSS_MODE_EXTERNAL_KM;
     configPage2.vssPulsesPerKm = 0;
