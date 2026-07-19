@@ -10,7 +10,9 @@ class fastOutputPin_t
 {
 public:
   /** @brief Set the output pin */
-  void setPin(uint8_t pin, uint8_t mode = OUTPUT) noexcept;
+  void setPin(uint8_t pin, uint8_t mode = OUTPUT) noexcept {
+    _port_pin = port_pin_t(pin, mode);
+  }
 
   /** @brief Set the pin high */
   void setPinHigh(void) noexcept {
@@ -26,7 +28,9 @@ public:
   bool isValid(void) const noexcept {
     return _port_pin.isValid();
   }
-  
+
+#if !defined(UNIT_TEST)
 private:
+#endif
   port_pin_t _port_pin;
 };

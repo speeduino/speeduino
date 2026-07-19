@@ -24,7 +24,7 @@ struct port_pin_t
   port_pin_t() = default;
 
   /** @brief Construct from a pin number*/
-  port_pin_t(uint8_t pinNum);
+  port_pin_t(uint8_t pinNum, uint8_t mode);
 
   /** @brief Is the port register initialised? */
   bool isValid(void) const {
@@ -33,7 +33,13 @@ struct port_pin_t
 
   /** @brief Check if the pin is set high */
   bool isPinHigh(void) const noexcept {
-    return isValid() ? (*_port & _mask) != 0 : false;
+    return isValid() ? 
+#if defined(UNIT_TEST)
+    _pinState
+#else
+    (*_port & _mask) != 0
+#endif    
+     : false;
   }
 
   /** @brief Check if the pin is set low */
@@ -59,5 +65,8 @@ private:
 
   port_register_t _port = NULL_PORT;
   pin_mask_t _mask = {0};
+#if defined(UNIT_TEST)
+  bool _pinState = LOW;
+#endif
 };
 
