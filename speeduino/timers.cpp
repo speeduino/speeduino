@@ -52,7 +52,7 @@ void __attribute__((optimize("Os"))) initialiseTimers(void)
   loopSec = 0;
 }
 
-static boardOutputPin_t tach_pin;
+TESTABLE_STATIC boardOutputPin_t tach_pin;
 TESTABLE_STATIC volatile uint8_t TIMER_mask;
 
 uint8_t getAndClearTimerMask(void)
