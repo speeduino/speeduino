@@ -1,6 +1,8 @@
 #include "port_pin.h"
 #include "../../atomic.h"
 
+// LCOV_EXCL_START
+
 port_pin_t::port_pin_t(uint8_t pinNum, uint8_t mode)
 {
     if (pinNum!=NOT_A_PIN)
@@ -10,8 +12,6 @@ port_pin_t::port_pin_t(uint8_t pinNum, uint8_t mode)
         pinMode(pinNum, mode);
     }
 }
-
-// LCOV_EXCL_START
 
 /** @brief Set the pin high */
 void port_pin_t::setPinHigh(void) noexcept

@@ -31,6 +31,7 @@ struct port_pin_t
     return _port!=NULL_PORT;
   }
 
+  // LCOV_EXCL_START
   /** @brief Check if the pin is set high */
   bool isPinHigh(void) const noexcept {
     return isValid() ? 
@@ -41,6 +42,7 @@ struct port_pin_t
 #endif    
      : false;
   }
+  // LCOV_EXCL_STOP
 
   /** @brief Check if the pin is set low */
   bool isPinLow(void) const noexcept {
