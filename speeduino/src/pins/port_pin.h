@@ -21,6 +21,34 @@ namespace type_detection_detail {
 /// @see https://docs.arduino.cc/retired/hacking/software/PortManipulation/ 
 struct port_pin_t
 {
+  port_pin_t() = default;
+
+  /** @brief Construct from a pin number*/
+  port_pin_t(uint8_t pinNum);
+
+  /** @brief Is the port register initialised? */
+  bool isValid(void) const {
+    return _port!=NULL_PORT;
+  }
+
+  /** @brief Check if the pin is set high */
+  bool isPinHigh(void) const noexcept {
+    return isValid() ? (*_port & _mask) != 0 : false;
+  }
+
+  /** @brief Check if the pin is set low */
+  bool isPinLow(void) const noexcept {
+    return !isPinHigh();
+  }
+
+  /** @brief Set the pin high */
+  void setPinHigh(void) noexcept;
+
+  /** @brief Set the pin low */
+  void setPinLow(void) noexcept;
+
+private:
+
   /** @brief The return type of a "call" to portOutputRegister() */
   using port_register_t = decltype(type_detection_detail::return_type_of(&type_detection_detail::detectPortRegisterType));
 
@@ -29,13 +57,7 @@ struct port_pin_t
 
   static constexpr port_register_t NULL_PORT = {nullptr};
 
-  port_register_t port = NULL_PORT;
-  pin_mask_t mask = {0};
-
-  /** @brief Is the port register initialised? */
-  bool isValid(void) const
-  {
-    return port!=port_pin_t::NULL_PORT;
-  }
+  port_register_t _port = NULL_PORT;
+  pin_mask_t _mask = {0};
 };
 

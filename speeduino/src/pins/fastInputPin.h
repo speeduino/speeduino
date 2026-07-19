@@ -13,17 +13,17 @@ public:
   void setPin(uint8_t pin, uint8_t mode = INPUT);
 
   /** @brief Check if the pin is set high */
-  bool isPinHigh(void) const noexcept;
+  bool isPinHigh(void) const noexcept {
+    return _port_pin.isPinHigh();
+  }
 
   /** @brief Check if the pin is set low */
-  bool isPinLow(void) const
-  {
+  bool isPinLow(void) const noexcept {
     return !isPinHigh();
   }
 
   /** @brief Is the pin set? */
-  bool isValid(void) const
-  {
+  bool isValid(void) const noexcept{
     return _port_pin.isValid();
   }
 

@@ -6,20 +6,11 @@
 
 void fastInputPin_t::setPin(uint8_t pin, uint8_t mode) 
 {
+    _port_pin = port_pin_t(pin);
     if (pin!=NOT_A_PIN)
     {
         pinMode(pin, mode);
-        _port_pin.port = portInputRegister(digitalPinToPort(pin));
-        _port_pin.mask = digitalPinToBitMask(pin);
     }
-    else
-    {
-        _port_pin = port_pin_t();
-    }
-}
-
-bool fastInputPin_t::isPinHigh(void) const noexcept{
-    return isValid() ? (*_port_pin.port & _port_pin.mask) != 0 : false;
 }
 
 // LCOV_EXCL_STOP
