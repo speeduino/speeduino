@@ -136,7 +136,7 @@ static void test_initialiseFuelPump_no_prime_pumpoff(void)
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
     TEST_ASSERT_FALSE(pump_state.isPumpOn);
-    TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_PUMP_PIN));
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinLow());
 }
 
 static void test_initialiseFuelPump_with_prime_pumpon(void)
@@ -147,7 +147,7 @@ static void test_initialiseFuelPump_with_prime_pumpon(void)
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
     TEST_ASSERT_TRUE(pump_state.isPumpOn);
-    TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_PUMP_PIN));
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 }
 
 

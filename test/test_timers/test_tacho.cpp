@@ -2,7 +2,11 @@
 #include "timers.h"
 #include "globals.h"
 #include "setup_oneMsInterval.h"
+#include "board_definition.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
+ extern boardOutputPin_t tach_pin;
 extern volatile uint8_t tachoEndTime;
 extern volatile uint16_t tachoSweepAccum;
 
@@ -20,13 +24,13 @@ static void test_tachoPulseHighAndLow_togglePin(void)
   initTacho(pin);
 
   tachoPulseHigh();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(pin));
+  TEST_ASSERT_TRUE(tach_pin._pin.isPinHigh());
 
   tachoPulseLow();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(pin));
+  TEST_ASSERT_TRUE(tach_pin._pin.isPinLow());
 
   tachoPulseHigh();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(pin));
+  TEST_ASSERT_TRUE(tach_pin._pin.isPinHigh());
 }
 
 static void test_tacho_ready_full_speed_to_active(void)

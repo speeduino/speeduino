@@ -3,7 +3,11 @@
 #include "auxiliaries.h"
 #include "units.h"
 #include "shared.h"
+#include "board_definition.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
+extern boardOutputPin_t boost_pin;
 extern byte boostCounter;
 extern long boost_pwm_target_value;
 extern volatile bool boost_pwm_state;
@@ -103,7 +107,7 @@ static void test_ol_zero_duty(void)
   boostControl();
 
   TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_BOOST_PIN));
+  TEST_ASSERT_TRUE(boost_pin._pin.isPinLow());
 }
 
 static void run_ol_tests(void)

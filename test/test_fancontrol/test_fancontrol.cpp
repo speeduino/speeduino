@@ -3,8 +3,12 @@
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
+#include "board_definition.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
-extern table2D_u8_u8_4 fanPWMTable;
+ extern boardOutputPin_t fan_pin;
+ extern table2D_u8_u8_4 fanPWMTable;
 
 static void set_coolant_above_ontemp(void)
 {
@@ -63,9 +67,11 @@ static void setup_fanControl_on_when_engine_running_and_hot(void)
 static void test_fanControl_nopwm_on_when_engine_running_and_hot(void)
 {
   setup_nopwm_tune();
+  initialiseFan(TEST_FAN_PIN);
+
   setup_fanControl_on_when_engine_running_and_hot();
   fanControl();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
   TEST_ASSERT_TRUE(currentStatus.fanOn);
 }
 
@@ -74,6 +80,8 @@ static void test_fanControl_pwm_on_when_engine_running_and_hot(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
   setup_pwm_tune();
+  initialiseFan(TEST_FAN_PIN);
+
   setup_fanControl_on_when_engine_running_and_hot();
   fanControl();
   TEST_ASSERT_TRUE(currentStatus.fanOn);
@@ -96,7 +104,7 @@ static void test_fanControl_nopwm_off_when_engine_stopped(void)
   seetup_fanControl_with_engine_stopped();
   fanControl();
   TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
 }
 
 static void test_fanControl_pwm_off_when_engine_stopped(void)
@@ -225,7 +233,7 @@ static void test_fanControl_nopwm_disables_during_crank_when_configured(void)
 
   fanControl();
   TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
 }
 
 static void test_fanControl_pwm_disables_during_crank_when_configured(void)

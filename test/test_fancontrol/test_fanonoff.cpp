@@ -3,6 +3,11 @@
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
+#include "board_definition.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
+
+ extern boardOutputPin_t fan_pin;
 
 static void test_fanOnOff_normal_polarity(void)
 {
@@ -11,9 +16,9 @@ static void test_fanOnOff_normal_polarity(void)
   initialiseFan(TEST_FAN_PIN);
 
   fanOff();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
   fanOn();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
 }
 
 
@@ -24,9 +29,9 @@ static void test_fanOnOff_inverted_polarity(void)
   initialiseFan(TEST_FAN_PIN);
 
   fanOff();   // inverted off -> HIGH
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
   fanOn();    // inverted on  -> LOW
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
 }
 
 void testOnOff(void)
