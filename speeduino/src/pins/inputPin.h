@@ -1,7 +1,5 @@
 #pragma once
-#include <Arduino.h>
-#include <stdint.h>
-#include "../../board_definition.h"
+#include "digitalPin.h"
 
 /** 
  * @brief A class for input pin operations. 
@@ -14,23 +12,27 @@ class inputPin_t
 {
 public:
   /** @brief Set the input pin */
-  void setPin(uint8_t pin, uint8_t mode = INPUT) noexcept;
+  void setPin(uint8_t pin, uint8_t mode = INPUT) noexcept {
+    _pin.setPin(pin, mode);
+  }
 
   /** @brief Check if the pin is set high */
-  bool isPinHigh(void) const noexcept; 
+  bool isPinHigh(void) const noexcept {
+    return _pin.isPinHigh();
+  }
 
   /** @brief Check if the pin is set low */
-  bool isPinLow(void) const noexcept
-  {
-    return !isPinHigh();
+  bool isPinLow(void) const noexcept {
+    return _pin.isPinLow();
   }
 
   /** @brief Is the pin set? */
-  bool isValid(void) const
-  {
-    return _pin != NOT_A_PIN;
+  bool isValid(void) const {
+    return _pin.isValid();
   }
 
+#if !defined(UNIT_TEST)
 private:
-  uint8_t _pin = NOT_A_PIN;
+#endif
+  digitalPin_t _pin;
 };
