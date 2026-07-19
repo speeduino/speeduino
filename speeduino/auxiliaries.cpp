@@ -69,7 +69,7 @@ static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const con
   }
 }
 
-static boardOutputPin_t boost_pin;
+TESTABLE_STATIC boardOutputPin_t boost_pin;
 static boardOutputPin_t n2o_stage1_pin;
 static boardOutputPin_t n2o_stage2_pin;
 static boardOutputPin_t aircon_comp_pin;
@@ -410,7 +410,7 @@ static inline void checkAirConRPMLockout(void)
 Fan control
 */
 
-static boardOutputPin_t fan_pin;
+TESTABLE_STATIC boardOutputPin_t fan_pin;
 
 void fanOn(void) 
 {
@@ -555,8 +555,8 @@ void fanControl(void)
   }
 }
 
-static boardOutputPin_t vvt1_pin;
-static boardOutputPin_t vvt2_pin;
+TESTABLE_STATIC boardOutputPin_t vvt1_pin;
+TESTABLE_STATIC boardOutputPin_t vvt2_pin;
 
 static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 

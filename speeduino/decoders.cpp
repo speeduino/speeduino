@@ -104,9 +104,9 @@ TESTABLE_STATIC decoder_status_t decoderStatus;
 static libdivide::libdivide_s16_t divTriggerToothAngle;
 #endif
 
-static boardInputPin_t triggerPri_pin;
-static boardInputPin_t triggerSec_pin;
-static boardInputPin_t triggerThird_pin;
+TESTABLE_STATIC boardInputPin_t triggerPri_pin;
+TESTABLE_STATIC boardInputPin_t triggerSec_pin;
+TESTABLE_STATIC boardInputPin_t triggerThird_pin;
 
 #define TOOTH_CRANK 0
 #define TOOTH_CAM_SECONDARY 1

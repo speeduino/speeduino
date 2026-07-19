@@ -2,7 +2,12 @@
 #include "globals.h"
 #include "auxiliaries.h"
 #include "units.h"
+#include "board_definition.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
 
+extern boardOutputPin_t vvt1_pin;
+extern boardOutputPin_t vvt2_pin;
 extern long vvt1_pwm_value;
 extern long vvt2_pwm_value;
 extern volatile bool vvt1_pwm_state;
@@ -162,11 +167,11 @@ static void test_vvt1On_and_Off_toggle_pin(void)
   setup_vvt_openloop_tune();
   initialiseAuxPWM();
   vvt1Off();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_VVT1_PIN));
+  TEST_ASSERT_TRUE(vvt1_pin._pin.isPinLow());
   vvt1On();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_VVT1_PIN));
+  TEST_ASSERT_TRUE(vvt1_pin._pin.isPinHigh());
   vvt1Off();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_VVT1_PIN));
+  TEST_ASSERT_TRUE(vvt1_pin._pin.isPinLow());
 }
 
 static void test_vvt2On_and_Off_toggle_pin(void)
@@ -174,11 +179,11 @@ static void test_vvt2On_and_Off_toggle_pin(void)
   setup_vvt_openloop_tune();
   initialiseAuxPWM();
   vvt2Off();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_VVT2_PIN));
+  TEST_ASSERT_TRUE(vvt2_pin._pin.isPinLow());
   vvt2On();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_VVT2_PIN));
+  TEST_ASSERT_TRUE(vvt2_pin._pin.isPinHigh());
   vvt2Off();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_VVT2_PIN));
+  TEST_ASSERT_TRUE(vvt2_pin._pin.isPinLow());
 }
 
 // ============================ VVT Control ===============================

@@ -10,23 +10,27 @@ class fastInputPin_t
 {
 public:
   /** @brief Set the input pin */
-  void setPin(uint8_t pin, uint8_t mode = INPUT);
+  void setPin(uint8_t pin, uint8_t mode = INPUT) noexcept {
+    _pin = port_pin_t(pin, mode);
+  }
 
   /** @brief Check if the pin is set high */
-  bool isPinHigh(void) const noexcept;
+  bool isPinHigh(void) const noexcept {
+    return _pin.isPinHigh();
+  }
 
   /** @brief Check if the pin is set low */
-  bool isPinLow(void) const
-  {
+  bool isPinLow(void) const noexcept {
     return !isPinHigh();
   }
 
   /** @brief Is the pin set? */
-  bool isValid(void) const
-  {
-    return _port_pin.isValid();
+  bool isValid(void) const noexcept{
+    return _pin.isValid();
   }
 
+#if !defined(UNIT_TEST)
 private:
-  port_pin_t _port_pin;
+#endif
+  port_pin_t _pin;
 };

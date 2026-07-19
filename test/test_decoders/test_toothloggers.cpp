@@ -4,39 +4,46 @@
 #include "globals.h"
 #include "decoder_init.h"
 #include "../test_utils.h"
+#include "board_definition.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
+#include "src/pins/fastInputPin.h"
+#include "src/pins/inputPin.h"
 
 extern decoder_status_t decoderStatus;
+extern boardInputPin_t triggerPri_pin;
+extern boardInputPin_t triggerSec_pin;
+extern boardInputPin_t triggerThird_pin;
 
-static void fireInterrupt(uint8_t pin, uint8_t edge)
+static void configurePinState(boardInputPin_t &p, uint8_t edge)
 {
-  uint8_t currentState = digitalRead(pin);
-  pinMode(pin, OUTPUT);
   if (edge == RISING)
   {
-    if (currentState == HIGH)
+    if (p.isPinHigh())
     {
-      digitalWrite(pin, LOW);
-      TEST_ASSERT_EQUAL(LOW, digitalRead(pin));
+      p._pin.setPinLow();
     }
-    digitalWrite(pin, HIGH);
-    TEST_ASSERT_EQUAL(HIGH, digitalRead(pin));
+    p._pin.setPinHigh();
   }
   else if (edge == FALLING)
   {
-    if (currentState == LOW)
+    if (p.isPinLow())
     {
-      digitalWrite(pin, HIGH);
-      TEST_ASSERT_EQUAL(HIGH, digitalRead(pin));
+      p._pin.setPinHigh();
     }
-    digitalWrite(pin, LOW);
-    TEST_ASSERT_EQUAL(LOW, digitalRead(pin));
+    p._pin.setPinLow();
   }
   else if (edge == CHANGE)
   {
-    digitalWrite(pin, !currentState); // Toggle pin state
-    TEST_ASSERT_EQUAL(!currentState, digitalRead(pin));
+    if (p.isPinLow())
+    {
+      p._pin.setPinHigh();
+    }
+    else
+    {
+      p._pin.setPinLow();
+    }
   }
-  delay(0);
 }
 
 extern volatile unsigned long triggerFilterTime;
@@ -65,7 +72,7 @@ static void configureDecoderForStartStop(uint8_t decoder)
     }
 }
 
-static void assertPrimaryTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge)
+static void assertTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge, interrupt_t::callback_t isr)
 {
     char szMsg[64];
     snprintf(szMsg, sizeof(szMsg), "Decoder %d, edge %d", decoderNum, edge);
@@ -73,13 +80,10 @@ static void assertPrimaryTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t 
     currentStatus.decoder = decoder;
     decoder.reset();
     configureDecoderForStartStop(decoderNum);
-    delayMicroseconds(triggerFilterTime + 1);
-    fireInterrupt(pinTrigger, edge);
-#if defined(NATIVE_BOARD)
-    TEST_MESSAGE("No interrupts on native board :-(");
-#else
+
+    configurePinState(triggerPri_pin, edge);
+    isr();
     TEST_ASSERT_TRUE_MESSAGE(decoder.getStatus().validTrigger, szMsg);
-#endif
 }
 
 static void assertStartStopPrimaryTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge)
@@ -87,19 +91,19 @@ static void assertStartStopPrimaryTrigger(decoder_t decoder, uint8_t decoderNum,
     currentStatus.decoder = decoder;
 
     // Test primary trigger function
-    assertPrimaryTrigger(decoder, decoderNum, edge);
+    assertTrigger(decoder, decoderNum, edge, decoder.primary.callback);
 
     // Attach logger
     startToothLogger();
 
     // Test primary trigger function
-    assertPrimaryTrigger(decoder, decoderNum, edge);
+    assertTrigger(decoder, decoderNum, edge, loggerPrimaryISR);
 
     // Detach logger
     stopToothLogger();
 
     // Test primary trigger function
-    assertPrimaryTrigger(decoder, decoderNum, edge);
+    assertTrigger(decoder, decoderNum, edge, decoder.primary.callback);
 }
 
 // Used as pseudo parameter to support dynamic test naming.
@@ -161,22 +165,22 @@ static void test_start_stop_ngc(void)
 
   // The NGC decoder triggers on change, but only sets 
   // BIT_DECODER_VALID_TRIGGER on falling interrupts.
-  fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
+  configurePinState(triggerPri_pin, RISING);
+  assertTrigger(decoder, DECODER_NGC, decoder.primary.edge, decoder.primary.callback);
   
   // Attach logger
   startToothLogger();
 
   // Test primary trigger function
-  fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
+  configurePinState(triggerPri_pin, RISING);
+  assertTrigger(decoder, DECODER_NGC, decoder.primary.edge, loggerPrimaryISR);
 
   // Detach logger
   stopToothLogger();
 
   // Test primary trigger function
-  fireInterrupt(pinTrigger, RISING);
-  assertPrimaryTrigger(decoder, DECODER_NGC, decoder.primary.edge);
+  configurePinState(triggerPri_pin, RISING);
+  assertTrigger(decoder, DECODER_NGC, decoder.primary.edge, decoder.primary.callback);
 }
 
 void testToothLoggers(void)
