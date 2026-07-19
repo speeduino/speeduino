@@ -13,6 +13,10 @@ void fastOutputPin_t::setPin(uint8_t pin, uint8_t mode) noexcept
         _port_pin.port = portOutputRegister(digitalPinToPort(pin));
         _port_pin.mask = digitalPinToBitMask(pin);
     }
+    else
+    {
+        _port_pin = port_pin_t();
+    }
 }
 
 /** @brief Set the pin high */
