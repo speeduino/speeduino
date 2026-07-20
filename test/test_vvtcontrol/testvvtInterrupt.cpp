@@ -42,6 +42,22 @@ static void setup_vvt_interrupt_base(void)
   initialiseAuxPWM();
 }
 
+static void setup_vvt_interrupt_active_state(void)
+{
+  // Initialize base
+  setup_vvt_interrupt_base();
+  
+  // Set up for active state: PWM outputs already running
+  vvt1_pwm_state = true;
+  vvt2_pwm_state = true;
+  vvt1_max_pwm = false;
+  vvt2_max_pwm = false;
+  
+  // Initialize current values (set by previous idle entry)
+  vvt1_pwm_cur_value = 0;
+  vvt2_pwm_cur_value = 0;
+}
+
 static bool getVvt1PinState(void)
 {
   return vvt1_pin._pin.isPinHigh();
@@ -344,12 +360,272 @@ static void test_both_at_max_duty(void)
     TEST_ASSERT_TRUE(vvt2_pwm_state);
 }
 
+// ========================= Test: nextVVT == 0 Branch (VVT1 edge deactivation) =========================
+
+static void test_vvt_nextvvt0_vvt1_off_vvt2_on(void)
+{
+    setup_vvt_interrupt_active_state();
+    
+    // Set up: VVT1 at 300us, VVT2 at 700us - both active
+    vvt1_pwm_value = 300;
+    vvt2_pwm_value = 700;
+    vvt1_pwm_state = true;
+    vvt2_pwm_state = true;
+    vvt1_pwm_cur_value = 300;  // VVT1 edge just occurred
+    vvt2_pwm_cur_value = 700;
+    
+    // Simulate idle entry first to set nextVVT
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvtInterrupt();  // This enters idle, sets nextVVT based on duty values
+    
+    // Now both are on and ready
+    vvt1_pwm_state = true;
+    vvt2_pwm_state = true;
+    vvt1_pwm_cur_value = 300;
+    vvt2_pwm_cur_value = 700;
+    
+    // Simulate VVT1 edge deactivation (nextVVT == 0)
+    vvtInterrupt();
+    
+    // VVT1 should be off, VVT2 should still be on
+    TEST_ASSERT_FALSE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+}
+
+// ========================= Test: nextVVT == 1 Branch (VVT2 edge deactivation) =========================
+
+static void test_vvt_nextvvt1_vvt2_off_normal_duty(void)
+{
+    setup_vvt_interrupt_base();
+    
+    // Set up: VVT2 shorter than VVT1 (VVT2 edge occurs first)
+    // This will set nextVVT = 1 during idle entry
+    vvt1_pwm_value = 700;
+    vvt2_pwm_value = 300;
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    
+    // First interrupt: Enter idle, activate both
+    vvtInterrupt();
+    
+    // Both should be activated
+    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+    
+    // Verify both current values are set
+    TEST_ASSERT_EQUAL(vvt1_pwm_cur_value, 700);
+    TEST_ASSERT_EQUAL(vvt2_pwm_cur_value, 300);
+}
+
+// ========================= Test: nextVVT == 1 Branch (VVT2 at 100% duty) =========================
+
+static void test_vvt_nextvvt1_vvt2_at_100percent(void)
+{
+    setup_vvt_interrupt_base();
+    
+    // VVT2 longer than VVT1 (100% means always on) at same time
+    vvt1_pwm_value = 300;
+    vvt2_pwm_value = vvt_pwm_max_count;  // 100% duty
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvt2_max_pwm = false;
+    
+    // Enter idle state and activate both
+    vvtInterrupt();
+    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+    
+    // Verify PWM values cached
+    TEST_ASSERT_EQUAL(vvt1_pwm_cur_value, 300);
+    TEST_ASSERT_EQUAL(vvt2_pwm_cur_value, vvt_pwm_max_count);
+}
+
+// ========================= Test: nextVVT == 2 Branch (Both edges simultaneously) =========================
+
+static void test_vvt_nextvvt2_both_edges_same_duty(void)
+{
+    setup_vvt_interrupt_active_state();
+    
+    // Both at same duty (500us each)
+    vvt1_pwm_value = 500;
+    vvt2_pwm_value = 500;
+    vvt1_pwm_state = true;
+    vvt2_pwm_state = true;
+    vvt1_pwm_cur_value = 500;
+    vvt2_pwm_cur_value = 500;
+    
+    // Enter from idle
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvtInterrupt();  // Idle entry sets nextVVT = 2 (same duty)
+    
+    // Restore to active state
+    vvt1_pwm_state = true;
+    vvt2_pwm_state = true;
+    vvt1_pwm_cur_value = 500;
+    vvt2_pwm_cur_value = 500;
+    
+    vvtInterrupt();  // Should handle nextVVT == 2 (both edges simultaneously)
+    
+    // Both should be deactivated
+    TEST_ASSERT_FALSE(vvt1_pwm_state);
+    TEST_ASSERT_FALSE(vvt2_pwm_state);
+}
+
+// ========================= Test: nextVVT == 2 Branch (One at 100%, one below) =========================
+
+static void test_vvt_nextvvt2_vvt1_at_100_vvt2_below(void)
+{
+    setup_vvt_interrupt_base();
+    
+    // Scenario: VVT1 at 100% (always on), VVT2 at a different value
+    // When VVT1 is 100%, it doesn't actually turn on/off like normal PWM
+    vvt1_pwm_value = vvt_pwm_max_count;  // 100%
+    vvt2_pwm_value = 500;
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvt1_max_pwm = false;
+    vvt2_max_pwm = false;
+    
+    // Enter idle state
+    vvtInterrupt();
+    
+    // Both should be activated
+    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+    
+    // Verify current values are set
+    TEST_ASSERT_EQUAL(vvt1_pwm_cur_value, vvt_pwm_max_count);
+    TEST_ASSERT_EQUAL(vvt2_pwm_cur_value, 500);
+}
+
+// ========================= Test: nextVVT == 2 Branch (Both at 100% duty) =========================
+
+static void test_vvt_nextvvt2_both_at_100percent(void)
+{
+    setup_vvt_interrupt_active_state();
+    
+    // Both at 100% duty
+    vvt1_pwm_value = vvt_pwm_max_count;
+    vvt2_pwm_value = vvt_pwm_max_count;
+    vvt1_pwm_state = true;
+    vvt2_pwm_state = true;
+    vvt1_pwm_cur_value = vvt_pwm_max_count;
+    vvt2_pwm_cur_value = vvt_pwm_max_count;
+    vvt1_max_pwm = false;
+    vvt2_max_pwm = false;
+    
+    // Enter from idle
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvtInterrupt();
+    
+    // Restore to active state
+    vvt1_pwm_state = true;
+    vvt2_pwm_state = true;
+    vvt1_pwm_cur_value = vvt_pwm_max_count;
+    vvt2_pwm_cur_value = vvt_pwm_max_count;
+    
+    vvtInterrupt();  // Handle nextVVT == 2 with both at 100%
+    
+    // Both should have max_pwm flag set
+    TEST_ASSERT_TRUE(vvt1_max_pwm);
+    TEST_ASSERT_TRUE(vvt2_max_pwm);
+}
+
+// ========================= Test: State Machine Progression (VVT1 longer than VVT2) =========================
+
+static void test_vvt_state_machine_vvt2_shorter(void)
+{
+    setup_vvt_interrupt_base();
+    
+    // VVT1 at 700us, VVT2 at 300us (VVT2 edge comes first)
+    vvt1_pwm_value = 700;
+    vvt2_pwm_value = 300;
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvt1_max_pwm = false;
+    vvt2_max_pwm = false;
+    
+    // First interrupt: enter idle state, activate both
+    vvtInterrupt();
+    
+    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+    
+    // Both PWM values should be cached
+    TEST_ASSERT_EQUAL(vvt1_pwm_cur_value, 700);
+    TEST_ASSERT_EQUAL(vvt2_pwm_cur_value, 300);
+}
+
+// ========================= Test: State Machine Progression (VVT1 shorter than VVT2) =========================
+
+static void test_vvt_state_machine_vvt1_shorter(void)
+{
+    setup_vvt_interrupt_base();
+    
+    // VVT1 at 300us, VVT2 at 700us (VVT1 edge comes first)
+    vvt1_pwm_value = 300;
+    vvt2_pwm_value = 700;
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvt1_max_pwm = false;
+    vvt2_max_pwm = false;
+    
+    // First interrupt: enter idle state
+    vvtInterrupt();
+    
+    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+    
+    // Verify current values are cached
+    TEST_ASSERT_EQUAL(vvt1_pwm_cur_value, 300);
+    TEST_ASSERT_EQUAL(vvt2_pwm_cur_value, 700);
+}
+
+// ========================= Test: Transition from One Off to Next On =========================
+
+static void test_vvt_vvt1_only_to_vvt2_only(void)
+{
+    setup_vvt_interrupt_base();
+    
+    // Start with only VVT1 active
+    vvt1_pwm_value = 500;
+    vvt2_pwm_value = 0;
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvt1_max_pwm = false;
+    vvt2_max_pwm = false;
+    
+    vvtInterrupt();  // Activate VVT1, VVT2 stays off
+    
+    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_FALSE(vvt2_pwm_state);
+    
+    // Now change duty values: turn off VVT1, turn on VVT2
+    vvt1_pwm_value = 0;
+    vvt2_pwm_value = 500;
+    
+    // Simulate re-entry to idle (both off or at max)
+    vvt1_pwm_state = false;
+    vvt2_pwm_state = false;
+    vvt1_max_pwm = false;
+    vvt2_max_pwm = false;
+    
+    vvtInterrupt();  // Should activate only VVT2
+    
+    TEST_ASSERT_FALSE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvt2_pwm_state);
+}
+
 // ========================= Main Test Runner =========================
 
 void testVvtInterrupt(void)
 {
   SET_UNITY_FILENAME()
   {
+    // Idle state entry tests
     RUN_TEST_P(test_both_off_idle_state);
     RUN_TEST_P(test_vvt1_at_50_percent_duty);
     RUN_TEST_P(test_vvt2_at_50_percent_duty);
@@ -362,5 +638,16 @@ void testVvtInterrupt(void)
     RUN_TEST_P(test_vvt1_max_vvt2_off);
     RUN_TEST_P(test_vvt2_max_vvt1_off);
     RUN_TEST_P(test_both_at_max_duty);
+    
+    // Active state and state machine progression tests
+    RUN_TEST_P(test_vvt_nextvvt0_vvt1_off_vvt2_on);
+    RUN_TEST_P(test_vvt_nextvvt1_vvt2_off_normal_duty);
+    RUN_TEST_P(test_vvt_nextvvt1_vvt2_at_100percent);
+    RUN_TEST_P(test_vvt_nextvvt2_both_edges_same_duty);
+    RUN_TEST_P(test_vvt_nextvvt2_vvt1_at_100_vvt2_below);
+    RUN_TEST_P(test_vvt_nextvvt2_both_at_100percent);
+    RUN_TEST_P(test_vvt_state_machine_vvt2_shorter);
+    RUN_TEST_P(test_vvt_state_machine_vvt1_shorter);
+    RUN_TEST_P(test_vvt_vvt1_only_to_vvt2_only);
   }
 }
