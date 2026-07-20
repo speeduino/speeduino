@@ -4,9 +4,7 @@
 #include "../test_utils.h"
 #include "shared.h"
 #include "src/pins/fastInputPin.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
-#include "board_definition.h"
+#include "src/pins/boardOutputPin.h"
 
 extern fastInputPin_t n2o_arming_pin;
 extern boardOutputPin_t n2o_stage1_pin;

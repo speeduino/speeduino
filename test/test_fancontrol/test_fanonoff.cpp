@@ -3,9 +3,7 @@
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
-#include "board_definition.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
+#include "src/pins/boardOutputPin.h"
 
  extern boardOutputPin_t fan_pin;
 

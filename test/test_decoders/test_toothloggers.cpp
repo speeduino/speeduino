@@ -4,11 +4,7 @@
 #include "globals.h"
 #include "decoder_init.h"
 #include "../test_utils.h"
-#include "board_definition.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
-#include "src/pins/fastInputPin.h"
-#include "src/pins/inputPin.h"
+#include "src/pins/boardInputPin.h"
 
 extern decoder_status_t decoderStatus;
 extern boardInputPin_t triggerPri_pin;

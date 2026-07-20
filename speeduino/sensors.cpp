@@ -27,8 +27,7 @@ A full copy of the license may be found in the projects root directory
 #include "static_for.hpp"
 #include "polling.hpp"
 #include "decoders.h"
-#include "src/pins/fastInputPin.h"
-#include "src/pins/inputPin.h"
+#include "src/pins/boardInputPin.h"
 #include "src/pins/pinMapping.h"
 
 uint8_t statusSensors = 0;

@@ -21,8 +21,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "preprocessor.h"
 #include "scheduledIO_ign.h"
 #include "scheduledIO_inj.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
+#include "src/pins/boardOutputPin.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
 
 TESTABLE_STATIC volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../../../board_definition.h"
-#include "../../pins/fastOutputPin.h"
-#include "../../pins/outputPin.h"
+#include "../../pins/boardOutputPin.h"
 
 namespace fuelPumpController {
 
