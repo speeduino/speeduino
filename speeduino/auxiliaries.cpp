@@ -31,7 +31,7 @@ static volatile char nextVVT;
 TESTABLE_STATIC byte boostCounter;
 static byte vvtCounter;
 
-static fastInputPin_t n2o_arming_pin;
+TESTABLE_STATIC fastInputPin_t n2o_arming_pin;
 
 static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
@@ -70,8 +70,8 @@ static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const con
 }
 
 TESTABLE_STATIC boardOutputPin_t boost_pin;
-static boardOutputPin_t n2o_stage1_pin;
-static boardOutputPin_t n2o_stage2_pin;
+TESTABLE_STATIC boardOutputPin_t n2o_stage1_pin;
+TESTABLE_STATIC boardOutputPin_t n2o_stage2_pin;
 static boardOutputPin_t aircon_comp_pin;
 static boardOutputPin_t aircon_fan_pin;
 
