@@ -25,6 +25,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 
 #include "globals.h"
 #include "corrections.h"
+#include "elapsed_time.h"
 #include "timers.h"
 #include "maths.h"
 #include "sensors.h"
@@ -313,13 +314,13 @@ static inline uint16_t calcDeccelEnrichment(void) {
 }
 
 static inline bool aeTimeoutExpired(void) {
-  return micros() >= currentStatus.AEEndTime;
+  // aeTime is stored as mS / 10, so multiply it by 10000 to get it in uS
+  return hasIntervalElapsed(micros(), currentStatus.AEStartTime, TIME_TENTH_MILLIS.toUser(configPage2.aeTime));
 }
 
-//Set the time in the future where the enrichment will be turned off. 
+//Record when the enrichment started: it will be turned off once aeTime has elapsed.
 static inline void updateAeTimeout(void) {
-  // taeTime is stored as mS / 10, so multiply it by 10000 to get it in uS
-  currentStatus.AEEndTime = micros() + TIME_TENTH_MILLIS.toUser(configPage2.aeTime); 
+  currentStatus.AEStartTime = micros();
 }
 
 using aeTimeoutExpiredCallback_t = void (*)(void);
@@ -1110,10 +1111,10 @@ static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
 {
   uint8_t tmpKnockRetard = curKnockRetard;
   //Check whether we are in knock recovery
-  if((micros() - knockStartTime) > (configPage10.knock_duration * 100000UL)) //knock_duration is in seconds*10
+  if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_duration * 100000UL) ) //knock_duration is in seconds*10
   {
     //Calculate how many recovery steps have occurred since the 
-    uint32_t timeInRecovery = (micros() - knockStartTime) - (configPage10.knock_duration * 100000UL);
+    uint32_t timeInRecovery = timeElapsed(micros(), knockStartTime) - (configPage10.knock_duration * 100000UL);
     uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
     uint8_t recoveryTimingAdj = 0;
     if(recoverySteps > knockLastRecoveryStep) 
@@ -1140,6 +1141,20 @@ static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
   return tmpKnockRetard;
 }
 
+static inline uint8_t applyAdditionalDigitalKnockRetard(uint8_t knockRetard)
+{
+  if(!currentStatus.knockPulseDetected
+    || !hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL))
+  {
+    return knockRetard;
+  }
+
+  currentStatus.knockCount++;
+  knockStartTime = micros();
+  knockLastRecoveryStep = 0;
+  return configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+}
+
 /** Ignition knock (retard) correction.
  */
 static inline int8_t correctionKnockTiming(int8_t advance)
@@ -1156,19 +1171,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
         //Knock retard is currently active already.
         tmpKnockRetard = currentStatus.knockRetard;
 
-        //Check if additional knock events occurred
-        if(currentStatus.knockPulseDetected)
-        {
-          //Check if the latest event was far enough after the initial knock event to pull further timing
-          if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
-          {
-            //Recalculate the amount timing being pulled
-            currentStatus.knockCount++;
-            tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
-            knockStartTime = micros();
-            knockLastRecoveryStep = 0;
-          }
-        }
+        tmpKnockRetard = applyAdditionalDigitalKnockRetard(tmpKnockRetard);
         tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
       }
       else
@@ -1189,7 +1192,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
     {
       //Check if additional knock events occurred
       //Additional knock events are when the step time has passed and the voltage remains above the threshold
-      if((micros() - knockStartTime) > (configPage10.knock_stepTime * 1000UL))
+      if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL) )
       {
         //Sufficient time has passed, check the current knock value
         uint16_t tmpKnockReading = getAnalogKnock();

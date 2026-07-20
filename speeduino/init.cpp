@@ -34,6 +34,7 @@
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
 #include "maths.h"
+#include "elapsed_time.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
 
 #if defined(CORE_AVR)
@@ -63,15 +64,15 @@ static void processResetStorageRequest(void) {
   pinMode(EEPROM_RESET_PIN, INPUT_PULLUP);  
 
   //only start routine when this pin is low because it is pulled low
-  while (digitalRead(EEPROM_RESET_PIN) != HIGH && (millis() - start_time)<START_RESET_INTERVAL)
+  while (digitalRead(EEPROM_RESET_PIN) != HIGH && !hasIntervalElapsed(millis(), start_time, START_RESET_INTERVAL))
   {
     //make sure the key is pressed for at least 0.5 second 
-    if ((millis() - start_time)>(MIN_BUTTON_PRESSED_INTERVAL)) {
+    if (hasIntervalElapsed(millis(), start_time, MIN_BUTTON_PRESSED_INTERVAL)) {
       //if key is pressed afterboot for 0.5 second make led turn off
       digitalWrite(LED_BUILTIN, HIGH);
 
       //see if the user reacts to the led turned off with removing the keypress within 1 second
-      while (((millis() - start_time)<MAX_BUTTON_RELEASE_INTERVAL) && (exit_erase_loop!=true)){
+      while ((!hasIntervalElapsed(millis(), start_time, MAX_BUTTON_RELEASE_INTERVAL)) && (exit_erase_loop!=true)){
 
         //if user let go of key within 1 second erase eeprom
         if(digitalRead(EEPROM_RESET_PIN) != LOW){

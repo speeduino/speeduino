@@ -12,6 +12,7 @@ void runAllMathTests(void)
     extern void testUnitConversions(void);
     extern void testOther(void);
     extern void testCrankMath(void);
+    extern void testElapsedTime(void);
 
     testCrankMaths();
     testPercent();
@@ -21,6 +22,7 @@ void runAllMathTests(void)
     testUnitConversions();
     testOther();
     testCrankMath();
+    testElapsedTime();
 }
 
 TEST_HARNESS(runAllMathTests)

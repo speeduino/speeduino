@@ -180,12 +180,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         }   
       #endif
           
-    if(currentLoopTime > micros())
-    {
-      //Occurs when micros() has overflowed
-      setStorageWriteTimeout(0); //Required to ensure that EEPROM writes are not deferred indefinitely
-    }
-
     currentLoopTime = micros();
     if ( currentStatus.decoder.isEngineRunning(currentLoopTime) )
     {

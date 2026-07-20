@@ -975,7 +975,8 @@ static void setup_AE(void) {
 	configPage2.aeColdTaperMin = 0;
 	
   currentStatus.coolant = temperatureRemoveOffset(configPage2.aeColdTaperMax) + 1;
-  currentStatus.AEEndTime = micros();
+  //Start AE far enough in the past that it has already expired
+  currentStatus.AEStartTime = micros() - TIME_TENTH_MILLIS.toUser(configPage2.aeTime);
 
   reset_AE();
 }

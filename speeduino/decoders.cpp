@@ -35,6 +35,7 @@ A full copy of the license may be found in the projects root directory
 #include <limits.h>
 #include "globals.h"
 #include "decoders.h"
+#include "elapsed_time.h"
 #include "scheduler.h"
 #include "crankMaths.h"
 #include "timers.h"
@@ -328,11 +329,16 @@ static inline bool IsCranking(const statuses &status) {
 TESTABLE_STATIC bool sharedEngineIsRunning(uint32_t curTime) {
   // Check how long ago the last tooth was seen compared to now. 
   // If it was more than MAX_STALL_TIME then the engine is probably stopped. 
-  // toothLastToothTime can be greater than curTime if a pulse occurs between getting the latest time and doing the comparison
+  uint32_t lastToothTime = 0U;
   ATOMIC() {
-    return (toothLastToothTime > curTime) || ((curTime - toothLastToothTime) < MAX_STALL_TIME); 
+    lastToothTime = toothLastToothTime;
   }
-  return false; // Just here to avoid compiler warning.
+
+  // lastToothTime can be slightly ahead of curTime if a pulse occurred after
+  // curTime was sampled. Accept that race only within the stall interval; an
+  // unconditional ordering check would mistake a real counter rollover for it.
+  return (timeElapsed(curTime, lastToothTime) < MAX_STALL_TIME)
+      || (timeElapsed(lastToothTime, curTime) < MAX_STALL_TIME);
 }
 
 

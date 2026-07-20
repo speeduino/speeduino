@@ -115,7 +115,7 @@ struct statuses {
   bool CTPSActive;   /**< Whether the externally controlled closed throttle position sensor is currently active */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
-  unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
+  unsigned long AEStartTime; /**< The time (µS) at which AE (acceleration enrichment) was last turned on. AE ends once aeTime has elapsed from this point */
 
   // Status1 fields as defined in the INI
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
