@@ -954,7 +954,7 @@ void flexPulse(void)
 {
   if(flex_pin.isPinHigh())
   {
-    uint16_t tempPW = clamp((unsigned long)timeElapsed(micros(), flexStartTime), 0UL, (unsigned long)UINT16_MAX); //Calculate the pulse width
+    uint16_t tempPW = clamp(timeElapsed(micros(), flexStartTime), (uint32_t)0U, (uint32_t)UINT16_MAX); //Calculate the pulse width
     flexPulseWidth = LOW_PASS_FILTER(tempPW, configPage4.FILTER_FLEX, flexPulseWidth);
     ++flexCounter;
   }

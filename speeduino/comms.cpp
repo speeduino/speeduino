@@ -108,6 +108,12 @@ static uint32_t deferEEPROMWritesStart = 0; //!< Time (µS) at which the current
 static uint32_t deferEEPROMWritesDelay = 0; //!< How long (µS) after deferEEPROMWritesStart before page writing can resume
 static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
 
+/** @brief Defer storage writes for @p delay_uS from now. */
+static void setStorageWriteTimeout(uint32_t delay_uS) {
+  deferEEPROMWritesStart = micros();
+  deferEEPROMWritesDelay = delay_uS;
+}
+
 #if defined(CORE_AVR)
 #pragma GCC push_options
 // This minimizes RAM usage at no performance cost
@@ -1188,11 +1194,6 @@ void sendCompositeLog(void)
 
   //Send the CRC
   (void)serialWrite(CRC32_val);
-}
-
-void setStorageWriteTimeout(uint32_t delay_uS) {
-  deferEEPROMWritesStart = micros();
-  deferEEPROMWritesDelay = delay_uS;
 }
 
 bool storageWriteTimeoutExpired(void) {

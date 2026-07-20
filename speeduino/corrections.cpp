@@ -1158,17 +1158,15 @@ static inline int8_t correctionKnockTiming(int8_t advance)
         tmpKnockRetard = currentStatus.knockRetard;
 
         //Check if additional knock events occurred
-        if(currentStatus.knockPulseDetected)
+        if(currentStatus.knockPulseDetected
+          && hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL))
         {
           //Check if the latest event was far enough after the initial knock event to pull further timing
-          if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL) )
-          {
-            //Recalculate the amount timing being pulled
-            currentStatus.knockCount++;
-            tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
-            knockStartTime = micros();
-            knockLastRecoveryStep = 0;
-          }
+          //Recalculate the amount timing being pulled
+          currentStatus.knockCount++;
+          tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+          knockStartTime = micros();
+          knockLastRecoveryStep = 0;
         }
         tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
       }

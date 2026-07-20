@@ -31,17 +31,7 @@ void serialTransmit(void);
 */
 bool isRxTimeout(void);
 
-/**
- * @brief During serial comms, defer storage writes
- * 
- * Serial comms can send data quicker than we can write it to permanent storage.
- * This is used to manually throttle the writes so that we don't stall the main loop. 
- * 
- * @param delay_uS How long from now (in µS) before storage writes can resume
- */
-void setStorageWriteTimeout(uint32_t delay_uS);
-
-/** @brief Test if the timeout set by @ref setStorageWriteTimeout has expired */
+/** @brief Test if the current storage write defer interval has expired. */
 bool storageWriteTimeoutExpired(void);
 
 #endif // COMMS_H
