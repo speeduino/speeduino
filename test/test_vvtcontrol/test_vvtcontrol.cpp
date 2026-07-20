@@ -2,9 +2,7 @@
 #include "globals.h"
 #include "auxiliaries.h"
 #include "units.h"
-#include "board_definition.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
+#include "src/pins/boardOutputPin.h"
 
 extern boardOutputPin_t vvt1_pin;
 extern boardOutputPin_t vvt2_pin;

@@ -12,11 +12,9 @@ A full copy of the license may be found in the projects root directory
 #include "timers.h"
 #include "preprocessor.h"
 #include "units.h"
-#include "board_definition.h"
 #include "atomic.h"
 #include "src/pins/fastInputPin.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
+#include "src/pins/boardOutputPin.h"
 #include "scheduler_fuel_controller.h"
 
 TESTABLE_STATIC long vvt1_pwm_value;
