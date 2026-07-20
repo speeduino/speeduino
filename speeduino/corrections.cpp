@@ -1141,6 +1141,20 @@ static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
   return tmpKnockRetard;
 }
 
+static inline uint8_t applyAdditionalDigitalKnockRetard(uint8_t knockRetard)
+{
+  if(!currentStatus.knockPulseDetected
+    || !hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL))
+  {
+    return knockRetard;
+  }
+
+  currentStatus.knockCount++;
+  knockStartTime = micros();
+  knockLastRecoveryStep = 0;
+  return configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
+}
+
 /** Ignition knock (retard) correction.
  */
 static inline int8_t correctionKnockTiming(int8_t advance)
@@ -1157,17 +1171,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
         //Knock retard is currently active already.
         tmpKnockRetard = currentStatus.knockRetard;
 
-        //Check if additional knock events occurred
-        if(currentStatus.knockPulseDetected
-          && hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL))
-        {
-          //Check if the latest event was far enough after the initial knock event to pull further timing
-          //Recalculate the amount timing being pulled
-          currentStatus.knockCount++;
-          tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
-          knockStartTime = micros();
-          knockLastRecoveryStep = 0;
-        }
+        tmpKnockRetard = applyAdditionalDigitalKnockRetard(tmpKnockRetard);
         tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
       }
       else

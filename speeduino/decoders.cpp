@@ -330,7 +330,7 @@ static inline bool IsCranking(const statuses &status) {
 TESTABLE_STATIC bool sharedEngineIsRunning(uint32_t curTime) {
   // Check how long ago the last tooth was seen compared to now. 
   // If it was more than MAX_STALL_TIME then the engine is probably stopped. 
-  uint32_t lastToothTime;
+  uint32_t lastToothTime = 0U;
   ATOMIC() {
     lastToothTime = toothLastToothTime;
   }
