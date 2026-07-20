@@ -19,15 +19,15 @@ A full copy of the license may be found in the projects root directory
 
 TESTABLE_STATIC long vvt1_pwm_value;
 TESTABLE_STATIC long vvt2_pwm_value;
-static volatile unsigned int vvt1_pwm_cur_value;
-static volatile unsigned int vvt2_pwm_cur_value;
+TESTABLE_STATIC volatile unsigned int vvt1_pwm_cur_value;
+TESTABLE_STATIC volatile unsigned int vvt2_pwm_cur_value;
 TESTABLE_STATIC volatile bool vvt1_pwm_state;
 TESTABLE_STATIC volatile bool vvt2_pwm_state;
-static volatile bool vvt1_max_pwm;
-static volatile bool vvt2_max_pwm;
-static volatile char nextVVT;
+TESTABLE_STATIC volatile bool vvt1_max_pwm;
+TESTABLE_STATIC volatile bool vvt2_max_pwm;
+TESTABLE_STATIC volatile char nextVVT;
 TESTABLE_STATIC byte boostCounter;
-static byte vvtCounter;
+TESTABLE_STATIC byte vvtCounter;
 
 TESTABLE_STATIC fastInputPin_t n2o_arming_pin;
 
