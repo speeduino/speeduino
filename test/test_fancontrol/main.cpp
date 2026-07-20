@@ -7,10 +7,12 @@ void runAllTests(void)
     extern void testInit(void);
     extern void tesFanControl(void);
     extern void testOnOff(void);
+    extern void testFanInterrupt(void);
 
     testInit();
     tesFanControl();
     testOnOff();
+    testFanInterrupt();
 }
 
 TEST_HARNESS(runAllTests)
