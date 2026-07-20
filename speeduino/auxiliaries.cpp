@@ -49,7 +49,7 @@ static __attribute__((optimize("Os"))) void initialiseN2oArmPin(const config10 &
   }
 }
 
-static fastInputPin_t aircon_req_pin;
+TESTABLE_STATIC fastInputPin_t aircon_req_pin;
 
 static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const config15 &page15)
 {
@@ -70,8 +70,8 @@ static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const con
 TESTABLE_STATIC boardOutputPin_t boost_pin;
 TESTABLE_STATIC boardOutputPin_t n2o_stage1_pin;
 TESTABLE_STATIC boardOutputPin_t n2o_stage2_pin;
-static boardOutputPin_t aircon_comp_pin;
-static boardOutputPin_t aircon_fan_pin;
+TESTABLE_STATIC boardOutputPin_t aircon_comp_pin;
+TESTABLE_STATIC boardOutputPin_t aircon_fan_pin;
 
 static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
 {
@@ -80,7 +80,7 @@ static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &pa
   initialiseN2oArmPin(page10);
 }
 
-static void airConOn(void)
+TESTABLE_STATIC void airConOn(void)
 {
   ATOMIC() { 
     if (configPage15.airConCompPol)
@@ -94,7 +94,7 @@ static void airConOn(void)
     currentStatus.airconCompressorOn = true; 
   }  
 }
-static void airConOff(void)
+TESTABLE_STATIC void airConOff(void)
 {
   ATOMIC() { 
     if (configPage15.airConCompPol)
@@ -154,13 +154,13 @@ TESTABLE_STATIC long fan_pwm_value;
 #endif
 TESTABLE_STATIC table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
-static bool acIsEnabled;
-static bool acStandAloneFanIsEnabled;
-static uint8_t acStartDelay;
-static uint8_t acTPSLockoutDelay;
-static uint8_t acRPMLockoutDelay;
-static uint8_t acAfterEngineStartDelay;
-static bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
+TESTABLE_STATIC bool acIsEnabled;
+TESTABLE_STATIC bool acStandAloneFanIsEnabled;
+TESTABLE_STATIC uint8_t acStartDelay;
+TESTABLE_STATIC uint8_t acTPSLockoutDelay;
+TESTABLE_STATIC uint8_t acRPMLockoutDelay;
+TESTABLE_STATIC uint8_t acAfterEngineStartDelay;
+TESTABLE_STATIC bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
 
 TESTABLE_STATIC long boost_pwm_target_value;
 TESTABLE_STATIC volatile bool boost_pwm_state;
