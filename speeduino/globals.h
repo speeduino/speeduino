@@ -38,24 +38,6 @@ constexpr uint8_t TOOTH_LOG_SIZE = 127U;
 constexpr uint8_t TOOTH_LOG_SIZE = 2U;
 #endif
 
-#define INJ1_CMD_BIT      0
-#define INJ2_CMD_BIT      1
-#define INJ3_CMD_BIT      2
-#define INJ4_CMD_BIT      3
-#define INJ5_CMD_BIT      4
-#define INJ6_CMD_BIT      5
-#define INJ7_CMD_BIT      6
-#define INJ8_CMD_BIT      7
-
-#define IGN1_CMD_BIT      0
-#define IGN2_CMD_BIT      1
-#define IGN3_CMD_BIT      2
-#define IGN4_CMD_BIT      3
-#define IGN5_CMD_BIT      4
-#define IGN6_CMD_BIT      5
-#define IGN7_CMD_BIT      6
-#define IGN8_CMD_BIT      7
-
 extern struct table3d16RpmLoad fuelTable; //16x16 fuel map
 extern struct table3d16RpmLoad fuelTable2; //16x16 fuel map
 extern struct table3d16RpmLoad ignitionTable; //16x16 ignition map
@@ -87,10 +69,6 @@ extern int16_t CRANK_ANGLE_MAX_IGN;
 extern int16_t CRANK_ANGLE_MAX_INJ;       ///< The number of crank degrees that the system track over. 360 for wasted / timed batch and 720 for sequential
 extern volatile uint32_t runSecsX10;  /**< Counter of seconds since cranking commenced (similar to runSecs) but in increments of 0.1 seconds */
 extern volatile uint32_t seclx10;     /**< Counter of seconds since powered commenced (similar to secl) but in increments of 0.1 seconds */
-extern volatile byte HWTest_INJ;      /**< Each bit in this variable represents one of the injector channels and it's HW test status */
-extern volatile byte HWTest_INJ_Pulsed; /**< Each bit in this variable represents one of the injector channels and it's 50% HW test status */
-extern volatile byte HWTest_IGN;      /**< Each bit in this variable represents one of the ignition channels and it's HW test status */
-extern volatile byte HWTest_IGN_Pulsed; /**< Each bit in this variable represents one of the ignition channels and it's 50% HW test status */
 
 extern byte pinInjector1; //Output pin injector 1
 extern byte pinInjector2; //Output pin injector 2

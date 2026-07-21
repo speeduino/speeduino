@@ -87,7 +87,7 @@ static void test_setFuelChannelSchedule_ignores_zero_pw(void)
 
   injectorAngleCalcCache cache = {};
   schedule.pw = 0;
-  setFuelChannelSchedule(schedule, UINT8_C(1), 100U, (byte)(1U << INJ1_CMD_BIT), 180U, &cache);
+  setFuelChannelSchedule(schedule, UINT8_C(1), 100U, 1U, 180U, &cache);
 
   TEST_ASSERT_EQUAL(OFF, schedule._status);
   TEST_ASSERT_EQUAL(0U, schedule._duration);
@@ -102,7 +102,7 @@ static void test_setFuelChannelSchedule_ignores_zero_timeout(void)
   setup_setFuelChannelSchedule(schedule);
 
   injectorAngleCalcCache cache = {};
-  setFuelChannelSchedule(schedule, UINT8_C(1), 0U, (byte)(1U << INJ1_CMD_BIT), 0U, &cache);
+  setFuelChannelSchedule(schedule, UINT8_C(1), 0U, 1U, 0U, &cache);
 
   TEST_ASSERT_EQUAL(OFF, schedule._status);
   TEST_ASSERT_EQUAL(0U, schedule._duration);
@@ -132,7 +132,7 @@ static void test_setFuelChannelSchedule_starts_pending_when_enabled(void)
   setup_setFuelChannelSchedule(schedule);
   
   injectorAngleCalcCache cache = {};
-  setFuelChannelSchedule(schedule, UINT8_C(1), 300U, (byte)(1U << INJ1_CMD_BIT), 355U, &cache);
+  setFuelChannelSchedule(schedule, UINT8_C(1), 300U, 1U, 355U, &cache);
 
   TEST_ASSERT_EQUAL(PENDING, schedule._status);
   TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(1000U), schedule._duration);

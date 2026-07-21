@@ -13,7 +13,6 @@ void runAllTests(void)
     testInit();
     testTacho();
     testOneMsInterval();
-    testTestMode();
     testFlex();
 }
 

@@ -52,14 +52,14 @@ static void __attribute__((noinline)) assert_fuel_schedules(uint16_t crankAngle,
 
   assert_num_inj_channels(enabled, assertLineNum);
 
-  RUNIF_INJCHANNEL1(assert_fuel_channel(enabled[0], angle[0], INJ1_CMD_BIT, fuelSchedule1, assertLineNum), {});
-  RUNIF_INJCHANNEL2(assert_fuel_channel(enabled[1], angle[1], INJ2_CMD_BIT, fuelSchedule2, assertLineNum), {});
-  RUNIF_INJCHANNEL3(assert_fuel_channel(enabled[2], angle[2], INJ3_CMD_BIT, fuelSchedule3, assertLineNum), {});
-  RUNIF_INJCHANNEL4(assert_fuel_channel(enabled[3], angle[3], INJ4_CMD_BIT, fuelSchedule4, assertLineNum), {});
-  RUNIF_INJCHANNEL5(assert_fuel_channel(enabled[4], angle[4], INJ5_CMD_BIT, fuelSchedule5, assertLineNum), {});
-  RUNIF_INJCHANNEL6(assert_fuel_channel(enabled[5], angle[5], INJ6_CMD_BIT, fuelSchedule6, assertLineNum), {});
-  RUNIF_INJCHANNEL7(assert_fuel_channel(enabled[6], angle[6], INJ7_CMD_BIT, fuelSchedule7, assertLineNum), {});
-  RUNIF_INJCHANNEL8(assert_fuel_channel(enabled[7], angle[7], INJ8_CMD_BIT, fuelSchedule8, assertLineNum), {});
+  RUNIF_INJCHANNEL1(assert_fuel_channel(enabled[0], angle[0], 0, fuelSchedule1, assertLineNum), {});
+  RUNIF_INJCHANNEL2(assert_fuel_channel(enabled[1], angle[1], 1, fuelSchedule2, assertLineNum), {});
+  RUNIF_INJCHANNEL3(assert_fuel_channel(enabled[2], angle[2], 2, fuelSchedule3, assertLineNum), {});
+  RUNIF_INJCHANNEL4(assert_fuel_channel(enabled[3], angle[3], 3, fuelSchedule4, assertLineNum), {});
+  RUNIF_INJCHANNEL5(assert_fuel_channel(enabled[4], angle[4], 4, fuelSchedule5, assertLineNum), {});
+  RUNIF_INJCHANNEL6(assert_fuel_channel(enabled[5], angle[5], 5, fuelSchedule6, assertLineNum), {});
+  RUNIF_INJCHANNEL7(assert_fuel_channel(enabled[6], angle[6], 6, fuelSchedule7, assertLineNum), {});
+  RUNIF_INJCHANNEL8(assert_fuel_channel(enabled[7], angle[7], 7, fuelSchedule8, assertLineNum), {});
 }
 
 static void assert_1cylinder_4stroke_seq_nostage(int assertLineNum)

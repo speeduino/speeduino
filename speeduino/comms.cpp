@@ -13,7 +13,7 @@ A full copy of the license may be found in the projects root directory
 #include "storage.h"
 #include "maths.h"
 #include "decoders.h"
-#include "TS_CommandButtonHandler.h"
+#include "src/controllers/tsCommand/tsCommandController.h"
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
@@ -641,7 +641,7 @@ void processSerialCommand(void)
     }
 
     case 'E': // receive command button commands
-      (void)TS_CommandButtonsHandler(word(serialPayload[1], serialPayload[2]));
+      (void)handleTsCommand(word(serialPayload[1], serialPayload[2]), currentStatus, configPage2);
       sendReturnCodeMsg(SERIAL_RC_OK);
       break;
 

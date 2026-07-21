@@ -304,12 +304,7 @@ struct config2 : public config_page_t {
   
   uint16_t vssPulsesPerKm; ///< VSS (Vehicle speed sensor) pulses per Km
   byte vssSmoothing;
-  uint16_t vssRatio1;
-  uint16_t vssRatio2;
-  uint16_t vssRatio3;
-  uint16_t vssRatio4;
-  uint16_t vssRatio5;
-  uint16_t vssRatio6;
+  uint16_t vssRatios[6];
 
   byte idleUpOutputEnabled : 1;
   byte idleUpOutputInv : 1;

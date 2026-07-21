@@ -57,6 +57,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "src/controllers/launch/launchController.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
 #include "scheduler_fuel_controller.h"
+#include "src/controllers/tsCommand/tsCommandController.h"
 
 #define CRANK_RUN_HYSTER    15
 
@@ -538,6 +539,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
+    pulsedCommandController(currentStatus, configPage13);
     onPowerSourceSwitch(originalBatteryVoltage, currentStatus, configPage2, configPage6);
 } //loop()
 END_LTO_INLINE()
