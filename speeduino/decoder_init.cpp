@@ -6,6 +6,8 @@
 #include "preprocessor.h"
 #include "unit_testing.h"
 
+#pragma GCC optimize("Os")
+
 static decoder_t defaultInitFunc(void)
 {
   return decoder_builder_t().build();
@@ -130,9 +132,10 @@ decoder_t buildDecoder(uint8_t decoderIndex)
 {
   decoder_t decoder = getDecoderInitFunc(decoderIndex)();
 
-  decoder.primary.attach(pinTrigger);
-  decoder.secondary.attach(pinTrigger2);
-  decoder.tertiary.attach(pinTrigger3);
+  // TODO: attach interrupts & init pins within the decoder init func
+  pinTrigger = decoder.primary.attach(pinTrigger);
+  pinTrigger2 = decoder.secondary.attach(pinTrigger2);
+  pinTrigger3 = decoder.tertiary.attach(pinTrigger3);
   
   initDecoderPins(pinTrigger, pinTrigger2, pinTrigger3);
 

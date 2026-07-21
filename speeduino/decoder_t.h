@@ -1,16 +1,9 @@
 #pragma once
 
 #include <stdint.h>
-#include <Arduino.h>
 
 /** @brief This constant represents no trigger edge */
 static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
-// Just in case
-static_assert(TRIGGER_EDGE_NONE != LOW, "LOW edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != HIGH, "HIGH edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != RISING, "RISING edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != FALLING, "FALLING edge value conflict");
-static_assert(TRIGGER_EDGE_NONE != CHANGE, "CHANGE edge value conflict");
 
 /** @brief This structure represents a trigger interrupt */
 struct interrupt_t
@@ -23,27 +16,16 @@ struct interrupt_t
   uint8_t edge = TRIGGER_EDGE_NONE;
 
   /** @brief Attach the interrupt to a pin */
-  void attach(uint8_t pin) const
-  {
-    detach(pin);
-    if (isValid())
-    {
-      attachInterrupt(digitalPinToInterrupt(pin), callback, edge);
-    }
-  }  
+  uint8_t attach(uint8_t pin) const;
 
   /** @brief Detach the interrupt from a pin */
-  void detach(uint8_t pin) const
-  {
-    detachInterrupt( digitalPinToInterrupt(pin) );
-  }  
+  void detach(uint8_t pin) const;
 
   bool isValid(void) const
   {
     return edge!=TRIGGER_EDGE_NONE && callback!=nullptr;
   }
 };
-
 
 /** \enum SyncStatus
  * @brief The decoder trigger status

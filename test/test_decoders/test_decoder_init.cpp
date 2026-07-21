@@ -15,20 +15,24 @@ static void assert_decoder(const decoder_t &decoder)
     if (decoder.secondary.edge!=TRIGGER_EDGE_NONE)
     {
         TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.secondary.callback, defaultDecoder.secondary.callback, "secondary");
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(NOT_A_PIN, pinTrigger2, "pinTrigger2");
     }
     else
     {
         TEST_ASSERT_EQUAL_MESSAGE(decoder.secondary.callback, defaultDecoder.secondary.callback, "secondary");
+        TEST_ASSERT_EQUAL_MESSAGE(NOT_A_PIN, pinTrigger2, "pinTrigger2");
     }
     
     // Tertiary is optional
     if (decoder.tertiary.edge!=TRIGGER_EDGE_NONE)
     {
         TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.tertiary.callback, defaultDecoder.tertiary.callback, "tertiary");
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(NOT_A_PIN, pinTrigger3, "pinTrigger3");
     }
     else
     {
         TEST_ASSERT_EQUAL_MESSAGE(decoder.tertiary.callback, defaultDecoder.tertiary.callback, "tertiary");
+        TEST_ASSERT_EQUAL_MESSAGE(NOT_A_PIN, pinTrigger3, "pinTrigger3");
     }
     
     // Mandatory
@@ -68,6 +72,9 @@ static uint8_t decoderIdentifier;
 static void test_buildDecoder(void)
 {
     configPage2.perToothIgn = true;
+    pinTrigger = 11;
+    pinTrigger2 = 12;
+    pinTrigger3 = 13;
     assert_decoder(buildDecoder(decoderIdentifier));
 }
 

@@ -25,6 +25,7 @@ void runAllDecoderTests(void)
     extern void testDecoderBuilder(void);
     extern void testDecoderInit(void);
     extern void testDecoderApiCoverage(void);
+    extern void testinterrupt_t(void);
     
     testMissingTooth();
     testDualWheel();
@@ -39,6 +40,7 @@ void runAllDecoderTests(void)
     testDecoderBuilder();
     testDecoderInit();
     testDecoderApiCoverage();
+    testinterrupt_t();
 }
 
 TEST_HARNESS(runAllDecoderTests)

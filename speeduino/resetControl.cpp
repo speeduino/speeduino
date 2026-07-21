@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "resetControl.h"
 #include "unit_testing.h"
 
