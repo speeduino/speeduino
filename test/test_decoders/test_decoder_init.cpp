@@ -5,6 +5,7 @@
 #include "decoder_builder.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "decoder_name.h"
 
 static void assert_decoder(const decoder_t &decoder)
 {
@@ -75,7 +76,7 @@ static void test_buildDecoder_all(void)
     configPage2.nCylinders = 4; // Needed to prevent division by zero on Renix.
     for (uint8_t decoder = 0; decoder < DECODER_MAX; ++decoder) {
         char szName[128];
-        snprintf(szName, sizeof(szName), "test_buildDecoder_%d", decoder);
+        snprintf(szName, sizeof(szName)-1, "test_buildDecoder_%s", getDecoderName(decoder));
         decoderIdentifier = decoder;
         UnityDefaultTestRun(test_buildDecoder, szName, __LINE__);
     }

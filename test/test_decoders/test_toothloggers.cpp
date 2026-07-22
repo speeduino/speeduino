@@ -5,6 +5,7 @@
 #include "decoder_init.h"
 #include "../test_utils.h"
 #include "src/pins/boardInputPin.h"
+#include "decoder_name.h"
 
 extern decoder_status_t decoderStatus;
 extern boardInputPin_t triggerPri_pin;
@@ -143,9 +144,9 @@ static void test_start_stop_all(void)
           decoderToTest = decoder;
           char szName[128];
 
-          snprintf(szName, sizeof(szName), "test_start_stop_rising_%d", decoder);
+          snprintf(szName, sizeof(szName)-1, "test_start_stop_rising_%s", getDecoderName(decoder));
           UnityDefaultTestRun(test_start_stop_rising, szName, __LINE__);
-          snprintf(szName, sizeof(szName), "test_start_stop_falling_%d", decoder);
+          snprintf(szName, sizeof(szName)-1, "test_start_stop_falling_%s", getDecoderName(decoder));
           UnityDefaultTestRun(test_start_stop_falling, szName, __LINE__);
         }
     }
