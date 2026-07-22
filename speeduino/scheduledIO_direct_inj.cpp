@@ -1,6 +1,7 @@
 #include "board_definition.h"
 #include "src/pins/fastOutputPin.h"
 #include "preprocessor.h"
+#include "unit_testing.h"
 
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control

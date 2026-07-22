@@ -5,7 +5,9 @@
  */
 
 #include <stdint.h>
-#include "statuses.h"
+
+// Forward declare
+struct statuses;
 
 using byte = uint8_t;
 

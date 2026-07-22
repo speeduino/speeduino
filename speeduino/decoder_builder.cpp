@@ -1,5 +1,6 @@
 #include "decoder_builder.h"
 #include "preprocessor.h"
+#include "decoder_t.h"
 
 #pragma GCC optimize ("Os")
 
