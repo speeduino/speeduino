@@ -62,15 +62,15 @@ void testSuzukiK6A_getCrankAngle()
 {
     SET_UNITY_FILENAME() {
 
-        RUN_TEST(test_k6a_getCrankAngle_tooth0);
-        RUN_TEST(test_k6a_getCrankAngle_tooth1);
-        RUN_TEST(test_k6a_getCrankAngle_tooth2);
-        RUN_TEST(test_k6a_getCrankAngle_tooth3);
-        RUN_TEST(test_k6a_getCrankAngle_tooth4);
-        RUN_TEST(test_k6a_getCrankAngle_tooth5);
-        RUN_TEST(test_k6a_getCrankAngle_tooth6);
-        RUN_TEST(test_k6a_getCrankAngle_tooth7);
-        RUN_TEST(test_k6a_getCrankAngle_tooth8);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth0);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth1);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth2);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth3);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth4);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth5);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth6);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth7);
+        RUN_TEST_P(test_k6a_getCrankAngle_tooth8);
 
     }
 }
