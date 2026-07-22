@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "src/pins/boardInputPin.h"
 
 /** @brief This constant represents no trigger edge */
 static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
@@ -15,16 +16,42 @@ struct interrupt_t
   /** @brief The edge type for the interrupt. E.g. RISING, FALLING, CHANGE */
   uint8_t edge = TRIGGER_EDGE_NONE;
 
+  interrupt_t() = default;
+  interrupt_t(callback_t _callback, uint8_t _edge)
+  : callback(_callback)
+  , edge(_edge)
+  {
+  }
+
   /** @brief Attach the interrupt to a pin */
-  uint8_t attach(uint8_t pin) const;
+  uint8_t attach(uint8_t pin);
 
   /** @brief Detach the interrupt from a pin */
-  void detach(uint8_t pin) const;
+  void detach(uint8_t pin);
 
+  /**
+   * @brief Does the pin state match the edge setting? 
+   * 
+   * @note Will always return true for the @ref CHANGE trigger edge
+  */
+  bool isTriggered(void) const;
+
+  /** @brief Is the interrupt configured correctly? */
   bool isValid(void) const
   {
-    return edge!=TRIGGER_EDGE_NONE && callback!=nullptr;
+    return edge!=TRIGGER_EDGE_NONE 
+        && callback!=nullptr
+        && _pin.isValid();
   }
+
+  bool isPinHigh(void) const {
+    return _pin.isPinHigh();
+  }
+
+#if !defined(UNIT_TEST)
+private:
+#endif
+  boardInputPin_t _pin;
 };
 
 /** \enum SyncStatus
