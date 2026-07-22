@@ -85,12 +85,9 @@ static void test_start_stop_all(void)
             && DECODER_ROVERMEMS!=decoder) { // See issue #1348
 
           decoderToTest = decoder;
-          char szName[128];
-
-          snprintf(szName, sizeof(szName)-1, "test_start_stop_rising_%s", getDecoderName(decoder));
-          UnityDefaultTestRun(test_start_stop_rising, szName, __LINE__);
-          snprintf(szName, sizeof(szName)-1, "test_start_stop_falling_%s", getDecoderName(decoder));
-          UnityDefaultTestRun(test_start_stop_falling, szName, __LINE__);
+          auto decoderName = getDecoderName(decoder);
+          RUN_TEST_POSTFIX_P(test_start_stop_rising, decoderName);
+          RUN_TEST_POSTFIX_P(test_start_stop_falling, decoderName);
         }
     }
 }
