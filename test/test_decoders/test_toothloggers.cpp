@@ -127,6 +127,6 @@ void testToothLoggers(void)
 {
   SET_UNITY_FILENAME() {
     test_start_stop_all();
-    RUN_TEST(test_start_stop_ngc);
+    RUN_TEST_P(test_start_stop_ngc);
   }
 }

@@ -123,8 +123,8 @@ void testDecoderInit(void)
 {
   SET_UNITY_FILENAME() {
     test_buildDecoder_all();
-    RUN_TEST(test_buildDecoder_attachesInterrupts);
-    RUN_TEST(test_buildDecoder_TurnsOffPerToothIgn);
-    RUN_TEST(test_buildDecoder_OutOfRange);
+    RUN_TEST_P(test_buildDecoder_attachesInterrupts);
+    RUN_TEST_P(test_buildDecoder_TurnsOffPerToothIgn);
+    RUN_TEST_P(test_buildDecoder_OutOfRange);
   }
 }

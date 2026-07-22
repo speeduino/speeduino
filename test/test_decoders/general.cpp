@@ -53,7 +53,7 @@ static void test_interrupt_isValid(void)
 void testDecoder_General()
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST(test_sharedEngineIsRunning);
-    RUN_TEST(test_interrupt_isValid);
+    RUN_TEST_P(test_sharedEngineIsRunning);
+    RUN_TEST_P(test_interrupt_isValid);
   }
 }
