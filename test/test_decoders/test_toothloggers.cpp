@@ -1,4 +1,3 @@
-#include <unity.h>
 #include "decoders.h"
 #include "logger.h"
 #include "globals.h"
@@ -6,68 +5,12 @@
 #include "../test_utils.h"
 #include "src/pins/boardInputPin.h"
 #include "decoder_name.h"
+#include "shared.h"
 
 extern decoder_status_t decoderStatus;
 extern boardInputPin_t triggerPri_pin;
 extern boardInputPin_t triggerSec_pin;
 extern boardInputPin_t triggerThird_pin;
-
-static void configurePinState(boardInputPin_t &p, uint8_t edge)
-{
-  if (edge == RISING)
-  {
-    if (p.isPinHigh())
-    {
-      p._pin.setPinLow();
-    }
-    p._pin.setPinHigh();
-  }
-  else if (edge == FALLING)
-  {
-    if (p.isPinLow())
-    {
-      p._pin.setPinHigh();
-    }
-    p._pin.setPinLow();
-  }
-  else if (edge == CHANGE)
-  {
-    if (p.isPinLow())
-    {
-      p._pin.setPinHigh();
-    }
-    else
-    {
-      p._pin.setPinLow();
-    }
-  }
-}
-
-extern volatile unsigned long triggerFilterTime;
-static void configureDecoderForStartStop(uint8_t decoder)
-{
-    extern volatile byte toothSystemCount;
-    extern volatile unsigned long toothLastToothRisingTime;
-    extern volatile unsigned long toothLastSecToothRisingTime;
-    extern volatile unsigned long toothLastToothTime;
-    extern volatile unsigned long toothSystemLastToothTime;
-    extern volatile uint16_t toothCurrentCount;
-
-    if (decoder==DECODER_24X) {
-        toothCurrentCount = 0U;
-    } else if (decoder==DECODER_JEEP2000) {
-        toothCurrentCount = 0U;
-    } else if (decoder==DECODER_AUDI135) {
-        toothSystemCount = 2U;
-        toothSystemLastToothTime = micros() - triggerFilterTime;
-        decoderStatus.syncStatus = SyncStatus::Full;
-    } else if (decoder==DECODER_RENIX) {
-        toothLastToothRisingTime = micros() - triggerFilterTime;
-        toothLastSecToothRisingTime = toothLastToothRisingTime - triggerFilterTime;
-    } else if (decoder==DECODER_ROVERMEMS) {
-        toothLastToothTime = micros() - triggerFilterTime;
-    }
-}
 
 static void assertTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge, interrupt_t::callback_t isr)
 {
@@ -76,7 +19,7 @@ static void assertTrigger(decoder_t decoder, uint8_t decoderNum, uint8_t edge, i
 
     currentStatus.decoder = decoder;
     decoder.reset();
-    configureDecoderForStartStop(decoderNum);
+    configureStateForPrimaryTrigger(decoderNum, decoderStatus);
 
     configurePinState(triggerPri_pin, edge);
     isr();
