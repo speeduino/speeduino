@@ -40,9 +40,9 @@ static void test_primary_trigger(decoder_t &decoder, uint8_t decoderNum)
 
 static void setup_prebuild_state(void)
 {
-    pinTrigger = 18;
-    pinTrigger2 = 19;
-    pinTrigger3 = 20;
+    pinNumbers.pinTrigger = 18;
+    pinNumbers.pinTrigger2 = 19;
+    pinNumbers.pinTrigger3 = 20;
     configPage4.TrigEdge = 1;
     configPage4.triggerTeeth = 31;
     configPage4.triggerAngle = 77;

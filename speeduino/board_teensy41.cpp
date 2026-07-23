@@ -11,6 +11,7 @@
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"
 #include "scheduler_fuel_controller.h"
+#include "src/pins/pinNumbers_t.h"
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -383,17 +384,17 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(uint8_t)
+void boardInitPins(uint8_t, pinNumbers_t &pins)
 {
   //Primary trigger
-  setPinHysteresis(pinTrigger);
+  setPinHysteresis(pins.pinTrigger);
   //Secondary trigger
-  setPinHysteresis(pinTrigger2);
+  setPinHysteresis(pins.pinTrigger2);
   //Tertiary trigger
-  setPinHysteresis(pinTrigger3);
+  setPinHysteresis(pins.pinTrigger3);
 
-  if(configPage2.flexEnabled > 0) { setPinHysteresis(pinFlex); }
-  if(configPage2.vssMode > 1) { setPinHysteresis(pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
+  if(configPage2.flexEnabled > 0) { setPinHysteresis(pins.pinFlex); }
+  if(configPage2.vssMode > 1) { setPinHysteresis(pins.pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 

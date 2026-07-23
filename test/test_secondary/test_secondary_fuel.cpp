@@ -171,22 +171,22 @@ static void __attribute__((noinline)) test_fuel_mode_input_switch(void) {
     fill_table_values(lookupTable, SWITCHED_VE2);
 
     page10.fuel2InputPolarity = HIGH;
-    pinFuel2Input = 3;   
-    pinMode(pinFuel2Input, OUTPUT);
+    pinNumbers.pinFuel2Input = 3;   
+    pinMode(pinNumbers.pinFuel2Input, OUTPUT);
 
     // On
-    digitalWrite(pinFuel2Input, page10.fuel2InputPolarity);
+    digitalWrite(pinNumbers.pinFuel2Input, page10.fuel2InputPolarity);
     calculateSecondaryFuel(page10, lookupTable, current);
     assert_2nd_fuel_is_on(current, SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
 
     // Off
-    digitalWrite(pinFuel2Input, !page10.fuel2InputPolarity);
+    digitalWrite(pinNumbers.pinFuel2Input, !page10.fuel2InputPolarity);
     current.VE = current.VE1;
     calculateSecondaryFuel(page10, lookupTable, current);
     assert_2nd_fuel_is_off(current, SIMPLE_VE1);
 
     // On again
-    digitalWrite(pinFuel2Input, page10.fuel2InputPolarity);
+    digitalWrite(pinNumbers.pinFuel2Input, page10.fuel2InputPolarity);
     calculateSecondaryFuel(page10, lookupTable, current);
     assert_2nd_fuel_is_on(current, SIMPLE_VE1, SWITCHED_VE2, SWITCHED_VE2);
 }

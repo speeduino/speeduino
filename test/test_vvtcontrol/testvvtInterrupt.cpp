@@ -22,8 +22,8 @@ extern boardOutputPin_t vvt2_pin;
 static void setup_vvt_interrupt_base(void)
 {
   // Initialize pins
-  pinVVT_1 = 19U;
-  pinVVT_2 = 20U;
+  pinNumbers.pinVVT_1 = 19U;
+  pinNumbers.pinVVT_2 = 20U;
   
   // Initialize all PWM state variables
   vvt1_pwm_value = 0;

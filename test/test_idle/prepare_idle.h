@@ -8,8 +8,8 @@ static constexpr uint8_t TEST_IDLE2_PIN = 91U;
 
 static void prepare_idle(uint8_t algorithm)
 {
-  pinIdle1 = TEST_IDLE1_PIN;
-  pinIdle2 = TEST_IDLE2_PIN;
+  pinNumbers.pinIdle1 = TEST_IDLE1_PIN;
+  pinNumbers.pinIdle2 = TEST_IDLE2_PIN;
   configPage6.iacAlgorithm = algorithm;
   configPage6.iacChannels = 0U;
   configPage6.iacPWMdir = 0U;

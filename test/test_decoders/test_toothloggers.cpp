@@ -69,7 +69,7 @@ static void test_toothLogger(uint8_t decoderNum, uint8_t configSetting, uint8_t 
   TEST_IGNORE_MESSAGE("Cannot run interrupt based tests on AVRboard");
 #endif
 
-  pinTrigger = 19; // Example pin number
+  pinNumbers.pinTrigger = 19; // Example pin number
   configPage4.TrigEdge = configSetting;
   currentStatus.initialisationComplete = false;
   auto decoder = buildDecoder(decoderNum);

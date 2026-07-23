@@ -13,8 +13,8 @@ void assert_ac_off(void)
 
 void setup_ac_tune(void)
 {
-    pinAirConComp = TEST_ACCOMP_PIN;
-    pinAirConRequest = TEST_ACREQUEST_PIN;
+    pinNumbers.pinAirConComp = TEST_ACCOMP_PIN;
+    pinNumbers.pinAirConRequest = TEST_ACREQUEST_PIN;
 
     configPage15.airConEnable = true;
     configPage15.airConCompPol = false;

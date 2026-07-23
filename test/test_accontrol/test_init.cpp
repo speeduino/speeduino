@@ -75,7 +75,7 @@ static void test_initialise_disabled(void)
 static void test_initialise_badcomppin(void)
 {
     setup_ac_tune();
-    pinAirConComp = NOT_A_PIN;
+    pinNumbers.pinAirConComp = NOT_A_PIN;
 
     assert_init_acdisabled();
 }
@@ -83,7 +83,7 @@ static void test_initialise_badcomppin(void)
 static void test_initialise_badreqin(void)
 {
     setup_ac_tune();
-    pinAirConRequest = NOT_A_PIN;
+    pinNumbers.pinAirConRequest = NOT_A_PIN;
 
     assert_init_acdisabled();
 }

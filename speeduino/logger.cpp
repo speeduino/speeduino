@@ -715,11 +715,11 @@ void startToothLogger(void)
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
-  attachLoggerInterrupt( pinTrigger, loggerPrimaryISR );
+  attachLoggerInterrupt( pinNumbers.pinTrigger, loggerPrimaryISR );
 
   if(VSS_USES_RPM2() != true)
   {
-    attachLoggerInterrupt( pinTrigger2, loggerSecondaryISR );
+    attachLoggerInterrupt( pinNumbers.pinTrigger2, loggerSecondaryISR );
   }
 }
 
@@ -734,11 +734,11 @@ void stopToothLogger(void)
   currentStatus.toothLogEnabled = false;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, currentStatus.decoder.primary );
+  detachLoggerInterrupt( pinNumbers.pinTrigger, currentStatus.decoder.primary );
 
   if(VSS_USES_RPM2() != true)
   {
-    detachLoggerInterrupt( pinTrigger2, currentStatus.decoder.secondary );
+    detachLoggerInterrupt( pinNumbers.pinTrigger2, currentStatus.decoder.secondary );
   }
 }
 
@@ -750,11 +750,11 @@ void startCompositeLogger(void)
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
-  attachLoggerInterrupt( pinTrigger, loggerPrimaryISR );
+  attachLoggerInterrupt( pinNumbers.pinTrigger, loggerPrimaryISR );
 
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    attachLoggerInterrupt( pinTrigger2, loggerSecondaryISR );
+    attachLoggerInterrupt( pinNumbers.pinTrigger2, loggerSecondaryISR );
   }
 }
 
@@ -763,11 +763,11 @@ void stopCompositeLogger(void)
   currentStatus.compositeTriggerUsed = 0U;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, currentStatus.decoder.primary );
+  detachLoggerInterrupt( pinNumbers.pinTrigger, currentStatus.decoder.primary );
 
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    detachLoggerInterrupt( pinTrigger2, currentStatus.decoder.secondary );
+    detachLoggerInterrupt( pinNumbers.pinTrigger2, currentStatus.decoder.secondary );
   }
 }
 
@@ -779,8 +779,8 @@ void startCompositeLoggerTertiary(void)
   toothHistoryIndex = 0U;
 
   //Disconnect the standard interrupt and add the logger version
-  attachLoggerInterrupt( pinTrigger, loggerPrimaryISR );
-  attachLoggerInterrupt( pinTrigger3, loggerTertiaryISR );
+  attachLoggerInterrupt( pinNumbers.pinTrigger, loggerPrimaryISR );
+  attachLoggerInterrupt( pinNumbers.pinTrigger3, loggerTertiaryISR );
 }
 
 void stopCompositeLoggerTertiary(void)
@@ -788,8 +788,8 @@ void stopCompositeLoggerTertiary(void)
   currentStatus.compositeTriggerUsed = 0;
 
   //Disconnect the logger interrupts and attach the normal ones
-  detachLoggerInterrupt( pinTrigger, currentStatus.decoder.primary );
-  detachLoggerInterrupt( pinTrigger3, currentStatus.decoder.tertiary );
+  detachLoggerInterrupt( pinNumbers.pinTrigger, currentStatus.decoder.primary );
+  detachLoggerInterrupt( pinNumbers.pinTrigger3, currentStatus.decoder.tertiary );
 }
 
 
@@ -803,10 +803,10 @@ void startCompositeLoggerCams(void)
   //Disconnect the standard interrupt and add the logger version
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    attachLoggerInterrupt( pinTrigger2, loggerSecondaryISR );
+    attachLoggerInterrupt( pinNumbers.pinTrigger2, loggerSecondaryISR );
   }
 
-  attachLoggerInterrupt( pinTrigger3, loggerTertiaryISR );
+  attachLoggerInterrupt( pinNumbers.pinTrigger3, loggerTertiaryISR );
 }
 
 void stopCompositeLoggerCams(void)
@@ -816,8 +816,8 @@ void stopCompositeLoggerCams(void)
   //Disconnect the logger interrupts and attach the normal ones
   if( (VSS_USES_RPM2() != true) && (FLEX_USES_RPM2() != true) )
   {
-    detachLoggerInterrupt( pinTrigger2, currentStatus.decoder.secondary );
+    detachLoggerInterrupt( pinNumbers.pinTrigger2, currentStatus.decoder.secondary );
   }
 
-  detachLoggerInterrupt( pinTrigger3, currentStatus.decoder.tertiary );
+  detachLoggerInterrupt( pinNumbers.pinTrigger3, currentStatus.decoder.tertiary );
 }

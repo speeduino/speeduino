@@ -34,87 +34,7 @@ int16_t CRANK_ANGLE_MAX_INJ = 360; ///< The number of crank degrees that the sys
 volatile uint32_t runSecsX10;
 volatile uint32_t seclx10;
 
-/// Various pin numbering (Injectors, Ign outputs, CAS, Cam, Sensors. etc.) assignments
-byte pinInjector1; ///< Output pin injector 1
-byte pinInjector2; ///< Output pin injector 2
-byte pinInjector3; ///< Output pin injector 3
-byte pinInjector4; ///< Output pin injector 4
-byte pinInjector5; ///< Output pin injector 5
-byte pinInjector6; ///< Output pin injector 6
-byte pinInjector7; ///< Output pin injector 7
-byte pinInjector8; ///< Output pin injector 8
-byte pinCoil1; ///< Pin for coil 1
-byte pinCoil2; ///< Pin for coil 2
-byte pinCoil3; ///< Pin for coil 3
-byte pinCoil4; ///< Pin for coil 4
-byte pinCoil5; ///< Pin for coil 5
-byte pinCoil6; ///< Pin for coil 6
-byte pinCoil7; ///< Pin for coil 7
-byte pinCoil8; ///< Pin for coil 8
-byte pinTrigger;  ///< RPM1 (Typically CAS=crankshaft angle sensor) pin
-byte pinTrigger2; ///< RPM2 (Typically the Cam Sensor) pin
-byte pinTrigger3;	///< the 2nd cam sensor pin
-byte pinTPS;      //TPS input pin
-byte pinMAP;      //MAP sensor pin
-byte pinEMAP;     //EMAP sensor pin
-byte pinMAP2;     //2nd MAP sensor (Currently unused)
-byte pinIAT;      //IAT sensor pin
-byte pinCLT;      //CLS sensor pin
-byte pinO2;       //O2 Sensor pin
-byte pinO2_2;     //second O2 pin
-byte pinBat;      //Battery voltage pin
-byte pinDisplayReset; // OLED reset pin
-byte pinTachOut;  //Tacho output
-byte pinFuelPump; //Fuel pump on/off
-byte pinIdle1;    //Single wire idle control
-byte pinIdle2;    //2 wire idle control (Not currently used)
-byte pinIdleUp;   //Input for triggering Idle Up
-byte pinIdleUpOutput; //Output that follows (normal or inverted) the idle up pin
-byte pinCTPS;     //Input for triggering closed throttle state
-byte pinFuel2Input;  //Input for switching to the 2nd fuel table
-byte pinSpark2Input; //Input for switching to the 2nd ignition table
-byte pinSpareTemp1;  // Future use only
-byte pinSpareTemp2;  // Future use only
-byte pinSpareOut1;  //Generic output
-byte pinSpareOut2;  //Generic output
-byte pinSpareOut3;  //Generic output
-byte pinSpareOut4;  //Generic output
-byte pinSpareOut5;  //Generic output
-byte pinSpareOut6;  //Generic output
-byte pinSpareHOut1; //spare high current output
-byte pinSpareHOut2; // spare high current output
-byte pinSpareLOut1; // spare low current output
-byte pinSpareLOut2; // spare low current output
-byte pinSpareLOut3;
-byte pinSpareLOut4;
-byte pinSpareLOut5;
-byte pinBoost;
-byte pinVVT_1;     ///< vvt (variable valve timing) output 1
-byte pinVVT_2;     ///< vvt (variable valve timing) output 2
-byte pinFan;       ///< Cooling fan output (on/off? See: auxiliaries.ino)
-byte pinStepperDir; //Direction pin for the stepper motor driver
-byte pinStepperStep; //Step pin for the stepper motor driver
-byte pinStepperEnable; //Turning the DRV8825 driver on/off
-byte pinLaunch;
-byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
-byte pinFlex; //Pin with the flex sensor attached
-byte pinVSS;  // VSS (Vehicle speed sensor) Pin
-byte pinBaro; //Pin that an al barometric pressure sensor is attached to (If used)
-byte pinResetControl; // Output pin used control resetting the Arduino
-byte pinFuelPressure;
-byte pinOilPressure;
-byte pinWMIEmpty; // Water tank empty sensor
-byte pinWMIIndicator; // No water indicator bulb
-byte pinWMIEnabled; // ON-OFF output to relay/pump/solenoid 
-byte pinMC33810_1_CS;
-byte pinMC33810_2_CS;
-byte pinSDEnable;
-#ifdef USE_SPI_EEPROM
-  byte pinSPIFlash_CS;
-#endif
-byte pinAirConComp;     // Air conditioning compressor output (See: auxiliaries.ino)
-byte pinAirConFan;    // Stand-alone air conditioning fan output (See: auxiliaries.ino)
-byte pinAirConRequest;  // Air conditioning request input (See: auxiliaries.ino)
+pinNumbers_t pinNumbers;
 
 struct statuses currentStatus; /**< The master global "live" status struct. Contains all values that are updated frequently and used across modules */
 struct config2 configPage2;
@@ -131,45 +51,26 @@ bool pinIsOutput(byte pin)
   bool used = false;
   bool isIdlePWM = isPwmIac(configPage6);
   bool isIdleStepper = isStepperIac(configPage6);
-  //Injector?
-  if ((pin == pinInjector1)
-  || ((pin == pinInjector2) && (configPage2.nInjectors > 1))
-  || ((pin == pinInjector3) && (configPage2.nInjectors > 2))
-  || ((pin == pinInjector4) && (configPage2.nInjectors > 3))
-  || ((pin == pinInjector5) && (configPage2.nInjectors > 4))
-  || ((pin == pinInjector6) && (configPage2.nInjectors > 5))
-  || ((pin == pinInjector7) && (configPage2.nInjectors > 6))
-  || ((pin == pinInjector8) && (configPage2.nInjectors > 7)))
-  {
-    used = true;
-  }
-  //Ignition?
-  if ((pin == pinCoil1)
-  || ((pin == pinCoil2) && (currentStatus.maxIgnOutputs > 1))
-  || ((pin == pinCoil3) && (currentStatus.maxIgnOutputs > 2))
-  || ((pin == pinCoil4) && (currentStatus.maxIgnOutputs > 3))
-  || ((pin == pinCoil5) && (currentStatus.maxIgnOutputs > 4))
-  || ((pin == pinCoil6) && (currentStatus.maxIgnOutputs > 5))
-  || ((pin == pinCoil7) && (currentStatus.maxIgnOutputs > 6))
-  || ((pin == pinCoil8) && (currentStatus.maxIgnOutputs > 7)))
-  {
-    used = true;
-  }
+  used = used 
+      //Injector?
+      || pinNumbers.injectorPins.isPinUsed(pin)
+      //Ignition?
+      || pinNumbers.coilPins.isPinUsed(pin);
   //Functions?
-  if ((pin == pinFuelPump)
-  || ((pin == pinFan) && (configPage2.fanEnable == 1))
-  || ((pin == pinVVT_1) && (configPage6.vvtEnabled > 0))
-  || ((pin == pinVVT_2) && (configPage10.wmiEnabled > 0))
-  || ((pin == pinVVT_2) && (configPage10.vvt2Enabled > 0))
-  || ((pin == pinBoost) && (configPage6.boostEnabled == 1))
-  || ((pin == pinIdle1) && isIdlePWM)
-  || ((pin == pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
-  || ((pin == pinStepperEnable) && isIdleStepper)
-  || ((pin == pinStepperStep) && isIdleStepper)
-  || ((pin == pinStepperDir) && isIdleStepper)
-  || (pin == pinTachOut)
-  || ((pin == pinAirConComp) && (configPage15.airConEnable > 0))
-  || ((pin == pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
+  if ((pin == pinNumbers.pinFuelPump)
+  || ((pin == pinNumbers.pinFan) && (configPage2.fanEnable == 1))
+  || ((pin == pinNumbers.pinVVT_1) && (configPage6.vvtEnabled > 0))
+  || ((pin == pinNumbers.pinVVT_2) && (configPage10.wmiEnabled > 0))
+  || ((pin == pinNumbers.pinVVT_2) && (configPage10.vvt2Enabled > 0))
+  || ((pin == pinNumbers.pinBoost) && (configPage6.boostEnabled == 1))
+  || ((pin == pinNumbers.pinIdle1) && isIdlePWM)
+  || ((pin == pinNumbers.pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
+  || ((pin == pinNumbers.pinStepperEnable) && isIdleStepper)
+  || ((pin == pinNumbers.pinStepperStep) && isIdleStepper)
+  || ((pin == pinNumbers.pinStepperDir) && isIdleStepper)
+  || (pin == pinNumbers.pinTachOut)
+  || ((pin == pinNumbers.pinAirConComp) && (configPage15.airConEnable > 0))
+  || ((pin == pinNumbers.pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
   {
     used = true;
   }
@@ -179,7 +80,7 @@ bool pinIsOutput(byte pin)
   return used;
 }
 
-#define pinIsSensor(pin)    ( ((pin) == pinCLT) || ((pin) == pinIAT) || ((pin) == pinMAP) || ((pin) == pinTPS) || ((pin) == pinO2) || ((pin) == pinBat) || (((pin) == pinFlex) && (configPage2.flexEnabled != 0)) )
+#define pinIsSensor(pin)    ( ((pin) == pinNumbers.pinCLT) || ((pin) == pinNumbers.pinIAT) || ((pin) == pinNumbers.pinMAP) || ((pin) == pinNumbers.pinTPS) || ((pin) == pinNumbers.pinO2) || ((pin) == pinNumbers.pinBat) || (((pin) == pinNumbers.pinFlex) && (configPage2.flexEnabled != 0)) )
 
 bool pinIsUsed(byte pin)
 {

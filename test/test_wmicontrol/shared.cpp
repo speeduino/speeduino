@@ -3,7 +3,7 @@
 
 void setup_wmi_tune(uint8_t mode)
 {
-    pinWMIEmpty = TANK_EMPTY_PIN;
+    pinNumbers.pinWMIEmpty = TANK_EMPTY_PIN;
     pinMode(TANK_EMPTY_PIN, OUTPUT);
     configPage10.vvt2Enabled = false;
     configPage10.wmiEnabled = true;

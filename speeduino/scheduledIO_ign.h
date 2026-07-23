@@ -1,13 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+#include "src/pins/pinNumbers_t.h"
 
-enum class IgnIoControlMode : uint8_t
-{
-    Direct,
-    MC33810
-};
-void initIgnIoControl(IgnIoControlMode controlMode);
+void initialiseIgnitionIO(const config4 &page4, const pinNumbers_t &pins);
 
 void beginCoilCharge(uint8_t channel);
 void endCoilCharge(uint8_t channel);
