@@ -5,9 +5,9 @@
 
 void tearDown(void) 
 { 
-  detachInterrupt( digitalPinToInterrupt(pinTrigger) );
-  detachInterrupt( digitalPinToInterrupt(pinTrigger2) );
-  detachInterrupt( digitalPinToInterrupt(pinTrigger3) );
+  detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger) );
+  detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger2) );
+  detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger3) );
 }
 
 void runAllDecoderTests(void)
@@ -24,6 +24,8 @@ void runAllDecoderTests(void)
     extern void testToothLoggers(void);
     extern void testDecoderBuilder(void);
     extern void testDecoderInit(void);
+    extern void testDecoderApiCoverage(void);
+    extern void testinterrupt_t(void);
     
     testMissingTooth();
     testDualWheel();
@@ -37,6 +39,8 @@ void runAllDecoderTests(void)
     testToothLoggers();
     testDecoderBuilder();
     testDecoderInit();
+    testDecoderApiCoverage();
+    testinterrupt_t();
 }
 
 TEST_HARNESS(runAllDecoderTests)

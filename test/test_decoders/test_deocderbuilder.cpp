@@ -210,16 +210,16 @@ static void test_setGetFeatures(void)
 void testDecoderBuilder(void)
 {
   SET_UNITY_FILENAME() {
-    RUN_TEST( test_ctor );
-    RUN_TEST( test_setPrimaryTrigger );
-    RUN_TEST( test_setSecondaryTrigger );
-    RUN_TEST( test_setTertiaryTrigger );
-    RUN_TEST( test_setGetRPM );
-    RUN_TEST( test_setGetCrankAngle );
-    RUN_TEST( test_setSetEndTeeth );
-    RUN_TEST( test_setReset );
-    RUN_TEST( test_setIsEngineRunning );
-    RUN_TEST( test_setGetStatus );
-    RUN_TEST( test_setGetFeatures );
+    RUN_TEST_P( test_ctor );
+    RUN_TEST_P( test_setPrimaryTrigger );
+    RUN_TEST_P( test_setSecondaryTrigger );
+    RUN_TEST_P( test_setTertiaryTrigger );
+    RUN_TEST_P( test_setGetRPM );
+    RUN_TEST_P( test_setGetCrankAngle );
+    RUN_TEST_P( test_setSetEndTeeth );
+    RUN_TEST_P( test_setReset );
+    RUN_TEST_P( test_setIsEngineRunning );
+    RUN_TEST_P( test_setGetStatus );
+    RUN_TEST_P( test_setGetFeatures );
   }
 }

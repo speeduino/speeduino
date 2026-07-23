@@ -28,25 +28,25 @@ static constexpr uint8_t UQ1X15_Shift = 15U;
 static UQ1X15_t degreesPerMicro;
 static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
-void setAngleConverterRevolutionTime(uint32_t revolutionTime) {
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept {
   microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
   constexpr uint32_t UQ1X15_360 = UINT32_C(360) << degreesPerMicro_Shift;
   degreesPerMicro = (uint16_t)fast_div_closest(UQ1X15_360, revolutionTime);
 }
 
-BEGIN_LTO_ALWAYS_INLINE(uint32_t) angleToTimeMicroSecPerDegree(uint16_t angle) {
+BEGIN_LTO_ALWAYS_INLINE(uint32_t) angleToTime(uint16_t angle) noexcept {
   UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
   return rshift_round<microsPerDegree_Shift>(micros);
 }
 END_LTO_INLINE()
 
-BEGIN_LTO_ALWAYS_INLINE(COMPARE_TYPE) angleToTimerTicks(uint16_t angle) {
-    uint32_t micros = angleToTimeMicroSecPerDegree(angle);
+BEGIN_LTO_ALWAYS_INLINE(COMPARE_TYPE) angleToTimerTicks(uint16_t angle) noexcept {
+    uint32_t micros = angleToTime(angle);
     return uS_TO_TIMER_COMPARE(micros);
 }
 END_LTO_INLINE()
 
-BEGIN_LTO_ALWAYS_INLINE(uint16_t) timeToAngleDegPerMicroSec(uint32_t time) {
+BEGIN_LTO_ALWAYS_INLINE(uint16_t) timeToAngle(uint32_t time) noexcept {
     uint32_t degFixed = time * (uint32_t)degreesPerMicro;
     return rshift_round<degreesPerMicro_Shift>(degFixed);
 }

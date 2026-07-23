@@ -1,7 +1,7 @@
 #include <decoders.h>
 #include <globals.h>
 #include <unity.h>
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
 
@@ -350,27 +350,27 @@ void testMissingTooth()
 {
    SET_UNITY_FILENAME() {
 
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig0_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig90_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig180_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig270_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig360_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg90_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg180_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg270_1);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg360_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig0_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig90_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig180_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig270_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig360_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg90_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg180_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg270_1);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg360_1);
 
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig0_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig90_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig180_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig270_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trig360_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg90_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg180_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg270_2);
-  RUN_TEST(test_missingtooth_newIgn_36_1_trigNeg360_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig0_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig90_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig180_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig270_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig360_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg90_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg180_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg270_2);
+  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg360_2);
 
-  //RUN_TEST(test_missingtooth_newIgn_60_2_trig181_2);
-  //RUN_TEST(test_missingtooth_newIgn_60_2_trig182_2);
+  //RUN_TEST_P(test_missingtooth_newIgn_60_2_trig181_2);
+  //RUN_TEST_P(test_missingtooth_newIgn_60_2_trig182_2);
    }
 }

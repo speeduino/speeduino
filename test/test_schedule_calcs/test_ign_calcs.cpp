@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "test_calcs_common.h"
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "crankMaths.h"
 #include "decoders.h"
 #include "../test_utils.h"
@@ -21,7 +21,7 @@ void setEngineSpeed(uint16_t rpm, int16_t max_crank)
   SetRevolutionTime(UDIV_ROUND_CLOSEST(60UL*1000000UL, rpm, uint32_t));
   CRANK_ANGLE_MAX_IGN = max_crank;
   CRANK_ANGLE_MAX_INJ = max_crank;
-  dwellAngle = timeToAngleDegPerMicroSec(DWELL_TIME_MS*1000UL);
+  dwellAngle = timeToAngle(DWELL_TIME_MS*1000UL);
 }
 
 struct ign_test_parameters
@@ -46,11 +46,11 @@ void test_calc_ign_timeout(const ign_test_parameters &test_params)
     TEST_ASSERT_EQUAL_MESSAGE(test_params.expectedEndAngle, schedule.dischargeAngle, "dischargeAngle");
     
     sprintf_P(msg, PSTR("PENDING advanceAngle: %" PRIi8 ", channelAngle: %" PRIu16 ", crankAngle: %" PRIu16 ", dischargeAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, schedule.dischargeAngle);
-    schedule.Status = PENDING;
+    schedule._status = PENDING;
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.pending, _calculateIgnitionTimeout(schedule, test_params.crankAngle), msg);
     
     sprintf_P(msg, PSTR("RUNNING advanceAngle: %" PRIi8 ", channelAngle: %" PRIu16 ", crankAngle: %" PRIu16 ", dischargeAngle: %" PRIi16), test_params.advanceAngle, test_params.channelAngle, test_params.crankAngle, schedule.dischargeAngle);
-    schedule.Status = RUNNING;
+    schedule._status = RUNNING;
     TEST_ASSERT_INT32_WITHIN_MESSAGE(1, test_params.running, _calculateIgnitionTimeout(schedule, test_params.crankAngle), msg);
 }
 

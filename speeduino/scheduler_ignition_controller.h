@@ -4,10 +4,18 @@
 #include "statuses.h"
 
 extern IgnitionSchedule ignitionSchedule1;
+#if IGN_CHANNELS >= 2
 extern IgnitionSchedule ignitionSchedule2;
+#endif
+#if IGN_CHANNELS >= 3
 extern IgnitionSchedule ignitionSchedule3;
+#endif
+#if IGN_CHANNELS >= 4
 extern IgnitionSchedule ignitionSchedule4;
+#endif
+#if IGN_CHANNELS >= 5
 extern IgnitionSchedule ignitionSchedule5;
+#endif
 #if IGN_CHANNELS >= 6
 extern IgnitionSchedule ignitionSchedule6;
 #endif
@@ -56,3 +64,6 @@ void stopIgnitionSchedulers(void);
 
 /** @brief Initialise all ignition schedules */
 void initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode);
+
+/** @brief Utility function to stop charging all ignition coils */
+void stopAllCoilsCharging(void);

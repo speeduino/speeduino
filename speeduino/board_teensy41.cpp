@@ -4,13 +4,14 @@
 #include <EEPROM.h>
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
+#include "src/pins/pinNumbers_t.h"
 
 static void PIT_isr();
 static void TMR1_isr(void);
@@ -68,8 +69,6 @@ void initBoard(uint32_t /*baudRate*/)
       PIT_TCTRL0 |= PIT_TCTRL_TIE; // enable Timer 1 interrupts
       PIT_TCTRL0 |= PIT_TCTRL_TEN; // start Timer 1
       PIT_LDVAL0 = 1; //1 * 2uS = 2uS
-
-      idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*
@@ -102,13 +101,6 @@ void initBoard(uint32_t /*baudRate*/)
       PIT_TCTRL2 |= PIT_TCTRL_TEN; // start Timer 3
       PIT_LDVAL2 = 1; //1 * 2uS = 2uS
     }
-
-    //2uS resolution Min 8Hz, Max 5KHz
-    boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow frequencies up to 511Hz
-    vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-    #if defined(PWM_FAN_AVAILABLE)
-      fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (2U * configPage6.vvtFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle
-    #endif
 
     //TODO: Configure timers here
 
@@ -392,17 +384,17 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(uint8_t)
+void boardInitPins(uint8_t, pinNumbers_t &pins)
 {
   //Primary trigger
-  setPinHysteresis(pinTrigger);
+  setPinHysteresis(pins.pinTrigger);
   //Secondary trigger
-  setPinHysteresis(pinTrigger2);
+  setPinHysteresis(pins.pinTrigger2);
   //Tertiary trigger
-  setPinHysteresis(pinTrigger3);
+  setPinHysteresis(pins.pinTrigger3);
 
-  if(configPage2.flexEnabled > 0) { setPinHysteresis(pinFlex); }
-  if(configPage2.vssMode > 1) { setPinHysteresis(pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
+  if(configPage2.flexEnabled > 0) { setPinHysteresis(pins.pinFlex); }
+  if(configPage2.vssMode > 1) { setPinHysteresis(pins.pinVSS); }// VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
   if(configPage10.knock_mode == KNOCK_MODE_DIGITAL) { setPinHysteresis(configPage10.knock_pin); }
 }
 
@@ -423,6 +415,12 @@ static uint16_t getEepromWriteBlockSize(const statuses &current)
 storage_api_t getBoardStorageApi(void)
 {
   return getEEPROMStorageApi(getEepromWriteBlockSize);
+}
+
+/** @brief Get the PWM timer resolution in uS */
+uint8_t getPwmTimerResolution(void)
+{
+  return 2;
 }
 
 #endif

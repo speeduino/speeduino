@@ -13,7 +13,7 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "timers.h"
 #include "globals.h"
 #include "sensors.h"
-#include "scheduler.h"
+#include "scheduler_fuel_controller.h"
 #include "scheduler_ignition_controller.h"
 #include "auxiliaries.h"
 #include "comms.h"
@@ -21,23 +21,21 @@ Timers are typically low resolution (Compared to Schedulers), with maximum frequ
 #include "preprocessor.h"
 #include "scheduledIO_ign.h"
 #include "scheduledIO_inj.h"
-#include "src/pins/fastOutputPin.h"
-#include "src/pins/outputPin.h"
+#include "src/pins/boardOutputPin.h"
+#include "src/controllers/fuelPump/fuelPumpController.h"
 
-volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
-volatile byte loop5ms;
-volatile byte loop20ms;
-volatile byte loop33ms;
-volatile byte loop66ms;
-volatile byte loop100ms;
-volatile byte loop250ms;
-volatile int loopSec;
-volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
+TESTABLE_STATIC volatile uint16_t lastRPM_100ms; //Need to record this for rpmDOT calculation
+TESTABLE_STATIC volatile byte loop5ms;
+TESTABLE_STATIC volatile byte loop20ms;
+TESTABLE_STATIC volatile byte loop33ms;
+TESTABLE_STATIC volatile byte loop66ms;
+TESTABLE_STATIC volatile byte loop100ms;
+TESTABLE_STATIC volatile byte loop250ms;
+TESTABLE_STATIC volatile int loopSec;
+TESTABLE_STATIC volatile uint8_t tachoEndTime; //The time (in ms) that the tacho pulse needs to end at
 volatile TachoOutputStatus tachoOutputFlag;
 volatile uint16_t tachoSweepIncr;
-volatile uint16_t tachoSweepAccum;
-volatile uint8_t testInjectorPulseCount = 0;
-volatile uint8_t testIgnitionPulseCount = 0;
+TESTABLE_STATIC volatile uint16_t tachoSweepAccum;
 
 void __attribute__((optimize("Os"))) initialiseTimers(void)
 {
@@ -51,8 +49,8 @@ void __attribute__((optimize("Os"))) initialiseTimers(void)
   loopSec = 0;
 }
 
-static boardOutputPin_t tach_pin;
-static volatile uint8_t TIMER_mask;
+TESTABLE_STATIC boardOutputPin_t tach_pin;
+TESTABLE_STATIC volatile uint8_t TIMER_mask;
 
 uint8_t getAndClearTimerMask(void)
 {
@@ -61,7 +59,9 @@ uint8_t getAndClearTimerMask(void)
     TIMER_mask = 0U;
     return mask;
   }
+  // LCOV_EXCL_START
   return 0U; // Suppress false compiler warning
+  // LCOV_EXCL_STOP
 }
 
 void __attribute__((optimize("Os"))) initTacho(uint8_t tachoPin)
@@ -101,7 +101,7 @@ void oneMSInterval(void)
   // See if we're in power-on sweep mode
   if( currentStatus.tachoSweepEnabled )
   {
-    if( (currentStatus.engineIsRunning) || (currentStatus.engineIsCranking) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
+    if( (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) || (ms_counter >= TACHO_SWEEP_TIME_MS) )  { currentStatus.tachoSweepEnabled = false; }  // Stop the sweep after SWEEP_TIME, or if real tach signals have started
     else 
     {
       // Ramp the needle smoothly to the max over the SWEEP_RAMP time
@@ -163,33 +163,6 @@ void oneMSInterval(void)
   if (loop33ms == 33)
   {
     loop33ms = 0;
-
-    //Pulse fuel and ignition test outputs are set at 30Hz
-    if( (currentStatus.isTestModeActive) && (currentStatus.RPM == 0) )
-    {
-      //Check for pulsed injector output test
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { openInjector1(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { openInjector2(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { openInjector3(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { openInjector4(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { openInjector5(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { openInjector6(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { openInjector7(); }
-      if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { openInjector8(); }
-      testInjectorPulseCount = 0;
-
-      //Check for pulsed ignition output test
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { beginCoil1Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { beginCoil2Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { beginCoil3Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { beginCoil4Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { beginCoil5Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { beginCoil6Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { beginCoil7Charge(); }
-      if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { beginCoil8Charge(); }
-      testIgnitionPulseCount = 0;
-    }
-
     BIT_SET(TIMER_mask, BIT_TIMER_30HZ);
   }
 
@@ -209,12 +182,12 @@ void oneMSInterval(void)
     currentStatus.rpmDOT = (currentStatus.RPM - lastRPM_100ms) * 10; //This is the RPM per second that the engine has accelerated/decelerated in the last loop
     lastRPM_100ms = currentStatus.RPM; //Record the current RPM for next calc
 
-    if ( currentStatus.engineIsRunning ) { runSecsX10++; }
+    if ( currentStatus.rotationStatus==EngineRotationStatus::Running ) { runSecsX10++; }
     else { runSecsX10 = 0; }
 
     if ( (currentStatus.injPrimed == false) && (seclx10 >= configPage2.primingDelay) && (currentStatus.RPM == 0) && (currentStatus.initialisationComplete == true) ) 
     { 
-      beginInjectorPriming(); 
+      beginInjectorPriming(currentStatus, configPage4); 
       currentStatus.injPrimed = true; 
     }
     seclx10++;
@@ -241,7 +214,7 @@ void oneMSInterval(void)
     //**************************************************************************************************************************************************
     //This updates the runSecs variable
     //If the engine is running or cranking, we need to update the run time counter.
-    if (currentStatus.engineIsRunning)
+    if (currentStatus.rotationStatus!=EngineRotationStatus::Stopped)
     { //NOTE - There is a potential for a ~1sec gap between engine crank starting and the runSec number being incremented. This may delay ASE!
       if (currentStatus.runSecs <= (UINT8_MAX-1U)) //Ensure we cap out at 255 and don't overflow. (which would reset ASE and cause problems with the closed loop fuelling (Which has to wait for the O2 to warmup))
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
@@ -305,51 +278,6 @@ void oneMSInterval(void)
       currentStatus.fuelTemp = div100((int16_t)tempX100);     
     }
   }
-
-  //Turn off any of the pulsed testing outputs if they are active and have been running for long enough
-  if( currentStatus.isTestModeActive )
-  {
-    //Check for pulsed injector output test
-    if( (HWTest_INJ_Pulsed > 0)  )
-    {
-      if(testInjectorPulseCount >= configPage13.hwTestInjDuration)
-      {
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ1_CMD_BIT)) { closeInjector1(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ2_CMD_BIT)) { closeInjector2(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ3_CMD_BIT)) { closeInjector3(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ4_CMD_BIT)) { closeInjector4(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ5_CMD_BIT)) { closeInjector5(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ6_CMD_BIT)) { closeInjector6(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ7_CMD_BIT)) { closeInjector7(); }
-        if(BIT_CHECK(HWTest_INJ_Pulsed, INJ8_CMD_BIT)) { closeInjector8(); }
-        
-        testInjectorPulseCount = 0;
-      }
-      else { testInjectorPulseCount++; }
-    }
-    
-
-    //Check for pulsed ignition output test
-    if( (HWTest_IGN_Pulsed > 0) )
-    {
-      if(testIgnitionPulseCount >= configPage13.hwTestIgnDuration)
-      {
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN1_CMD_BIT)) { endCoil1Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN2_CMD_BIT)) { endCoil2Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN3_CMD_BIT)) { endCoil3Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN4_CMD_BIT)) { endCoil4Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN5_CMD_BIT)) { endCoil5Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN6_CMD_BIT)) { endCoil6Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN7_CMD_BIT)) { endCoil7Charge(); }
-        if(BIT_CHECK(HWTest_IGN_Pulsed, IGN8_CMD_BIT)) { endCoil8Charge(); }
-
-        testIgnitionPulseCount = 0;
-      }
-      else { testIgnitionPulseCount++; }
-    }
-    
-  }
-
 
 #if defined(CORE_AVR) //AVR chips use the ISR for this
     //Reset Timer2 to trigger in another ~1ms

@@ -45,7 +45,7 @@ TESTABLE_INLINE_STATIC bool checkBoostLimit(const statuses &current, const confi
 {
   return (page6.engineProtectType != PROTECT_CUT_OFF)
       && (page6.boostCutEnabled) 
-      && (current.MAP > (long)MAP.toUser(page6.boostLimit));
+      && (current.MAP > MAP.toUser(page6.boostLimit));
 }
 
 static inline bool canApplyAfrLimit(const config6 &page6, const config9 &page9)
@@ -69,7 +69,7 @@ static inline uint16_t getAfrO2Limit(const statuses &current, const config9 &pag
 
 static inline bool isAfrLimitCondtionActive(const statuses &current, const config9 &page9)
 {
-    return (current.MAP >= (long)MAP.toUser(page9.afrProtectMinMAP))
+    return (current.MAP >= MAP.toUser(page9.afrProtectMinMAP))
           && (current.RPMdiv100 >= page9.afrProtectMinRPM) 
           && (current.TPS >= page9.afrProtectMinTPS) 
           && (current.O2 >= getAfrO2Limit(current, page9)); 
@@ -378,7 +378,7 @@ TESTABLE_STATIC bool supportPendingIgnitionCut(const config2 &page2, const confi
 TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, bool supportPendingIgnitionCut)
 {
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
-  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, current.maxInjOutputs); ++channel)
+  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, getTotalInjChannelCount(current)); ++channel)
   {  
     if( rollingCutRandFunc() < cutPercent )
     {
@@ -431,7 +431,7 @@ statuses::scheduler_cut_t maskUnusedChannels(statuses::scheduler_cut_t cutState,
 {
   // Whatever the cut state is, ensure that any channels above the max outputs configured are masked off.  
   cutState.ignitionChannels = cutState.ignitionChannels & setBits(current.maxIgnOutputs); //Mask off unused ignition channels
-  cutState.fuelChannels = cutState.fuelChannels & setBits(current.maxInjOutputs); //Mask off unused fuel channels
+  cutState.fuelChannels = cutState.fuelChannels & setBits(getTotalInjChannelCount(current)); //Mask off unused fuel channels
   return cutState;
 }
 

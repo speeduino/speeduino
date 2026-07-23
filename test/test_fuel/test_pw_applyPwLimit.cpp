@@ -8,7 +8,7 @@ static void test_inactive_cranking(void) {
     config10 page10 = {};
     statuses current = {};
 
-    current.engineIsCranking = true;
+    current.rotationStatus = EngineRotationStatus::Cranking;
     TEST_ASSERT_EQUAL(1000, applyPwLimits(1000, 500, page10, current));
 }
 

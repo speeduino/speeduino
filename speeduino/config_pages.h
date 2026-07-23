@@ -149,6 +149,10 @@ constexpr uint8_t IAC_ALGORITHM_STEP_CL = 5U;
 constexpr uint8_t IAC_ALGORITHM_PWM_OLCL  = 6U; //Openloop plus closedloop IAC control
 constexpr uint8_t IAC_ALGORITHM_STEP_OLCL  = 7U; //Openloop plus closedloop IAC control
 
+constexpr uint8_t BOOST_BY_GEAR_OFF      = 0U;
+constexpr uint8_t BOOST_BY_GEAR_PERCENT  = 1U;
+constexpr uint8_t BOOST_BY_GEAR_CONSTANT = 2U;
+
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
   MAPSamplingCycleAverage = 1, 
@@ -182,7 +186,7 @@ struct config2 : public config_page_t {
   byte wueValues[10];   ///< Warm up enrichment array (10 bytes, transferred to @ref WUETable)
   byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
-  byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)
+  byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinNumbers.pinTachOut, which defaults to board assigned tach pin)
   byte tachoDiv : 2;    ///< Whether to change the tacho speed ("half speed tacho" ?)
   byte tachoDuration;   //The duration of the tacho pulse in mS
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
@@ -300,12 +304,7 @@ struct config2 : public config_page_t {
   
   uint16_t vssPulsesPerKm; ///< VSS (Vehicle speed sensor) pulses per Km
   byte vssSmoothing;
-  uint16_t vssRatio1;
-  uint16_t vssRatio2;
-  uint16_t vssRatio3;
-  uint16_t vssRatio4;
-  uint16_t vssRatio5;
-  uint16_t vssRatio6;
+  uint16_t vssRatios[6];
 
   byte idleUpOutputEnabled : 1;
   byte idleUpOutputInv : 1;
@@ -366,7 +365,7 @@ struct config4 : public config_page_t {
   byte TrigPattern : 5; ///< Decoder configured (DECODER_MISSING_TOOTH, DECODER_BASIC_DISTRIBUTOR, DECODER_GM7X, ... See init.ino)
 
   byte TrigEdgeSec : 1; ///< Secondary (RPM2) Trigger Edge (See RPM1)
-  byte fuelPumpPin : 6; ///< Fuel pump pin (copied as override to pinFuelPump, defaults to board default, See: init.ino)
+  byte fuelPumpPin : 6; ///< Fuel pump pin (copied as override to pinNumbers.pinFuelPump, defaults to board default, See: init.ino)
   byte useResync : 1;
 
   byte sparkDur; ///< Spark duration in ms * 10
@@ -753,8 +752,8 @@ struct config10 : public config_page_t {
 
   byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinFuelPressure)
-  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinOilPressure)
+  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinNumbers.pinFuelPressure)
+  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinNumbers.pinOilPressure)
   byte oilPressureProtEnbl : 1;
   byte oilPressurePin : 5;
 

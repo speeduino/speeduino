@@ -158,13 +158,13 @@ extern uint16_t compute_bin_position(const uint16_t &value, const table3d_dim_t 
 
 static void assert_compute_bin_position(table3d_axis_t *axis, uint16_t multiplier, uint8_t percent) {
   char msg[64];
-  sprintf(msg, "Mul: %u, Pct: %u", multiplier, percent);  
+  snprintf(msg, _countof(msg)-1, "Mul: %u, Pct: %u", multiplier, percent);  
   TEST_ASSERT_INT_WITHIN_MESSAGE(1U, percentage(percent, QU1X8_ONE), compute_bin_position(intermediate(axis[1U]*multiplier, axis[0U]*multiplier, percent), 0U, axis, multiplier), msg);
 }
 
 static void assert_compute_bin_position_mult(table3d_axis_t *axis, uint16_t multiplier) {
   char msg[64];
-  sprintf(msg, "Mul: %u", multiplier);
+  snprintf(msg, _countof(msg)-1, "Mul: %u", multiplier);
   // Below/at min
   TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[1U]*multiplier, 0U, axis, multiplier), msg);
   TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[1U]-5U)*multiplier, 0U, axis, multiplier), msg);

@@ -2,7 +2,6 @@
 #include <globals.h>
 #include <unity.h>
 #include "scheduler.h"
-#include "schedule_calcs.h"
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
 
@@ -130,14 +129,14 @@ void testNGC()
 {
    SET_UNITY_FILENAME() {
 
-    RUN_TEST(test_ngc_newIgn_12_trig0_1);
-    RUN_TEST(test_ngc_newIgn_12_trig90_1);
-    RUN_TEST(test_ngc_newIgn_12_trig180_1);
-    RUN_TEST(test_ngc_newIgn_12_trig270_1);
-    RUN_TEST(test_ngc_newIgn_12_trig360_1);
-    RUN_TEST(test_ngc_newIgn_12_trigNeg90_1);
-    RUN_TEST(test_ngc_newIgn_12_trigNeg180_1);
-    RUN_TEST(test_ngc_newIgn_12_trigNeg270_1);
-    RUN_TEST(test_ngc_newIgn_12_trigNeg360_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trig0_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trig90_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trig180_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trig270_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trig360_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trigNeg90_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trigNeg180_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trigNeg270_1);
+    RUN_TEST_P(test_ngc_newIgn_12_trigNeg360_1);
    }
 }

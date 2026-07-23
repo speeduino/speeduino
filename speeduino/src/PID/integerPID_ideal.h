@@ -1,68 +1,76 @@
 #pragma once
 
 #include <stdint.h>
+#include "PidCore.h"
 
 class integerPID_ideal
 {
 public:
+  
+  /** @brief Default construction */
+  integerPID_ideal(void);
 
-  //Constants used in some of the functions below
-  #define AUTOMATIC	1
-  #define MANUAL	0
-  #define DIRECT  0
-  #define REVERSE  1
+  /** @name Configuration methods */
+  ///@{
 
-  //commonly used functions **************************************************************************
-    integerPID_ideal(long*, uint16_t*, uint16_t*, uint16_t*, uint8_t*,        // * constructor.  links the PID to the Input, Output, and
-        uint8_t, uint8_t, uint8_t, uint8_t);     //   Setpoint.  Initial tuning parameters are also set here
+  /** @brief Set the output limits */
+  void setOutputLimits(uint8_t min, uint8_t max);
 
-    bool Compute(unsigned long now, uint16_t);  // * performs the PID calculation with injected time.
-    bool Compute(uint16_t);                      // * legacy wrapper that calls millis().
-                                          //   called every time loop() cycles. ON/OFF and
-                                          //   calculation frequency can be set using SetMode
-                                          //   SetSampleTime respectively
+  /**
+   * @brief Set the minimum time interval between computations
+   * 
+   * @param now Current time
+   * @param minComputeInterval Interval between valid calls to compute(). Must be in same units as @p now
+   */
+  void setSampleTime(uint32_t now, uint16_t minComputeInterval) { 
+    _sampleTime = minComputeInterval; 
+    _lastTime = now-minComputeInterval;
+  }
+  
+  /** @brief Set the PID parameters */
+  void setTunings(const PidTuningParameters& params) { 
+      _pidCore.setTunings(params); 
+  }
 
-    void SetOutputLimits(long, long); //clamps the output to a specific range. 0-255 by default, but
-										  //it's likely the user will want to change this depending on
-										  //the application
+  /** @brief Set the controller set point */
+  void setSetPoint(uint16_t setpoint) { _setpoint = setpoint; }
+  
+  /** @brief (Optional) Set the sensitivity */
+  void setSensitivity(uint16_t sensitivity) { _sensitivity = sensitivity>5000U ? 5000 : sensitivity; }
+  
+  /** @brief (Optional) Set the forward bias */
+  void setFeedForwardTerm(uint16_t feedForwardTerm) { _feedForwardTerm = feedForwardTerm; }
+	///@}
 
+  /**
+   * @brief Initialize the controller
+   * 
+   * @param input The first input value (same as the compute() input parameter)
+   */
+	void initialize(uint16_t input);
 
+  /**
+   * @brief Compute the new output.
+   * 
+   * @note The output is not a correction to be applied to the input.
+   * It is the actual output to be applied to the physical system.
+   *  
+   * @param now Current time (same units as used for setSampleTime)
+   * @param input The input value
+   * @param pOutput The new output: only valid when true is returned.
+   * @return true if a calculation occurred, false otherwise 
+   */
+  bool compute(uint32_t now, uint16_t input, uint16_t* pOutput);
+  
+private:
 
-  //available but not commonly used functions ********************************************************
-    void SetTunings(uint8_t, uint8_t,       // * While most users will set the tunings once in the
-                    uint8_t);         	  //   constructor, this function gives the user the option
-                                          //   of changing tunings during runtime for Adaptive control
-	void SetControllerDirection(uint8_t);	  // * Sets the Direction, or "Action" of the controller. DIRECT
-										  //   means the output will increase when error is positive. REVERSE
-										  //   means the opposite.  it's very unlikely that this will be needed
-										  //   once it is set in the constructor.
+  uint16_t _setpoint = 0;
+  uint16_t _sensitivity = 0;
+  uint16_t _sampleTime = 0; 
+  uint16_t _feedForwardTerm = 0;
 
+	uint32_t _lastTime = 0;
+  uint16_t _lastInput = 0;
 
-
-	void Initialize();
-
-  private:
-
-
-	uint8_t dispKp;				// * we'll hold on to the tuning parameters in user-entered
-	uint8_t dispKi;				//   format for display purposes
-	uint8_t dispKd;				//
-
-	uint16_t  kp;                  // * (P)roportional Tuning Parameter
-  uint16_t  ki;                  // * (I)ntegral Tuning Parameter
-  uint16_t  kd;                  // * (D)erivative Tuning Parameter
-
-	int controllerDirection;
-
-    long *myInput;              //
-    uint16_t *myOutput;         //   This is a percentage figure multiplied by 100 (To give 2 points of precision)
-    uint16_t *mySetpoint;       //
-    uint16_t *mySensitivity;
-    uint8_t *mySampleTime;
-
-
-	unsigned long lastTime;
-	long ITerm, lastInput;
-
-	long outMin, outMax;
+  PidCore _pidCore;
 };

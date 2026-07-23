@@ -1,154 +1,47 @@
-/**********************************************************************************************
- * Arduino PID Library - Version 1.0.1
- * by Brett Beauregard <br3ttb@gmail.com> brettbeauregard.com
- *
- * This Library is licensed under a GPLv3 License
- **********************************************************************************************/
 #include "integerPID_ideal.h"
-#include <Arduino.h>
 
-
-/*Constructor (...)*********************************************************
- *    The parameters specified here are those for for which we can't set up
- *    reliable defaults, so we need to have the user set them.
- ***************************************************************************/
-integerPID_ideal::integerPID_ideal(long* Input, uint16_t* Output, uint16_t* Setpoint, uint16_t* Sensitivity, uint8_t* SampleTime,
-                                   uint8_t Kp, uint8_t Ki, uint8_t Kd, uint8_t ControllerDirection)
+integerPID_ideal::integerPID_ideal(void)
 {
-
-    myOutput = Output;
-    myInput = (long*)Input;
-    mySetpoint = Setpoint;
-    mySensitivity = Sensitivity;
-    mySampleTime = SampleTime;
-
-	  integerPID_ideal::SetOutputLimits(20, 80);				//default output limits
-
-    integerPID_ideal::SetControllerDirection(ControllerDirection);
-    integerPID_ideal::SetTunings(Kp, Ki, Kd);
-
-    lastTime = millis()- *mySampleTime;
+   setOutputLimits(20, 80);				//default output limits
 }
 
-
-/* Compute() **********************************************************************
- *     This, as they say, is where the magic happens.  this function should be called
- *   every time "void loop()" executes.  the function will decide for itself whether a new
- *   pid Output needs to be computed.  returns true when the output is computed,
- *   false when nothing has been done.
- **********************************************************************************/
-bool integerPID_ideal::Compute(unsigned long now, uint16_t FeedForward)
+static inline int32_t calculateUnitlessError(uint16_t input, uint16_t setpoint, uint16_t sensitivity)
 {
-   unsigned long timeChange = (now - lastTime);
-   if(timeChange >= *mySampleTime)
-   {
-      /*Compute all the working error variables*/
-      uint16_t sensitivity = 10001 - (*mySensitivity * 2);
-      long unitless_setpoint = (((long)*mySetpoint - 0) * 10000L) / (sensitivity - 0);
-      long unitless_input = (((long)*myInput - 0) * 10000L) / (sensitivity - 0);
-      long error = unitless_setpoint - unitless_input;
-      // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
-      uint32_t scaledFeedForward = FeedForward*10UL;
+   // sensitivity range is [0, 5000]
+   uint16_t scaledSensitivity = 10001U - (sensitivity * 2U);
+   int32_t unitless_setpoint = (setpoint * 10000L) / scaledSensitivity;
+   int32_t unitless_input = (input * 10000L) / scaledSensitivity;
+   return unitless_setpoint - unitless_input;
+}
 
-      ITerm += error;
+bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
+{
+   uint32_t timeChange = (now - _lastTime);
+   if (timeChange < _sampleTime) return false;
 
-      /*Compute PID Output*/
-      long output = scaledFeedForward + (kp * error) + (ki * ITerm) + (kd * (lastInput - *myInput));
+   int32_t error = calculateUnitlessError(input, _setpoint, _sensitivity);
       
-      if(output > outMax)
-      {
-         output = outMax;
-         ITerm -= error;
-      }
-      else if(output < outMin)
-      {
-         output = outMin;
-         ITerm -= error;
-      }
+   // Bias is % in whole numbers. Multiply it by 10 to get it with 2 places.
+   uint32_t scaledFeedForward = _feedForwardTerm*10UL;
 
-	   //output is % multiplied by 1000. To get % with 2 decimal places, divide it by 10. 
-      *myOutput = output/10;
+   // We are using "Derivative on Measurement" as described [here](http://brettbeauregard.com/blog/2011/04/improving-the-beginners-pid-derivative-kick/)
+   *pOutput = _pidCore.compute(scaledFeedForward, error, (int32_t)_lastInput - input)/10L;
 
-      /*Remember some variables for next time*/
-      lastTime = now;
-      lastInput = *myInput;
+   /*Remember some variables for next time*/
+   _lastTime = now;
+   _lastInput = input;
 
-      return true;
-   }
-   else return false;
+   return true;
 }
 
-// LCOV_EXCL_START
-bool integerPID_ideal::Compute(uint16_t FeedForward)
+void integerPID_ideal::setOutputLimits(uint8_t min, uint8_t max)
 {
-    return Compute(millis(), FeedForward);
-}
-// LCOV_EXCL_STOP
-
-/* SetTunings(...)*************************************************************
- * This function allows the controller's dynamic performance to be adjusted.
- * it's called automatically from the constructor, but tunings can also
- * be adjusted on the fly during normal operation
- ******************************************************************************/
-void integerPID_ideal::SetTunings(uint8_t Kp, uint8_t Ki, uint8_t Kd)
-{
-   if ( dispKp == Kp && dispKi == Ki && dispKd == Kd ) return; //Only do anything if one of the values has changed
-   dispKp = Kp; dispKi = Ki; dispKd = Kd;
-
-  kp = Kp;
-  ki = Ki;
-  kd = Kd;
-
-  if(controllerDirection == REVERSE)
-   {
-      kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
-   }
+   constexpr int32_t limitMultiplier = 1000; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
+   _pidCore.setOutputLimits(min*limitMultiplier, max*limitMultiplier);
 }
 
-/* SetOutputLimits(...)****************************************************
- *     This function will be used far more often than SetInputLimits.  while
- *  the input to the controller will generally be in the 0-1023 range (which is
- *  the default already,)  the output will be a little different.  maybe they'll
- *  be doing a time window and will need 0-8000 or something.  or maybe they'll
- *  want to clamp it from 0-125.  who knows.  at any rate, that can all be done
- *  here.
- **************************************************************************/
-void integerPID_ideal::SetOutputLimits(long Min, long Max)
+void integerPID_ideal::initialize(uint16_t input)
 {
-   if(Min < Max)
-   {
-     constexpr uint16_t LIMIT_FACTOR = 1000; //How much outMin and OutMax must be multiplied by to get them in the same scale as the output
-
-     outMin = Min * LIMIT_FACTOR;
-     outMax = Max * LIMIT_FACTOR;
-   }
-}
-
-/* Initialize()****************************************************************
- *	does all the things that need to happen to ensure a bumpless transfer
- *  from manual to automatic mode.
- ******************************************************************************/
-void integerPID_ideal::Initialize()
-{
-   ITerm = 0;
-   lastInput = *myInput;
-}
-
-/* SetControllerDirection(...)*************************************************
- * The PID will either be connected to a DIRECT acting process (+Output leads
- * to +Input) or a REVERSE acting process(+Output leads to -Input.)  we need to
- * know which one, because otherwise we may increase the output when we should
- * be decreasing.  This is called from the constructor.
- ******************************************************************************/
-void integerPID_ideal::SetControllerDirection(uint8_t Direction)
-{
-   if(Direction != controllerDirection)
-   {
-	    kp = (0 - kp);
-      ki = (0 - ki);
-      kd = (0 - kd);
-   }
-   controllerDirection = Direction;
+   _pidCore.resetIntegral();
+   _lastInput = input;
 }

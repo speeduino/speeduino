@@ -82,6 +82,12 @@ constexpr uint16_t TABLE_BLOCKING_FACTOR = 64;
   #ifndef NUM_DIGITAL_PINS
     #define NUM_DIGITAL_PINS 75
   #endif
+#elif defined(BOARD_FCR_MICRO_F4)
+  #ifndef NUM_DIGITAL_PINS
+    #define NUM_DIGITAL_PINS 100
+  #endif
+  #define BOARD_ANALOG_SCALE_NUM 5148
+  #define BOARD_ANALOG_SCALE_DEN 5000
 #endif
 
 //Specific mode for Bluepill due to its small flash size. This disables a number of strings from being compiled into the flash
@@ -147,14 +153,30 @@ extern STM32RTC& rtc;
   #endif
 #else
   #ifdef USE_SPI_EEPROM
-    static inline bool pinIsReserved(uint8_t pin) { 
-      return (pin == (uint8_t)PA11) 
-          || (pin == (uint8_t)PA12) 
-          || (pin == (uint8_t)PB3) 
+    #if defined(BOARD_FCR_MICRO_F4) //FCR Micro F4: USB(PA11/PA12) + VBUS sense(PA9) + SPI3 flash(PC10/11/12) + CS + CAN1 ALT_2(PD0/PD1)
+    static inline bool pinIsReserved(uint8_t pin) {
+      PinName p = digitalPinToPinName(pin);
+      return (p == PA_11)
+          || (p == PA_12)
+          || (p == PA_9)
+          || (p == PC_10)
+          || (p == PC_11)
+          || (p == PC_12)
+          || (p == (PinName)USE_SPI_EEPROM)
+          || (p == PD_0)
+          || (p == PD_1)
+        ;
+    }
+    #else
+    static inline bool pinIsReserved(uint8_t pin) {
+      return (pin == (uint8_t)PA11)
+          || (pin == (uint8_t)PA12)
+          || (pin == (uint8_t)PB3)
           || (pin == (uint8_t)PB4)
           || (pin == (uint8_t)USE_SPI_EEPROM)
         ;
     }
+    #endif
   #else
     static inline bool pinIsReserved(uint8_t pin) { 
       return (pin == (uint8_t)PA11) 
@@ -202,11 +224,19 @@ extern STM32RTC& rtc;
 * 4 - IDLE  |4 - IGN4  |4 - INJ4  |4 - IGN8  |4 - INJ8  | 
 */
 #if defined(STM32F407xx) //F407 can do 8x8 STM32F401/STM32F411 don't
-  #define INJ_CHANNELS 8
-  #define IGN_CHANNELS 8
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 8
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 8
+  #endif
 #else
-  #define INJ_CHANNELS 4
-  #define IGN_CHANNELS 5
+  #ifndef INJ_CHANNELS
+    #define INJ_CHANNELS 4
+  #endif
+  #ifndef IGN_CHANNELS
+    #define IGN_CHANNELS 5
+  #endif
 #endif
 #define FUEL1_COUNTER (TIM3)->CNT
 #define FUEL2_COUNTER (TIM3)->CNT

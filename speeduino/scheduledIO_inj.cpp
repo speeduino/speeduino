@@ -1,6 +1,7 @@
 #include "scheduledIO_inj.h"
 #include "acc_mc33810.h"
 #include "scheduledIO_direct_inj.h"
+#include "preprocessor.h"
 
 /** @file
  * Injector and Coil (toggle/open/close) control (under various situations, eg with particular cylinder count, rotary engine type or wasted spark ign, etc.).
@@ -10,11 +11,28 @@
  */
 
 static volatile byte injStatusMask = 0;
-static InjIoControlMode _controlMode = InjIoControlMode::Direct;
 
-void initInjIoControl(InjIoControlMode controlMode)
+#if defined(MC33810_SUPPORT)
+static bool controlModeDirect = false;
+#endif
+
+void __attribute__((optimize("Os"))) initialiseInjectionIO(const config4 &page4, const pinNumbers_t &pins)
 {
-    _controlMode = controlMode;
+#if defined(MC33810_SUPPORT)
+  controlModeDirect = pins.pinMC33810_1_CS==NOT_A_PIN;
+
+  if(controlModeDirect)
+  {
+    initInjDirectIO(pins.injectorPins);
+  } 
+  else
+  {
+    initMC33810(page4, pins);
+  }
+#else
+    UNUSED(page4);
+    initInjDirectIO(pins.injectorPins);
+#endif
 }
 
 /** @brief Injector open/close status bits */
@@ -29,7 +47,7 @@ char getInjectorStatus(void)
 void openInjector(uint8_t channel)
 {
 #if defined(MC33810_SUPPORT)
-    if(_controlMode==InjIoControlMode::Direct) {
+    if(controlModeDirect) {
         openInjector_DIRECT(channel);
     } else {
         openInjector_MC33810(channel);
@@ -43,7 +61,7 @@ void openInjector(uint8_t channel)
 void closeInjector(uint8_t channel)
 {
 #if defined(MC33810_SUPPORT)
-    if(_controlMode==InjIoControlMode::Direct) {
+    if(controlModeDirect) {
         closeInjector_DIRECT(channel);
     } else {
         closeInjector_MC33810(channel);

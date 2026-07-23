@@ -4,7 +4,7 @@
 #include "storage.h"
 #include "pages.h"
 #include "config_pages.h"
-#include "globals.h"
+#include "scheduler.h"
 
 extern uint16_t getEntityStartAddress(page_iterator_t entity);
 extern const uint16_t MAX_PAGE_ADDRESS;
@@ -30,7 +30,7 @@ static void assert_nocalibration_overlap(const block &newBlock, uint8_t idxCurrB
     uint16_t start = getSensorCalibrationCrcAddress(table);
     uint16_t end = start + sizeof(uint32_t);
     char msg[64];
-    sprintf(msg, "EEPROM storage: entity %" PRIu16 " overlaps calibration CRC %" PRIu16, idxCurrBlock, (uint16_t)table);
+    snprintf(msg, _countof(msg)-1, "EEPROM storage: entity %" PRIu16 " overlaps calibration CRC %" PRIu16, idxCurrBlock, (uint16_t)table);
     TEST_ASSERT_FALSE_MESSAGE(isInRangeExclusive(start, end, newBlock.start), msg);
     TEST_ASSERT_FALSE_MESSAGE(isInRangeExclusive(start, end, newBlock.start+newBlock.length), msg);
 }
@@ -67,7 +67,7 @@ static uint8_t test_no_overlap_page(uint8_t pageNum, block blocks[], size_t leng
         uint8_t overlapBlock = find_overlap(blocks, idxCurrBlock, newBlock);
         if (overlapBlock!=idxCurrBlock) {
             char msg[64];
-            sprintf(msg, "EEPROM storage: entity %" PRIu8 " overlaps entity %" PRIu8, overlapBlock, idxCurrBlock);
+            snprintf(msg, _countof(msg)-1, "EEPROM storage: entity %" PRIu8 " overlaps entity %" PRIu8, overlapBlock, idxCurrBlock);
             TEST_FAIL_MESSAGE(msg);
         }
         TEST_ASSERT_TRUE(overlapBlock==idxCurrBlock);
@@ -119,14 +119,28 @@ const char *getEntityName(const page_iterator_t &it) {
     { &boostTable, GET_VARIABLE_NAME(boostTable) },
     { &vvtTable, GET_VARIABLE_NAME(vvtTable) },
     { &stagingTable, GET_VARIABLE_NAME(stagingTable) },
-    { &trim1Table, GET_VARIABLE_NAME(trim1Table) },
-    { &trim2Table, GET_VARIABLE_NAME(trim2Table) },
-    { &trim3Table, GET_VARIABLE_NAME(trim3Table) },
-    { &trim4Table, GET_VARIABLE_NAME(trim4Table) },
-    { &trim5Table, GET_VARIABLE_NAME(trim5Table) },
-    { &trim6Table, GET_VARIABLE_NAME(trim6Table) },
-    { &trim7Table, GET_VARIABLE_NAME(trim7Table) },
-    { &trim8Table, GET_VARIABLE_NAME(trim8Table) },
+    { &trimTables[0], GET_VARIABLE_NAME(trimTables[0]) },
+#if INJ_CHANNELS >= 2
+    { &trimTables[1], GET_VARIABLE_NAME(trimTables[1]) },
+#endif
+#if INJ_CHANNELS >= 3
+    { &trimTables[2], GET_VARIABLE_NAME(trimTables[2]) },
+#endif
+#if INJ_CHANNELS >= 4
+    { &trimTables[3], GET_VARIABLE_NAME(trimTables[3]) },
+#endif
+#if INJ_CHANNELS >= 5
+    { &trimTables[4], GET_VARIABLE_NAME(trimTables[4]) },
+#endif
+#if INJ_CHANNELS >= 6
+    { &trimTables[5], GET_VARIABLE_NAME(trimTables[5]) },
+#endif
+#if INJ_CHANNELS >= 7
+    { &trimTables[6], GET_VARIABLE_NAME(trimTables[6]) },
+#endif
+#if INJ_CHANNELS >= 8
+    { &trimTables[7], GET_VARIABLE_NAME(trimTables[7]) },
+#endif
     { &configPage9, GET_VARIABLE_NAME(configPage9) },
     { &configPage10, GET_VARIABLE_NAME(configPage10) },
     { &fuelTable2, GET_VARIABLE_NAME(fuelTable2) },
@@ -157,7 +171,7 @@ static void print_entity(const page_iterator_t &iter)
     if (EntityType::NoEntity!=iter.entity.type)
     {
         char msg[128];
-        sprintf(msg, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, iter.location.page, iter.location.index, getEntityName(iter), getEntityTypeName(iter), getEntityStartAddress(iter), iter.entity.size);
+        snprintf(msg, _countof(msg)-1, "%" PRIu8 ", %" PRIu8 ", %s, %s, %" PRIu16 ", %" PRIu16, iter.location.page, iter.location.index, getEntityName(iter), getEntityTypeName(iter), getEntityStartAddress(iter), iter.entity.size);
         UnityPrint(msg); UNITY_PRINT_EOL();
     }
 }
@@ -181,13 +195,13 @@ static void print_eeprom_layout(void) {
 
     #define GET_VARIABLE_NAME(Variable) (#Variable)
     char msg[128];
-    sprintf(msg, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::CoolantSensor, GET_VARIABLE_NAME(CoolantSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::CoolantSensor), (uint16_t)sizeof(uint32_t));
+    snprintf(msg, _countof(msg)-1, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::CoolantSensor, GET_VARIABLE_NAME(CoolantSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::CoolantSensor), (uint16_t)sizeof(uint32_t));
     UnityPrint(msg); UNITY_PRINT_EOL();
-    sprintf(msg, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::IntakeAirTempSensor, GET_VARIABLE_NAME(IntakeAirTempSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::IntakeAirTempSensor), (uint16_t)sizeof(uint32_t));
+    snprintf(msg, _countof(msg)-1, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::IntakeAirTempSensor, GET_VARIABLE_NAME(IntakeAirTempSensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::IntakeAirTempSensor), (uint16_t)sizeof(uint32_t));
     UnityPrint(msg); UNITY_PRINT_EOL();
-    sprintf(msg, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::O2Sensor, GET_VARIABLE_NAME(O2Sensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::O2Sensor), (uint16_t)sizeof(uint32_t));
+    snprintf(msg, _countof(msg)-1, "Calib CRC, %d, %s, CRC, %" PRIu16 ", %" PRIu16, (int)SensorCalibrationTable::O2Sensor, GET_VARIABLE_NAME(O2Sensor), getSensorCalibrationCrcAddress(SensorCalibrationTable::O2Sensor), (uint16_t)sizeof(uint32_t));
     UnityPrint(msg); UNITY_PRINT_EOL();
-    sprintf(msg, "Calibrations, 0, Calib, Calib, %" PRIu16 ", %" PRIu16, MAX_PAGE_ADDRESS, (uint16_t)(STORAGE_SIZE-MAX_PAGE_ADDRESS));
+    snprintf(msg, _countof(msg)-1, "Calibrations, 0, Calib, Calib, %" PRIu16 ", %" PRIu16, MAX_PAGE_ADDRESS, (uint16_t)(STORAGE_SIZE-MAX_PAGE_ADDRESS));
     UnityPrint(msg); UNITY_PRINT_EOL();
 }
 

@@ -18,7 +18,7 @@ extern bool cycleAverageMAPReading(const statuses &current, const config2 &page2
 extern bool canUseCycleAverage(const statuses &current, const config2 &page2);
 
 static decoder_status_t decoderStatus;
-static decoder_status_t getDecoderStatus(void)
+static decoder_status_t getDecoderStatus(void) noexcept
 {
     return decoderStatus;
 }

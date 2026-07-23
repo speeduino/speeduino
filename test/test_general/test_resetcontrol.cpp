@@ -2,7 +2,7 @@
 #include "resetControl.h"
 
 static decoder_status_t fakeDecoderStatus = {};
-static decoder_status_t fakeGetStatus(void)
+static decoder_status_t fakeGetStatus(void) noexcept
 {
     return fakeDecoderStatus;
 }

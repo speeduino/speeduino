@@ -14,6 +14,7 @@
 #include "updates.h"
 #include "pages.h"
 #include "comms_CAN.h"
+#include "scheduler.h"
 #include "units.h"
 #include "unit_testing.h"
 
@@ -609,14 +610,14 @@ void doUpdates(void)
     {
       multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
       multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
-      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
-      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
-      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
-      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
-      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
-      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
-      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
-      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+
+      for (auto& table : trimTables)
+      {
+        // Access the type of the table via the type since it's static
+        using table_t = typename type_traits::remove_reference<decltype(table)>::type;
+        multiplyTableLoad(&table, table_t::type_key, 4);
+      }
+
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
       { 
         for(uint8_t x = 0; x < 8; x++)

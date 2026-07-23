@@ -11,6 +11,9 @@ void runAllMathTests(void)
     extern void test_fast_map(void);
     extern void testUnitConversions(void);
     extern void testOther(void);
+    extern void testCrankMath(void);
+    extern void testElapsedTime(void);
+    extern void testRandom(void);
 
     testCrankMaths();
     testPercent();
@@ -19,6 +22,9 @@ void runAllMathTests(void)
     test_fast_map();
     testUnitConversions();
     testOther();
+    testCrankMath();
+    testElapsedTime();
+    testRandom();
 }
 
 TEST_HARNESS(runAllMathTests)

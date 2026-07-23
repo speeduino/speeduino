@@ -14,11 +14,12 @@ A full copy of the license may be found in the projects root directory
 #include "maths.h"
 #include "preprocessor.h"
 #include "decoders.h"
-#include "TS_CommandButtonHandler.h"
+#include "src/controllers/tsCommand/tsCommandController.h"
 #include "pages.h"
 #include "page_crc.h"
 #include "logger.h"
 #include "board_definition.h"
+#include "scheduler_fuel_controller.h"
 #ifdef RTC_ENABLED
   #include "rtc_common.h"
 #endif
@@ -132,7 +133,7 @@ void legacySerialCommand(void)
       if(primarySerial.available() >= 2)
       {
         byte cmdGroup = (byte)Serial.read();
-        (void)TS_CommandButtonsHandler(word(cmdGroup, primarySerial.read()));
+        (void)handleTsCommand(word(cmdGroup, primarySerial.read()), currentStatus, configPage2);
         serialStatusFlag = SERIAL_INACTIVE;
       }
       break;
@@ -401,7 +402,7 @@ void legacySerialCommand(void)
       #endif
 
         while (primarySerial.available() == 0) { }
-        digitalWrite(pinResetControl, LOW);
+        digitalWrite(pinNumbers.pinResetControl, LOW);
       }
       else
       {
@@ -766,10 +767,10 @@ void sendValuesLegacy(void)
 
   bytestosend -= primarySerial.write(currentStatus.secl>>8);
   bytestosend -= primarySerial.write(currentStatus.secl);
-  bytestosend -= primarySerial.write(currentStatus.PW1>>8);
-  bytestosend -= primarySerial.write(currentStatus.PW1);
-  bytestosend -= primarySerial.write(currentStatus.PW2>>8);
-  bytestosend -= primarySerial.write(currentStatus.PW2);
+  bytestosend -= primarySerial.write(fuelSchedule1.pw>>8);
+  bytestosend -= primarySerial.write(fuelSchedule1.pw);
+  bytestosend -= primarySerial.write(fuelSchedule2.pw>>8);
+  bytestosend -= primarySerial.write(fuelSchedule2.pw);
   bytestosend -= primarySerial.write(currentStatus.RPM>>8);
   bytestosend -= primarySerial.write(currentStatus.RPM);
 
@@ -1132,7 +1133,7 @@ void sendPageASCII(void)
 
     case seqFuelPage:
       primarySerial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(&trim1Table, trim1Table.type_key);
+      serial_print_3dtable(&trimTables[0], trimTable3d::type_key);
       break;
 
     case canbusPage:

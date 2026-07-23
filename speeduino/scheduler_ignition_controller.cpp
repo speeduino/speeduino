@@ -1,5 +1,6 @@
 #include "scheduler_ignition_controller.h"
 #include "scheduledIO_ign.h"
+#include "elapsed_time.h"
 #include "schedule_calcs.hpp"
 #include "scheduledIO_ign.h"
 #include "globals.h"
@@ -7,10 +8,18 @@
 
 
 IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#if IGN_CHANNELS >= 2
 IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
+#if IGN_CHANNELS >= 3
 IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
+#if IGN_CHANNELS >= 4
 IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
+#if IGN_CHANNELS >= 5
 IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE); //cppcheck-suppress misra-c2012-8.4
+#endif
 #if IGN_CHANNELS >= 6
 IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE); //cppcheck-suppress misra-c2012-8.4
 #endif
@@ -129,22 +138,34 @@ static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCyl
   case 4:
     //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
     setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
+#if IGN_CHANNELS >= 2
     setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+#endif
     break;
   
   case 6:
     //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
     setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
+#if IGN_CHANNELS >= 2
     setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
+#endif
+#if IGN_CHANNELS >= 3
     setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+#endif
     break;
   
   case 8:
     //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
     setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
+#if IGN_CHANNELS >= 2
     setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
+#endif
+#if IGN_CHANNELS >= 3
     setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
+#endif
+#if IGN_CHANNELS >= 4
     setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+#endif
   }
 }
 
@@ -155,21 +176,33 @@ static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryTyp
   case ROTARY_IGN_FC:
     //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
     setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+#if IGN_CHANNELS >= 2
     setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+#endif
+#if IGN_CHANNELS >= 3
     setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
+#endif
+#if IGN_CHANNELS >= 4
     setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
+#endif
     break;
 
     case ROTARY_IGN_FD:
     //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
     setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+#if IGN_CHANNELS >= 2
     setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+#endif
 
     //Trailing coils have their own channel each
     //IGN2 = front rotor trailing spark
+#if IGN_CHANNELS >= 3
     setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
     //IGN3 = rear rotor trailing spark
+#endif
+#if IGN_CHANNELS >= 4
     setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
+#endif
     break;
   
   case ROTARY_IGN_RX8:
@@ -199,9 +232,15 @@ static void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkMode, uint
 TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(void)
 {
   ignitionSchedule1.reset();
+#if IGN_CHANNELS >= 2
   ignitionSchedule2.reset();
+#endif
+#if IGN_CHANNELS >= 3
   ignitionSchedule3.reset();
+#endif
+#if IGN_CHANNELS >= 4
   ignitionSchedule4.reset();
+#endif
 #if (IGN_CHANNELS >= 5)
   ignitionSchedule5.reset();
 #endif
@@ -216,8 +255,19 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(voi
 #endif
 }
 
+void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
+{
+  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  {
+    endCoilCharge(index);
+  }
+}
+
 void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode)
 {
+  //End all coil charges to ensure no stray sparks on startup
+  stopAllCoilsCharging();
+
   resetIgnitionSchedulers();
   setCallbacks(sparkMode, numCylinders, rotaryMode);
 }
@@ -379,7 +429,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
 {
   matchIgnitionSchedulersToSyncState(page2, page4, current);
 
-  uint16_t dwellAngle = timeToAngleDegPerMicroSec(current.dwell);
+  uint16_t dwellAngle = timeToAngle(current.dwell);
 
   if((current.maxIgnOutputs==4U) && (page4.sparkMode == IGN_MODE_ROTARY))
   {
@@ -398,7 +448,7 @@ END_LTO_INLINE()
 TESTABLE_INLINE_STATIC void setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration) 
 {
   // Only queue up the next schedule if the maximum time between sparks (Based on CRANK_ANGLE_MAX_IGN) is less than the max timer period
-  setSchedule(schedule, delay, duration, angleToTimeMicroSecPerDegree((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
+  setSchedule(schedule, delay, duration, angleToTime((uint16_t)CRANK_ANGLE_MAX_IGN) < MAX_TIMER_PERIOD);
 }
 
 static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellDuration, byte channelMask, uint8_t channelIdx)
@@ -439,10 +489,10 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const
 }
 END_LTO_INLINE()
 
-TESTABLE_INLINE_STATIC void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t targetOverdwellTime) {
+TESTABLE_INLINE_STATIC void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t now, uint32_t dwellLimit_uS) {
   //Check first whether each spark output is currently on. Only check it's dwell time if it is
   ATOMIC() {
-    if (isRunning(schedule) && (schedule._startTime < targetOverdwellTime)) { 
+    if (isRunning(schedule) && hasIntervalElapsed(now, schedule._startTime, dwellLimit_uS)) {
       moveToNextState(schedule); //Call the end function to disable the spark output
     }
   }
@@ -458,29 +508,30 @@ TESTABLE_INLINE_STATIC bool isOverDwellActive(const config4 &page4, const status
 void applyOverDwellProtection(const config4 &page4, const statuses &current)
 {
   if (isOverDwellActive(page4, current)) {
-    uint32_t targetOverdwellTime = micros() - (page4.dwellLimit * 1000U); //Convert to uS
+    uint32_t now = micros();
+    uint32_t dwellLimit_uS = page4.dwellLimit * 1000U; //Convert to uS
 
-    applyChannelOverDwellProtection(ignitionSchedule1, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule1, now, dwellLimit_uS);
 #if IGN_CHANNELS >= 2
-    applyChannelOverDwellProtection(ignitionSchedule2, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule2, now, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 3
-    applyChannelOverDwellProtection(ignitionSchedule3, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule3, now, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 4
-    applyChannelOverDwellProtection(ignitionSchedule4, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule4, now, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 5
-    applyChannelOverDwellProtection(ignitionSchedule5, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule5, now, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 6
-    applyChannelOverDwellProtection(ignitionSchedule6, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule6, now, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 7
-    applyChannelOverDwellProtection(ignitionSchedule7, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule7, now, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 8
-    applyChannelOverDwellProtection(ignitionSchedule8, targetOverdwellTime);
+    applyChannelOverDwellProtection(ignitionSchedule8, now, dwellLimit_uS);
 #endif
   }
 }

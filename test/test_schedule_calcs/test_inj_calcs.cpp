@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 #include "test_calcs_common.h"
-#include "schedule_calcs.h"
+#include "scheduler.h"
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "src/stdlib/type_traits.h"
@@ -22,23 +22,22 @@ static void test_calc_inj_timeout(const inj_test_parameters &parameters)
 {
     static constexpr uint16_t injAngle = 355;
     char msg[150];
-    uint16_t PWdivTimerPerDegree = timeToAngleDegPerMicroSec(parameters.pw);
 
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     FuelSchedule schedule(counter, compare);
+    schedule.channelDegrees = parameters.channelAngle;
+    schedule.pw = parameters.pw;
 
-    schedule.Status = PENDING;
-    uint16_t startAngle = calculateInjectorStartAngle(PWdivTimerPerDegree, parameters.channelAngle, injAngle);
-    sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, startAngle, parameters.crankAngle), msg);
+    schedule._status = PENDING;
+    uint16_t openAngle = _calculateOpenAngle(schedule, timeToAngle(parameters.pw), injAngle);
+    sprintf_P(msg, PSTR("PENDING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, openAngle);
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.pending, calculateInjectorTimeout(schedule, parameters.crankAngle, openAngle), msg);
     
-    schedule.Status = RUNNING;
-    startAngle = calculateInjectorStartAngle( PWdivTimerPerDegree, parameters.channelAngle, injAngle);
-    sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, startAngle);
-    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.running, calculateInjectorTimeout(schedule, startAngle, parameters.crankAngle), msg);
+    schedule._status = RUNNING;
+    sprintf_P(msg, PSTR("RUNNING channelAngle: %" PRIu16 ", pw: %" PRIu16 ", crankAngle: %" PRIu16 ", openAngle: %" PRIu16), parameters.channelAngle, parameters.pw, parameters.crankAngle, openAngle);
+    TEST_ASSERT_INT32_WITHIN_MESSAGE(1, parameters.running, calculateInjectorTimeout(schedule, parameters.crankAngle, openAngle), msg);
 }
-
 
 static void test_calc_inj_timeout(const inj_test_parameters *pStart, const inj_test_parameters *pEnd)
 {
@@ -281,21 +280,153 @@ static void test_calculateInjectorTimeout(void)
   FuelSchedule schedule(counter, compare);
   setEngineSpeed(4000, 360);
 
-  schedule.Status = OFF;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule._status = OFF;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U, 351U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 351U, 123U));
 
-  schedule.Status = PENDING;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(0, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule._status = PENDING;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U, 351U));
+  TEST_ASSERT_EQUAL(0, calculateInjectorTimeout(schedule, 351U, 123U));
 
-  schedule.Status = RUNNING_WITHNEXT;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule._status = RUNNING_WITHNEXT;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U, 351U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 351U, 123U));
 
-  schedule.Status = RUNNING;
-  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 351U, 123U));
-  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 123U, 351U));
+  schedule._status = RUNNING;
+  TEST_ASSERT_EQUAL(9500, calculateInjectorTimeout(schedule, 123U, 351U));
+  TEST_ASSERT_EQUAL(5500, calculateInjectorTimeout(schedule, 351U, 123U));
+}
+
+static void test_calculateOpenAngle_basic_no_wrap(void)
+{
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+
+  CRANK_ANGLE_MAX_INJ = 360;
+  schedule.channelDegrees = 45;
+
+  TEST_ASSERT_EQUAL_UINT16(115U, _calculateOpenAngle(schedule, 20U, 90U));
+}
+
+static void test_calculateOpenAngle_wraps_when_pw_is_larger(void)
+{
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+
+  CRANK_ANGLE_MAX_INJ = 360;
+  schedule.channelDegrees = 0;
+
+  TEST_ASSERT_EQUAL_UINT16(160U, _calculateOpenAngle(schedule, 300U, 100U));
+}
+
+static void test_calculateOpenAngle_clamps_above_maxAngle(void)
+{
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+
+  CRANK_ANGLE_MAX_INJ = 360;
+  schedule.channelDegrees = 360;
+
+  TEST_ASSERT_EQUAL_UINT16(0U, _calculateOpenAngle(schedule, 0U, 360U));
+}
+
+static void test_calculateOpenAngle_preserves_720_maxAngle(void)
+{
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+
+  CRANK_ANGLE_MAX_INJ = 720;
+  schedule.channelDegrees = 180;
+
+  TEST_ASSERT_EQUAL_UINT16(260U, _calculateOpenAngle(schedule, 220U, 300U));
+}
+
+
+static void test_calculateOpenAngle_large_pw(void)
+{
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+
+  CRANK_ANGLE_MAX_INJ = 360;
+  schedule.channelDegrees = CRANK_ANGLE_MAX_INJ-1;
+  TEST_ASSERT_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ-3, _calculateOpenAngle(schedule, CRANK_ANGLE_MAX_INJ*2, schedule.channelDegrees-1U));
+  TEST_ASSERT_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ-2, _calculateOpenAngle(schedule, CRANK_ANGLE_MAX_INJ*2, schedule.channelDegrees));
+  TEST_ASSERT_EQUAL_UINT16(CRANK_ANGLE_MAX_INJ-1, _calculateOpenAngle(schedule, CRANK_ANGLE_MAX_INJ*2, schedule.channelDegrees+1U));
+}
+
+static void test_updatePwAngleCache_basic(void)
+{
+  setAngleConverterRevolutionTime(MICROS_PER_MIN/4000);
+
+  injectorAngleCalcCache cache = { 0, 0 };
+  TEST_ASSERT_EQUAL(72, updatePwAngleCache(3000, &cache));
+  TEST_ASSERT_EQUAL(72, cache.pwDegrees);
+  // Repeat
+  TEST_ASSERT_EQUAL(72, updatePwAngleCache(3000, &cache));
+  TEST_ASSERT_EQUAL(72, cache.pwDegrees);
+}
+
+static void test_updatePwAngleCache_within_threshoold(void)
+{
+  injectorAngleCalcCache cache = { 3000, 1 };
+  // Within threshold - positive
+  TEST_ASSERT_EQUAL(1, updatePwAngleCache(cache.pw + 32, &cache));
+  TEST_ASSERT_EQUAL(1, cache.pwDegrees);
+  // Within threshold - neggative
+  TEST_ASSERT_EQUAL(1, updatePwAngleCache(cache.pw - 32, &cache));
+  TEST_ASSERT_EQUAL(1, cache.pwDegrees);
+}
+
+static void assert_calculateAngularTime(uint16_t eventAngle, uint16_t crankAngle, uint16_t expected)
+{
+  TEST_ASSERT_LESS_THAN(360, eventAngle);
+  TEST_ASSERT_LESS_THAN(360, crankAngle);
+  
+  raw_counter_t counter = {0};
+  raw_compare_t compare = {0};
+  FuelSchedule schedule(counter, compare);
+  schedule._status = OFF; 
+  TEST_ASSERT_EQUAL(expected, _calculateAngularTime(schedule, eventAngle, crankAngle, 360));
+  schedule._status = PENDING; 
+  if (eventAngle>=crankAngle)
+  {
+    TEST_ASSERT_EQUAL(expected, _calculateAngularTime(schedule, eventAngle, crankAngle, 360));
+  }
+  else
+  {
+    TEST_ASSERT_EQUAL(0, _calculateAngularTime(schedule, eventAngle, crankAngle, 360));
+  }
+  schedule._status = RUNNING; 
+  TEST_ASSERT_EQUAL(expected, _calculateAngularTime(schedule, eventAngle, crankAngle, 360));
+  schedule._status = RUNNING_WITHNEXT; 
+  TEST_ASSERT_EQUAL(expected, _calculateAngularTime(schedule, eventAngle, crankAngle, 360));
+}
+
+static void test_calculateAngularTime_eventcrank_equal(void)
+{
+  setAngleConverterRevolutionTime(MICROS_PER_MIN/4000);
+  assert_calculateAngularTime(0, 0, 0);
+  assert_calculateAngularTime(90, 90, 0);
+  assert_calculateAngularTime(270, 270, 0);
+}
+
+static void test_calculateAngularTime_event_lessthan_crank(void)
+{
+  setAngleConverterRevolutionTime(MICROS_PER_MIN/4000);
+  assert_calculateAngularTime(9, 357, 500);
+  assert_calculateAngularTime(120, 240, 10000);
+}
+
+static void test_calculateAngularTime_event_greaterthan_crank(void)
+{
+  setAngleConverterRevolutionTime(MICROS_PER_MIN/4000);
+  assert_calculateAngularTime(357, 9, 14500);
+  assert_calculateAngularTime(240, 120, 5000);
 }
 
 // 
@@ -305,6 +436,16 @@ void test_calc_inj_timeout(void)
 
     RUN_TEST(test_calc_inj_timeout_360);
     RUN_TEST(test_calc_inj_timeout_720);
+    RUN_TEST(test_calculateOpenAngle_basic_no_wrap);
+    RUN_TEST(test_calculateOpenAngle_wraps_when_pw_is_larger);
+    RUN_TEST(test_calculateOpenAngle_clamps_above_maxAngle);
+    RUN_TEST(test_calculateOpenAngle_preserves_720_maxAngle);
+    RUN_TEST_P(test_calculateOpenAngle_large_pw);
+    RUN_TEST_P(test_updatePwAngleCache_basic);
+    RUN_TEST_P(test_updatePwAngleCache_within_threshoold);
     RUN_TEST(test_calculateInjectorTimeout);
+    RUN_TEST_P(test_calculateAngularTime_eventcrank_equal);
+    RUN_TEST_P(test_calculateAngularTime_event_lessthan_crank);
+    RUN_TEST_P(test_calculateAngularTime_event_greaterthan_crank);
   }
 }

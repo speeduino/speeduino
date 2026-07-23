@@ -26,6 +26,17 @@ enum class SchedulerCutStatus : uint8_t
 };
 
 
+/** @brief The engine rotation status */
+enum class EngineRotationStatus : uint8_t
+{
+  /** Not rotating */
+  Stopped, 
+  /** Rotating below the cranking threshold. */
+  Cranking, 
+  /** Rotating above the cranking threshold. */
+  Running, 
+};
+
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -51,8 +62,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool previousClutchTrigger : 1;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool fpPrimed : 1; ///< Tracks whether or not the fuel pump priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool injPrimed : 1; ///< Tracks whether or not the injector priming has been completed yet
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool tachoSweepEnabled : 1;
@@ -61,9 +70,8 @@ struct statuses {
     
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
-  long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
   uint16_t baroADC;
-  long MAP;     ///< Manifold absolute pressure. Has to be a long for PID calcs (Boost control)
+  uint16_t MAP;     ///< Manifold absolute pressure.
   uint16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
   uint8_t baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   uint8_t TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
@@ -107,7 +115,7 @@ struct statuses {
   bool CTPSActive;   /**< Whether the externally controlled closed throttle position sensor is currently active */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
-  unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
+  unsigned long AEStartTime; /**< The time (µS) at which AE (acceleration enrichment) was last turned on. AE ends once aeTime has elapsed from this point */
 
   // Status1 fields as defined in the INI
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -169,12 +177,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
 
-  // Engine status fields as defined in the INI.  
-  // TODO: engine has 3 states: Off, Cranking, Running. Need to capture this better 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineIsRunning : 1; ///< Is engine running (true) or not (false) 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool engineIsCranking : 1; ///< Is engine cranking (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -185,16 +187,8 @@ struct statuses {
   bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool isDeceleratingTPS : 1; ///< Are we decelerating (true) or not (false), based on TPS
+  EngineRotationStatus rotationStatus;
   
-  // TODO: make all pulse widths uint16_t
-  unsigned int PW1; ///< In uS
-  unsigned int PW2; ///< In uS
-  unsigned int PW3; ///< In uS
-  unsigned int PW4; ///< In uS
-  unsigned int PW5; ///< In uS
-  unsigned int PW6; ///< In uS
-  unsigned int PW7; ///< In uS
-  unsigned int PW8; ///< In uS
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
@@ -221,15 +215,14 @@ struct statuses {
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
   uint16_t fuelLoad;
   uint16_t ignLoad;
-  bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
   volatile byte syncLossCounter;
   byte knockRetard;
   volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
-  int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt1TargetAngle;
-  long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
+  int16_t vvt1Angle; 
+  uint8_t vvt1TargetAngle;
+  uint8_t vvt1Duty; 
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -279,9 +272,9 @@ struct statuses {
 
   byte fanDuty;
   byte wmiPW;
-  int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt2TargetAngle;
-  long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
+  int16_t vvt2Angle; 
+  uint8_t vvt2TargetAngle;
+  uint8_t vvt2Duty; 
   byte outputsStatus;
 
   // SD card status fields.
@@ -320,8 +313,10 @@ struct statuses {
   uint8_t systemTemp;
   uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
 
-  uint8_t maxIgnOutputs = 1; /**< Number of ignition outputs being used by the current tune configuration */
-  uint8_t maxInjOutputs = 1; /**< Number of injection outputs being used by the current tune configuration */
+  uint8_t maxIgnOutputs; /**< Number of ignition outputs being used by the current tune configuration */
+  uint8_t numPrimaryInjOutputs : 4; /**< Number of primary injection outputs */
+  uint8_t numSecondaryInjOutputs : 4; /**< Number of secondary injection outputs (staged injection only)*/
+  uint8_t injLayout : 3; ///< Normally the same value as config2::injLayout, but under some situations will change to one of the other INJ_* constants
 
   /** @brief Fuel and ignition scheduler cut state. @see calculateFuelIgnitionChannelCut */
   struct scheduler_cut_t
@@ -339,3 +334,8 @@ struct statuses {
 
   uint8_t LOOP_TIMER; ///< The timer flags currently in effect
 };
+
+static inline uint8_t getTotalInjChannelCount(const statuses &current)
+{
+  return current.numPrimaryInjOutputs + current.numSecondaryInjOutputs;
+}

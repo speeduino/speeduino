@@ -11,10 +11,6 @@ void vvtControl(void);
 void initialiseFan(uint8_t fanPin);
 void initialiseAirCon(void);
 
-void initialiseFuelPump(statuses &current, const config2 &page2, uint8_t pumpPin);
-void startPumpPriming(statuses &current, const config2 &page2);
-void stopPumpPriming(statuses &current, const config2 &page2);
-
 void nitrousControl(void);
 void fanControl(void);
 void airConControl(void);
@@ -25,19 +21,12 @@ void vvt1Off(void);
 void vvt2On(void);
 void vvt2Off(void);
 
-void fuelPumpOn(void);
-void fuelPumpOff(void);
-
 void fanOn(void);
 void fanOff(void);
 
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-extern uint16_t fan_pwm_max_count; //Used for variable PWM frequency
 void fanInterrupt(void);
 #endif
-
-extern uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
-extern uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 
 void boostInterrupt(void);
 void vvtInterrupt(void);

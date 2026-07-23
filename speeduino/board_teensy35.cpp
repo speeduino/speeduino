@@ -8,13 +8,13 @@
 #endif
 #include "auxiliaries.h"
 #include "idle.h"
-#include "scheduler.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>
 #include RTC_LIB_H
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"
+#include "scheduler_fuel_controller.h"
 
  //These are declared locally in comms_CAN now due to this issue: https://github.com/tonton81/FlexCAN_T4/issues/67
 // #if defined(__MK64FX512__)         // use for Teensy 3.5 only 
@@ -97,8 +97,6 @@ void initBoard(uint32_t baudRate)
 
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM2);
-
-        idle_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.idleFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 32uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*
@@ -173,10 +171,6 @@ void initBoard(uint32_t baudRate)
 
         //Enable IRQ Interrupt
         NVIC_ENABLE_IRQ(IRQ_FTM1);
-
-        boost_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.boostFreq * 2U)); //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-        vvt_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.vvtFreq * 2U));     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
-        fan_pwm_max_count = (uint16_t)(MICROS_PER_SEC / (32U * configPage6.fanFreq * 2U));     //Converts the frequency in Hz to the number of ticks (at 16uS) it takes to complete 1 cycle. Note that the frequency is divided by 2 coming from TS to allow for up to 512hz
     }
 
     /*
@@ -441,7 +435,7 @@ void boardInitRTC(void)
 }
 
 
-void boardInitPins(uint8_t boardID)
+void boardInitPins(uint8_t boardID, pinNumbers_t &)
 {
   if (boardID==55U)
   {
@@ -470,6 +464,12 @@ static uint16_t getEepromWriteBlockSize(const statuses &current)
 storage_api_t getBoardStorageApi(void)
 {
   return getEEPROMStorageApi(getEepromWriteBlockSize);
+}
+
+/** @brief Get the PWM timer resolution in uS */
+uint8_t getPwmTimerResolution(void)
+{
+  return 32;
 }
 
 #endif
