@@ -509,17 +509,60 @@ TESTABLE_INLINE_STATIC uint16_t correctionAccel(void)
 
 // ============================= Flood Clear =============================
 
-static inline bool isFloodClearActive(const statuses &current, const config4 &page4) {
-  return current.rotationStatus==EngineRotationStatus::Cranking
+/*
+Flood clear is safety-critical (it is also used to build oil pressure by cranking without fuel),
+so once triggered it LATCHES: the fuel cut is held even if the engine momentarily spins past the
+cranking RPM threshold on residual fuel. The latch is only released once the throttle has been held
+below FLOOD_CLEAR_RELEASE_TPS for longer than FLOOD_CLEAR_RELEASE_TIME_MS, or the ECU is restarted.
+The latch must survive between crank attempts, so it is deliberately NOT reset in
+initialiseCorrections() (that runs on every stall detection).
+*/
+static constexpr uint8_t FLOOD_CLEAR_RELEASE_TPS = 2U; //1% in 0.5% TPS units
+static constexpr uint16_t FLOOD_CLEAR_RELEASE_TIME_MS = 3000U;
+static constexpr int8_t FLOOD_CLEAR_IGN_ANGLE = -5; //5 degrees ATDC, see correctionFloodClearIgnition()
+TESTABLE_STATIC bool floodClearLatched = false;
+static uint32_t floodClearTpsHighMs; //Last time the TPS was at or above FLOOD_CLEAR_RELEASE_TPS
+
+static inline bool isFloodClearEnabled(const config4 &page4) {
+  //A threshold of 0 would match any TPS reading and permanently cut all cranking fuel, so treat 0 as disabled
+  return page4.floodClear > 0U;
+}
+
+static inline bool isFloodClearTriggered(const statuses &current, const config4 &page4) {
+  return isFloodClearEnabled(page4)
+      && current.rotationStatus==EngineRotationStatus::Cranking
       && (current.TPS >= page4.floodClear);
 }
 
-/** Simple check to see whether we are cranking with the TPS above the flood clear threshold.
-@return 100 (not cranking and thus no need for flood-clear) or 0 (Engine cranking and TPS above @ref config4.floodClear limit).
+bool isFloodClearActive(void) {
+  return floodClearLatched;
+}
+
+TESTABLE_INLINE_STATIC void updateFloodClear(uint32_t nowMs)
+{
+  if (isFloodClearTriggered(currentStatus, configPage4)) { floodClearLatched = true; }
+
+  if (currentStatus.TPS >= FLOOD_CLEAR_RELEASE_TPS) { floodClearTpsHighMs = nowMs; }
+  else if ((nowMs - floodClearTpsHighMs) > FLOOD_CLEAR_RELEASE_TIME_MS) { floodClearLatched = false; }
+}
+
+/** Latch or release the flood clear state. Called at the TPS read rate from the main loop,
+including while the engine is not rotating, so the release timer keeps running once cranking stops. */
+void updateFloodClear(void)
+{
+  updateFloodClear(millis());
+}
+
+/** Cut all fuel whilst the flood clear latch is set.
+Latched by cranking with the TPS at or above the @ref config4.floodClear threshold; released by
+updateFloodClear() once the throttle has been held closed for long enough.
+@return 100 (latch not set) or 0 (Flood clear latched: no fuel).
 */
 TESTABLE_INLINE_STATIC uint8_t correctionFloodClear(void)
 {
-  return isFloodClearActive(currentStatus, configPage4) ? 0U : NO_FUEL_CORRECTION;
+  //The trigger is also evaluated here so the cut starts on the same loop that the cranking state & TPS first match
+  if (isFloodClearTriggered(currentStatus, configPage4)) { floodClearLatched = true; }
+  return floodClearLatched ? 0U : NO_FUEL_CORRECTION;
 }
 
 /** Battery Voltage correction.
@@ -874,6 +917,21 @@ TESTABLE_INLINE_STATIC int8_t correctionCLTadvance(int8_t advance)
     cachedValue = IGNITION_ADVANCE_SMALL.toUser(table2D_getValue(&CLTAdvanceTable, temperatureAddOffset(currentStatus.coolant)));
   }
   return advance + cachedValue;
+}
+
+/** Ignition retard whilst the flood clear fuel cut is latched.
+ * With no fuel injected, the only combustion possible is from residual mixture in the cylinders.
+ * Firing slightly after TDC means any such burn happens with the piston already descending: it
+ * cannot kick back against the starter and produces almost no torque, so the engine cannot
+ * accelerate on residual fuel, whilst the plugs keep firing to dry themselves and the late burn
+ * helps vaporise and expel the excess fuel.
+ * Must be called last as an absolute override (note: has no effect when the decoder-level
+ * cranking timing lock (ignCranklock) is enabled, as that bypasses the advance value entirely).
+ */
+TESTABLE_INLINE_STATIC int8_t correctionFloodClearIgnition(int8_t advance)
+{
+  if (floodClearLatched) { advance = FLOOD_CLEAR_IGN_ANGLE; }
+  return advance;
 }
 
 /** Correct ignition timing to configured fixed value to use during craning.
@@ -1351,6 +1409,7 @@ int8_t correctionsIgn(int8_t base_advance)
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrides the regular fixed timing, must come last
+  advance = correctionFloodClearIgnition(advance); //Flood clear retard overrides even the fixed timings, must come after them
 
   return advance;
 }

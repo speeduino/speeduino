@@ -289,29 +289,144 @@ static void test_corrections_ASE(void)
 }
 
 uint8_t correctionFloodClear(void);
+void updateFloodClear(uint32_t nowMs);
+extern bool floodClearLatched;
+
+static void reset_floodclear(void) {
+  floodClearLatched = false;
+}
 
 static void test_corrections_floodclear_no_crank_inactive(void) {
+  reset_floodclear();
   currentStatus.rotationStatus = EngineRotationStatus::Running;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
   TEST_ASSERT_EQUAL(100U, correctionFloodClear() );
+  TEST_ASSERT_FALSE(floodClearLatched);
 }
 
 static void test_corrections_floodclear_crank_below_threshold_inactive(void) {
+  reset_floodclear();
   currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear - 10;
 
   TEST_ASSERT_EQUAL(100U, correctionFloodClear() );
+  TEST_ASSERT_FALSE(floodClearLatched);
 }
 
 static void test_corrections_floodclear_crank_above_threshold_active(void) {
+  reset_floodclear();
   currentStatus.rotationStatus = EngineRotationStatus::Cranking;
   configPage4.floodClear = 90;
   currentStatus.TPS = configPage4.floodClear + 10;
 
   TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+  TEST_ASSERT_TRUE(floodClearLatched);
+  reset_floodclear();
+}
+
+static void test_corrections_floodclear_crank_at_threshold_active(void) {
+  //At exactly the threshold the fuel cut must win (matches the priming suppression boundary)
+  reset_floodclear();
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  configPage4.floodClear = 90;
+  currentStatus.TPS = configPage4.floodClear;
+
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+  reset_floodclear();
+}
+
+static void test_corrections_floodclear_zero_threshold_disabled(void) {
+  //A threshold of 0 must disable the feature entirely, not cut all cranking fuel
+  reset_floodclear();
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  configPage4.floodClear = 0;
+  currentStatus.TPS = 200; //WOT
+
+  TEST_ASSERT_EQUAL(100U, correctionFloodClear() );
+  TEST_ASSERT_FALSE(floodClearLatched);
+}
+
+static void test_corrections_floodclear_latch_holds_past_crank_rpm(void) {
+  //Once latched, the fuel cut must persist even if the engine spins past the cranking
+  //threshold (Running) or the crank attempt ends (Stopped)
+  reset_floodclear();
+  configPage4.floodClear = 90;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  currentStatus.TPS = 180;
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+
+  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+  reset_floodclear();
+}
+
+static void test_corrections_floodclear_release_requires_low_tps_time(void) {
+  reset_floodclear();
+  configPage4.floodClear = 90;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  currentStatus.TPS = 180;
+  updateFloodClear(1000); //Latches & records the TPS-high time
+  TEST_ASSERT_TRUE(floodClearLatched);
+
+  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
+  currentStatus.TPS = 1; //0.5%: below the 1% release threshold
+  updateFloodClear(2000);
+  TEST_ASSERT_TRUE(floodClearLatched); //Only 1s below the threshold
+  updateFloodClear(4000);
+  TEST_ASSERT_TRUE(floodClearLatched); //Exactly 3s: not yet released
+  updateFloodClear(4001);
+  TEST_ASSERT_FALSE(floodClearLatched); //>3s below 1%: released
+  TEST_ASSERT_EQUAL(100U, correctionFloodClear() );
+}
+
+static void test_corrections_floodclear_release_timer_resets_on_throttle(void) {
+  reset_floodclear();
+  configPage4.floodClear = 90;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  currentStatus.TPS = 180;
+  updateFloodClear(1000);
+  TEST_ASSERT_TRUE(floodClearLatched);
+
+  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
+  currentStatus.TPS = 1;
+  updateFloodClear(2000);
+  TEST_ASSERT_TRUE(floodClearLatched);
+
+  currentStatus.TPS = 50; //Throttle blip above 1% restarts the 3s requirement
+  updateFloodClear(3000);
+  TEST_ASSERT_TRUE(floodClearLatched);
+
+  currentStatus.TPS = 0;
+  updateFloodClear(5900); //2.9s since the blip
+  TEST_ASSERT_TRUE(floodClearLatched);
+  updateFloodClear(6001); //>3s since the blip
+  TEST_ASSERT_FALSE(floodClearLatched);
+}
+
+int8_t correctionFloodClearIgnition(int8_t advance);
+
+static void test_corrections_floodclear_ignition_retard(void) {
+  reset_floodclear();
+  //Pass-through when not latched
+  TEST_ASSERT_EQUAL(10, correctionFloodClearIgnition(10));
+  TEST_ASSERT_EQUAL(-20, correctionFloodClearIgnition(-20));
+
+  //Latch flood clear
+  configPage4.floodClear = 90;
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  currentStatus.TPS = 180;
+  TEST_ASSERT_EQUAL(0U, correctionFloodClear() );
+
+  //Absolute override to 5 degrees ATDC whilst latched
+  TEST_ASSERT_EQUAL(-5, correctionFloodClearIgnition(10));
+  TEST_ASSERT_EQUAL(-5, correctionFloodClearIgnition(-20));
+  reset_floodclear();
 }
 
 static void test_corrections_floodclear(void)
@@ -319,6 +434,12 @@ static void test_corrections_floodclear(void)
   RUN_TEST_P(test_corrections_floodclear_no_crank_inactive);
   RUN_TEST_P(test_corrections_floodclear_crank_below_threshold_inactive);
   RUN_TEST_P(test_corrections_floodclear_crank_above_threshold_active);
+  RUN_TEST_P(test_corrections_floodclear_crank_at_threshold_active);
+  RUN_TEST_P(test_corrections_floodclear_zero_threshold_disabled);
+  RUN_TEST_P(test_corrections_floodclear_latch_holds_past_crank_rpm);
+  RUN_TEST_P(test_corrections_floodclear_release_requires_low_tps_time);
+  RUN_TEST_P(test_corrections_floodclear_release_timer_resets_on_throttle);
+  RUN_TEST_P(test_corrections_floodclear_ignition_retard);
 }
 
 uint8_t correctionAFRClosedLoop(void);
@@ -1613,6 +1734,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   WUETable.cache.cacheTime = currentStatus.secl - 1;
 
   configPage4.floodClear = 100;
+  floodClearLatched = false;
 
   configPage6.egoType = 0;
   configPage6.egoAlgorithm = EGO_ALGORITHM_SIMPLE;
@@ -1663,6 +1785,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
 
 static void test_corrections_correctionsFuel_clip_limit(void) {
   initialiseCorrections();
+  floodClearLatched = false;
 
   populate_2dtable(&injectorVCorrectionTable, (uint8_t)255, (uint8_t)100);
   populate_2dtable(&baroFuelTable, (uint8_t)255, (uint8_t)100);

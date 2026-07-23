@@ -391,7 +391,7 @@ struct config4 : public config_page_t {
   byte triggerTeeth;  ///< The full count of teeth on the trigger wheel if there were no gaps
   byte triggerMissingTeeth; ///< The size of the tooth gap (ie number of missing teeth)
   byte crankRPM;      ///< RPM below which the engine is considered to be cranking
-  byte floodClear;    ///< TPS (raw adc count? % ?) value that triggers flood clear mode (No fuel whilst cranking, See @ref correctionFloodClear())
+  byte floodClear;    ///< TPS value (in 0.5% units, 0-200) at or above which flood clear latches whilst cranking: no fuel until the throttle is held below 1% for 3s or the ECU restarts. 0 = disabled. See @ref correctionFloodClear()
   byte SoftRevLim;    ///< Soft rev limit (RPM/100)
   byte SoftLimRetard; ///< Amount soft limit (ignition) retard (degrees)
   byte SoftLimMax;    ///< Time the soft limit can run (units 0.1S)
