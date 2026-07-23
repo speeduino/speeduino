@@ -16,6 +16,7 @@ struct ignition_test_context_t
 {
     config2 page2 = {};
     config4 page4 = {};
+    config13 page13 = {};
     statuses current = {};
 
     ignition_test_context_t() {
@@ -33,7 +34,7 @@ struct ignition_test_context_t
 
     void calculateIgnitionAngles(void)
     {
-        ::calculateIgnitionAngles(page2, page4, current);        
+        ::calculateIgnitionAngles(page2, page4, page13, current);        
     }
 };
 
@@ -78,6 +79,51 @@ static void test_calculateIgnitionAngles_nonrotary(void)
         context.calculateIgnitionAngles();
         assert_ignition_angles(context);
     }
+}
+
+static void test_calculateIgnitionAngles_sequential_applies_individual_trim(void)
+{
+    ignition_test_context_t context;
+    CRANK_ANGLE_MAX_IGN = 720U;
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    context.page2.nCylinders = 4U;
+    context.current.maxIgnOutputs = 4U;
+    context.current.advance = 15U;
+    fakeDecoderStatus.syncStatus = SyncStatus::Full;
+
+    setup_ignition_channel_angles();
+
+    context.page13.ignTrim[0] = 1;
+    context.page13.ignTrim[1] = -2;
+    context.page13.ignTrim[2] = 3;
+    context.page13.ignTrim[3] = -4;
+
+    context.calculateIgnitionAngles();
+
+    TEST_ASSERT_EQUAL_INT16(704, ignitionSchedule1.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(77, ignitionSchedule2.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(162, ignitionSchedule3.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(259, ignitionSchedule4.dischargeAngle);
+}
+
+static void test_calculateIgnitionAngles_wasted_ignores_individual_trim(void)
+{
+    ignition_test_context_t context;
+    CRANK_ANGLE_MAX_IGN = 360U;
+    context.page4.sparkMode = IGN_MODE_WASTED;
+    context.page2.nCylinders = 4U;
+    context.current.maxIgnOutputs = 2U;
+    context.current.advance = 15U;
+
+    setup_ignition_channel_angles();
+
+    context.page13.ignTrim[0] = 5;
+    context.page13.ignTrim[1] = -5;
+
+    context.calculateIgnitionAngles();
+
+    TEST_ASSERT_EQUAL_INT16(345, ignitionSchedule1.dischargeAngle);
+    TEST_ASSERT_EQUAL_INT16(30, ignitionSchedule2.dischargeAngle);
 }
 
 static void test_calculateIgnitionAngles_rotary(void)
@@ -491,6 +537,30 @@ static void test_initialize_rotary_rx8_callbacks(void)
 void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
+    RUN_TEST(test_calculateIgnitionAngles_nonrotary);
+    RUN_TEST(test_calculateIgnitionAngles_sequential_applies_individual_trim);
+    RUN_TEST(test_calculateIgnitionAngles_wasted_ignores_individual_trim);
+    RUN_TEST(test_calculateIgnitionAngles_rotary);
+    RUN_TEST(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
+    RUN_TEST(test_calculateIgnitionAngles_sync_state_transitions);
+    RUN_TEST(test_setIgnitionChannels_mask_enables_and_disables_channels);
+    RUN_TEST(test_changeIgnitionToFullSequential);
+    RUN_TEST(test_changeIgnitionToFullSequential_running_schedule);
+    RUN_TEST(test_changeIgnitionToHalfSync);
+    RUN_TEST(test_changeIgnitionToHalfSync_runningschedule);
+    RUN_TEST(test_isAnyIgnScheduleRunning);
+    RUN_TEST(test_initialize_singlechannel_callbacks);
+    RUN_TEST(test_initialize_wastedCOP1_callbacks);
+    RUN_TEST(test_initialize_wastedCOP2_callbacks);
+    RUN_TEST(test_initialize_wastedCOP3_callbacks);
+    RUN_TEST(test_initialize_wastedCOP4_callbacks);
+    RUN_TEST(test_initialize_wastedCOP5_callbacks);
+    RUN_TEST(test_initialize_wastedCOP6_callbacks);
+    RUN_TEST(test_initialize_wastedCOP8_callbacks);
+    RUN_TEST(test_initialize_sequential_callbacks);
+    RUN_TEST(test_initialize_rotary_fc_callbacks);
+    RUN_TEST(test_initialize_rotary_fd_callbacks);
+    RUN_TEST(test_initialize_rotary_rx8_callbacks);
     RUN_TEST_P(test_calculateIgnitionAngles_nonrotary);
     RUN_TEST_P(test_calculateIgnitionAngles_rotary);
     RUN_TEST_P(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);

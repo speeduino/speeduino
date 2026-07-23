@@ -32,6 +32,16 @@ IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppr
 
 constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
+static inline int8_t constrainAdvanceTrim(int16_t advance)
+{
+  return (int8_t)clamp(advance, (int16_t)INT8_MIN, (int16_t)INT8_MAX);
+}
+
+static inline int8_t getIgnitionTrimmedAdvance(const config13 &page13, int8_t baseAdvance, uint8_t channelIndex)
+{
+  return constrainAdvanceTrim((int16_t)baseAdvance + (int16_t)page13.ignTrim[channelIndex]);
+}
+
 static void __attribute__((optimize("Os"))) setSequentialCallbacks(uint8_t numChannels)
 {
   setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
@@ -357,63 +367,65 @@ static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const stat
 #endif
 }
 
-static inline void calculateNonRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
+static inline void calculateNonRotaryIgnitionAngles(const config2 &page2, const config4 &page4, const config13 &page13, uint16_t dwellAngle, const statuses &current)
 {
+  const bool useIndividualTrim = isFullSequentialIgnition(page4, current.decoder.getStatus());
+
   switch (current.maxIgnOutputs)
   {
   case 8:
 #if IGN_CHANNELS >= 8
-    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 7U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 7:
 #if IGN_CHANNELS >= 7
-    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 6U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 6:
 #if IGN_CHANNELS >= 6
-    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 5U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 5:
 #if IGN_CHANNELS >= 5
-    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 4U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 4:
 #if IGN_CHANNELS >= 4
-    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 3U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 3:
 #if IGN_CHANNELS >= 3
-    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 2U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 2:
 #if IGN_CHANNELS >= 2
-    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 1U) : current.advance);
 #endif
     break;
   default:
     // Do nothing
     break;
   }
-  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 0U) : current.advance);
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
  * both start and end angles are calculated for each channel.
  * Also the mode of ignition firing - wasted spark vs. dedicated spark per cyl. - is considered here.
  */
-BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(const config2 &page2, const config4 &page4, statuses &current)
+BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(const config2 &page2, const config4 &page4, const config13 &page13, statuses &current)
 {
   matchIgnitionSchedulersToSyncState(page2, page4, current);
 
@@ -425,7 +437,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
   }
   else
   {
-    calculateNonRotaryIgnitionAngles(dwellAngle, current);
+    calculateNonRotaryIgnitionAngles(page2, page4, page13, dwellAngle, current);
   }
   
   //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
