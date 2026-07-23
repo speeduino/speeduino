@@ -6,7 +6,6 @@
 #include "src/pins/boardInputPin.h"
 
 extern decoder_status_t decoderStatus;
-extern boardInputPin_t triggerPri_pin;
 extern volatile unsigned long toothOneTime;
 extern volatile unsigned long toothOneMinusOneTime;
 extern volatile unsigned long toothLastToothTime;
@@ -14,19 +13,18 @@ extern volatile unsigned long toothLastMinusOneToothTime;
 extern uint16_t toothCurrentCount;
 extern unsigned long MAX_STALL_TIME;
 
-static void test_primary_trigger(const decoder_t &decoder, uint8_t decoderNum)
+static void test_primary_trigger(decoder_t &decoder, uint8_t decoderNum)
 {
     char szMsg[64] = {};
     snprintf(szMsg, _countof(szMsg), "%" PRIu8, decoderNum);
 
-    configurePinState(triggerPri_pin, decoder.primary.edge);
     if (DECODER_NGC==decoderNum)
     {
-        configurePinState(triggerPri_pin, FALLING);
+        configurePinState(decoder.primary._pin, FALLING);
     }
     else
     {
-        configurePinState(triggerPri_pin, decoder.primary.edge);
+        configurePinState(decoder.primary._pin, decoder.primary.edge);
     }
 
     decoder.reset();

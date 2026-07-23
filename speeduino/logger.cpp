@@ -723,10 +723,10 @@ void startToothLogger(void)
   }
 }
 
-static inline void detachLoggerInterrupt(uint8_t pin, const interrupt_t &decoderInterrupt)
+static inline void detachLoggerInterrupt(uint8_t pin, interrupt_t &decoderInterrupt)
 {
   detachInterrupt( digitalPinToInterrupt(pin) );
-  decoderInterrupt.attach(pin);
+ (void)decoderInterrupt.attach(pin);
 }
 
 void stopToothLogger(void)
