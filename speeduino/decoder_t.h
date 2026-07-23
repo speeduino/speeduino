@@ -48,9 +48,6 @@ struct interrupt_t
     return _pin.isPinHigh();
   }
 
-#if !defined(UNIT_TEST)
-private:
-#endif
   boardInputPin_t _pin;
 };
 
