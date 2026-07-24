@@ -14,6 +14,9 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "unit_testing.h"
 #include "scheduler.h"
+#include "storage_details.h"
+
+using namespace storage::details;
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -54,12 +57,12 @@ const storage_api_t& getStorageAPI(void)
 // Calibration data is stored at the end of the EEPROM (This is in case any further calibration tables are needed as they are large blocks)
 constexpr uint16_t EEPROM_DATA_VERSION = 0;
 constexpr uint16_t STORAGE_END = 0xFFF;
-constexpr uint16_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-(uint16_t)sizeof(decltype(cltCalibrationTable)::values);
-constexpr uint16_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(decltype(cltCalibrationTable)::axis);
-constexpr uint16_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-(uint16_t)sizeof(decltype(iatCalibrationTable)::values);
-constexpr uint16_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-(uint16_t)sizeof(decltype(iatCalibrationTable)::axis);
-constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-(uint16_t)sizeof(decltype(o2CalibrationTable)::values);
-constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+constexpr uint16_t EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-getCalibrationElementSize(SensorCalibrationTable::CoolantSensor, SensorCalibrationTableElement::Values);
+constexpr uint16_t EEPROM_CALIBRATION_CLT_BINS =  EEPROM_CALIBRATION_CLT_VALUES-getCalibrationElementSize(SensorCalibrationTable::CoolantSensor, SensorCalibrationTableElement::Bins);
+constexpr uint16_t EEPROM_CALIBRATION_IAT_VALUES = EEPROM_CALIBRATION_CLT_BINS-getCalibrationElementSize(SensorCalibrationTable::IntakeAirTempSensor, SensorCalibrationTableElement::Values);
+constexpr uint16_t EEPROM_CALIBRATION_IAT_BINS = EEPROM_CALIBRATION_IAT_VALUES-getCalibrationElementSize(SensorCalibrationTable::IntakeAirTempSensor, SensorCalibrationTableElement::Bins);
+constexpr uint16_t EEPROM_CALIBRATION_O2_VALUES = EEPROM_CALIBRATION_IAT_BINS-getCalibrationElementSize(SensorCalibrationTable::O2Sensor, SensorCalibrationTableElement::Values);
+constexpr uint16_t EEPROM_CALIBRATION_O2_BINS =   EEPROM_CALIBRATION_O2_VALUES-getCalibrationElementSize(SensorCalibrationTable::O2Sensor, SensorCalibrationTableElement::Bins);
 constexpr uint16_t EEPROM_LAST_BARO = (EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
 
 constexpr uint16_t EEPROM_CONFIG1_MAP    = 3;
@@ -92,6 +95,52 @@ constexpr uint16_t EEPROM_CONFIG8_MAP8   = 3151;
 constexpr uint16_t EEPROM_CONFIG15_MAP   = 3199;
 constexpr uint16_t EEPROM_CONFIG15_START = 3281;
 
+TESTABLE_INLINE_STATIC uint16_t getSensorCalibrationAddress(SensorCalibrationTable sensor, SensorCalibrationTableElement element) {
+  constexpr uint16_t EEPROM_CALIBRATION_CLT_CRC = 3674;
+  constexpr uint16_t EEPROM_CALIBRATION_IAT_CRC = 3678;
+  constexpr uint16_t EEPROM_CALIBRATION_O2_CRC = 3682; 
+
+  if (sensor==SensorCalibrationTable::CoolantSensor)
+  {
+    if (element==SensorCalibrationTableElement::Crc) {
+      return EEPROM_CALIBRATION_CLT_CRC;
+    }
+    if (element==SensorCalibrationTableElement::Values) {
+      return EEPROM_CALIBRATION_CLT_VALUES;
+    }
+    if (element==SensorCalibrationTableElement::Bins) {
+      return EEPROM_CALIBRATION_CLT_BINS;
+    }
+  }
+
+  if (sensor==SensorCalibrationTable::IntakeAirTempSensor)
+  {
+    if (element==SensorCalibrationTableElement::Crc) {
+      return EEPROM_CALIBRATION_IAT_CRC;
+    }
+    if (element==SensorCalibrationTableElement::Values) {
+      return EEPROM_CALIBRATION_IAT_VALUES;
+    }
+    if (element==SensorCalibrationTableElement::Bins) {
+      return EEPROM_CALIBRATION_IAT_BINS;
+    }
+  }
+  if (sensor==SensorCalibrationTable::O2Sensor) {
+    if (element==SensorCalibrationTableElement::Crc) {
+      return EEPROM_CALIBRATION_O2_CRC;
+    }
+    if (element==SensorCalibrationTableElement::Values) {
+      return EEPROM_CALIBRATION_O2_VALUES;
+    }
+    if (element==SensorCalibrationTableElement::Bins) {
+      return EEPROM_CALIBRATION_O2_BINS;
+    }
+  }
+
+  INTERNAL_TEST_ASSERT(false);
+  return 0; // Fail safe
+}
+
 #if defined(UNIT_TEST)
 uint16_t MAX_PAGE_ADDRESS = EEPROM_LAST_BARO-sizeof(uint8_t);
 uint16_t STORAGE_SIZE = STORAGE_END;
@@ -101,6 +150,15 @@ uint16_t STORAGE_SIZE = STORAGE_END;
 // This is *THE* single source of truth for mapping the tune
 // (I.e page entities) to EEPROM locations.
 TESTABLE_STATIC uint16_t getEntityStartAddress(page_iterator_t iter) {
+  if ( iter.location.page==CLT_CALIBRATION_PAGE) {
+    return getSensorCalibrationAddress(SensorCalibrationTable::CoolantSensor, (SensorCalibrationTableElement)(iter.location.index));
+  }
+  if (iter.location.page==IAT_CALIBRATION_PAGE) {
+    return getSensorCalibrationAddress(SensorCalibrationTable::IntakeAirTempSensor, (SensorCalibrationTableElement)(iter.location.index));
+  }
+  if (iter.location.page==O2_CALIBRATION_PAGE) {
+    return getSensorCalibrationAddress(SensorCalibrationTable::O2Sensor, (SensorCalibrationTableElement)(iter.location.index));
+  }
   struct entity_storage_map_t {
       void *pEntity;
       uint16_t eepromStartAddress;
@@ -540,14 +598,14 @@ void loadAllCalibrationTables(void)
   // If you modify this function be sure to also modify saveAllCalibrationTables();
   // it should be a mirror image of this function.
 
-  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
-  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+  (void)loadObject(getStorageAPI(), getSensorCalibrationAddress(SensorCalibrationTable::O2Sensor, SensorCalibrationTableElement::Bins), o2CalibrationTable.axis);
+  (void)loadObject(getStorageAPI(), getSensorCalibrationAddress(SensorCalibrationTable::O2Sensor, SensorCalibrationTableElement::Values), o2CalibrationTable.values);
   
-  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_IAT_BINS, iatCalibrationTable.axis);
-  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_IAT_VALUES, iatCalibrationTable.values);
+  (void)loadObject(getStorageAPI(), getSensorCalibrationAddress(SensorCalibrationTable::IntakeAirTempSensor, SensorCalibrationTableElement::Bins), iatCalibrationTable.axis);
+  (void)loadObject(getStorageAPI(), getSensorCalibrationAddress(SensorCalibrationTable::IntakeAirTempSensor, SensorCalibrationTableElement::Values), iatCalibrationTable.values);
 
-  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_CLT_BINS, cltCalibrationTable.axis);
-  (void)loadObject(getStorageAPI(), EEPROM_CALIBRATION_CLT_VALUES, cltCalibrationTable.values);
+  (void)loadObject(getStorageAPI(), getSensorCalibrationAddress(SensorCalibrationTable::CoolantSensor, SensorCalibrationTableElement::Bins), cltCalibrationTable.axis);
+  (void)loadObject(getStorageAPI(), getSensorCalibrationAddress(SensorCalibrationTable::CoolantSensor, SensorCalibrationTableElement::Values), cltCalibrationTable.values);
 }
 
 /** Write calibration tables to EEPROM.
@@ -568,53 +626,35 @@ void saveCalibrationTable(SensorCalibrationTable sensor)
 {
   if(sensor == SensorCalibrationTable::O2Sensor)
   {
-    updateObject(getStorageAPI(), o2CalibrationTable.axis, EEPROM_CALIBRATION_O2_BINS);
-    updateObject(getStorageAPI(), o2CalibrationTable.values, EEPROM_CALIBRATION_O2_VALUES);
+    updateObject(getStorageAPI(), o2CalibrationTable.axis, getSensorCalibrationAddress(SensorCalibrationTable::O2Sensor, SensorCalibrationTableElement::Bins));
+    updateObject(getStorageAPI(), o2CalibrationTable.values, getSensorCalibrationAddress(SensorCalibrationTable::O2Sensor, SensorCalibrationTableElement::Values));
   }
   else if(sensor == SensorCalibrationTable::IntakeAirTempSensor)
   {
-    updateObject(getStorageAPI(), iatCalibrationTable.axis, EEPROM_CALIBRATION_IAT_BINS);
-    updateObject(getStorageAPI(), iatCalibrationTable.values, EEPROM_CALIBRATION_IAT_VALUES);
+    updateObject(getStorageAPI(), iatCalibrationTable.axis, getSensorCalibrationAddress(SensorCalibrationTable::IntakeAirTempSensor, SensorCalibrationTableElement::Bins));
+    updateObject(getStorageAPI(), iatCalibrationTable.values, getSensorCalibrationAddress(SensorCalibrationTable::IntakeAirTempSensor, SensorCalibrationTableElement::Values));
   }
   else if(sensor == SensorCalibrationTable::CoolantSensor)
   {
-    updateObject(getStorageAPI(), cltCalibrationTable.axis, EEPROM_CALIBRATION_CLT_BINS);
-    updateObject(getStorageAPI(), cltCalibrationTable.values, EEPROM_CALIBRATION_CLT_VALUES);
+    updateObject(getStorageAPI(), cltCalibrationTable.axis, getSensorCalibrationAddress(SensorCalibrationTable::CoolantSensor, SensorCalibrationTableElement::Bins));
+    updateObject(getStorageAPI(), cltCalibrationTable.values, getSensorCalibrationAddress(SensorCalibrationTable::CoolantSensor, SensorCalibrationTableElement::Values));
   } else {
     // Unknown sensor identifier - do nothing but keep MISRA checker happy
   }
-}
-
-TESTABLE_INLINE_STATIC uint16_t getSensorCalibrationCrcAddress(SensorCalibrationTable sensor) {
-  constexpr uint16_t EEPROM_CALIBRATION_CLT_CRC = 3674;
-  constexpr uint16_t EEPROM_CALIBRATION_IAT_CRC = 3678;
-  constexpr uint16_t EEPROM_CALIBRATION_O2_CRC = 3682;
-
-  switch(sensor)
-  {
-    case SensorCalibrationTable::O2Sensor:
-      return EEPROM_CALIBRATION_O2_CRC;
-    case SensorCalibrationTable::IntakeAirTempSensor:
-      return EEPROM_CALIBRATION_IAT_CRC;
-    case SensorCalibrationTable::CoolantSensor:
-    default: //Obviously should never happen
-      return EEPROM_CALIBRATION_CLT_CRC;
-  }
-  return EEPROM_CALIBRATION_CLT_CRC;
 }
 
 // LCOV_EXCL_START
 // Exclude simple wrappers from code coverage
 void saveCalibrationCrc(SensorCalibrationTable sensor, uint32_t calibrationCRC)
 {
-  updateObject(getStorageAPI(), calibrationCRC, getSensorCalibrationCrcAddress(sensor));
+  updateObject(getStorageAPI(), calibrationCRC, getSensorCalibrationAddress(sensor, SensorCalibrationTableElement::Crc));
 }
 
 /** Retrieves and returns the 4 byte CRC32 checksum for a given calibration page from EEPROM. */
 uint32_t loadCalibrationCrc(SensorCalibrationTable sensor)
 {
   uint32_t crc32_val;
-  return loadObject(getStorageAPI(), getSensorCalibrationCrcAddress(sensor), crc32_val);
+  return loadObject(getStorageAPI(), getSensorCalibrationAddress(sensor, SensorCalibrationTableElement::Crc), crc32_val);
 }
 // LCOV_EXCL_STOP
 
