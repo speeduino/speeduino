@@ -103,7 +103,7 @@ const char* getEntityTypeName(const page_iterator_t &iter) {
     }
 }
 
-static const char * getEntityNameNew(const page_iterator_t &it) {
+static const char * getEntityName(const page_iterator_t &it) {
    struct entity_name_map_t {
       entity_page_location_t location;
       String name;
@@ -120,6 +120,33 @@ static const char * getEntityNameNew(const page_iterator_t &it) {
     { entity_page_location_t(CLT_CALIBRATION_PAGE, PAGE_IDX_CALIBRATION_CRC), "Clt Crc" },
     { entity_page_location_t(CLT_CALIBRATION_PAGE, PAGE_IDX_CALIBRATION_VALUES), "Clt Calib Values" },
     { entity_page_location_t(CLT_CALIBRATION_PAGE, PAGE_IDX_CALIBRATION_BINS), "Clt Calib Bins" },
+    { entity_page_location_t(veSetPage, 0), "configPage2" },
+    { entity_page_location_t(veMapPage, 0), "fuelTable" },
+    { entity_page_location_t(ignMapPage, 0), "ignitionTable" },
+    { entity_page_location_t(ignSetPage, 0), "configPage4" },
+    { entity_page_location_t(afrMapPage, 0), "afrTable" },
+    { entity_page_location_t(afrSetPage, 0), "configPage6" },
+    { entity_page_location_t(boostvvtPage, 0), "boostTable" },
+    { entity_page_location_t(boostvvtPage, 1), "vvtTable" },
+    { entity_page_location_t(boostvvtPage, 2), "stagingTable" },
+    { entity_page_location_t(seqFuelPage, 0), "trimTables[0]" },
+    { entity_page_location_t(seqFuelPage, 1), "trimTables[1]" },
+    { entity_page_location_t(seqFuelPage, 2), "trimTables[2]" },
+    { entity_page_location_t(seqFuelPage, 3), "trimTables[3]" },
+    { entity_page_location_t(seqFuelPage, 4), "trimTables[4]" },
+    { entity_page_location_t(seqFuelPage, 5), "trimTables[5]" },
+    { entity_page_location_t(seqFuelPage, 6), "trimTables[6]" },
+    { entity_page_location_t(seqFuelPage, 7), "trimTables[7]" },
+    { entity_page_location_t(canbusPage, 0), "configPage9" },
+    { entity_page_location_t(warmupPage, 0), "configPage10" },
+    { entity_page_location_t(fuelMap2Page, 0), "fuelTable2" },
+    { entity_page_location_t(wmiMapPage, 0), "wmiTable" },
+    { entity_page_location_t(wmiMapPage, 1), "vvt2Table" },
+    { entity_page_location_t(wmiMapPage, 2), "dwellTable" },
+    { entity_page_location_t(progOutsPage, 0), "configPage13" },
+    { entity_page_location_t(ignMap2Page, 0), "ignitionTable2" },
+    { entity_page_location_t(boostvvtPage2, 0), "boostTableLookupDuty" },
+    { entity_page_location_t(boostvvtPage2, 1), "configPage15" },
   };
   static const constexpr entity_name_map_t* entityMapEnd = entityMap + _countof(entityMap);  
 
@@ -132,76 +159,6 @@ static const char * getEntityNameNew(const page_iterator_t &it) {
     return pMapEntry->name.c_str();
   }
 
-  return nullptr;
-}
-
-const char *getEntityName(const page_iterator_t &it) {
-  auto name = getEntityNameNew(it);
-  if (name!=nullptr) {
-    return name;
-  }
-
-  #define GET_VARIABLE_NAME(Variable) (#Variable)
-
-  struct entity_name_map_t {
-      void *pEntity;
-      String name;
-  };
-
-  // Store a map of entity to EEPROM address in FLASH memory.
-  static const entity_name_map_t entityMap[] = {
-    { &fuelTable, GET_VARIABLE_NAME(fuelTable) },
-    { &configPage2, GET_VARIABLE_NAME(configPage2) },
-    { &ignitionTable, GET_VARIABLE_NAME(ignitionTable) },
-    { &configPage4, GET_VARIABLE_NAME(configPage4) },
-    { &afrTable, GET_VARIABLE_NAME(afrTable) },
-    { &configPage6, GET_VARIABLE_NAME(configPage6) },
-    { &boostTable, GET_VARIABLE_NAME(boostTable) },
-    { &vvtTable, GET_VARIABLE_NAME(vvtTable) },
-    { &stagingTable, GET_VARIABLE_NAME(stagingTable) },
-    { &trimTables[0], GET_VARIABLE_NAME(trimTables[0]) },
-#if INJ_CHANNELS >= 2
-    { &trimTables[1], GET_VARIABLE_NAME(trimTables[1]) },
-#endif
-#if INJ_CHANNELS >= 3
-    { &trimTables[2], GET_VARIABLE_NAME(trimTables[2]) },
-#endif
-#if INJ_CHANNELS >= 4
-    { &trimTables[3], GET_VARIABLE_NAME(trimTables[3]) },
-#endif
-#if INJ_CHANNELS >= 5
-    { &trimTables[4], GET_VARIABLE_NAME(trimTables[4]) },
-#endif
-#if INJ_CHANNELS >= 6
-    { &trimTables[5], GET_VARIABLE_NAME(trimTables[5]) },
-#endif
-#if INJ_CHANNELS >= 7
-    { &trimTables[6], GET_VARIABLE_NAME(trimTables[6]) },
-#endif
-#if INJ_CHANNELS >= 8
-    { &trimTables[7], GET_VARIABLE_NAME(trimTables[7]) },
-#endif
-    { &configPage9, GET_VARIABLE_NAME(configPage9) },
-    { &configPage10, GET_VARIABLE_NAME(configPage10) },
-    { &fuelTable2, GET_VARIABLE_NAME(fuelTable2) },
-    { &wmiTable, GET_VARIABLE_NAME(wmiTable) },
-    { &vvt2Table, GET_VARIABLE_NAME(vvt2Table) },
-    { &dwellTable, GET_VARIABLE_NAME(dwellTable) },
-    { &configPage13, GET_VARIABLE_NAME(configPage13) },
-    { &ignitionTable2, GET_VARIABLE_NAME(ignitionTable2) },
-    { &boostTableLookupDuty, GET_VARIABLE_NAME(boostTableLookupDuty) },
-    { &configPage15, GET_VARIABLE_NAME(configPage15) },
-  };
-  static const constexpr entity_name_map_t* entityMapEnd = entityMap + _countof(entityMap);  
-
-  // Linear search of the name map.
-  const entity_name_map_t *pMapEntry = entityMap;
-  while ((pMapEntry!=entityMapEnd) && (it.entity.pRaw!=pMapEntry->pEntity)) {
-    ++pMapEntry;
-  }
-  if (pMapEntry!=entityMapEnd) {
-    return pMapEntry->name.c_str();
-  }
   static const char *unknown = "Unknown";
   return unknown;
 }
