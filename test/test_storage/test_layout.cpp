@@ -210,6 +210,8 @@ static void print_calib_table(SensorCalibrationTable table)
 // Requires "-v" flag on pio unit test runner 
 static void print_eeprom_layout(void) {
     UnityPrint("Page, Index, Item, Type, Start Address, Length"); UNITY_PRINT_EOL();
+    UnityPrint("-, -, Version, Other, 0, 1"); UNITY_PRINT_EOL();
+    UnityPrint("-, -, Baro, Other, 3806, 1"); UNITY_PRINT_EOL();
     for (uint8_t page = MIN_PAGE_NUM; page < MAX_PAGE_NUM; page++) {
         print_page_layout(page);
     }
