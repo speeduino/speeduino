@@ -464,9 +464,10 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 }
 
 
-void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10)
+void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10, const pinNumbers_t &pins)
 {
-  //End all coil charges to ensure no stray sparks on startup
+  initialiseIgnitionIO(page4, pins);
+
   stopAllCoilsCharging();
 
   resetIgnitionSchedulers();

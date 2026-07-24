@@ -165,8 +165,8 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinNumbers.pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10);
-    initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage10);
+    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, pinNumbers);
+    initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage10, pinNumbers);
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);
     initialiseAirCon();
@@ -327,9 +327,6 @@ void setPinMapping(byte boardID)
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
-
-  initialiseInjectionIO(configPage4, pinNumbers);
-  initialiseIgnitionIO(configPage4, pinNumbers);
 
   initTacho(pinNumbers.pinTachOut);
 

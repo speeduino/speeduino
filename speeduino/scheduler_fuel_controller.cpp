@@ -1138,8 +1138,9 @@ static __attribute__((optimize("Os"))) uint8_t calulateDefaultSquirts(const conf
   return max((uint8_t)1, nSquirts);
 }
 
-void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10)
+void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10, const pinNumbers_t &pins)
 {
+  initialiseInjectionIO(page4, pins);
   closeAllInjectors();
   resetFuelSchedules();
   setupCallbacks(page2.injLayout, page2.nCylinders, page4.inj4cylPairing);
