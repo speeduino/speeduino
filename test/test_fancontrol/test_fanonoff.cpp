@@ -1,5 +1,5 @@
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
@@ -18,7 +18,6 @@ static void test_fanOnOff_normal_polarity(void)
   fanOn();
   TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
 }
-
 
 static void test_fanOnOff_inverted_polarity(void)
 {

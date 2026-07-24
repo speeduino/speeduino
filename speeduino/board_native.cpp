@@ -9,6 +9,7 @@
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"
 #include "scheduler_fuel_controller.h"
+#include "src/controllers/fan/fanController.h"
 
 #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
 #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
