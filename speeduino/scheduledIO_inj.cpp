@@ -35,11 +35,16 @@ void __attribute__((optimize("Os"))) initialiseInjectionIO(const config4 &page4,
 #endif
 }
 
+// LCOV_EXCL_START
+// Exclude simple wrapper function from code coverage
+
 /** @brief Injector open/close status bits */
 char getInjectorStatus(void)
 {
     return injStatusMask;
 }
+
+// LCOV_EXCL_STOP
 
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control

@@ -143,8 +143,6 @@ struct statuses {
   bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
-  // TODO: resolve duplication with nSquirts
-  unsigned int nSquirtsStatus: 3; ///< 
 
   // Status4 fields as defined in the INI.   
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
