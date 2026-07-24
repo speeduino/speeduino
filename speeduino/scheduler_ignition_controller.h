@@ -63,7 +63,7 @@ void startIgnitionSchedulers(void);
 void stopIgnitionSchedulers(void);
 
 /** @brief Initialise all ignition schedules */
-void initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10);
+void initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10, const pinNumbers_t &pins);
 
 /** @brief Utility function to stop charging all ignition coils */
 void stopAllCoilsCharging(void);
