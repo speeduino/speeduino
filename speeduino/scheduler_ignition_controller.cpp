@@ -208,6 +208,7 @@ static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryTyp
   case ROTARY_IGN_RX8:
     //RX8 outputs are simply 1 coil and 1 output per plug
     setSequentialCallbacks(4U);
+    break;
 
   default:
     //No action for other RX ignition modes (Future expansion / MISRA compliant). 
