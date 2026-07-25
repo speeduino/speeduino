@@ -746,6 +746,26 @@ static void test_corrections_launch_removeFuel(void) {
   TEST_ASSERT_EQUAL(75U, correctionLaunch() );
 }
 
+static void test_corrections_launch_maxAdd(void) {
+  //lnchFuelAdd max is +80 (see speeduino.ini). 100 + 80 = 180, which exceeds
+  //int8_t range - the accumulator must be wide enough to hold it without relying
+  //on implementation-defined narrowing.
+  currentStatus.launchingHard = true;
+  currentStatus.launchingSoft = false;
+  configPage6.lnchFuelAdd = 80;
+
+  TEST_ASSERT_EQUAL(180U, correctionLaunch() );
+}
+
+static void test_corrections_launch_minAdd(void) {
+  //lnchFuelAdd min is -40 (see speeduino.ini). 100 - 40 = 60.
+  currentStatus.launchingHard = false;
+  currentStatus.launchingSoft = true;
+  configPage6.lnchFuelAdd = -40;
+
+  TEST_ASSERT_EQUAL(60U, correctionLaunch() );
+}
+
 static void test_corrections_launch(void)
 {
   RUN_TEST_P(test_corrections_launch_inactive);
@@ -753,6 +773,8 @@ static void test_corrections_launch(void)
   RUN_TEST_P(test_corrections_launch_soft);
   RUN_TEST_P(test_corrections_launch_both);
   RUN_TEST_P(test_corrections_launch_removeFuel);
+  RUN_TEST_P(test_corrections_launch_maxAdd);
+  RUN_TEST_P(test_corrections_launch_minAdd);
 }
 
 extern bool correctionDFCO(void);
