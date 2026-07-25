@@ -316,6 +316,22 @@ static inline void doStep(void)
 }
 
 /*
+Clamps the target step count to the configured max steps (including any idle-up
+adder, to prevent over-opening), updates the reported idleLoad and performs a step.
+*/
+static inline void updateIdleStepAndLoad(void)
+{
+  //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
+  if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
+  {
+    idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
+  }
+  if( ((uint16_t)configPage9.iacMaxSteps * 3) > UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+  else { currentStatus.idleLoad = idleStepper.curIdleStep; }
+  doStep();
+}
+
+/*
 Checks whether the stepper has been homed yet. If it hasn't, will handle the next step
 Returns:
 True: If the system has been homed. No other action is taken
@@ -592,14 +608,7 @@ void idleControl(void)
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
           }
         }
-        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
-        {
-          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-        }
-        if( ((uint16_t)configPage9.iacMaxSteps * 3) > UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
-        else { currentStatus.idleLoad = idleStepper.curIdleStep; }
-        doStep();
+        updateIdleStepAndLoad();
       }
       break;
 
@@ -672,14 +681,7 @@ void idleControl(void)
         
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
         
-        //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-        if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
-        {
-          idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-        }
-        if( ( (uint16_t)configPage9.iacMaxSteps * 3) > UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
-        else { currentStatus.idleLoad = idleStepper.curIdleStep; }
-        doStep();
+        updateIdleStepAndLoad();
       }
       if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Use timer flag instead idle count
       {
