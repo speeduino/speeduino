@@ -568,10 +568,10 @@ This simple check applies the extra fuel if we're currently launching
 */
 TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
 {
-  int8_t correction = (int8_t)NO_FUEL_CORRECTION;
+  int16_t correction = (int16_t)NO_FUEL_CORRECTION;
   if (currentStatus.launchingHard || currentStatus.launchingSoft) {
     correction = correction + configPage6.lnchFuelAdd;
-  } 
+  }
   return (uint8_t)correction;
 }
 
