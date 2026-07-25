@@ -1,6 +1,6 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/boost/boostController.h"
 #include "units.h"
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
@@ -15,7 +15,7 @@ extern table2D_u8_s16_6 flexBoostTable;
 static void test_boost_disabled(void)
 {
     setup_simplepid_tune();
-    initialiseAuxPWM();
+    initialiseBoost(TEST_BOOST_PIN);
 
     currentStatus.flexBoostCorrection = 99;
     configPage6.boostEnabled = false;
@@ -99,7 +99,7 @@ static void test_ol_zero_duty(void)
 {
   setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
   fill_table_values(boostTable, 0);
-  initialiseAuxPWM();
+    initialiseBoost(TEST_BOOST_PIN);
   currentStatus.boostDuty = 99;
 
   boostControl();
@@ -168,7 +168,7 @@ static void test_cl_flexcorrection(void)
   populate_2dtable(&flexBoostTable, (int16_t)77, (uint8_t)50);
   fill_table_values(boostTable, 55);
 
-  initialiseAuxPWM();
+  initialiseBoost(TEST_BOOST_PIN);
 
   boostCounter = 1;
   currentStatus.flexBoostCorrection = 99;

@@ -1,6 +1,6 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/boost/boostController.h"
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
 
@@ -9,7 +9,7 @@ extern boardOutputPin_t boost_pin;
 static void test_disable(void)
 {
     setup_simplepid_tune();
-    initialiseAuxPWM();
+    initialiseBoost(TEST_BOOST_PIN);
     currentStatus.boostDuty = 99;
 
     boostDisable();

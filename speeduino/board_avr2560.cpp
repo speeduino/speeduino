@@ -14,6 +14,7 @@
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"
 #include "scheduler_fuel_controller.h"
+#include "src/controllers/boost/boostController.h"
 
 // Prescaler values for timers 1-3-4-5. Refer to www.instructables.com/files/orig/F3T/TIKL/H3WSA4V7/F3TTIKLH3WSA4V7.jpg
 #define TIMER_PRESCALER_OFF  ((0<<CS12)|(0<<CS11)|(0<<CS10))

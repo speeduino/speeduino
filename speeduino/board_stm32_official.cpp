@@ -9,6 +9,7 @@
 #include "scheduler_ignition_controller.h"
 #include "scheduler_fuel_controller.h"
 #include "src/controllers/fan/fanController.h"
+#include "src/controllers/boost/boostController.h"
 
 #if defined(BOARD_FCR_MICRO_F4)
 extern "C" void __real_pinMode(uint8_t pin, uint8_t mode);

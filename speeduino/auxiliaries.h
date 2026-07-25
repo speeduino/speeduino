@@ -5,8 +5,6 @@
 #include "statuses.h"
 
 void initialiseAuxPWM(void);
-void boostControl(void);
-void boostDisable(void);
 void vvtControl(void);
 void initialiseAirCon(void);
 
@@ -19,7 +17,6 @@ void vvt1Off(void);
 void vvt2On(void);
 void vvt2Off(void);
 
-void boostInterrupt(void);
 void vvtInterrupt(void);
 
 #endif
