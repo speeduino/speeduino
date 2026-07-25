@@ -329,7 +329,7 @@ static void sendReturnCodeMsg(byte returnCode)
  */
 static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
 {
-  if ( (offset + length) <= getPageSize(pageNum) )
+  if ( ((uint32_t)offset + (uint32_t)length) <= (uint32_t)getPageSize(pageNum) )
   {
     for(uint16_t i = 0; i < length; i++)
     {
@@ -747,10 +747,17 @@ void processSerialCommand(void)
       //2 - Length
       uint16_t length = word(serialPayload[6], serialPayload[5]);
 
-      //Setup the transmit buffer
-      serialPayload[0] = SERIAL_RC_OK;
-      loadPageValuesToBuffer(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[1], length);
-      sendSerialPayloadNonBlocking(length + 1U);
+      if (length <= (sizeof(serialPayload) - 1U))
+      {
+        //Setup the transmit buffer
+        serialPayload[0] = SERIAL_RC_OK;
+        loadPageValuesToBuffer(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[1], length);
+        sendSerialPayloadNonBlocking(length + 1U);
+      }
+      else
+      {
+        sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+      }
       break;
     }
 
@@ -771,8 +778,15 @@ void processSerialCommand(void)
 
       if(cmd == SEND_OUTPUT_CHANNELS) //Send output channels command 0x30 is 48dec
       {
-        generateLiveValues(offset, length);
-        sendSerialPayloadNonBlocking(length + 1U);
+        if (length <= (sizeof(serialPayload) - 1U))
+        {
+          generateLiveValues(offset, length);
+          sendSerialPayloadNonBlocking(length + 1U);
+        }
+        else
+        {
+          sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+        }
       }
       else if(cmd == 0x0fU)
       {

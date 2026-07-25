@@ -789,7 +789,7 @@ void readAuxCanBus()
         // Gets the one-byte value from the Data Field.
         currentStatus.canin[i] = inMsg.buf[configPage9.caninput_source_start_byte[i]];
       }
-      else
+      else if (configPage9.caninput_source_start_byte[i] < 7U) // a 2-byte value can't start at the last byte of an 8-byte CAN payload
       {
         if (configPage9.caninputEndianess == 1)
         {
@@ -802,6 +802,7 @@ void readAuxCanBus()
           currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]] << 8) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1]));
         }
       }
+      else { /* Misconfigured: 2-byte value can't start at byte 7. Leave canin[i] unchanged. */ }
     }
   } 
 }

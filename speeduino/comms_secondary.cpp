@@ -87,10 +87,12 @@ void secondserial_Command(void)
           {
             Gdata[Gx] = secondarySerial.read();
           }
+        if (destcaninchannel < 16U) // destcaninchannel indexes caninput_source_start_byte[16] / canin[16]; discard out-of-range channels
+        {
           Glow = Gdata[(configPage9.caninput_source_start_byte[destcaninchannel]&7)];
           if ((BIT_CHECK(configPage9.caninput_source_num_bytes,destcaninchannel) > 0))  //if true then num bytes is 2
           {
-            if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 8)   //you can't have a 2 byte value starting at byte 7(8 on the list)
+            if ((configPage9.caninput_source_start_byte[destcaninchannel]&7) < 7)   //you can't have a 2 byte value starting at byte 7(8 on the list)
             {
               Ghigh = Gdata[((configPage9.caninput_source_start_byte[destcaninchannel]&7)+1)];
             }
@@ -102,6 +104,7 @@ void secondserial_Command(void)
         }
 
         currentStatus.canin[destcaninchannel] = (Ghigh<<8) | Glow;
+      }
       }
 
         else{}  //continue as command request failed and/or data/device was not available
