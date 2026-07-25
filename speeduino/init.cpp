@@ -36,6 +36,7 @@
 #include "maths.h"
 #include "elapsed_time.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
+#include "src/controllers/fan/fanController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options

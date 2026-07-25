@@ -8,11 +8,9 @@ void initialiseAuxPWM(void);
 void boostControl(void);
 void boostDisable(void);
 void vvtControl(void);
-void initialiseFan(uint8_t fanPin);
 void initialiseAirCon(void);
 
 void nitrousControl(void);
-void fanControl(void);
 void airConControl(void);
 void wmiControl(void);
 
@@ -20,13 +18,6 @@ void vvt1On(void);
 void vvt1Off(void);
 void vvt2On(void);
 void vvt2Off(void);
-
-void fanOn(void);
-void fanOff(void);
-
-#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-void fanInterrupt(void);
-#endif
 
 void boostInterrupt(void);
 void vvtInterrupt(void);

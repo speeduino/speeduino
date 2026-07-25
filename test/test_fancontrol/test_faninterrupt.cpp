@@ -1,5 +1,5 @@
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
