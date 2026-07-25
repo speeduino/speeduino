@@ -5,12 +5,12 @@
 [![Release](https://img.shields.io/github/release/noisymime/speeduino.svg)](https://github.com/noisymime/speeduino/releases/latest)
 [![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](https://github.com/noisymime/speeduino/blob/master/LICENSE)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/noisymime/speeduino/build-firmware.yml?label=Build%20Status&branch=master)](https://github.com/noisymime/speeduino/actions/workflows/build-firmware.yml)
-[![Unit Tests](https://img.shields.io/github/actions/workflow/status/noisymime/speeduino/unit-tests.yml?label=Unit%20Tests&branch=master)](https://github.com/noisymime/speeduino/actions/workflows/unit-tests.yml)
-![badge](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/noisymime/d8a449a3f6d3307dab457431512502f9/raw/misra_results.json)
+[![Unit Tests](https://github.com/speeduino/speeduino/actions/workflows/sim-unit-tests.yml/badge.svg)](https://github.com/speeduino/speeduino/actions/workflows/sim-unit-tests.yml)
 [![Sponsors](https://img.shields.io/github/sponsors/noisymime)](https://github.com/sponsors/noisymime)
 [![GitHub commits](https://img.shields.io/github/commits-since/noisymime/speeduino/202310.svg)](https://github.com/noisymime/speeduino/compare/202310...master)
 [![https://img.shields.io/discord/879495735912071269 ](https://img.shields.io/discord/879495735912071269?label=Discord&logo=Discord)](https://discord.gg/YWCEexaNDe)
 [![codecov](https://codecov.io/github/speeduino/speeduino/graph/badge.svg?token=8LHRxqsbbo)](https://codecov.io/github/speeduino/speeduino)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=speeduino_speeduino&metric=bugs)](https://sonarcloud.io/summary/new_code?id=speeduino_speeduino)
 
 ##### A low cost, DIY friendly Engine Management System (ECU) based on the Arduino framework
 </div>

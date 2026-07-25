@@ -6,7 +6,7 @@ If you haven't already, jump onto our Discord as that is where most of the devel
 
 Here are some important resources:
 
-  * [Coding style guide](https://wiki.speeduino.com/dev/Style_code)
+  * [Development Wiki](https://github.com/speeduino/speeduino/wiki)
   * [Project forum](https://speeduino.com/forum)
   * [Discord](https://speeduino.com/home/community/discord)
 
