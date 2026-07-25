@@ -1,6 +1,6 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/boost/boostController.h"
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
 
@@ -10,7 +10,7 @@ extern boardOutputPin_t boost_pin;
 static void test_on_to_off(void)
 {
     pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseAuxPWM();
+    initialiseBoost(TEST_BOOST_PIN);
 
     boost_pwm_state = true;
     boostInterrupt();
@@ -22,7 +22,7 @@ static void test_on_to_off(void)
 static void test_off_to_on(void)
 {
     pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseAuxPWM();
+    initialiseBoost(TEST_BOOST_PIN);
 
     boost_pwm_state = false;
     boostInterrupt();

@@ -1,9 +1,11 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/boost/boostController.h"
 #include "shared.h"
+#include "src/pins/boardOutputPin.h"
 
 extern uint8_t boostCounter;
+extern boardOutputPin_t boost_pin;
 
 static void test_initialise(void)
 {
@@ -11,11 +13,11 @@ static void test_initialise(void)
     currentStatus.boostDuty = 99;
     boostCounter = 101;
 
-    initialiseAuxPWM();
+    initialiseBoost(TEST_BOOST_PIN);
 
     TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
     TEST_ASSERT_EQUAL(0, boostCounter);
-    // TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_BOOST_PIN));
+    TEST_ASSERT_TRUE(boost_pin._pin.isPinLow());
 }
 
 void testBoostInit(void)

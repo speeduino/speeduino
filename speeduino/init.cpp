@@ -37,6 +37,7 @@
 #include "elapsed_time.h"
 #include "src/controllers/fuelPump/fuelPumpController.h"
 #include "src/controllers/fan/fanController.h"
+#include "src/controllers/boost/boostController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -197,6 +198,7 @@ void initialiseAll(void)
     initialiseFuelSchedules(currentStatus, configPage2, configPage4);
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);
+    initialiseBoost(pinNumbers.pinBoost);
     initialiseAirCon();
     initialiseAuxPWM();
     initialiseCorrections();
