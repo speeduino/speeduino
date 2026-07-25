@@ -1,6 +1,6 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/aircon/airconController.h"
 #include "shared.h"
 
 static void test_initialise(void)

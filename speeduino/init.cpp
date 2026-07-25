@@ -38,6 +38,7 @@
 #include "src/controllers/fuelPump/fuelPumpController.h"
 #include "src/controllers/fan/fanController.h"
 #include "src/controllers/boost/boostController.h"
+#include "src/controllers/aircon/airconController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
