@@ -61,7 +61,7 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
       {
         dataRequested -= REUSE_RULES;
-        if ( dataRequested <= sizeof(page13.outputPin) ) { data = BIT_CHECK(currentRuleStatus, dataRequested); }
+        if ( dataRequested < sizeof(page13.outputPin) ) { data = BIT_CHECK(currentRuleStatus, dataRequested); }
         else { data = 0; }
       }
       else { data = getData(dataRequested); }
@@ -79,7 +79,7 @@ TESTABLE_STATIC void checkProgrammableIO(statuses& current, const config13& page
       if (page13.operation[y].bitwise != BITWISE_DISABLED)
       {
         dataRequested = page13.secondDataIn[y];
-        if ( dataRequested <= (REUSE_RULES + sizeof(page13.outputPin)) ) //Failsafe check
+        if ( dataRequested < (REUSE_RULES + sizeof(page13.outputPin)) ) //Failsafe check
         {
           if ( dataRequested > 239U ) //Somehow using 239 uses 9 bytes of RAM, why??
           {
