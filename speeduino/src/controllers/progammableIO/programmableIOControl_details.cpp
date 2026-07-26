@@ -123,7 +123,7 @@ bool rule_t::evaluate(const state_t& state, getDataFn pGetData) const
 {
   bool firstCheck = firstOp.evaluate(state, pGetData);
 
-  if ((combineOpType != COMBINE_DISABLED) && (secondOp.dataIndex <= (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
+  if ((combineOpType != COMBINE_DISABLED) && (secondOp.dataIndex < (REUSE_RULES + _countof(state.channels))) ) //Failsafe check
   {
     bool secondCheck = secondOp.evaluate(state, pGetData);
     firstCheck = evaluateCombineOp(firstCheck, secondCheck);
