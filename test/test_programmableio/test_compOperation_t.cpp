@@ -86,11 +86,18 @@ static void test_getComparisonData_direct_data_lookup(void)
 
 static void test_getComparisonData_virtual_state_channel(void)
 {
-    compOperation_t op{ COMPARATOR_EQUAL, static_cast<uint8_t>(REUSE_RULES + 2), 0 };
     state_t state{};
-    state.channels[2].isRuleActive = true;
+    for (auto& channel: state.channels) {
+        channel.isRuleActive = true;
+    }
 
-    TEST_ASSERT_EQUAL_INT16(1, op.getComparisonData(state, mockGetData));
+    for (uint8_t index=0; index<UINT8_MAX-REUSE_RULES; ++index) {
+        compOperation_t op{ COMPARATOR_EQUAL, static_cast<uint8_t>(REUSE_RULES + index), 0 };
+        char szMsg[16];
+        snprintf(szMsg, _countof(szMsg)-1, "idx:%" PRIu8, index);
+        TEST_ASSERT_TRUE_MESSAGE(op.isVirtualData(), szMsg);
+        TEST_ASSERT_EQUAL_INT16_MESSAGE(index<CHAR_BIT, op.getComparisonData(state, mockGetData), szMsg);
+    }
 }
 
 static void test_getComparisonData_virtual_state_channel_out_of_range(void)
