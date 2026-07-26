@@ -179,12 +179,12 @@ void testApplyPwToInjectorChannels(void)
     {
       for (secondaries=0; secondaries<=INJ_CHANNELS; ++secondaries)
       {    
-        char szName[128];
-        snprintf(szName, _countof(szName)-1, "test_noTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
-        UnityDefaultTestRun(test_noTrim_inner, szName, __LINE__);
+        char szPostFix[32];
+        snprintf(szPostFix, _countof(szPostFix)-1, "p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
+        RUN_TEST_POSTFIX_P(test_noTrim_inner, szPostFix);
 
-        snprintf(szName, _countof(szName)-1, "test_withTrim_inner_p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
-        UnityDefaultTestRun(test_withTrim_inner, szName, __LINE__);
+        snprintf(szPostFix, _countof(szPostFix)-1, "p%" PRIu8 "_s%" PRIu8, primaries, secondaries);
+        RUN_TEST_POSTFIX_P(test_withTrim_inner, szPostFix);
       }
     }
   }
