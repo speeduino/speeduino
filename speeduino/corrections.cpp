@@ -568,6 +568,9 @@ This simple check applies the extra fuel if we're currently launching
 */
 TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
 {
+  // Accumulate in int16_t: NO_FUEL_CORRECTION (100) + lnchFuelAdd (tune range
+  // -40..+80) can reach 180, which overflows int8_t. The result is always within
+  // [60, 180], so the final narrowing to uint8_t is safe.
   int16_t correction = (int16_t)NO_FUEL_CORRECTION;
   if (currentStatus.launchingHard || currentStatus.launchingSoft) {
     correction = correction + configPage6.lnchFuelAdd;
