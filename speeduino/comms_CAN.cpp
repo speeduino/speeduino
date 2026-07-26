@@ -789,7 +789,7 @@ void readAuxCanBus()
         // Gets the one-byte value from the Data Field.
         currentStatus.canin[i] = inMsg.buf[configPage9.caninput_source_start_byte[i]];
       }
-      else if (configPage9.caninput_source_start_byte[i] < 7U) // a 2-byte value can't start at the last byte of an 8-byte CAN payload
+      else if (configPage9.caninput_source_start_byte[i] < (_countof(inMsg.buf) - 1U)) // a 2-byte value can't start at the last byte of the CAN payload
       {
         if (configPage9.caninputEndianess == 1)
         {

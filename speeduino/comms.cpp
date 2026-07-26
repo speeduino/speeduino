@@ -314,8 +314,19 @@ static void sendReturnCodeMsg(byte returnCode)
 
 // ====================================== Command/Action Support =============================
 
-// The functions in this section are abstracted out to prevent enlarging callers stack frame, 
+// The functions in this section are abstracted out to prevent enlarging callers stack frame,
 // which in turn throws off free ram reporting.
+
+/** @brief Add two 16-bit values in 32-bit arithmetic so the sum cannot wrap.
+ *
+ * On AVR `int` is 16-bit, so `a + b` for two uint16_t operands is evaluated at
+ * 16 bits and can overflow. Widening to uint32_t first guarantees an exact sum,
+ * which matters when the result is used in a bounds check against attacker-supplied
+ * offset/length values.
+ */
+static inline uint32_t addWithoutOverflow(uint16_t a, uint16_t b) {
+  return (uint32_t)a + (uint32_t)b;
+}
 
 /**
  * @brief Update a pages contents from a buffer
@@ -329,7 +340,7 @@ static void sendReturnCodeMsg(byte returnCode)
  */
 static bool updatePageValues(uint8_t pageNum, uint16_t offset, const byte *buffer, uint16_t length)
 {
-  if ( ((uint32_t)offset + (uint32_t)length) <= (uint32_t)getPageSize(pageNum) )
+  if ( addWithoutOverflow(offset, length) <= getPageSize(pageNum) )
   {
     for(uint16_t i = 0; i < length; i++)
     {
@@ -747,7 +758,7 @@ void processSerialCommand(void)
       //2 - Length
       uint16_t length = word(serialPayload[6], serialPayload[5]);
 
-      if (length <= (sizeof(serialPayload) - 1U))
+      if (length < _countof(serialPayload))
       {
         //Setup the transmit buffer
         serialPayload[0] = SERIAL_RC_OK;
@@ -778,7 +789,7 @@ void processSerialCommand(void)
 
       if(cmd == SEND_OUTPUT_CHANNELS) //Send output channels command 0x30 is 48dec
       {
-        if (length <= (sizeof(serialPayload) - 1U))
+        if (length < _countof(serialPayload))
         {
           generateLiveValues(offset, length);
           sendSerialPayloadNonBlocking(length + 1U);
