@@ -634,7 +634,7 @@ static inline void readIAT(void)
 * with record highs close to 108.5 kPa.
 * The lowest possible baro reading is based on an altitude of 3500m above sea level.
 */
-static inline bool isValidBaro(uint8_t baro) 
+TESTABLE_INLINE_STATIC bool isValidBaro(uint16_t baro)
 {
   static constexpr uint16_t BARO_MIN = 65U;
   static constexpr uint16_t BARO_MAX = 108U;
