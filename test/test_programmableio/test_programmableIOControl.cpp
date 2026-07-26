@@ -615,7 +615,7 @@ static void test_checkProgrammableIO_second_comparator_failsafe_skip(void)
 
     context.page13.operation[0].bitwise = COMBINE_AND; // COMBINE_AND
     context.page13.operation[0].secondCompType = COMPARATOR_EQUAL; // EQUAL
-    context.page13.secondDataIn[0] = REUSE_RULES + 9; // Out-of-range reuse index, skip second comparator
+    context.page13.secondDataIn[0] = REUSE_RULES + _countof(state.channels); // Out-of-range reuse index, skip second comparator
     context.page13.secondTarget[0] = 1;
     initialiseProgrammableIO(context.page13);
 
