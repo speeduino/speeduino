@@ -39,6 +39,7 @@
 #include "src/controllers/fan/fanController.h"
 #include "src/controllers/boost/boostController.h"
 #include "src/controllers/aircon/airconController.h"
+#include "src/controllers/nitrous/nitrousController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -201,6 +202,7 @@ void initialiseAll(void)
     initialiseFan(pinNumbers.pinFan);
     initialiseBoost(pinNumbers.pinBoost);
     initialiseAirCon();
+    initialiseNitrous();
     initialiseAuxPWM();
     initialiseCorrections();
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
