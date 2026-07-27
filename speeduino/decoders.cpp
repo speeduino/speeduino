@@ -78,15 +78,12 @@ static volatile unsigned long lastSyncRevolution = 0; // the revolution value of
 static volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 
 static volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
-// TODO: remove this - unused
-static volatile unsigned long secondaryLastToothTime1 = 0; //The time (micros()) that the last tooth was registered (Cam input)
 
 static uint16_t triggerActualTeeth;
 TESTABLE_STATIC volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
 static volatile unsigned long triggerSecFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the secondary input
 static volatile unsigned long triggerThirdFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering) for the Third input
 
-static unsigned int triggerSecFilterTime_duration; // The shortest valid time (in uS) pulse DURATION
 TESTABLE_STATIC volatile uint16_t triggerToothAngle; //The number of crank degrees that elapse per tooth
 static byte checkSyncToothCount; //How many teeth must've been seen on this revolution before we try to confirm sync (Useful for missing tooth type decoders)
 static unsigned long elapsedTime;
@@ -1728,12 +1725,10 @@ static void triggerSec_4G63(void)
       }
     }
 
-    //if ( (micros() - secondaryLastToothTime1) < triggerSecFilterTime_duration && configPage2.useResync )
     if ( (currentStatus.RPM < currentStatus.crankRPM) || (configPage4.useResync == 1) )
     {
       if( (decoderStatus.syncStatus==SyncStatus::Full) && (configPage2.nCylinders == 4) )
       {
-        triggerSecFilterTime_duration = (micros() - secondaryLastToothTime1) >> 1;
         if(currentStatus.decoder.primary.isPinHigh())
         {
           //Whilst we're cranking and have sync, we need to watch for noise pulses.
@@ -1743,7 +1738,6 @@ static void triggerSec_4G63(void)
             decoderStatus.syncStatus = SyncStatus::None;
             currentStatus.syncLossCounter++;
           } 
-          else { toothCurrentCount = 8; } //Why? Just why?
         }
       } //Has sync and 4 cylinder 
     } // Use resync or cranking
@@ -1905,7 +1899,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
 
   triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  triggerSecFilterTime_duration = 4000;
   
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_4G63, CHANGE)

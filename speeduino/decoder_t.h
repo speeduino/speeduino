@@ -143,7 +143,7 @@ struct decoder_t
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnoexcept-type"  
   using status_fun_t = decoder_status_t(*)(void)noexcept;
-#pragma GCC diagnostic push
+#pragma GCC diagnostic pop
   status_fun_t getStatus;
   /// @}  
 
