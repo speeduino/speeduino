@@ -4,7 +4,6 @@
 void initialiseAuxPWM(void);
 void vvtControl(void);
 
-void nitrousControl(void);
 void wmiControl(void);
 
 void vvt1On(void);

@@ -1,14 +1,14 @@
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/nitrous/nitrousController.h"
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
-#include "src/pins/fastInputPin.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pins/inputPin.h"
+#include "src/pins/outputPin.h"
 
-extern fastInputPin_t n2o_arming_pin;
-extern boardOutputPin_t n2o_stage1_pin;
-extern boardOutputPin_t n2o_stage2_pin;
+extern inputPin_t n2o_arming_pin;
+extern outputPin_t n2o_stage1_pin;
+extern outputPin_t n2o_stage2_pin;
 
 static void assert_n2o_off(void)
 {
@@ -70,7 +70,7 @@ static void setup_valid_conditions_stageboth(void)
 static void test_not_armed(void)
 {
   setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseAuxPWM();
+  initialiseNitrous();
 
   setup_valid_conditions_stageboth();
   if (configPage10.n2o_pin_polarity)
@@ -88,7 +88,7 @@ static void test_not_armed(void)
 static void test_coolant_threshhold(void)
 {
   setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseAuxPWM();
+  initialiseNitrous();
 
   setup_valid_conditions_stageboth();
   currentStatus.coolant = TEMPERATURE.toUser(configPage10.n2o_minCLT-1);
@@ -98,7 +98,7 @@ static void test_coolant_threshhold(void)
 static void test_tps_threshhold(void)
 {
   setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseAuxPWM();
+  initialiseNitrous();
 
   setup_valid_conditions_stageboth();
   currentStatus.TPS =configPage10.n2o_minTPS-1;
@@ -108,7 +108,7 @@ static void test_tps_threshhold(void)
 static void test_o2_threshhold(void)
 {
   setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseAuxPWM();
+  initialiseNitrous();
 
   setup_valid_conditions_stageboth();
   currentStatus.O2 = configPage10.n2o_maxAFR+1;
@@ -118,7 +118,7 @@ static void test_o2_threshhold(void)
 static void test_map_threshhold(void)
 {
   setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseAuxPWM();
+  initialiseNitrous();
 
   setup_valid_conditions_stageboth();
   currentStatus.MAP = (configPage10.n2o_maxMAP * 2U) + 1;
@@ -128,7 +128,7 @@ static void test_map_threshhold(void)
 static void test_stage1(void)
 {
   setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseAuxPWM();
+  initialiseNitrous();
   setup_valid_conditions_stage1();
 
   nitrousControl();
@@ -141,7 +141,7 @@ static void test_stage1(void)
 static void test_stage2(void)
 {
   setup_rpm_overlap_tune(NITROUS_STAGE2);
-  initialiseAuxPWM();
+  initialiseNitrous();
   setup_valid_conditions_stage2();
 
   nitrousControl();
@@ -154,7 +154,7 @@ static void test_stage2(void)
 static void test_stage_both(void)
 {
   setup_rpm_overlap_tune(NITROUS_STAGE2);
-  initialiseAuxPWM();
+  initialiseNitrous();
   setup_valid_conditions_stageboth();
 
   nitrousControl();

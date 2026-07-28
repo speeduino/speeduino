@@ -61,6 +61,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "src/controllers/fan/fanController.h"
 #include "src/controllers/boost/boostController.h"
 #include "src/controllers/aircon/airconController.h"
+#include "src/controllers/nitrous/nitrousController.h"
 
 #define CRANK_RUN_HYSTER    15
 

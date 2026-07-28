@@ -1,6 +1,5 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
 #include "units.h"
 #include "shared.h"
 
