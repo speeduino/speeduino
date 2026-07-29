@@ -5,9 +5,11 @@ void runAllTests(void)
 {
     void testVvtControl(void);
     void testVvtInterrupt(void);
+    void testInit(void);
 
     testVvtControl();
     testVvtInterrupt();
+    testInit();
 }
 
 TEST_HARNESS(runAllTests)
