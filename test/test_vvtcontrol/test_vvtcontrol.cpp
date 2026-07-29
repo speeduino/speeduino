@@ -5,11 +5,8 @@
 #include "src/pins/boardOutputPin.h"
 #include "src/controllers/vvt/VvtOutputChannel.h"
 
-extern boardOutputPin_t vvt1_pin;
-extern boardOutputPin_t vvt2_pin;
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
-
 extern bool vvtTimeHold;
 extern bool vvtIsHot;
 
@@ -62,7 +59,7 @@ static void setup_vvt_basic_tune(uint8_t mode)
   configPage4.TrigPattern = 0U;
 
   configPage10.vvt2Enabled = testVvt2Enabled;
-  configPage10.wmiEnabled = testWmiEnabled;;
+  configPage10.wmiEnabled = testWmiEnabled;
   configPage10.vvtCLMinAng = INT8_MIN+5;
   configPage10.vvtCLMaxAng = UINT8_MAX-5;
   configPage10.vvtCLholdDuty = 100U;
@@ -76,7 +73,7 @@ static void setup_vvt_onconditions(void)
   currentStatus.MAP = 50U;
   currentStatus.TPS = currentStatus.MAP / 2U;
   runSecsX10 = 0U;
-  vvtChannel2.pinState = false;
+  vvtChannel2.pin.setPinLow();
 }
 
 static void populate_vvt_tables(table3d_value_t vvt1Value, table3d_value_t vvt2Value)
@@ -121,7 +118,7 @@ static void assert_vvt1_off(void)
 {
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt1Duty);
   TEST_ASSERT_EQUAL_UINT8(0U, vvtChannel1.targetDuty);
-  TEST_ASSERT_FALSE(vvtChannel1.pinState);
+  TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
 }
 
 static void assert_vvt1_on(void)
@@ -130,7 +127,7 @@ static void assert_vvt1_on(void)
   TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel1.targetDuty);
   if (vvtChannel1.targetDuty==200U)
   {
-    TEST_ASSERT_TRUE(vvtChannel1.pinState);
+    TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
   }
 }
 
@@ -138,7 +135,7 @@ static void assert_vvt2_off(void)
 {
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt2Duty);
   TEST_ASSERT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);
-  TEST_ASSERT_FALSE(vvtChannel2.pinState);
+  TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
 }
 
 static void assert_vvt2_on(void)
@@ -149,7 +146,7 @@ static void assert_vvt2_on(void)
     TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);
     if (vvtChannel2.targetDuty==200U)
     {
-        TEST_ASSERT_TRUE(vvtChannel2.pinState);
+        TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     }
   }
   else
@@ -165,11 +162,11 @@ static void test_vvt1On_and_Off_toggle_pin(void)
   setup_vvt_openloop_tune();
   initialiseAuxPWM();
   vvt1Off();
-  TEST_ASSERT_TRUE(vvt1_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
   vvt1On();
-  TEST_ASSERT_TRUE(vvt1_pin._pin.isPinHigh());
+  TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
   vvt1Off();
-  TEST_ASSERT_TRUE(vvt1_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
 }
 
 static void test_vvt2On_and_Off_toggle_pin(void)
@@ -177,11 +174,11 @@ static void test_vvt2On_and_Off_toggle_pin(void)
   setup_vvt_openloop_tune();
   initialiseAuxPWM();
   vvt2Off();
-  TEST_ASSERT_TRUE(vvt2_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
   vvt2On();
-  TEST_ASSERT_TRUE(vvt2_pin._pin.isPinHigh());
+  TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
   vvt2Off();
-  TEST_ASSERT_TRUE(vvt2_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
 }
 
 // ============================ VVT Control ===============================

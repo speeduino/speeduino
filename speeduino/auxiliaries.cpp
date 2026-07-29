@@ -41,13 +41,10 @@ TESTABLE_STATIC uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 static integerPID vvt2PID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
-TESTABLE_STATIC boardOutputPin_t vvt1_pin;
-TESTABLE_STATIC boardOutputPin_t vvt2_pin;
-
 static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
 { 
-  vvt1_pin.setPin(pin1, OUTPUT);
-  vvt2_pin.setPin(pin2, OUTPUT);
+  vvtChannel1.pin.setPin(pin1, OUTPUT);
+  vvtChannel2.pin.setPin(pin2, OUTPUT);
 }
 
 static void setVvtPidTunings(integerPID &pid, const config10 &page10, bool isReverse)
@@ -109,19 +106,19 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
 void vvt1On(void)
 {
-  vvt1_pin.setPinHigh();
+  vvtChannel1.pin.setPinHigh();
 }
 void vvt1Off(void)
 {
-  vvt1_pin.setPinLow();
+  vvtChannel1.pin.setPinLow();
 }
 void vvt2On(void)
 {
-  vvt2_pin.setPinHigh();
+  vvtChannel2.pin.setPinHigh();
 }
 void vvt2Off(void)
 {
-  vvt2_pin.setPinLow();
+  vvtChannel2.pin.setPinLow();
 }
 
 void vvtControl(void)
@@ -254,22 +251,18 @@ void vvtControl(void)
         if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
         {
           //Make sure solenoid is off (0% duty)
-          vvt1Off();
-          vvt2Off();
-          vvtChannel1.pinState = false;
+          vvtChannel1.pin.setPinLow();
+          vvtChannel2.pin.setPinLow();
           vvtChannel1.periodTicks = false;
-          vvtChannel2.pinState = false;
           vvtChannel2.periodTicks = false;
           DISABLE_VVT_TIMER();
         }
         else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
         {
           //Make sure solenoid is on (100% duty)
-          vvt1On();
-          vvt2On();
-          vvtChannel1.pinState = true;
+          vvtChannel1.pin.setPinHigh();
+          vvtChannel2.pin.setPinHigh();
           vvtChannel1.periodTicks = true;
-          vvtChannel2.pinState = true;
           vvtChannel2.periodTicks = true;
           DISABLE_VVT_TIMER();
         }
@@ -286,15 +279,13 @@ void vvtControl(void)
         if( currentStatus.vvt1Duty == 0 )
         {
           //Make sure solenoid is off (0% duty)
-          vvt1Off();
-          vvtChannel1.pinState = false;
+          vvtChannel1.pin.setPinLow();
           vvtChannel1.periodTicks = false;
         }
         else if( currentStatus.vvt1Duty >= 200 )
         {
           //Make sure solenoid is on (100% duty)
-          vvt1On();
-          vvtChannel1.pinState = true;
+          vvtChannel1.pin.setPinHigh();
           vvtChannel1.periodTicks = true;
         }
         else
@@ -314,12 +305,12 @@ void vvtControl(void)
       DISABLE_VVT_TIMER();
       currentStatus.vvt2Duty = 0;
       vvtChannel2.targetDuty = 0;
-      vvtChannel2.pinState = false;
+      vvtChannel2.pin.setPinLow();
       vvtChannel2.periodTicks = false;
     }
     currentStatus.vvt1Duty = 0;
     vvtChannel1.targetDuty = 0;
-    vvtChannel1.pinState = false;
+    vvtChannel1.pin.setPinLow();
     vvtChannel1.periodTicks = false;
     vvtTimeHold = false;
   } 
@@ -372,8 +363,7 @@ void wmiControl(void)
     if(wmiPW == 0)
     {
       // Make sure water pump is off
-      vvt2Off();
-      vvtChannel2.pinState = false;
+      vvtChannel2.pin.setPinLow();
       vvtChannel2.periodTicks = false;
       if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
       digitalWrite(pinNumbers.pinWMIEnabled, LOW);
@@ -384,8 +374,7 @@ void wmiControl(void)
       if (wmiPW >= 200)
       {
         // Make sure water pump is on (100% duty)
-        vvt2On();
-        vvtChannel2.pinState = true;
+        vvtChannel2.pin.setPinHigh();
         vvtChannel2.periodTicks = true;
         if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
       }
@@ -401,28 +390,26 @@ void wmiControl(void)
 //The interrupt to control the VVT PWM
 void vvtInterrupt(void)
 {
-  if ( ((vvtChannel1.pinState == false) || (vvtChannel1.periodTicks == true)) && ((vvtChannel2.pinState == false) || (vvtChannel2.periodTicks == true)) )
+  if ( ((vvtChannel1.pin.isPinLow()) || (vvtChannel1.periodTicks == true)) && ((vvtChannel2.pin.isPinLow()) || (vvtChannel2.periodTicks == true)) )
   {
     if( (vvtChannel1.targetDuty > 0) && (vvtChannel1.periodTicks == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
-      vvt1Off();
+      vvtChannel1.pin.setPinLow();
       #else
-      vvt1On();
+      vvtChannel1.pin.setPinHigh();
       #endif
-      vvtChannel1.pinState = true;
     }
     if( (vvtChannel2.targetDuty > 0) && (vvtChannel2.periodTicks == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
-      vvt2Off();
+      vvtChannel2.pin.setPinLow();
       #else
-      vvt2On();
+      vvtChannel2.pin.setPinHigh();
       #endif
-      vvtChannel2.pinState = true;
     }
 
-    if( (vvtChannel1.pinState == true) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pinState == false)) )
+    if( (vvtChannel1.pin.isPinHigh()) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pin.isPinLow())) )
     {
       SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel1.targetDuty);
       vvtChannel1.compareTicks = vvtChannel1.targetDuty;
@@ -430,7 +417,7 @@ void vvtInterrupt(void)
       if (vvtChannel1.targetDuty == vvtChannel2.targetDuty) { nextVVT = 2; } //Next event is for both PWM
       else { nextVVT = 0; } //Next event is for PWM0
     }
-    else if( vvtChannel2.pinState == true )
+    else if( vvtChannel2.pin.isPinHigh() )
     {
       SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel2.targetDuty);
       vvtChannel1.compareTicks = vvtChannel1.targetDuty;
@@ -446,16 +433,15 @@ void vvtInterrupt(void)
       if(vvtChannel1.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        vvt1On();
+        vvtChannel1.pin.setPinHigh();
         #else
-        vvt1Off();
+        vvtChannel1.pin.setPinLow();
         #endif
-        vvtChannel1.pinState = false;
         vvtChannel1.periodTicks = false;
       }
       else { vvtChannel1.periodTicks = true; }
       nextVVT = 1; //Next event is for PWM1
-      if(vvtChannel2.pinState == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.compareTicks - vvtChannel1.compareTicks) ); }
+      if(vvtChannel2.pin.isPinHigh()){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.compareTicks - vvtChannel1.compareTicks) ); }
       else
       { 
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel1.compareTicks) );
@@ -467,16 +453,15 @@ void vvtInterrupt(void)
       if(vvtChannel2.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        vvt2On();
+        vvtChannel2.pin.setPinHigh();
         #else
-        vvt2Off();
+        vvtChannel2.pin.setPinLow();
         #endif
-        vvtChannel2.pinState = false;
         vvtChannel2.periodTicks = false;
       }
       else { vvtChannel2.periodTicks = true; }
       nextVVT = 0; //Next event is for PWM0
-      if(vvtChannel1.pinState == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.compareTicks - vvtChannel2.compareTicks) ); }
+      if(vvtChannel1.pin.isPinHigh()) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.compareTicks - vvtChannel2.compareTicks) ); }
       else
       { 
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel2.compareTicks) );
@@ -488,11 +473,10 @@ void vvtInterrupt(void)
       if(vvtChannel1.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
        #if defined(CORE_TEENSY41)
-        vvt1On();
+        vvtChannel1.pin.setPinHigh();
         #else
-        vvt1Off();
+        vvtChannel1.pin.setPinLow();
         #endif
-        vvtChannel1.pinState = false;
         vvtChannel1.periodTicks = false;
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel1.compareTicks) );
       }
@@ -500,11 +484,10 @@ void vvtInterrupt(void)
       if(vvtChannel2.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
-        vvt2On();
+        vvtChannel2.pin.setPinHigh();
         #else
-        vvt2Off();
+        vvtChannel2.pin.setPinLow();
         #endif
-        vvtChannel2.pinState = false;
         vvtChannel2.periodTicks = false;
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel2.compareTicks) );
       }
