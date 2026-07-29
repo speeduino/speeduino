@@ -3,13 +3,13 @@
 #include "auxiliaries.h"
 #include "units.h"
 #include "src/pins/boardOutputPin.h"
+#include "src/controllers/vvt/VvtOutputChannel.h"
 
 extern boardOutputPin_t vvt1_pin;
 extern boardOutputPin_t vvt2_pin;
-extern long vvt1_pwm_value;
-extern long vvt2_pwm_value;
-extern volatile bool vvt1_pwm_state;
-extern volatile bool vvt2_pwm_state;
+extern VvtOutputChannel vvtChannel1;
+extern VvtOutputChannel vvtChannel2;
+
 extern bool vvtTimeHold;
 extern bool vvtIsHot;
 
@@ -76,7 +76,7 @@ static void setup_vvt_onconditions(void)
   currentStatus.MAP = 50U;
   currentStatus.TPS = currentStatus.MAP / 2U;
   runSecsX10 = 0U;
-  vvt2_pwm_state = false;
+  vvtChannel2.pinState = false;
 }
 
 static void populate_vvt_tables(table3d_value_t vvt1Value, table3d_value_t vvt2Value)
@@ -120,25 +120,25 @@ static void setup_vvt_closedloop_tune(void)
 static void assert_vvt1_off(void)
 {
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt1Duty);
-  TEST_ASSERT_EQUAL_UINT8(0U, vvt1_pwm_value);
-  TEST_ASSERT_FALSE(vvt1_pwm_state);
+  TEST_ASSERT_EQUAL_UINT8(0U, vvtChannel1.targetDuty);
+  TEST_ASSERT_FALSE(vvtChannel1.pinState);
 }
 
 static void assert_vvt1_on(void)
 {
   TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt1Duty);
-  TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvt1_pwm_value);
-  if (vvt1_pwm_value==200U)
+  TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel1.targetDuty);
+  if (vvtChannel1.targetDuty==200U)
   {
-    TEST_ASSERT_TRUE(vvt1_pwm_state);
+    TEST_ASSERT_TRUE(vvtChannel1.pinState);
   }
 }
 
 static void assert_vvt2_off(void)
 {
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt2Duty);
-  TEST_ASSERT_EQUAL_UINT8(0U, vvt2_pwm_value);
-  TEST_ASSERT_FALSE(vvt2_pwm_state);
+  TEST_ASSERT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);
+  TEST_ASSERT_FALSE(vvtChannel2.pinState);
 }
 
 static void assert_vvt2_on(void)
@@ -146,10 +146,10 @@ static void assert_vvt2_on(void)
   if (testVvt2Enabled)
   {
     TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt2Duty);
-    TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvt2_pwm_value);
-    if (vvt2_pwm_value==200U)
+    TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);
+    if (vvtChannel2.targetDuty==200U)
     {
-        TEST_ASSERT_TRUE(vvt2_pwm_state);
+        TEST_ASSERT_TRUE(vvtChannel2.pinState);
     }
   }
   else

@@ -1,0 +1,8 @@
+#include <stdint.h>
+
+struct VvtOutputChannel {
+    uint16_t targetDuty;     // Requested duty cycle (0-100% or 0-255)
+    uint16_t compareTicks;   // Active compare threshold for ISR match
+    bool     periodTicks;    // Total clock ticks per PWM period (frequency ceiling)
+    bool     pinState;       // Current output state (HIGH/LOW)
+};
