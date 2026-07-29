@@ -30,7 +30,7 @@ static void test_wmi_disabled(void)
     currentStatus.wmiPW = 99;
     initialiseAuxPWM();
 
-    TEST_ASSERT_EQUAL(99, currentStatus.wmiPW);
+    TEST_ASSERT_EQUAL(0, currentStatus.wmiPW);
 }
 
 
@@ -42,7 +42,7 @@ static void test_vvt_enabled(void)
     currentStatus.wmiPW = 99;
     initialiseAuxPWM();
 
-    TEST_ASSERT_EQUAL(99, currentStatus.wmiPW);
+    TEST_ASSERT_EQUAL(0, currentStatus.wmiPW);
 }
 
 void testInit(void)

@@ -33,19 +33,13 @@ static bool isWmiTankEmpty(void)
   return true;
 }
 
-static uint32_t vvtWarmTime;
+TESTABLE_STATIC uint32_t vvtWarmTime;
 TESTABLE_STATIC bool vvtIsHot;
 TESTABLE_STATIC bool vvtTimeHold;
 TESTABLE_STATIC uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 static integerPID vvt2PID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
-
-static __attribute__((optimize("Os"))) void initialiseVvtPins(uint8_t pin1, uint8_t pin2) 
-{ 
-  vvtChannel1.pin.setPin(pin1, OUTPUT);
-  vvtChannel2.pin.setPin(pin2, OUTPUT);
-}
 
 static void setVvtPidTunings(integerPID &pid, const config10 &page10, bool isReverse)
 {
@@ -62,15 +56,27 @@ static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isRev
 
 void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
-  initialiseVvtPins(pinNumbers.pinVVT_1, pinNumbers.pinVVT_2);
+  vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
 
-  if( configPage6.vvtEnabled > 0)
-  {
-    currentStatus.vvt1Angle = 0;
-    currentStatus.vvt2Angle = 0;
-    vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
+  vvtChannel1 = VvtOutputChannel();
+  vvtChannel1.pin.setPin(pinNumbers.pinVVT_1, OUTPUT);
+  vvtChannel2 = VvtOutputChannel();
+  vvtChannel2.pin.setPin(pinNumbers.pinVVT_2, OUTPUT);
 
-    if(configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
+  currentStatus.wmiTankEmpty = false;
+  currentStatus.wmiPW = 0;
+  currentStatus.vvt1Duty = 0;
+  currentStatus.vvt2Duty = 0;
+  currentStatus.vvt1Angle = 0;
+  currentStatus.vvt2Angle = 0;
+  currentStatus.vvt1AngleError = false;
+  currentStatus.vvt2AngleError = false;
+  vvtTimeHold = false;
+  vvtCounter = 0;
+  vvtIsHot = currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt);
+  vvtWarmTime = 0;
+
+  if ((configPage6.vvtEnabled) && (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP))
     {
       initialiseVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1Angle);
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
@@ -79,29 +85,10 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
       }
     }
 
-    vvtChannel1.targetDuty = 0;
-    vvtChannel2.targetDuty = 0;
-    ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
-    currentStatus.vvt1AngleError = false;
-    currentStatus.vvt2AngleError = false;
-    vvtTimeHold = false;
-    if (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) { vvtIsHot = true; } //Checks to see if coolant's already at operating temperature
-  }
-  
-  if( (configPage6.vvtEnabled == 0) && (configPage10.wmiEnabled >= 1) )
+  if( (configPage6.vvtEnabled) || (configPage10.wmiEnabled) )
   {
-    // config wmi pwm output to use vvt output
-    vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
-    currentStatus.wmiTankEmpty = false;
-    currentStatus.wmiPW = 0;
-    vvtChannel1.targetDuty = 0;
-    vvtChannel2.targetDuty = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
-
-  currentStatus.vvt1Duty = 0;
-  currentStatus.vvt2Duty = 0;
-  vvtCounter = 0;
 }
 
 void vvt1On(void)
