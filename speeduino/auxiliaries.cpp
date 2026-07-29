@@ -17,15 +17,10 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/fastInputPin.h"
 #include "src/pins/boardOutputPin.h"
 #include "scheduler_fuel_controller.h"
+#include "src/controllers/vvt/VvtOutputChannel.h"
 
-TESTABLE_STATIC long vvt1_pwm_value;
-TESTABLE_STATIC long vvt2_pwm_value;
-TESTABLE_STATIC volatile unsigned int vvt1_pwm_cur_value;
-TESTABLE_STATIC volatile unsigned int vvt2_pwm_cur_value;
-TESTABLE_STATIC volatile bool vvt1_pwm_state;
-TESTABLE_STATIC volatile bool vvt2_pwm_state;
-TESTABLE_STATIC volatile bool vvt1_max_pwm;
-TESTABLE_STATIC volatile bool vvt2_max_pwm;
+TESTABLE_STATIC VvtOutputChannel vvtChannel1;
+TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC volatile char nextVVT;
 TESTABLE_STATIC byte vvtCounter;
 
@@ -87,8 +82,8 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
       }
     }
 
-    vvt1_pwm_value = 0;
-    vvt2_pwm_value = 0;
+    vvtChannel1.targetDuty = 0;
+    vvtChannel2.targetDuty = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
     currentStatus.vvt1AngleError = false;
     currentStatus.vvt2AngleError = false;
@@ -102,8 +97,8 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
     vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
     currentStatus.wmiTankEmpty = false;
     currentStatus.wmiPW = 0;
-    vvt1_pwm_value = 0;
-    vvt2_pwm_value = 0;
+    vvtChannel1.targetDuty = 0;
+    vvtChannel2.targetDuty = 0;
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
 
@@ -156,7 +151,7 @@ void vvtControl(void)
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
         if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
 
-        vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+        vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
@@ -167,7 +162,7 @@ void vvtControl(void)
           //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
           if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
 
-          vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+          vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
         }
 
       } //Open loop
@@ -186,14 +181,14 @@ void vvtControl(void)
         if ( currentStatus.vvt1Angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1Angle > configPage10.vvtCLMaxAng )
         {
           currentStatus.vvt1Duty = 0;
-          vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
           currentStatus.vvt1AngleError = true;
         }
         //Check that we're not already at the angle we want to be
         else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
         {
           currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
-          vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
           vvtPID.reset(currentStatus.vvt1Angle);
           currentStatus.vvt1AngleError = false;
         }
@@ -206,7 +201,7 @@ void vvtControl(void)
           if(PID_compute == true) 
           { 
             currentStatus.vvt1Duty = (uint8_t)pidOutput;
-            vvt1_pwm_value = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); 
+            vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); 
           }
           currentStatus.vvt1AngleError = false;
         }
@@ -225,14 +220,14 @@ void vvtControl(void)
           if ( currentStatus.vvt2Angle <= configPage10.vvtCLMinAng || currentStatus.vvt2Angle > configPage10.vvtCLMaxAng )
           {
             currentStatus.vvt2Duty = 0;
-            vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
             currentStatus.vvt2AngleError = true;
           }
           //Check that we're not already at the angle we want to be
           else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
           {
             currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
-            vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
             vvt2PID.reset(currentStatus.vvt2Angle);
             currentStatus.vvt2AngleError = false;
           }
@@ -245,7 +240,7 @@ void vvtControl(void)
             if(PID_compute == true) 
             { 
               currentStatus.vvt2Duty = (uint8_t)pidOutput;
-              vvt2_pwm_value = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); 
+              vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); 
             }
             currentStatus.vvt2AngleError = false;
           }
@@ -261,10 +256,10 @@ void vvtControl(void)
           //Make sure solenoid is off (0% duty)
           vvt1Off();
           vvt2Off();
-          vvt1_pwm_state = false;
-          vvt1_max_pwm = false;
-          vvt2_pwm_state = false;
-          vvt2_max_pwm = false;
+          vvtChannel1.pinState = false;
+          vvtChannel1.periodTicks = false;
+          vvtChannel2.pinState = false;
+          vvtChannel2.periodTicks = false;
           DISABLE_VVT_TIMER();
         }
         else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
@@ -272,18 +267,18 @@ void vvtControl(void)
           //Make sure solenoid is on (100% duty)
           vvt1On();
           vvt2On();
-          vvt1_pwm_state = true;
-          vvt1_max_pwm = true;
-          vvt2_pwm_state = true;
-          vvt2_max_pwm = true;
+          vvtChannel1.pinState = true;
+          vvtChannel1.periodTicks = true;
+          vvtChannel2.pinState = true;
+          vvtChannel2.periodTicks = true;
           DISABLE_VVT_TIMER();
         }
         else
         {
           //Duty cycle is between 0 and 100. Make sure the timer is enabled
           ENABLE_VVT_TIMER();
-          if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
-          if(currentStatus.vvt2Duty < 200) { vvt2_max_pwm = false; }
+          if(currentStatus.vvt1Duty < 200) { vvtChannel1.periodTicks = false; }
+          if(currentStatus.vvt2Duty < 200) { vvtChannel2.periodTicks = false; }
         }
       }
       else
@@ -292,21 +287,21 @@ void vvtControl(void)
         {
           //Make sure solenoid is off (0% duty)
           vvt1Off();
-          vvt1_pwm_state = false;
-          vvt1_max_pwm = false;
+          vvtChannel1.pinState = false;
+          vvtChannel1.periodTicks = false;
         }
         else if( currentStatus.vvt1Duty >= 200 )
         {
           //Make sure solenoid is on (100% duty)
           vvt1On();
-          vvt1_pwm_state = true;
-          vvt1_max_pwm = true;
+          vvtChannel1.pinState = true;
+          vvtChannel1.periodTicks = true;
         }
         else
         {
           //Duty cycle is between 0 and 100. Make sure the timer is enabled
           ENABLE_VVT_TIMER();
-          if(currentStatus.vvt1Duty < 200) { vvt1_max_pwm = false; }
+          if(currentStatus.vvt1Duty < 200) { vvtChannel1.periodTicks = false; }
         }
       }
     }
@@ -318,14 +313,14 @@ void vvtControl(void)
       // Disable timer channel
       DISABLE_VVT_TIMER();
       currentStatus.vvt2Duty = 0;
-      vvt2_pwm_value = 0;
-      vvt2_pwm_state = false;
-      vvt2_max_pwm = false;
+      vvtChannel2.targetDuty = 0;
+      vvtChannel2.pinState = false;
+      vvtChannel2.periodTicks = false;
     }
     currentStatus.vvt1Duty = 0;
-    vvt1_pwm_value = 0;
-    vvt1_pwm_state = false;
-    vvt1_max_pwm = false;
+    vvtChannel1.targetDuty = 0;
+    vvtChannel1.pinState = false;
+    vvtChannel1.periodTicks = false;
     vvtTimeHold = false;
   } 
 }
@@ -372,14 +367,14 @@ void wmiControl(void)
     else { currentStatus.wmiTankEmpty = true; }
 
     currentStatus.wmiPW = wmiPW;
-    vvt2_pwm_value = halfPercentage(currentStatus.wmiPW, vvt_pwm_max_count);
+    vvtChannel2.targetDuty = halfPercentage(currentStatus.wmiPW, vvt_pwm_max_count);
 
     if(wmiPW == 0)
     {
       // Make sure water pump is off
       vvt2Off();
-      vvt2_pwm_state = false;
-      vvt2_max_pwm = false;
+      vvtChannel2.pinState = false;
+      vvtChannel2.periodTicks = false;
       if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
       digitalWrite(pinNumbers.pinWMIEnabled, LOW);
     }
@@ -390,13 +385,13 @@ void wmiControl(void)
       {
         // Make sure water pump is on (100% duty)
         vvt2On();
-        vvt2_pwm_state = true;
-        vvt2_max_pwm = true;
+        vvtChannel2.pinState = true;
+        vvtChannel2.periodTicks = true;
         if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
       }
       else
       {
-        vvt2_max_pwm = false;
+        vvtChannel2.periodTicks = false;
         ENABLE_VVT_TIMER();
       }
     }
@@ -406,40 +401,40 @@ void wmiControl(void)
 //The interrupt to control the VVT PWM
 void vvtInterrupt(void)
 {
-  if ( ((vvt1_pwm_state == false) || (vvt1_max_pwm == true)) && ((vvt2_pwm_state == false) || (vvt2_max_pwm == true)) )
+  if ( ((vvtChannel1.pinState == false) || (vvtChannel1.periodTicks == true)) && ((vvtChannel2.pinState == false) || (vvtChannel2.periodTicks == true)) )
   {
-    if( (vvt1_pwm_value > 0) && (vvt1_max_pwm == false) ) //Don't toggle if at 0%
+    if( (vvtChannel1.targetDuty > 0) && (vvtChannel1.periodTicks == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
       vvt1Off();
       #else
       vvt1On();
       #endif
-      vvt1_pwm_state = true;
+      vvtChannel1.pinState = true;
     }
-    if( (vvt2_pwm_value > 0) && (vvt2_max_pwm == false) ) //Don't toggle if at 0%
+    if( (vvtChannel2.targetDuty > 0) && (vvtChannel2.periodTicks == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
       vvt2Off();
       #else
       vvt2On();
       #endif
-      vvt2_pwm_state = true;
+      vvtChannel2.pinState = true;
     }
 
-    if( (vvt1_pwm_state == true) && ((vvt1_pwm_value <= vvt2_pwm_value) || (vvt2_pwm_state == false)) )
+    if( (vvtChannel1.pinState == true) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pinState == false)) )
     {
-      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt1_pwm_value);
-      vvt1_pwm_cur_value = vvt1_pwm_value;
-      vvt2_pwm_cur_value = vvt2_pwm_value;
-      if (vvt1_pwm_value == vvt2_pwm_value) { nextVVT = 2; } //Next event is for both PWM
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel1.targetDuty);
+      vvtChannel1.compareTicks = vvtChannel1.targetDuty;
+      vvtChannel2.compareTicks = vvtChannel2.targetDuty;
+      if (vvtChannel1.targetDuty == vvtChannel2.targetDuty) { nextVVT = 2; } //Next event is for both PWM
       else { nextVVT = 0; } //Next event is for PWM0
     }
-    else if( vvt2_pwm_state == true )
+    else if( vvtChannel2.pinState == true )
     {
-      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt2_pwm_value);
-      vvt1_pwm_cur_value = vvt1_pwm_value;
-      vvt2_pwm_cur_value = vvt2_pwm_value;
+      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel2.targetDuty);
+      vvtChannel1.compareTicks = vvtChannel1.targetDuty;
+      vvtChannel2.compareTicks = vvtChannel2.targetDuty;
       nextVVT = 1; //Next event is for PWM1
     }
     else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt_pwm_max_count); } //Shouldn't ever get here
@@ -448,72 +443,72 @@ void vvtInterrupt(void)
   {
     if(nextVVT == 0)
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel1.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvt1On();
         #else
         vvt1Off();
         #endif
-        vvt1_pwm_state = false;
-        vvt1_max_pwm = false;
+        vvtChannel1.pinState = false;
+        vvtChannel1.periodTicks = false;
       }
-      else { vvt1_max_pwm = true; }
+      else { vvtChannel1.periodTicks = true; }
       nextVVT = 1; //Next event is for PWM1
-      if(vvt2_pwm_state == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt2_pwm_cur_value - vvt1_pwm_cur_value) ); }
+      if(vvtChannel2.pinState == true){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.compareTicks - vvtChannel1.compareTicks) ); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel1.compareTicks) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
     else if (nextVVT == 1)
     {
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel2.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvt2On();
         #else
         vvt2Off();
         #endif
-        vvt2_pwm_state = false;
-        vvt2_max_pwm = false;
+        vvtChannel2.pinState = false;
+        vvtChannel2.periodTicks = false;
       }
-      else { vvt2_max_pwm = true; }
+      else { vvtChannel2.periodTicks = true; }
       nextVVT = 0; //Next event is for PWM0
-      if(vvt1_pwm_state == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt1_pwm_cur_value - vvt2_pwm_cur_value) ); }
+      if(vvtChannel1.pinState == true) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.compareTicks - vvtChannel2.compareTicks) ); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel2.compareTicks) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
     else
     {
-      if(vvt1_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel1.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
        #if defined(CORE_TEENSY41)
         vvt1On();
         #else
         vvt1Off();
         #endif
-        vvt1_pwm_state = false;
-        vvt1_max_pwm = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt1_pwm_cur_value) );
+        vvtChannel1.pinState = false;
+        vvtChannel1.periodTicks = false;
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel1.compareTicks) );
       }
-      else { vvt1_max_pwm = true; }
-      if(vvt2_pwm_value < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      else { vvtChannel1.periodTicks = true; }
+      if(vvtChannel2.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvt2On();
         #else
         vvt2Off();
         #endif
-        vvt2_pwm_state = false;
-        vvt2_max_pwm = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvt2_pwm_cur_value) );
+        vvtChannel2.pinState = false;
+        vvtChannel2.periodTicks = false;
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel2.compareTicks) );
       }
-      else { vvt2_max_pwm = true; }
+      else { vvtChannel2.periodTicks = true; }
     }
   }
 }
