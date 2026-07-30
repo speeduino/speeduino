@@ -213,54 +213,31 @@ void vvtControl(void)
         updateVvtDuty(currentStatus.vvt2, vvt2PID, currentStatus, configPage6, configPage10, vvt2Table);
       }
       
-      //Set the PWM state based on the above lookups
-      if( configPage10.wmiEnabled == 0 ) //Added possibility to use vvt and wmi at the same time
+      //Set the PWM state based on the duty
+      if( !configPage10.wmiEnabled ) //Added possibility to use vvt1 and wmi at the same time
       {
         if( (currentStatus.vvt1.duty == 0) && (currentStatus.vvt2.duty == 0) )
         {
           //Make sure solenoid is off (0% duty)
-          vvtChannel1.pin.setPinLow();
-          vvtChannel2.pin.setPinLow();
-          vvtChannel1.periodTicks = false;
-          vvtChannel2.periodTicks = false;
           DISABLE_VVT_TIMER();
         }
         else if( (currentStatus.vvt1.duty >= 200) && (currentStatus.vvt2.duty >= 200) )
         {
           //Make sure solenoid is on (100% duty)
-          vvtChannel1.pin.setPinHigh();
-          vvtChannel2.pin.setPinHigh();
-          vvtChannel1.periodTicks = true;
-          vvtChannel2.periodTicks = true;
           DISABLE_VVT_TIMER();
         }
         else
         {
           //Duty cycle is between 0 and 100. Make sure the timer is enabled
           ENABLE_VVT_TIMER();
-          if(currentStatus.vvt1.duty < 200) { vvtChannel1.periodTicks = false; }
-          if(currentStatus.vvt2.duty < 200) { vvtChannel2.periodTicks = false; }
         }
       }
       else
       {
-        if( currentStatus.vvt1.duty == 0 )
-        {
-          //Make sure solenoid is off (0% duty)
-          vvtChannel1.pin.setPinLow();
-          vvtChannel1.periodTicks = false;
-        }
-        else if( currentStatus.vvt1.duty >= 200 )
-        {
-          //Make sure solenoid is on (100% duty)
-          vvtChannel1.pin.setPinHigh();
-          vvtChannel1.periodTicks = true;
-        }
-        else
+        if( (currentStatus.vvt1.duty>0) && (currentStatus.vvt1.duty<200) )
         {
           //Duty cycle is between 0 and 100. Make sure the timer is enabled
           ENABLE_VVT_TIMER();
-          if(currentStatus.vvt1.duty < 200) { vvtChannel1.periodTicks = false; }
         }
       }
     }
@@ -272,16 +249,16 @@ void vvtControl(void)
       // Disable timer channel
       DISABLE_VVT_TIMER();
       currentStatus.vvt2.duty = 0;
-      vvtChannel2.pin.setPinLow();
-      vvtChannel2.periodTicks = false;
     }
     currentStatus.vvt1.duty = 0;
-    vvtChannel1.pin.setPinLow();
-    vvtChannel1.periodTicks = false;
     vvtWarmStartTime = 0;
   } 
-  vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
-  vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
+
+  vvtChannel1.setTargetDutyFromDuty(currentStatus.vvt1.duty, vvt_pwm_max_count);
+  if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
+  {
+    vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty, vvt_pwm_max_count);
+  }
 }
 
 // Water methanol injection control
