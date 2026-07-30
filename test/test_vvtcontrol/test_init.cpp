@@ -8,7 +8,6 @@
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
 extern uint16_t vvt_pwm_max_count;
-extern bool vvtIsHot;
 extern uint32_t vvtWarmStartTime;
 
 static void reset_init_postconditions(void)
@@ -71,31 +70,10 @@ static void test_init(void)
     }
 }
 
-static void test_vvtIsHot(void)
-{
-    setup_vvt_onoff_tune(VVT_LOAD_MAP, false, false);
-
-    currentStatus.coolant = temperatureRemoveOffset(configPage4.vvtMinClt)-1;
-    vvtIsHot = true;
-    initialiseAuxPWM();
-    TEST_ASSERT_FALSE(vvtIsHot);
-
-    currentStatus.coolant = temperatureRemoveOffset(configPage4.vvtMinClt);
-    vvtIsHot = false;
-    initialiseAuxPWM();
-    TEST_ASSERT_TRUE(vvtIsHot);
-
-    currentStatus.coolant = temperatureRemoveOffset(configPage4.vvtMinClt)+1;
-    vvtIsHot = false;
-    initialiseAuxPWM();
-    TEST_ASSERT_TRUE(vvtIsHot);
-}
-
 void testInit(void)
 {
   SET_UNITY_FILENAME()
   {
     RUN_TEST_P(test_init);
-    RUN_TEST_P(test_vvtIsHot);
   }
 }
