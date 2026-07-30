@@ -184,9 +184,17 @@ static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuse
   }
 }
 
+static bool isVvtActive(const statuses &current, const config4 &page4, const config6 &page6)
+{
+  return (page6.vvtEnabled)
+  && (current.coolant >= temperatureRemoveOffset(page4.vvtMinClt))
+  && (current.rotationStatus==EngineRotationStatus::Running)
+  ;
+}
+
 void vvtControl(void)
 {
-  if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) && (currentStatus.rotationStatus==EngineRotationStatus::Running))
+  if( isVvtActive(currentStatus, configPage4, configPage6) )
   {
     if(vvtTimeHold == false) 
     {
