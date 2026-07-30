@@ -131,8 +131,6 @@ void vvtControl(void)
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
         if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1.duty < 200) ) { currentStatus.vvt1.duty = 0; }
 
-        vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
-
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
           //Lookup VVT duty based on either MAP or TPS
@@ -141,8 +139,6 @@ void vvtControl(void)
 
           //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
           if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2.duty < 200) ) { currentStatus.vvt2.duty = 0; }
-
-          vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
         }
 
       } //Open loop
@@ -161,14 +157,12 @@ void vvtControl(void)
         if ( currentStatus.vvt1.angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1.angle > configPage10.vvtCLMaxAng )
         {
           currentStatus.vvt1.duty = 0;
-          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
           currentStatus.vvt1.angleError = true;
         }
         //Check that we're not already at the angle we want to be
         else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1.targetAngle == currentStatus.vvt1.angle) )
         {
           currentStatus.vvt1.duty = configPage10.vvtCLholdDuty;
-          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
           vvtPID.reset(currentStatus.vvt1.angle);
           currentStatus.vvt1.angleError = false;
         }
@@ -181,7 +175,6 @@ void vvtControl(void)
           if(PID_compute == true) 
           { 
             currentStatus.vvt1.duty = (uint8_t)pidOutput;
-            vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count); 
           }
           currentStatus.vvt1.angleError = false;
         }
@@ -200,14 +193,12 @@ void vvtControl(void)
           if ( currentStatus.vvt2.angle <= configPage10.vvtCLMinAng || currentStatus.vvt2.angle > configPage10.vvtCLMaxAng )
           {
             currentStatus.vvt2.duty = 0;
-            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
             currentStatus.vvt2.angleError = true;
           }
           //Check that we're not already at the angle we want to be
           else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2.targetAngle == currentStatus.vvt2.angle) )
           {
             currentStatus.vvt2.duty = configPage10.vvtCLholdDuty;
-            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
             vvt2PID.reset(currentStatus.vvt2.angle);
             currentStatus.vvt2.angleError = false;
           }
@@ -220,13 +211,12 @@ void vvtControl(void)
             if(PID_compute == true) 
             { 
               currentStatus.vvt2.duty = (uint8_t)pidOutput;
-              vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count); 
             }
             currentStatus.vvt2.angleError = false;
           }
         }
       }
-
+      
       //Set the PWM state based on the above lookups
       if( configPage10.wmiEnabled == 0 ) //Added possibility to use vvt and wmi at the same time
       {
@@ -286,16 +276,16 @@ void vvtControl(void)
       // Disable timer channel
       DISABLE_VVT_TIMER();
       currentStatus.vvt2.duty = 0;
-      vvtChannel2.targetDuty = 0;
       vvtChannel2.pin.setPinLow();
       vvtChannel2.periodTicks = false;
     }
     currentStatus.vvt1.duty = 0;
-    vvtChannel1.targetDuty = 0;
     vvtChannel1.pin.setPinLow();
     vvtChannel1.periodTicks = false;
     vvtTimeHold = false;
   } 
+  vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
+  vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
 }
 
 // Water methanol injection control
