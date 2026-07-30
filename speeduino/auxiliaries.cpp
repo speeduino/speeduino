@@ -22,7 +22,6 @@ A full copy of the license may be found in the projects root directory
 TESTABLE_STATIC VvtOutputChannel vvtChannel1;
 TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC volatile char nextVVT;
-TESTABLE_STATIC byte vvtCounter;
 
 static bool isWmiTankEmpty(void)
 {
@@ -43,8 +42,10 @@ static integerPID vvt2PID; //This is the PID object if that algorithm is used. N
 
 static void setVvtPidTunings(integerPID &pid, const config10 &page10, bool isReverse)
 {
+  // LCOV_EXCL_BR_START
   int8_t multiplier = isReverse ? 1 : -1;
   pid.setTunings(PidTuningParameters(page10.vvtCLKP, page10.vvtCLKI, page10.vvtCLKD) * multiplier, millis(), 33);
+  // LCOV_EXCL_BR_STOP
 }
 
 static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isReverse, int16_t currentAngle)
@@ -68,7 +69,6 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   currentStatus.vvt1 = vvtStatus_t();
   currentStatus.vvt2 = vvtStatus_t();
   vvtTimeHold = false;
-  vvtCounter = 0;
   vvtIsHot = currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt);
   vvtWarmTime = 0;
 
@@ -152,7 +152,7 @@ void vvtControl(void)
         if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1.targetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
         else { currentStatus.vvt1.targetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
-        if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
+        if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
           setVvtPidTunings(vvtPID, configPage10, configPage6.vvtPWMdir);  
         }
 
@@ -191,7 +191,7 @@ void vvtControl(void)
           if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2.targetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
           else { currentStatus.vvt2.targetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
-          if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
+          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
             setVvtPidTunings(vvt2PID, configPage10, configPage4.vvt2PWMdir);
         }
 
@@ -225,7 +225,6 @@ void vvtControl(void)
             currentStatus.vvt2.angleError = false;
           }
         }
-        vvtCounter++;
       }
 
       //Set the PWM state based on the above lookups
