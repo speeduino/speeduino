@@ -33,7 +33,6 @@ static bool isWmiTankEmpty(void)
 }
 
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
-TESTABLE_STATIC bool vvtIsHot;
 TESTABLE_STATIC uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -67,7 +66,6 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   currentStatus.wmiPW = 0;
   currentStatus.vvt1 = vvtStatus_t();
   currentStatus.vvt2 = vvtStatus_t();
-  vvtIsHot = currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt);
   vvtWarmStartTime = 0;
 
   if ((configPage6.vvtEnabled) && (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP))
@@ -202,10 +200,8 @@ void vvtControl(void)
     //Calculate the current cam angle for miata trigger
     if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1.angle = getCamAngle_Miata9905(); }
 
-    if( (vvtIsHot == true) || hasIntervalElapsed(runSecsX10, vvtWarmStartTime, TIME_TWO_MILLIS.toUser(configPage4.vvtDelay)) )
+    if(hasIntervalElapsed(runSecsX10, vvtWarmStartTime, TIME_TWO_MILLIS.toUser(configPage4.vvtDelay)) )
     {
-      vvtIsHot = true;
-
       updateVvtDuty(currentStatus.vvt1, vvtPID, currentStatus, configPage6, configPage10, vvtTable);
       if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
       {
