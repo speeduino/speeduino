@@ -8,9 +8,8 @@
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
 extern uint16_t vvt_pwm_max_count;
-extern bool vvtTimeHold;
 extern bool vvtIsHot;
-extern uint32_t vvtWarmTime;
+extern uint32_t vvtWarmStartTime;
 
 static void reset_init_postconditions(void)
 {
@@ -25,8 +24,7 @@ static void reset_init_postconditions(void)
     currentStatus.vvt2.angle = 99;
     currentStatus.vvt1.angleError = true;
     currentStatus.vvt2.angleError = true;
-    vvtTimeHold = true;
-    vvtWarmTime = 99;
+    vvtWarmStartTime = 99;
 }
 
 static void assert_init_postconditions(void)
@@ -44,8 +42,7 @@ static void assert_init_postconditions(void)
     TEST_ASSERT_EQUAL(0, currentStatus.vvt2.angle);
     TEST_ASSERT_FALSE(currentStatus.vvt1.angleError);
     TEST_ASSERT_FALSE(currentStatus.vvt2.angleError);
-    TEST_ASSERT_FALSE(vvtTimeHold);
-    TEST_ASSERT_EQUAL(0, vvtWarmTime);
+    TEST_ASSERT_EQUAL(0, vvtWarmStartTime);
 }
 
 static void test_init(void)

@@ -8,9 +8,9 @@
 
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
-extern bool vvtTimeHold;
+
 extern bool vvtIsHot;
-extern uint32_t vvtWarmTime;
+extern uint32_t vvtWarmStartTime;
 
 // For coverage, we need to run all tests against TPS and MAP
 static uint8_t loadSource = VVT_LOAD_MAP;
@@ -201,40 +201,34 @@ static void test_vvtControl_delay_holds_until_elapsed(void)
 
   setup_vvt_onconditions();
   vvtIsHot = false;
-  vvtWarmTime = 0U;
-  vvtTimeHold = false;
+  vvtWarmStartTime = 0U;
 
   constexpr uint16_t INTIAL_RUNSECSX10 = 500;
   runSecsX10 = INTIAL_RUNSECSX10;
   vvtControl();
-  TEST_ASSERT_TRUE(vvtTimeHold);
-  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmTime);
+  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmStartTime);
   TEST_ASSERT_FALSE(vvtIsHot);
 
 
   runSecsX10 = INTIAL_RUNSECSX10 + TIME_TWO_MILLIS.toUser(configPage4.vvtDelay) - 1U;
   vvtControl();
-  TEST_ASSERT_TRUE(vvtTimeHold);
-  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmTime);
+  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmStartTime);
   TEST_ASSERT_FALSE(vvtIsHot);
   
   runSecsX10 = INTIAL_RUNSECSX10 + TIME_TWO_MILLIS.toUser(configPage4.vvtDelay);
   vvtControl();
-  TEST_ASSERT_TRUE(vvtTimeHold);
-  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmTime);
+  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmStartTime);
   TEST_ASSERT_TRUE(vvtIsHot);
 
   // Test reset
   currentStatus.rotationStatus = EngineRotationStatus::Stopped;
   vvtControl();
-  TEST_ASSERT_FALSE(vvtTimeHold);
-  TEST_ASSERT_EQUAL(INTIAL_RUNSECSX10, vvtWarmTime);
+  TEST_ASSERT_EQUAL(0, vvtWarmStartTime);
 
   currentStatus.rotationStatus = EngineRotationStatus::Running;
   runSecsX10 = INTIAL_RUNSECSX10 * 2U;
   vvtControl();
-  TEST_ASSERT_TRUE(vvtTimeHold);
-  TEST_ASSERT_EQUAL(runSecsX10, vvtWarmTime);
+  TEST_ASSERT_EQUAL(runSecsX10, vvtWarmStartTime);
 }
 
 static void mirror_vvt2_conditions(void)
