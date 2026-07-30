@@ -18,7 +18,7 @@ static bool testWmiEnabled = false;
 
 static void assert_vvt2_duty(uint8_t expected)
 {
-  TEST_ASSERT_EQUAL(testVvt2Enabled ? expected : 0U, currentStatus.vvt2.duty);
+  TEST_ASSERT_EQUAL((testVvt2Enabled && !testWmiEnabled) ? expected : 0U, currentStatus.vvt2.duty);
 }
 
 static void setup_vvt_onconditions(void)
@@ -60,7 +60,7 @@ static void assert_vvt2_off(void)
 
 static void assert_vvt2_on(void)
 {
-  if (testVvt2Enabled)
+  if (testVvt2Enabled && !testWmiEnabled)
   {
     TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt2.duty);
     TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);

@@ -68,14 +68,19 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   currentStatus.vvt2 = vvtStatus_t();
   vvtWarmStartTime = 0;
 
-  if ((configPage6.vvtEnabled) && (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP))
+  configPage10.vvt2Enabled = configPage10.vvt2Enabled && configPage6.vvtEnabled && !configPage10.wmiEnabled;
+
+  if (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
+  {
+    if (configPage6.vvtEnabled)
     {
       initialiseVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1.angle);
-      if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
-      {
-        initialiseVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2.angle);
-      }
     }
+    if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
+    {
+      initialiseVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2.angle);
+    }
+  }
 
   if( (configPage6.vvtEnabled) || (configPage10.wmiEnabled) )
   {
@@ -285,7 +290,7 @@ void wmiControl(void)
   int wmiPW = 0;
   
   // wmi can only work when vvt2 is disabled 
-  if( (configPage10.vvt2Enabled == 0) && (configPage10.wmiEnabled >= 1) )
+  if (configPage10.wmiEnabled)
   {
     if( isWmiTankEmpty() )
     {
