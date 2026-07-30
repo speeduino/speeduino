@@ -104,6 +104,86 @@ void vvt2Off(void)
   vvtChannel2.pin.setPinLow();
 }
 
+static uint16_t getVvtLoad(const statuses &current, const config6 &page6)
+{
+  if (page6.vvtLoadSource == VVT_LOAD_TPS)
+  {
+    return (current.TPS * 2U);
+  }
+   return current.MAP;
+}
+
+static void updateVvtDutyOl(vvtStatus_t &vvtStatus, const statuses &current, const config6 &page6, const table3d8RpmLoad &lookupTable)
+{
+  // Lookup VVT duty based on either MAP or TPS
+  vvtStatus.duty = get3DTableValue(&lookupTable, getVvtLoad(current, page6), current.RPM);
+}
+
+static void updateVvtDutyOnOff(vvtStatus_t &vvtStatus, const statuses &current, const config6 &page6, const table3d8RpmLoad &lookupTable)
+{
+  // Lookup VVT duty based on either MAP or TPS
+  vvtStatus.duty = get3DTableValue(&lookupTable, getVvtLoad(current, page6), current.RPM);
+
+  //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
+  if(vvtStatus.duty < 200U) { 
+    vvtStatus.duty = 0; 
+  }
+}
+
+static void updateVvtDutyCl(vvtStatus_t &vvtStatus, integerPID &pid, const statuses &current, const config6 &page6, const config10 &page10, const table3d8RpmLoad &lookupTable)
+{
+  // Lookup VVT *angle* based on either MAP or TPS
+  vvtStatus.targetAngle = get3DTableValue(&lookupTable, getVvtLoad(current, page6), current.RPM);
+
+  // LCOV_EXCL_START
+  if(BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1HZ)) { //This only needs to be run very infrequently, once per second
+    setVvtPidTunings(pid, page10, page6.vvtPWMdir);  
+  }
+  // LCOV_EXCL_STOP
+
+  // Safety check that the cam angles are ok. 
+  // The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam 
+  // angles, so if that happens default to 0 duty.
+  if ( vvtStatus.angle <=  page10.vvtCLMinAng || vvtStatus.angle > page10.vvtCLMaxAng )
+  {
+    vvtStatus.duty = 0;
+    vvtStatus.angleError = true;
+  }
+  // Check that we're not already at the angle we want to be
+  else if((page6.vvtCLUseHold) && (vvtStatus.targetAngle == vvtStatus.angle) )
+  {
+    vvtStatus.duty = page10.vvtCLholdDuty;
+    pid.reset(vvtStatus.angle);
+    vvtStatus.angleError = false;
+  }
+  else // If not already at target angle, calculate new value from PID
+  {
+    int32_t pidOutput = 0;
+    pid.setSetPoint(vvtStatus.targetAngle);
+    if(pid.compute(millis(), vvtStatus.angle, &pidOutput)) 
+    { 
+      vvtStatus.duty = (uint8_t)pidOutput;
+    }
+    vvtStatus.angleError = false;
+  }
+}
+
+static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuses &current, const config6 &page6, const config10 &page10, const table3d8RpmLoad &lookupTable)
+{
+  if(page6.vvtMode == VVT_MODE_OPEN_LOOP)
+  {
+    updateVvtDutyOl(vvtStatus, current, page6, lookupTable);
+  }
+  else if(page6.vvtMode == VVT_MODE_CLOSED_LOOP)
+  {
+    updateVvtDutyCl(vvtStatus, pid, current, page6, page10, lookupTable);
+  }
+  else
+  {
+    updateVvtDutyOnOff(vvtStatus, current, page6, lookupTable);
+  }
+}
+
 void vvtControl(void)
 {
   if( (configPage6.vvtEnabled == 1) && (currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt)) && (currentStatus.rotationStatus==EngineRotationStatus::Running))
@@ -122,99 +202,10 @@ void vvtControl(void)
     {
       vvtIsHot = true;
 
-      if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
+      updateVvtDuty(currentStatus.vvt1, vvtPID, currentStatus, configPage6, configPage10, vvtTable);
+      if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
       {
-        //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1.duty = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
-        else { currentStatus.vvt1.duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
-
-        //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-        if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1.duty < 200) ) { currentStatus.vvt1.duty = 0; }
-
-        if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
-        {
-          //Lookup VVT duty based on either MAP or TPS
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2.duty = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
-          else { currentStatus.vvt2.duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
-
-          //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-          if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2.duty < 200) ) { currentStatus.vvt2.duty = 0; }
-        }
-
-      } //Open loop
-      else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
-      {
-        //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1.targetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
-        else { currentStatus.vvt1.targetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
-
-        if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-          setVvtPidTunings(vvtPID, configPage10, configPage6.vvtPWMdir);  
-        }
-
-        // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
-        // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-        if ( currentStatus.vvt1.angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1.angle > configPage10.vvtCLMaxAng )
-        {
-          currentStatus.vvt1.duty = 0;
-          currentStatus.vvt1.angleError = true;
-        }
-        //Check that we're not already at the angle we want to be
-        else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1.targetAngle == currentStatus.vvt1.angle) )
-        {
-          currentStatus.vvt1.duty = configPage10.vvtCLholdDuty;
-          vvtPID.reset(currentStatus.vvt1.angle);
-          currentStatus.vvt1.angleError = false;
-        }
-        else
-        {
-          //If not already at target angle, calculate new value from PID
-          int32_t pidOutput = 0;
-          vvtPID.setSetPoint(currentStatus.vvt1.targetAngle);
-          bool PID_compute = vvtPID.compute(millis(), currentStatus.vvt1.angle, &pidOutput);
-          if(PID_compute == true) 
-          { 
-            currentStatus.vvt1.duty = (uint8_t)pidOutput;
-          }
-          currentStatus.vvt1.angleError = false;
-        }
-
-        if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
-        {
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2.targetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
-          else { currentStatus.vvt2.targetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
-
-          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
-            setVvtPidTunings(vvt2PID, configPage10, configPage4.vvt2PWMdir);
-        }
-
-          // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
-          // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-          if ( currentStatus.vvt2.angle <= configPage10.vvtCLMinAng || currentStatus.vvt2.angle > configPage10.vvtCLMaxAng )
-          {
-            currentStatus.vvt2.duty = 0;
-            currentStatus.vvt2.angleError = true;
-          }
-          //Check that we're not already at the angle we want to be
-          else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2.targetAngle == currentStatus.vvt2.angle) )
-          {
-            currentStatus.vvt2.duty = configPage10.vvtCLholdDuty;
-            vvt2PID.reset(currentStatus.vvt2.angle);
-            currentStatus.vvt2.angleError = false;
-          }
-          else
-          {
-            vvt2PID.setSetPoint(currentStatus.vvt2.targetAngle);
-            //If not already at target angle, calculate new value from PID
-            int32_t pidOutput = 0;
-            bool PID_compute = vvt2PID.compute(millis(), currentStatus.vvt2.angle, &pidOutput);
-            if(PID_compute == true) 
-            { 
-              currentStatus.vvt2.duty = (uint8_t)pidOutput;
-            }
-            currentStatus.vvt2.angleError = false;
-          }
-        }
+        updateVvtDuty(currentStatus.vvt2, vvt2PID, currentStatus, configPage6, configPage10, vvt2Table);
       }
       
       //Set the PWM state based on the above lookups
