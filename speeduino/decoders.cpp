@@ -730,7 +730,7 @@ static inline void triggerRecordVVT1Angle (void)
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
 
-    currentStatus.vvt1Angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+    currentStatus.vvt1.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1.angle);
   }
 }
 
@@ -758,8 +758,8 @@ static void triggerThird_missingTooth(void)
     while(curAngle > 360) { curAngle -= 360; }
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
-    //currentStatus.vvt2Angle = int8_t (curAngle); //vvt1Angle is only int8, but +/-127 degrees is enough for VVT control
-    currentStatus.vvt2Angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2Angle);    
+    //currentStatus.vvt2.angle = int8_t (curAngle); //vvt1.angle is only int8, but +/-127 degrees is enough for VVT control
+    currentStatus.vvt2.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2.angle);    
 
     toothLastThirdToothTime = curTime3;
   } //Trigger filter
@@ -2716,9 +2716,9 @@ int getCamAngle_Miata9905(void)
   //lastVVTtime is the time between tooth #1 (10* BTDC) and the single cam tooth. 
   //All cam angles in in BTDC, so the actual advance angle is 370 - timeToAngle(lastVVTtime) - <the angle of the cam at 0 advance>
   curAngle = 370 - timeToAngle(lastVVTtime) - configPage10.vvtCL0DutyAng;
-  currentStatus.vvt1Angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1Angle);
+  currentStatus.vvt1.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1.angle);
 
-  return currentStatus.vvt1Angle;
+  return currentStatus.vvt1.angle;
 }
 
 static void triggerSetEndTeeth_Miata9905(void)
@@ -4527,7 +4527,7 @@ static void triggerSec_FordST170(void)
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
       {
         curAngle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
-        currentStatus.vvt1Angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
+        currentStatus.vvt1.angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
       }
     }
   } //Trigger filter
@@ -5632,7 +5632,7 @@ static void triggerSec_RoverMEMS(void)
       curAngle -= configPage4.triggerAngle; //Value at TDC
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
 
-      currentStatus.vvt1Angle = curAngle;
+      currentStatus.vvt1.angle = curAngle;
     }
 
     if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE)

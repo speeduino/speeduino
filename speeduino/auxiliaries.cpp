@@ -65,12 +65,8 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
   currentStatus.wmiTankEmpty = false;
   currentStatus.wmiPW = 0;
-  currentStatus.vvt1Duty = 0;
-  currentStatus.vvt2Duty = 0;
-  currentStatus.vvt1Angle = 0;
-  currentStatus.vvt2Angle = 0;
-  currentStatus.vvt1AngleError = false;
-  currentStatus.vvt2AngleError = false;
+  currentStatus.vvt1 = vvtStatus_t();
+  currentStatus.vvt2 = vvtStatus_t();
   vvtTimeHold = false;
   vvtCounter = 0;
   vvtIsHot = currentStatus.coolant >= temperatureRemoveOffset(configPage4.vvtMinClt);
@@ -78,10 +74,10 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 
   if ((configPage6.vvtEnabled) && (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP))
     {
-      initialiseVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1Angle);
+      initialiseVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1.angle);
       if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
       {
-        initialiseVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2Angle);
+        initialiseVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2.angle);
       }
     }
 
@@ -119,7 +115,7 @@ void vvtControl(void)
     }
 
     //Calculate the current cam angle for miata trigger
-    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1Angle = getCamAngle_Miata9905(); }
+    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1.angle = getCamAngle_Miata9905(); }
 
     constexpr uint32_t VVT_TIME_DELAY_MULTIPLIER = 50;
     if( (vvtIsHot == true) || hasIntervalElapsed(runSecsX10, vvtWarmTime, configPage4.vvtDelay * VVT_TIME_DELAY_MULTIPLIER) )
@@ -129,32 +125,32 @@ void vvtControl(void)
       if( (configPage6.vvtMode == VVT_MODE_OPEN_LOOP) || (configPage6.vvtMode == VVT_MODE_ONOFF) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
-        else { currentStatus.vvt1Duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1.duty = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
+        else { currentStatus.vvt1.duty = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
         //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-        if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1Duty < 200) ) { currentStatus.vvt1Duty = 0; }
+        if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt1.duty < 200) ) { currentStatus.vvt1.duty = 0; }
 
-        vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
+        vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
           //Lookup VVT duty based on either MAP or TPS
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
-          else { currentStatus.vvt2Duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2.duty = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
+          else { currentStatus.vvt2.duty = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
           //VVT table can be used for controlling on/off switching. If this is turned on, then disregard any interpolation or non-binary values
-          if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2Duty < 200) ) { currentStatus.vvt2Duty = 0; }
+          if( (configPage6.vvtMode == VVT_MODE_ONOFF) && (currentStatus.vvt2.duty < 200) ) { currentStatus.vvt2.duty = 0; }
 
-          vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
+          vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
         }
 
       } //Open loop
       else if( (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP) )
       {
         //Lookup VVT duty based on either MAP or TPS
-        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
-        else { currentStatus.vvt1TargetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
+        if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt1.targetAngle = get3DTableValue(&vvtTable, (currentStatus.TPS * 2U), currentStatus.RPM); }
+        else { currentStatus.vvt1.targetAngle = get3DTableValue(&vvtTable, currentStatus.MAP, currentStatus.RPM); }
 
         if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
           setVvtPidTunings(vvtPID, configPage10, configPage6.vvtPWMdir);  
@@ -162,38 +158,38 @@ void vvtControl(void)
 
         // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
         // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-        if ( currentStatus.vvt1Angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1Angle > configPage10.vvtCLMaxAng )
+        if ( currentStatus.vvt1.angle <=  configPage10.vvtCLMinAng || currentStatus.vvt1.angle > configPage10.vvtCLMaxAng )
         {
-          currentStatus.vvt1Duty = 0;
-          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
-          currentStatus.vvt1AngleError = true;
+          currentStatus.vvt1.duty = 0;
+          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
+          currentStatus.vvt1.angleError = true;
         }
         //Check that we're not already at the angle we want to be
-        else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1TargetAngle == currentStatus.vvt1Angle) )
+        else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt1.targetAngle == currentStatus.vvt1.angle) )
         {
-          currentStatus.vvt1Duty = configPage10.vvtCLholdDuty;
-          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count);
-          vvtPID.reset(currentStatus.vvt1Angle);
-          currentStatus.vvt1AngleError = false;
+          currentStatus.vvt1.duty = configPage10.vvtCLholdDuty;
+          vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count);
+          vvtPID.reset(currentStatus.vvt1.angle);
+          currentStatus.vvt1.angleError = false;
         }
         else
         {
           //If not already at target angle, calculate new value from PID
           int32_t pidOutput = 0;
-          vvtPID.setSetPoint(currentStatus.vvt1TargetAngle);
-          bool PID_compute = vvtPID.compute(millis(), currentStatus.vvt1Angle, &pidOutput);
+          vvtPID.setSetPoint(currentStatus.vvt1.targetAngle);
+          bool PID_compute = vvtPID.compute(millis(), currentStatus.vvt1.angle, &pidOutput);
           if(PID_compute == true) 
           { 
-            currentStatus.vvt1Duty = (uint8_t)pidOutput;
-            vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1Duty, vvt_pwm_max_count); 
+            currentStatus.vvt1.duty = (uint8_t)pidOutput;
+            vvtChannel1.targetDuty = halfPercentage(currentStatus.vvt1.duty, vvt_pwm_max_count); 
           }
-          currentStatus.vvt1AngleError = false;
+          currentStatus.vvt1.angleError = false;
         }
 
         if (configPage10.vvt2Enabled == 1) // same for VVT2 if it's enabled
         {
-          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
-          else { currentStatus.vvt2TargetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
+          if(configPage6.vvtLoadSource == VVT_LOAD_TPS) { currentStatus.vvt2.targetAngle = get3DTableValue(&vvt2Table, (currentStatus.TPS * 2U), currentStatus.RPM); }
+          else { currentStatus.vvt2.targetAngle = get3DTableValue(&vvt2Table, currentStatus.MAP, currentStatus.RPM); }
 
           if( (vvtCounter & 31) == 1) { //This only needs to be run very infrequently, once every 32 calls to vvtControl(). This is approx. once per second
             setVvtPidTunings(vvt2PID, configPage10, configPage4.vvt2PWMdir);
@@ -201,32 +197,32 @@ void vvtControl(void)
 
           // safety check that the cam angles are ok. The engine will be totally undriveable if the cam sensor is faulty and giving wrong cam angles, so if that happens, default to 0 duty.
           // This also prevents using zero or negative current angle values for PID adjustment, because those don't work in integer PID.
-          if ( currentStatus.vvt2Angle <= configPage10.vvtCLMinAng || currentStatus.vvt2Angle > configPage10.vvtCLMaxAng )
+          if ( currentStatus.vvt2.angle <= configPage10.vvtCLMinAng || currentStatus.vvt2.angle > configPage10.vvtCLMaxAng )
           {
-            currentStatus.vvt2Duty = 0;
-            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
-            currentStatus.vvt2AngleError = true;
+            currentStatus.vvt2.duty = 0;
+            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
+            currentStatus.vvt2.angleError = true;
           }
           //Check that we're not already at the angle we want to be
-          else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2TargetAngle == currentStatus.vvt2Angle) )
+          else if((configPage6.vvtCLUseHold > 0) && (currentStatus.vvt2.targetAngle == currentStatus.vvt2.angle) )
           {
-            currentStatus.vvt2Duty = configPage10.vvtCLholdDuty;
-            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count);
-            vvt2PID.reset(currentStatus.vvt2Angle);
-            currentStatus.vvt2AngleError = false;
+            currentStatus.vvt2.duty = configPage10.vvtCLholdDuty;
+            vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count);
+            vvt2PID.reset(currentStatus.vvt2.angle);
+            currentStatus.vvt2.angleError = false;
           }
           else
           {
-            vvt2PID.setSetPoint(currentStatus.vvt2TargetAngle);
+            vvt2PID.setSetPoint(currentStatus.vvt2.targetAngle);
             //If not already at target angle, calculate new value from PID
             int32_t pidOutput = 0;
-            bool PID_compute = vvt2PID.compute(millis(), currentStatus.vvt2Angle, &pidOutput);
+            bool PID_compute = vvt2PID.compute(millis(), currentStatus.vvt2.angle, &pidOutput);
             if(PID_compute == true) 
             { 
-              currentStatus.vvt2Duty = (uint8_t)pidOutput;
-              vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2Duty, vvt_pwm_max_count); 
+              currentStatus.vvt2.duty = (uint8_t)pidOutput;
+              vvtChannel2.targetDuty = halfPercentage(currentStatus.vvt2.duty, vvt_pwm_max_count); 
             }
-            currentStatus.vvt2AngleError = false;
+            currentStatus.vvt2.angleError = false;
           }
         }
         vvtCounter++;
@@ -235,7 +231,7 @@ void vvtControl(void)
       //Set the PWM state based on the above lookups
       if( configPage10.wmiEnabled == 0 ) //Added possibility to use vvt and wmi at the same time
       {
-        if( (currentStatus.vvt1Duty == 0) && (currentStatus.vvt2Duty == 0) )
+        if( (currentStatus.vvt1.duty == 0) && (currentStatus.vvt2.duty == 0) )
         {
           //Make sure solenoid is off (0% duty)
           vvtChannel1.pin.setPinLow();
@@ -244,7 +240,7 @@ void vvtControl(void)
           vvtChannel2.periodTicks = false;
           DISABLE_VVT_TIMER();
         }
-        else if( (currentStatus.vvt1Duty >= 200) && (currentStatus.vvt2Duty >= 200) )
+        else if( (currentStatus.vvt1.duty >= 200) && (currentStatus.vvt2.duty >= 200) )
         {
           //Make sure solenoid is on (100% duty)
           vvtChannel1.pin.setPinHigh();
@@ -257,19 +253,19 @@ void vvtControl(void)
         {
           //Duty cycle is between 0 and 100. Make sure the timer is enabled
           ENABLE_VVT_TIMER();
-          if(currentStatus.vvt1Duty < 200) { vvtChannel1.periodTicks = false; }
-          if(currentStatus.vvt2Duty < 200) { vvtChannel2.periodTicks = false; }
+          if(currentStatus.vvt1.duty < 200) { vvtChannel1.periodTicks = false; }
+          if(currentStatus.vvt2.duty < 200) { vvtChannel2.periodTicks = false; }
         }
       }
       else
       {
-        if( currentStatus.vvt1Duty == 0 )
+        if( currentStatus.vvt1.duty == 0 )
         {
           //Make sure solenoid is off (0% duty)
           vvtChannel1.pin.setPinLow();
           vvtChannel1.periodTicks = false;
         }
-        else if( currentStatus.vvt1Duty >= 200 )
+        else if( currentStatus.vvt1.duty >= 200 )
         {
           //Make sure solenoid is on (100% duty)
           vvtChannel1.pin.setPinHigh();
@@ -279,7 +275,7 @@ void vvtControl(void)
         {
           //Duty cycle is between 0 and 100. Make sure the timer is enabled
           ENABLE_VVT_TIMER();
-          if(currentStatus.vvt1Duty < 200) { vvtChannel1.periodTicks = false; }
+          if(currentStatus.vvt1.duty < 200) { vvtChannel1.periodTicks = false; }
         }
       }
     }
@@ -290,12 +286,12 @@ void vvtControl(void)
     {
       // Disable timer channel
       DISABLE_VVT_TIMER();
-      currentStatus.vvt2Duty = 0;
+      currentStatus.vvt2.duty = 0;
       vvtChannel2.targetDuty = 0;
       vvtChannel2.pin.setPinLow();
       vvtChannel2.periodTicks = false;
     }
-    currentStatus.vvt1Duty = 0;
+    currentStatus.vvt1.duty = 0;
     vvtChannel1.targetDuty = 0;
     vvtChannel1.pin.setPinLow();
     vvtChannel1.periodTicks = false;

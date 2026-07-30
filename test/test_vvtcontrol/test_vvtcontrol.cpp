@@ -18,7 +18,7 @@ static bool testWmiEnabled = false;
 
 static void assert_vvt2_duty(uint8_t expected)
 {
-  TEST_ASSERT_EQUAL(testVvt2Enabled ? expected : 0U, currentStatus.vvt2Duty);
+  TEST_ASSERT_EQUAL(testVvt2Enabled ? expected : 0U, currentStatus.vvt2.duty);
 }
 
 static void setup_vvt_onconditions(void)
@@ -36,14 +36,14 @@ static void setup_vvt_onconditions(void)
 
 static void assert_vvt1_off(void)
 {
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt1Duty);
+  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt1.duty);
   TEST_ASSERT_EQUAL_UINT8(0U, vvtChannel1.targetDuty);
   TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
 }
 
 static void assert_vvt1_on(void)
 {
-  TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt1Duty);
+  TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt1.duty);
   TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel1.targetDuty);
   if (vvtChannel1.targetDuty==200U)
   {
@@ -53,7 +53,7 @@ static void assert_vvt1_on(void)
 
 static void assert_vvt2_off(void)
 {
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt2Duty);
+  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt2.duty);
   TEST_ASSERT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);
   TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
 }
@@ -62,7 +62,7 @@ static void assert_vvt2_on(void)
 {
   if (testVvt2Enabled)
   {
-    TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt2Duty);
+    TEST_ASSERT_NOT_EQUAL_UINT8(0U, currentStatus.vvt2.duty);
     TEST_ASSERT_NOT_EQUAL_UINT8(0U, vvtChannel2.targetDuty);
     if (vvtChannel2.targetDuty==200U)
     {
@@ -206,8 +206,8 @@ static void test_vvtControl_delay_holds_until_elapsed(void)
 
   TEST_ASSERT_TRUE(vvtTimeHold);
   TEST_ASSERT_FALSE(vvtIsHot);
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt1Duty);
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt2Duty);
+  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt1.duty);
+  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.vvt2.duty);
 
   vvtControl();
 
@@ -217,18 +217,18 @@ static void test_vvtControl_delay_holds_until_elapsed(void)
 
 static void mirror_vvt2_conditions(void)
 {
-  currentStatus.vvt2Angle = currentStatus.vvt1Angle;
-  currentStatus.vvt2TargetAngle = currentStatus.vvt1TargetAngle;
-  currentStatus.vvt2AngleError = currentStatus.vvt1AngleError;
-  currentStatus.vvt2Duty = currentStatus.vvt1Duty;
+  currentStatus.vvt2.angle = currentStatus.vvt1.angle;
+  currentStatus.vvt2.targetAngle = currentStatus.vvt1.targetAngle;
+  currentStatus.vvt2.angleError = currentStatus.vvt1.angleError;
+  currentStatus.vvt2.duty = currentStatus.vvt1.duty;
 }
 
 static void assert_angle_error(uint8_t expectedDuty, bool expectedError)
 {
-  TEST_ASSERT_EQUAL_UINT8(expectedDuty, currentStatus.vvt1Duty);
-  TEST_ASSERT_TRUE(expectedError==currentStatus.vvt1AngleError);
-  assert_vvt2_duty(currentStatus.vvt1Duty);
-  TEST_ASSERT_TRUE(!testVvt2Enabled || (currentStatus.vvt2AngleError==currentStatus.vvt2AngleError));
+  TEST_ASSERT_EQUAL_UINT8(expectedDuty, currentStatus.vvt1.duty);
+  TEST_ASSERT_TRUE(expectedError==currentStatus.vvt1.angleError);
+  assert_vvt2_duty(currentStatus.vvt1.duty);
+  TEST_ASSERT_TRUE(!testVvt2Enabled || (currentStatus.vvt2.angleError==currentStatus.vvt2.angleError));
 }
 
 static void test_vvtControl_closed_loop_hold_sets_hold_duty(void)
@@ -238,10 +238,10 @@ static void test_vvtControl_closed_loop_hold_sets_hold_duty(void)
   initialiseAuxPWM();
 
   setup_vvt_onconditions();
-  currentStatus.vvt1Angle = 150;
-  currentStatus.vvt1TargetAngle = 150;
-  currentStatus.vvt1AngleError = false;
-  currentStatus.vvt1Duty = 0;
+  currentStatus.vvt1.angle = 150;
+  currentStatus.vvt1.targetAngle = 150;
+  currentStatus.vvt1.angleError = false;
+  currentStatus.vvt1.duty = 0;
   mirror_vvt2_conditions();
 
   vvtControl();
@@ -254,16 +254,16 @@ static void test_vvtControl_closed_loop_angle_error_sets_error(void)
   initialiseAuxPWM();
 
   setup_vvt_onconditions();
-  currentStatus.vvt1Angle = configPage10.vvtCLMinAng - 1;
-  currentStatus.vvt1Duty = 0;
+  currentStatus.vvt1.angle = configPage10.vvtCLMinAng - 1;
+  currentStatus.vvt1.duty = 0;
   mirror_vvt2_conditions();
   
   vvtControl();
   assert_angle_error(0, true);
 
   setup_vvt_onconditions();
-  currentStatus.vvt1Angle = configPage10.vvtCLMaxAng + 1;
-  currentStatus.vvt1Duty = 0;
+  currentStatus.vvt1.angle = configPage10.vvtCLMaxAng + 1;
+  currentStatus.vvt1.duty = 0;
   mirror_vvt2_conditions();
   
   vvtControl();
@@ -277,17 +277,17 @@ static void test_vvtControl_closed_loop_nohold_noangle_error(void)
   initialiseAuxPWM();
 
   setup_vvt_onconditions();
-  currentStatus.vvt1Angle = configPage10.vvtCLMinAng + 1;
-  currentStatus.vvt1TargetAngle = currentStatus.vvt1Angle + 5U;
-  currentStatus.vvt1Duty = 0;
+  currentStatus.vvt1.angle = configPage10.vvtCLMinAng + 1;
+  currentStatus.vvt1.targetAngle = currentStatus.vvt1.angle + 5U;
+  currentStatus.vvt1.duty = 0;
   mirror_vvt2_conditions();
   
   vvtControl();
  
-  TEST_ASSERT_EQUAL_UINT8(234, currentStatus.vvt1Duty);
-  TEST_ASSERT_FALSE(currentStatus.vvt1AngleError);
-  assert_vvt2_duty(currentStatus.vvt1Duty);
-  TEST_ASSERT_TRUE(!testVvt2Enabled || (currentStatus.vvt2AngleError==currentStatus.vvt2AngleError));
+  TEST_ASSERT_EQUAL_UINT8(234, currentStatus.vvt1.duty);
+  TEST_ASSERT_FALSE(currentStatus.vvt1.angleError);
+  assert_vvt2_duty(currentStatus.vvt1.duty);
+  TEST_ASSERT_TRUE(!testVvt2Enabled || (currentStatus.vvt2.angleError==currentStatus.vvt2.angleError));
 }
 
 void testVvtControl(void)
