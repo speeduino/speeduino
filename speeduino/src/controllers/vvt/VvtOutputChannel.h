@@ -7,4 +7,6 @@ struct VvtOutputChannel {
     uint16_t compareTicks = 0;   // Active compare threshold for ISR match
     bool     periodTicks = false;    // Total clock ticks per PWM period (frequency ceiling)
     trackedOutputPin_t<boardOutputPin_t> pin;
+
+    void setTargetDutyFromDuty(uint8_t duty, uint16_t maxPwmDuty);
 };
