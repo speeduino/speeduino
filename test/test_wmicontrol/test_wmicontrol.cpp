@@ -64,7 +64,7 @@ static void test_tank_not_empty(void)
 
 static void assert_wmipw(uint8_t expected)
 {
-    currentStatus.wmiPW = 99;
+    currentStatus.wmiPW = 99; 
     wmiControl();
     TEST_ASSERT_EQUAL(expected, currentStatus.wmiPW);
 }
@@ -201,13 +201,14 @@ static void test_disabled(void)
     setup_assert_wmipw(99);
 }
 
-static void test_vvt_enabled(void)
+static void test_vvt2_enabled(void)
 {
     setup_wmi_tune(WMI_MODE_SIMPLE);
     configPage10.vvt2Enabled = true;
     initialiseAuxPWM();
+    TEST_ASSERT_FALSE(configPage10.vvt2Enabled);
 
-    setup_assert_wmipw(99);
+    setup_assert_wmipw(200);
 }
 
 void testWmiControl(void)
@@ -222,7 +223,7 @@ void testWmiControl(void)
     RUN_TEST_P(test_mode_cl);
     RUN_TEST_P(test_mode_other);
     RUN_TEST_P(test_disabled);
-    RUN_TEST_P(test_vvt_enabled);
+    RUN_TEST_P(test_vvt2_enabled);
     RUN_TEST_P(test_calc_conditions);
   }
 }
