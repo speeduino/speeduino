@@ -255,6 +255,15 @@ static bool isWmiTankEmpty(void)
       ;
 }
 
+static bool isWmiActive(const statuses &current, const config10 &page10)
+{
+  return (current.TPS >= page10.wmiTPS) 
+      && (current.RPM >= RPM_COARSE.toUser(page10.wmiRPM))
+      && (current.MAP >= MAP.toUser(page10.wmiMAP)) 
+      && (current.IAT >= TEMPERATURE.toUser(page10.wmiIAT))
+      ;
+}
+
 // Water methanol injection control
 void wmiControl(void)
 {
@@ -265,7 +274,7 @@ void wmiControl(void)
     uint16_t wmiPW = 0;
     if (!currentStatus.wmiTankEmpty)
     {
-      if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2U) >= configPage10.wmiMAP) && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
+      if( isWmiActive(currentStatus, configPage10) )
       {
         switch(configPage10.wmiMode)
         {
@@ -303,7 +312,6 @@ void wmiControl(void)
     else
     {
       if( !configPage6.vvtEnabled ) { DISABLE_VVT_TIMER(); }
-
     }
     digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isOff() ? LOW : HIGH);
   }
