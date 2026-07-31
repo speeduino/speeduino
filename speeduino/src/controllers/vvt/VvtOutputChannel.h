@@ -8,5 +8,7 @@ struct VvtOutputChannel {
     bool     periodTicks = false;    // Total clock ticks per PWM period (frequency ceiling)
     trackedOutputPin_t<boardOutputPin_t> pin;
 
+    VvtOutputChannel() = default;
+    VvtOutputChannel(uint8_t pinNum);
     void setTargetDutyFromDuty(uint8_t duty, uint16_t maxPwmDuty);
 };

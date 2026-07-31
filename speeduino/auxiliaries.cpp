@@ -57,10 +57,8 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
   vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
 
-  vvtChannel1 = VvtOutputChannel();
-  vvtChannel1.pin.setPin(pinNumbers.pinVVT_1, OUTPUT);
-  vvtChannel2 = VvtOutputChannel();
-  vvtChannel2.pin.setPin(pinNumbers.pinVVT_2, OUTPUT);
+  vvtChannel1 = VvtOutputChannel(pinNumbers.pinVVT_1);
+  vvtChannel2 = VvtOutputChannel(pinNumbers.pinVVT_2);
 
   currentStatus.wmiTankEmpty = false;
   currentStatus.wmiPW = 0;
@@ -185,6 +183,48 @@ static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuse
   }
 }
 
+static bool isOff(const vvtStatus_t &status)
+{
+  return status.duty==0U;
+}
+
+static bool isOnPartial(const vvtStatus_t &status)
+{
+  return (status.duty>0U) && (status.duty<200U);
+}
+
+static bool isOnFull(const vvtStatus_t &status)
+{
+  return status.duty>=200U;
+}
+
+static void setTimerState(const statuses &current, const config10 &page10)
+{
+  if( !page10.wmiEnabled )
+  {
+    if( isOff(current.vvt1) && isOff(current.vvt2) )
+    {
+      DISABLE_VVT_TIMER();
+    }
+    else if( isOnFull(current.vvt1) && isOnFull(current.vvt2) )
+    {
+      DISABLE_VVT_TIMER();
+    }
+    else
+    {
+      ENABLE_VVT_TIMER();
+    }
+  }
+  else
+  {
+    if (isOnPartial(current.vvt1))
+    {
+      //Duty cycle is between 0 and 100. Make sure the timer is enabled
+      ENABLE_VVT_TIMER();
+    }
+  }
+}
+
 static bool isVvtActive(const statuses &current, const config4 &page4, const config6 &page6)
 {
   return (page6.vvtEnabled)
@@ -212,52 +252,25 @@ void vvtControl(void)
       {
         updateVvtDuty(currentStatus.vvt2, vvt2PID, currentStatus, configPage6, configPage10, vvt2Table);
       }
-      
-      //Set the PWM state based on the duty
-      if( !configPage10.wmiEnabled ) //Added possibility to use vvt1 and wmi at the same time
-      {
-        if( (currentStatus.vvt1.duty == 0) && (currentStatus.vvt2.duty == 0) )
-        {
-          //Make sure solenoid is off (0% duty)
-          DISABLE_VVT_TIMER();
-        }
-        else if( (currentStatus.vvt1.duty >= 200) && (currentStatus.vvt2.duty >= 200) )
-        {
-          //Make sure solenoid is on (100% duty)
-          DISABLE_VVT_TIMER();
-        }
-        else
-        {
-          //Duty cycle is between 0 and 100. Make sure the timer is enabled
-          ENABLE_VVT_TIMER();
-        }
-      }
-      else
-      {
-        if( (currentStatus.vvt1.duty>0) && (currentStatus.vvt1.duty<200) )
-        {
-          //Duty cycle is between 0 and 100. Make sure the timer is enabled
-          ENABLE_VVT_TIMER();
-        }
-      }
     }
   }
   else 
   { 
-    if (configPage10.wmiEnabled == 0)
+    if (!configPage10.wmiEnabled)
     {
-      // Disable timer channel
-      DISABLE_VVT_TIMER();
       currentStatus.vvt2.duty = 0;
     }
     currentStatus.vvt1.duty = 0;
     vvtWarmStartTime = 0;
   } 
 
-  vvtChannel1.setTargetDutyFromDuty(currentStatus.vvt1.duty, vvt_pwm_max_count);
-  if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
-  {
-    vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty, vvt_pwm_max_count);
+  ATOMIC() {
+    vvtChannel1.setTargetDutyFromDuty(currentStatus.vvt1.duty, vvt_pwm_max_count);
+    if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
+    {
+      vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty, vvt_pwm_max_count);
+    }
+    setTimerState(currentStatus, configPage10);
   }
 }
 
