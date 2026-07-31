@@ -2,6 +2,11 @@
 #include "../../../maths.h"
 #include "../../../units.h"
 
+VvtOutputChannel::VvtOutputChannel(uint8_t pinNum)
+{
+    pin.setPin(pinNum, OUTPUT);
+}
+
 void VvtOutputChannel::setTargetDutyFromDuty(uint8_t duty, uint16_t maxPwmDuty)
 {
     if(duty == 0)
