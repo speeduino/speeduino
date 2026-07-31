@@ -264,56 +264,63 @@ static bool isWmiActive(const statuses &current, const config10 &page10)
       ;
 }
 
-// Water methanol injection control
-void wmiControl(void)
+static uint8_t calculateWmiPw(const statuses &current, const config10 &page10)
 {
-  if (configPage10.wmiEnabled)
-  {
-    currentStatus.wmiTankEmpty = isWmiTankEmpty();
+    uint16_t wmiPw = 0;
 
-    uint16_t wmiPW = 0;
-    if (!currentStatus.wmiTankEmpty)
+    if (configPage10.wmiEnabled && !current.wmiTankEmpty && isWmiActive(current, page10))
     {
-      if( isWmiActive(currentStatus, configPage10) )
+      switch(configPage10.wmiMode)
       {
-        switch(configPage10.wmiMode)
+      case WMI_MODE_SIMPLE:
+        // Simple mode - Output is turned on when preset boost level is reached
+        wmiPw = 200;
+        break;
+      case WMI_MODE_PROPORTIONAL:
+        // Proportional Mode - Output PWM is proportionally controlled between two MAP values - MAP Value 1 = PWM:0% / MAP Value 2 = PWM:100%
+        wmiPw = map(currentStatus.MAP, MAP.toUser(configPage10.wmiMAP), MAP.toUser(configPage10.wmiMAP2), 0, 200);
+        break;
+      case WMI_MODE_OPENLOOP:
+        //  Mapped open loop - Output PWM follows 2D map value (RPM vs MAP) Cell value contains desired PWM% [range 0-100%]
+        wmiPw = get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM);
+        break;
+      case WMI_MODE_CLOSEDLOOP:
+        // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). 
+        // Cell value contains correction value% [nom 100%]
         {
-        case WMI_MODE_SIMPLE:
-          // Simple mode - Output is turned on when preset boost level is reached
-          wmiPW = 200;
-          break;
-        case WMI_MODE_PROPORTIONAL:
-          // Proportional Mode - Output PWM is proportionally controlled between two MAP values - MAP Value 1 = PWM:0% / MAP Value 2 = PWM:100%
-          wmiPW = map(currentStatus.MAP/2U, configPage10.wmiMAP, configPage10.wmiMAP2, 0, 200);
-          break;
-        case WMI_MODE_OPENLOOP:
-          //  Mapped open loop - Output PWM follows 2D map value (RPM vs MAP) Cell value contains desired PWM% [range 0-100%]
-          wmiPW = get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM);
-          break;
-        case WMI_MODE_CLOSEDLOOP:
-          // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). Cell value contains correction value% [nom 100%] 
-          wmiPW = max(0, ((int)fuelSchedule1.pw + configPage10.wmiOffset)) * get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM) / 200;
-          break;
-        default:
-          // Wrong mode
-          wmiPW = 0;
-          break;
+          uint16_t basePw = clamp((int32_t)fuelSchedule1.pw + configPage10.wmiOffset, (int32_t)0, (int32_t)UINT16_MAX);
+          wmiPw = halfPercentage(get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM), basePw);
         }
-        if (wmiPW > 200) { wmiPW = 200; } //without this the duty can get beyond 100%
+        break;
+      default: // Unknown mode
+        break;
       }
     }
 
-    currentStatus.wmiPW = wmiPW;
-    vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
-    if (vvtChannel2.isOnPartial())
-    {
-        ENABLE_VVT_TIMER();
+    return (uint8_t)clamp(wmiPw, (uint16_t)0, (uint16_t)200);
+}
+
+// Water methanol injection control
+void wmiControl(void)
+{
+  currentStatus.wmiTankEmpty = configPage10.wmiEnabled && isWmiTankEmpty();
+  currentStatus.wmiPW = calculateWmiPw(currentStatus, configPage10);
+
+  if (configPage10.wmiEnabled)
+  {
+    ATOMIC() {
+      vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
+      digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isOff() ? LOW : HIGH);
+    
+      if (vvtChannel2.isOnPartial())
+      {
+          ENABLE_VVT_TIMER();
+      }
+      else
+      {
+        if( !configPage6.vvtEnabled ) { DISABLE_VVT_TIMER(); }
+      }
     }
-    else
-    {
-      if( !configPage6.vvtEnabled ) { DISABLE_VVT_TIMER(); }
-    }
-    digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isOff() ? LOW : HIGH);
   }
 }
 

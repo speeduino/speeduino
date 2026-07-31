@@ -204,7 +204,7 @@ static void test_disabled(void)
     configPage10.wmiEnabled = false;    
     initialiseAuxPWM();
 
-    setup_assert_wmipw(99);
+    setup_assert_wmipw(0);
 }
 
 static void test_vvt2_enabled(void)
