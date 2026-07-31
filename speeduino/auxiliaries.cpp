@@ -250,11 +250,9 @@ void vvtControl(void)
 
 static bool isWmiTankEmpty(void)
 {
-  if (configPage10.wmiEmptyEnabled) 
-  {
-    return (configPage10.wmiEmptyPolarity) ? wmiTankEmptyPin.isPinHigh() : wmiTankEmptyPin.isPinLow();
-  }
-  return true;
+  return configPage10.wmiEmptyEnabled
+      && (configPage10.wmiEmptyPolarity!=wmiTankEmptyPin.isPinHigh())
+      ;
 }
 
 // Water methanol injection control
@@ -262,7 +260,7 @@ void wmiControl(void)
 {
   if (configPage10.wmiEnabled)
   {
-    currentStatus.wmiTankEmpty = !isWmiTankEmpty();
+    currentStatus.wmiTankEmpty = isWmiTankEmpty();
 
     uint16_t wmiPW = 0;
     if (!currentStatus.wmiTankEmpty)
