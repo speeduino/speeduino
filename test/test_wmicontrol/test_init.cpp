@@ -7,7 +7,6 @@
 
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
-extern uint16_t vvt_pwm_max_count;
 
 static void test_wmi_enabled(void)
 {
@@ -15,7 +14,6 @@ static void test_wmi_enabled(void)
 
     initialiseAuxPWM();
 
-    TEST_ASSERT_NOT_EQUAL(0, vvt_pwm_max_count);
     TEST_ASSERT_FALSE(currentStatus.wmiTankEmpty);
     TEST_ASSERT_EQUAL(0, currentStatus.wmiPW);
     TEST_ASSERT_EQUAL(0, vvtChannel1.targetDuty);

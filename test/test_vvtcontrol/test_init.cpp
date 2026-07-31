@@ -7,12 +7,10 @@
 
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
-extern uint16_t vvt_pwm_max_count;
 extern uint32_t vvtWarmStartTime;
 
 static void reset_init_postconditions(void)
 {
-    vvt_pwm_max_count = 0;
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
     currentStatus.wmiTankEmpty = true;
@@ -28,9 +26,10 @@ static void reset_init_postconditions(void)
 
 static void assert_init_postconditions(void)
 {
-    TEST_ASSERT_NOT_EQUAL(0, vvt_pwm_max_count);
+    TEST_ASSERT_NOT_EQUAL(0, vvtChannel1.maxDuty);
     TEST_ASSERT_TRUE(vvtChannel1.pin.isValid());
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
+    TEST_ASSERT_NOT_EQUAL(0, vvtChannel2.maxDuty);
     TEST_ASSERT_TRUE(vvtChannel2.pin.isValid());
     TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_FALSE(currentStatus.wmiTankEmpty);

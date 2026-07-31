@@ -6,7 +6,6 @@
 #include "src/controllers/vvt/VvtOutputChannel.h"
 
 // External declarations for testing VVT PWM interrupt handler
-extern uint16_t vvt_pwm_max_count;
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
 
@@ -29,7 +28,8 @@ static void setup_vvt_interrupt_base(void)
   vvtChannel2.periodTicks = false;
   
   // Set max count (typical PWM period in ticks)
-  vvt_pwm_max_count = 1000;
+  vvtChannel1.maxDuty = 1000;
+  vvtChannel2.maxDuty = 1000;
   
   // Initialize pins through auxiliaries
   initialiseAuxPWM();
@@ -203,7 +203,7 @@ static void test_vvt1_at_100_percent_duty(void)
     setup_vvt_interrupt_base();
     
     // Set VVT1 to 100% duty (max)
-    vvtChannel1.targetDuty = vvt_pwm_max_count;
+    vvtChannel1.targetDuty = vvtChannel1.maxDuty;
     vvtChannel2.targetDuty = 0;
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
@@ -299,7 +299,7 @@ static void test_vvt1_max_vvt2_off(void)
     setup_vvt_interrupt_base();
     
     // VVT1 at max, VVT2 off
-    vvtChannel1.targetDuty = vvt_pwm_max_count;
+    vvtChannel1.targetDuty =vvtChannel1.maxDuty;
     vvtChannel2.targetDuty = 0;
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
@@ -320,7 +320,7 @@ static void test_vvt2_max_vvt1_off(void)
     
     // VVT2 at max, VVT1 off
     vvtChannel1.targetDuty = 0;
-    vvtChannel2.targetDuty = vvt_pwm_max_count;
+    vvtChannel2.targetDuty =vvtChannel2.maxDuty;
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
     vvtChannel1.periodTicks = false;
@@ -339,8 +339,8 @@ static void test_both_at_max_duty(void)
     setup_vvt_interrupt_base();
     
     // Both at 100% duty
-    vvtChannel1.targetDuty = vvt_pwm_max_count;
-    vvtChannel2.targetDuty = vvt_pwm_max_count;
+    vvtChannel1.targetDuty =vvtChannel1.maxDuty;
+    vvtChannel2.targetDuty =vvtChannel2.maxDuty;
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
     vvtChannel1.periodTicks = false;
@@ -419,7 +419,7 @@ static void test_vvt_nextvvt1_vvt2_at_100percent(void)
     
     // VVT2 longer than VVT1 (100% means always on) at same time
     vvtChannel1.targetDuty = 300;
-    vvtChannel2.targetDuty = vvt_pwm_max_count;  // 100% duty
+    vvtChannel2.targetDuty =vvtChannel2.maxDuty;  // 100% duty
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
     vvtChannel2.periodTicks = false;
@@ -431,7 +431,7 @@ static void test_vvt_nextvvt1_vvt2_at_100percent(void)
     
     // Verify PWM values cached
     TEST_ASSERT_EQUAL(vvtChannel1.compareTicks, 300);
-    TEST_ASSERT_EQUAL(vvtChannel2.compareTicks, vvt_pwm_max_count);
+    TEST_ASSERT_EQUAL(vvtChannel2.compareTicks, vvtChannel2.maxDuty);
 }
 
 // ========================= Test: nextVVT == 2 Branch (Both edges simultaneously) =========================
@@ -474,7 +474,7 @@ static void test_vvt_nextvvt2_vvt1_at_100_vvt2_below(void)
     
     // Scenario: VVT1 at 100% (always on), VVT2 at a different value
     // When VVT1 is 100%, it doesn't actually turn on/off like normal PWM
-    vvtChannel1.targetDuty = vvt_pwm_max_count;  // 100%
+    vvtChannel1.targetDuty =vvtChannel1.maxDuty;  // 100%
     vvtChannel2.targetDuty = 500;
     vvtChannel1.pin.setPinLow();
     vvtChannel2.pin.setPinLow();
@@ -489,7 +489,7 @@ static void test_vvt_nextvvt2_vvt1_at_100_vvt2_below(void)
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     
     // Verify current values are set
-    TEST_ASSERT_EQUAL(vvtChannel1.compareTicks, vvt_pwm_max_count);
+    TEST_ASSERT_EQUAL(vvtChannel1.compareTicks, vvtChannel1.maxDuty);
     TEST_ASSERT_EQUAL(vvtChannel2.compareTicks, 500);
 }
 
@@ -500,12 +500,12 @@ static void test_vvt_nextvvt2_both_at_100percent(void)
     setup_vvt_interrupt_active_state();
     
     // Both at 100% duty
-    vvtChannel1.targetDuty = vvt_pwm_max_count;
-    vvtChannel2.targetDuty = vvt_pwm_max_count;
+    vvtChannel1.targetDuty =vvtChannel1.maxDuty;
+    vvtChannel2.targetDuty =vvtChannel2.maxDuty;
     vvtChannel1.pin.setPinHigh();
     vvtChannel2.pin.setPinHigh();
-    vvtChannel1.compareTicks = vvt_pwm_max_count;
-    vvtChannel2.compareTicks = vvt_pwm_max_count;
+    vvtChannel1.compareTicks = vvtChannel1.maxDuty;
+    vvtChannel2.compareTicks = vvtChannel2.maxDuty;
     vvtChannel1.periodTicks = false;
     vvtChannel2.periodTicks = false;
     
@@ -517,8 +517,8 @@ static void test_vvt_nextvvt2_both_at_100percent(void)
     // Restore to active state
     vvtChannel1.pin.setPinHigh();
     vvtChannel2.pin.setPinHigh();
-    vvtChannel1.compareTicks = vvt_pwm_max_count;
-    vvtChannel2.compareTicks = vvt_pwm_max_count;
+    vvtChannel1.compareTicks = vvtChannel1.maxDuty;
+    vvtChannel2.compareTicks = vvtChannel2.maxDuty;
     
     vvtInterrupt();  // Handle nextVVT == 2 with both at 100%
     
