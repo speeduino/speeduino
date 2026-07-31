@@ -180,30 +180,15 @@ static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuse
   }
 }
 
-static bool isOff(const vvtStatus_t &status)
-{
-  return status.duty==0U;
-}
-
-static bool isOnPartial(const vvtStatus_t &status)
-{
-  return (status.duty>0U) && (status.duty<200U);
-}
-
-static bool isOnFull(const vvtStatus_t &status)
-{
-  return status.duty>=200U;
-}
-
-static void setTimerState(const statuses &current, const config10 &page10)
+static void setTimerState(const config10 &page10)
 {
   if( !page10.wmiEnabled )
   {
-    if( isOff(current.vvt1) && isOff(current.vvt2) )
+    if( vvtChannel1.isOff() && vvtChannel2.isOff() )
     {
       DISABLE_VVT_TIMER();
     }
-    else if( isOnFull(current.vvt1) && isOnFull(current.vvt2) )
+    else if( vvtChannel1.isOnFull() && vvtChannel2.isOnFull() )
     {
       DISABLE_VVT_TIMER();
     }
@@ -214,7 +199,7 @@ static void setTimerState(const statuses &current, const config10 &page10)
   }
   else
   {
-    if (isOnPartial(current.vvt1))
+    if (vvtChannel1.isOnPartial())
     {
       //Duty cycle is between 0 and 100. Make sure the timer is enabled
       ENABLE_VVT_TIMER();
@@ -267,7 +252,7 @@ void vvtControl(void)
     {
       vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty);
     }
-    setTimerState(currentStatus, configPage10);
+    setTimerState(configPage10);
   }
 }
 
