@@ -22,16 +22,6 @@ A full copy of the license may be found in the projects root directory
 TESTABLE_STATIC VvtOutputChannel vvtChannel1;
 TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC volatile char nextVVT;
-
-static bool isWmiTankEmpty(void)
-{
-  if (configPage10.wmiEmptyEnabled) 
-  {
-    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinNumbers.pinWMIEmpty) : !digitalRead(pinNumbers.pinWMIEmpty);
-  }
-  return true;
-}
-
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
 
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -256,15 +246,25 @@ void vvtControl(void)
   }
 }
 
+static bool isWmiTankEmpty(void)
+{
+  if (configPage10.wmiEmptyEnabled) 
+  {
+    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinNumbers.pinWMIEmpty) : !digitalRead(pinNumbers.pinWMIEmpty);
+  }
+  return true;
+}
+
 // Water methanol injection control
 void wmiControl(void)
 {
   if (configPage10.wmiEnabled)
   {
+    currentStatus.wmiTankEmpty = !isWmiTankEmpty();
+
     uint16_t wmiPW = 0;
-    if( isWmiTankEmpty() )
+    if (!currentStatus.wmiTankEmpty)
     {
-     currentStatus.wmiTankEmpty = false;
       if( (currentStatus.TPS >= configPage10.wmiTPS) && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) && ( (currentStatus.MAP / 2U) >= configPage10.wmiMAP) && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
       {
         switch(configPage10.wmiMode)
@@ -293,7 +293,6 @@ void wmiControl(void)
         if (wmiPW > 200) { wmiPW = 200; } //without this the duty can get beyond 100%
       }
     }
-    else { currentStatus.wmiTankEmpty = true; }
 
     currentStatus.wmiPW = wmiPW;
     vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
