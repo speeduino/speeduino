@@ -33,7 +33,6 @@ static bool isWmiTankEmpty(void)
 }
 
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
-TESTABLE_STATIC uint16_t vvt_pwm_max_count; //Used for variable PWM frequency
 
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 static integerPID vvt2PID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -55,10 +54,8 @@ static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isRev
 
 void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
 {
-  vvt_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.vvtFreq));
-
-  vvtChannel1 = VvtOutputChannel(pinNumbers.pinVVT_1);
-  vvtChannel2 = VvtOutputChannel(pinNumbers.pinVVT_2);
+  vvtChannel1 = VvtOutputChannel(pinNumbers.pinVVT_1, FREQUENCY.toUser(configPage6.vvtFreq));
+  vvtChannel2 = VvtOutputChannel(pinNumbers.pinVVT_2, FREQUENCY.toUser(configPage6.vvtFreq));
 
   currentStatus.wmiTankEmpty = false;
   currentStatus.wmiPW = 0;
@@ -265,10 +262,10 @@ void vvtControl(void)
   } 
 
   ATOMIC() {
-    vvtChannel1.setTargetDutyFromDuty(currentStatus.vvt1.duty, vvt_pwm_max_count);
+    vvtChannel1.setTargetDutyFromDuty(currentStatus.vvt1.duty);
     if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
     {
-      vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty, vvt_pwm_max_count);
+      vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty);
     }
     setTimerState(currentStatus, configPage10);
   }
@@ -316,7 +313,7 @@ void wmiControl(void)
     else { currentStatus.wmiTankEmpty = true; }
 
     currentStatus.wmiPW = wmiPW;
-    vvtChannel2.targetDuty = halfPercentage(currentStatus.wmiPW, vvt_pwm_max_count);
+    vvtChannel2.targetDuty = halfPercentage(currentStatus.wmiPW, vvtChannel2.maxDuty);
 
     if(wmiPW == 0)
     {
@@ -382,13 +379,13 @@ void vvtInterrupt(void)
       vvtChannel2.compareTicks = vvtChannel2.targetDuty;
       nextVVT = 1; //Next event is for PWM1
     }
-    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvt_pwm_max_count); } //Shouldn't ever get here
+    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel1.maxDuty); } //Shouldn't ever get here
   }
   else
   {
     if(nextVVT == 0)
     {
-      if(vvtChannel1.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel1.targetDuty < vvtChannel1.maxDuty) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel1.pin.setPinHigh();
@@ -402,13 +399,13 @@ void vvtInterrupt(void)
       if(vvtChannel2.pin.isPinHigh()){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.compareTicks - vvtChannel1.compareTicks) ); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel1.compareTicks) );
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.maxDuty - vvtChannel1.compareTicks) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
     else if (nextVVT == 1)
     {
-      if(vvtChannel2.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel2.targetDuty < vvtChannel2.maxDuty) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel2.pin.setPinHigh();
@@ -422,13 +419,13 @@ void vvtInterrupt(void)
       if(vvtChannel1.pin.isPinHigh()) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.compareTicks - vvtChannel2.compareTicks) ); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel2.compareTicks) );
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.maxDuty - vvtChannel2.compareTicks) );
         nextVVT = 2; //Next event is for both PWM
       }
     }
     else
     {
-      if(vvtChannel1.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel1.targetDuty < vvtChannel1.maxDuty) //Don't toggle if at 100%
       {
        #if defined(CORE_TEENSY41)
         vvtChannel1.pin.setPinHigh();
@@ -436,10 +433,10 @@ void vvtInterrupt(void)
         vvtChannel1.pin.setPinLow();
         #endif
         vvtChannel1.periodTicks = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel1.compareTicks) );
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.maxDuty - vvtChannel1.compareTicks) );
       }
       else { vvtChannel1.periodTicks = true; }
-      if(vvtChannel2.targetDuty < (long)vvt_pwm_max_count) //Don't toggle if at 100%
+      if(vvtChannel2.targetDuty < vvtChannel2.maxDuty) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel2.pin.setPinHigh();
@@ -447,7 +444,7 @@ void vvtInterrupt(void)
         vvtChannel2.pin.setPinLow();
         #endif
         vvtChannel2.periodTicks = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvt_pwm_max_count - vvtChannel2.compareTicks) );
+        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.maxDuty - vvtChannel2.compareTicks) );
       }
       else { vvtChannel2.periodTicks = true; }
     }
