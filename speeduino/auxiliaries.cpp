@@ -23,6 +23,7 @@ TESTABLE_STATIC VvtOutputChannel vvtChannel1;
 TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC volatile char nextVVT;
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
+TESTABLE_STATIC inputPin_t wmiTankEmptyPin;
 
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 static integerPID vvt2PID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -47,6 +48,7 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   vvtChannel1 = VvtOutputChannel(pinNumbers.pinVVT_1, FREQUENCY.toUser(configPage6.vvtFreq));
   vvtChannel2 = VvtOutputChannel(pinNumbers.pinVVT_2, FREQUENCY.toUser(configPage6.vvtFreq));
 
+  wmiTankEmptyPin.setPin(pinNumbers.pinWMIEmpty);
   currentStatus.wmiTankEmpty = false;
   currentStatus.wmiPW = 0;
   currentStatus.vvt1 = vvtStatus_t();
@@ -250,7 +252,7 @@ static bool isWmiTankEmpty(void)
 {
   if (configPage10.wmiEmptyEnabled) 
   {
-    return (configPage10.wmiEmptyPolarity) ? digitalRead(pinNumbers.pinWMIEmpty) : !digitalRead(pinNumbers.pinWMIEmpty);
+    return (configPage10.wmiEmptyPolarity) ? wmiTankEmptyPin.isPinHigh() : wmiTankEmptyPin.isPinLow();
   }
   return true;
 }

@@ -5,9 +5,19 @@
 #include "shared.h"
 #include "scheduler_fuel_controller.h"
 
+extern inputPin_t wmiTankEmptyPin;
+
+static void setTankEmpty(bool empty)
+{
+    if (empty) {
+        wmiTankEmptyPin._pin.setPinHigh();
+    } else {
+        wmiTankEmptyPin._pin.setPinLow();
+    }
+}
 static void setup_calc_conditions(void)
 {
-    digitalWrite(TANK_EMPTY_PIN, configPage10.wmiEmptyPolarity ? HIGH : LOW);
+    setTankEmpty(configPage10.wmiEmptyPolarity);
     // if( (currentStatus.TPS >= configPage10.wmiTPS)
     currentStatus.TPS = configPage10.wmiTPS + 1; 
     //  && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) 
@@ -20,7 +30,7 @@ static void setup_calc_conditions(void)
 
 static void assert_tank_empty(void)
 {
-    digitalWrite(TANK_EMPTY_PIN, configPage10.wmiEmptyPolarity ? LOW : HIGH);
+    setTankEmpty(!configPage10.wmiEmptyPolarity);
     currentStatus.wmiTankEmpty = false;
     wmiControl();
     TEST_ASSERT_TRUE(currentStatus.wmiTankEmpty);
@@ -40,7 +50,7 @@ static void test_tank_empty(void)
 
 static void assert_tank_not_empty(void)
 {
-    digitalWrite(TANK_EMPTY_PIN, configPage10.wmiEmptyPolarity ? HIGH : LOW);
+    setTankEmpty(configPage10.wmiEmptyPolarity);
     currentStatus.wmiTankEmpty = true;
     wmiControl();
     TEST_ASSERT_FALSE(currentStatus.wmiTankEmpty);
