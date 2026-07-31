@@ -259,11 +259,9 @@ void vvtControl(void)
 // Water methanol injection control
 void wmiControl(void)
 {
-  int wmiPW = 0;
-  
-  // wmi can only work when vvt2 is disabled 
   if (configPage10.wmiEnabled)
   {
+    uint16_t wmiPW = 0;
     if( isWmiTankEmpty() )
     {
      currentStatus.wmiTankEmpty = false;
@@ -298,32 +296,17 @@ void wmiControl(void)
     else { currentStatus.wmiTankEmpty = true; }
 
     currentStatus.wmiPW = wmiPW;
-    vvtChannel2.targetDuty = halfPercentage(currentStatus.wmiPW, vvtChannel2.maxDuty);
-
-    if(wmiPW == 0)
+    vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
+    if (vvtChannel2.isOnPartial())
     {
-      // Make sure water pump is off
-      vvtChannel2.pin.setPinLow();
-      vvtChannel2.periodTicks = false;
-      if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
-      digitalWrite(pinNumbers.pinWMIEnabled, LOW);
+        ENABLE_VVT_TIMER();
     }
     else
     {
-      digitalWrite(pinNumbers.pinWMIEnabled, HIGH);
-      if (wmiPW >= 200)
-      {
-        // Make sure water pump is on (100% duty)
-        vvtChannel2.pin.setPinHigh();
-        vvtChannel2.periodTicks = true;
-        if( configPage6.vvtEnabled == 0 ) { DISABLE_VVT_TIMER(); }
-      }
-      else
-      {
-        vvtChannel2.periodTicks = false;
-        ENABLE_VVT_TIMER();
-      }
+      if( !configPage6.vvtEnabled ) { DISABLE_VVT_TIMER(); }
+
     }
+    digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isOff() ? LOW : HIGH);
   }
 }
 
