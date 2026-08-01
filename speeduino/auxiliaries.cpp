@@ -374,7 +374,7 @@ void vvtInterrupt(void)
   {
     if(nextVVT == NextInterruptEvent::VVT1)
     {
-      if(vvtChannel1.targetDuty < vvtChannel1.maxDuty) //Don't toggle if at 100%
+      if(!vvtChannel1.isOnFull()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel1.pin.setPinHigh();
@@ -394,7 +394,7 @@ void vvtInterrupt(void)
     }
     else if (nextVVT == NextInterruptEvent::VVT2)
     {
-      if(vvtChannel2.targetDuty < vvtChannel2.maxDuty) //Don't toggle if at 100%
+      if(!vvtChannel2.isOnFull()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel2.pin.setPinHigh();
@@ -414,7 +414,7 @@ void vvtInterrupt(void)
     }
     else
     {
-      if(vvtChannel1.targetDuty < vvtChannel1.maxDuty) //Don't toggle if at 100%
+      if(!vvtChannel1.isOnFull()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel1.pin.setPinHigh();
@@ -425,7 +425,7 @@ void vvtInterrupt(void)
         SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.maxDuty - vvtChannel1.compareTicks) );
       }
       else { vvtChannel1.periodTicks = true; }
-      if(vvtChannel2.targetDuty < vvtChannel2.maxDuty) //Don't toggle if at 100%
+      if(!vvtChannel2.isOnFull()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel2.pin.setPinHigh();
