@@ -21,14 +21,7 @@ A full copy of the license may be found in the projects root directory
 
 TESTABLE_STATIC VvtOutputChannel vvtChannel1;
 TESTABLE_STATIC VvtOutputChannel vvtChannel2;
-
-enum class NextInterruptEvent : uint8_t
-{
-    VVT1,
-    VVT2,
-    Both
-};
-static volatile NextInterruptEvent nextVVT;
+TESTABLE_STATIC NextInterruptEvent nextVVT;
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
 TESTABLE_STATIC inputPin_t wmiTankEmptyPin;
 
