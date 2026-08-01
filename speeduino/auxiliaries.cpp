@@ -172,7 +172,7 @@ static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuse
   }
 }
 
-static void setTimerState(const config10 &page10)
+static void setTimerState(const config10 &page10) noexcept
 {
   if( !page10.wmiEnabled )
   {
@@ -217,7 +217,9 @@ void vvtControl(void)
     }
 
     //Calculate the current cam angle for miata trigger
+    // LCOV_EXCL_BR_START
     if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1.angle = getCamAngle_Miata9905(); }
+    // LCOV_EXCL_BR_STOP
 
     if(hasIntervalElapsed(runSecsX10, vvtWarmStartTime, TIME_TWO_MILLIS.toUser(configPage4.vvtDelay)) )
     {

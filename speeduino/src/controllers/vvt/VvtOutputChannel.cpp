@@ -8,7 +8,7 @@ VvtOutputChannel::VvtOutputChannel(uint8_t pinNum, uint16_t motorFrequency)
     pin.setPin(pinNum, OUTPUT);
 }
 
-void VvtOutputChannel::setTargetDutyFromDuty(uint8_t duty)
+void VvtOutputChannel::setTargetDutyFromDuty(uint8_t duty) noexcept
 {
     if(duty == 0)
     {
