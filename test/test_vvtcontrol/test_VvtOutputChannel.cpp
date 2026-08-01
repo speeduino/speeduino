@@ -1,0 +1,43 @@
+#include "../test_utils.h"
+#include "src/controllers/vvt/VvtOutputChannel.h"
+
+static void test_ctor(void)
+{
+    VvtOutputChannel subject(19, 1000);
+
+    TEST_ASSERT_TRUE(subject.pin.isValid());
+    TEST_ASSERT_NOT_EQUAL(0, subject.maxDuty);
+}
+
+static void test_setTargetDutyFromDuty(void)
+{
+    VvtOutputChannel subject(19, 1000);
+
+    // Test 0% duty
+    subject.setTargetDutyFromDuty(0);
+    TEST_ASSERT_EQUAL(0, subject.targetDuty);
+    TEST_ASSERT_TRUE(subject.pin.isPinLow());
+    TEST_ASSERT_FALSE(subject.periodTicks);
+
+    // Test 100% duty
+    subject.setTargetDutyFromDuty(200);
+    TEST_ASSERT_EQUAL(subject.maxDuty, subject.targetDuty);
+    TEST_ASSERT_TRUE(subject.pin.isPinHigh());
+    TEST_ASSERT_TRUE(subject.periodTicks);
+
+    // Test 50% duty
+    auto isPinHigh = subject.pin.isPinHigh();
+    subject.setTargetDutyFromDuty(100);
+    TEST_ASSERT_EQUAL(subject.maxDuty / 2, subject.targetDuty);
+    TEST_ASSERT_EQUAL(isPinHigh, subject.pin.isPinHigh());
+    TEST_ASSERT_FALSE(subject.periodTicks);
+}
+
+void testVvtOutputChannel(void)
+{
+  SET_UNITY_FILENAME()
+  {
+    RUN_TEST_P(test_ctor);
+    RUN_TEST_P(test_setTargetDutyFromDuty);
+  }
+}
