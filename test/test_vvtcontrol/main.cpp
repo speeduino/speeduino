@@ -3,13 +3,15 @@
 
 void runAllTests(void)
 {
-    void testVvtControl(void);
-    void testVvtInterrupt(void);
-    void testInit(void);
+    extern void testVvtControl(void);
+    extern void testVvtInterrupt(void);
+    extern void testInit(void);
+    extern void testVvtOutputChannel(void);
 
     testVvtControl();
     testVvtInterrupt();
     testInit();
+    testVvtOutputChannel();
 }
 
 TEST_HARNESS(runAllTests)
