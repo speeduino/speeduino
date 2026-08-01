@@ -324,6 +324,18 @@ void wmiControl(void)
   }
 }
 
+#if defined(UNIT_TEST)
+uint16_t lastVvtComparatorOffset = 0;
+#endif
+static void setVvtTimerCompare(uint16_t offset)
+{
+#if defined(UNIT_TEST)
+  lastVvtComparatorOffset = offset;
+#endif
+  SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + offset);
+}
+
+
 //The interrupt to control the VVT PWM
 void vvtInterrupt(void)
 {
@@ -348,7 +360,7 @@ void vvtInterrupt(void)
 
     if( (vvtChannel1.pin.isPinHigh()) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pin.isPinLow())) )
     {
-      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel1.targetDuty);
+      setVvtTimerCompare(vvtChannel1.targetDuty);
       vvtChannel1.compareTicks = vvtChannel1.targetDuty;
       vvtChannel2.compareTicks = vvtChannel2.targetDuty;
       if (vvtChannel1.targetDuty == vvtChannel2.targetDuty) { nextVVT = NextInterruptEvent::Both; } //Next event is for both PWM
@@ -356,12 +368,16 @@ void vvtInterrupt(void)
     }
     else if( vvtChannel2.pin.isPinHigh() )
     {
-      SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel2.targetDuty);
+      setVvtTimerCompare(vvtChannel2.targetDuty);
       vvtChannel1.compareTicks = vvtChannel1.targetDuty;
       vvtChannel2.compareTicks = vvtChannel2.targetDuty;
       nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
     }
-    else { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + vvtChannel1.maxDuty); } //Shouldn't ever get here
+    else 
+    { 
+      // INTERNAL_TEST_ASSERT(false);
+      setVvtTimerCompare(vvtChannel1.maxDuty); //Shouldn't ever get here
+    }
   }
   else
   {
@@ -378,10 +394,10 @@ void vvtInterrupt(void)
       }
       else { vvtChannel1.periodTicks = true; }
       nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
-      if(vvtChannel2.pin.isPinHigh()){ SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.compareTicks - vvtChannel1.compareTicks) ); }
+      if(vvtChannel2.pin.isPinHigh()){ setVvtTimerCompare(vvtChannel2.compareTicks - vvtChannel1.compareTicks); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.maxDuty - vvtChannel1.compareTicks) );
+        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
         nextVVT = NextInterruptEvent::Both; //Next event is for both PWM
       }
     }
@@ -398,10 +414,10 @@ void vvtInterrupt(void)
       }
       else { vvtChannel2.periodTicks = true; }
       nextVVT = NextInterruptEvent::VVT1; //Next event is for PWM0
-      if(vvtChannel1.pin.isPinHigh()) { SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.compareTicks - vvtChannel2.compareTicks) ); }
+      if(vvtChannel1.pin.isPinHigh()) { setVvtTimerCompare(vvtChannel1.compareTicks - vvtChannel2.compareTicks); }
       else
       { 
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.maxDuty - vvtChannel2.compareTicks) );
+        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
         nextVVT = NextInterruptEvent::Both; //Next event is for both PWM
       }
     }
@@ -415,7 +431,7 @@ void vvtInterrupt(void)
         vvtChannel1.pin.setPinLow();
         #endif
         vvtChannel1.periodTicks = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel1.maxDuty - vvtChannel1.compareTicks) );
+        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
       }
       else { vvtChannel1.periodTicks = true; }
       if(!vvtChannel2.isOnFull()) //Don't toggle if at 100%
@@ -426,7 +442,7 @@ void vvtInterrupt(void)
         vvtChannel2.pin.setPinLow();
         #endif
         vvtChannel2.periodTicks = false;
-        SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + (vvtChannel2.maxDuty - vvtChannel2.compareTicks) );
+        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
       }
       else { vvtChannel2.periodTicks = true; }
     }

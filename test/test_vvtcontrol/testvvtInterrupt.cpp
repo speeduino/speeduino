@@ -9,6 +9,7 @@
 extern VvtOutputChannel vvtChannel1;
 extern VvtOutputChannel vvtChannel2;
 extern NextInterruptEvent nextVVT;
+extern uint16_t lastVvtComparatorOffset;
 
 // ========================= Setup and Helpers =========================
 
@@ -38,6 +39,7 @@ static void test_both_off_idle_state(void)
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.maxDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: VVT1 only at 50% duty =========================
@@ -56,6 +58,7 @@ static void test_vvt1_at_50_percent_duty(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: VVT2 only at 50% duty =========================
@@ -74,6 +77,7 @@ static void test_vvt2_at_50_percent_duty(void)
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: Both at different duty cycles =========================
@@ -92,6 +96,7 @@ static void test_both_on_different_duties(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: Both at same duty cycle =========================
@@ -110,6 +115,7 @@ static void test_both_same_duty_cycle(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: VVT at 100% duty (always on) =========================
@@ -128,6 +134,7 @@ static void test_vvt1_at_100_percent_duty(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: VVT at minimal duty (1%) =========================
@@ -145,6 +152,7 @@ static void test_vvt1_minimal_duty(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: VVT1 transition from on to off =========================
@@ -162,6 +170,7 @@ static void test_vvt1_transition_off(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
     
     // The interrupt will handle the off-transition internally
     // VVT1 PWM state should now be false
@@ -169,6 +178,7 @@ static void test_vvt1_transition_off(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: VVT2 earlier than VVT1 =========================
@@ -187,6 +197,7 @@ static void test_vvt2_earlier_than_vvt1(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: Only VVT2 enabled at max =========================
@@ -204,6 +215,7 @@ static void test_vvt2_max_vvt1_off(void)
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: Both at max duty (always on) =========================
@@ -222,6 +234,7 @@ static void test_both_at_max_duty(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: nextVVT == 0 Branch (VVT1 edge deactivation) =========================
@@ -241,6 +254,7 @@ static void test_vvt_nextvvt0_vvt1_off_vvt2_on(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
     
     // Simulate VVT1 edge deactivation (nextVVT == 0)
     vvtInterrupt();
@@ -249,6 +263,7 @@ static void test_vvt_nextvvt0_vvt1_off_vvt2_on(void)
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty-vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: nextVVT == 1 Branch (VVT2 edge deactivation) =========================
@@ -269,6 +284,7 @@ static void test_vvt_nextvvt1_vvt2_off_normal_duty(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: nextVVT == 1 Branch (VVT2 at 100% duty) =========================
@@ -286,6 +302,7 @@ static void test_vvt_nextvvt1_vvt2_at_100percent(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: nextVVT == 2 Branch (Both edges simultaneously) =========================
@@ -303,12 +320,14 @@ static void test_vvt_nextvvt2_both_edges_same_duty(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
-      
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
+
     vvtInterrupt();  // Should handle nextVVT == 2 (both edges simultaneously)
     // Both should be deactivated
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: nextVVT == 2 Branch (One at 100%, one below) =========================
@@ -329,6 +348,7 @@ static void test_vvt_nextvvt2_vvt1_at_100_vvt2_below(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: nextVVT == 2 Branch (Both at 100% duty) =========================
@@ -346,12 +366,14 @@ static void test_vvt_nextvvt2_both_at_100percent(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
     
     // Restore to active state
     vvtInterrupt();  // Handle nextVVT == 2 with both at 100%
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: State Machine Progression (VVT1 longer than VVT2) =========================
@@ -369,6 +391,7 @@ static void test_vvt_state_machine_vvt2_shorter(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: State Machine Progression (VVT1 shorter than VVT2) =========================
@@ -386,6 +409,7 @@ static void test_vvt_state_machine_vvt1_shorter(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Test: Transition from One Off to Next On =========================
@@ -402,6 +426,7 @@ static void test_vvt_vvt1_only_to_vvt2_only(void)
     TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_FALSE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
    
     // Now change duty values: turn off VVT1, turn on VVT2
     vvtChannel1.setTargetDutyFromDuty(0);
@@ -411,6 +436,7 @@ static void test_vvt_vvt1_only_to_vvt2_only(void)
     TEST_ASSERT_FALSE(vvtChannel1.pin.isPinHigh());
     TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
     TEST_ASSERT_EQUAL(NextInterruptEvent::VVT2, nextVVT);
+    TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
 }
 
 // ========================= Main Test Runner =========================
