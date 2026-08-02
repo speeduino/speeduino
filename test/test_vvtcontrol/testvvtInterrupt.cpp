@@ -41,7 +41,7 @@ static void test_vvt1_off_vvt2_off(void)
         // PWM states should remain false
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::VVT1, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOn, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel1.maxDuty, lastVvtComparatorOffset);
     }
 }
@@ -69,7 +69,7 @@ static void test_vvt1_partial_vvt2_off(void)
         // VVT1 should be turned off
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOff, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
@@ -97,7 +97,7 @@ static void test_vvt1_off_vvt2_partial(void)
         // VVT2 should be off, VVT1 should NOT activate (was at 0%)
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOff, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
     }
 }
@@ -118,14 +118,14 @@ static void test_both_same_duty_cycle(void)
         // Both should turn on
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOff, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
 
         vvtInterrupt();   
         // Both should turn off
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOn, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
@@ -182,7 +182,7 @@ static void test_vvt1_later_than_vvt2(void)
         // Both should turn on regardless of order  
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOff, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
     }
 }
@@ -217,7 +217,7 @@ static void test_vvt1_earlier_than_vvt2(void)
         // Both should turn on regardless of order  
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOff, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
@@ -260,7 +260,7 @@ static void test_vvt1_fullon_vvt2_fullon(void)
         // Both should be activated
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
-        TEST_ASSERT_EQUAL(NextInterruptEvent::Both, nextVVT);
+        TEST_ASSERT_EQUAL(NextInterruptEvent::BothOff, nextVVT);
         TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
