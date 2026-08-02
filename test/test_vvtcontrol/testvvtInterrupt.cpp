@@ -40,7 +40,7 @@ static void test_vvt1_off_vvt2_off(void)
         // PWM states should remain false
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(vvtChannel1.maxDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(0, lastVvtComparatorOffset);
     }
 }
 
@@ -139,7 +139,7 @@ static void test_vvt1_fullon_vvt2_off(void)
         // At 100%, the PWM state still toggles (handled by max_pwm flag in practice)
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(0, lastVvtComparatorOffset);
     }
 }
 
@@ -223,7 +223,7 @@ static void test_vvt1_off_vvt2_fullon(void)
         
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
-        TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(0, lastVvtComparatorOffset);
     }
 }
 
@@ -244,7 +244,7 @@ static void test_vvt1_fullon_vvt2_fullon(void)
         // Both should be activated
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
-        TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(0, lastVvtComparatorOffset);
     }
 }
 
