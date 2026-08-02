@@ -349,16 +349,12 @@ void vvtInterrupt(void)
     if( (vvtChannel1.pin.isPinHigh()) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pin.isPinLow())) )
     {
       setVvtTimerCompare(vvtChannel1.targetDuty);
-      vvtChannel1.compareTicks = vvtChannel1.targetDuty;
-      vvtChannel2.compareTicks = vvtChannel2.targetDuty;
       if (vvtChannel1.targetDuty == vvtChannel2.targetDuty) { nextVVT = NextInterruptEvent::Both; } //Next event is for both PWM
       else { nextVVT = NextInterruptEvent::VVT1; } //Next event is for PWM0
     }
     else if( vvtChannel2.pin.isPinHigh() )
     {
       setVvtTimerCompare(vvtChannel2.targetDuty);
-      vvtChannel1.compareTicks = vvtChannel1.targetDuty;
-      vvtChannel2.compareTicks = vvtChannel2.targetDuty;
       nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
     }
     else 
@@ -376,12 +372,12 @@ void vvtInterrupt(void)
       if(vvtChannel2.pin.isPinHigh())
       { 
         nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
-        setVvtTimerCompare(vvtChannel2.compareTicks - vvtChannel1.compareTicks); 
+        setVvtTimerCompare(vvtChannel2.targetDuty - vvtChannel1.targetDuty); 
       }
       else
       { 
         nextVVT = NextInterruptEvent::Both; //Next event is for both PWM
-        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
+        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.targetDuty);
       }
     }
     else if (nextVVT == NextInterruptEvent::VVT2)
@@ -390,12 +386,12 @@ void vvtInterrupt(void)
       if(vvtChannel1.pin.isPinHigh()) 
       { 
         nextVVT = NextInterruptEvent::VVT1; //Next event is for PWM0
-        setVvtTimerCompare(vvtChannel1.compareTicks - vvtChannel2.compareTicks); 
+        setVvtTimerCompare(vvtChannel1.targetDuty - vvtChannel2.targetDuty); 
       }
       else
       { 
         nextVVT = NextInterruptEvent::Both; //Next event is for both PWM
-        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
+        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.targetDuty);
       }
     }
     else
@@ -404,11 +400,11 @@ void vvtInterrupt(void)
       vvtChannel2.toggleOff();
       if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
       {
-        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
+        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.targetDuty);
       }
       if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
       {
-        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
+        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.targetDuty);
       }
     }
   }
