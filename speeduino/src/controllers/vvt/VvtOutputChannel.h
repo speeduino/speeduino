@@ -12,6 +12,9 @@ struct VvtOutputChannel {
     VvtOutputChannel(uint8_t pinNum, uint16_t motorFrequency);
 
     void setTargetDutyFromDuty(uint8_t duty) noexcept;
+    
+    void toggleOn(void) noexcept;
+    void toggleOff(void) noexcept;
 
     bool isNoDuty(void) const
     {
