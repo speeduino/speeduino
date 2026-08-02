@@ -341,9 +341,9 @@ static void setVvtTimerCompare(uint16_t offset)
 //The interrupt to control the VVT PWM
 void vvtInterrupt(void)
 {
-  if ( ((vvtChannel1.pin.isPinLow()) || (vvtChannel1.periodTicks == true)) && ((vvtChannel2.pin.isPinLow()) || (vvtChannel2.periodTicks == true)) )
+  if ( ((vvtChannel1.pin.isPinLow()) || (vvtChannel1.isFullDuty())) && ((vvtChannel2.pin.isPinLow()) || (vvtChannel2.isFullDuty())) )
   {
-    if( (!vvtChannel1.isNoDuty()) && (vvtChannel1.periodTicks == false) ) //Don't toggle if at 0%
+    if (!vvtChannel1.isNoDuty()) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
       vvtChannel1.pin.setPinLow();
@@ -351,7 +351,7 @@ void vvtInterrupt(void)
       vvtChannel1.pin.setPinHigh();
       #endif
     }
-    if( (!vvtChannel2.isNoDuty()) && (vvtChannel2.periodTicks == false) ) //Don't toggle if at 0%
+    if (!vvtChannel2.isNoDuty()) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
       vvtChannel2.pin.setPinLow();
@@ -392,9 +392,8 @@ void vvtInterrupt(void)
         #else
         vvtChannel1.pin.setPinLow();
         #endif
-        vvtChannel1.periodTicks = false;
       }
-      else { vvtChannel1.periodTicks = true; }
+
       nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
       if(vvtChannel2.pin.isPinHigh()){ setVvtTimerCompare(vvtChannel2.compareTicks - vvtChannel1.compareTicks); }
       else
@@ -412,9 +411,7 @@ void vvtInterrupt(void)
         #else
         vvtChannel2.pin.setPinLow();
         #endif
-        vvtChannel2.periodTicks = false;
       }
-      else { vvtChannel2.periodTicks = true; }
       nextVVT = NextInterruptEvent::VVT1; //Next event is for PWM0
       if(vvtChannel1.pin.isPinHigh()) { setVvtTimerCompare(vvtChannel1.compareTicks - vvtChannel2.compareTicks); }
       else
@@ -432,10 +429,8 @@ void vvtInterrupt(void)
         #else
         vvtChannel1.pin.setPinLow();
         #endif
-        vvtChannel1.periodTicks = false;
         setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
       }
-      else { vvtChannel1.periodTicks = true; }
       if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
@@ -443,10 +438,8 @@ void vvtInterrupt(void)
         #else
         vvtChannel2.pin.setPinLow();
         #endif
-        vvtChannel2.periodTicks = false;
         setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
       }
-      else { vvtChannel2.periodTicks = true; }
     }
   }
 }
