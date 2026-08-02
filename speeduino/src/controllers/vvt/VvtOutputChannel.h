@@ -30,11 +30,3 @@ struct VvtOutputChannel {
         return targetDuty==maxDuty;
     }
 };
-
-enum class NextInterruptEvent : uint8_t
-{
-    VVT1,
-    VVT2,
-    BothOff,
-    BothOn,
-};
