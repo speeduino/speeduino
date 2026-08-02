@@ -14,17 +14,17 @@ struct VvtOutputChannel {
 
     void setTargetDutyFromDuty(uint8_t duty) noexcept;
 
-    bool isOff(void) const
+    bool isNoDuty(void) const
     {
         return targetDuty==0U;
     }
 
-    bool isOnPartial(void) const
+    bool isPartialDuty(void) const
     {
-        return !isOff() && !isOnFull();
+        return !isNoDuty() && !isFullDuty();
     }
 
-    bool isOnFull(void) const
+    bool isFullDuty(void) const
     {
         return targetDuty==maxDuty;
     }
