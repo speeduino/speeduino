@@ -343,22 +343,8 @@ void vvtInterrupt(void)
 {
   if ( ((vvtChannel1.pin.isPinLow()) || (vvtChannel1.isFullDuty())) && ((vvtChannel2.pin.isPinLow()) || (vvtChannel2.isFullDuty())) )
   {
-    if (!vvtChannel1.isNoDuty()) //Don't toggle if at 0%
-    {
-      #if defined(CORE_TEENSY41)
-      vvtChannel1.pin.setPinLow();
-      #else
-      vvtChannel1.pin.setPinHigh();
-      #endif
-    }
-    if (!vvtChannel2.isNoDuty()) //Don't toggle if at 0%
-    {
-      #if defined(CORE_TEENSY41)
-      vvtChannel2.pin.setPinLow();
-      #else
-      vvtChannel2.pin.setPinHigh();
-      #endif
-    }
+    vvtChannel1.toggleOn();
+    vvtChannel2.toggleOn();
 
     if( (vvtChannel1.pin.isPinHigh()) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pin.isPinLow())) )
     {
@@ -385,59 +371,43 @@ void vvtInterrupt(void)
   {
     if(nextVVT == NextInterruptEvent::VVT1)
     {
-      if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
-      {
-        #if defined(CORE_TEENSY41)
-        vvtChannel1.pin.setPinHigh();
-        #else
-        vvtChannel1.pin.setPinLow();
-        #endif
-      }
+      vvtChannel1.toggleOff();
 
-      nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
-      if(vvtChannel2.pin.isPinHigh()){ setVvtTimerCompare(vvtChannel2.compareTicks - vvtChannel1.compareTicks); }
+      if(vvtChannel2.pin.isPinHigh())
+      { 
+        nextVVT = NextInterruptEvent::VVT2; //Next event is for PWM1
+        setVvtTimerCompare(vvtChannel2.compareTicks - vvtChannel1.compareTicks); 
+      }
       else
       { 
-        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
         nextVVT = NextInterruptEvent::Both; //Next event is for both PWM
+        setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
       }
     }
     else if (nextVVT == NextInterruptEvent::VVT2)
     {
-      if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
-      {
-        #if defined(CORE_TEENSY41)
-        vvtChannel2.pin.setPinHigh();
-        #else
-        vvtChannel2.pin.setPinLow();
-        #endif
+      vvtChannel2.toggleOff();
+      if(vvtChannel1.pin.isPinHigh()) 
+      { 
+        nextVVT = NextInterruptEvent::VVT1; //Next event is for PWM0
+        setVvtTimerCompare(vvtChannel1.compareTicks - vvtChannel2.compareTicks); 
       }
-      nextVVT = NextInterruptEvent::VVT1; //Next event is for PWM0
-      if(vvtChannel1.pin.isPinHigh()) { setVvtTimerCompare(vvtChannel1.compareTicks - vvtChannel2.compareTicks); }
       else
       { 
-        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
         nextVVT = NextInterruptEvent::Both; //Next event is for both PWM
+        setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
       }
     }
     else
     {
+      vvtChannel1.toggleOff();
+      vvtChannel2.toggleOff();
       if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
       {
-        #if defined(CORE_TEENSY41)
-        vvtChannel1.pin.setPinHigh();
-        #else
-        vvtChannel1.pin.setPinLow();
-        #endif
         setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
       }
       if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
       {
-        #if defined(CORE_TEENSY41)
-        vvtChannel2.pin.setPinHigh();
-        #else
-        vvtChannel2.pin.setPinLow();
-        #endif
         setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.compareTicks);
       }
     }
