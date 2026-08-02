@@ -176,11 +176,11 @@ static void setTimerState(const config10 &page10) noexcept
 {
   if( !page10.wmiEnabled )
   {
-    if( vvtChannel1.isOff() && vvtChannel2.isOff() )
+    if( vvtChannel1.isNoDuty() && vvtChannel2.isNoDuty() )
     {
       DISABLE_VVT_TIMER();
     }
-    else if( vvtChannel1.isOnFull() && vvtChannel2.isOnFull() )
+    else if( vvtChannel1.isFullDuty() && vvtChannel2.isFullDuty() )
     {
       DISABLE_VVT_TIMER();
     }
@@ -191,7 +191,7 @@ static void setTimerState(const config10 &page10) noexcept
   }
   else
   {
-    if (vvtChannel1.isOnPartial())
+    if (vvtChannel1.isPartialDuty())
     {
       //Duty cycle is between 0 and 100. Make sure the timer is enabled
       ENABLE_VVT_TIMER();
@@ -312,9 +312,9 @@ void wmiControl(void)
   {
     ATOMIC() {
       vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
-      digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isOff() ? LOW : HIGH);
+      digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isNoDuty() ? LOW : HIGH);
     
-      if (vvtChannel2.isOnPartial())
+      if (vvtChannel2.isPartialDuty())
       {
           ENABLE_VVT_TIMER();
       }
@@ -343,7 +343,7 @@ void vvtInterrupt(void)
 {
   if ( ((vvtChannel1.pin.isPinLow()) || (vvtChannel1.periodTicks == true)) && ((vvtChannel2.pin.isPinLow()) || (vvtChannel2.periodTicks == true)) )
   {
-    if( (!vvtChannel1.isOff()) && (vvtChannel1.periodTicks == false) ) //Don't toggle if at 0%
+    if( (!vvtChannel1.isNoDuty()) && (vvtChannel1.periodTicks == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
       vvtChannel1.pin.setPinLow();
@@ -351,7 +351,7 @@ void vvtInterrupt(void)
       vvtChannel1.pin.setPinHigh();
       #endif
     }
-    if( (!vvtChannel2.isOff()) && (vvtChannel2.periodTicks == false) ) //Don't toggle if at 0%
+    if( (!vvtChannel2.isNoDuty()) && (vvtChannel2.periodTicks == false) ) //Don't toggle if at 0%
     {
       #if defined(CORE_TEENSY41)
       vvtChannel2.pin.setPinLow();
@@ -385,7 +385,7 @@ void vvtInterrupt(void)
   {
     if(nextVVT == NextInterruptEvent::VVT1)
     {
-      if(!vvtChannel1.isOnFull()) //Don't toggle if at 100%
+      if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel1.pin.setPinHigh();
@@ -405,7 +405,7 @@ void vvtInterrupt(void)
     }
     else if (nextVVT == NextInterruptEvent::VVT2)
     {
-      if(!vvtChannel2.isOnFull()) //Don't toggle if at 100%
+      if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel2.pin.setPinHigh();
@@ -425,7 +425,7 @@ void vvtInterrupt(void)
     }
     else
     {
-      if(!vvtChannel1.isOnFull()) //Don't toggle if at 100%
+      if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel1.pin.setPinHigh();
@@ -436,7 +436,7 @@ void vvtInterrupt(void)
         setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.compareTicks);
       }
       else { vvtChannel1.periodTicks = true; }
-      if(!vvtChannel2.isOnFull()) //Don't toggle if at 100%
+      if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
       {
         #if defined(CORE_TEENSY41)
         vvtChannel2.pin.setPinHigh();
