@@ -19,6 +19,14 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler_fuel_controller.h"
 #include "src/controllers/vvt/VvtOutputChannel.h"
 
+enum class NextInterruptEvent : uint8_t
+{
+    VVT1,
+    VVT2,
+    BothOff,
+    BothOn,
+};
+
 TESTABLE_STATIC VvtOutputChannel vvtChannel1;
 TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC NextInterruptEvent nextVVT;
