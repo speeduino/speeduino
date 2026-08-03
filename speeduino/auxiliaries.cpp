@@ -183,30 +183,15 @@ static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuse
   }
 }
 
-static void setTimerState(const config10 &page10) noexcept
+static void setTimerState(void) noexcept
 {
-  if( !page10.wmiEnabled )
+  if( vvtChannel1.isPartialDuty() || vvtChannel2.isPartialDuty() )
   {
-    if( vvtChannel1.isNoDuty() && vvtChannel2.isNoDuty() )
-    {
-      DISABLE_VVT_TIMER();
-    }
-    else if( vvtChannel1.isFullDuty() && vvtChannel2.isFullDuty() )
-    {
-      DISABLE_VVT_TIMER();
-    }
-    else
-    {
-      ENABLE_VVT_TIMER();
-    }
+    ENABLE_VVT_TIMER();
   }
   else
   {
-    if (vvtChannel1.isPartialDuty())
-    {
-      //Duty cycle is between 0 and 100. Make sure the timer is enabled
-      ENABLE_VVT_TIMER();
-    }
+    DISABLE_VVT_TIMER();
   }
 }
 
@@ -257,7 +242,7 @@ void vvtControl(void)
     {
       vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty);
     }
-    setTimerState(configPage10);
+    setTimerState();
   }
 }
 
@@ -324,15 +309,7 @@ void wmiControl(void)
     ATOMIC() {
       vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
       digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isNoDuty() ? LOW : HIGH);
-    
-      if (vvtChannel2.isPartialDuty())
-      {
-          ENABLE_VVT_TIMER();
-      }
-      else
-      {
-        if( !configPage6.vvtEnabled ) { DISABLE_VVT_TIMER(); }
-      }
+      setTimerState();
     }
   }
 }
