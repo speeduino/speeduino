@@ -491,13 +491,21 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const
 END_LTO_INLINE()
 
 TESTABLE_INLINE_STATIC void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t now, uint32_t dwellLimit_uS) {
-  //Check first whether each spark output is currently on. Only check it's dwell time if it is
-  ATOMIC() {
     if (isRunning(schedule) && hasIntervalElapsed(now, schedule._startTime, dwellLimit_uS)) {
       moveToNextState(schedule); //Call the end function to disable the spark output
     }
+}
+
+// LCOV_EXCL_START
+// The lower level function should be tested, so this can be excluded from coverage
+static void applyChannelOverDwellProtection(IgnitionSchedule &schedule, uint32_t dwellLimit_uS) {
+  //Check first whether each spark output is currently on. Only check it's dwell time if it is
+  ATOMIC() {
+    uint32_t now = micros(); // This **must** be inside the atomic block to avoid a race. See #1581
+    applyChannelOverDwellProtection(schedule, now, dwellLimit_uS);
   }
 }
+// LCOV_EXCL_STOP
 
 TESTABLE_INLINE_STATIC bool isOverDwellActive(const config4 &page4, const statuses &current){
   bool isCrankLocked = page4.ignCranklock && (current.RPM < current.crankRPM); //Dwell limiter is disabled during cranking on setups using the locked cranking timing. WE HAVE to do the RPM check here as relying on the engine cranking bit can be potentially too slow in updating
@@ -509,30 +517,29 @@ TESTABLE_INLINE_STATIC bool isOverDwellActive(const config4 &page4, const status
 void applyOverDwellProtection(const config4 &page4, const statuses &current)
 {
   if (isOverDwellActive(page4, current)) {
-    uint32_t now = micros();
     uint32_t dwellLimit_uS = page4.dwellLimit * 1000U; //Convert to uS
 
-    applyChannelOverDwellProtection(ignitionSchedule1, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule1, dwellLimit_uS);
 #if IGN_CHANNELS >= 2
-    applyChannelOverDwellProtection(ignitionSchedule2, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule2, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 3
-    applyChannelOverDwellProtection(ignitionSchedule3, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule3, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 4
-    applyChannelOverDwellProtection(ignitionSchedule4, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule4, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 5
-    applyChannelOverDwellProtection(ignitionSchedule5, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule5, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 6
-    applyChannelOverDwellProtection(ignitionSchedule6, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule6, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 7
-    applyChannelOverDwellProtection(ignitionSchedule7, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule7, dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 8
-    applyChannelOverDwellProtection(ignitionSchedule8, now, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedule8, dwellLimit_uS);
 #endif
   }
 }
