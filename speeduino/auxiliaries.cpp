@@ -30,6 +30,21 @@ enum class NextInterruptEvent : uint8_t
   BothOn = VVT1On | VVT2On,
 };
 
+inline NextInterruptEvent operator|(NextInterruptEvent lhs, NextInterruptEvent rhs) {
+    return static_cast<NextInterruptEvent>(
+        static_cast<uint8_t>(lhs) |
+        static_cast<uint8_t>(rhs)
+    );
+}
+
+// 3. Overload the bitwise AND operator for checking flags
+inline NextInterruptEvent operator&(NextInterruptEvent lhs, NextInterruptEvent rhs) {
+    return static_cast<NextInterruptEvent>(
+        static_cast<uint8_t>(lhs) &
+        static_cast<uint8_t>(rhs)
+    );
+}
+
 TESTABLE_STATIC VvtOutputChannel vvtChannel1;
 TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC NextInterruptEvent nextVVT;
@@ -348,16 +363,35 @@ static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const VvtOu
   return next;
 }
 
+static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent event, NextInterruptEvent onEvent, NextInterruptEvent offEvent)
+{
+  if (channel.isPartialDuty())
+  {
+    if ((event & onEvent) == onEvent)
+    {
+      channel.pin.setPinHigh();
+    }
+    else if ((event & offEvent) == offEvent)
+    {
+      channel.pin.setPinLow();
+    }
+    else
+    {
+      // Do nothing, leave the channel in its current state
+    }
+  }
+}
+
 //The interrupt to control the VVT PWM
 void vvtInterrupt(void)
 {
   nextVVT = overrideNextEvent(nextVVT, vvtChannel1, vvtChannel2);
 
+  applyEventToChannel(vvtChannel1, nextVVT, NextInterruptEvent::VVT1On, NextInterruptEvent::VVT1Off);
+  applyEventToChannel(vvtChannel2, nextVVT, NextInterruptEvent::VVT2On, NextInterruptEvent::VVT2Off);
+
   if(nextVVT == NextInterruptEvent::BothOn)
   {
-    vvtChannel1.toggleOn();
-    vvtChannel2.toggleOn();
-
     if( (vvtChannel1.pin.isPinHigh()) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pin.isPinLow())) )
     {
       setVvtTimerCompare(vvtChannel1.targetDuty);
@@ -376,8 +410,6 @@ void vvtInterrupt(void)
   }
   else if(nextVVT == NextInterruptEvent::VVT1Off)
   {
-    vvtChannel1.toggleOff();
-
     if(vvtChannel2.pin.isPinHigh())
     { 
       nextVVT = NextInterruptEvent::VVT2Off; //Next event is for PWM1
@@ -391,7 +423,6 @@ void vvtInterrupt(void)
   }
   else if (nextVVT == NextInterruptEvent::VVT2Off)
   {
-    vvtChannel2.toggleOff();
     if(vvtChannel1.pin.isPinHigh()) 
     { 
       nextVVT = NextInterruptEvent::VVT1Off; //Next event is for PWM0
@@ -405,8 +436,6 @@ void vvtInterrupt(void)
   }
   else if (nextVVT == NextInterruptEvent::BothOff)
   {
-    vvtChannel1.toggleOff();
-    vvtChannel2.toggleOff();
     nextVVT = NextInterruptEvent::BothOn; //Next event is for both PWM
     if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
     {
