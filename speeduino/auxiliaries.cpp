@@ -350,7 +350,7 @@ static bool isVvtOff(const VvtOutputChannel &channel)
   return channel.pin.isPinLow() || channel.isFullDuty();
 }
 
-static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2)
+static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2) noexcept
 {
   if (!channel1.isPartialDuty() && !channel2.isPartialDuty())
   {
@@ -363,7 +363,7 @@ static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const VvtOu
   return next;
 }
 
-static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent event, NextInterruptEvent onEvent, NextInterruptEvent offEvent)
+static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent event, NextInterruptEvent onEvent, NextInterruptEvent offEvent) noexcept
 {
   if (channel.isPartialDuty())
   {
@@ -382,7 +382,22 @@ static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent ev
   }
 }
 
-static NextInterruptEvent calculateNextInterrupt(NextInterruptEvent currentEvent, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2, uint16_t &offset)
+static NextInterruptEvent calculateNextInterruptSingleOff(const VvtOutputChannel &primary, NextInterruptEvent primaryOff, const VvtOutputChannel &other, uint16_t &offset) noexcept
+{
+    if(primary.pin.isPinHigh())
+    { 
+      offset = primary.targetDuty - other.targetDuty; 
+      return primaryOff;
+    }
+    else
+    { 
+      offset = other.maxDuty - other.targetDuty;
+      return NextInterruptEvent::BothOff; //Next event is for both PWM
+    }
+
+}
+
+static NextInterruptEvent calculateNextInterrupt(NextInterruptEvent currentEvent, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2, uint16_t &offset) noexcept
 {
   if(currentEvent == NextInterruptEvent::BothOn)
   {
@@ -391,57 +406,30 @@ static NextInterruptEvent calculateNextInterrupt(NextInterruptEvent currentEvent
       offset = channel1.targetDuty;
       return (channel1.targetDuty == channel2.targetDuty) ? NextInterruptEvent::BothOff : NextInterruptEvent::VVT1Off;
     }
-    else if( channel2.pin.isPinHigh() )
+    else
     {
       offset = channel2.targetDuty;
       return NextInterruptEvent::VVT2Off; //Next event is for PWM1
     }
-    else 
-    { 
-      INTERNAL_TEST_ASSERT(false); // Shouldn't ever get here
-    }
   }
   else if(currentEvent == NextInterruptEvent::VVT1Off)
   {
-    if(channel2.pin.isPinHigh())
-    { 
-      offset = channel2.targetDuty - channel1.targetDuty; 
-      return NextInterruptEvent::VVT2Off; //Next event is for PWM1
-    }
-    else
-    { 
-      offset = channel1.maxDuty - channel1.targetDuty;
-      return NextInterruptEvent::BothOff; //Next event is for both PWM
-    }
+    return calculateNextInterruptSingleOff(channel2, NextInterruptEvent::VVT2Off, channel1, offset);
   }
   else if (currentEvent == NextInterruptEvent::VVT2Off)
   {
-    if(channel1.pin.isPinHigh()) 
-    { 
-      offset = channel1.targetDuty - channel2.targetDuty; 
-      return NextInterruptEvent::VVT1Off; //Next event is for PWM0
-    }
-    else
-    { 
-      offset = channel2.maxDuty - channel2.targetDuty;
-      return NextInterruptEvent::BothOff; //Next event is for both PWM
-    }
+    return calculateNextInterruptSingleOff(channel1, NextInterruptEvent::VVT1Off, channel2, offset);
   }
   else if (currentEvent == NextInterruptEvent::BothOff)
   {
-    if(!channel1.isFullDuty()) //Don't toggle if at 100%
-    {
-      offset = channel1.maxDuty - channel1.targetDuty;
-    }
-    if(!channel2.isFullDuty()) //Don't toggle if at 100%
-    {
-      offset = channel2.maxDuty - channel2.targetDuty;
-    }
+    offset = (std ::min)((channel1.maxDuty - channel1.targetDuty), (channel2.maxDuty - channel2.targetDuty));
     return NextInterruptEvent::BothOn; //Next event is for both PWM
   }
   else
   {
-      INTERNAL_TEST_ASSERT(currentEvent == NextInterruptEvent::None);
+    // LCOV_EXCL_START
+    INTERNAL_TEST_ASSERT(currentEvent == NextInterruptEvent::None);
+    // LCOV_EXCL_STOP
   }
   offset = 0;
   return NextInterruptEvent::None;
