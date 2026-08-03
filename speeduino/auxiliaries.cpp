@@ -405,7 +405,7 @@ void vvtInterrupt(void)
     }
     else 
     { 
-      setVvtTimerCompare(0); //Shouldn't ever get here
+      INTERNAL_TEST_ASSERT(false); // Shouldn't ever get here
     }
   }
   else if(nextVVT == NextInterruptEvent::VVT1Off)
