@@ -27,20 +27,3 @@ void VvtOutputChannel::setTargetDutyFromDuty(uint8_t duty) noexcept
         targetDuty = halfPercentage(duty, maxDuty);
     }
 }
-
-
-void VvtOutputChannel::toggleOn(void) noexcept
-{
-    if( (!isNoDuty()) && (pin.isPinLow()) ) //Don't toggle if at 0%
-    {
-        pin.setPinHigh();
-    }        
-}
-
-void VvtOutputChannel::toggleOff(void) noexcept
-{
-    if( (!isFullDuty()) && (pin.isPinHigh()) ) //Don't toggle if at 100%
-    {
-        pin.setPinLow();
-    }        
-}

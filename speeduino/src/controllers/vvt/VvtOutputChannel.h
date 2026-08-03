@@ -12,9 +12,6 @@ struct VvtOutputChannel {
 
     void setTargetDutyFromDuty(uint8_t duty) noexcept;
     
-    void toggleOn(void) noexcept;
-    void toggleOff(void) noexcept;
-
     bool isNoDuty(void) const
     {
         return targetDuty==0U;
