@@ -11,6 +11,9 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 #endif
 
+int16_t CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_INJ = 360; 
+
 typedef uint32_t UQ24X8_t;
 static constexpr uint8_t UQ24X8_Shift = 8U;
 

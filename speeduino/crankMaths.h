@@ -42,6 +42,9 @@ static constexpr uint16_t MIN_REVOLUTION_TIME = MICROS_PER_MIN/MAX_RPM;
  */
 static constexpr uint32_t MAX_REVOLUTION_TIME = MICROS_PER_MIN/MIN_RPM;
 
+extern int16_t CRANK_ANGLE_MAX_IGN; ///< The number of crank degrees that the system tracks ignition over.
+extern int16_t CRANK_ANGLE_MAX_INJ; ///< The number of crank degrees that the system tracks fuel injection over.
+
 /**
  * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_IGN]
  * 
