@@ -382,6 +382,71 @@ static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent ev
   }
 }
 
+static NextInterruptEvent calculateNextInterrupt(NextInterruptEvent currentEvent, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2, uint16_t &offset)
+{
+  if(currentEvent == NextInterruptEvent::BothOn)
+  {
+    if( (channel1.pin.isPinHigh()) && ((channel1.targetDuty <= channel2.targetDuty) || (channel2.pin.isPinLow())) )
+    {
+      offset = channel1.targetDuty;
+      return (channel1.targetDuty == channel2.targetDuty) ? NextInterruptEvent::BothOff : NextInterruptEvent::VVT1Off;
+    }
+    else if( channel2.pin.isPinHigh() )
+    {
+      offset = channel2.targetDuty;
+      return NextInterruptEvent::VVT2Off; //Next event is for PWM1
+    }
+    else 
+    { 
+      INTERNAL_TEST_ASSERT(false); // Shouldn't ever get here
+    }
+  }
+  else if(currentEvent == NextInterruptEvent::VVT1Off)
+  {
+    if(channel2.pin.isPinHigh())
+    { 
+      offset = channel2.targetDuty - channel1.targetDuty; 
+      return NextInterruptEvent::VVT2Off; //Next event is for PWM1
+    }
+    else
+    { 
+      offset = channel1.maxDuty - channel1.targetDuty;
+      return NextInterruptEvent::BothOff; //Next event is for both PWM
+    }
+  }
+  else if (currentEvent == NextInterruptEvent::VVT2Off)
+  {
+    if(channel1.pin.isPinHigh()) 
+    { 
+      offset = channel1.targetDuty - channel2.targetDuty; 
+      return NextInterruptEvent::VVT1Off; //Next event is for PWM0
+    }
+    else
+    { 
+      offset = channel2.maxDuty - channel2.targetDuty;
+      return NextInterruptEvent::BothOff; //Next event is for both PWM
+    }
+  }
+  else if (currentEvent == NextInterruptEvent::BothOff)
+  {
+    if(!channel1.isFullDuty()) //Don't toggle if at 100%
+    {
+      offset = channel1.maxDuty - channel1.targetDuty;
+    }
+    if(!channel2.isFullDuty()) //Don't toggle if at 100%
+    {
+      offset = channel2.maxDuty - channel2.targetDuty;
+    }
+    return NextInterruptEvent::BothOn; //Next event is for both PWM
+  }
+  else
+  {
+      INTERNAL_TEST_ASSERT(currentEvent == NextInterruptEvent::None);
+  }
+  offset = 0;
+  return NextInterruptEvent::None;
+}
+
 //The interrupt to control the VVT PWM
 void vvtInterrupt(void)
 {
@@ -390,65 +455,7 @@ void vvtInterrupt(void)
   applyEventToChannel(vvtChannel1, nextVVT, NextInterruptEvent::VVT1On, NextInterruptEvent::VVT1Off);
   applyEventToChannel(vvtChannel2, nextVVT, NextInterruptEvent::VVT2On, NextInterruptEvent::VVT2Off);
 
-  if(nextVVT == NextInterruptEvent::BothOn)
-  {
-    if( (vvtChannel1.pin.isPinHigh()) && ((vvtChannel1.targetDuty <= vvtChannel2.targetDuty) || (vvtChannel2.pin.isPinLow())) )
-    {
-      setVvtTimerCompare(vvtChannel1.targetDuty);
-      if (vvtChannel1.targetDuty == vvtChannel2.targetDuty) { nextVVT = NextInterruptEvent::BothOff; } //Next event is for both PWM
-      else { nextVVT = NextInterruptEvent::VVT1Off; } //Next event is for PWM0
-    }
-    else if( vvtChannel2.pin.isPinHigh() )
-    {
-      setVvtTimerCompare(vvtChannel2.targetDuty);
-      nextVVT = NextInterruptEvent::VVT2Off; //Next event is for PWM1
-    }
-    else 
-    { 
-      INTERNAL_TEST_ASSERT(false); // Shouldn't ever get here
-    }
-  }
-  else if(nextVVT == NextInterruptEvent::VVT1Off)
-  {
-    if(vvtChannel2.pin.isPinHigh())
-    { 
-      nextVVT = NextInterruptEvent::VVT2Off; //Next event is for PWM1
-      setVvtTimerCompare(vvtChannel2.targetDuty - vvtChannel1.targetDuty); 
-    }
-    else
-    { 
-      nextVVT = NextInterruptEvent::BothOff; //Next event is for both PWM
-      setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.targetDuty);
-    }
-  }
-  else if (nextVVT == NextInterruptEvent::VVT2Off)
-  {
-    if(vvtChannel1.pin.isPinHigh()) 
-    { 
-      nextVVT = NextInterruptEvent::VVT1Off; //Next event is for PWM0
-      setVvtTimerCompare(vvtChannel1.targetDuty - vvtChannel2.targetDuty); 
-    }
-    else
-    { 
-      nextVVT = NextInterruptEvent::BothOff; //Next event is for both PWM
-      setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.targetDuty);
-    }
-  }
-  else if (nextVVT == NextInterruptEvent::BothOff)
-  {
-    nextVVT = NextInterruptEvent::BothOn; //Next event is for both PWM
-    if(!vvtChannel1.isFullDuty()) //Don't toggle if at 100%
-    {
-      setVvtTimerCompare(vvtChannel1.maxDuty - vvtChannel1.targetDuty);
-    }
-    if(!vvtChannel2.isFullDuty()) //Don't toggle if at 100%
-    {
-      setVvtTimerCompare(vvtChannel2.maxDuty - vvtChannel2.targetDuty);
-    }
-  }
-  else
-  {
-      INTERNAL_TEST_ASSERT(nextVVT == NextInterruptEvent::None);
-      setVvtTimerCompare(0);
-  }
+  uint16_t offset = 0;
+  nextVVT = calculateNextInterrupt(nextVVT, vvtChannel1, vvtChannel2, offset);
+  setVvtTimerCompare(offset);
 }
