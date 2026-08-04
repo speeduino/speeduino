@@ -11,6 +11,7 @@
 #include "resetControl.h"
 #include "scheduler.h"
 #include "scheduler_fuel_controller.h"
+#include "globals.h"
 
 static byte setStatusBit(byte status, uint8_t index, bool bit)
 {

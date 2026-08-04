@@ -6,6 +6,9 @@
 #include "crankMaths.h"
 #include "maths.h"
 #include "timers.h"
+#include "preprocessor.h"
+#include "atomic.h"
+#include "statuses.h"
 
 /**
  * @brief Compute the injector open angle for an injection channel
@@ -149,7 +152,7 @@ static inline uint32_t _calculateIgnitionTimeout(const IgnitionSchedule &schedul
  * @param schedule The schedule to modify 
  * @param crankAngle The new crank angle in degrees
  */
-static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAngle) {
+static inline void adjustCrankAngle(const statuses &current, IgnitionSchedule &schedule, int16_t crankAngle) {
   constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;
 
   crankAngle = ignitionLimits(crankAngle);
@@ -164,7 +167,7 @@ static inline void adjustCrankAngle(IgnitionSchedule &schedule, int16_t crankAng
       } 
     }
     else if( (schedule._status==PENDING) ) {
-      if ((currentStatus.startRevolutions > MIN_CYCLES_FOR_CORRECTION) && (schedule.chargeAngle>crankAngle)) {
+      if ((current.startRevolutions > MIN_CYCLES_FOR_CORRECTION) && (schedule.chargeAngle>crankAngle)) {
         // We are waiting for the timer to fire & start charging the coil.
         // Keep dwell (I.e. duration) constant (for better spark) - instead adjust the waiting period so 
         // the spark fires at the requested crank angle.

@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "decoder_init.h"
 #include "decoders.h"
+#include "globals.h"
 
 extern decoder_status_t decoderStatus;
 

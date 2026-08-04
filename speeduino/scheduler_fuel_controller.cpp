@@ -1,6 +1,8 @@
 #include "scheduler_fuel_controller.h"
 #include "scheduledIO_inj.h"
 #include "units.h"
+#include "table2d.h"
+#include "globals.h"
 
 FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
 FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4

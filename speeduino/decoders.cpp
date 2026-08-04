@@ -47,6 +47,8 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/boardInputPin.h"
 #include "scheduler_ignition_controller.h"
 
+#define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
+
 static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);
 
@@ -470,48 +472,48 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
   {
     if ( (currentTooth == ignitionEndTeeth[0]) )
     {
-      adjustCrankAngle(ignitionSchedule1, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule1, crankAngle);
     }
 #if IGN_CHANNELS >= 2
     else if ( (currentTooth == ignitionEndTeeth[1]) )
     {
-      adjustCrankAngle(ignitionSchedule2, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule2, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 3
     else if ( (currentTooth == ignitionEndTeeth[2]) )
     {
-      adjustCrankAngle(ignitionSchedule3, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule3, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 4
     else if ( (currentTooth == ignitionEndTeeth[3]) )
     {
-      adjustCrankAngle(ignitionSchedule4, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule4, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 5
     else if ( (currentTooth == ignitionEndTeeth[4]) )
     {
-      adjustCrankAngle(ignitionSchedule5, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule5, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 6
     else if ( (currentTooth == ignitionEndTeeth[5]) )
     {
-      adjustCrankAngle(ignitionSchedule6, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule6, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 7
     else if ( (currentTooth == ignitionEndTeeth[6]) )
     {
-      adjustCrankAngle(ignitionSchedule7, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule7, crankAngle);
     }
 #endif
 #if IGN_CHANNELS >= 8
     else if ( (currentTooth == ignitionEndTeeth[7]) )
     {
-      adjustCrankAngle(ignitionSchedule8, crankAngle);
+      adjustCrankAngle(currentStatus, ignitionSchedule8, crankAngle);
     }
 #endif
   }
