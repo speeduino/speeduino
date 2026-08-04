@@ -70,7 +70,7 @@ static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isRev
   pid.activate(currentAngle); //Turn PID on
 }
 
-void __attribute__((optimize("Os"))) initialiseAuxPWM(statuses &current, const pinNumbers_t &pins, const config4 &page4, const config6 &page6, config10 &page10)
+void __attribute__((optimize("Os"))) initialiseVvtWmi(statuses &current, const pinNumbers_t &pins, const config4 &page4, const config6 &page6, config10 &page10)
 {
   vvtChannel1 = VvtOutputChannel(pins.pinVVT_1, FREQUENCY.toUser(page6.vvtFreq));
   vvtChannel2 = VvtOutputChannel(pins.pinVVT_2, FREQUENCY.toUser(page6.vvtFreq));

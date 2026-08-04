@@ -12,7 +12,7 @@ struct test_context_t
 
     void initialise(void)
     {
-        initialiseAuxPWM(current, pins, page4, page6, page10);
+        initialiseVvtWmi(current, pins, page4, page6, page10);
     }
 
     void wmiControl(void)
