@@ -5,6 +5,7 @@
 #include "crankMaths.h"
 #include "decoders.h"
 #include "../test_utils.h"
+#include "globals.h"
 
 #if !defined(_countof)
 #define _countof(x) (sizeof(x) / sizeof (x[0]))

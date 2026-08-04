@@ -41,9 +41,8 @@ See page 136 of the processors datasheet: http://www.atmel.com/Images/doc2549.pd
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "globals.h"
+#include "board_definition.h"
 #include "crankMaths.h"
-
 
 /** \enum ScheduleStatus
  * @brief The current state of a schedule

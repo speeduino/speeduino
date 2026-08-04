@@ -2,7 +2,7 @@
 #define CRANKMATHS_H
 
 #include "maths.h"
-#include "globals.h"
+#include "board_definition.h"
 
 /**
  * @file

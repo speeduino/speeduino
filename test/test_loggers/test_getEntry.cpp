@@ -1,6 +1,7 @@
 #include <unity.h>
 #include "logger.h"
 #include "../test_utils.h"
+#include "globals.h"
 
 // Mirror of the static fsIntIndex[] table inside is2ByteEntry().
 // MUST be kept in sync with logger.cpp.

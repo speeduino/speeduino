@@ -3,6 +3,7 @@
 #include "fuel_calcs.h"
 #include "scheduler_fuel_controller.h"
 #include "units.h"
+#include "globals.h"
 
 static statuses getRandomPW(void) {
   statuses current = {};

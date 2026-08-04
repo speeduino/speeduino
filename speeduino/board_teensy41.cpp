@@ -13,6 +13,7 @@
 #include "scheduler_fuel_controller.h"
 #include "src/pins/pinNumbers_t.h"
 #include "src/controllers/boost/boostController.h"
+#include "globals.h"
 
 static void PIT_isr();
 static void TMR1_isr(void);

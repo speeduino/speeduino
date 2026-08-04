@@ -6,6 +6,9 @@
 #include "crankMaths.h"
 #include "maths.h"
 #include "timers.h"
+#include "preprocessor.h"
+#include "atomic.h"
+#include "statuses.h"
 
 /**
  * @brief Compute the injector open angle for an injection channel
