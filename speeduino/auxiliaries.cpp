@@ -50,6 +50,7 @@ TESTABLE_STATIC VvtOutputChannel vvtChannel2;
 TESTABLE_STATIC NextInterruptEvent nextVVT;
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
 TESTABLE_STATIC inputPin_t wmiTankEmptyPin;
+TESTABLE_STATIC outputPin_t wmiIsEnabledPin;
 
 static integerPID vvtPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 static integerPID vvt2PID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -75,6 +76,7 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
   vvtChannel2 = VvtOutputChannel(pinNumbers.pinVVT_2, FREQUENCY.toUser(configPage6.vvtFreq));
 
   wmiTankEmptyPin.setPin(pinNumbers.pinWMIEmpty);
+  wmiIsEnabledPin.setPin(pinNumbers.pinWMIEnabled);
   currentStatus.wmiTankEmpty = false;
   currentStatus.wmiPW = 0;
   currentStatus.vvt1 = vvtStatus_t();
@@ -323,7 +325,14 @@ void wmiControl(void)
   {
     ATOMIC() {
       vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
-      digitalWrite(pinNumbers.pinWMIEnabled, vvtChannel2.isNoDuty() ? LOW : HIGH);
+      if (vvtChannel2.isNoDuty())
+      {
+        wmiIsEnabledPin.setPinLow();
+      }
+      else
+      {
+        wmiIsEnabledPin.setPinHigh();
+      }
       setTimerState();
     }
   }
