@@ -104,23 +104,6 @@ void __attribute__((optimize("Os"))) initialiseAuxPWM(statuses &current, const p
   }
 }
 
-void vvt1On(void)
-{
-  vvtChannel1.pin.setPinHigh();
-}
-void vvt1Off(void)
-{
-  vvtChannel1.pin.setPinLow();
-}
-void vvt2On(void)
-{
-  vvtChannel2.pin.setPinHigh();
-}
-void vvt2Off(void)
-{
-  vvtChannel2.pin.setPinLow();
-}
-
 static uint16_t getVvtLoad(const statuses &current, const config6 &page6)
 {
   if (page6.vvtLoadSource == VVT_LOAD_TPS)
