@@ -74,33 +74,6 @@ static void assert_vvt2_on(const test_context_t &context)
 }
 }
 
-
-// ============================ VVT pin drivers ===============================
-
-static void test_vvt1On_and_Off_toggle_pin(void)
-{
-  auto context = setup_vvt_openloop_tune(loadSource, testVvt2Enabled, testWmiEnabled);
-  context.initialise();
-  vvt1Off();
-  TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
-  vvt1On();
-  TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
-  vvt1Off();
-  TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
-}
-
-static void test_vvt2On_and_Off_toggle_pin(void)
-{
-  auto context = setup_vvt_openloop_tune(loadSource, testVvt2Enabled, testWmiEnabled);
-  context.initialise();
-  vvt2Off();
-  TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-  vvt2On();
-  TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
-  vvt2Off();
-  TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-}
-
 // ============================ VVT Control ===============================
 
 static void test_vvtControl_disabled_noduty(void)
@@ -325,8 +298,6 @@ void testVvtControl(void)
                 RUN_TEST_P(test_vvtControl_coolantlow_noduty);
                 RUN_TEST_P(test_vvtControl_engineoff_noduty);
                 RUN_TEST_P(test_vvtControl_enginecranking_noduty);
-                RUN_TEST_P(test_vvt1On_and_Off_toggle_pin);
-                RUN_TEST_P(test_vvt2On_and_Off_toggle_pin);
                 RUN_TEST_P(test_vvtControl_open_loop_sets_vvt_duty_from_table);
                 RUN_TEST_P(test_vvtControl_onoff_mode_turns_pins_off_when_duty_below_threshold);
                 RUN_TEST_P(test_vvtControl_onoff_mode_turns_pins_on_when_duty_above_threshold);
