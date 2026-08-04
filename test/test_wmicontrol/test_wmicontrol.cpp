@@ -20,14 +20,11 @@ static void setTankEmpty(bool empty)
 static void setup_calc_conditions(test_context_t &context)
 {
     setTankEmpty(context.page10.wmiEmptyPolarity);
-    // if( (context.current.TPS >= context.page10.wmiTPS)
     context.current.TPS = context.page10.wmiTPS + 1; 
-    //  && (context.current.RPMdiv100 >= context.page10.wmiRPM) 
     context.current.setRpm(RPM_COARSE.toUser(context.page10.wmiRPM+1));
-    //  && ( (context.current.MAP / 2U) >= context.page10.wmiMAP) 
     context.current.MAP = (context.page10.wmiMAP + ((context.page10.wmiMAP2-context.page10.wmiMAP)/2U))*2U;
-    //  && ( temperatureAddOffset(context.current.IAT) >= context.page10.wmiIAT) )
     context.current.IAT = temperatureRemoveOffset(context.page10.wmiIAT+1);
+    context.current.rotationStatus = EngineRotationStatus::Running;
 }
 
 static void assert_tank_empty(test_context_t &context)
@@ -138,6 +135,15 @@ static void test_calc_conditions(void)
     
     setup_calc_conditions(context);
     context.current.IAT = temperatureRemoveOffset(context.page10.wmiIAT)-1U;
+    assert_wmipw(context, 0);
+
+    // Engine rotating
+    setup_calc_conditions(context);
+    context.current.rotationStatus = EngineRotationStatus::Cranking;
+    assert_wmipw(context, 0);
+
+    setup_calc_conditions(context);
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
     assert_wmipw(context, 0);
 }
 

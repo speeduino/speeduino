@@ -279,6 +279,7 @@ static bool isWmiActive(const statuses &current, const config10 &page10)
       && (current.RPM >= RPM_COARSE.toUser(page10.wmiRPM))
       && (current.MAP >= MAP.toUser(page10.wmiMAP)) 
       && (current.IAT >= TEMPERATURE.toUser(page10.wmiIAT))
+      && (current.rotationStatus==EngineRotationStatus::Running)
       ;
 }
 
