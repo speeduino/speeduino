@@ -6,6 +6,7 @@ constexpr uint8_t TANK_EMPTY_PIN = 11;
 void setup_wmi_tune(uint8_t mode)
 {
     pinNumbers.pinWMIEmpty = TANK_EMPTY_PIN;
+    pinNumbers.pinWMIEnabled = 18;
     configPage10.vvt2Enabled = false;
     configPage10.wmiEnabled = true;
     configPage10.wmiEmptyEnabled = true;

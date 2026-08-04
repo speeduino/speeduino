@@ -4,8 +4,10 @@
 #include "units.h"
 #include "shared.h"
 #include "scheduler_fuel_controller.h"
+#include "src/pins/outputPin.h"
 
 extern inputPin_t wmiTankEmptyPin;
+extern outputPin_t wmiIsEnabledPin;
 
 static void setTankEmpty(bool empty)
 {
@@ -77,6 +79,14 @@ static void assert_wmipw(uint8_t expected)
     currentStatus.wmiPW = 99; 
     wmiControl();
     TEST_ASSERT_EQUAL(expected, currentStatus.wmiPW);
+    if (expected==0)
+    {
+        TEST_ASSERT_TRUE(wmiIsEnabledPin._pin.isPinLow());
+    }
+    else
+    {
+        TEST_ASSERT_TRUE(wmiIsEnabledPin._pin.isPinHigh());
+    }
 }
 
 static void setup_assert_wmipw(uint8_t expected)
