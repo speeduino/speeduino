@@ -243,9 +243,9 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
-      vvtControl();
+      vvtControl(currentStatus, configPage4, configPage6, configPage10);
       //Water methanol injection
-      wmiControl();
+      wmiControl(currentStatus, configPage10);
       
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(30);

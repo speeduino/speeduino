@@ -1,8 +1,8 @@
 
 #include "../test_utils.h"
-#include "globals.h"
 #include "shared.h"
 #include "units.h"
+#include "globals.h"
 
 static constexpr table3d_axis_t TEST_VVT_AXIS_X[8] = {
   7000U/100U,
@@ -37,47 +37,54 @@ void populate_vvt_tables(table3d_value_t vvt1Value, table3d_value_t vvt2Value)
   fill_table_values(vvt2Table, vvt2Value);
 }
 
-static void setup_vvt_basic_tune(uint8_t mode, uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
+static test_context_t setup_vvt_basic_tune(uint8_t mode, uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
 {
-  pinNumbers.pinVVT_1 = TEST_VVT1_PIN;
-  pinNumbers.pinVVT_2 = TEST_VVT2_PIN;
+  constexpr uint8_t TEST_VVT1_PIN = 19U;
+  constexpr uint8_t TEST_VVT2_PIN = 20U;
 
-  configPage6.vvtEnabled = true;
-  configPage6.vvtFreq = 1U;
-  configPage4.vvtMinClt = temperatureAddOffset(60);
-  configPage4.vvtDelay = 0U;
-  configPage6.vvtLoadSource = loadSource;
-  configPage6.vvtMode = mode;
-  configPage4.TrigPattern = 0U;
+  test_context_t context;
+  context.pins.pinVVT_1 = TEST_VVT1_PIN;
+  context.pins.pinVVT_2 = TEST_VVT2_PIN;
 
-  configPage10.vvt2Enabled = vvt2Enabled;
-  configPage10.wmiEnabled = wmiEnabled;
-  configPage10.vvtCLMinAng = INT8_MIN+5;
-  configPage10.vvtCLMaxAng = UINT8_MAX-5;
-  configPage10.vvtCLholdDuty = 100U;
+  context.page6.vvtEnabled = true;
+  context.page6.vvtFreq = 1U;
+  context.page4.vvtMinClt = temperatureAddOffset(60);
+  context.page4.vvtDelay = 0U;
+  context.page6.vvtLoadSource = loadSource;
+  context.page6.vvtMode = mode;
+  context.page4.TrigPattern = 0U;
+
+  context.page10.vvt2Enabled = vvt2Enabled;
+  context.page10.wmiEnabled = wmiEnabled;
+  context.page10.vvtCLMinAng = INT8_MIN+5;
+  context.page10.vvtCLMaxAng = UINT8_MAX-5;
+  context.page10.vvtCLholdDuty = 100U;
+
+  return context;
 }
 
-void setup_vvt_openloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
+test_context_t setup_vvt_openloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
 {
-    setup_vvt_basic_tune(VVT_MODE_OPEN_LOOP, loadSource, vvt2Enabled, wmiEnabled);
     populate_vvt_tables(150U, 150U);
+    return setup_vvt_basic_tune(VVT_MODE_OPEN_LOOP, loadSource, vvt2Enabled, wmiEnabled);
 }
 
-void setup_vvt_onoff_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
+test_context_t setup_vvt_onoff_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
 {
-    setup_vvt_basic_tune(VVT_MODE_ONOFF, loadSource, vvt2Enabled, wmiEnabled);
+    return setup_vvt_basic_tune(VVT_MODE_ONOFF, loadSource, vvt2Enabled, wmiEnabled);
 }
 
-void setup_vvt_closedloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
+test_context_t setup_vvt_closedloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled)
 {
-  setup_vvt_basic_tune(VVT_MODE_CLOSED_LOOP, loadSource, vvt2Enabled, wmiEnabled);
-  configPage6.vvtPWMdir = 1U;
-  configPage4.vvt2PWMdir = configPage6.vvtPWMdir;
-  configPage10.vvtCLholdDuty = 120U;
-  configPage10.vvtCLKP = 5;
-  configPage10.vvtCLKI = 4;
-  configPage10.vvtCLKD = 3;
-  configPage10.vvtCLminDuty = 0;
-  configPage10.vvtCLmaxDuty = UINT8_MAX;
+  auto context = setup_vvt_basic_tune(VVT_MODE_CLOSED_LOOP, loadSource, vvt2Enabled, wmiEnabled);
+  context.page6.vvtPWMdir = 1U;
+  context.page4.vvt2PWMdir = context.page6.vvtPWMdir;
+  context.page10.vvtCLholdDuty = 120U;
+  context.page10.vvtCLKP = 5;
+  context.page10.vvtCLKI = 4;
+  context.page10.vvtCLKD = 3;
+  context.page10.vvtCLminDuty = 0;
+  context.page10.vvtCLmaxDuty = UINT8_MAX;
   populate_vvt_tables(150U, 150U);
+  return context;
 }

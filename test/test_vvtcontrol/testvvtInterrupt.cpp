@@ -1,7 +1,7 @@
 #include "../test_utils.h"
-#include "globals.h"
 #include "auxiliaries.h"
 #include "units.h"
+#include "shared.h"
 #include "src/pins/boardOutputPin.h"
 #include "src/controllers/vvt/VvtOutputChannel.h"
 
@@ -16,12 +16,13 @@ constexpr uint8_t LOOP_COUNT = 6; // Number of iterations for each test loop
 
 static void setup_vvt_interrupt_base(void)
 {
+  test_context_t context;
   // Initialize pins
-  pinNumbers.pinVVT_1 = 19U;
-  pinNumbers.pinVVT_2 = 20U;
+  context.pins.pinVVT_1 = 19U;
+  context.pins.pinVVT_2 = 20U;
   
   // Initialize pins through auxiliaries
-  initialiseAuxPWM();
+  context.initialise();
 }
 
 // ========================= Test: Both VVT outputs off (idle state) =========================
@@ -66,7 +67,7 @@ static void test_vvt1_partial_vvt2_off(void)
         // VVT1 should be turned off
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(vvtChannel1.maxDuty-vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
 
@@ -92,7 +93,7 @@ static void test_vvt1_off_vvt2_partial(void)
         // VVT2 should be off, VVT1 should NOT activate (was at 0%)
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(vvtChannel2.maxDuty-vvtChannel2.targetDuty, lastVvtComparatorOffset);
     }
 }
 
@@ -118,7 +119,7 @@ static void test_both_same_duty_cycle(void)
         // Both should turn off
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(vvtChannel1.maxDuty-vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
 
@@ -269,7 +270,7 @@ static void test_vvt1_partial_vvt2_max(void)
         vvtInterrupt();
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinLow());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinHigh());
-        TEST_ASSERT_EQUAL(vvtChannel1.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(vvtChannel1.maxDuty-vvtChannel1.targetDuty, lastVvtComparatorOffset);
     }
 }
 
@@ -295,7 +296,7 @@ static void test_vvt1_max_vvt2_partial(void)
         vvtInterrupt();
         TEST_ASSERT_TRUE(vvtChannel1.pin.isPinHigh());
         TEST_ASSERT_TRUE(vvtChannel2.pin.isPinLow());
-        TEST_ASSERT_EQUAL(vvtChannel2.targetDuty, lastVvtComparatorOffset);
+        TEST_ASSERT_EQUAL(vvtChannel2.maxDuty-vvtChannel2.targetDuty, lastVvtComparatorOffset);
     }
 }
 

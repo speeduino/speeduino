@@ -70,34 +70,35 @@ static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isRev
   pid.activate(currentAngle); //Turn PID on
 }
 
-void __attribute__((optimize("Os"))) initialiseAuxPWM(void)
+void __attribute__((optimize("Os"))) initialiseAuxPWM(statuses &current, const pinNumbers_t &pins, const config4 &page4, const config6 &page6, config10 &page10)
 {
-  vvtChannel1 = VvtOutputChannel(pinNumbers.pinVVT_1, FREQUENCY.toUser(configPage6.vvtFreq));
-  vvtChannel2 = VvtOutputChannel(pinNumbers.pinVVT_2, FREQUENCY.toUser(configPage6.vvtFreq));
+  vvtChannel1 = VvtOutputChannel(pins.pinVVT_1, FREQUENCY.toUser(page6.vvtFreq));
+  vvtChannel2 = VvtOutputChannel(pins.pinVVT_2, FREQUENCY.toUser(page6.vvtFreq));
 
-  wmiTankEmptyPin.setPin(pinNumbers.pinWMIEmpty);
-  wmiIsEnabledPin.setPin(pinNumbers.pinWMIEnabled);
-  currentStatus.wmiTankEmpty = false;
-  currentStatus.wmiPW = 0;
-  currentStatus.vvt1 = vvtStatus_t();
-  currentStatus.vvt2 = vvtStatus_t();
+  wmiTankEmptyPin.setPin(pins.pinWMIEmpty);
+  wmiIsEnabledPin.setPin(pins.pinWMIEnabled);
+
+  current.wmiTankEmpty = false;
+  current.wmiPW = 0;
+  current.vvt1 = vvtStatus_t();
+  current.vvt2 = vvtStatus_t();
   vvtWarmStartTime = 0;
 
-  configPage10.vvt2Enabled = configPage10.vvt2Enabled && configPage6.vvtEnabled && !configPage10.wmiEnabled;
+  page10.vvt2Enabled = page10.vvt2Enabled && page6.vvtEnabled && !page10.wmiEnabled;
 
-  if (configPage6.vvtMode == VVT_MODE_CLOSED_LOOP)
+  if (page6.vvtMode == VVT_MODE_CLOSED_LOOP)
   {
-    if (configPage6.vvtEnabled)
+    if (page6.vvtEnabled)
     {
-      initialiseVvtPid(vvtPID, configPage10, configPage6.vvtPWMdir, currentStatus.vvt1.angle);
+      initialiseVvtPid(vvtPID, page10, page6.vvtPWMdir, current.vvt1.angle);
     }
-    if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
+    if (page10.vvt2Enabled) // same for VVT2 if it's enabled
     {
-      initialiseVvtPid(vvt2PID, configPage10, configPage4.vvt2PWMdir, currentStatus.vvt2.angle);
+      initialiseVvtPid(vvt2PID, page10, page4.vvt2PWMdir, current.vvt2.angle);
     }
   }
 
-  if( (configPage6.vvtEnabled) || (configPage10.wmiEnabled) )
+  if( (page6.vvtEnabled) || (page10.wmiEnabled) )
   {
     ENABLE_VVT_TIMER(); //Turn on the B compare unit (ie turn on the interrupt)
   }
@@ -202,6 +203,7 @@ static void updateVvtDuty(vvtStatus_t &vvtStatus, integerPID &pid, const statuse
 
 static void setTimerState(void) noexcept
 {
+#if !defined(UNIT_TEST)
   if( vvtChannel1.isPartialDuty() || vvtChannel2.isPartialDuty() )
   {
     ENABLE_VVT_TIMER();
@@ -210,6 +212,7 @@ static void setTimerState(void) noexcept
   {
     DISABLE_VVT_TIMER();
   }
+#endif
 }
 
 static bool isVvtActive(const statuses &current, const config4 &page4, const config6 &page6)
@@ -220,9 +223,9 @@ static bool isVvtActive(const statuses &current, const config4 &page4, const con
   ;
 }
 
-void vvtControl(void)
+void vvtControl(statuses &current, const config4 &page4, const config6 &page6, config10 &page10)
 {
-  if( isVvtActive(currentStatus, configPage4, configPage6) )
+  if( isVvtActive(current, page4, page6) )
   {
     if(vvtWarmStartTime == 0U) 
     {
@@ -231,42 +234,42 @@ void vvtControl(void)
 
     //Calculate the current cam angle for miata trigger
     // LCOV_EXCL_BR_START
-    if( configPage4.TrigPattern == 9 ) { currentStatus.vvt1.angle = getCamAngle_Miata9905(); }
+    if( page4.TrigPattern == 9 ) { current.vvt1.angle = getCamAngle_Miata9905(); }
     // LCOV_EXCL_BR_STOP
 
-    if(hasIntervalElapsed(runSecsX10, vvtWarmStartTime, TIME_TWO_MILLIS.toUser(configPage4.vvtDelay)) )
+    if(hasIntervalElapsed(runSecsX10, vvtWarmStartTime, TIME_TWO_MILLIS.toUser(page4.vvtDelay)) )
     {
-      updateVvtDuty(currentStatus.vvt1, vvtPID, currentStatus, configPage6, configPage10, vvtTable);
-      if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
+      updateVvtDuty(current.vvt1, vvtPID, current, page6, page10, vvtTable);
+      if (page10.vvt2Enabled) // same for VVT2 if it's enabled
       {
-        updateVvtDuty(currentStatus.vvt2, vvt2PID, currentStatus, configPage6, configPage10, vvt2Table);
+        updateVvtDuty(current.vvt2, vvt2PID, current, page6, page10, vvt2Table);
       }
     }
   }
   else 
   { 
-    if (!configPage10.wmiEnabled)
+    if (!page10.wmiEnabled)
     {
-      currentStatus.vvt2.duty = 0;
+      current.vvt2.duty = 0;
     }
-    currentStatus.vvt1.duty = 0;
+    current.vvt1.duty = 0;
     vvtWarmStartTime = 0;
   } 
 
   ATOMIC() {
-    vvtChannel1.setTargetDutyFromDuty(currentStatus.vvt1.duty);
-    if (configPage10.vvt2Enabled) // same for VVT2 if it's enabled
+    vvtChannel1.setTargetDutyFromDuty(current.vvt1.duty);
+    if (page10.vvt2Enabled) // same for VVT2 if it's enabled
     {
-      vvtChannel2.setTargetDutyFromDuty(currentStatus.vvt2.duty);
+      vvtChannel2.setTargetDutyFromDuty(current.vvt2.duty);
     }
     setTimerState();
   }
 }
 
-static bool isWmiTankEmpty(void)
+static bool isWmiTankEmpty(const config10 &page10)
 {
-  return configPage10.wmiEmptyEnabled
-      && (configPage10.wmiEmptyPolarity!=wmiTankEmptyPin.isPinHigh())
+  return page10.wmiEmptyEnabled
+      && (page10.wmiEmptyPolarity!=wmiTankEmptyPin.isPinHigh())
       ;
 }
 
@@ -283,9 +286,9 @@ static uint8_t calculateWmiPw(const statuses &current, const config10 &page10)
 {
     uint16_t wmiPw = 0;
 
-    if (configPage10.wmiEnabled && !current.wmiTankEmpty && isWmiActive(current, page10))
+    if (page10.wmiEnabled && !current.wmiTankEmpty && isWmiActive(current, page10))
     {
-      switch(configPage10.wmiMode)
+      switch(page10.wmiMode)
       {
       case WMI_MODE_SIMPLE:
         // Simple mode - Output is turned on when preset boost level is reached
@@ -293,18 +296,18 @@ static uint8_t calculateWmiPw(const statuses &current, const config10 &page10)
         break;
       case WMI_MODE_PROPORTIONAL:
         // Proportional Mode - Output PWM is proportionally controlled between two MAP values - MAP Value 1 = PWM:0% / MAP Value 2 = PWM:100%
-        wmiPw = map(currentStatus.MAP, MAP.toUser(configPage10.wmiMAP), MAP.toUser(configPage10.wmiMAP2), 0, 200);
+        wmiPw = map(current.MAP, MAP.toUser(page10.wmiMAP), MAP.toUser(page10.wmiMAP2), 0, 200);
         break;
       case WMI_MODE_OPENLOOP:
         //  Mapped open loop - Output PWM follows 2D map value (RPM vs MAP) Cell value contains desired PWM% [range 0-100%]
-        wmiPw = get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM);
+        wmiPw = get3DTableValue(&wmiTable, current.MAP, current.RPM);
         break;
       case WMI_MODE_CLOSEDLOOP:
         // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). 
         // Cell value contains correction value% [nom 100%]
         {
-          uint16_t basePw = clamp((int32_t)fuelSchedule1.pw + configPage10.wmiOffset, (int32_t)0, (int32_t)UINT16_MAX);
-          wmiPw = halfPercentage(get3DTableValue(&wmiTable, currentStatus.MAP, currentStatus.RPM), basePw);
+          uint16_t basePw = clamp((int32_t)fuelSchedule1.pw + page10.wmiOffset, (int32_t)0, (int32_t)UINT16_MAX);
+          wmiPw = halfPercentage(get3DTableValue(&wmiTable, current.MAP, current.RPM), basePw);
         }
         break;
       default: // Unknown mode
@@ -316,15 +319,15 @@ static uint8_t calculateWmiPw(const statuses &current, const config10 &page10)
 }
 
 // Water methanol injection control
-void wmiControl(void)
+void wmiControl(statuses &current, const config10 &page10)
 {
-  currentStatus.wmiTankEmpty = configPage10.wmiEnabled && isWmiTankEmpty();
-  currentStatus.wmiPW = calculateWmiPw(currentStatus, configPage10);
+  current.wmiTankEmpty = page10.wmiEnabled && isWmiTankEmpty(page10);
+  current.wmiPW = calculateWmiPw(current, page10);
 
-  if (configPage10.wmiEnabled)
+  if (page10.wmiEnabled)
   {
     ATOMIC() {
-      vvtChannel2.setTargetDutyFromDuty(currentStatus.wmiPW);
+      vvtChannel2.setTargetDutyFromDuty(current.wmiPW);
       if (vvtChannel2.isNoDuty())
       {
         wmiIsEnabledPin.setPinLow();
@@ -345,13 +348,14 @@ static void setVvtTimerCompare(uint16_t offset)
 {
 #if defined(UNIT_TEST)
   lastVvtComparatorOffset = offset;
-#endif
+#else
   // IRL a zero offset is bad.
   if (offset==0U)
   {
     offset = 1000;
   }
   SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + offset);
+#endif
 }
 
 static bool isVvtOff(const VvtOutputChannel &channel)
