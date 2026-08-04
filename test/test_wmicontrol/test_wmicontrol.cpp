@@ -17,68 +17,68 @@ static void setTankEmpty(bool empty)
         wmiTankEmptyPin._pin.setPinLow();
     }
 }
-static void setup_calc_conditions(void)
+static void setup_calc_conditions(test_context_t &context)
 {
-    setTankEmpty(configPage10.wmiEmptyPolarity);
-    // if( (currentStatus.TPS >= configPage10.wmiTPS)
-    currentStatus.TPS = configPage10.wmiTPS + 1; 
-    //  && (currentStatus.RPMdiv100 >= configPage10.wmiRPM) 
-    currentStatus.setRpm(RPM_COARSE.toUser(configPage10.wmiRPM+1));
-    //  && ( (currentStatus.MAP / 2U) >= configPage10.wmiMAP) 
-    currentStatus.MAP = (configPage10.wmiMAP + ((configPage10.wmiMAP2-configPage10.wmiMAP)/2U))*2U;
-    //  && ( temperatureAddOffset(currentStatus.IAT) >= configPage10.wmiIAT) )
-    currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT+1);
+    setTankEmpty(context.page10.wmiEmptyPolarity);
+    // if( (context.current.TPS >= context.page10.wmiTPS)
+    context.current.TPS = context.page10.wmiTPS + 1; 
+    //  && (context.current.RPMdiv100 >= context.page10.wmiRPM) 
+    context.current.setRpm(RPM_COARSE.toUser(context.page10.wmiRPM+1));
+    //  && ( (context.current.MAP / 2U) >= context.page10.wmiMAP) 
+    context.current.MAP = (context.page10.wmiMAP + ((context.page10.wmiMAP2-context.page10.wmiMAP)/2U))*2U;
+    //  && ( temperatureAddOffset(context.current.IAT) >= context.page10.wmiIAT) )
+    context.current.IAT = temperatureRemoveOffset(context.page10.wmiIAT+1);
 }
 
-static void assert_tank_empty(void)
+static void assert_tank_empty(test_context_t &context)
 {
-    setTankEmpty(!configPage10.wmiEmptyPolarity);
-    currentStatus.wmiTankEmpty = false;
-    wmiControl();
-    TEST_ASSERT_TRUE(currentStatus.wmiTankEmpty);
+    setTankEmpty(!context.page10.wmiEmptyPolarity);
+    context.current.wmiTankEmpty = false;
+    context.wmiControl();
+    TEST_ASSERT_TRUE(context.current.wmiTankEmpty);
 }
 
 static void test_tank_empty(void)
 {
-    setup_wmi_tune(WMI_MODE_SIMPLE);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_SIMPLE);
+    context.initialise();
     
-    assert_tank_empty();
+    assert_tank_empty(context);
     
     // Reverse polarity
-    configPage10.wmiEmptyPolarity = !configPage10.wmiEmptyPolarity; 
-    assert_tank_empty();
+    context.page10.wmiEmptyPolarity = !context.page10.wmiEmptyPolarity; 
+    assert_tank_empty(context);
 }
 
-static void assert_tank_not_empty(void)
+static void assert_tank_not_empty(test_context_t &context)
 {
-    setTankEmpty(configPage10.wmiEmptyPolarity);
-    currentStatus.wmiTankEmpty = true;
-    wmiControl();
-    TEST_ASSERT_FALSE(currentStatus.wmiTankEmpty);
+    setTankEmpty(context.page10.wmiEmptyPolarity);
+    context.current.wmiTankEmpty = true;
+    context.wmiControl();
+    TEST_ASSERT_FALSE(context.current.wmiTankEmpty);
 }
 
 static void test_tank_not_empty(void)
 {
-    setup_wmi_tune(WMI_MODE_SIMPLE);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_SIMPLE);
+    context.initialise();
 
-    assert_tank_not_empty();
+    assert_tank_not_empty(context);
 
     // Reverse polarity
-    configPage10.wmiEmptyPolarity = !configPage10.wmiEmptyPolarity; 
-    assert_tank_not_empty();
+    context.page10.wmiEmptyPolarity = !context.page10.wmiEmptyPolarity; 
+    assert_tank_not_empty(context);
 
     // Disabled 
-    configPage10.wmiEmptyEnabled = false;
-    assert_tank_not_empty();
+    context.page10.wmiEmptyEnabled = false;
+    assert_tank_not_empty(context);
 }
 
-static void assert_wmipw(uint8_t expected)
+static void assert_wmipw(test_context_t &context, uint8_t expected)
 {
-    currentStatus.wmiPW = 99; 
-    wmiControl();
-    TEST_ASSERT_EQUAL(expected, currentStatus.wmiPW);
+    context.current.wmiPW = 99; 
+    context.wmiControl();
+    TEST_ASSERT_EQUAL(expected, context.current.wmiPW);
     if (expected==0)
     {
         TEST_ASSERT_TRUE(wmiIsEnabledPin._pin.isPinLow());
@@ -89,142 +89,142 @@ static void assert_wmipw(uint8_t expected)
     }
 }
 
-static void setup_assert_wmipw(uint8_t expected)
+static void setup_assert_wmipw(test_context_t &context, uint8_t expected)
 {
-    setup_calc_conditions();
-    assert_wmipw(expected);
+    setup_calc_conditions(context);
+    assert_wmipw(context, expected);
 }
 
 static void test_calc_conditions(void)
 {
-    setup_wmi_tune(WMI_MODE_SIMPLE);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_SIMPLE);
+    context.initialise();
 
     // Assert initial conditions
-    setup_calc_conditions();
-    assert_wmipw(200);
+    setup_calc_conditions(context);
+    assert_wmipw(context, 200);
 
     // TPS
-    setup_calc_conditions();
-    currentStatus.TPS = configPage10.wmiTPS; 
-    assert_wmipw(200);
+    setup_calc_conditions(context);
+    context.current.TPS = context.page10.wmiTPS; 
+    assert_wmipw(context, 200);
 
-    setup_calc_conditions();
-    currentStatus.TPS = configPage10.wmiTPS - 1; 
-    assert_wmipw(0);
+    setup_calc_conditions(context);
+    context.current.TPS = context.page10.wmiTPS - 1; 
+    assert_wmipw(context, 0);
     
     // RPM
-    setup_calc_conditions();
-    currentStatus.setRpm(RPM_COARSE.toUser(configPage10.wmiRPM));
-    assert_wmipw(200);
+    setup_calc_conditions(context);
+    context.current.setRpm(RPM_COARSE.toUser(context.page10.wmiRPM));
+    assert_wmipw(context, 200);
     
-    setup_calc_conditions();
-    currentStatus.setRpm(RPM_COARSE.toUser(configPage10.wmiRPM-1));
-    assert_wmipw(0);
+    setup_calc_conditions(context);
+    context.current.setRpm(RPM_COARSE.toUser(context.page10.wmiRPM-1));
+    assert_wmipw(context, 0);
     
     // MAP
-    setup_calc_conditions();
-    currentStatus.MAP = configPage10.wmiMAP*2U;
-    assert_wmipw(200);
+    setup_calc_conditions(context);
+    context.current.MAP = context.page10.wmiMAP*2U;
+    assert_wmipw(context, 200);
     
-    setup_calc_conditions();
-    currentStatus.MAP = (configPage10.wmiMAP*2U)-1;
-    assert_wmipw(0);
+    setup_calc_conditions(context);
+    context.current.MAP = (context.page10.wmiMAP*2U)-1;
+    assert_wmipw(context, 0);
     
     // IAT
-    setup_calc_conditions();
-    currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT);
-    assert_wmipw(200);
+    setup_calc_conditions(context);
+    context.current.IAT = temperatureRemoveOffset(context.page10.wmiIAT);
+    assert_wmipw(context, 200);
     
-    setup_calc_conditions();
-    currentStatus.IAT = temperatureRemoveOffset(configPage10.wmiIAT)-1U;
-    assert_wmipw(0);
+    setup_calc_conditions(context);
+    context.current.IAT = temperatureRemoveOffset(context.page10.wmiIAT)-1U;
+    assert_wmipw(context, 0);
 }
 
 static void test_mode_simple(void)
 {
-    setup_wmi_tune(WMI_MODE_SIMPLE);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_SIMPLE);
+    context.initialise();
 
-    setup_assert_wmipw(200);
+    setup_assert_wmipw(context, 200);
 }
 
 static void test_mode_proportional(void)
 {
-    setup_wmi_tune(WMI_MODE_PROPORTIONAL);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_PROPORTIONAL);
+    context.initialise();
 
-    setup_assert_wmipw(100);
+    setup_assert_wmipw(context, 100);
 
     // Clamp <=200
-    configPage10.wmiMAP2 = configPage10.wmiMAP+10;
-    assert_wmipw(200);
+    context.page10.wmiMAP2 = context.page10.wmiMAP+10;
+    assert_wmipw(context, 200);
 }
 
 static void test_mode_ol(void)
 {
-    setup_wmi_tune(WMI_MODE_OPENLOOP);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_OPENLOOP);
+    context.initialise();
 
     fill_table_values(wmiTable, 33);
     populate_table_axis(wmiTable.axisX, (table3d_axis_t)10);
     populate_table_axis(wmiTable.axisY, (table3d_axis_t)10);
 
-    setup_assert_wmipw(wmiTable.values[0]);
+    setup_assert_wmipw(context, wmiTable.values[0]);
 
     // Clamp <=200
     fill_table_values(wmiTable, 255);
-    configPage10.wmiMAP2 = configPage10.wmiMAP+10;
-    assert_wmipw(200);
+    context.page10.wmiMAP2 = context.page10.wmiMAP+10;
+    assert_wmipw(context, 200);
 }
 
 static void test_mode_cl(void)
 {
-    setup_wmi_tune(WMI_MODE_CLOSEDLOOP);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_CLOSEDLOOP);
+    context.initialise();
 
     populate_table_axis(wmiTable.axisX, (table3d_axis_t)10);
     populate_table_axis(wmiTable.axisY, (table3d_axis_t)10);
     fill_table_values(wmiTable, 177);
-    fuelSchedule1.pw = abs(configPage10.wmiOffset)*2;
+    fuelSchedule1.pw = abs(context.page10.wmiOffset)*2;
 
-    setup_assert_wmipw(29);
+    setup_assert_wmipw(context, 29);
 
     // Test 0-200 clamp
     fill_table_values(wmiTable, 1);
     fuelSchedule1.pw = 1;
-    assert_wmipw(0);
+    assert_wmipw(context, 0);
 
     fill_table_values(wmiTable, 255);
     fuelSchedule1.pw = 255;
-    assert_wmipw(200);
+    assert_wmipw(context, 200);
 }
 
 static void test_mode_other(void)
 {
-    setup_wmi_tune(WMI_MODE_CLOSEDLOOP*2U);
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_CLOSEDLOOP*2U);
+    context.initialise();
 
-    setup_assert_wmipw(0);
+    setup_assert_wmipw(context, 0);
 }
 
 static void test_disabled(void)
 {
-    setup_wmi_tune(WMI_MODE_SIMPLE);
-    configPage10.wmiEnabled = false;    
-    initialiseAuxPWM();
+    auto context = setup_wmi_tune(WMI_MODE_SIMPLE);
+    context.page10.wmiEnabled = false;    
+    context.initialise();
 
-    setup_assert_wmipw(0);
+    setup_assert_wmipw(context, 0);
 }
 
 static void test_vvt2_enabled(void)
 {
-    setup_wmi_tune(WMI_MODE_SIMPLE);
-    configPage10.vvt2Enabled = true;
-    initialiseAuxPWM();
-    TEST_ASSERT_FALSE(configPage10.vvt2Enabled);
+    auto context = setup_wmi_tune(WMI_MODE_SIMPLE);
+    context.page10.vvt2Enabled = true;
+    context.initialise();
+    TEST_ASSERT_FALSE(context.page10.vvt2Enabled);
 
-    setup_assert_wmipw(200);
+    setup_assert_wmipw(context, 200);
 }
 
 void testWmiControl(void)

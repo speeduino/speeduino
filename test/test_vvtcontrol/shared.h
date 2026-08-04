@@ -1,11 +1,27 @@
 #pragma once
 
-#include "table3d_typedefs.h"
+#include "auxiliaries.h"
 
-static constexpr uint8_t TEST_VVT1_PIN = 19U;
-static constexpr uint8_t TEST_VVT2_PIN = 20U;
+struct test_context_t
+{
+    statuses current;
+    pinNumbers_t pins;
+    config4 page4;
+    config6 page6;
+    config10 page10;
 
-void setup_vvt_openloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled);
-void setup_vvt_onoff_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled);
-void setup_vvt_closedloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled);
+    void initialise(void)
+    {
+        initialiseAuxPWM(current, pins, page4, page6, page10);
+    }
+
+    void vvtControl(void)
+    {
+        ::vvtControl(current, page4, page6, page10);
+    }
+};
+
+test_context_t setup_vvt_openloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled);
+test_context_t setup_vvt_onoff_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled);
+test_context_t setup_vvt_closedloop_tune(uint8_t loadSource, bool vvt2Enabled, bool wmiEnabled);
 void populate_vvt_tables(table3d_value_t vvt1Value, table3d_value_t vvt2Value);
