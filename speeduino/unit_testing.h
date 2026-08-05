@@ -69,5 +69,10 @@
 #define INTERNAL_TEST_ASSERT(expression) 
 #else
 #include <unity.h>
-#define INTERNAL_TEST_ASSERT(expression) TEST_ASSERT_TRUE((expression))
+#include "../test/file_name_guard_t.h"
+#define INTERNAL_TEST_ASSERT(expression) \
+{ \
+    unity_filename_guard_t guard(__FILE__); \
+    TEST_ASSERT_TRUE((expression)); \
+}
 #endif
