@@ -37,6 +37,19 @@ enum class EngineRotationStatus : uint8_t
   Running, 
 };
 
+struct vvtStatus_t
+{
+  bool angleError : 1;  ///< Is the cam angle within limits (false) or not (true)
+  int16_t angle = 0;        ///< Measured cam angle
+  uint8_t targetAngle = 0;  ///< Target angle
+  uint8_t duty = 0;         ///< PWM duty
+
+  vvtStatus_t()
+  : angleError(false)
+  {
+  }
+};
+
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -148,10 +161,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool vvt1AngleError : 1; ///< VVT1 cam angle within limits (false) or not (true)
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool vvt2AngleError : 1; ///< VVT2 cam angle within limits (false) or not (true)
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool fanOn : 1; ///< Engine fan status (true == on, false == off)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
@@ -218,9 +227,6 @@ struct statuses {
   volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
-  int16_t vvt1Angle; 
-  uint8_t vvt1TargetAngle;
-  uint8_t vvt1Duty; 
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
@@ -270,9 +276,6 @@ struct statuses {
 
   byte fanDuty;
   byte wmiPW;
-  int16_t vvt2Angle; 
-  uint8_t vvt2TargetAngle;
-  uint8_t vvt2Duty; 
   byte outputsStatus;
 
   // SD card status fields.
@@ -331,6 +334,9 @@ struct statuses {
   decoder_t decoder; ///< The current decoder
 
   uint8_t LOOP_TIMER; ///< The timer flags currently in effect
+
+  vvtStatus_t vvt1;
+  vvtStatus_t vvt2;
 };
 
 static inline uint8_t getTotalInjChannelCount(const statuses &current)

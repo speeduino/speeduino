@@ -1,6 +1,6 @@
 #include "../test_utils.h"
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "units.h"
 #include "shared.h"
 

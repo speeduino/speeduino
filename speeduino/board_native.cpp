@@ -3,7 +3,7 @@
 #if defined(NATIVE_BOARD)
 #include <EEPROM.h>
 #include "board_native.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "idle.h"
 #include "timers.h"
 #include "board_eeprom_adapter.hpp"

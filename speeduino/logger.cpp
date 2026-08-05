@@ -82,8 +82,8 @@ static byte buildStatus4(const statuses &current)
 {
   bool bits[] = {
     current.wmiTankEmpty,
-    current.vvt1AngleError,
-    current.vvt2AngleError,
+    current.vvt1.angleError,
+    current.vvt2.angleError,
     current.fanOn,
     current.burnPending,
     current.stagingActive,
@@ -310,10 +310,10 @@ byte getTSLogEntry(uint16_t byteNum)
     case 92: statusValue = currentStatus.CLIdleTarget; break;
     case 93: statusValue = lowByte(currentStatus.mapDOT); break;
     case 94: statusValue = highByte(currentStatus.mapDOT); break;
-    case 95: statusValue = lowByte(currentStatus.vvt1Angle); break; //2 bytes for vvt1Angle
-    case 96: statusValue = highByte(currentStatus.vvt1Angle); break;
-    case 97: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 98: statusValue = currentStatus.vvt1Duty; break;
+    case 95: statusValue = lowByte(currentStatus.vvt1.angle); break; //2 bytes for vvt1.angle
+    case 96: statusValue = highByte(currentStatus.vvt1.angle); break;
+    case 97: statusValue = currentStatus.vvt1.targetAngle; break;
+    case 98: statusValue = currentStatus.vvt1.duty; break;
     case 99: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 100: statusValue = highByte(currentStatus.flexBoostCorrection); break;
     case 101: statusValue = currentStatus.baroCorrection; break;
@@ -326,10 +326,10 @@ byte getTSLogEntry(uint16_t byteNum)
     case 108: statusValue = currentStatus.oilPressure; break;
     case 109: statusValue = currentStatus.wmiPW; break;
     case 110: statusValue = buildStatus4(currentStatus); break;
-    case 111: statusValue = lowByte(currentStatus.vvt2Angle); break; //2 bytes for vvt2Angle
-    case 112: statusValue = highByte(currentStatus.vvt2Angle); break;
-    case 113: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 114: statusValue = currentStatus.vvt2Duty; break;
+    case 111: statusValue = lowByte(currentStatus.vvt2.angle); break; //2 bytes for vvt2.angle
+    case 112: statusValue = highByte(currentStatus.vvt2.angle); break;
+    case 113: statusValue = currentStatus.vvt2.targetAngle; break;
+    case 114: statusValue = currentStatus.vvt2.duty; break;
     case 115: statusValue = currentStatus.outputsStatus; break;
     case 116: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 117: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
@@ -466,9 +466,9 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 62: statusValue = (int16_t)currentStatus.dwell; break;
     case 63: statusValue = currentStatus.CLIdleTarget; break;
     case 64: statusValue = currentStatus.mapDOT; break;
-    case 65: statusValue = currentStatus.vvt1Angle; break;
-    case 66: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 67: statusValue = currentStatus.vvt1Duty; break;
+    case 65: statusValue = currentStatus.vvt1.angle; break;
+    case 66: statusValue = currentStatus.vvt1.targetAngle; break;
+    case 67: statusValue = currentStatus.vvt1.duty; break;
     case 68: statusValue = currentStatus.flexBoostCorrection; break;
     case 69: statusValue = currentStatus.baroCorrection; break;
     case 70: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
@@ -479,9 +479,9 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 75: statusValue = currentStatus.oilPressure; break;
     case 76: statusValue = currentStatus.wmiPW; break;
     case 77: statusValue = buildStatus4(currentStatus); break;
-    case 78: statusValue = currentStatus.vvt2Angle; break; //2 bytes for vvt2Angle
-    case 79: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 80: statusValue = currentStatus.vvt2Duty; break;
+    case 78: statusValue = currentStatus.vvt2.angle; break; //2 bytes for vvt2.angle
+    case 79: statusValue = currentStatus.vvt2.targetAngle; break;
+    case 80: statusValue = currentStatus.vvt2.duty; break;
     case 81: statusValue = currentStatus.outputsStatus; break;
     case 82: statusValue = currentStatus.fuelTemp; break; //Fuel temperature from flex sensor
     case 83: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
@@ -662,9 +662,9 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 90: statusValue = currentStatus.idleLoad; break;
     case 91: statusValue = currentStatus.CLIdleTarget; break; //closed loop idle target
     case 92: statusValue = currentStatus.mapDOT / 10; break; //rate of change of the map 
-    case 93: statusValue = (int8_t)currentStatus.vvt1Angle; break;
-    case 94: statusValue = currentStatus.vvt1TargetAngle; break;
-    case 95: statusValue = currentStatus.vvt1Duty; break;
+    case 93: statusValue = (int8_t)currentStatus.vvt1.angle; break;
+    case 94: statusValue = currentStatus.vvt1.targetAngle; break;
+    case 95: statusValue = currentStatus.vvt1.duty; break;
     case 96: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 97: statusValue = highByte(currentStatus.flexBoostCorrection); break;
     case 98: statusValue = currentStatus.baroCorrection; break;
@@ -676,9 +676,9 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 104: statusValue = currentStatus.oilPressure; break;
     case 105: statusValue = currentStatus.wmiPW; break;
     case 106: statusValue = buildStatus4(currentStatus); break;
-    case 107: statusValue = (int8_t)currentStatus.vvt2Angle; break;
-    case 108: statusValue = currentStatus.vvt2TargetAngle; break;
-    case 109: statusValue = currentStatus.vvt2Duty; break;
+    case 107: statusValue = (int8_t)currentStatus.vvt2.angle; break;
+    case 108: statusValue = currentStatus.vvt2.targetAngle; break;
+    case 109: statusValue = currentStatus.vvt2.duty; break;
     case 110: statusValue = currentStatus.outputsStatus; break;
     case 111: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
     case 112: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)

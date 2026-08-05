@@ -354,8 +354,8 @@ void DashMessage(uint16_t DashMessageID)
 
     case CAN_HALTECH_VSS:
       temp_VSS = currentStatus.vss * 10U;
-      temp_VVT1 = currentStatus.vvt1Angle * 10U;
-      temp_VVT2 = currentStatus.vvt2Angle * 10U;
+      temp_VVT1 = currentStatus.vvt1.angle * 10U;
+      temp_VVT2 = currentStatus.vvt2.angle * 10U;
       outMsg.len = 8;
       outMsg.buf[0] = highByte(temp_VSS);
       outMsg.buf[1] = lowByte(temp_VSS);
