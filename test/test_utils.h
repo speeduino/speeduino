@@ -1,15 +1,13 @@
 
 #pragma once
-#include "table3d.h"
-
 #include <stdint.h>
 #include <unity.h>
 #include <Arduino.h>
-#include <unity.h>
-#include "table2d.h"
 #include "table3d.h"
+#include "table2d.h"
 #include "maths.h"
-#
+#include "file_name_guard_t.h"
+
 template<size_t MAX_LEN, size_t N>
 constexpr void STR_LEN_CHECK(char const (&)[N]) 
 {
@@ -51,25 +49,12 @@ constexpr void STR_LEN_CHECK(char const (&)[N])
 
 // ============================ SET_UNITY_FILENAME ============================ 
 
-static inline uint8_t ufname_set(const char *newFName)
-{
-    Unity.TestFile = newFName;
-    return 1;
-}
-
-static inline void ufname_szrestore(char** __s)
-{
-    Unity.TestFile = *__s;
-    __asm__ volatile ("" ::: "memory");
-}
-
-
-#define UNITY_FILENAME_RESTORE char* _ufname_saved                           \
-    __attribute__((__cleanup__(ufname_szrestore))) = (char*)Unity.TestFile
-
+// This is an older style. New code should just use
+//    unity_filename_guard_t(__FILE__);
+// instead.
 #define SET_UNITY_FILENAME()                                                        \
-for ( UNITY_FILENAME_RESTORE, _ufname_done = ufname_set(__FILE__);                  \
-    _ufname_done; _ufname_done = 0 )
+for ( struct { unity_filename_guard_t a; uint8_t b; } guard = { .a = unity_filename_guard_t(__FILE__), .b = 1 }; \
+    guard.b; guard.b = 0 )
 
 // ============================ end SET_UNITY_FILENAME ============================ 
 
