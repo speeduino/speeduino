@@ -319,13 +319,13 @@ static inline void doStep(void)
 Clamps the target step count to the configured max steps (including any idle-up
 adder, to prevent over-opening), updates the reported idleLoad and performs a step.
 */
-static inline void updateIdleStepAndLoad(void)
+static inline void updateIdleStepAndLoad(statuses &current, const config9 &page9)
 {
   //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-  idleStepper.targetIdleStep = clamp((uint16_t)idleStepper.targetIdleStep, (uint16_t)0U, IAC_STEPS.toUser(configPage9.iacMaxSteps));
+  idleStepper.targetIdleStep = clamp((uint16_t)idleStepper.targetIdleStep, (uint16_t)0U, IAC_STEPS.toUser(page9.iacMaxSteps));
   
-  if (IAC_STEPS.toUser(configPage9.iacMaxSteps) > (uint16_t)UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
-  else { currentStatus.idleLoad = idleStepper.curIdleStep; }
+  if (IAC_STEPS.toUser(page9.iacMaxSteps) > (uint16_t)UINT8_MAX ) { current.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+  else { current.idleLoad = idleStepper.curIdleStep; }
   
   doStep();
 }
@@ -607,7 +607,7 @@ void idleControl(void)
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
           }
         }
-        updateIdleStepAndLoad();
+        updateIdleStepAndLoad(currentStatus, configPage9);
       }
       break;
 
@@ -680,7 +680,7 @@ void idleControl(void)
         
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
         
-        updateIdleStepAndLoad();
+        updateIdleStepAndLoad(currentStatus, configPage9);
       }
       if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Use timer flag instead idle count
       {
