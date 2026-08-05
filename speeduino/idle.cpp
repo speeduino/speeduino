@@ -315,6 +315,15 @@ static inline void doStep(void)
   }
 }
 
+static inline uint8_t calculateIdleLoad(const config9 &page9, const StepperIdle &idleState)
+{
+  if (IAC_STEPS.toUser(page9.iacMaxSteps) > (uint16_t)UINT8_MAX ) 
+  { 
+    return idleState.curIdleStep / 2; 
+  }
+  return idleState.curIdleStep;
+}
+
 /*
 Clamps the target step count to the configured max steps (including any idle-up
 adder, to prevent over-opening), updates the reported idleLoad and performs a step.
@@ -323,10 +332,7 @@ static inline void updateIdleStepAndLoad(statuses &current, const config9 &page9
 {
   //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
   idleState.targetIdleStep = clamp((uint16_t)idleState.targetIdleStep, (uint16_t)0U, IAC_STEPS.toUser(page9.iacMaxSteps));
-  
-  if (IAC_STEPS.toUser(page9.iacMaxSteps) > (uint16_t)UINT8_MAX ) { current.idleLoad = idleState.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
-  else { current.idleLoad = idleState.curIdleStep; }
-  
+  current.idleLoad = calculateIdleLoad(page9, idleState);
   doStep();
 }
 
