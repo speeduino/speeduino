@@ -332,14 +332,13 @@ static void setVvtTimerCompare(uint16_t offset)
 {
 #if defined(UNIT_TEST)
   lastVvtComparatorOffset = offset;
-#else
+#endif
   // IRL a zero offset is bad.
   if (offset==0U)
   {
     offset = 1000;
   }
   SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + offset);
-#endif
 }
 
 static bool isVvtOff(const VvtOutputChannel &channel)
