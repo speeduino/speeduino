@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "units.h"
 #include "shared.h"
 #include "src/controllers/vvt/VvtOutputChannel.h"

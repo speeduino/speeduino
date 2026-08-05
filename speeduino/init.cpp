@@ -10,7 +10,7 @@
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "scheduler_fuel_controller.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "sensors.h"
 #include "decoders.h"
 #include "corrections.h"
