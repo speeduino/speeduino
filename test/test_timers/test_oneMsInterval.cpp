@@ -1,7 +1,7 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "timers.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "setup_oneMsInterval.h"
 
 extern volatile byte loop5ms;

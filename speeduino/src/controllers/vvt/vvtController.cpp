@@ -3,21 +3,21 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-#include "auxiliaries.h"
-#include "globals.h"
-#include "elapsed_time.h"
-#include "maths.h"
-#include "src/PID/integerPID.h"
-#include "src/PID/integerPID_ideal.h"
-#include "decoders.h"
-#include "timers.h"
-#include "preprocessor.h"
-#include "units.h"
-#include "atomic.h"
-#include "src/pins/fastInputPin.h"
-#include "src/pins/boardOutputPin.h"
-#include "scheduler_fuel_controller.h"
-#include "src/controllers/vvt/VvtOutputChannel.h"
+#include "vvtController.h"
+#include "../../../globals.h"
+#include "../../../elapsed_time.h"
+#include "../../../maths.h"
+#include "../../PID/integerPID.h"
+#include "../../PID/integerPID_ideal.h"
+#include "../../../decoders.h"
+#include "../../../timers.h"
+#include "../../../preprocessor.h"
+#include "../../../units.h"
+#include "../../../atomic.h"
+#include "../../pins/fastInputPin.h"
+#include "../../pins/boardOutputPin.h"
+#include "../../../scheduler_fuel_controller.h"
+#include "VvtOutputChannel.h"
 
 enum class NextInterruptEvent : uint8_t
 {

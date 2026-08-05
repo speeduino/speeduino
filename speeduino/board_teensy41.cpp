@@ -2,7 +2,7 @@
 
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 #include <EEPROM.h>
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "idle.h"
 #include "timers.h"
 #include "comms_secondary.h"
