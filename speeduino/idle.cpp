@@ -322,12 +322,11 @@ adder, to prevent over-opening), updates the reported idleLoad and performs a st
 static inline void updateIdleStepAndLoad(void)
 {
   //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-  if (idleStepper.targetIdleStep > (configPage9.iacMaxSteps * 3) )
-  {
-    idleStepper.targetIdleStep = configPage9.iacMaxSteps * 3;
-  }
-  if( ((uint16_t)configPage9.iacMaxSteps * 3) > UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
+  idleStepper.targetIdleStep = clamp((uint16_t)idleStepper.targetIdleStep, (uint16_t)0U, IAC_STEPS.toUser(configPage9.iacMaxSteps));
+  
+  if (IAC_STEPS.toUser(configPage9.iacMaxSteps) > (uint16_t)UINT8_MAX ) { currentStatus.idleLoad = idleStepper.curIdleStep / 2; }//Current step count (Divided by 2 for byte)
   else { currentStatus.idleLoad = idleStepper.curIdleStep; }
+  
   doStep();
 }
 
