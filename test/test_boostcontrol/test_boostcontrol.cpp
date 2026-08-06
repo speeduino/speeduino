@@ -4,9 +4,9 @@
 #include "units.h"
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
+#include "timers.h"
 
 extern boardOutputPin_t boost_pin;
-extern byte boostCounter;
 extern long boost_pwm_target_value;
 extern volatile bool boost_pwm_state;
 extern volatile unsigned int boost_pwm_cur_value;
@@ -19,11 +19,9 @@ static void test_boost_disabled(void)
 
     currentStatus.flexBoostCorrection = 99;
     configPage6.boostEnabled = false;
-    uint8_t oldCounter =  boostCounter;
     boostControl();
 
     TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
-    TEST_ASSERT_NOT_EQUAL(oldCounter, boostCounter);
 }
 
 static void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, uint8_t gearMode)
@@ -140,12 +138,13 @@ static void test_boost_cl_target_clamp(void)
   configPage9.boostByGear6 = 255;
   fill_table_values(boostTable, 255);
 
-  currentStatus.boostTarget = 1;
   currentStatus.MAP = 50;
+  currentStatus.LOOP_TIMER = 0xFF;
   for (uint8_t gear=1; gear<=6; ++gear)
   {
-    boostCounter = 1;
     currentStatus.gear = gear;
+    currentStatus.boostTarget = 1;
+    currentStatus.flexBoostCorrection = 99;
     boostControl();
 
     TEST_ASSERT_EQUAL(511, currentStatus.boostTarget);
@@ -155,7 +154,7 @@ static void test_boost_cl_target_clamp(void)
   // Invalid gear
   currentStatus.boostTarget = 1;
   currentStatus.MAP = 50;
-  boostCounter = 1;
+  currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.gear = 0;
   boostControl();
   TEST_ASSERT_EQUAL(1, currentStatus.boostTarget);
@@ -170,7 +169,7 @@ static void test_cl_flexcorrection(void)
 
   initialiseBoost(TEST_BOOST_PIN);
 
-  boostCounter = 1;
+  currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.flexBoostCorrection = 99;
   boostControl();
 
@@ -180,7 +179,7 @@ static void test_cl_flexcorrection(void)
 
 static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
 {
-  boostCounter = 1;
+  currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.boostTarget = 1;
   currentStatus.gear = gearNum;
   boostGear = 3;
@@ -200,7 +199,7 @@ static void test_cl_boost_constant_gear(void)
   test_cl_boost_constant_gear(6, configPage9.boostByGear6);
 
   // Invalid gear
-  boostCounter = 1;
+  currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.boostTarget = 1;
   currentStatus.gear = 0;
   boostControl();

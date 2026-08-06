@@ -3,8 +3,8 @@
 #include "../../../unit_testing.h"
 #include "../../../units.h"
 #include "../../PID/integerPID_ideal.h"
+#include "../../../timers.h"
 
-TESTABLE_STATIC byte boostCounter;
 TESTABLE_STATIC boardOutputPin_t boost_pin;
 TESTABLE_STATIC long boost_pwm_target_value;
 TESTABLE_STATIC volatile bool boost_pwm_state;
@@ -36,7 +36,6 @@ __attribute__((optimize("Os"))) void initialiseBoost(uint8_t boostPin)
   setBoostPidTunings(configPage2, configPage6, configPage10);
   boost_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.boostFreq));
   currentStatus.boostDuty = 0;
-  boostCounter = 0;
 }
 
 void boostDisable(void)
@@ -206,7 +205,7 @@ void boostControl(void)
     }
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
     {
-      if( (boostCounter & 7) == 1) 
+      if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ) )
       { 
         if ( (configPage9.boostByGearEnabled!=BOOST_BY_GEAR_OFF) && isExternalVssMode(configPage2) ){ boostByGear(); }
         else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
@@ -228,8 +227,7 @@ void boostControl(void)
       {
         if(currentStatus.boostTarget > 0)
         {
-          //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
-          if( (boostCounter & 15) == 1)
+          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) )
           {
             setBoostPidTunings(configPage2, configPage6, configPage10);
           }
@@ -283,8 +281,6 @@ void boostControl(void)
     DISABLE_BOOST_TIMER();
     currentStatus.flexBoostCorrection = 0;
   }
-
-  boostCounter++;
 }
 
 //The interrupt to control the Boost PWM
