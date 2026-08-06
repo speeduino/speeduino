@@ -91,7 +91,17 @@ static uint16_t getBoostTarget(const statuses &current, const config2 &page2, co
     //Boost target table is in kpa and divided by 2
     target = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1;
   }
-  return clamp(target, (uint16_t)0, (uint16_t)511U);
+  return clamp((uint16_t)(target+current.flexBoostCorrection), (uint16_t)0, (uint16_t)511U);
+}
+
+static int16_t getFlexCorrection(const statuses &current, const config2 &page2)
+{
+  //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
+  if( page2.flexEnabled )
+  {
+    return table2D_getValue(&flexBoostTable, current.ethanolPct);
+  }
+  return 0U;
 }
 
 void boostControl(void)
@@ -113,19 +123,8 @@ void boostControl(void)
     {
       if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ) )
       { 
+        currentStatus.flexBoostCorrection = getFlexCorrection(currentStatus, configPage2);
         currentStatus.boostTarget = getBoostTarget(currentStatus, configPage2, configPage9);
-
-        //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-        if( configPage2.flexEnabled == 1 )
-        {
-          currentStatus.flexBoostCorrection = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);
-          currentStatus.boostTarget += currentStatus.flexBoostCorrection;
-          currentStatus.boostTarget = (std::min)(currentStatus.boostTarget, (uint16_t)511U);
-        }
-        else
-        {
-          currentStatus.flexBoostCorrection = 0;
-        }
       } 
 
       if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
