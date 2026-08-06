@@ -5,12 +5,14 @@
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
 #include "timers.h"
+#include "src/PID/integerPID_ideal.h"
 
 extern boardOutputPin_t boost_pin;
 extern long boost_pwm_target_value;
 extern volatile bool boost_pwm_state;
 extern volatile unsigned int boost_pwm_cur_value;
 extern table2D_u8_s16_6 flexBoostTable;
+extern integerPID_ideal boostPID;
 
 static void test_boost_disabled(void)
 {
@@ -145,9 +147,11 @@ static void test_boost_cl_target_clamp(void)
     currentStatus.gear = gear;
     currentStatus.boostTarget = 1;
     currentStatus.flexBoostCorrection = 99;
+    boostPID.initialize(currentStatus.MAP);
     boostControl();
 
     TEST_ASSERT_EQUAL(511, currentStatus.boostTarget);
+    TEST_ASSERT_EQUAL(642, currentStatus.boostDuty);
     TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
   }
 
@@ -158,6 +162,7 @@ static void test_boost_cl_target_clamp(void)
   currentStatus.gear = 0;
   boostControl();
   TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
 }
 
 static void test_cl_flexcorrection(void)
@@ -171,10 +176,12 @@ static void test_cl_flexcorrection(void)
 
   currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.flexBoostCorrection = 99;
+  boostPID.initialize(currentStatus.MAP);
   boostControl();
 
   TEST_ASSERT_EQUAL_INT16(77, currentStatus.flexBoostCorrection);
   TEST_ASSERT_EQUAL_INT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(577, currentStatus.boostDuty);
 }
 
 static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
@@ -183,8 +190,10 @@ static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
   currentStatus.boostTarget = 1;
   currentStatus.gear = gearNum;
   boostGear = 3;
+  boostPID.initialize(currentStatus.MAP);
   boostControl();
   TEST_ASSERT_EQUAL(boostGear << 1U, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(541, currentStatus.boostDuty);
 }
 
 static void test_cl_boost_constant_gear(void)
@@ -204,6 +213,7 @@ static void test_cl_boost_constant_gear(void)
   currentStatus.gear = 0;
   boostControl();
   TEST_ASSERT_EQUAL(0U, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(0U, currentStatus.boostDuty);
 }
 
 static void test_cl_boost_control_baro(void)

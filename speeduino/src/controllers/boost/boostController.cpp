@@ -10,7 +10,7 @@ TESTABLE_STATIC long boost_pwm_target_value;
 TESTABLE_STATIC volatile bool boost_pwm_state;
 TESTABLE_STATIC volatile unsigned int boost_pwm_cur_value = 0;
 static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-static integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+TESTABLE_STATIC integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
