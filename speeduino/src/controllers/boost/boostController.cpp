@@ -122,20 +122,34 @@ static uint16_t convertTargetToDuty(const statuses &current)
   return duty;
 }
 
+static void applyDutyToPwm(const statuses &current)
+{
+  boost_pwm_target_value = ((unsigned long)(current.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
+
+  if (boost_pwm_target_value == 0)
+  { 
+    DISABLE_BOOST_TIMER(); 
+    boost_pin.setPinLow(); //If boost duty is 0, shut everything down
+  }
+  // Check for 100% duty cycle
+  else if (boost_pwm_target_value >= boost_pwm_max_count)
+  {
+    DISABLE_BOOST_TIMER(); 
+    boost_pin.setPinHigh(); 
+  }
+  else
+  {
+    ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+  }
+}
+
 void boostControl(void)
 {
   if( configPage6.boostEnabled==1 )
   {
     if(configPage4.boostType == OPEN_LOOP_BOOST)
     {
-      //Open loop
       currentStatus.boostDuty = getBoostDuty(currentStatus, configPage2, configPage9);
-
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
-      else
-      {
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-      }
     }
     else if (configPage4.boostType == CLOSED_LOOP_BOOST)
     {
@@ -148,40 +162,21 @@ void boostControl(void)
       if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
       {
         currentStatus.boostDuty = convertTargetToDuty(currentStatus);
-          
-        if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
-        else
-        {
-          boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-        }
       }
       else
       {
         boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
         //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
         currentStatus.boostDuty = configPage15.boostDCWhenDisabled*100;
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
-        if(currentStatus.boostDuty == 0) { boostDisable(); } //If boost control does nothing disable PWM completely
       } //MAP above boost + hyster
-    } //Open / Cloosed loop
-
-    //Check for 100% duty cycle
-    if(currentStatus.boostDuty >= 10000)
-    {
-      DISABLE_BOOST_TIMER(); //Turn off the compare unit (ie turn off the interrupt) if boost duty is 100%
-      boost_pin.setPinHigh(); //Turn on boost pin if duty is 100%
-    }
-    else if(currentStatus.boostDuty > 0)
-    {
-      ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty is > 0
-    }
-    
+    } //Open / Cloosed loop   
   }
   else { // Disable timer channel and zero the flex boost correction status
-    DISABLE_BOOST_TIMER();
+    currentStatus.boostTarget = 0;
+    currentStatus.boostDuty = 0;
     currentStatus.flexBoostCorrection = 0;
   }
+  applyDutyToPwm(currentStatus);
 }
 
 //The interrupt to control the Boost PWM
