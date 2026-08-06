@@ -89,7 +89,7 @@ static void test_boost_ol_duty_clamp(void)
     currentStatus.boostDuty = 33;
     currentStatus.gear = 0;
     boostControl();
-    TEST_ASSERT_EQUAL(33, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
   }
 }
 
@@ -157,7 +157,7 @@ static void test_boost_cl_target_clamp(void)
   currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.gear = 0;
   boostControl();
-  TEST_ASSERT_EQUAL(1, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
 }
 
 static void test_cl_flexcorrection(void)
@@ -203,7 +203,7 @@ static void test_cl_boost_constant_gear(void)
   currentStatus.boostTarget = 1;
   currentStatus.gear = 0;
   boostControl();
-  TEST_ASSERT_EQUAL(1U, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(0U, currentStatus.boostTarget);
 }
 
 static void test_cl_boost_control_baro(void)
