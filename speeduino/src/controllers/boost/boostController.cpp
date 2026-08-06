@@ -48,28 +48,9 @@ void boostDisable(void)
 
 static uint8_t getBoostByGearFactor(const statuses &current, const config9 &page9)
 {
-  switch (current.gear)
+  if ((current.gear-1U)<_countof(page9.boostByGear))
   {
-    case 1:
-      return page9.boostByGear1;
-      break;
-    case 2:
-      return page9.boostByGear2;
-      break;
-    case 3:
-      return page9.boostByGear3;
-      break;
-    case 4:
-      return page9.boostByGear4;
-      break;
-    case 5:
-      return page9.boostByGear5;
-      break;
-    case 6:
-      return page9.boostByGear6;
-      break;
-    default:
-      break;
+    return page9.boostByGear[current.gear-1U];
   }
   return 0U;
 }

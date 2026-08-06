@@ -38,12 +38,12 @@ static void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, u
   configPage2.vssMode = vssMode;
   configPage4.boostType = boostType;
   configPage9.boostByGearEnabled = gearMode;
-  configPage9.boostByGear1 = 1;
-  configPage9.boostByGear2 = 2;
-  configPage9.boostByGear3 = 3;
-  configPage9.boostByGear4 = 4;
-  configPage9.boostByGear5 = 5;
-  configPage9.boostByGear6 = 6;
+  configPage9.boostByGear[0] = 1;
+  configPage9.boostByGear[1] = 2;
+  configPage9.boostByGear[2] = 3;
+  configPage9.boostByGear[3] = 4;
+  configPage9.boostByGear[4] = 5;
+  configPage9.boostByGear[5] = 6;
   configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
   fill_table_values(boostTable, 33);
   populate_table_axis(boostTable.axisX, (table3d_axis_t)10);
@@ -67,12 +67,12 @@ static void setup_boost_tune(void)
 static void test_boost_ol_duty_clamp(void)
 {
   setup_boost_tune();
-  configPage9.boostByGear1 = 255;
-  configPage9.boostByGear2 = 255;
-  configPage9.boostByGear3 = 255;
-  configPage9.boostByGear4 = 255;
-  configPage9.boostByGear5 = 255;
-  configPage9.boostByGear6 = 255;
+  configPage9.boostByGear[0] = 255;
+  configPage9.boostByGear[1] = 255;
+  configPage9.boostByGear[2] = 255;
+  configPage9.boostByGear[3] = 255;
+  configPage9.boostByGear[4] = 255;
+  configPage9.boostByGear[5] = 255;
   fill_table_values(boostTable, 255);
 
   for (uint8_t gear=1; gear<=6; ++gear)
@@ -130,12 +130,12 @@ static void run_ol_tests(void)
 static void test_boost_cl_target_clamp(void)
 {
   setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_PERCENT);
-  configPage9.boostByGear1 = 255;
-  configPage9.boostByGear2 = 255;
-  configPage9.boostByGear3 = 255;
-  configPage9.boostByGear4 = 255;
-  configPage9.boostByGear5 = 255;
-  configPage9.boostByGear6 = 255;
+  configPage9.boostByGear[0] = 255;
+  configPage9.boostByGear[1] = 255;
+  configPage9.boostByGear[2] = 255;
+  configPage9.boostByGear[3] = 255;
+  configPage9.boostByGear[4] = 255;
+  configPage9.boostByGear[5] = 255;
   fill_table_values(boostTable, 255);
 
   currentStatus.MAP = 50;
@@ -191,12 +191,12 @@ static void test_cl_boost_constant_gear(void)
 {
   setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_CONSTANT);
 
-  test_cl_boost_constant_gear(1, configPage9.boostByGear1);
-  test_cl_boost_constant_gear(2, configPage9.boostByGear2);
-  test_cl_boost_constant_gear(3, configPage9.boostByGear3);
-  test_cl_boost_constant_gear(4, configPage9.boostByGear4);
-  test_cl_boost_constant_gear(5, configPage9.boostByGear5);
-  test_cl_boost_constant_gear(6, configPage9.boostByGear6);
+  test_cl_boost_constant_gear(1, configPage9.boostByGear[0]);
+  test_cl_boost_constant_gear(2, configPage9.boostByGear[1]);
+  test_cl_boost_constant_gear(3, configPage9.boostByGear[2]);
+  test_cl_boost_constant_gear(4, configPage9.boostByGear[3]);
+  test_cl_boost_constant_gear(5, configPage9.boostByGear[4]);
+  test_cl_boost_constant_gear(6, configPage9.boostByGear[5]);
 
   // Invalid gear
   currentStatus.LOOP_TIMER = 0xFF;
