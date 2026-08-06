@@ -9,7 +9,7 @@ TESTABLE_STATIC boardOutputPin_t boost_pin;
 TESTABLE_STATIC long boost_pwm_target_value;
 TESTABLE_STATIC volatile bool boost_pwm_state;
 TESTABLE_STATIC volatile unsigned int boost_pwm_cur_value = 0;
-static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
+TESTABLE_STATIC uint16_t boost_pwm_max_count; //Used for variable PWM frequency
 TESTABLE_STATIC integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
@@ -91,7 +91,9 @@ static uint16_t getBoostTarget(const statuses &current, const config2 &page2, co
     //Boost target table is in kpa and divided by 2
     target = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1;
   }
-  return clamp((uint16_t)(target+current.flexBoostCorrection), (uint16_t)0, (uint16_t)511U);
+  // flexBoostCorrection is int16_t; beware of conversion under-/over-flow
+  int16_t correctedTarget = (int16_t)target+current.flexBoostCorrection;
+  return clamp(correctedTarget, (int16_t)0, (int16_t)511);
 }
 
 static int16_t getFlexCorrection(const statuses &current, const config2 &page2)

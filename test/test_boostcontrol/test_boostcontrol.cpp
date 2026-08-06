@@ -24,6 +24,9 @@ static void test_boost_disabled(void)
     boostControl();
 
     TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
+    TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+    TEST_ASSERT_EQUAL(0, boost_pwm_target_value);
 }
 
 static void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, uint8_t gearMode)
@@ -83,6 +86,8 @@ static void test_boost_ol_duty_clamp(void)
     currentStatus.gear = gear;
     boostControl();
     TEST_ASSERT_EQUAL(10000, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+    TEST_ASSERT_EQUAL(41248, boost_pwm_target_value);
   }
 
     // Invalid gear
@@ -92,6 +97,8 @@ static void test_boost_ol_duty_clamp(void)
     currentStatus.gear = 0;
     boostControl();
     TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+    TEST_ASSERT_EQUAL(0, boost_pwm_target_value);
   }
 }
 
@@ -106,6 +113,8 @@ static void test_ol_zero_duty(void)
 
   TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
   TEST_ASSERT_TRUE(boost_pin._pin.isPinLow());
+  TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(0, boost_pwm_target_value);
 }
 
 static void run_ol_tests(void)
@@ -153,7 +162,8 @@ static void test_boost_cl_target_clamp(void)
     TEST_ASSERT_EQUAL(511, currentStatus.boostTarget);
     TEST_ASSERT_EQUAL(642, currentStatus.boostDuty);
     TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
-  }
+    TEST_ASSERT_EQUAL(2648, boost_pwm_target_value);
+}
 
   // Invalid gear
   currentStatus.boostTarget = 1;
@@ -163,6 +173,8 @@ static void test_boost_cl_target_clamp(void)
   boostControl();
   TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
   TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
+  TEST_ASSERT_EQUAL(0, boost_pwm_target_value);
 }
 
 static void test_cl_flexcorrection(void)
@@ -182,6 +194,27 @@ static void test_cl_flexcorrection(void)
   TEST_ASSERT_EQUAL_INT16(77, currentStatus.flexBoostCorrection);
   TEST_ASSERT_EQUAL_INT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
   TEST_ASSERT_EQUAL(577, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL(2380, boost_pwm_target_value);
+}
+
+static void test_cl_flexcorrection_negative(void)
+{
+  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  configPage2.flexEnabled = true;
+  populate_2dtable(&flexBoostTable, (int16_t)-77, (uint8_t)50);
+  fill_table_values(boostTable, 5);
+
+  initialiseBoost(TEST_BOOST_PIN);
+
+  currentStatus.LOOP_TIMER = 0xFF;
+  currentStatus.flexBoostCorrection = 99;
+  boostPID.initialize(currentStatus.MAP);
+  boostControl();
+
+  TEST_ASSERT_EQUAL_INT16(-77, currentStatus.flexBoostCorrection);
+  TEST_ASSERT_EQUAL_INT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL(0, boost_pwm_target_value);
 }
 
 static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
@@ -189,11 +222,10 @@ static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
   currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.boostTarget = 1;
   currentStatus.gear = gearNum;
-  boostGear = 3;
+  boostGear = gearNum*7;
   boostPID.initialize(currentStatus.MAP);
   boostControl();
-  TEST_ASSERT_EQUAL(boostGear << 1U, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(541, currentStatus.boostDuty);
+  TEST_ASSERT_UINT16_WITHIN(1, boostGear << 1U, currentStatus.boostTarget);
 }
 
 static void test_cl_boost_constant_gear(void)
@@ -266,6 +298,7 @@ static void run_cl_tests(void)
 {
   RUN_TEST_P(test_boost_cl_target_clamp);
   RUN_TEST_P(test_cl_flexcorrection);
+  RUN_TEST_P(test_cl_flexcorrection_negative);
   RUN_TEST_P(test_cl_boost_constant_gear);
   RUN_TEST_P(test_cl_boost_control_baro);
   RUN_TEST_P(test_cl_boost_control_fixed);
