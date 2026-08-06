@@ -104,6 +104,24 @@ static int16_t getFlexCorrection(const statuses &current, const config2 &page2)
   return 0U;
 }
 
+static uint16_t convertTargetToDuty(const statuses &current)
+{
+  uint16_t duty = 0;
+  if(current.boostTarget > 0)
+  {
+    if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1HZ) )
+    {
+      setBoostPidTunings(configPage2, configPage6, configPage10);
+    }
+
+    boostPID.setSetPoint(current.boostTarget);
+    boostPID.setFeedForwardTerm(get3DTableValue(&boostTableLookupDuty, current.boostTarget, current.RPM) * 100/2);
+    (void)boostPID.compute(millis(), current.MAP, &duty);
+  }
+
+  return duty;
+}
+
 void boostControl(void)
 {
   if( configPage6.boostEnabled==1 )
@@ -129,33 +147,12 @@ void boostControl(void)
 
       if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
       {
-        if(currentStatus.boostTarget > 0)
-        {
-          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) )
-          {
-            setBoostPidTunings(configPage2, configPage6, configPage10);
-          }
-
-          boostPID.setSetPoint(currentStatus.boostTarget);
-          boostPID.setFeedForwardTerm(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2);
-          //Compute() returns false if the required interval has not yet passed.
-          bool PIDcomputed = boostPID.compute(millis(), 
-                                              currentStatus.MAP,
-                                              &currentStatus.boostDuty);
+        currentStatus.boostDuty = convertTargetToDuty(currentStatus);
           
-          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
-          else
-          {
-            if(PIDcomputed == true)
-            {
-              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-            }
-          }
-        }
+        if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
         else
         {
-          //If boost target is 0, turn everything off
-          boostDisable();
+          boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
         }
       }
       else
