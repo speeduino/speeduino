@@ -9,7 +9,6 @@
 #include "comms.h"
 #include "comms_secondary.h"
 #include "comms_CAN.h"
-#include "programmableIOControl.h"
 #include "scheduler_fuel_controller.h"
 #include "auxiliaries.h"
 #include "sensors.h"
@@ -40,6 +39,7 @@
 #include "src/controllers/boost/boostController.h"
 #include "src/controllers/aircon/airconController.h"
 #include "src/controllers/nitrous/nitrousController.h"
+#include "src/controllers/progammableIO/programmableIOControl.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -181,7 +181,7 @@ void initialiseAll(void)
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
     initialiseMAPBaro();
-    initialiseProgrammableIO(currentStatus, configPage13);
+    initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
 
     //Same as above, but for the VSS input
