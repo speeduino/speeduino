@@ -11,49 +11,60 @@ extern PwmOutputChannel boostOutput;
 extern table2D_u8_s16_6 flexBoostTable;
 extern integerPID_ideal boostPID;
 
-static void test_boost_disabled(void)
+static void setup_boost_enabled(statuses &current, config6 &page6)
 {
-    setup_simplepid_tune();
-    initialiseBoost(TEST_BOOST_PIN);
-
-    currentStatus.flexBoostCorrection = 99;
-    configPage6.boostEnabled = false;
-    boostControl();
-
-    TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
-    TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
-    TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
+  current.rotationStatus = EngineRotationStatus::Running;
+  current.LOOP_TIMER = 0xFF;
+  page6.boostEnabled = true;
 }
 
-static void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, uint8_t gearMode)
+static void setup_preboost_state(statuses &current)
 {
-  if (fullPid)
-  {
-    setup_fullpid_tune();
-  }
-  else
-  {
-   setup_simplepid_tune();
-  }
-  configPage2.flexEnabled = false;
-  configPage2.vssMode = vssMode;
-  configPage4.boostType = boostType;
-  configPage9.boostByGearEnabled = gearMode;
-  configPage9.boostByGear[0] = 1;
-  configPage9.boostByGear[1] = 2;
-  configPage9.boostByGear[2] = 3;
-  configPage9.boostByGear[3] = 4;
-  configPage9.boostByGear[4] = 5;
-  configPage9.boostByGear[5] = 6;
-  configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
-  fill_table_values(boostTable, 33);
-  populate_table_axis(boostTable.axisX, (table3d_axis_t)10);
-  populate_table_axis(boostTable.axisY, (table3d_axis_t)10);
+  current.flexBoostCorrection = 77;
+  current.boostDuty = 77;
+  current.boostTarget = 77;
+  boostOutput.targetDuty = 77;
+}
 
-  fill_table_values(boostTableLookupDuty, 11);
-  populate_table_axis(boostTableLookupDuty.axisX, (table3d_axis_t)10);
-  populate_table_axis(boostTableLookupDuty.axisY, (table3d_axis_t)10);
+static void assert_boost_off(statuses &current)
+{
+  TEST_ASSERT_EQUAL(0, current.flexBoostCorrection);
+  TEST_ASSERT_EQUAL(0, current.boostDuty);
+  TEST_ASSERT_EQUAL(0, current.boostTarget);
+  TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
+}
+
+static void test_boost_disabled(void)
+{
+  setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
+  initialiseBoost(pinNumbers.pinBoost);
+
+  // Initial state
+  setup_boost_enabled(currentStatus, configPage6);
+  setup_preboost_state(currentStatus);
+  boostControl();
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.flexBoostCorrection);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
+  TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
+
+  currentStatus.rotationStatus = EngineRotationStatus::Running;
+  configPage6.boostEnabled = false;
+  setup_preboost_state(currentStatus);
+  boostControl();
+  assert_boost_off(currentStatus);
+
+  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  configPage6.boostEnabled = true;
+  setup_preboost_state(currentStatus);
+  boostControl();
+  assert_boost_off(currentStatus);
+
+  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
+  configPage6.boostEnabled = true;
+  setup_preboost_state(currentStatus);
+  boostControl();
+  assert_boost_off(currentStatus);
 }
 
 static uint8_t testBoostType;
@@ -77,10 +88,12 @@ static void test_boost_ol_duty_clamp(void)
   configPage9.boostByGear[5] = 255;
   fill_table_values(boostTable, 255);
 
+  setup_boost_enabled(currentStatus, configPage6);
   for (uint8_t gear=1; gear<=6; ++gear)
   {
     currentStatus.boostDuty = 1;
     currentStatus.gear = gear;
+
     boostControl();
     TEST_ASSERT_EQUAL(10000, currentStatus.boostDuty);
     TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
@@ -103,8 +116,9 @@ static void test_ol_zero_duty(void)
 {
   setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
   fill_table_values(boostTable, 0);
-    initialiseBoost(TEST_BOOST_PIN);
+  initialiseBoost(pinNumbers.pinBoost);
   currentStatus.boostDuty = 99;
+  setup_boost_enabled(currentStatus, configPage6);
 
   boostControl();
 
@@ -146,8 +160,8 @@ static void test_boost_cl_target_clamp(void)
   configPage9.boostByGear[5] = 255;
   fill_table_values(boostTable, 255);
 
+  setup_boost_enabled(currentStatus, configPage6);
   currentStatus.MAP = 50;
-  currentStatus.LOOP_TIMER = 0xFF;
   for (uint8_t gear=1; gear<=6; ++gear)
   {
     currentStatus.gear = gear;
@@ -165,7 +179,6 @@ static void test_boost_cl_target_clamp(void)
   // Invalid gear
   currentStatus.boostTarget = 1;
   currentStatus.MAP = 50;
-  currentStatus.LOOP_TIMER = 0xFF;
   currentStatus.gear = 0;
   boostControl();
   TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
@@ -181,9 +194,9 @@ static void test_cl_flexcorrection(void)
   populate_2dtable(&flexBoostTable, (int16_t)77, (uint8_t)50);
   fill_table_values(boostTable, 55);
 
-  initialiseBoost(TEST_BOOST_PIN);
+  initialiseBoost(pinNumbers.pinBoost);
 
-  currentStatus.LOOP_TIMER = 0xFF;
+  setup_boost_enabled(currentStatus, configPage6);
   currentStatus.flexBoostCorrection = 99;
   boostPID.initialize(currentStatus.MAP);
   boostControl();
@@ -201,9 +214,9 @@ static void test_cl_flexcorrection_negative(void)
   populate_2dtable(&flexBoostTable, (int16_t)-77, (uint8_t)50);
   fill_table_values(boostTable, 5);
 
-  initialiseBoost(TEST_BOOST_PIN);
+  initialiseBoost(pinNumbers.pinBoost);
 
-  currentStatus.LOOP_TIMER = 0xFF;
+  setup_boost_enabled(currentStatus, configPage6);
   currentStatus.flexBoostCorrection = 99;
   boostPID.initialize(currentStatus.MAP);
   boostControl();
@@ -216,7 +229,7 @@ static void test_cl_flexcorrection_negative(void)
 
 static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
 {
-  currentStatus.LOOP_TIMER = 0xFF;
+  setup_boost_enabled(currentStatus, configPage6);
   currentStatus.boostTarget = 1;
   currentStatus.gear = gearNum;
   boostGear = gearNum*7;
@@ -237,7 +250,7 @@ static void test_cl_boost_constant_gear(void)
   test_cl_boost_constant_gear(6, configPage9.boostByGear[5]);
 
   // Invalid gear
-  currentStatus.LOOP_TIMER = 0xFF;
+  setup_boost_enabled(currentStatus, configPage6);
   currentStatus.boostTarget = 1;
   currentStatus.gear = 0;
   boostControl();
@@ -252,6 +265,7 @@ static void test_cl_boost_control_baro(void)
   configPage15.boostDCWhenDisabled = 77;
   currentStatus.MAP = 50;
   
+  setup_boost_enabled(currentStatus, configPage6);
   currentStatus.baro = currentStatus.MAP;
   boostControl();
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
@@ -274,6 +288,7 @@ static void test_cl_boost_control_fixed(void)
   configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
   configPage15.boostDCWhenDisabled = 77;
   currentStatus.MAP = 50;
+  setup_boost_enabled(currentStatus, configPage6);
   
   configPage15.boostControlEnableThreshold = currentStatus.MAP;
   boostControl();

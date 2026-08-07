@@ -220,7 +220,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { 
         currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
       }
-      boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
     //***Perform sensor reads***

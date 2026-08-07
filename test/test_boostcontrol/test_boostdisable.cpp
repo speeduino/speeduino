@@ -8,8 +8,8 @@ extern PwmOutputChannel boostOutput;
 
 static void test_disable(void)
 {
-    setup_simplepid_tune();
-    initialiseBoost(TEST_BOOST_PIN);
+    setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
+    initialiseBoost(pinNumbers.pinBoost );
     currentStatus.boostDuty = 99;
 
     boostDisable();

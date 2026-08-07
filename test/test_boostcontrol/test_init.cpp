@@ -8,10 +8,10 @@ extern PwmOutputChannel boostOutput;
 
 static void test_initialise(void)
 {
-    setup_simplepid_tune();
+    setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
     currentStatus.boostDuty = 99;
 
-    initialiseBoost(TEST_BOOST_PIN);
+    initialiseBoost(pinNumbers.pinBoost );
 
     TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
     TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());

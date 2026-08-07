@@ -8,8 +8,8 @@ extern PwmOutputChannel boostOutput;
 
 static void test_duty_full(void)
 {
-    pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseBoost(TEST_BOOST_PIN);
+    pinNumbers.pinBoost = pinNumbers.pinBoost ;
+    initialiseBoost(pinNumbers.pinBoost );
 
     boostOutput.setTargetDuty(200);
 
@@ -24,8 +24,8 @@ static void test_duty_full(void)
 
 static void test_partial_duty(void)
 {
-    pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseBoost(TEST_BOOST_PIN);
+    pinNumbers.pinBoost = pinNumbers.pinBoost ;
+    initialiseBoost(pinNumbers.pinBoost );
 
     boostOutput.setTargetDuty(66*2);
 
@@ -41,8 +41,8 @@ static void test_partial_duty(void)
 
 static void test_duty_none(void)
 {
-    pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseBoost(TEST_BOOST_PIN);
+    pinNumbers.pinBoost = pinNumbers.pinBoost ;
+    initialiseBoost(pinNumbers.pinBoost );
 
     boostOutput.setTargetDuty(0);
 
