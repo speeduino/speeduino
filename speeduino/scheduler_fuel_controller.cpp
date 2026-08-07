@@ -649,7 +649,7 @@ TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t calcScheduleAngl
   return injectorLimits(angle);
 }
 
-static inline __attribute__((optimize("Os"))) void initInjectorAngles(const statuses &current, const config2 &page2)
+static inline __attribute__((optimize("Os"))) void setInjectorAngles(const statuses &current, const config2 &page2)
 {
   #define ASSIGN_PRIMARY_ANGLE(index) \
     fuelSchedule ## index .channelDegrees = calcScheduleAngle(current, page2, index);
@@ -828,7 +828,7 @@ void __attribute__((optimize("Os"))) configureFuelSchedules(statuses &current, c
   current.nSquirts = calulateNumSquirts(current, page2);
   CRANK_ANGLE_MAX_INJ = calculateMaxInjAngle(current, page2);
   current.injOutputs = calcNumInjectors(current, page2, page10);
-  initInjectorAngles(current, page2);
+  setInjectorAngles(current, page2);
   setupCallbacks(current.injLayout, page2.nCylinders, page4.inj4cylPairing);
 }
 
