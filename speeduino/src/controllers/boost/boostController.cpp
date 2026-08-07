@@ -33,14 +33,6 @@ __attribute__((optimize("Os"))) void initialiseBoost(uint8_t boostPin)
   currentStatus.boostDuty = 0;
 }
 
-void boostDisable(void)
-{
-  boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
-  currentStatus.boostDuty = 0;
-  DISABLE_BOOST_TIMER(); //Turn off timer
-  boostOutput.pin.setPinLow(); //Make sure solenoid is off (0% duty)
-}
-
 static uint8_t getBoostByGearFactor(const statuses &current, const config9 &page9)
 {
   if ((current.gear-1U)<_countof(page9.boostByGear))
