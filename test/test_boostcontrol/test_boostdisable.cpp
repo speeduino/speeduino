@@ -2,9 +2,9 @@
 #include "globals.h"
 #include "src/controllers/boost/boostController.h"
 #include "shared.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
 
-extern boardOutputPin_t boost_pin;
+extern PwmOutputChannel boostOutput;
 
 static void test_disable(void)
 {
@@ -15,7 +15,7 @@ static void test_disable(void)
     boostDisable();
 
     TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
-    TEST_ASSERT_TRUE(boost_pin._pin.isPinLow());
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
 }
 
 void testBoostDisable(void)

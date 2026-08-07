@@ -4,12 +4,9 @@
 #include "../../../units.h"
 #include "../../PID/integerPID_ideal.h"
 #include "../../../timers.h"
+#include "../../pwm/PwmOutputChannel.h"
 
-TESTABLE_STATIC boardOutputPin_t boost_pin;
-TESTABLE_STATIC long boost_pwm_target_value;
-TESTABLE_STATIC volatile bool boost_pwm_state;
-TESTABLE_STATIC volatile unsigned int boost_pwm_cur_value = 0;
-TESTABLE_STATIC uint16_t boost_pwm_max_count; //Used for variable PWM frequency
+TESTABLE_STATIC PwmOutputChannel boostOutput;
 TESTABLE_STATIC integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
@@ -31,10 +28,8 @@ static __attribute__((optimize("Os"))) void setBoostPidTunings(const config2 &pa
 
 __attribute__((optimize("Os"))) void initialiseBoost(uint8_t boostPin)
 {
-  boost_pin.setPin(boostPin, OUTPUT);
-
+  boostOutput = PwmOutputChannel(boostPin, FREQUENCY.toUser(configPage6.boostFreq));
   setBoostPidTunings(configPage2, configPage6, configPage10);
-  boost_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.boostFreq));
   currentStatus.boostDuty = 0;
 }
 
@@ -43,7 +38,7 @@ void boostDisable(void)
   boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
   currentStatus.boostDuty = 0;
   DISABLE_BOOST_TIMER(); //Turn off timer
-  boost_pin.setPinLow(); //Make sure solenoid is off (0% duty)
+  boostOutput.pin.setPinLow(); //Make sure solenoid is off (0% duty)
 }
 
 static uint8_t getBoostByGearFactor(const statuses &current, const config9 &page9)
@@ -126,22 +121,17 @@ static uint16_t convertTargetToDuty(const statuses &current)
 
 static void applyDutyToPwm(const statuses &current)
 {
-  boost_pwm_target_value = ((unsigned long)(current.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
+  // Convert boost duty (Which is a % multiplied by 100) to half percentage. I.e 0-200
+  boostOutput.setTargetDuty(fast_div_closest(current.boostDuty, 50U));
 
-  if (boost_pwm_target_value == 0)
+  if (boostOutput.isPartialDuty())
   { 
-    DISABLE_BOOST_TIMER(); 
-    boost_pin.setPinLow(); //If boost duty is 0, shut everything down
+    ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
   }
   // Check for 100% duty cycle
-  else if (boost_pwm_target_value >= boost_pwm_max_count)
-  {
-    DISABLE_BOOST_TIMER(); 
-    boost_pin.setPinHigh(); 
-  }
   else
   {
-    ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+    DISABLE_BOOST_TIMER(); 
   }
 }
 
@@ -184,25 +174,17 @@ void boostControl(void)
 //The interrupt to control the Boost PWM
 void boostInterrupt(void)
 {
-  if (boost_pwm_state == true)
+  if (boostOutput.isPartialDuty())
   {
-    #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    boost_pin.setPinHigh();
-    #else
-    boost_pin.setPinLow();  // Switch pin to low
-    #endif
-    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
-    boost_pwm_state = false;
-  }
-  else
-  {
-    #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    boost_pin.setPinLow();
-    #else
-    boost_pin.setPinHigh();  // Switch pin high
-    #endif
-    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
-    boost_pwm_cur_value = boost_pwm_target_value;
-    boost_pwm_state = true;
+    if (boostOutput.pin.isPinHigh())
+    {
+      boostOutput.pin.setPinLow();
+      SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boostOutput.maxDuty - boostOutput.targetDuty) );
+    }
+    else
+    {
+      boostOutput.pin.setPinHigh();
+      SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boostOutput.targetDuty);
+    }
   }
 }
