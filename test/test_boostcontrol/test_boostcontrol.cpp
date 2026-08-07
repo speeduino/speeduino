@@ -44,8 +44,8 @@ static void test_boost_disabled(void)
   setup_preboost_state(currentStatus);
   boostControl();
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostDuty);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
   TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
 
   currentStatus.rotationStatus = EngineRotationStatus::Running;
@@ -95,9 +95,9 @@ static void test_boost_ol_duty_clamp(void)
     currentStatus.gear = gear;
 
     boostControl();
-    TEST_ASSERT_EQUAL(10000, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
-    TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
+    TEST_ASSERT_EQUAL_UINT16(10000, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
+    TEST_ASSERT_NOT_EQUAL_UINT16(0, boostOutput.targetDuty);
   }
 
     // Invalid gear
@@ -106,8 +106,8 @@ static void test_boost_ol_duty_clamp(void)
     currentStatus.boostDuty = 33;
     currentStatus.gear = 0;
     boostControl();
-    TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
     TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
   }
 }
@@ -122,9 +122,9 @@ static void test_ol_zero_duty(void)
 
   boostControl();
 
-  TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
   TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
-  TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
   TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
 }
 
@@ -170,8 +170,8 @@ static void test_boost_cl_target_clamp(void)
     boostPID.initialize(currentStatus.MAP);
     boostControl();
 
-    TEST_ASSERT_EQUAL(511, currentStatus.boostTarget);
-    TEST_ASSERT_EQUAL(642, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(511, currentStatus.boostTarget);
+    TEST_ASSERT_EQUAL_UINT16(642, currentStatus.boostDuty);
     TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
     TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
 }
@@ -181,8 +181,8 @@ static void test_boost_cl_target_clamp(void)
   currentStatus.MAP = 50;
   currentStatus.gear = 0;
   boostControl();
-  TEST_ASSERT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
   TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
   TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
 }
@@ -202,8 +202,8 @@ static void test_cl_flexcorrection(void)
   boostControl();
 
   TEST_ASSERT_EQUAL_INT16(77, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_EQUAL_INT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(577, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(577, currentStatus.boostDuty);
   TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
 }
 
@@ -223,7 +223,7 @@ static void test_cl_flexcorrection_negative(void)
 
   TEST_ASSERT_EQUAL_INT16(-77, currentStatus.flexBoostCorrection);
   TEST_ASSERT_EQUAL_INT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
   TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
 }
 
@@ -254,8 +254,8 @@ static void test_cl_boost_constant_gear(void)
   currentStatus.boostTarget = 1;
   currentStatus.gear = 0;
   boostControl();
-  TEST_ASSERT_EQUAL(0U, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(0U, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16(0U, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0U, currentStatus.boostDuty);
 }
 
 static void test_cl_boost_control_baro(void)
@@ -268,18 +268,18 @@ static void test_cl_boost_control_baro(void)
   setup_boost_enabled(currentStatus, configPage6);
   currentStatus.baro = currentStatus.MAP;
   boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
   
   currentStatus.baro = currentStatus.MAP + 10;
   boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(configPage15.boostDCWhenDisabled*100, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(configPage15.boostDCWhenDisabled*100, currentStatus.boostDuty);
   
   currentStatus.baro = currentStatus.MAP - 10;
   boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
 }
 
 static void test_cl_boost_control_fixed(void)
@@ -292,18 +292,18 @@ static void test_cl_boost_control_fixed(void)
   
   configPage15.boostControlEnableThreshold = currentStatus.MAP;
   boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
   
   configPage15.boostControlEnableThreshold = currentStatus.MAP + 10;
   boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(configPage15.boostDCWhenDisabled*100, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(configPage15.boostDCWhenDisabled*100, currentStatus.boostDuty);
   
   configPage15.boostControlEnableThreshold = currentStatus.MAP - 10;
   boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
 }
 
 static void run_cl_tests(void)

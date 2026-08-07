@@ -13,7 +13,7 @@ static void test_initialise(void)
 
     initialiseBoost(pinNumbers.pinBoost );
 
-    TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
     TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
 }
 
