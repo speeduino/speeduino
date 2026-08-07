@@ -4,7 +4,7 @@
 #include "init.h"
 #include "../test_utils.h"
 #include "storage.h"
-#include "../test_schedules/channel_test_helpers.h"
+#include "../channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 #include "../fake_decoder_status.h"
 #include "decoder_builder.h"

@@ -1,7 +1,7 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler_ignition_controller.h"
-#include "channel_test_helpers.h"
+#include "../channel_test_helpers.h"
 #include "../fake_decoder_status.h"
 #include "scheduledIO_ign.h"
 #include "decoder_builder.h"
