@@ -26,11 +26,11 @@ static __attribute__((optimize("Os"))) void setBoostPidTunings(const config2 &pa
   boostPID.setSensitivity(page10.boostSens);
 }
 
-__attribute__((optimize("Os"))) void initialiseBoost(uint8_t boostPin)
+__attribute__((optimize("Os"))) void initialiseBoost(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const pinNumbers_t &pins)
 {
-  boostOutput = PwmOutputChannel(boostPin, FREQUENCY.toUser(configPage6.boostFreq));
-  setBoostPidTunings(configPage2, configPage6, configPage10);
-  currentStatus.boostDuty = 0;
+  boostOutput = PwmOutputChannel(pins.pinBoost, FREQUENCY.toUser(page6.boostFreq));
+  setBoostPidTunings(page2, page6, page10);
+  current.boostDuty = 0;
 }
 
 static uint8_t getBoostByGearFactor(const statuses &current, const config9 &page9)
@@ -76,7 +76,7 @@ static uint16_t getBoostTarget(const statuses &current, const config2 &page2, co
   else
   {
     //Boost target table is in kpa and divided by 2
-    target = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1;
+    target = get3DTableValue(&boostTable, (current.TPS * 2U), current.RPM) << 1;
   }
   // flexBoostCorrection is int16_t; beware of conversion under-/over-flow
   int16_t correctedTarget = (int16_t)target+current.flexBoostCorrection;
@@ -93,14 +93,14 @@ static int16_t getFlexCorrection(const statuses &current, const config2 &page2)
   return 0U;
 }
 
-static uint16_t convertTargetToDuty(const statuses &current)
+static uint16_t convertTargetToDuty(const statuses &current, const config2 &page2, const config6 &page6, const config10 &page10)
 {
   uint16_t duty = 0;
   if(current.boostTarget > 0)
   {
     if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1HZ) )
     {
-      setBoostPidTunings(configPage2, configPage6, configPage10);
+      setBoostPidTunings(page2, page6, page10);
     }
 
     boostPID.setSetPoint(current.boostTarget);
@@ -134,41 +134,41 @@ static bool isBoostActive(const statuses &current, const config6 &page6)
   ;
 }
 
-void boostControl(void)
+void boostControl(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, const config15 &page15)
 {
-  if(isBoostActive(currentStatus, configPage6) )
+  if(isBoostActive(current, page6) )
   {
-    if(configPage4.boostType == OPEN_LOOP_BOOST)
+    if(page4.boostType == OPEN_LOOP_BOOST)
     {
-      currentStatus.boostDuty = getBoostDuty(currentStatus, configPage2, configPage9);
+      current.boostDuty = getBoostDuty(current, page2, page9);
     }
-    else if (configPage4.boostType == CLOSED_LOOP_BOOST)
+    else if (page4.boostType == CLOSED_LOOP_BOOST)
     {
-      if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ) )
+      if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ) )
       { 
-        currentStatus.flexBoostCorrection = getFlexCorrection(currentStatus, configPage2);
-        currentStatus.boostTarget = getBoostTarget(currentStatus, configPage2, configPage9);
+        current.flexBoostCorrection = getFlexCorrection(current, page2);
+        current.boostTarget = getBoostTarget(current, page2, page9);
       } 
 
-      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
+      if(((page15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (current.MAP >= current.baro)) || ((page15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (current.MAP >= page15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
       {
-        currentStatus.boostDuty = convertTargetToDuty(currentStatus);
+        current.boostDuty = convertTargetToDuty(current, page2, page6, page10);
       }
       else
       {
-        boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
+        boostPID.initialize(current.MAP); //This resets the ITerm value to prevent rubber banding
         //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
-        currentStatus.boostDuty = configPage15.boostDCWhenDisabled*100;
+        current.boostDuty = page15.boostDCWhenDisabled*100;
       } //MAP above boost + hyster
     } //Open / Cloosed loop   
   }
   else { // Disable timer channel and zero the flex boost correction status
-    boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
-    currentStatus.boostTarget = 0;
-    currentStatus.boostDuty = 0;
-    currentStatus.flexBoostCorrection = 0;
+    boostPID.initialize(current.MAP); //This resets the ITerm value to prevent rubber banding
+    current.boostTarget = 0;
+    current.boostDuty = 0;
+    current.flexBoostCorrection = 0;
   }
-  applyDutyToPwm(currentStatus);
+  applyDutyToPwm(current);
 }
 
 //The interrupt to control the Boost PWM

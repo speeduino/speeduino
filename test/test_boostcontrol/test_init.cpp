@@ -8,12 +8,12 @@ extern PwmOutputChannel boostOutput;
 
 static void test_initialise(void)
 {
-    setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
-    currentStatus.boostDuty = 99;
+    auto context = setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
+    context.current.boostDuty = 99;
 
-    initialiseBoost(pinNumbers.pinBoost );
+    context.initialise();
 
-    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(0, context.current.boostDuty);
     TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
 }
 

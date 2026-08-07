@@ -235,7 +235,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_30HZ)) //30 hertz
     {
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
-      boostControl();
+      boostControl(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10, configPage15);
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
       vvtControl(currentStatus, configPage4, configPage6, configPage10);
       //Water methanol injection

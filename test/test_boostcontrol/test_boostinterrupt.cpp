@@ -8,50 +8,50 @@ extern PwmOutputChannel boostOutput;
 
 static void test_duty_full(void)
 {
-    pinNumbers.pinBoost = pinNumbers.pinBoost ;
-    initialiseBoost(pinNumbers.pinBoost );
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.initialise();
 
-    boostOutput.setTargetDuty(200);
+  boostOutput.setTargetDuty(200);
 
-    for (uint8_t loop=0; loop<7; ++loop)
-    {
-      boostInterrupt();
+  for (uint8_t loop=0; loop<7; ++loop)
+  {
+    boostInterrupt();
 
-      TEST_ASSERT_TRUE(boostOutput.pin.isPinHigh());
-    }
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinHigh());
+  }
 }
 
 
 static void test_partial_duty(void)
 {
-    pinNumbers.pinBoost = pinNumbers.pinBoost ;
-    initialiseBoost(pinNumbers.pinBoost );
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.initialise();
 
-    boostOutput.setTargetDuty(66*2);
+  boostOutput.setTargetDuty(66*2);
 
-    for (uint8_t loop=0; loop<7; ++loop)
-    {
-      boostInterrupt();
-      TEST_ASSERT_TRUE(boostOutput.pin.isPinHigh());
+  for (uint8_t loop=0; loop<7; ++loop)
+  {
+    boostInterrupt();
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinHigh());
 
-      boostInterrupt();
-      TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
-    }
+    boostInterrupt();
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
+  }
 }
 
 static void test_duty_none(void)
 {
-    pinNumbers.pinBoost = pinNumbers.pinBoost ;
-    initialiseBoost(pinNumbers.pinBoost );
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.initialise();
 
-    boostOutput.setTargetDuty(0);
+  boostOutput.setTargetDuty(0);
 
-    // for (uint8_t loop=0; loop<7; ++loop)
-    {
-      boostInterrupt();
+  for (uint8_t loop=0; loop<7; ++loop)
+  {
+    boostInterrupt();
 
-      TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
-    }
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
+  }
 }
 
 void testBoostInterrupt(void)

@@ -11,13 +11,6 @@ extern PwmOutputChannel boostOutput;
 extern table2D_u8_s16_6 flexBoostTable;
 extern integerPID_ideal boostPID;
 
-static void setup_boost_enabled(statuses &current, config6 &page6)
-{
-  current.rotationStatus = EngineRotationStatus::Running;
-  current.LOOP_TIMER = 0xFF;
-  page6.boostEnabled = true;
-}
-
 static void setup_preboost_state(statuses &current)
 {
   current.flexBoostCorrection = 77;
@@ -36,35 +29,35 @@ static void assert_boost_off(statuses &current)
 
 static void test_boost_disabled(void)
 {
-  setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
-  initialiseBoost(pinNumbers.pinBoost);
+  auto context = setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
+  context.initialise();
 
   // Initial state
-  setup_boost_enabled(currentStatus, configPage6);
-  setup_preboost_state(currentStatus);
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
+  context.setup_boost_enabled();
+  setup_preboost_state(context.current);
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL(0, context.current.flexBoostCorrection);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, boostOutput.targetDuty);
 
-  currentStatus.rotationStatus = EngineRotationStatus::Running;
-  configPage6.boostEnabled = false;
-  setup_preboost_state(currentStatus);
-  boostControl();
-  assert_boost_off(currentStatus);
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.page6.boostEnabled = false;
+  setup_preboost_state(context.current);
+  context.boostControl();
+  assert_boost_off(context.current);
 
-  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
-  configPage6.boostEnabled = true;
-  setup_preboost_state(currentStatus);
-  boostControl();
-  assert_boost_off(currentStatus);
+  context.current.rotationStatus = EngineRotationStatus::Cranking;
+  context.page6.boostEnabled = true;
+  setup_preboost_state(context.current);
+  context.boostControl();
+  assert_boost_off(context.current);
 
-  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
-  configPage6.boostEnabled = true;
-  setup_preboost_state(currentStatus);
-  boostControl();
-  assert_boost_off(currentStatus);
+  context.current.rotationStatus = EngineRotationStatus::Stopped;
+  context.page6.boostEnabled = true;
+  setup_preboost_state(context.current);
+  context.boostControl();
+  assert_boost_off(context.current);
 }
 
 static uint8_t testBoostType;
@@ -72,60 +65,60 @@ static uint8_t testBoostByGearType;
 static bool testPidType;
 static uint8_t testVssMode;
 
-static void setup_boost_tune(void)
+static test_context_t setup_boost_tune(void)
 {
-  setup_boost_tune(testPidType, testVssMode, testBoostType, testBoostByGearType);
+  return setup_boost_tune(testPidType, testVssMode, testBoostType, testBoostByGearType);
 }
 
 static void test_boost_ol_duty_clamp(void)
 {
-  setup_boost_tune();
-  configPage9.boostByGear[0] = 255;
-  configPage9.boostByGear[1] = 255;
-  configPage9.boostByGear[2] = 255;
-  configPage9.boostByGear[3] = 255;
-  configPage9.boostByGear[4] = 255;
-  configPage9.boostByGear[5] = 255;
+  auto context = setup_boost_tune();
+  context.page9.boostByGear[0] = 255;
+  context.page9.boostByGear[1] = 255;
+  context.page9.boostByGear[2] = 255;
+  context.page9.boostByGear[3] = 255;
+  context.page9.boostByGear[4] = 255;
+  context.page9.boostByGear[5] = 255;
   fill_table_values(boostTable, 255);
 
-  setup_boost_enabled(currentStatus, configPage6);
+  context.setup_boost_enabled();
   for (uint8_t gear=1; gear<=6; ++gear)
   {
-    currentStatus.boostDuty = 1;
-    currentStatus.gear = gear;
+    context.current.boostDuty = 1;
+    context.current.gear = gear;
 
-    boostControl();
-    TEST_ASSERT_EQUAL_UINT16(10000, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
+    context.boostControl();
+    TEST_ASSERT_EQUAL_UINT16(10000, context.current.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(0, context.current.boostTarget);
     TEST_ASSERT_NOT_EQUAL_UINT16(0, boostOutput.targetDuty);
   }
 
     // Invalid gear
-  if (configPage9.boostByGearEnabled!=BOOST_BY_GEAR_OFF && isExternalVssMode(configPage2))
+  if (context.page9.boostByGearEnabled!=BOOST_BY_GEAR_OFF && isExternalVssMode(context.page2))
   {
-    currentStatus.boostDuty = 33;
-    currentStatus.gear = 0;
-    boostControl();
-    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
-    TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
+    context.current.boostDuty = 33;
+    context.current.gear = 0;
+    context.boostControl();
+    TEST_ASSERT_EQUAL_UINT16(0, context.current.boostDuty);
+    TEST_ASSERT_EQUAL_UINT16(0, context.current.boostTarget);
+    TEST_ASSERT_EQUAL_UINT16(0, boostOutput.targetDuty);
   }
 }
 
 static void test_ol_zero_duty(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
   fill_table_values(boostTable, 0);
-  initialiseBoost(pinNumbers.pinBoost);
-  currentStatus.boostDuty = 99;
-  setup_boost_enabled(currentStatus, configPage6);
+  context.initialise();
+  context.current.boostDuty = 99;
+  context.setup_boost_enabled();
 
-  boostControl();
+  context.boostControl();
 
-  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16(0, context.current.boostDuty);
   TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
-  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
+  TEST_ASSERT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0, boostOutput.targetDuty);
 }
 
 static void run_ol_tests(void)
@@ -151,159 +144,155 @@ static void run_ol_tests(void)
 
 static void test_boost_cl_target_clamp(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_PERCENT);
-  configPage9.boostByGear[0] = 255;
-  configPage9.boostByGear[1] = 255;
-  configPage9.boostByGear[2] = 255;
-  configPage9.boostByGear[3] = 255;
-  configPage9.boostByGear[4] = 255;
-  configPage9.boostByGear[5] = 255;
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_PERCENT);
+  context.page9.boostByGear[0] = 255;
+  context.page9.boostByGear[1] = 255;
+  context.page9.boostByGear[2] = 255;
+  context.page9.boostByGear[3] = 255;
+  context.page9.boostByGear[4] = 255;
+  context.page9.boostByGear[5] = 255;
   fill_table_values(boostTable, 255);
 
-  setup_boost_enabled(currentStatus, configPage6);
-  currentStatus.MAP = 50;
+  context.setup_boost_enabled();
   for (uint8_t gear=1; gear<=6; ++gear)
   {
-    currentStatus.gear = gear;
-    currentStatus.boostTarget = 1;
-    currentStatus.flexBoostCorrection = 99;
-    boostPID.initialize(currentStatus.MAP);
-    boostControl();
+    context.current.gear = gear;
+    context.current.boostTarget = 1;
+    context.current.flexBoostCorrection = 99;
+    boostPID.initialize(context.current.MAP);
+    context.boostControl();
 
-    TEST_ASSERT_EQUAL_UINT16(511, currentStatus.boostTarget);
-    TEST_ASSERT_EQUAL_UINT16(642, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
-    TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
+    TEST_ASSERT_EQUAL_UINT16(511, context.current.boostTarget);
+    TEST_ASSERT_EQUAL_UINT16(642, context.current.boostDuty);
+    TEST_ASSERT_EQUAL(0, context.current.flexBoostCorrection);
+    TEST_ASSERT_NOT_EQUAL_UINT16(0, boostOutput.targetDuty);
 }
 
   // Invalid gear
-  currentStatus.boostTarget = 1;
-  currentStatus.MAP = 50;
-  currentStatus.gear = 0;
-  boostControl();
-  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
-  TEST_ASSERT_EQUAL(0, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
+  context.current.boostTarget = 1;
+  context.current.gear = 0;
+  context.boostControl();
+  TEST_ASSERT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0, context.current.boostDuty);
+  TEST_ASSERT_EQUAL(0, context.current.flexBoostCorrection);
+  TEST_ASSERT_EQUAL_UINT16(0, boostOutput.targetDuty);
 }
 
 static void test_cl_flexcorrection(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
-  configPage2.flexEnabled = true;
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.page2.flexEnabled = true;
   populate_2dtable(&flexBoostTable, (int16_t)77, (uint8_t)50);
   fill_table_values(boostTable, 55);
 
-  initialiseBoost(pinNumbers.pinBoost);
+  context.initialise();
 
-  setup_boost_enabled(currentStatus, configPage6);
-  currentStatus.flexBoostCorrection = 99;
-  boostPID.initialize(currentStatus.MAP);
-  boostControl();
+  context.setup_boost_enabled();
+  context.current.flexBoostCorrection = 99;
+  boostPID.initialize(context.current.MAP);
+  context.boostControl();
 
-  TEST_ASSERT_EQUAL_INT16(77, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_EQUAL_UINT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL_UINT16(577, currentStatus.boostDuty);
-  TEST_ASSERT_NOT_EQUAL(0, boostOutput.targetDuty);
+  TEST_ASSERT_EQUAL_INT16(77, context.current.flexBoostCorrection);
+  TEST_ASSERT_EQUAL_UINT16((boostTable.values[0]*2)+77, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(577, context.current.boostDuty);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, boostOutput.targetDuty);
 }
 
 static void test_cl_flexcorrection_negative(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
-  configPage2.flexEnabled = true;
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.page2.flexEnabled = true;
   populate_2dtable(&flexBoostTable, (int16_t)-77, (uint8_t)50);
   fill_table_values(boostTable, 5);
 
-  initialiseBoost(pinNumbers.pinBoost);
+  context.initialise();
 
-  setup_boost_enabled(currentStatus, configPage6);
-  currentStatus.flexBoostCorrection = 99;
-  boostPID.initialize(currentStatus.MAP);
-  boostControl();
+  context.setup_boost_enabled();
+  context.current.flexBoostCorrection = 99;
+  boostPID.initialize(context.current.MAP);
+  context.boostControl();
 
-  TEST_ASSERT_EQUAL_INT16(-77, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_EQUAL_INT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL_UINT16(0, currentStatus.boostDuty);
-  TEST_ASSERT_EQUAL(0, boostOutput.targetDuty);
+  TEST_ASSERT_EQUAL_INT16(-77, context.current.flexBoostCorrection);
+  TEST_ASSERT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0, context.current.boostDuty);
+  TEST_ASSERT_EQUAL_UINT16(0, boostOutput.targetDuty);
 }
 
-static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)
+static void test_cl_boost_constant_gear(test_context_t &context, uint8_t gearNum, uint8_t &boostGear)
 {
-  setup_boost_enabled(currentStatus, configPage6);
-  currentStatus.boostTarget = 1;
-  currentStatus.gear = gearNum;
+  context.setup_boost_enabled();
+  context.current.boostTarget = 1;
+  context.current.gear = gearNum;
   boostGear = gearNum*7;
-  boostPID.initialize(currentStatus.MAP);
-  boostControl();
-  TEST_ASSERT_UINT16_WITHIN(1, boostGear << 1U, currentStatus.boostTarget);
+  boostPID.initialize(context.current.MAP);
+  context.boostControl();
+  TEST_ASSERT_UINT16_WITHIN(1, boostGear << 1U, context.current.boostTarget);
 }
 
 static void test_cl_boost_constant_gear(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_CONSTANT);
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_CONSTANT);
 
-  test_cl_boost_constant_gear(1, configPage9.boostByGear[0]);
-  test_cl_boost_constant_gear(2, configPage9.boostByGear[1]);
-  test_cl_boost_constant_gear(3, configPage9.boostByGear[2]);
-  test_cl_boost_constant_gear(4, configPage9.boostByGear[3]);
-  test_cl_boost_constant_gear(5, configPage9.boostByGear[4]);
-  test_cl_boost_constant_gear(6, configPage9.boostByGear[5]);
+  test_cl_boost_constant_gear(context, 1, context.page9.boostByGear[0]);
+  test_cl_boost_constant_gear(context, 2, context.page9.boostByGear[1]);
+  test_cl_boost_constant_gear(context, 3, context.page9.boostByGear[2]);
+  test_cl_boost_constant_gear(context, 4, context.page9.boostByGear[3]);
+  test_cl_boost_constant_gear(context, 5, context.page9.boostByGear[4]);
+  test_cl_boost_constant_gear(context, 6, context.page9.boostByGear[5]);
 
   // Invalid gear
-  setup_boost_enabled(currentStatus, configPage6);
-  currentStatus.boostTarget = 1;
-  currentStatus.gear = 0;
-  boostControl();
-  TEST_ASSERT_EQUAL_UINT16(0U, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL_UINT16(0U, currentStatus.boostDuty);
+  context.setup_boost_enabled();
+  context.current.boostTarget = 1;
+  context.current.gear = 0;
+  context.boostControl();
+  TEST_ASSERT_EQUAL_UINT16(0U, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(0U, context.current.boostDuty);
 }
 
 static void test_cl_boost_control_baro(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
-  configPage15.boostControlEnable = EN_BOOST_CONTROL_BARO;
-  configPage15.boostDCWhenDisabled = 77;
-  currentStatus.MAP = 50;
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.page15.boostControlEnable = EN_BOOST_CONTROL_BARO;
+  context.page15.boostDCWhenDisabled = 77;
   
-  setup_boost_enabled(currentStatus, configPage6);
-  currentStatus.baro = currentStatus.MAP;
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
+  context.setup_boost_enabled();
+  context.current.baro = context.current.MAP;
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostDuty);
   
-  currentStatus.baro = currentStatus.MAP + 10;
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL_UINT16(configPage15.boostDCWhenDisabled*100, currentStatus.boostDuty);
+  context.current.baro = context.current.MAP + 10;
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(context.page15.boostDCWhenDisabled*100, context.current.boostDuty);
   
-  currentStatus.baro = currentStatus.MAP - 10;
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
+  context.current.baro = context.current.MAP - 10;
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostDuty);
 }
 
 static void test_cl_boost_control_fixed(void)
 {
-  setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
-  configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
-  configPage15.boostDCWhenDisabled = 77;
-  currentStatus.MAP = 50;
-  setup_boost_enabled(currentStatus, configPage6);
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, CLOSED_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.page15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
+  context.page15.boostDCWhenDisabled = 77;
+  context.setup_boost_enabled();
   
-  configPage15.boostControlEnableThreshold = currentStatus.MAP;
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
+  context.page15.boostControlEnableThreshold = context.current.MAP;
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostDuty);
   
-  configPage15.boostControlEnableThreshold = currentStatus.MAP + 10;
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_EQUAL_UINT16(configPage15.boostDCWhenDisabled*100, currentStatus.boostDuty);
+  context.page15.boostControlEnableThreshold = context.current.MAP + 10;
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_EQUAL_UINT16(context.page15.boostDCWhenDisabled*100, context.current.boostDuty);
   
-  configPage15.boostControlEnableThreshold = currentStatus.MAP - 10;
-  boostControl();
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostTarget);
-  TEST_ASSERT_NOT_EQUAL_UINT16(0, currentStatus.boostDuty);
+  context.page15.boostControlEnableThreshold = context.current.MAP - 10;
+  context.boostControl();
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostTarget);
+  TEST_ASSERT_NOT_EQUAL_UINT16(0, context.current.boostDuty);
 }
 
 static void run_cl_tests(void)

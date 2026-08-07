@@ -2,53 +2,51 @@
 #include "shared.h"
 #include "globals.h"
 
-void setup_simplepid_tune(void)
+static test_context_t setup_simplepid_tune(void)
 {
-    pinNumbers.pinBoost = 19U;
+    test_context_t context;
+    context.pins.pinBoost = 19U;
 
-    configPage6.boostEnabled = true;
-    configPage6.boostMode = BOOST_MODE_SIMPLE;
-    configPage2.boostMinDuty = 0; 
-    configPage2.boostMaxDuty = 255;
-    configPage10.boostIntv = 0;
-    configPage10.boostSens = 1;
+    context.page6.boostEnabled = true;
+    context.page6.boostMode = BOOST_MODE_SIMPLE;
+    context.page2.boostMinDuty = 0; 
+    context.page2.boostMaxDuty = 255;
+    context.page10.boostIntv = 0;
+    context.page10.boostSens = 1;
+    return context;
 }
 
-void setup_fullpid_tune(void)
+static test_context_t setup_fullpid_tune(void)
 {
-    setup_simplepid_tune();
-    configPage6.boostMode = BOOST_MODE_FULL;
-    configPage6.boostKP = 5;
-    configPage6.boostKI = 3;
-    configPage6.boostKD = 1;
+    auto context = setup_simplepid_tune();
+    context.page6.boostMode = BOOST_MODE_FULL;
+    context.page6.boostKP = 5;
+    context.page6.boostKI = 3;
+    context.page6.boostKD = 1;
+    return context;
 }
 
-void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, uint8_t gearMode)
+test_context_t setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, uint8_t gearMode)
 {
-  if (fullPid)
-  {
-    setup_fullpid_tune();
-  }
-  else
-  {
-   setup_simplepid_tune();
-  }
-  configPage2.flexEnabled = false;
-  configPage2.vssMode = vssMode;
-  configPage4.boostType = boostType;
-  configPage9.boostByGearEnabled = gearMode;
-  configPage9.boostByGear[0] = 1;
-  configPage9.boostByGear[1] = 2;
-  configPage9.boostByGear[2] = 3;
-  configPage9.boostByGear[3] = 4;
-  configPage9.boostByGear[4] = 5;
-  configPage9.boostByGear[5] = 6;
-  configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
-  fill_table_values(boostTable, 33);
-  populate_table_axis(boostTable.axisX, 10);
-  populate_table_axis(boostTable.axisY, 10);
+    auto context = fullPid ? setup_fullpid_tune() : setup_simplepid_tune();
+    context.page2.flexEnabled = false;
+    context.page2.vssMode = vssMode;
+    context.page4.boostType = boostType;
+    context.page9.boostByGearEnabled = gearMode;
+    context.page9.boostByGear[0] = 1;
+    context.page9.boostByGear[1] = 2;
+    context.page9.boostByGear[2] = 3;
+    context.page9.boostByGear[3] = 4;
+    context.page9.boostByGear[4] = 5;
+    context.page9.boostByGear[5] = 6;
+    context.page15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
+    context.page15.boostControlEnableThreshold = 0;
+    fill_table_values(boostTable, 33);
+    populate_table_axis(boostTable.axisX, 10);
+    populate_table_axis(boostTable.axisY, 10);
 
-  fill_table_values(boostTableLookupDuty, 11);
-  populate_table_axis(boostTableLookupDuty.axisX, 10);
-  populate_table_axis(boostTableLookupDuty.axisY, 10);
+    fill_table_values(boostTableLookupDuty, 11);
+    populate_table_axis(boostTableLookupDuty.axisX, 10);
+    populate_table_axis(boostTableLookupDuty.axisY, 10);
+    return context;
 }
