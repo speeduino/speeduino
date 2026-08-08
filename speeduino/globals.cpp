@@ -16,6 +16,7 @@ struct table3d8RpmLoad vvt2Table; ///< 8x8 vvt2 map
 struct table3d8RpmLoad wmiTable; ///< 8x8 wmi map
 struct table3d6RpmLoad trimTables[INJ_CHANNELS];
 struct table3d4RpmLoad dwellTable; ///< 4x4 Dwell map
+struct config16 configPage16 = {}; ///< Page 16 scatter array. Zero-initialised; zero entry signals end of list.
 
 //These are variables used across multiple files
 uint8_t softLimitTime = 0; //The time (in 0.1 seconds, based on seclx10) that the soft limiter started

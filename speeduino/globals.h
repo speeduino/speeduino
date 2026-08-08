@@ -71,6 +71,7 @@ extern volatile uint32_t seclx10;     /**< Counter of seconds since powered comm
 extern pinNumbers_t pinNumbers;
 
 extern struct statuses currentStatus; //The global status object
+
 extern struct config2 configPage2;
 extern struct config4 configPage4;
 extern struct config6 configPage6;
@@ -78,6 +79,7 @@ extern struct config9 configPage9;
 extern struct config10 configPage10;
 extern struct config13 configPage13;
 extern struct config15 configPage15;
+extern struct config16 configPage16; //!< Page 16 scatter array (RAM-only, not written to EEPROM).
 
 bool pinIsOutput(byte pin);
 bool pinIsUsed(byte pin);
