@@ -1,11 +1,11 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
-#include "src/stdlib/type_traits.h"
+#include <type_traits>
 #include "globals.h"
 
-using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
-using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
+using raw_counter_t = std::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = std::remove_reference<IgnitionSchedule::compare_t>::type;
 
 extern bool isOverDwellActive(const config4 &page4, const statuses &current);
 

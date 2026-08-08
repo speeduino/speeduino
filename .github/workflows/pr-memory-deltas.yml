@@ -36,9 +36,11 @@ jobs:
             family-name: arduino:avr
             platform: |
               - name: arduino:avr
-            compile-flags: -DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
+            compile-flags: -I /root/Arduino/libraries/avr-libstdcpp/include -DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
             lib_deps: |
               - name: Time
+              - source-url: https://github.com/modm-io/avr-libstdcpp.git
+                destination-name: avr-libstdcpp
 
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35

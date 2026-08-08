@@ -1,10 +1,10 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
-#include "src/stdlib/type_traits.h"
+#include <type_traits>
 
-using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
-using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
+using raw_counter_t = std::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = std::remove_reference<IgnitionSchedule::compare_t>::type;
 
 static constexpr uint32_t TIMEOUT = 5000U;
 static constexpr uint32_t DURATION = 2000U;

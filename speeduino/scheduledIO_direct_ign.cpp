@@ -7,7 +7,7 @@
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
  
-static fastOutputPin_t pins[_countof(coil_pins_t::_elements)];
+static fastOutputPin_t pins[_countof(coil_pins_t::_M_elems)];
 
 static inline void coilLow(uint8_t channel)
 {

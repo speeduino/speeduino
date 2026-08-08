@@ -1,12 +1,13 @@
 #pragma once
 
 #include <stdint.h>
+#include "../utils/minmax.h"
+#include <array>
 #include "../../board_definition.h"
 #include "../../config_pages.h"
-#include "../stdlib/array.h"
 
 /** @brief An array of pin numbers */
-template <uint8_t N, typename base_type = array<uint8_t, N>>
+template <uint8_t N, typename base_type = std::array<uint8_t, N>>
 struct pin_array_t : public base_type
 {
   // LCOV_EXCL_START
