@@ -113,6 +113,47 @@ static void test_y_rbegin(void)
   }
 }
 
+extern row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize);
+
+static void test_toTopRight(void)
+{
+  auto subject = toTopRight({0,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({0,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({0,7},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({4,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({4,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({4,7},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({7,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(0, subject.col);    
+
+  subject = toTopRight({7,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(0, subject.col);    
+
+  subject = toTopRight({7,7},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(0, subject.col);    
+}
+
 void test3DTableUtils()
 {
   SET_UNITY_FILENAME() {
@@ -124,5 +165,6 @@ void test3DTableUtils()
     RUN_TEST(test_x_rbegin);
     RUN_TEST(test_y_begin);
     RUN_TEST(test_y_rbegin);
+    RUN_TEST_P(test_toTopRight);
   }  
 }

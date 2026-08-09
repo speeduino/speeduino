@@ -180,14 +180,8 @@ TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const
   return fast_div32_16(p, (uint16_t)binWidth);  
 }
 
-/** @brief Row and column coordinates in a 2D table */
-struct row_col2d {
-  table3d_dim_t row;
-  table3d_dim_t col;
-};
-
 /** @brief Get the top right corner of the *value* coordinates in a 3D table, based on x/y axis coords. */
-static inline row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize)
+TESTABLE_INLINE_STATIC row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize)
 {
   return { (table3d_dim_t)(axisCoords.y * axisSize), (table3d_dim_t)(axisSize - axisCoords.x - UINT8_C(1)) };
 }
