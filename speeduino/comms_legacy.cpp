@@ -913,9 +913,9 @@ namespace {
 
   void send_table_entity(const page_iterator_t &iter)
   {
-    send_table_values(rows_begin(iter));
-    send_table_axis(x_begin(iter));
-    send_table_axis(y_begin(iter));
+    send_table_values(rows_begin(iter.entity.pTable, iter.entity.table_key));
+    send_table_axis(x_begin(iter.entity.pTable, iter.entity.table_key));
+    send_table_axis(y_begin(iter.entity.pTable, iter.entity.table_key));
   }
 
   void send_entity(const page_iterator_t &iter)
