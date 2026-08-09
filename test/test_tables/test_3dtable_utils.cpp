@@ -65,26 +65,21 @@ static void test_x_rbegin(void)
   table3d8RpmLoad testTable = getDummyTable();
 
   auto axis = x_rbegin(&testTable, testTable.type_key);
-  uint8_t index = testTable.axisX.length-1U;
-  while (!axis.at_end())
-  {
-    TEST_ASSERT_EQUAL(testTable.axisX.axis[index], *axis);
-    --index; ++axis;
-  }
+  for (auto it = testTable.axisX.crbegin(); it != testTable.axisX.crend(); ++it) {
+    TEST_ASSERT_EQUAL(*it, *axis);
+    ++axis;
+  }  
 }
-
 
 static void test_x_begin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
   auto axis = x_begin(&testTable, testTable.type_key);
-  uint8_t index = 0U;
-  while (!axis.at_end())
-  {
-    TEST_ASSERT_EQUAL(testTable.axisX.axis[index], *axis);
-    ++index; ++axis;
-  }
+  for (auto it = testTable.axisX.cbegin(); it != testTable.axisX.cend(); ++it) {
+    TEST_ASSERT_EQUAL(*it, *axis);
+    ++axis;
+  }  
 }
 
 static void test_y_rbegin(void)
@@ -92,11 +87,9 @@ static void test_y_rbegin(void)
   table3d8RpmLoad testTable = getDummyTable();
 
   auto axis = y_rbegin(&testTable, testTable.type_key);
-  uint8_t index = testTable.axisY.length-1U;
-  while (!axis.at_end())
-  {
-    TEST_ASSERT_EQUAL(testTable.axisY.axis[index], *axis);
-    --index; ++axis;
+  for (auto it = testTable.axisY.crbegin(); it != testTable.axisY.crend(); ++it) {
+    TEST_ASSERT_EQUAL(*it, *axis);
+    ++axis;
   }
 }
 
@@ -105,12 +98,10 @@ static void test_y_begin(void)
   table3d8RpmLoad testTable = getDummyTable();
 
   auto axis = y_begin(&testTable, testTable.type_key);
-  uint8_t index = 0U;
-  while (!axis.at_end())
-  {
-    TEST_ASSERT_EQUAL(testTable.axisY.axis[index], *axis);
-    ++index; ++axis;
-  }
+  for (auto it = testTable.axisY.cbegin(); it != testTable.axisY.cend(); ++it) {
+    TEST_ASSERT_EQUAL(*it, *axis);
+    ++axis;
+  }  
 }
 
 extern row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize);
@@ -159,7 +150,7 @@ static void test_value_at(void)
   table3d8RpmLoad testTable = getDummyTable();
 
   table3d_value_t lastValue = 0;
-  for (uint8_t i=0; i<testTable.axisX.length*testTable.axisY.length; ++i)
+  for (uint8_t i=0; i<testTable.axisX.size()*testTable.axisY.size(); ++i)
   {
     table3d_value_t newValue = testTable.values.value_at(i);
     TEST_ASSERT_GREATER_THAN(lastValue, newValue);

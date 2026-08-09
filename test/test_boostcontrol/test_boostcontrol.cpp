@@ -48,12 +48,12 @@ static void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, u
   configPage9.boostByGear6 = 6;
   configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
   fill_table_values(boostTable, 33);
-  populate_table_axis(boostTable.axisX.begin(), 10);
-  populate_table_axis(boostTable.axisY.begin(), 10);
+  populate_table_axis(boostTable.axisX, (table3d_axis_t)10);
+  populate_table_axis(boostTable.axisY, (table3d_axis_t)10);
 
   fill_table_values(boostTableLookupDuty, 11);
-  populate_table_axis(boostTableLookupDuty.axisX.begin(), 10);
-  populate_table_axis(boostTableLookupDuty.axisY.begin(), 10);
+  populate_table_axis(boostTableLookupDuty.axisX, (table3d_axis_t)10);
+  populate_table_axis(boostTableLookupDuty.axisY, (table3d_axis_t)10);
 }
 
 static uint8_t testBoostType;

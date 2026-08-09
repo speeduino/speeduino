@@ -81,12 +81,12 @@ static void setup_vvt_onconditions(void)
 
 static void populate_vvt_tables(table3d_value_t vvt1Value, table3d_value_t vvt2Value)
 {
-  populate_table_axis_P(vvtTable.axisX.begin(), TEST_VVT_AXIS_X);
-  populate_table_axis_P(vvtTable.axisY.begin(), TEST_VVT_AXIS_Y);
+  populate_table_axis_P(vvtTable.axisX, TEST_VVT_AXIS_X);
+  populate_table_axis_P(vvtTable.axisY, TEST_VVT_AXIS_Y);
   fill_table_values(vvtTable, vvt1Value);
 
-  populate_table_axis_P(vvt2Table.axisX.begin(), TEST_VVT_AXIS_X);
-  populate_table_axis_P(vvt2Table.axisY.begin(), TEST_VVT_AXIS_Y);
+  populate_table_axis_P(vvt2Table.axisX, TEST_VVT_AXIS_X);
+  populate_table_axis_P(vvt2Table.axisY, TEST_VVT_AXIS_Y);
   fill_table_values(vvt2Table, vvt2Value);
 }
 

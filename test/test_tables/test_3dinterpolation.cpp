@@ -17,7 +17,7 @@ static void test_tableLookup_exact1Axis(void)
   //Tests a lookup that exactly matches on the X axis and 50% of the way between cells on the Y axis
   table3d8RpmLoad testTable = getDummyTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[1]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX[1]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(78U, tempVE);
 }
 
@@ -26,7 +26,7 @@ static void test_tableLookup_exact2Axis(void)
   //Tests a lookup that exactly matches on both the X and Y axis
   table3d8RpmLoad testTable = getDummyTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[2]*getConversionFactor(testTable.YDomain), testTable.axisX.axis[0]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY[2]*getConversionFactor(testTable.YDomain), testTable.axisX[0]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(56U, tempVE);
 }
 

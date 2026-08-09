@@ -45,8 +45,8 @@ static void __attribute__((noinline)) test_fuel_mode_cap_UINT8_MAX(uint8_t mode)
     table3d16RpmLoad lookupTable;
 
     fill_table_values(lookupTable, SIMPLE_LOAD_VALUE);
-    populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
-    populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
+    populate_table_axis_P(lookupTable.axisX, tempXAxis);
+    populate_table_axis_P(lookupTable.axisY, tempYAxis);
 
     page10.fuel2Mode = mode;    
     page10.fuel2Algorithm = LOAD_SOURCE_MAP;
@@ -64,8 +64,8 @@ static constexpr int8_t SIMPLE_VE1 = 75;
 
 static void __attribute__((noinline)) setup_test_fuel_mode_simple(config10 &page10, statuses &current, table3d16RpmLoad &lookupTable, uint8_t mode) {
     fill_table_values(lookupTable, SIMPLE_LOAD_VALUE);
-    populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
-    populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
+    populate_table_axis_P(lookupTable.axisX, tempXAxis);
+    populate_table_axis_P(lookupTable.axisY, tempYAxis);
 
     page10.fuel2Mode = mode;    
     page10.fuel2Algorithm = LOAD_SOURCE_MAP;

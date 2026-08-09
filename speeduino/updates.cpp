@@ -710,23 +710,19 @@ void doUpdates(void)
     }
 
     //Set some sensible values at the RPM axis
-    auto table_X = boostTableLookupDuty.axisX.begin();
     uint16_t i = 0;
-    while (!table_X.at_end())
+    for(auto &x: boostTableLookupDuty.axisX)
     {
       ++i;
-      *table_X = 1000+(500*i);
-      ++table_X;
+      x = 1000+(500*i);
     }
 
     //Set some sensible values at the boosttarget axis
-    auto table_Y = boostTableLookupDuty.axisY.begin();
     i = 0;
-    while (!table_Y.at_end())
+    for(auto &y: boostTableLookupDuty.axisY)
     {
       ++i;
-      *table_Y = (120 + 10*i);
-      ++table_Y;
+      y = (120 + 10*i);
     }
 
     //AFR Protection added, add default values

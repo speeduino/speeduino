@@ -44,10 +44,11 @@
  */
 
 #pragma once
-
+#include "src/utils/minmax.h"
 #include "table3d_interpolate.h"
 #include "table3d_axes.h"
 #include "table3d_values.h"
+#include <array>
 
 #define TO_TYPE_KEY(size, xDom, yDom) table3d ## size ## xDom ## yDom ## _key
 
@@ -84,18 +85,20 @@ struct table3d_t
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
     struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) : public table3d_t \
     { \
-        typedef TABLE3D_TYPENAME_AXIS(size) xaxis_t; \
-        typedef TABLE3D_TYPENAME_AXIS(size) yaxis_t; \
         typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
+        static constexpr table3d_dim_t length = (size); \
         static constexpr TableType type_key = TableType::TO_TYPE_KEY(size, xDom, yDom); \
         static constexpr AxisDomain XDomain = AxisDomain::xDom; \
         static constexpr AxisDomain YDomain = AxisDomain::yDom; \
         \
         mutable table3DGetValueCache get_value_cache; \
         value_t values; \
-        xaxis_t axisX; \
-        yaxis_t axisY; \
+        std::array<table3d_axis_t, (size)> axisX; \
+        std::array<table3d_axis_t, (size)> axisY; \
+        \
+        static constexpr uint8_t width(void) { return size; } \
+        static constexpr uint8_t height(void) { return size; } \
     };
 // LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
@@ -110,8 +113,8 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
       return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache, \
                               TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
                               pTable->values.values, \
-                              pTable->axisX.axis, \
-                              pTable->axisY.axis, \
+                              pTable->axisX.data(), \
+                              pTable->axisY.data(), \
                               { x, y }); \
     } 
 // LCOV_EXCL_START

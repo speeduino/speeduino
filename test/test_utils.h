@@ -1,7 +1,9 @@
 
 #pragma once
+#include "src/utils/minmax.h"
 #include <stdint.h>
 #include <unity.h>
+#include <algorithm>
 #include <Arduino.h>
 #include "table3d.h"
 #include "table2d.h"
@@ -84,26 +86,21 @@ static inline void fill_table_values(table3d_t &table, table3d_value_t value) {
   invalidate_cache(&table.get_value_cache);
 }
 
-static inline void populate_table_axis(table_axis_iterator it, 
-                                       table3d_axis_t value) {
-  while (!it.at_end())
-  {
-    *it = value;
-    ++it;
-  }
+template<size_t N>
+static inline void populate_table_axis(std::array<table3d_axis_t, N> &axis, table3d_axis_t value) {
+  std::fill(axis.begin(), axis.end(), value); 
 }
 
-static inline void populate_table_axis_P(table_axis_iterator it, 
+template<size_t N>
+static inline void populate_table_axis_P(std::array<table3d_axis_t, N> &axis, 
                                          const table3d_axis_t *pXValues) {   // PROGMEM if available
-  while (!it.at_end())
-  {
+  for (auto &elenent: axis) {
 #if defined(PROGMEM)
-    *it = (table3d_axis_t)pgm_read_word(pXValues);
+    elenent = (table3d_axis_t)pgm_read_word(pXValues);
 #else
-    *it = *pXValues;
+    elenent = *pXValues;
 #endif      
     ++pXValues;
-    ++it;
   }
 }
 
@@ -115,8 +112,8 @@ static inline void populate_table_P(table3d_t &table,
                                   const table3d_axis_t *pYValues,   // PROGMEM if available
                                   const table3d_value_t *pZValues)  // PROGMEM if available
 {
-  populate_table_axis_P(table.axisX.begin(), pXValues);
-  populate_table_axis_P(table.axisY.begin(), pYValues);
+  populate_table_axis_P(table.axisX, pXValues);
+  populate_table_axis_P(table.axisY, pYValues);
   {
     table_value_iterator itZ = table.values.begin();
     while (!itZ.at_end())

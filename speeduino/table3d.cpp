@@ -19,10 +19,20 @@ table_value_iterator rows_begin(table3d_t *pTable, TableType key)
   // LCOV_EXCL_BR_STOP
 }
 
+template <size_t N>
+static table_axis_iterator begin(std::array<table3d_axis_t, N> &axis) {
+    return table_axis_iterator(axis.data(), axis.data()+N-1);
+}
+
+template <size_t N>
+static table_axis_iterator rbegin(std::array<table3d_axis_t, N> &axis) {
+    return table_axis_iterator(axis.data()+N-1, axis.data());
+}
+
 struct x_begin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
-        return table.axisX.begin();
+        return begin(table.axisX);
     }
 };
 
@@ -38,7 +48,7 @@ table_axis_iterator x_begin(table3d_t *pTable, TableType key)
 struct x_rbegin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
-        return table.axisX.rbegin();
+        return rbegin(table.axisX);
     }
 };
 
@@ -53,7 +63,7 @@ table_axis_iterator x_rbegin(table3d_t *pTable, TableType key)
 struct y_begin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
-        return table.axisY.begin();
+        return begin(table.axisY);
     }
 };
 
@@ -69,7 +79,7 @@ table_axis_iterator y_begin(table3d_t *pTable, TableType key)
 struct y_rbegin_visitor {
     template <typename TTable>
     table_axis_iterator visit(TTable &table) {
-        return table.axisY.rbegin();
+        return rbegin(table.axisY);
     }
 };
 

@@ -82,36 +82,4 @@ private:
     const table3d_axis_t *_pEnd;
 };
 
-#define TABLE3D_TYPENAME_AXIS(size) table3d ## size ## _axis
-
-#define TABLE3D_GEN_AXIS(size) \
-    /** @brief The dxis for a 3D table with size x size dimensions and domain 'domain' */ \
-    struct TABLE3D_TYPENAME_AXIS(size) { \
-        /** @brief The length of the axis in elements */ \
-        static constexpr table3d_dim_t length = (size); \
-        /**
-          @brief The axis elements\
-        */ \
-        table3d_axis_t axis[(size)]; \
-        \
-        /** @brief Iterate over the axis elements */ \
-        table_axis_iterator begin(void) \
-        {  \
-            return table_axis_iterator(axis, axis+(size)-1); \
-        } \
-        /** @brief Iterate over the axis elements, from largest to smallest */ \
-        table_axis_iterator rbegin(void) \
-        {  \
-            return table_axis_iterator(axis+(size)-1, axis); \
-        } \
-    };
-
-// This generates the axis types for the following sizes & domains:
-// LCOV_EXCL_START
-TABLE3D_GEN_AXIS(4)
-TABLE3D_GEN_AXIS(6)
-TABLE3D_GEN_AXIS(8)
-TABLE3D_GEN_AXIS(16)
-// LCOV_EXCL_STOP
-
 /** @} */

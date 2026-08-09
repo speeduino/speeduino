@@ -34,17 +34,17 @@
 template <class table_t>
 static constexpr uint16_t get_table_value_end(void)
 {
-  return table_t::xaxis_t::length*table_t::yaxis_t::length;
+  return table_t::width()*table_t::height();
 }
 template <class table_t>
 static constexpr uint16_t get_table_axisx_end(void)
 {
-  return get_table_value_end<table_t>()+table_t::xaxis_t::length;
+  return get_table_value_end<table_t>()+table_t::width();
 }
 template <class table_t>
 static constexpr uint16_t getTableSize(void)
 {
-  return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
+  return get_table_axisx_end<table_t>()+table_t::height();
 }
 
 // ========================= Intra-table offset to byte class =========================
@@ -119,18 +119,12 @@ private:
 
   inline table3d_axis_t& get_xaxis_value(void) const
   {
-    // LCOV_EXCL_BR_START
-    // Can't figure out the missing branches, so exclude for the moment
-    return *(_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>()));
-    // LCOV_EXCL_BR_STOP
+    return _pTable->axisX[_table_offset - get_table_value_end<table_t>()];
   }
 
   inline table3d_axis_t& get_yaxis_value(void) const
   {
-    // LCOV_EXCL_BR_START
-    // Can't figure out the missing branches, so exclude for the moment
-    return *(_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>()));
-    // LCOV_EXCL_BR_STOP
+    return _pTable->axisY[_table_offset - get_table_axisx_end<table_t>()];
 }
 
   enum table_location {

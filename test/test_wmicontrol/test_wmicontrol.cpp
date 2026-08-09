@@ -147,8 +147,8 @@ static void test_mode_ol(void)
     initialiseAuxPWM();
 
     fill_table_values(wmiTable, 33);
-    populate_table_axis(wmiTable.axisX.begin(), 10);
-    populate_table_axis(wmiTable.axisY.begin(), 10);
+    populate_table_axis(wmiTable.axisX, (table3d_axis_t)10);
+    populate_table_axis(wmiTable.axisY, (table3d_axis_t)10);
 
     setup_assert_wmipw(wmiTable.values.values[0]);
 
@@ -163,8 +163,8 @@ static void test_mode_cl(void)
     setup_wmi_tune(WMI_MODE_CLOSEDLOOP);
     initialiseAuxPWM();
 
-    populate_table_axis(wmiTable.axisX.begin(), 10);
-    populate_table_axis(wmiTable.axisY.begin(), 10);
+    populate_table_axis(wmiTable.axisX, (table3d_axis_t)10);
+    populate_table_axis(wmiTable.axisY, (table3d_axis_t)10);
     fill_table_values(wmiTable, 177);
     fuelSchedule1.pw = abs(configPage10.wmiOffset)*2;
 

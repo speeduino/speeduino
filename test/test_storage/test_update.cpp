@@ -102,7 +102,7 @@ static void test_multiplyTableLoad_doubles_y_axis(void)
   table3d8RpmLoad testSubject;
 
   // Seed the testSubject Y-axis with known values, then verify each was doubled.
-  populate_table_axis(y_begin(&testSubject, testSubject.type_key), (table3d_axis_t)10);
+  populate_table_axis(testSubject.axisY, (table3d_axis_t)10);
   // Force a couple of distinct values too so we don't trivially pass with all zeros.
   table_axis_iterator it = y_begin(&testSubject, testSubject.type_key);
   uint8_t i = 0;
