@@ -102,24 +102,20 @@ struct table3d_t
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 // LCOV_EXCL_STOP
 
-// Generate get3DTableValue() functions
-#define TABLE3D_GEN_GET_TABLE_VALUE(size, xDom, yDom) \
-    static inline table3d_value_t get3DTableValue(const TABLE3D_TYPENAME_BASE(size, xDom, yDom) *pTable, const uint16_t y, const uint16_t x) \
-    { \
-      constexpr uint16_t xFactor = getConversionFactor(AxisDomain::xDom); \
-      constexpr uint16_t yFactor = getConversionFactor(AxisDomain::yDom); \
-      return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache, \
-                              pTable->width(), \
-                              pTable->values.data(), \
-                              pTable->axisX.data(), \
-                              pTable->axisY.data(), \
-                              { x, y }); \
-    } 
-// LCOV_EXCL_START
-TABLE3D_GENERATOR(TABLE3D_GEN_GET_TABLE_VALUE)
-// LCOV_EXCL_STOP
-
 // =============================== Table function calls =========================
+
+template <typename TTable>
+static inline table3d_value_t get3DTableValue(const TTable *pTable, const uint16_t y, const uint16_t x) 
+{ 
+    constexpr uint16_t xFactor = getConversionFactor(TTable::XDomain);
+    constexpr uint16_t yFactor = getConversionFactor(TTable::YDomain);
+    return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache,
+                            pTable->width(),
+                            pTable->values.data(),
+                            pTable->axisX.data(),
+                            pTable->axisY.data(),
+                            { x, y });
+} 
 
 table_value_iterator rows_begin(table3d_t *pTable, TableType key);
 
