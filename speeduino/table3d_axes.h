@@ -97,12 +97,12 @@ private:
         /** @brief Iterate over the axis elements */ \
         table_axis_iterator begin(void) \
         {  \
-            return table_axis_iterator(axis+(size)-1, axis); \
+            return table_axis_iterator(axis, axis+(size)-1); \
         } \
         /** @brief Iterate over the axis elements, from largest to smallest */ \
         table_axis_iterator rbegin(void) \
         {  \
-            return table_axis_iterator(axis, axis+(size)-1); \
+            return table_axis_iterator(axis+(size)-1, axis); \
         } \
     };
 

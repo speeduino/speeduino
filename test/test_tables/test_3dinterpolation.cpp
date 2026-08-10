@@ -17,7 +17,7 @@ static void test_tableLookup_exact1Axis(void)
   //Tests a lookup that exactly matches on the X axis and 50% of the way between cells on the Y axis
   table3d8RpmLoad testTable = getDummyTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[6]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, 48, testTable.axisX.axis[1]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(78U, tempVE);
 }
 
@@ -26,7 +26,7 @@ static void test_tableLookup_exact2Axis(void)
   //Tests a lookup that exactly matches on both the X and Y axis
   table3d8RpmLoad testTable = getDummyTable();
 
-  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[5]*getConversionFactor(testTable.YDomain), testTable.axisX.axis[7]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
+  uint16_t tempVE = get3DTableValue(&testTable, testTable.axisY.axis[2]*getConversionFactor(testTable.YDomain), testTable.axisX.axis[0]*getConversionFactor(testTable.XDomain)); //Perform lookup into fuel map for RPM vs MAP value
   TEST_ASSERT_EQUAL(56U, tempVE);
 }
 
@@ -122,21 +122,21 @@ extern table3d_dim_t linear_bin_search(const table3d_axis_t *array,
 static void test_linear_bin_search(void) {
   // Test the linear search function used in the table lookup
   // This is a simple test to ensure that the linear search returns the correct index
-  constexpr table3d_axis_t axis[] = { 50, 40, 30, 20, 10 };
+  constexpr table3d_axis_t axis[] = { 10, 20, 30, 40, 50 };
   // Below axis min value
-  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_bin_search(axis, _countof(axis), 5));
+  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 5));
   // Middle of bins & the bin edges
-  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_bin_search(axis, _countof(axis), 10));
-  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_bin_search(axis, _countof(axis), 15));
-  TEST_ASSERT_EQUAL(_countof(axis)-2U, linear_bin_search(axis, _countof(axis), 20));
+  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 10));
+  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 15));
+  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 20));
   TEST_ASSERT_EQUAL(2U, linear_bin_search(axis, _countof(axis), 25));
   TEST_ASSERT_EQUAL(2U, linear_bin_search(axis, _countof(axis), 30));
-  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 35));
-  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 40));
-  TEST_ASSERT_EQUAL(0U, linear_bin_search(axis, _countof(axis), 45));
-  TEST_ASSERT_EQUAL(0U, linear_bin_search(axis, _countof(axis), 50));
+  TEST_ASSERT_EQUAL(3U, linear_bin_search(axis, _countof(axis), 35));
+  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 40));
+  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 45));
+  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 50));
   // Above axis max value
-  TEST_ASSERT_EQUAL(0U, linear_bin_search(axis, _countof(axis), 55));
+  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 55));
 }
 
 extern uint16_t mulQU1X8(uint16_t a, uint16_t b);
@@ -157,37 +157,38 @@ static void test_mulQU1X8(void) {
 extern uint16_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier);
 
 static void assert_compute_bin_position(table3d_axis_t *axis, uint16_t multiplier, uint8_t percent) {
+  uint16_t value = intermediate(axis[0U]*multiplier, axis[1U]*multiplier, percent);
   char msg[64];
-  snprintf(msg, _countof(msg)-1, "Mul: %u, Pct: %u", multiplier, percent);  
-  TEST_ASSERT_INT_WITHIN_MESSAGE(1U, percentage(percent, QU1X8_ONE), compute_bin_position(intermediate(axis[1U]*multiplier, axis[0U]*multiplier, percent), 0U, axis, multiplier), msg);
+  snprintf(msg, _countof(msg)-1, "Mul: %u, Pct: %u, V: %u", multiplier, percent, value);  
+  TEST_ASSERT_INT_WITHIN_MESSAGE(2U, percentage(percent, QU1X8_ONE), compute_bin_position(value, 1U, axis, multiplier), msg);
 }
 
 static void assert_compute_bin_position_mult(table3d_axis_t *axis, uint16_t multiplier) {
   char msg[64];
   snprintf(msg, _countof(msg)-1, "Mul: %u", multiplier);
   // Below/at min
-  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[1U]*multiplier, 0U, axis, multiplier), msg);
-  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[1U]-5U)*multiplier, 0U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[0U]*multiplier, 1U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[0U]-5U)*multiplier, 1U, axis, multiplier), msg);
   // Above/at max
-  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[0U]*multiplier, 0U, axis, multiplier), msg);
-  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[0U]+5U)*multiplier, 0U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[1U]*multiplier, 1U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[1U]+5U)*multiplier, 1U, axis, multiplier), msg);
   // Intermediate
   assert_compute_bin_position(axis, multiplier, 50U);
   assert_compute_bin_position(axis, multiplier, 25U);
   assert_compute_bin_position(axis, multiplier, 75U);
   // We need bigger ranges for this level of fidelity
-  if (((axis[0U]*multiplier)-(axis[1U]*multiplier))>75U) {
+  if (((axis[1U]*multiplier)-(axis[0U]*multiplier))>75U) {
     assert_compute_bin_position(axis, multiplier, 33U);
     assert_compute_bin_position(axis, multiplier, 66U);
   }
 }
 
 static void test_compute_bin_position(void) {
-  table3d_axis_t otherAxis[] = { 248, 128 };
+  table3d_axis_t otherAxis[] = { 128, 248 };
   assert_compute_bin_position_mult(otherAxis, 1U);
-  table3d_axis_t loadAxis[] = { 100, 86 };
+  table3d_axis_t loadAxis[] = { 86, 100 };
   assert_compute_bin_position_mult(loadAxis, 2U);
-  table3d_axis_t rpmAxis[] = { 25, 20 };
+  table3d_axis_t rpmAxis[] = { 20, 25 };
   assert_compute_bin_position_mult(rpmAxis, 100U);
 }
 

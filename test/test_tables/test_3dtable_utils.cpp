@@ -60,11 +60,11 @@ static void test_rows_begin(void)
   }
 }
 
-static void test_x_begin(void)
+static void test_x_rbegin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = x_begin(&testTable, testTable.type_key);
+  auto axis = x_rbegin(&testTable, testTable.type_key);
   uint8_t index = testTable.axisX.length-1U;
   while (!axis.at_end())
   {
@@ -74,11 +74,11 @@ static void test_x_begin(void)
 }
 
 
-static void test_x_rbegin(void)
+static void test_x_begin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = x_rbegin(&testTable, testTable.type_key);
+  auto axis = x_begin(&testTable, testTable.type_key);
   uint8_t index = 0U;
   while (!axis.at_end())
   {
@@ -87,11 +87,11 @@ static void test_x_rbegin(void)
   }
 }
 
-static void test_y_begin(void)
+static void test_y_rbegin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = y_begin(&testTable, testTable.type_key);
+  auto axis = y_rbegin(&testTable, testTable.type_key);
   uint8_t index = testTable.axisY.length-1U;
   while (!axis.at_end())
   {
@@ -100,11 +100,11 @@ static void test_y_begin(void)
   }
 }
 
-static void test_y_rbegin(void)
+static void test_y_begin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = y_rbegin(&testTable, testTable.type_key);
+  auto axis = y_begin(&testTable, testTable.type_key);
   uint8_t index = 0U;
   while (!axis.at_end())
   {
@@ -117,39 +117,39 @@ extern row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &a
 
 static void test_toTopRight(void)
 {
-  auto subject = toTopRight({0,0},8);
+  auto subject = toTopRight({7,7},8);
   TEST_ASSERT_EQUAL(0, subject.row);
   TEST_ASSERT_EQUAL(7, subject.col);    
 
-  subject = toTopRight({0,4},8);
+  subject = toTopRight({7,3},8);
   TEST_ASSERT_EQUAL(32, subject.row);
   TEST_ASSERT_EQUAL(7, subject.col);    
-
-  subject = toTopRight({0,7},8);
-  TEST_ASSERT_EQUAL(56, subject.row);
-  TEST_ASSERT_EQUAL(7, subject.col);    
-
-  subject = toTopRight({4,0},8);
-  TEST_ASSERT_EQUAL(0, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
-
-  subject = toTopRight({4,4},8);
-  TEST_ASSERT_EQUAL(32, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
-
-  subject = toTopRight({4,7},8);
-  TEST_ASSERT_EQUAL(56, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
 
   subject = toTopRight({7,0},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({3,7},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({3,3},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({3,0},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({0,7},8);
   TEST_ASSERT_EQUAL(0, subject.row);
   TEST_ASSERT_EQUAL(0, subject.col);    
 
-  subject = toTopRight({7,4},8);
+  subject = toTopRight({0,3},8);
   TEST_ASSERT_EQUAL(32, subject.row);
   TEST_ASSERT_EQUAL(0, subject.col);    
 
-  subject = toTopRight({7,7},8);
+  subject = toTopRight({0,0},8);
   TEST_ASSERT_EQUAL(56, subject.row);
   TEST_ASSERT_EQUAL(0, subject.col);    
 }

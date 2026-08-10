@@ -28,24 +28,22 @@ TESTABLE_INLINE_STATIC table3d_dim_t linear_bin_search( const table3d_axis_t *pS
                                                     const table3d_dim_t length,
                                                     const table3d_axis_t value) 
 {
-  const table3d_dim_t minBinIndex = length - 2U; // The minimum bin index is the last bin before the final value
-
   // At or above maximum - clamp to final value
-  if (value>=pStart[0U])
+  if (value>=pStart[length-2U])
   {
-    return 0U;
+    return length - 1U;
   }
   // At or below minimum - clamp to lowest value
-  if (value<=pStart[length-1U])
+  if (value<=pStart[1U])
   {
-    return minBinIndex;
+    return 1U;
   }
 
-  // Run the linear search.
-  table3d_dim_t binUpperIndex = 0U;
-  while (binUpperIndex!=minBinIndex && !table3d_bin_t::withinBin(value, *(pStart+binUpperIndex+1U), *(pStart+binUpperIndex)))
+  // Run a linear search in reverse
+  table3d_dim_t binUpperIndex = length-2U;
+  while (binUpperIndex!=1U && !table3d_bin_t::withinBin(value, *(pStart+binUpperIndex-1U), *(pStart+binUpperIndex)))
   {
-    ++binUpperIndex;
+    --binUpperIndex;
   }
   return binUpperIndex;
   // Performance note: on AVR it's much quicker to increment and compare 8-bit indices (and
@@ -79,7 +77,7 @@ table3d_dim_t find_bin_max(
   table3d_dim_t lastBinMax)
 {
   // Check cached bin from last call to this function.
-  if (table3d_bin_t::withinBin(value, *(pAxis+lastBinMax+1U), *(pAxis+lastBinMax)))
+  if (table3d_bin_t::withinBin(value, *(pAxis+lastBinMax-1U), *(pAxis+lastBinMax)))
   {
     return lastBinMax;
   }
@@ -164,7 +162,7 @@ TESTABLE_INLINE_STATIC QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
  */
 TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
 {
-  uint16_t binMinValue = (uint16_t)pAxis[upperBinIndex+1U]*multiplier;
+  uint16_t binMinValue = (uint16_t)pAxis[upperBinIndex-1U]*multiplier;
   if (value<=binMinValue) { return 0U; }
   uint16_t binMaxValue = (uint16_t)pAxis[upperBinIndex]*multiplier;
   if (value>=binMaxValue) { return QU1X8_ONE; }
@@ -183,7 +181,7 @@ TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const
 /** @brief Get the top right corner of the *value* coordinates in a 3D table, based on x/y axis coords. */
 TESTABLE_INLINE_STATIC row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize)
 {
-  return { (table3d_dim_t)(axisCoords.y * axisSize), (table3d_dim_t)(axisSize - axisCoords.x - UINT8_C(1)) };
+  return { (table3d_dim_t)(axisSize*(axisSize-axisCoords.y-1U)), axisCoords.x };
 }
 
 /** @brief Get the bottom left corner of the *value* coordinates in a 3D table, based on top right corner. */
