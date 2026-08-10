@@ -36,7 +36,7 @@ static void assert_row(uint8_t rowNum, table_row_iterator row, const table3d8Rpm
   uint8_t colNum=0;
   while (!row.at_end())
   {
-    uint8_t indexRowStart = (axisSize - rowNum - UINT8_C(1))* axisSize;
+    uint8_t indexRowStart = rowNum * axisSize;
     uint16_t address = indexRowStart + colNum;    
     char szMsg[32];
     snprintf(szMsg, _countof(szMsg)-1, "[%" PRIu8 ",%" PRIu8 "][%" PRIu16 "]", rowNum, colNum, address);
@@ -117,39 +117,39 @@ extern row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &a
 
 static void test_toTopRight(void)
 {
-  auto subject = toTopRight({7,7},8);
+  auto subject = toTopRight({7,0},8);
   TEST_ASSERT_EQUAL(0, subject.row);
   TEST_ASSERT_EQUAL(7, subject.col);    
 
-  subject = toTopRight({7,3},8);
+  subject = toTopRight({7,4},8);
   TEST_ASSERT_EQUAL(32, subject.row);
   TEST_ASSERT_EQUAL(7, subject.col);    
 
-  subject = toTopRight({7,0},8);
+  subject = toTopRight({7,7},8);
   TEST_ASSERT_EQUAL(56, subject.row);
   TEST_ASSERT_EQUAL(7, subject.col);    
-
-  subject = toTopRight({3,7},8);
-  TEST_ASSERT_EQUAL(0, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
-
-  subject = toTopRight({3,3},8);
-  TEST_ASSERT_EQUAL(32, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
 
   subject = toTopRight({3,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({3,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({3,7},8);
   TEST_ASSERT_EQUAL(56, subject.row);
   TEST_ASSERT_EQUAL(3, subject.col);    
 
-  subject = toTopRight({0,7},8);
+  subject = toTopRight({0,0},8);
   TEST_ASSERT_EQUAL(0, subject.row);
   TEST_ASSERT_EQUAL(0, subject.col);    
 
-  subject = toTopRight({0,3},8);
+  subject = toTopRight({0,4},8);
   TEST_ASSERT_EQUAL(32, subject.row);
   TEST_ASSERT_EQUAL(0, subject.col);    
 
-  subject = toTopRight({0,0},8);
+  subject = toTopRight({0,7},8);
   TEST_ASSERT_EQUAL(56, subject.row);
   TEST_ASSERT_EQUAL(0, subject.col);    
 }
