@@ -1,3 +1,4 @@
+#include <tuple>
 #include "pages.h"
 #include "globals.h"
 #include "preprocessor.h"
@@ -34,17 +35,17 @@
 template <class table_t>
 static constexpr uint16_t get_table_value_end(void)
 {
-  return table_t::width()*table_t::height();
+  return std::tuple_size<decltype(table_t::values)>::value;
 }
 template <class table_t>
 static constexpr uint16_t get_table_axisx_end(void)
 {
-  return get_table_value_end<table_t>()+table_t::width();
+  return get_table_value_end<table_t>()+std::tuple_size<decltype(table_t::axisX)>::value;
 }
 template <class table_t>
 static constexpr uint16_t getTableSize(void)
 {
-  return get_table_axisx_end<table_t>()+table_t::height();
+  return get_table_axisx_end<table_t>()+std::tuple_size<decltype(table_t::axisY)>::value;
 }
 
 // ========================= Intra-table offset to byte class =========================

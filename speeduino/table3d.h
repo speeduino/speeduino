@@ -94,9 +94,6 @@ struct table3d_t
         std::array<table3d_axis_t, (size)*(size)> values; \
         std::array<table3d_axis_t, (size)> axisX; \
         std::array<table3d_axis_t, (size)> axisY; \
-        \
-        static constexpr uint8_t width(void) { return size; } \
-        static constexpr uint8_t height(void) { return size; } \
     };
 // LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
@@ -110,7 +107,7 @@ static inline table3d_value_t get3DTableValue(const TTable *pTable, const uint16
     constexpr uint16_t xFactor = getConversionFactor(TTable::XDomain);
     constexpr uint16_t yFactor = getConversionFactor(TTable::YDomain);
     return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache,
-                            pTable->width(),
+                            pTable->axisX.size(),
                             pTable->values.data(),
                             pTable->axisX.data(),
                             pTable->axisY.data(),

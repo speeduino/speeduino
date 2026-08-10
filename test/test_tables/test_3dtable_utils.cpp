@@ -30,9 +30,9 @@ static void test_invalidateCache(void)
 
 static void assert_row(uint8_t rowNum, table_row_iterator row, const table3d8RpmLoad &testTable)
 {
-  TEST_ASSERT_EQUAL(row.size(), testTable.width());
+  TEST_ASSERT_EQUAL(row.size(), testTable.axisX.size());
 
-  uint8_t axisSize = testTable.width();
+  uint8_t axisSize = testTable.axisX.size();
   uint8_t colNum=0;
   while (!row.at_end())
   {

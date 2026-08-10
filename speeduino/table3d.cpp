@@ -7,7 +7,7 @@
 struct row_begin_visitor {
     template <typename TTable>
     table_value_iterator visit(TTable &table) {
-        return table_value_iterator(table.values.data(), table.width());
+        return table_value_iterator(table.values.data(), table.axisX.size());
     }
 };
 
