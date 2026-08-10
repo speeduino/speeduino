@@ -154,6 +154,19 @@ static void test_toTopRight(void)
   TEST_ASSERT_EQUAL(0, subject.col);    
 }
 
+static void test_value_at(void)
+{
+  table3d8RpmLoad testTable = getDummyTable();
+
+  table3d_value_t lastValue = 0;
+  for (uint8_t i=0; i<testTable.axisX.length*testTable.axisY.length; ++i)
+  {
+    table3d_value_t newValue = testTable.values.value_at(i);
+    TEST_ASSERT_GREATER_THAN(lastValue, newValue);
+    lastValue = newValue;
+  }
+}
+
 void test3DTableUtils()
 {
   SET_UNITY_FILENAME() {
@@ -166,5 +179,6 @@ void test3DTableUtils()
     RUN_TEST(test_y_begin);
     RUN_TEST(test_y_rbegin);
     RUN_TEST_P(test_toTopRight);
+    RUN_TEST_P(test_value_at);
   }  
 }
