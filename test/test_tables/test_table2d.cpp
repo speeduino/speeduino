@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "table2d.h"
 #include "../test_utils.h"
-#include "src/stdlib/limits.h"
+#include <limits>
 
 #define U8_X4_DATA 251, 211, 199, 167,
 static uint8_t table2d_data_u8_4[4] = { U8_X4_DATA };
@@ -237,7 +237,7 @@ static void test_table2d_all_decrementing(axis_t (&pAxisBin)[sizeT], value_t (&p
 {
     table2D<axis_t, value_t, sizeT> testSubject(&pAxisBin, &pCurve);
 
-    value_t result_last = (numeric_limits<value_t>::max)();
+    value_t result_last = (std::numeric_limits<value_t>::max)();
     for (axis_t loop=testSubject.axis[0]; loop<=testSubject.axis[sizeT-1]; ++loop)
     {
         value_t result = table2D_getValue(&testSubject, loop);

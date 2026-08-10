@@ -614,7 +614,7 @@ void doUpdates(void)
       for (auto& table : trimTables)
       {
         // Access the type of the table via the type since it's static
-        using table_t = typename type_traits::remove_reference<decltype(table)>::type;
+        using table_t = typename std::remove_reference<decltype(table)>::type;
         multiplyTableLoad(&table, table_t::type_key, 4);
       }
 

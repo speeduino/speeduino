@@ -50,14 +50,14 @@ static void setup_valid_conditions(void)
 static void setup_valid_conditions_stage1(void)
 {
   setup_valid_conditions();
-  uint8_t maxRpm = min(configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage2_minRPM); // Just in case the ranges overlap
+  uint8_t maxRpm = (std::min)(configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage2_minRPM); // Just in case the ranges overlap
   currentStatus.setRpm(RPM_COARSE.toUser(intermediate(configPage10.n2o_stage1_minRPM, maxRpm, (uint8_t)50)));
 }
 
 static void setup_valid_conditions_stage2(void)
 {
   setup_valid_conditions();
-  uint8_t minRpm = max(configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage2_minRPM); // Just in case the ranges overlap
+  uint8_t minRpm = (std::max)(configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage2_minRPM); // Just in case the ranges overlap
   currentStatus.setRpm(RPM_COARSE.toUser(intermediate(minRpm, configPage10.n2o_stage2_maxRPM, (uint8_t)50)));
 }
 

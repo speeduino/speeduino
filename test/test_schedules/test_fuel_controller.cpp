@@ -4,7 +4,7 @@
 #include "scheduler_fuel_controller.h"
 #include "channel_test_helpers.h"
 #include "units.h"
-#include "src/stdlib/type_traits.h"
+#include <type_traits>
 
 extern bool isAnyFuelScheduleRunning(void);
 extern uint16_t lookupInjectorAngle(const statuses &current);
@@ -65,8 +65,8 @@ static void test_isAnyFuelScheduleRunning(void)
   RUNIF_INJCHANNEL8( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 }
 
-using raw_counter_t = type_traits::remove_reference<FuelSchedule::counter_t>::type;
-using raw_compare_t = type_traits::remove_reference<FuelSchedule::compare_t>::type;
+using raw_counter_t = std::remove_reference<FuelSchedule::counter_t>::type;
+using raw_compare_t = std::remove_reference<FuelSchedule::compare_t>::type;
 
 static void setup_setFuelChannelSchedule(FuelSchedule &schedule)
 {

@@ -215,7 +215,7 @@ static void test_changeIgnitionToFullSequential_isapplied(uint8_t numCylinders)
 
     changeIgnitionToFullSequential(page2, current);
     TEST_ASSERT_EQUAL(720, CRANK_ANGLE_MAX_IGN);
-    TEST_ASSERT_EQUAL(min((uint8_t)IGN_CHANNELS, page2.nCylinders), current.maxIgnOutputs);
+    TEST_ASSERT_EQUAL((std::min)((uint8_t)IGN_CHANNELS, page2.nCylinders), current.maxIgnOutputs);
 }
 
 static void test_changeIgnitionToFullSequential_notapplied(uint8_t numCylinders)

@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "maths.h"
 #include "board_definition.h"
+#include "src/utils/minmax.h"
 
 //Generates a random number from 1 to 100 (inclusive).
 //The initial seed used is always based on micros(), though this is unlikely to cause an issue as the first run is nearly random itself

@@ -4,15 +4,15 @@
 #include "scheduler.h"
 #include "crankMaths.h"
 #include "../test_utils.h"
-#include "src/stdlib/type_traits.h"
+#include <type_traits>
 #include "scheduler_fuel_controller.h"
 
 extern uint16_t _calculateOpenAngle(FuelSchedule &schedule, uint16_t pwDegrees, uint16_t injAngle);
 extern uint32_t calculateInjectorTimeout(const FuelSchedule &schedule, int16_t crankAngle, uint16_t openAngle);
 extern uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *pCache);
 
-using raw_counter_t = type_traits::remove_reference<FuelSchedule::counter_t>::type;
-using raw_compare_t = type_traits::remove_reference<FuelSchedule::compare_t>::type;
+using raw_counter_t = std::remove_reference<FuelSchedule::counter_t>::type;
+using raw_compare_t = std::remove_reference<FuelSchedule::compare_t>::type;
 
 struct inj_test_parameters
 {

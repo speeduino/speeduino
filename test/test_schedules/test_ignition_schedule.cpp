@@ -3,10 +3,10 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
-#include "src/stdlib/type_traits.h"
+#include <type_traits>
 
-using raw_counter_t = type_traits::remove_reference<IgnitionSchedule::counter_t>::type;
-using raw_compare_t = type_traits::remove_reference<IgnitionSchedule::compare_t>::type;
+using raw_counter_t = std::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = std::remove_reference<IgnitionSchedule::compare_t>::type;
 
 extern void setIgnitionScheduleDuration(IgnitionSchedule &schedule, uint32_t delay, uint16_t duration);
 
