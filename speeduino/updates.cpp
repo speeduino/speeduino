@@ -87,17 +87,9 @@ void doUpdates(void)
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(loadEEPROMVersion() == 2)
   {
-    auto table_it = ignitionTable.values.begin();
-    //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
-    for(uint8_t x=0; x<ignitionTable.values.num_rows;x++)
+    for (auto &element: ignitionTable.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row + 40;
-        ++row;
-      }      
-      ++table_it;
+        element = element + 40;
     }
     saveAllPages();
     saveEEPROMVersion(3);
@@ -537,16 +529,9 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
-    auto table_it = vvtTable.values.begin();
-    while (!table_it.at_end())
+    for (auto &element: vvtTable.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row << 1;
-        ++row;
-      }      
-      ++table_it;
+      element = element << 1;
     }
 
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
@@ -697,17 +682,10 @@ void doUpdates(void)
     
     //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
     //This makes the boostcontrol fully backwards compatible.  
-    auto table_it = boostTableLookupDuty.values.begin();
-    while (!table_it.at_end())
+    for (auto &element: boostTableLookupDuty.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = 50*2;
-        ++row;
-      }      
-      ++table_it;
-    }
+      element = 50*2;
+    }    
 
     //Set some sensible values at the RPM axis
     uint16_t i = 0;

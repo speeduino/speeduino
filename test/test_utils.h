@@ -69,20 +69,7 @@ for ( struct { unity_filename_guard_t a; uint8_t b; } guard = { .a = unity_filen
 
 template <typename table3d_t>
 static inline void fill_table_values(table3d_t &table, table3d_value_t value) {
-  // for (uint8_t i=0; i<table.values.row_size*table.values.num_rows; ++i) {
-  //   table.values.values[i] = value;
-  // }
-  table_value_iterator itZ = table.values.begin();
-  while (!itZ.at_end())
-  {
-    table_row_iterator itRow = *itZ;
-    while (!itRow.at_end())
-    {
-      *itRow = value;
-      ++itRow;
-    }
-    ++itZ;
-  }  
+  std::fill(table.values.begin(), table.values.end(), value); 
   invalidate_cache(&table.get_value_cache);
 }
 
@@ -114,24 +101,16 @@ static inline void populate_table_P(table3d_t &table,
 {
   populate_table_axis_P(table.axisX, pXValues);
   populate_table_axis_P(table.axisY, pYValues);
+
+  for (auto &element: table.values)
   {
-    table_value_iterator itZ = table.values.begin();
-    while (!itZ.at_end())
-    {
-      table_row_iterator itRow = *itZ;
-      while (!itRow.at_end())
-      {
 #if defined(PROGMEM)
-        *itRow = pgm_read_byte(pZValues);
+    element = pgm_read_byte(pZValues);
 #else
-        *itRow = *pZValues;
+    element = *pZValues;
 #endif
-        ++pZValues;
-        ++itRow;
-      }
-      ++itZ;
-    }
-  }
+    ++pZValues;
+  }   
 }
 
 // Populate a 2d table with constant values

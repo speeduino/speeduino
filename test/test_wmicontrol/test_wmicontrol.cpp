@@ -150,7 +150,7 @@ static void test_mode_ol(void)
     populate_table_axis(wmiTable.axisX, (table3d_axis_t)10);
     populate_table_axis(wmiTable.axisY, (table3d_axis_t)10);
 
-    setup_assert_wmipw(wmiTable.values.values[0]);
+    setup_assert_wmipw(wmiTable.values[0]);
 
     // Clamp <=200
     fill_table_values(wmiTable, 255);

@@ -144,30 +144,5 @@ private:
     table3d_dim_t rowWidth;
 };
 
-#define TABLE3D_TYPENAME_VALUE(size, xDom, yDom) CONCAT(TABLE3D_TYPENAME_BASE(size, xDom, yDom), _values)
-
-#define TABLE3D_GEN_VALUES(size, xDom, yDom) \
-    /** @brief The values for a 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct TABLE3D_TYPENAME_VALUE(size, xDom, yDom) { \
-        /** @brief The number of items in a row. I.e. it's length  */ \
-        static constexpr table3d_dim_t row_size = (size); \
-        /** @brief The number of rows */ \
-        static constexpr table3d_dim_t num_rows = (size); \
-        /** @brief The row values */ \
-        table3d_value_t values[(uint16_t)row_size*num_rows]; \
-        \
-        /** @brief Iterate over the values */ \
-        table_value_iterator begin(void) \
-        {  \
-            return table_value_iterator(values, row_size); \
-        } \
-        \
-        /** @brief Direct access to table value element from a linear index */ \
-        table3d_value_t& value_at(table3d_dim_t linear_index) \
-        { \
-            return values[linear_index]; \
-        } \
-    };
-TABLE3D_GENERATOR(TABLE3D_GEN_VALUES)
 
 /** @} */

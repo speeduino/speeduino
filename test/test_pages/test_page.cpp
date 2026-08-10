@@ -53,7 +53,7 @@ static void assert_3d_table(const entity_t &entity, const TTable &table, byte va
 {
     char szMsg[64];
     uint16_t offset=0; 
-    uint16_t valueSize = table.values.num_rows*table.values.row_size; 
+    uint16_t valueSize = table.values.size();
     for (; offset<valueSize; ++offset)
     {
         snprintf(szMsg, _countof(szMsg)-1, "Value %" PRIu16, offset);
@@ -138,10 +138,10 @@ static void test_setEntityValue_none(void)
 template <typename TTable>
 static void assert_set_3d_table(entity_t entity, const TTable &table, byte valuePre, byte xAxisPre, byte yAxisPre)
 {
-    const uint16_t valueSize = table.values.num_rows*table.values.row_size; 
+    const uint16_t valueSize = table.values.size(); 
     const char valuePost = valuePre+1;
     set_entity_values(entity, 0, valueSize, valuePost);
-    TEST_ASSERT_EACH_EQUAL_CHAR(valuePost, table.values.values, valueSize);
+    TEST_ASSERT_EACH_EQUAL_CHAR(valuePost, table.values.data(), valueSize);
 
     const char xAxisPost = xAxisPre+1;
     set_entity_values(entity, valueSize, valueSize+table.axisX.size(), xAxisPost);

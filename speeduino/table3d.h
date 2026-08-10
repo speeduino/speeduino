@@ -85,15 +85,13 @@ struct table3d_t
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
     struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) : public table3d_t \
     { \
-        typedef TABLE3D_TYPENAME_VALUE(size, xDom, yDom) value_t; \
         /* This will take up zero space unless we take the address somewhere */ \
-        static constexpr table3d_dim_t length = (size); \
         static constexpr TableType type_key = TableType::TO_TYPE_KEY(size, xDom, yDom); \
         static constexpr AxisDomain XDomain = AxisDomain::xDom; \
         static constexpr AxisDomain YDomain = AxisDomain::yDom; \
         \
         mutable table3DGetValueCache get_value_cache; \
-        value_t values; \
+        std::array<table3d_axis_t, (size)*(size)> values; \
         std::array<table3d_axis_t, (size)> axisX; \
         std::array<table3d_axis_t, (size)> axisY; \
         \
@@ -111,8 +109,8 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
       constexpr uint16_t xFactor = getConversionFactor(AxisDomain::xDom); \
       constexpr uint16_t yFactor = getConversionFactor(AxisDomain::yDom); \
       return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache, \
-                              TABLE3D_TYPENAME_BASE(size, xDom, yDom)::value_t::row_size, \
-                              pTable->values.values, \
+                              pTable->width(), \
+                              pTable->values.data(), \
                               pTable->axisX.data(), \
                               pTable->axisY.data(), \
                               { x, y }); \

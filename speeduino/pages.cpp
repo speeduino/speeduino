@@ -114,7 +114,7 @@ private:
 
   inline byte& get_value_value(void) const
   {
-    return _pTable->values.value_at((uint8_t)_table_offset);
+    return _pTable->values[_table_offset];
   }
 
   inline table3d_axis_t& get_xaxis_value(void) const

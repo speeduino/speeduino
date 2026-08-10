@@ -175,7 +175,7 @@ static void test_cl_flexcorrection(void)
   boostControl();
 
   TEST_ASSERT_EQUAL_INT16(77, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_EQUAL_INT16((boostTable.values.values[0]*2)+77, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_INT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
 }
 
 static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)

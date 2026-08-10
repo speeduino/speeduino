@@ -30,9 +30,9 @@ static void test_invalidateCache(void)
 
 static void assert_row(uint8_t rowNum, table_row_iterator row, const table3d8RpmLoad &testTable)
 {
-  TEST_ASSERT_EQUAL(row.size(), testTable.values.row_size);
+  TEST_ASSERT_EQUAL(row.size(), testTable.width());
 
-  uint8_t axisSize = testTable.values.row_size;
+  uint8_t axisSize = testTable.width();
   uint8_t colNum=0;
   while (!row.at_end())
   {
@@ -40,7 +40,7 @@ static void assert_row(uint8_t rowNum, table_row_iterator row, const table3d8Rpm
     uint16_t address = indexRowStart + colNum;    
     char szMsg[32];
     snprintf(szMsg, _countof(szMsg)-1, "[%" PRIu8 ",%" PRIu8 "][%" PRIu16 "]", rowNum, colNum, address);
-    TEST_ASSERT_EQUAL_MESSAGE(testTable.values.values[address], *row, szMsg);
+    TEST_ASSERT_EQUAL_MESSAGE(testTable.values[address], *row, szMsg);
     ++row;
     ++colNum;
   }  
@@ -152,7 +152,7 @@ static void test_value_at(void)
   table3d_value_t lastValue = 0;
   for (uint8_t i=0; i<testTable.axisX.size()*testTable.axisY.size(); ++i)
   {
-    table3d_value_t newValue = testTable.values.value_at(i);
+    table3d_value_t newValue = testTable.values[i];
     TEST_ASSERT_GREATER_THAN(lastValue, newValue);
     lastValue = newValue;
   }
