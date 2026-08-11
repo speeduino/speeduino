@@ -36,7 +36,7 @@ static void assert_row(uint8_t rowNum, table_row_iterator row, const table3d8Rpm
   uint8_t colNum=0;
   while (!row.at_end())
   {
-    uint8_t indexRowStart = (axisSize - rowNum - UINT8_C(1))* axisSize;
+    uint8_t indexRowStart = rowNum * axisSize;
     uint16_t address = indexRowStart + colNum;    
     char szMsg[32];
     snprintf(szMsg, _countof(szMsg)-1, "[%" PRIu8 ",%" PRIu8 "][%" PRIu16 "]", rowNum, colNum, address);
@@ -60,11 +60,11 @@ static void test_rows_begin(void)
   }
 }
 
-static void test_x_begin(void)
+static void test_x_rbegin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = x_begin(&testTable, testTable.type_key);
+  auto axis = x_rbegin(&testTable, testTable.type_key);
   uint8_t index = testTable.axisX.length-1U;
   while (!axis.at_end())
   {
@@ -74,11 +74,11 @@ static void test_x_begin(void)
 }
 
 
-static void test_x_rbegin(void)
+static void test_x_begin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = x_rbegin(&testTable, testTable.type_key);
+  auto axis = x_begin(&testTable, testTable.type_key);
   uint8_t index = 0U;
   while (!axis.at_end())
   {
@@ -87,11 +87,11 @@ static void test_x_rbegin(void)
   }
 }
 
-static void test_y_begin(void)
+static void test_y_rbegin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = y_begin(&testTable, testTable.type_key);
+  auto axis = y_rbegin(&testTable, testTable.type_key);
   uint8_t index = testTable.axisY.length-1U;
   while (!axis.at_end())
   {
@@ -100,16 +100,70 @@ static void test_y_begin(void)
   }
 }
 
-static void test_y_rbegin(void)
+static void test_y_begin(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
 
-  auto axis = y_rbegin(&testTable, testTable.type_key);
+  auto axis = y_begin(&testTable, testTable.type_key);
   uint8_t index = 0U;
   while (!axis.at_end())
   {
     TEST_ASSERT_EQUAL(testTable.axisY.axis[index], *axis);
     ++index; ++axis;
+  }
+}
+
+extern row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize);
+
+static void test_toTopRight(void)
+{
+  auto subject = toTopRight({7,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({7,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({7,7},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(7, subject.col);    
+
+  subject = toTopRight({3,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({3,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({3,7},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(3, subject.col);    
+
+  subject = toTopRight({0,0},8);
+  TEST_ASSERT_EQUAL(0, subject.row);
+  TEST_ASSERT_EQUAL(0, subject.col);    
+
+  subject = toTopRight({0,4},8);
+  TEST_ASSERT_EQUAL(32, subject.row);
+  TEST_ASSERT_EQUAL(0, subject.col);    
+
+  subject = toTopRight({0,7},8);
+  TEST_ASSERT_EQUAL(56, subject.row);
+  TEST_ASSERT_EQUAL(0, subject.col);    
+}
+
+static void test_value_at(void)
+{
+  table3d8RpmLoad testTable = getDummyTable();
+
+  table3d_value_t lastValue = 0;
+  for (uint8_t i=0; i<testTable.axisX.length*testTable.axisY.length; ++i)
+  {
+    table3d_value_t newValue = testTable.values.value_at(i);
+    TEST_ASSERT_GREATER_THAN(lastValue, newValue);
+    lastValue = newValue;
   }
 }
 
@@ -124,5 +178,7 @@ void test3DTableUtils()
     RUN_TEST(test_x_rbegin);
     RUN_TEST(test_y_begin);
     RUN_TEST(test_y_rbegin);
+    RUN_TEST_P(test_toTopRight);
+    RUN_TEST_P(test_value_at);
   }  
 }

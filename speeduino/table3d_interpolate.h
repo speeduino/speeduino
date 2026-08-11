@@ -150,3 +150,9 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
   return pValueCache->lastOutput;
 
 }
+
+/** @brief Row and column coordinates in a 2D table */
+struct row_col2d {
+  table3d_dim_t row;
+  table3d_dim_t col;
+};

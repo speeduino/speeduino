@@ -450,9 +450,9 @@ static void setTableAxisToEmpty(table_axis_iterator it)
 
 static void setTableToEmpty(const page_iterator_t &iter)
 {
-  setTableAxisToEmpty(y_begin(iter));
-  setTableAxisToEmpty(x_begin(iter));
-  setTableValuesToEmpty(rows_begin(iter));
+  setTableAxisToEmpty(y_begin(iter.entity.pTable, iter.entity.table_key));
+  setTableAxisToEmpty(x_begin(iter.entity.pTable, iter.entity.table_key));
+  setTableValuesToEmpty(rows_begin(iter.entity.pTable, iter.entity.table_key));
 }
 
 
@@ -529,38 +529,6 @@ page_iterator_t page_begin(uint8_t pageNum)
 page_iterator_t advance(const page_iterator_t &iter)
 {
     return map_page_offset_to_entity(iter.location.page, iter.entity.start+iter.entity.size);
-}
-
-/**
- * Convert page iterator to table value iterator.
- */
-table_value_iterator rows_begin(const page_iterator_t &iter)
-{
-  return rows_begin(iter.entity.pTable, iter.entity.table_key);
-}
-
-/**
- * Convert page iterator to table x axis iterator.
- */
-table_axis_iterator x_begin(const page_iterator_t &iter)
-{
-  return x_begin(iter.entity.pTable, iter.entity.table_key);
-}
-
-/**
- * Convert page iterator to table x axis iterator.
- */
-table_axis_iterator x_rbegin(const page_iterator_t &iter)
-{
-  return x_rbegin(iter.entity.pTable, iter.entity.table_key);
-}
-
-/**
- * Convert page iterator to table y axis iterator.
- */
-table_axis_iterator y_begin(const page_iterator_t &iter)
-{
-  return y_begin(iter.entity.pTable, iter.entity.table_key);
 }
 
 // LCOV_EXCL_STOP
