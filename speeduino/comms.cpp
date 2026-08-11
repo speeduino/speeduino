@@ -454,7 +454,7 @@ static uint8_t toTemperature(byte lo, byte hi)
   tempValue = tempValue / 10; //TS sends values multiplied by 10 so divide back to whole degrees. 
   tempValue = ((tempValue - 32) * 5) / 9; //Convert from F to C
   //Apply the temp offset and check that it results in all values being positive
-  return max( temperatureAddOffset(tempValue), (uint8_t)0U );
+  return (std::max)( temperatureAddOffset(tempValue), (uint8_t)0U );
 }
 
 /**

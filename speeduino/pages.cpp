@@ -70,7 +70,7 @@ public:
 
   offset_to_table(const table_t *pTable, uint16_t table_offset)
   : _pTable(const_cast<table_t *>(pTable)), // cppcheck-suppress misra-c2012-10.4
-    _table_offset(min(table_offset, getTableSize<table_t>()))
+    _table_offset((std::min)(table_offset, getTableSize<table_t>()))
   {    
   }
 

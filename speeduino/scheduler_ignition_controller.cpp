@@ -89,7 +89,7 @@ static void __attribute__((optimize("Os"))) setSequentialCallbacks(uint8_t numCh
 
 static void __attribute__((optimize("Os"))) setWastedSparkCallbacks(void)
 {
-  setSequentialCallbacks(min((uint8_t)5U, (uint8_t)IGN_CHANNELS));
+  setSequentialCallbacks((std::min)((uint8_t)5U, (uint8_t)IGN_CHANNELS));
 }
 
 static void __attribute__((optimize("Os"))) setSingleChannelCallbacks(void)
@@ -541,7 +541,7 @@ TESTABLE_STATIC void changeIgnitionToFullSequential(const config2 &page2, status
   {
     if (!isAnyIgnScheduleRunning() && isSwitchableCylinderCount(page2)) {
       CRANK_ANGLE_MAX_IGN = 720;
-      current.maxIgnOutputs = min((uint8_t)IGN_CHANNELS, page2.nCylinders);
+      current.maxIgnOutputs = (std::min)((uint8_t)IGN_CHANNELS, page2.nCylinders);
       setCallbacks(IGN_MODE_SEQUENTIAL, page2.nCylinders, 0U);
     }
   }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "../utils/minmax.h"
+#include "../utils/nominmax.h"
 #include <array>
 #include "../../board_definition.h"
 #include "../../config_pages.h"

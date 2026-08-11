@@ -44,7 +44,7 @@
  */
 
 #pragma once
-#include "src/utils/minmax.h"
+#include "src/utils/nominmax.h"
 #include "table3d_interpolate.h"
 #include "table3d_axes.h"
 #include <array>
