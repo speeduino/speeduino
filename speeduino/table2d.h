@@ -4,6 +4,8 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
+#include "src/utils/nominmax.h"
+#include <algorithm>
 #include <stdint.h>
 #include <Arduino.h>
 
@@ -67,14 +69,25 @@ struct Bin {
   T _lowerValue;
 };
 
-template <typename T, uint8_t sizeT>
-static inline Bin<T> findBin(const T *const array, const T value) 
+
+template <typename TIter, typename TValue>
+static inline uint8_t findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
 {
-  // Loop from the upper end of the axis back down to the 1st bin [0,1]
-  // Assume array is ordered [min...max]
-  const T *binLower = array+sizeT-2U;
-  while ( (*binLower >= value) && (binLower != array) ) { --binLower; }
-  return Bin<T>(binLower-array+1U, *(binLower+1U), *binLower);
+  auto it = std::lower_bound(pStart, pEnd, value);
+
+  if (it == pStart) {
+    ++it;
+  }
+  if (it != pEnd) {
+    return std::distance(pStart, it);
+  }
+  return std::distance(pStart, pEnd)-1U;
+}
+
+template <typename T, uint8_t sizeT>
+static inline Bin<T> findBin(const T *const pStart, const T value) 
+{
+  return Bin<T>(pStart, findBinUpperIndex(pStart, pStart+sizeT, value));
 }
 
 // Generic interpolation
