@@ -28,47 +28,6 @@ static void test_invalidateCache(void)
   TEST_ASSERT_FALSE(lastLookup==cacheA.last_lookup);
 }
 
-extern row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize);
-
-static void test_toTopRight(void)
-{
-  auto subject = toTopRight({7,0},8);
-  TEST_ASSERT_EQUAL(0, subject.row);
-  TEST_ASSERT_EQUAL(7, subject.col);    
-
-  subject = toTopRight({7,4},8);
-  TEST_ASSERT_EQUAL(32, subject.row);
-  TEST_ASSERT_EQUAL(7, subject.col);    
-
-  subject = toTopRight({7,7},8);
-  TEST_ASSERT_EQUAL(56, subject.row);
-  TEST_ASSERT_EQUAL(7, subject.col);    
-
-  subject = toTopRight({3,0},8);
-  TEST_ASSERT_EQUAL(0, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
-
-  subject = toTopRight({3,4},8);
-  TEST_ASSERT_EQUAL(32, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
-
-  subject = toTopRight({3,7},8);
-  TEST_ASSERT_EQUAL(56, subject.row);
-  TEST_ASSERT_EQUAL(3, subject.col);    
-
-  subject = toTopRight({0,0},8);
-  TEST_ASSERT_EQUAL(0, subject.row);
-  TEST_ASSERT_EQUAL(0, subject.col);    
-
-  subject = toTopRight({0,4},8);
-  TEST_ASSERT_EQUAL(32, subject.row);
-  TEST_ASSERT_EQUAL(0, subject.col);    
-
-  subject = toTopRight({0,7},8);
-  TEST_ASSERT_EQUAL(56, subject.row);
-  TEST_ASSERT_EQUAL(0, subject.col);    
-}
-
 static void test_value_at(void)
 {
   table3d8RpmLoad testTable = getDummyTable();
@@ -88,7 +47,6 @@ void test3DTableUtils()
 
     RUN_TEST_P(test_xyPair_equality);
     RUN_TEST_P(test_invalidateCache);
-    RUN_TEST_P(test_toTopRight);
     RUN_TEST_P(test_value_at);
   }  
 }

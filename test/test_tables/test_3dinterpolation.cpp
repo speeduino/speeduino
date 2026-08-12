@@ -131,24 +131,24 @@ static void test_mulQU1X8(void) {
   TEST_ASSERT_EQUAL(144U, mulQU1X8(QU1X8_QTR*3U, QU1X8_QTR*3U));
 }
 
-extern uint16_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier);
+extern uint16_t compute_bin_position(const uint16_t &value, const table3d_bin_t &bin, const uint16_t &multiplier);
 
 static void assert_compute_bin_position(table3d_axis_t *axis, uint16_t multiplier, uint8_t percent) {
   uint16_t value = intermediate(axis[0U]*multiplier, axis[1U]*multiplier, percent);
   char msg[64];
   snprintf(msg, _countof(msg)-1, "Mul: %u, Pct: %u, V: %u", multiplier, percent, value);  
-  TEST_ASSERT_INT_WITHIN_MESSAGE(2U, percentage(percent, QU1X8_ONE), compute_bin_position(value, 1U, axis, multiplier), msg);
+  TEST_ASSERT_INT_WITHIN_MESSAGE(2U, percentage(percent, QU1X8_ONE), compute_bin_position(value, table3d_bin_t(axis, 1U), multiplier), msg);
 }
 
 static void assert_compute_bin_position_mult(table3d_axis_t *axis, uint16_t multiplier) {
   char msg[64];
   snprintf(msg, _countof(msg)-1, "Mul: %u", multiplier);
   // Below/at min
-  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[0U]*multiplier, 1U, axis, multiplier), msg);
-  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[0U]-5U)*multiplier, 1U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[0U]*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[0U]-5U)*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
   // Above/at max
-  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[1U]*multiplier, 1U, axis, multiplier), msg);
-  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[1U]+5U)*multiplier, 1U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[1U]*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[1U]+5U)*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
   // Intermediate
   assert_compute_bin_position(axis, multiplier, 50U);
   assert_compute_bin_position(axis, multiplier, 25U);

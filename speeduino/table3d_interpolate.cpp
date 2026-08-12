@@ -80,11 +80,11 @@ TESTABLE_INLINE_STATIC QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
  * @param multiplier The multiplier for the axis values.
  * @return QU1X8_t The % position of the value within the bin.
  */
-TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier)
+TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const table3d_bin_t &bin, const uint16_t &multiplier)
 {
-  uint16_t binMinValue = (uint16_t)pAxis[upperBinIndex-1U]*multiplier;
+  uint16_t binMinValue = (uint16_t)bin.lowerValue()*multiplier;
   if (value<=binMinValue) { return 0U; }
-  uint16_t binMaxValue = (uint16_t)pAxis[upperBinIndex]*multiplier;
+  uint16_t binMaxValue = (uint16_t)bin.upperValue()*multiplier;
   if (value>=binMaxValue) { return QU1X8_ONE; }
   uint16_t binWidth = binMaxValue-binMinValue;
 
@@ -99,9 +99,9 @@ TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const
 }
 
 /** @brief Get the top right corner of the *value* coordinates in a 3D table, based on x/y axis coords. */
-TESTABLE_INLINE_STATIC row_col2d toTopRight(const xy_coord2d &axisCoords, const table3d_dim_t &axisSize)
+TESTABLE_INLINE_STATIC row_col2d toTopRight(const table3d_bin_t &xBin, const table3d_bin_t &yBin, const table3d_dim_t &axisSize)
 {
-  return { (table3d_dim_t)(axisSize*axisCoords.y), axisCoords.x };
+  return { (table3d_dim_t)(axisSize*yBin.upperIndex), xBin.upperIndex };
 }
 
 /** @brief Get the bottom left corner of the *value* coordinates in a 3D table, based on top right corner. */
@@ -161,13 +161,12 @@ TESTABLE_INLINE_STATIC table3d_value_t bilinear_interpolation( const table3d_val
  * @param yMultiplier The y-axis multiplier
  * @return table3d_value_t 
  */
-table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues, 
-                    const xy_coord2d &upperBinIndices,
+ table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues, 
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
-                    const table3d_axis_t *pXAxis,
+                    const table3d_bin_t &xBin,
                     const uint16_t xMultiplier,
-                    const table3d_axis_t *pYAxis,
+                    const table3d_bin_t &yBin,
                     const uint16_t yMultiplier)
 {
   /*
@@ -183,7 +182,7 @@ table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues,
   (1,0) = 1
   (1,1) = 4
   */  
-  row_col2d tr = toTopRight(upperBinIndices, axisSize);
+  row_col2d tr = toTopRight(xBin, yBin, axisSize);
   row_col2d bl = toBottomLeft(tr, axisSize);
 
   /*
@@ -213,8 +212,8 @@ table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues,
   {
     //Create some normalised position values
     //These are essentially percentages (between 0 and 1) of where the desired value falls between the nearest bins on each axis
-    const QU1X8_t p = compute_bin_position(lookUpValues.x, upperBinIndices.x, pXAxis, xMultiplier);
-    const QU1X8_t q = compute_bin_position(lookUpValues.y, upperBinIndices.y, pYAxis, yMultiplier);
+    const QU1X8_t p = compute_bin_position(lookUpValues.x, xBin, xMultiplier);
+    const QU1X8_t q = compute_bin_position(lookUpValues.y, yBin, yMultiplier);
     return bilinear_interpolation(A, B, C, D, p, q);
   }
 }
