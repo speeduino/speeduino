@@ -44,40 +44,40 @@ jobs:
             external_libs_repo: modm-io/avr-libstdcpp
             external_libs_include: modm-io/avr-libstdcpp/include
 
-          # - fqbn: teensy:avr:teensy35
-          #   artifact-name-suffix: teensy-avr-teensy35
-          #   platform: |
-          #     - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-          #       name: teensy:avr
-          #   compile-flags: -Wall
-          #   lib_deps: |
-          #     - name: SDfat
-          #     - name: InternalTemperature
-          #     - name: elapsedMillis
+          - fqbn: teensy:avr:teensy35
+            artifact-name-suffix: teensy-avr-teensy35
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: -Wall
+            lib_deps: |
+              - name: SDfat
+              - name: InternalTemperature
+              - name: elapsedMillis
               
-          # - fqbn: teensy:avr:teensy41
-          #   artifact-name-suffix: teensy-avr-teensy41
-          #   platform: |
-          #     - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-          #       name: teensy:avr
-          #   compile-flags: -Wall
-          #   lib_deps: |
-          #     - name: SDfat
-          #     - name: InternalTemperature
-          #     - name: elapsedMillis
+          - fqbn: teensy:avr:teensy41
+            artifact-name-suffix: teensy-avr-teensy41
+            platform: |
+              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
+                name: teensy:avr
+            compile-flags: -Wall
+            lib_deps: |
+              - name: SDfat
+              - name: InternalTemperature
+              - name: elapsedMillis
           
-          # - fqbn: STMicroelectronics:stm32:GenF4
-          #   artifact-name-suffix: stm32-avr-stm32f4
-          #   platform: |
-          #     - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
-          #       name: STMicroelectronics:stm32
-          #       version: 2.7.1
-          #   compile-flags: -DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
-          #   lib_deps: |
-          #     - name: "STM32duino RTC"
-          #       version: 1.2.0
-          #     - name: SdFat
-          #     - name: elapsedMillis
+          - fqbn: STMicroelectronics:stm32:GenF4
+            artifact-name-suffix: stm32-avr-stm32f4
+            platform: |
+              - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
+                name: STMicroelectronics:stm32
+                version: 2.7.1
+            compile-flags: -DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
+            lib_deps: |
+              - name: "STM32duino RTC"
+                version: 1.2.0
+              - name: SdFat
+              - name: elapsedMillis
 
     steps:
       - name: Checkout repository
