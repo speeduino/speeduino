@@ -420,36 +420,19 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
 
 // ========================= Set tune to empty support  ===================
 
-static void setTableRowToEmpty(table_row_iterator row)
-{
-  (void)memset(&*row, 0, row.size());
-}
-
-static void setTableValuesToEmpty(table_value_iterator it)
-{
-  while (!it.at_end())
-  {
-    setTableRowToEmpty(*it);
-    ++it;
-  }
-}
-
-static void setTableAxisToEmpty(table_axis_iterator it)
-{
-  while (!it.at_end())
-  {
-    *it = 0;
-    ++it;
-  }
-}
-
+struct setTableToEmpty_visitor {
+    template <typename TTable>
+    void visit(TTable &table) {
+      table.values.fill(0);
+      table.axisX.fill(0);
+      table.axisY.fill(0);
+    }
+};
 static void setTableToEmpty(const page_iterator_t &iter)
 {
-  setTableAxisToEmpty(y_begin(iter.entity.pTable, iter.entity.table_key));
-  setTableAxisToEmpty(x_begin(iter.entity.pTable, iter.entity.table_key));
-  setTableValuesToEmpty(rows_begin(iter.entity.pTable, iter.entity.table_key));
+  setTableToEmpty_visitor visitor;
+  visitTable3d<setTableToEmpty_visitor, void>(*iter.entity.pTable, iter.entity.table_key, visitor);  
 }
-
 
 static void setEntityToEmpty(page_iterator_t iter) {
   switch (iter.entity.type)

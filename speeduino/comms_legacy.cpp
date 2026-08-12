@@ -26,6 +26,7 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "sensors.h"
 #include "resetControl.h"
+#include "table3d_visitor.h"
 
 static byte currentPage = 1;//Not the same as the speeduino config page numbers
 bool firstCommsRequest = true; /**< The number of times the A command has been issued. This is used to track whether a reset has recently been performed on the controller */
@@ -892,30 +893,18 @@ namespace {
     primarySerial.write((byte *)iter.entity.pRaw, iter.entity.size);
   }
 
-  inline void send_table_values(table_value_iterator it)
-  {
-    while (!it.at_end())
-    {
-      auto row = *it;
-      primarySerial.write(&*row, row.size());
-      ++it;
-    }
-  }
-
-  inline void send_table_axis(table_axis_iterator it)
-  {
-    while (!it.at_end())
-    {
-      primarySerial.write(*it);
-      ++it;
-    }
-  }
-
+  struct send_table_entity_visitor {
+      template <typename TTable>
+      void visit(TTable &table) {
+        primarySerial.write(table.values.data(), table.values.size());
+        primarySerial.write(table.axisX.data(), table.axisX.size());
+        primarySerial.write(table.axisY.data(), table.axisY.size());
+      }
+  };
   void send_table_entity(const page_iterator_t &iter)
   {
-    send_table_values(rows_begin(iter.entity.pTable, iter.entity.table_key));
-    send_table_axis(x_begin(iter.entity.pTable, iter.entity.table_key));
-    send_table_axis(y_begin(iter.entity.pTable, iter.entity.table_key));
+    send_table_entity_visitor visitor;
+    visitTable3d<send_table_entity_visitor, void>(*iter.entity.pTable, iter.entity.table_key, visitor);     
   }
 
   void send_entity(const page_iterator_t &iter)
@@ -962,15 +951,8 @@ void sendPage(void)
 namespace {
 
   /// Prints each element in the memory byte range (*first, *last).
-  void serial_println_range(const byte *first, const byte *last)
-  {
-    while (first!=last)
-    {
-      primarySerial.println(*first);
-      ++first;
-    }
-  }
-  void serial_println_range(const uint16_t *first, const uint16_t *last)
+  template <typename TIter>
+  void serial_println_range(TIter first, TIter last)
   {
     while (first!=last)
     {
@@ -979,7 +961,8 @@ namespace {
     }
   }
 
-  void serial_print_space_delimited(const byte *first, const byte *last)
+  template <typename TIter>
+  void serial_print_space_delimited(TIter first, TIter last)
   {
     while (first!=last)
     {
@@ -1010,45 +993,39 @@ namespace {
       primarySerial.print(F(" "));
   }
 
-  void print_row(const table_axis_iterator &y_it, table_row_iterator row)
+  template <typename TIter>
+  void print_row(TIter pStart, TIter pEnd)
   {
-    serial_print_prepadded_value(*y_it);
-
-    while (!row.at_end())
+    while (pStart!=pEnd)
     {
-      serial_print_prepadded_value(*row);
-      ++row;
+      serial_print_prepadded_value(*pStart);
+      ++pStart;
     }
     primarySerial.println();
   }
 
-  void print_x_axis(table3d_t *pTable, TableType key)
+  template <size_t N>
+  void print_x_axis(const std::array<table3d_axis_t, N> &axis)
   {
     primarySerial.print(F("    "));
-
-    auto x_it = x_begin(pTable, key);
-
-    while(!x_it.at_end())
+    for (auto element: axis)
     {
-      serial_print_prepadded_value(*x_it);
-      ++x_it;
+      serial_print_prepadded_value(element);
     }
   }
 
-  void serial_print_3dtable(table3d_t *pTable, TableType key)
+  template <typename TTable>
+  void serial_print_3dtable(const TTable &table)
   {
-    auto y_it = y_begin(pTable, key);
-    auto row_it = rows_begin(pTable, key);
-
-    while (!row_it.at_end())
+    print_x_axis(table.axisX);
+    primarySerial.println();   
+    auto pRow = table.values.cbegin();
+    for (auto yAxis: table.axisY)
     {
-      print_row(y_it, *row_it);
-      ++y_it;
-      ++row_it;
+      serial_print_prepadded_value(yAxis);
+      print_row(pRow, pRow+table.axisX.size());
+      pRow = pRow+table.axisX.size();
     }
-
-    print_x_axis(pTable, key);
-    primarySerial.println();
   }
 }
 
@@ -1063,7 +1040,7 @@ void sendPageASCII(void)
   {
     case veMapPage:
       primarySerial.println(F("\nVE Map"));
-      serial_print_3dtable(&fuelTable, fuelTable.type_key);
+      serial_print_3dtable(fuelTable);
       break;
 
     case veSetPage:
@@ -1084,7 +1061,7 @@ void sendPageASCII(void)
 
     case ignMapPage:
       primarySerial.println(F("\nIgnition Map"));
-      serial_print_3dtable(&ignitionTable, ignitionTable.type_key);
+      serial_print_3dtable(ignitionTable);
       break;
 
     case ignSetPage:
@@ -1102,7 +1079,7 @@ void sendPageASCII(void)
 
     case afrMapPage:
       primarySerial.println(F("\nAFR Map"));
-      serial_print_3dtable(&afrTable, afrTable.type_key);
+      serial_print_3dtable(afrTable);
       break;
 
     case afrSetPage:
@@ -1126,14 +1103,14 @@ void sendPageASCII(void)
 
     case boostvvtPage:
       primarySerial.println(F("\nBoost Map"));
-      serial_print_3dtable(&boostTable, boostTable.type_key);
+      serial_print_3dtable(boostTable);
       primarySerial.println(F("\nVVT Map"));
-      serial_print_3dtable(&vvtTable, vvtTable.type_key);
+      serial_print_3dtable(vvtTable);
       break;
 
     case seqFuelPage:
       primarySerial.println(F("\nTrim 1 Table"));
-      serial_print_3dtable(&trimTables[0], trimTable3d::type_key);
+      serial_print_3dtable(trimTables[0]);
       break;
 
     case canbusPage:
@@ -1143,17 +1120,17 @@ void sendPageASCII(void)
 
     case fuelMap2Page:
       primarySerial.println(F("\n2nd Fuel Map"));
-      serial_print_3dtable(&fuelTable2, fuelTable2.type_key);
+      serial_print_3dtable(fuelTable2);
       break;
    
     case ignMap2Page:
       primarySerial.println(F("\n2nd Ignition Map"));
-      serial_print_3dtable(&ignitionTable2, ignitionTable2.type_key);
+      serial_print_3dtable(ignitionTable2);
       break;
 
     case boostvvtPage2:
       primarySerial.println(F("\nBoost lookup table"));
-      serial_print_3dtable(&boostTableLookupDuty, boostTableLookupDuty.type_key);
+      serial_print_3dtable(boostTableLookupDuty);
       break;
 
     case warmupPage:

@@ -47,7 +47,6 @@
 #include "src/utils/minmax.h"
 #include "table3d_interpolate.h"
 #include "table3d_axes.h"
-#include "table3d_values.h"
 #include <array>
 
 #define TO_TYPE_KEY(size, xDom, yDom) table3d ## size ## xDom ## yDom ## _key
@@ -113,15 +112,5 @@ static inline table3d_value_t get3DTableValue(const TTable *pTable, const uint16
                             pTable->axisY.data(),
                             { x, y });
 } 
-
-table_value_iterator rows_begin(table3d_t *pTable, TableType key);
-
-table_axis_iterator x_begin(table3d_t *pTable, TableType key);
-
-table_axis_iterator x_rbegin(table3d_t *pTable, TableType key);
-
-table_axis_iterator y_begin(table3d_t *pTable, TableType key);
-
-table_axis_iterator y_rbegin(table3d_t *pTable, TableType key);
 
 /** @} */

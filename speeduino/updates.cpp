@@ -21,6 +21,24 @@
 // Minimize flash usage of the non-performance critical code in this file.
 #pragma GCC optimize ("Os") 
 
+template <typename TAxis>
+static void multiplyAxis(TAxis &axis, uint8_t multiplier)
+{
+  for (auto &element: axis)
+  {
+    element = element * multiplier; 
+  }
+}
+
+template <typename TAxis>
+static void divideAxis(TAxis &axis, uint8_t divisor)
+{
+  for (auto &element: axis)
+  {
+    element = element / divisor; 
+  }
+}
+
 TESTABLE_STATIC void updateTableU16toU8(table2D_u16_u8_32 &targetTable, uint16_t u16EEpromBinAddress)
 {
     uint16_t oldValues[32];
@@ -593,14 +611,12 @@ void doUpdates(void)
     // Each table Y axis need to be updated as well if TPS is the source
     if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
     {
-      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
-      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
+      multiplyAxis(fuelTable.axisY,  4);
+      multiplyAxis(afrTable.axisY,   4);
 
       for (auto& table : trimTables)
       {
-        // Access the type of the table via the type since it's static
-        using table_t = typename std::remove_reference<decltype(table)>::type;
-        multiplyTableLoad(&table, table_t::type_key, 4);
+        multiplyAxis(table.axisY, 4);
       }
 
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
@@ -611,22 +627,22 @@ void doUpdates(void)
         }
       }
     }
-    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
-    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
-    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
-    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyAxis(ignitionTable.axisY, 4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyAxis(fuelTable2.axisY, 4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyAxis(ignitionTable2.axisY, 4); }
+    multiplyAxis(boostTable.axisY, 2); // Boost table used 1.0 previously.axisY, so it only needs a 2x multiplier
 
     if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
-      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
-      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      multiplyAxis(vvtTable.axisY, 2);
+      multiplyAxis(vvt2Table.axisY, 2);
     }
     else
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
-      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
-      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      divideAxis(vvtTable.axisY, 2);
+      divideAxis(vvt2Table.axisY, 2);
     }
 
 
@@ -859,26 +875,6 @@ void doUpdates(void)
 
   //Check to see if someone has downgraded versions:
   if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
-}
-
-void multiplyTableLoad(table3d_t *pTable, TableType key, uint8_t multiplier)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it * multiplier; 
-    ++y_it;
-  }
-}
-
-void divideTableLoad(table3d_t *pTable, TableType key, uint8_t divisor)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
-    ++y_it;
-  }
 }
 
 void multiplyTableValue(uint8_t pageNum, uint8_t multiplier)
