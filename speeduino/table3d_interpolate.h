@@ -82,11 +82,16 @@ static inline table3d_dim_t find_bin_max(
   const TAxis &axis,
   table3d_dim_t lastBinMax)
 {
+  // Ignore the cache during tests
+#if !defined(UNIT_TEST)
   // Check cached bin from last call to this function.
   if (table3d_bin_t::withinBin(value, axis[lastBinMax-1U], axis[lastBinMax]))
   {
     return lastBinMax;
   }
+#else
+  UNUSED(lastBinMax);
+#endif
 
   // Note: we could check the bins above and below the lastBinMax, but this showed
   // no performance improvement in testing, so we just do a linear search.
