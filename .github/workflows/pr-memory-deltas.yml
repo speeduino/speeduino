@@ -19,8 +19,7 @@ env:
       version: "1.41"
     - name: avr-fast-div
       version: "1.4.0"
-  COMMON_BUILD_FLAGS: 
-  AVR_STDLIB_FOLDER: ${{ github.workspace }}/external_libs/modm-io/avr-libstdcpp
+  COMMON_BUILD_FLAGS: ""
 
 jobs:
   compile:
@@ -40,9 +39,14 @@ jobs:
             compile-flags: -DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
             lib_deps: |
               - name: Time
-            external_libs_dir: modm-io/avr-libstdcpp
-            external_libs_repo: modm-io/avr-libstdcpp
-            external_libs_include: modm-io/avr-libstdcpp/include
+            external_libs: |
+              [
+                { 
+                  "repo": "https://github.com/modm-io/avr-libstdcpp.git", 
+                  "dir": "modm-io/avr-libstdcpp", 
+                  "include": "modm-io/avr-libstdcpp/include"
+                }
+              ]
 
           - fqbn: teensy:avr:teensy35
             artifact-name-suffix: teensy-avr-teensy35
@@ -87,11 +91,42 @@ jobs:
         if: ${{ env.ACT }}
         run: echo "/root/.local/bin" >> $GITHUB_PATH
 
-      - name: Clone Custom External Library
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ matrix.board.external_libs_repo }}
-          path: external_libs/${{ matrix.board.external_libs_dir }}
+      # Step 1: Use a dynamic bash loop and jq to clone every repo side-by-side
+      - name: Clone Custom External Libraries
+        if: ${{ matrix.board.external_libs != '[]' }}
+        run: |
+          # Strip formatting anomalies out of the matrix JSON string entirely
+          echo '${{ matrix.board.external_libs }}' | jq -c '.' > libs.json
+          
+          # Read elements line-by-line using structured jq outputs to avoid string pollution
+          jq -c '.[]' libs.json | while read -r item; do
+            repo=$(echo "$item" | jq -r '.repo')
+            dir=$(echo "$item" | jq -r '.dir')
+            
+            echo "Cloning repository: $repo target folder: external_libs/$dir"
+            
+            # Formulate full target path layout safely
+            mkdir -p "external_libs/$dir"
+            
+            # Clean clone directly into target workspace path block
+            git clone "${repo}" "external_libs/${dir}"
+          done
+
+      # Step 2: Build a string containing all -I include compiler arguments for external libraries
+      - name: Generate Compiler Flags
+        id: flags
+        run: |
+          echo '${{ matrix.board.external_libs }}' > libs.json
+          INCLUDE_FLAGS=""
+          
+          # Loop through entries and append the formatted -I absolute paths
+          while read -r include_path; do
+            if [ ! -z "$include_path" ]; then
+              INCLUDE_FLAGS="$INCLUDE_FLAGS -I${{ github.workspace }}/external_libs/$include_path"
+            fi
+          done < <(jq -r '.[] | .include' libs.json)
+          
+          echo "include_args=$INCLUDE_FLAGS" >> $GITHUB_OUTPUT
 
       - name: Compile platforms
         uses: arduino/compile-sketches@v1.1.2
@@ -108,7 +143,7 @@ jobs:
           cli-compile-flags: | 
             - --clean
             - --build-property 
-            - build.extra_flags=${{ env.COMMON_BUILD_FLAGS }} ${{ matrix.board.compile-flags }} -I${{ github.workspace }}/external_libs/${{ matrix.board.external_libs_include }}
+            - build.extra_flags=${{ env.COMMON_BUILD_FLAGS }} ${{ matrix.board.compile-flags }} ${{ steps.flags.outputs.include_args }}
           libraries: |
             ${{ matrix.board.lib_deps }}
             ${{ env.COMMON_LIB_DEPS }}
