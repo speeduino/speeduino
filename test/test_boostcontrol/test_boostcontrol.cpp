@@ -48,12 +48,12 @@ static void setup_boost_tune(bool fullPid, uint8_t vssMode, uint8_t boostType, u
   configPage9.boostByGear6 = 6;
   configPage15.boostControlEnable = EN_BOOST_CONTROL_FIXED;
   fill_table_values(boostTable, 33);
-  populate_table_axis(boostTable.axisX.begin(), 10);
-  populate_table_axis(boostTable.axisY.begin(), 10);
+  populate_table_axis(boostTable.axisX, (table3d_axis_t)10);
+  populate_table_axis(boostTable.axisY, (table3d_axis_t)10);
 
   fill_table_values(boostTableLookupDuty, 11);
-  populate_table_axis(boostTableLookupDuty.axisX.begin(), 10);
-  populate_table_axis(boostTableLookupDuty.axisY.begin(), 10);
+  populate_table_axis(boostTableLookupDuty.axisX, (table3d_axis_t)10);
+  populate_table_axis(boostTableLookupDuty.axisY, (table3d_axis_t)10);
 }
 
 static uint8_t testBoostType;
@@ -175,7 +175,7 @@ static void test_cl_flexcorrection(void)
   boostControl();
 
   TEST_ASSERT_EQUAL_INT16(77, currentStatus.flexBoostCorrection);
-  TEST_ASSERT_EQUAL_INT16((boostTable.values.values[0]*2)+77, currentStatus.boostTarget);
+  TEST_ASSERT_EQUAL_INT16((boostTable.values[0]*2)+77, currentStatus.boostTarget);
 }
 
 static void test_cl_boost_constant_gear(uint8_t gearNum, uint8_t &boostGear)

@@ -136,8 +136,8 @@ static void test_calculateSecondaryPw_table(uint8_t split, uint16_t expectedPrim
 
   TEST_DATA_P table3d_axis_t xAxis[] = { 900U/100U, 1600U/100U, 2500U/100U, 3500U/100U, 4700U/100U, 5900U/100U, 6750U/100U, 7000U/100U};
   TEST_DATA_P table3d_axis_t yAxis[] = { 16U/2U,  31U/2U,   43U/2U,   52U/2U,   63U/2U,   75U/2U,   81U/2U,   103U/2U };
-  populate_table_axis_P(stagingTable.axisX.begin(), xAxis);
-  populate_table_axis_P(stagingTable.axisY.begin(), yAxis);
+  populate_table_axis_P(stagingTable.axisX, xAxis);
+  populate_table_axis_P(stagingTable.axisY, yAxis);
   fill_table_values(stagingTable, split);
 
   auto result = calculateSecondaryPw(1500, 1501, 0, context.page2, context.page10, context.current);

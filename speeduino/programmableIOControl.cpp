@@ -7,6 +7,7 @@
 #include "units.h"
 #include "unit_testing.h"
 #include "globals.h"
+#include "preprocessor.h"
 
 TESTABLE_STATIC uint8_t ioDelay[_countof(config13::outputPin)];
 TESTABLE_STATIC uint8_t ioOutDelay[_countof(config13::outputPin)];

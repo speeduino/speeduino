@@ -1,3 +1,4 @@
+#include <tuple>
 #include "pages.h"
 #include "globals.h"
 #include "preprocessor.h"
@@ -34,17 +35,17 @@
 template <class table_t>
 static constexpr uint16_t get_table_value_end(void)
 {
-  return table_t::xaxis_t::length*table_t::yaxis_t::length;
+  return std::tuple_size<decltype(table_t::values)>::value;
 }
 template <class table_t>
 static constexpr uint16_t get_table_axisx_end(void)
 {
-  return get_table_value_end<table_t>()+table_t::xaxis_t::length;
+  return get_table_value_end<table_t>()+std::tuple_size<decltype(table_t::axisX)>::value;
 }
 template <class table_t>
 static constexpr uint16_t getTableSize(void)
 {
-  return get_table_axisx_end<table_t>()+table_t::yaxis_t::length;
+  return get_table_axisx_end<table_t>()+std::tuple_size<decltype(table_t::axisY)>::value;
 }
 
 // ========================= Intra-table offset to byte class =========================
@@ -114,23 +115,17 @@ private:
 
   inline byte& get_value_value(void) const
   {
-    return _pTable->values.value_at((uint8_t)_table_offset);
+    return _pTable->values[_table_offset];
   }
 
   inline table3d_axis_t& get_xaxis_value(void) const
   {
-    // LCOV_EXCL_BR_START
-    // Can't figure out the missing branches, so exclude for the moment
-    return *(_pTable->axisX.begin().advance(_table_offset - get_table_value_end<table_t>()));
-    // LCOV_EXCL_BR_STOP
+    return _pTable->axisX[_table_offset - get_table_value_end<table_t>()];
   }
 
   inline table3d_axis_t& get_yaxis_value(void) const
   {
-    // LCOV_EXCL_BR_START
-    // Can't figure out the missing branches, so exclude for the moment
-    return *(_pTable->axisY.begin().advance(_table_offset - get_table_axisx_end<table_t>()));
-    // LCOV_EXCL_BR_STOP
+    return _pTable->axisY[_table_offset - get_table_axisx_end<table_t>()];
 }
 
   enum table_location {
@@ -425,36 +420,19 @@ static page_iterator_t map_page_offset_to_entity(uint8_t pageNumber, uint16_t of
 
 // ========================= Set tune to empty support  ===================
 
-static void setTableRowToEmpty(table_row_iterator row)
-{
-  (void)memset(&*row, 0, row.size());
-}
-
-static void setTableValuesToEmpty(table_value_iterator it)
-{
-  while (!it.at_end())
-  {
-    setTableRowToEmpty(*it);
-    ++it;
-  }
-}
-
-static void setTableAxisToEmpty(table_axis_iterator it)
-{
-  while (!it.at_end())
-  {
-    *it = 0;
-    ++it;
-  }
-}
-
+struct setTableToEmpty_visitor {
+    template <typename TTable>
+    void visit(TTable &table) {
+      table.values.fill(0);
+      table.axisX.fill(0);
+      table.axisY.fill(0);
+    }
+};
 static void setTableToEmpty(const page_iterator_t &iter)
 {
-  setTableAxisToEmpty(y_begin(iter.entity.pTable, iter.entity.table_key));
-  setTableAxisToEmpty(x_begin(iter.entity.pTable, iter.entity.table_key));
-  setTableValuesToEmpty(rows_begin(iter.entity.pTable, iter.entity.table_key));
+  setTableToEmpty_visitor visitor;
+  visitTable3d<setTableToEmpty_visitor, void>(*iter.entity.pTable, iter.entity.table_key, visitor);  
 }
-
 
 static void setEntityToEmpty(page_iterator_t iter) {
   switch (iter.entity.type)

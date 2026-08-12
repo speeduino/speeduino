@@ -21,6 +21,24 @@
 // Minimize flash usage of the non-performance critical code in this file.
 #pragma GCC optimize ("Os") 
 
+template <typename TAxis>
+static void multiplyAxis(TAxis &axis, uint8_t multiplier)
+{
+  for (auto &element: axis)
+  {
+    element = element * multiplier; 
+  }
+}
+
+template <typename TAxis>
+static void divideAxis(TAxis &axis, uint8_t divisor)
+{
+  for (auto &element: axis)
+  {
+    element = element / divisor; 
+  }
+}
+
 TESTABLE_STATIC void updateTableU16toU8(table2D_u16_u8_32 &targetTable, uint16_t u16EEpromBinAddress)
 {
     uint16_t oldValues[32];
@@ -87,17 +105,9 @@ void doUpdates(void)
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(loadEEPROMVersion() == 2)
   {
-    auto table_it = ignitionTable.values.begin();
-    //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
-    for(uint8_t x=0; x<ignitionTable.values.num_rows;x++)
+    for (auto &element: ignitionTable.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row + 40;
-        ++row;
-      }      
-      ++table_it;
+        element = element + 40;
     }
     saveAllPages();
     saveEEPROMVersion(3);
@@ -537,16 +547,9 @@ void doUpdates(void)
   if(loadEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
-    auto table_it = vvtTable.values.begin();
-    while (!table_it.at_end())
+    for (auto &element: vvtTable.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row << 1;
-        ++row;
-      }      
-      ++table_it;
+      element = element << 1;
     }
 
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
@@ -608,14 +611,12 @@ void doUpdates(void)
     // Each table Y axis need to be updated as well if TPS is the source
     if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
     {
-      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
-      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
+      multiplyAxis(fuelTable.axisY,  4);
+      multiplyAxis(afrTable.axisY,   4);
 
       for (auto& table : trimTables)
       {
-        // Access the type of the table via the type since it's static
-        using table_t = typename std::remove_reference<decltype(table)>::type;
-        multiplyTableLoad(&table, table_t::type_key, 4);
+        multiplyAxis(table.axisY, 4);
       }
 
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
@@ -626,22 +627,22 @@ void doUpdates(void)
         }
       }
     }
-    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
-    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
-    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
-    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyAxis(ignitionTable.axisY, 4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyAxis(fuelTable2.axisY, 4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyAxis(ignitionTable2.axisY, 4); }
+    multiplyAxis(boostTable.axisY, 2); // Boost table used 1.0 previously.axisY, so it only needs a 2x multiplier
 
     if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
-      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
-      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      multiplyAxis(vvtTable.axisY, 2);
+      multiplyAxis(vvt2Table.axisY, 2);
     }
     else
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
-      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
-      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      divideAxis(vvtTable.axisY, 2);
+      divideAxis(vvt2Table.axisY, 2);
     }
 
 
@@ -697,36 +698,25 @@ void doUpdates(void)
     
     //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
     //This makes the boostcontrol fully backwards compatible.  
-    auto table_it = boostTableLookupDuty.values.begin();
-    while (!table_it.at_end())
+    for (auto &element: boostTableLookupDuty.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = 50*2;
-        ++row;
-      }      
-      ++table_it;
-    }
+      element = 50*2;
+    }    
 
     //Set some sensible values at the RPM axis
-    auto table_X = boostTableLookupDuty.axisX.begin();
     uint16_t i = 0;
-    while (!table_X.at_end())
+    for(auto &x: boostTableLookupDuty.axisX)
     {
       ++i;
-      *table_X = 1000+(500*i);
-      ++table_X;
+      x = 1000+(500*i);
     }
 
     //Set some sensible values at the boosttarget axis
-    auto table_Y = boostTableLookupDuty.axisY.begin();
     i = 0;
-    while (!table_Y.at_end())
+    for(auto &y: boostTableLookupDuty.axisY)
     {
       ++i;
-      *table_Y = (120 + 10*i);
-      ++table_Y;
+      y = (120 + 10*i);
     }
 
     //AFR Protection added, add default values
@@ -885,26 +875,6 @@ void doUpdates(void)
 
   //Check to see if someone has downgraded versions:
   if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
-}
-
-void multiplyTableLoad(table3d_t *pTable, TableType key, uint8_t multiplier)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it * multiplier; 
-    ++y_it;
-  }
-}
-
-void divideTableLoad(table3d_t *pTable, TableType key, uint8_t divisor)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
-    ++y_it;
-  }
 }
 
 void multiplyTableValue(uint8_t pageNum, uint8_t multiplier)

@@ -52,8 +52,8 @@ static void __attribute__((noinline)) setup_test_mode_cap_INT8_MAX(config2 &, co
     current.MAP = tempYAxis[0];
     current.setRpm( tempXAxis[0]);
     fill_table_values(lookupTable, CAP_LOAD_LOOKUP_RESULT);
-    populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
-    populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
+    populate_table_axis_P(lookupTable.axisX, tempXAxis);
+    populate_table_axis_P(lookupTable.axisY, tempYAxis);
 }
 
 static void __attribute__((noinline)) test_mode_cap_INT8_MAX(uint8_t mode, int8_t expectedAdvance2) {
@@ -81,8 +81,8 @@ static void __attribute__((noinline)) setup_test_mode_simple(config2 &, config10
     current.MAP = tempYAxis[0];
     current.setRpm( tempXAxis[0]);
     fill_table_values(lookupTable, SIMPLE_LOAD_LOOKUP_RESULT);
-    populate_table_axis_P(lookupTable.axisX.begin(), tempXAxis);
-    populate_table_axis_P(lookupTable.axisY.begin(), tempYAxis);
+    populate_table_axis_P(lookupTable.axisX, tempXAxis);
+    populate_table_axis_P(lookupTable.axisY, tempYAxis);
 }
 
 static void __attribute__((noinline)) test_mode_simple(uint8_t mode, int8_t expectedAdvance, int8_t expectedAdvance2) {

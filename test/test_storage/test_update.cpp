@@ -95,94 +95,6 @@ static void test_upgradeV25toV26_negative(void)
     TEST_ASSERT_EQUAL(0, oneByteEeprom.writeCount);
 }
 
-// =========================== multiplyTableLoad ==============================
-
-static void test_multiplyTableLoad_doubles_y_axis(void)
-{
-  table3d8RpmLoad testSubject;
-
-  // Seed the testSubject Y-axis with known values, then verify each was doubled.
-  populate_table_axis(y_begin(&testSubject, testSubject.type_key), (table3d_axis_t)10);
-  // Force a couple of distinct values too so we don't trivially pass with all zeros.
-  table_axis_iterator it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t i = 0;
-  while (!it.at_end())
-  {
-    *it = (table3d_axis_t)(5 + i);
-    ++it; ++i;
-  }
-
-  multiplyTableLoad(&testSubject, testSubject.type_key, 2U);
-
-  it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t j = 0;
-  while (!it.at_end())
-  {
-    TEST_ASSERT_EQUAL((table3d_axis_t)((5 + j) * 2), *it);
-    ++it; ++j;
-  }
-}
-
-static void test_multiplyTableLoad_by_one_is_identity(void)
-{
-  table3d8RpmLoad testSubject;
-
-  table_axis_iterator it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t i = 0;
-  while (!it.at_end()) { *it = (table3d_axis_t)(20 + i); ++it; ++i; }
-
-  multiplyTableLoad(&testSubject, testSubject.type_key, 1U);
-
-  it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t j = 0;
-  while (!it.at_end())
-  {
-    TEST_ASSERT_EQUAL((table3d_axis_t)(20 + j), *it);
-    ++it; ++j;
-  }
-}
-
-// =========================== divideTableLoad ================================
-
-static void test_divideTableLoad_halves_y_axis(void)
-{
-  table3d8RpmLoad testSubject;
-
-  table_axis_iterator it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t i = 0;
-  while (!it.at_end()) { *it = (table3d_axis_t)((10 + i) * 2); ++it; ++i; }
-
-  divideTableLoad(&testSubject, testSubject.type_key, 2U);
-
-  it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t j = 0;
-  while (!it.at_end())
-  {
-    TEST_ASSERT_EQUAL((table3d_axis_t)(10 + j), *it);
-    ++it; ++j;
-  }
-}
-
-static void test_multiplyDivideTableLoad_round_trip(void)
-{
-  table3d8RpmLoad testSubject;
-
-  table_axis_iterator it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t i = 0;
-  while (!it.at_end()) { *it = (table3d_axis_t)(7 + i); ++it; ++i; }
-
-  multiplyTableLoad(&testSubject, testSubject.type_key, 4U);
-  divideTableLoad(&testSubject, testSubject.type_key, 4U);
-
-  it = y_begin(&testSubject, testSubject.type_key);
-  uint8_t j = 0;
-  while (!it.at_end())
-  {
-    TEST_ASSERT_EQUAL((table3d_axis_t)(7 + j), *it);
-    ++it; ++j;
-  }
-}
-
 // =========================== multiplyTableValue / divideTableValue ==========
 //
 // These walk the entire page-as-bytes (including non-table fields). Pages 1
@@ -227,11 +139,7 @@ void test_update(void) {
         RUN_TEST(test_updateTableU16toU8); 
         RUN_TEST(test_upgradeV25toV26_positive);  
         RUN_TEST(test_upgradeV25toV26_negative); 
-        RUN_TEST(test_multiplyTableLoad_doubles_y_axis);
-        RUN_TEST(test_multiplyTableLoad_by_one_is_identity);
-        RUN_TEST(test_multiplyDivideTableLoad_round_trip);
         RUN_TEST(test_multiplyTableValue_scales_each_byte);
         RUN_TEST(test_divideTableValue_scales_each_byte);
-        RUN_TEST(test_divideTableLoad_halves_y_axis);
   }
 }

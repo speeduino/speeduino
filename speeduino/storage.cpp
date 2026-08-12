@@ -258,39 +258,27 @@ static inline uint16_t write_range(const byte *pStart, const byte *pEnd, uint16_
   return updateBlockLimitWriteOps(externalApi, address, pStart, pEnd, writesRemaining);
 }
 
-static inline write_location write(const table_row_iterator &row, const write_location &location)
+template <typename Iter>
+static inline write_location write_range(Iter pStart, Iter pEnd, write_location location)
 {
-  return { (uint16_t)(location.address+row.size()), updateBlockLimitWriteOps(getStorageAPI(), location.address, &*row, row.end(), location.writesRemaining) };
-}
-
-static inline write_location write(table_value_iterator it, write_location location)
-{
-  while (location.writesRemaining>0U && !it.at_end())
+  while (location.writesRemaining>0U && pStart!=pEnd)
   {
-    location = write(it.operator*(), location);
-    ++it;
-  }
-  return location;
-}
-
-static inline write_location write(table_axis_iterator it, write_location location)
-{
-  while (location.writesRemaining>0U && !it.at_end())
-  {
-    if (update(getStorageAPI(), location.address, it.operator*())) {
+    if (update(externalApi, location.address, *pStart))
+    {
       --location.writesRemaining;
     }
     ++location.address;
-    ++it;
+    ++pStart;
   }
   return location;
 }
 
-static inline uint16_t writeTable(table3d_t *pTable, TableType key, uint16_t address, uint16_t writesRemaining)
+template <typename TTable>
+static inline uint16_t writeTable(const TTable &table, uint16_t address, uint16_t writesRemaining)
 {
-  return write(y_rbegin(pTable, key), 
-                write(x_begin(pTable, key), 
-                  write(rows_begin(pTable, key), { address, writesRemaining }))).writesRemaining;
+  return write_range(table.axisY.crbegin(), table.axisY.crend(), // NOTE: Y-axis is reversed for reasons that no longer apply, but we preserve that for backwards compatibility
+            write_range(table.axisX.cbegin(), table.axisX.cend(), 
+              write_range(table.values.cbegin(), table.values.cend(), { address, writesRemaining }))).writesRemaining;
 }
 
 //  ================================= End write support ===============================
@@ -306,7 +294,7 @@ void savePage(uint8_t pageNum)
       | Fuel table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&fuelTable, decltype(fuelTable)::type_key, EEPROM_CONFIG1_MAP, writesRemaining);
+      writesRemaining = writeTable(fuelTable, EEPROM_CONFIG1_MAP, writesRemaining);
       break;
 
     case veSetPage:
@@ -322,7 +310,7 @@ void savePage(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&ignitionTable, decltype(ignitionTable)::type_key, EEPROM_CONFIG3_MAP, writesRemaining);
+      writesRemaining = writeTable(ignitionTable, EEPROM_CONFIG3_MAP, writesRemaining);
       break;
 
     case ignSetPage:
@@ -338,7 +326,7 @@ void savePage(uint8_t pageNum)
       | AFR table (See storage.h for data layout) - Page 5
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&afrTable, decltype(afrTable)::type_key, EEPROM_CONFIG5_MAP, writesRemaining);
+      writesRemaining = writeTable(afrTable, EEPROM_CONFIG5_MAP, writesRemaining);
       break;
 
     case afrSetPage:
@@ -354,9 +342,9 @@ void savePage(uint8_t pageNum)
       | Boost and vvt tables (See storage.h for data layout) - Page 8
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&boostTable, decltype(boostTable)::type_key, EEPROM_CONFIG7_MAP1, writesRemaining);
-      writesRemaining = writeTable(&vvtTable, decltype(vvtTable)::type_key, EEPROM_CONFIG7_MAP2, writesRemaining);
-      writesRemaining = writeTable(&stagingTable, decltype(stagingTable)::type_key, EEPROM_CONFIG7_MAP3, writesRemaining);
+      writesRemaining = writeTable(boostTable, EEPROM_CONFIG7_MAP1, writesRemaining);
+      writesRemaining = writeTable(vvtTable, EEPROM_CONFIG7_MAP2, writesRemaining);
+      writesRemaining = writeTable(stagingTable, EEPROM_CONFIG7_MAP3, writesRemaining);
       break;
 
     case seqFuelPage:
@@ -364,7 +352,7 @@ void savePage(uint8_t pageNum)
       | Fuel trim tables (See storage.h for data layout) - Page 9
       | 6x6 tables itself + the 6 values along each of the axis
       -----------------------------------------------------*/
-#define WRITE_TRIM_TABLE(index) writeTable(&trimTables[index-1U], trimTable3d::type_key, EEPROM_CONFIG8_MAP ## index, writesRemaining)
+#define WRITE_TRIM_TABLE(index) writeTable(trimTables[index-1U], EEPROM_CONFIG8_MAP ## index, writesRemaining)
       writesRemaining = WRITE_TRIM_TABLE(1);
 #if INJ_CHANNELS >= 2
       writesRemaining = WRITE_TRIM_TABLE(2);
@@ -410,7 +398,7 @@ void savePage(uint8_t pageNum)
       | Fuel table 2 (See storage.h for data layout)
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&fuelTable2, decltype(fuelTable2)::type_key, EEPROM_CONFIG11_MAP, writesRemaining);
+      writesRemaining = writeTable(fuelTable2, EEPROM_CONFIG11_MAP, writesRemaining);
       break;
 
     case wmiMapPage:
@@ -420,9 +408,9 @@ void savePage(uint8_t pageNum)
       | 8x8 VVT2 table + the 8 values along each of the axis
       | 4x4 Dwell table itself + the 4 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&wmiTable, decltype(wmiTable)::type_key, EEPROM_CONFIG12_MAP, writesRemaining);
-      writesRemaining = writeTable(&vvt2Table, decltype(vvt2Table)::type_key, EEPROM_CONFIG12_MAP2, writesRemaining);
-      writesRemaining = writeTable(&dwellTable, decltype(dwellTable)::type_key, EEPROM_CONFIG12_MAP3, writesRemaining);
+      writesRemaining = writeTable(wmiTable, EEPROM_CONFIG12_MAP, writesRemaining);
+      writesRemaining = writeTable(vvt2Table, EEPROM_CONFIG12_MAP2, writesRemaining);
+      writesRemaining = writeTable(dwellTable, EEPROM_CONFIG12_MAP3, writesRemaining);
       break;
       
     case progOutsPage:
@@ -437,7 +425,7 @@ void savePage(uint8_t pageNum)
       | Ignition table (See storage.h for data layout) - Page 1
       | 16x16 table itself + the 16 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&ignitionTable2, decltype(ignitionTable2)::type_key, EEPROM_CONFIG14_MAP, writesRemaining);
+      writesRemaining = writeTable(ignitionTable2, EEPROM_CONFIG14_MAP, writesRemaining);
       break;
 
     case boostvvtPage2:
@@ -445,7 +433,7 @@ void savePage(uint8_t pageNum)
       | Boost duty cycle lookuptable (See storage.h for data layout) - Page 15
       | 8x8 table itself + the 8 values along each of the axis
       -----------------------------------------------------*/
-      writesRemaining = writeTable(&boostTableLookupDuty, decltype(boostTableLookupDuty)::type_key, EEPROM_CONFIG15_MAP, writesRemaining);
+      writesRemaining = writeTable(boostTableLookupDuty, EEPROM_CONFIG15_MAP, writesRemaining);
 
       /*---------------------------------------------------
       | Config page 15 (See storage.h for data layout)
@@ -472,68 +460,55 @@ static inline uint16_t load_range(uint16_t address, byte *pFirst, const byte *pL
   return loadBlock(getStorageAPI(), address, pFirst, pLast);
 }
 
-static inline uint16_t load(table_row_iterator row, uint16_t address)
+template <typename Iter>
+static inline uint16_t load_range(Iter pStart, Iter pEnd, uint16_t address)
 {
-  return load_range(address, &*row, row.end());
-}
-
-static inline uint16_t load(table_value_iterator it, uint16_t address)
-{
-  while (!it.at_end())
+  while (pStart!=pEnd)
   {
-    address = load(*it, address); // cppcheck-suppress misra-c2012-17.2
-    ++it;
-  }
-  return address; 
-}
-
-static inline uint16_t load(table_axis_iterator it, uint16_t address)
-{
-  while (!it.at_end())
-  {
-    *it = getStorageAPI().read(address);
+    *pStart = externalApi.read(address);
+    ++pStart;
     ++address;
-    ++it;
   }
-  return address;    
+  return address;
 }
 
-
-static inline uint16_t loadTable(table3d_t *pTable, TableType key, uint16_t address)
+template <typename TTable>
+static inline uint16_t loadTable(TTable &table, uint16_t address)
 {
-  return load(y_rbegin(pTable, key),
-                load(x_begin(pTable, key), 
-                  load(rows_begin(pTable, key), address)));
+  return load_range(table.axisY.rbegin(), table.axisY.rend(), // NOTE: Y-axis is reversed for reasons that no longer apply, but we preserve that for backwards compatibility
+            load_range(table.axisX.begin(), table.axisX.end(), 
+              load_range(table.values.begin(), table.values.end(), address)));
 }
+
 
 //  ================================= End internal read support ===============================
 
 void loadAllPages(void)
 {
-  (void)loadTable(&fuelTable, decltype(fuelTable)::type_key, EEPROM_CONFIG1_MAP);
+  (void)loadTable(fuelTable, EEPROM_CONFIG1_MAP);
   (void)load_range(EEPROM_CONFIG2_START, (byte *)&configPage2, (byte *)&configPage2+sizeof(configPage2));
   
   //*********************************************************************************************************************************************************************************
   //IGNITION CONFIG PAGE (2)
 
-  (void)loadTable(&ignitionTable, decltype(ignitionTable)::type_key, EEPROM_CONFIG3_MAP);
+  (void)loadTable(ignitionTable, EEPROM_CONFIG3_MAP);
   (void)load_range(EEPROM_CONFIG4_START, (byte *)&configPage4, (byte *)&configPage4+sizeof(configPage4));
 
   //*********************************************************************************************************************************************************************************
   //AFR TARGET CONFIG PAGE (3)
 
-  (void)loadTable(&afrTable, decltype(afrTable)::type_key, EEPROM_CONFIG5_MAP);
+  (void)loadTable(afrTable, EEPROM_CONFIG5_MAP);
   (void)load_range(EEPROM_CONFIG6_START, (byte *)&configPage6, (byte *)&configPage6+sizeof(configPage6));
 
   //*********************************************************************************************************************************************************************************
   // Boost and vvt tables load
-  (void)loadTable(&boostTable, decltype(boostTable)::type_key, EEPROM_CONFIG7_MAP1);
-  (void)loadTable(&vvtTable, decltype(vvtTable)::type_key,  EEPROM_CONFIG7_MAP2);
-  (void)loadTable(&stagingTable, decltype(stagingTable)::type_key, EEPROM_CONFIG7_MAP3);
+  (void)loadTable(boostTable, EEPROM_CONFIG7_MAP1);
+  (void)loadTable(vvtTable,  EEPROM_CONFIG7_MAP2);
+  (void)loadTable(stagingTable, EEPROM_CONFIG7_MAP3);
 
   //*********************************************************************************************************************************************************************************
   // Fuel trim tables load
-#define LOAD_TRIM_TABLE(index) (void)loadTable(&trimTables[index-1U], trimTable3d::type_key, EEPROM_CONFIG8_MAP ## index)
+#define LOAD_TRIM_TABLE(index) (void)loadTable(trimTables[index-1U], EEPROM_CONFIG8_MAP ## index)
   LOAD_TRIM_TABLE(1);
 #if INJ_CHANNELS >= 2
   LOAD_TRIM_TABLE(2);
@@ -568,13 +543,13 @@ void loadAllPages(void)
 
   //*********************************************************************************************************************************************************************************
   //Fuel table 2 (See storage.h for data layout)
-  (void)loadTable(&fuelTable2, decltype(fuelTable2)::type_key, EEPROM_CONFIG11_MAP);
+  (void)loadTable(fuelTable2, EEPROM_CONFIG11_MAP);
 
   //*********************************************************************************************************************************************************************************
   // WMI, VVT2 and Dwell table load
-  (void)loadTable(&wmiTable, decltype(wmiTable)::type_key, EEPROM_CONFIG12_MAP);
-  (void)loadTable(&vvt2Table, decltype(vvt2Table)::type_key, EEPROM_CONFIG12_MAP2);
-  (void)loadTable(&dwellTable, decltype(dwellTable)::type_key, EEPROM_CONFIG12_MAP3);
+  (void)loadTable(wmiTable, EEPROM_CONFIG12_MAP);
+  (void)loadTable(vvt2Table, EEPROM_CONFIG12_MAP2);
+  (void)loadTable(dwellTable, EEPROM_CONFIG12_MAP3);
 
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (13)
@@ -583,11 +558,11 @@ void loadAllPages(void)
   //*********************************************************************************************************************************************************************************
   //SECOND IGNITION CONFIG PAGE (14)
 
-  (void)loadTable(&ignitionTable2, decltype(ignitionTable2)::type_key, EEPROM_CONFIG14_MAP);
+  (void)loadTable(ignitionTable2, EEPROM_CONFIG14_MAP);
 
   //*********************************************************************************************************************************************************************************
   //CONFIG PAGE (15) + boost duty lookup table (LUT)
-  (void)loadTable(&boostTableLookupDuty, decltype(boostTableLookupDuty)::type_key, EEPROM_CONFIG15_MAP);
+  (void)loadTable(boostTableLookupDuty, EEPROM_CONFIG15_MAP);
   (void)load_range(EEPROM_CONFIG15_START, (byte *)&configPage15, (byte *)&configPage15+sizeof(configPage15));  
 
   //*********************************************************************************************************************************************************************************

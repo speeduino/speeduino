@@ -29,6 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "units.h"
 #include "sensors.h"
 #include "resetControl.h"
+#include "preprocessor.h"
 
 /** @defgroup group-serial-comms-impl Serial comms implementation
  * @{
