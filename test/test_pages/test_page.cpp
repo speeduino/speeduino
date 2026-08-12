@@ -43,8 +43,8 @@ static TTable setup3dTable(byte valueMarker, byte xMarker, byte yMarker)
 template <typename TTable>
 static entity_t setupTableEntity(TTable &entity)
 {
-    constexpr uint16_t countTableValue = entity.axisX.size()*entity.axisY.size();
-    constexpr uint16_t size = countTableValue+entity.axisX.size()+entity.axisY.size();
+    uint16_t countTableValue = entity.axisX.size()*entity.axisY.size();
+    uint16_t size = countTableValue+entity.axisX.size()+entity.axisY.size();
     return entity_t(&entity, entity.type_key, size);
 }
 
