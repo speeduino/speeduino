@@ -276,7 +276,7 @@ static inline write_location write_range(Iter pStart, Iter pEnd, write_location 
 template <typename TTable>
 static inline uint16_t writeTable(const TTable &table, uint16_t address, uint16_t writesRemaining)
 {
-  return write_range(table.axisY.crbegin(), table.axisY.crend(), // NOTE: Y-axis is reversed for reaons that no longer apply, but we preserve that for backwards compatibility
+  return write_range(table.axisY.crbegin(), table.axisY.crend(), // NOTE: Y-axis is reversed for reasons that no longer apply, but we preserve that for backwards compatibility
             write_range(table.axisX.cbegin(), table.axisX.cend(), 
               write_range(table.values.cbegin(), table.values.cend(), { address, writesRemaining }))).writesRemaining;
 }
@@ -475,7 +475,7 @@ static inline uint16_t load_range(Iter pStart, Iter pEnd, uint16_t address)
 template <typename TTable>
 static inline uint16_t loadTable(TTable &table, uint16_t address)
 {
-  return load_range(table.axisY.rbegin(), table.axisY.rend(), // NOTE: Y-axis is reversed for reaons that no longer apply, but we preserve that for backwards compatibility
+  return load_range(table.axisY.rbegin(), table.axisY.rend(), // NOTE: Y-axis is reversed for reasons that no longer apply, but we preserve that for backwards compatibility
             load_range(table.axisX.begin(), table.axisX.end(), 
               load_range(table.values.begin(), table.values.end(), address)));
 }
