@@ -93,7 +93,7 @@ jobs:
 
       # Step 1: Use a dynamic bash loop and jq to clone every repo side-by-side
       - name: Clone Custom External Libraries
-        if: ${{ matrix.board.external_libs != '[]' }}
+        if: ${{ matrix.board.external_libs != '' }}
         run: |
           # Strip formatting anomalies out of the matrix JSON string entirely
           echo '${{ matrix.board.external_libs }}' | jq -c '.' > libs.json
@@ -115,6 +115,7 @@ jobs:
       # Step 2: Build a string containing all -I include compiler arguments for external libraries
       - name: Generate Compiler Flags
         id: flags
+        if: ${{ matrix.board.external_libs != '' }}
         run: |
           echo '${{ matrix.board.external_libs }}' > libs.json
           INCLUDE_FLAGS=""
