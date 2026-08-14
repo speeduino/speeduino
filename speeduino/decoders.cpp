@@ -294,21 +294,19 @@ static decoder_status_t sharedGetStatus(void) noexcept
 
 TESTABLE_STATIC uint16_t timeToAngleIntervalTooth(uint32_t time)
 {
-    noInterrupts();
+  ATOMIC() 
+  {
     //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
     if(decoderStatus.toothAngleIsCorrect)
     {
-      unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime);
-      uint16_t tempTriggerToothAngle = triggerToothAngle; // triggerToothAngle is set by interrupts
-      interrupts();
-
-      return (unsigned long)(time * (uint32_t)tempTriggerToothAngle) / toothTime;
+      return (time * triggerToothAngle) / timeElapsed(toothLastToothTime, toothLastMinusOneToothTime);
     }
     else { 
-      interrupts();
       //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
       return timeToAngle(time);
     }
+  }
+  return 0U; // Silence incorrect compiler warning
 }
 
 static inline bool IsCranking(const statuses &status) {
@@ -359,17 +357,25 @@ TESTABLE_STATIC __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTim
   return false;
 }
 
+// If tooth angle calculations are based on cam teeth (not crank teeth), then results must be
+// divided by 2 (shifted by 1) 
+static inline uint8_t calcToothCalcShift(bool isCamTeeth)
+{
+  return isCamTeeth ? 1U : 0U;
+}
+
 static bool UpdateRevolutionTimeFromTeeth(bool isCamTeeth) {
-  noInterrupts();
+  ATOMIC() {
   bool updatedRevTime = decoderStatus.syncStatus!=SyncStatus::None 
     && !IsCranking(currentStatus)
     && (toothOneMinusOneTime!=UINT32_C(0))
     && (toothOneTime>toothOneMinusOneTime) 
     //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-    && SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> (isCamTeeth ? 1U : 0U)); 
+      && SetRevolutionTime(timeElapsed(toothOneTime, toothOneMinusOneTime) >> calcToothCalcShift(isCamTeeth)); 
 
-  interrupts();
  return updatedRevTime;  
+  }
+  return false; // Silence incorrect compiler warning
 }
 
 static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
@@ -438,11 +444,11 @@ TESTABLE_STATIC __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bo
   {
     if((toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
     {
-      noInterrupts();
-      bool newRevtime = SetRevolutionTime(((toothLastToothTime - toothLastMinusOneToothTime) * totalTeeth) >> (isCamTeeth ? 1U : 0U));
-      interrupts();
-      if (newRevtime) {
+      ATOMIC()
+      {      
+        if (SetRevolutionTime((timeElapsed(toothLastToothTime, toothLastMinusOneToothTime) * totalTeeth) >> calcToothCalcShift(isCamTeeth))) {
         return RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
+        }
       }
     }
   }
