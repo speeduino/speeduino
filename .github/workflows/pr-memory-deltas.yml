@@ -1,157 +1,84 @@
-name: Calculate memory deltas
+name: calculate-memory-deltas
 
 on:
-  - push
   - pull_request
 
-env:
-  # It's convenient to set variables for values used multiple times in the workflow.
-  SKETCHES_REPORTS_PATH: sketches-reports
-  # Libraries shared by all builds
-  COMMON_LIB_DEPS: | 
-    - name: SimplyAtomic
-      version: "1.0"
-    - name: avr-fast-shift
-      version: "1.1.0"
-    - name: libdivide
-      version: "5.2.0"
-    - name: FastCRC
-      version: "1.41"
-    - name: avr-fast-div
-      version: "1.4.0"
-  COMMON_BUILD_FLAGS: ""
-
 jobs:
-  compile:
+  size-delta:
+    env:
+        BASE_FOLDER: base-code
+        PR_FOLDER: pr-code
+        PIO_ENVS: '["megaatmega2560", "teensy41", "black_F407VE"]'
+        PR_LOG_FILE: pr-build.log
+        BASE_LOG_FILE: base-build.log
+        SIZE_REPORT_FILE: size_report.md
+        PR_NUM_FILE: pr_number.txt
+
     runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        board:
-          # Each element in the sequence produces a matrix job:
-          - fqbn: arduino:avr:mega
-            # This suffix will be used to define a unique name for the sketches report artifact.
-            artifact-name-suffix: arduino-avr-mega
-            family-name: arduino:avr
-            platform: |
-              - name: arduino:avr
-            compile-flags: -DPLATFORMIO -DUSE_LIBDIVIDE -DCRC_BIGTABLES=0 -DAFD_INLINE=0 -O3 -ffast-math -fshort-enums -funroll-loops -Wall -Wextra -std=c++14
-            lib_deps: |
-              - name: Time
-            external_libs: |
-              [
-                { 
-                  "repo": "https://github.com/modm-io/avr-libstdcpp.git", 
-                  "dir": "modm-io/avr-libstdcpp", 
-                  "include": "modm-io/avr-libstdcpp/include"
-                }
-              ]
-
-          - fqbn: teensy:avr:teensy35
-            artifact-name-suffix: teensy-avr-teensy35
-            platform: |
-              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-                name: teensy:avr
-            compile-flags: -Wall
-            lib_deps: |
-              - name: SDfat
-              - name: InternalTemperature
-              - name: elapsedMillis
-              
-          - fqbn: teensy:avr:teensy41
-            artifact-name-suffix: teensy-avr-teensy41
-            platform: |
-              - source-url: https://www.pjrc.com/teensy/package_teensy_index.json
-                name: teensy:avr
-            compile-flags: -Wall
-            lib_deps: |
-              - name: SDfat
-              - name: InternalTemperature
-              - name: elapsedMillis
-          
-          - fqbn: STMicroelectronics:stm32:GenF4
-            artifact-name-suffix: stm32-avr-stm32f4
-            platform: |
-              - source-url: https://github.com/stm32duino/BoardManagerFiles/raw/main/package_stmicroelectronics_index.json
-                name: STMicroelectronics:stm32
-                version: 2.7.1
-            compile-flags: -DUSE_LIBDIVIDE -DUSBCON -DUSBD_USE_CDC -DHAL_PCD_MODULE_ENABLED -DHAL_CAN_MODULE_ENABLED -DSERIAL_TX_BUFFER_SIZE=128 -DSERIAL_RX_BUFFER_SIZE=128 -std=gnu++14 -UBOARD_MAX_IO_PINS
-            lib_deps: |
-              - name: "STM32duino RTC"
-                version: 1.2.0
-              - name: SdFat
-              - name: elapsedMillis
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4     
+    - name: Set up Python
+      uses: actions/setup-python@v5
 
-      - name: Add Poetry to PATH (Local Act Fix)
-        if: ${{ env.ACT }}
-        run: echo "/root/.local/bin" >> $GITHUB_PATH
+    - name: Create Python venv
+      run: |
+        sudo apt-get install python3-venv
+        python3 -m venv PIO
 
-      # Step 1: Use a dynamic bash loop and jq to clone every repo side-by-side
-      - name: Clone Custom External Libraries
-        if: ${{ matrix.board.external_libs != '' }}
-        run: |
-          # Strip formatting anomalies out of the matrix JSON string entirely
-          echo '${{ matrix.board.external_libs }}' | jq -c '.' > libs.json
-          
-          # Read elements line-by-line using structured jq outputs to avoid string pollution
-          jq -c '.[]' libs.json | while read -r item; do
-            repo=$(echo "$item" | jq -r '.repo')
-            dir=$(echo "$item" | jq -r '.dir')
-            
-            echo "Cloning repository: $repo target folder: external_libs/$dir"
-            
-            # Formulate full target path layout safely
-            mkdir -p "external_libs/$dir"
-            
-            # Clean clone directly into target workspace path block
-            git clone "${repo}" "external_libs/${dir}"
-          done
+    - name: Install PlatformIO
+      run: |
+        source PIO/bin/activate
+        pip install platformio
 
-      # Step 2: Build a string containing all -I include compiler arguments for external libraries
-      - name: Generate Compiler Flags
-        id: flags
-        if: ${{ matrix.board.external_libs != '' }}
-        run: |
-          echo '${{ matrix.board.external_libs }}' > libs.json
-          INCLUDE_FLAGS=""
-          
-          # Loop through entries and append the formatted -I absolute paths
-          while read -r include_path; do
-            if [ ! -z "$include_path" ]; then
-              INCLUDE_FLAGS="$INCLUDE_FLAGS -I${{ github.workspace }}/external_libs/$include_path"
-            fi
-          done < <(jq -r '.[] | .include' libs.json)
-          
-          echo "include_args=$INCLUDE_FLAGS" >> $GITHUB_OUTPUT
+    - name: Build command line
+      if: ${{ env.PIO_ENVS }}
+      id: build_command_line
+      run: |
+        echo '${{ env.PIO_ENVS }}' | jq -r '.[0] |= "CMD_PIO_ENVS=-e " + . | join(" -e ")' >> $GITHUB_OUTPUT
 
-      - name: Compile platforms
-        uses: arduino/compile-sketches@v1.1.2
-        with:
-          fqbn: ${{ matrix.board.fqbn }}
-          enable-deltas-report: ${{ !env.ACT }}
-          verbose: true
-          sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          sketch-paths: |
-            - speeduino/speeduino.ino
-          platforms: |
-            ${{ matrix.board.platform }}
-          cli-compile-flags: | 
-            - --clean
-            - --build-property 
-            - build.extra_flags=${{ env.COMMON_BUILD_FLAGS }} ${{ matrix.board.compile-flags }} ${{ steps.flags.outputs.include_args }}
-          libraries: |
-            ${{ matrix.board.lib_deps }}
-            ${{ env.COMMON_LIB_DEPS }}
+    - name: Checkout PR
+      uses: actions/checkout@v4
+      with:
+        path: ${{ env.PR_FOLDER }}
+
+    - name: Build PR Envs
+      run: |
+        source PIO/bin/activate
+        platformio run -d ${{ env.PR_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} &> ${{ env.PR_LOG_FILE }}
+    
+    - name: Checkout Base Branch
+      uses: actions/checkout@v4
+      with:
+        ref: master
+        path: ${{ env.BASE_FOLDER }}
+
+    - name: Build Base Envs
+      run: |
+        source PIO/bin/activate
+        platformio run -d ${{ env.BASE_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} &> ${{ env.BASE_LOG_FILE }}
+
+    - name: Generate artifacts
+      run: |
+        source PIO/bin/activate
+        python ${{ env.PR_FOLDER }}/.github/workflows/pr-memory-deltas.py ${{ env.BASE_LOG_FILE }} ${{ env.PR_LOG_FILE }} > ${{ env.SIZE_REPORT_FILE }}
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "${{ github.event.number }}" > ${{ env.PR_NUM_FILE }}
+        else
+          echo "not-a-pr" > ${{ env.PR_NUM_FILE }}
+        fi
+
+    - name: Upload build logs
+      if: ${{ env.ACT }}
+      uses: actions/upload-artifact@v4
+      with:
+        path: |
+            **/*.log
 
       # This step is needed to pass the size data to the report job.
-      - name: Upload sketches report to workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sketches-report-${{ matrix.board.artifact-name-suffix }}
-          path: ${{ env.SKETCHES_REPORTS_PATH }}
+    - name: Upload sketches report to workflow artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sketches-report-all
+        path: |
+          ${{ env.SIZE_REPORT_FILE }}
+          ${{ env.PR_NUM_FILE }}
