@@ -1,24 +1,44 @@
-name: Report Size Deltas
+name: report-size-deltas
 
-# See: https://docs.github.com/en/free-pro-team@latest/actions/reference/events-that-trigger-workflows
 on:
-  push:
-    paths:
-      - ".github/workflows/pr-memory-deltas-report.yaml"
-  schedule:
-    # Run at the minimum interval allowed by GitHub Actions.
-    # Note: GitHub Actions periodically has outages which result in workflow failures.
-    # In this event, the workflows will start passing again once the service recovers.
-    - cron: "*/5 * * * *"
-  workflow_dispatch:
-  repository_dispatch:
+  workflow_run:
+    workflows: ["calculate-memory-deltas"]
+    types:
+      - completed
 
 jobs:
   report:
+
+    env:
+        SIZE_REPORT_FILE: size_report.md
+        PR_NUM_FILE: pr_number.txt
+        SOURCE_ARTIFACT: sketches-report-all
+
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      pull-requests: write
+    
     steps:
-      - name: Comment size deltas reports to PRs
-        uses: arduino/report-size-deltas@v1
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
         with:
-          # The name of the workflow artifact created by the sketch compilation workflow
-          sketches-reports-source: ^sketches-report-.+
+          name: ${{ env.SOURCE_ARTIFACT }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./
+
+      - name: Extract PR Number
+        id: extract-pr-id
+        run: |
+          echo "PR_NUM<<EOF" >> $GITHUB_OUTPUT
+          cat "${{ env.PR_NUM_FILE }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment on Pull Request
+        if: steps.extract-pr-id.outputs.PR_NUM != 'not-a-pr'      
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: ${{ env.SIZE_REPORT_FILE }}
+          comment-tag: size-report
+          pr-number:  ${{ steps.extract-pr-id.outputs.PR_NUM }}
