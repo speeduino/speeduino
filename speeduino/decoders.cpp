@@ -49,10 +49,8 @@ A full copy of the license may be found in the projects root directory
 
 #define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
-static void triggerRoverMEMSCommon(void);
 static inline void triggerRecordVVT1Angle (void);
 
-static volatile unsigned long curTime;
 static volatile unsigned long curGap;
 static volatile unsigned long curTime2;
 static volatile unsigned long curGap2;
@@ -541,7 +539,7 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
 */
 static void triggerPri_missingTooth(void)
 {
-   curTime = micros();
+   uint32_t curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    {
@@ -926,7 +924,7 @@ Note: There can be no missing teeth on the primary wheel.
  * */
 static void triggerPri_DualWheel(void)
 {
-    curTime = micros();
+    uint32_t curTime = micros();
     curGap = curTime - toothLastToothTime;
     if ( curGap >= triggerFilterTime )
     {
@@ -1137,7 +1135,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 */
 static void triggerPri_BasicDistributor(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) )
   {
@@ -1347,7 +1345,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 static void triggerPri_GM7X(void)
 {
     lastGap = curGap;
-    curTime = micros();
+    uint32_t curTime = micros();
     curGap = curTime - toothLastToothTime;
     toothCurrentCount++; //Increment the tooth counter
     decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
@@ -1491,7 +1489,7 @@ Tooth number one is at 355* ATDC.
 */
 static void triggerPri_4G63(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
@@ -1924,7 +1922,7 @@ static void triggerPri_24X(void)
   if(toothCurrentCount == 25) { decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
-    curTime = micros();
+    uint32_t curTime = micros();
     curGap = curTime - toothLastToothTime;
 
     if(toothCurrentCount == 0)
@@ -2051,7 +2049,7 @@ static void triggerPri_Jeep2000(void)
   if(toothCurrentCount == 13) { decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
   else
   {
-    curTime = micros();
+    uint32_t curTime = micros();
     curGap = curTime - toothLastToothTime;
     if ( curGap >= triggerFilterTime )
     {
@@ -2158,7 +2156,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 */
 static void triggerPri_Audi135(void)
 {
-   curTime = micros();
+   uint32_t curTime = micros();
    curGap = curTime - toothSystemLastToothTime;
    if ( (curGap > triggerFilterTime) || (currentStatus.startRevolutions == 0) )
    {
@@ -2283,7 +2281,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 static void triggerPri_HondaD17(void)
 {
    lastGap = curGap;
-   curTime = micros();
+   uint32_t curTime = micros();
    curGap = curTime - toothLastToothTime;
    toothCurrentCount++; //Increment the tooth counter
 
@@ -2401,7 +2399,7 @@ static void triggerPri_HondaJ32(void)
   // This function is called only on rising edges, which occur as we lose sight of a tooth.
   // This function sets the following state variables for use in other functions:
   // toothLastToothTime, toothOneTime, revolutionOne (just toggles - not correct)
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   toothLastToothTime = curTime;
 
@@ -2530,7 +2528,7 @@ Tooth number one is at 355* ATDC.
 */
 static void triggerPri_Miata9905(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0) )
   {
@@ -2810,7 +2808,7 @@ Tooth number one is at 348* ATDC.
 */
 static void triggerPri_MazdaAU(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime )
   {
@@ -3033,7 +3031,7 @@ See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
 */
 static void triggerPri_Nissan360(void)
 {
-   curTime = micros();
+   uint32_t curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap < triggerFilterTime ) { return; }
    
@@ -3278,7 +3276,7 @@ This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (
 */
 static void triggerPri_Subaru67(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap < triggerFilterTime ) 
   { return; }
@@ -3561,7 +3559,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 */
 static void triggerPri_Daihatsu(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
 
   //if ( curGap >= triggerFilterTime || (currentStatus.startRevolutions == 0 )
@@ -3729,7 +3727,7 @@ Only rising Edge is used for simplicity.The second input is ignored, as it does 
 static void triggerPri_Harley(void)
 {
   lastGap = curGap;
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   setFilter(curGap); // Filtering adjusted according to setting
   if (curGap > triggerFilterTime)
@@ -3865,7 +3863,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 */
 static void triggerPri_ThirtySixMinus222(void)
 {
-   curTime = micros();
+   uint32_t curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    {
@@ -4043,7 +4041,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
 */
 static void triggerPri_ThirtySixMinus21(void)
 {
-   curTime = micros();
+   uint32_t curTime = micros();
    curGap = curTime - toothLastToothTime;
    if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
    {
@@ -4175,7 +4173,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 */
 static void triggerPri_420a(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
   {
@@ -4364,7 +4362,7 @@ Uses DualWheel decoders, There can be no missing teeth on the primary wheel.
 */
 static void triggerPri_Webber(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;
   if ( curGap >= triggerFilterTime )
   {
@@ -4696,7 +4694,7 @@ The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups 
 */
 static void triggerPri_NGC(void) 
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   // We need to know the polarity of the missing tooth to determine position
   if (currentStatus.decoder.primary.isPinHigh()) {
     toothLastToothRisingTime = curTime;
@@ -5050,7 +5048,7 @@ Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of 
 //We measure the width of a lobe so on the end of a lobe, but want to trigger on the beginning. Variable toothCurrentCount tracks the downward events, and secondaryToothCount updates on the upward events. Ideally, it should be the other way round but the engine stall routine resets secondaryToothCount, so it would not sync again after an engine stall.
 static void triggerPri_Vmax(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   if(currentStatus.decoder.primary.isTriggered()){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
     curGap2 = curTime;
     curGap = curTime - toothLastToothTime;
@@ -5248,7 +5246,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 
 static void triggerPri_Renix(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - renixSystemLastToothTime;
 
   if ( curGap >= triggerFilterTime )   
@@ -5423,9 +5421,37 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  */
 volatile unsigned long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
 
+static void triggerRoverMEMSCommon(uint32_t curTime)
+{
+  // pattern 1 isn't unique & if we don't have a cam we need special code to identify if we're tooth 18 or 36 - this allows batch injection but not spark to run
+  // as we have to be greater than 18 teeth when using the cam this code also works for that.
+  if( toothCurrentCount > 18) 
+  {
+    toothCurrentCount = 1;
+    toothOneMinusOneTime = toothOneTime;
+    toothOneTime = curTime;
+    revolutionOne = !revolutionOne; //Flip sequential revolution tracker   
+  }
+
+  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
+  {
+    //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
+    if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
+    {
+      decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit
+      if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
+    }
+    else if(decoderStatus.syncStatus!=SyncStatus::Full) 
+    { decoderStatus.syncStatus = SyncStatus::Partial; } //If there is primary trigger but no secondary we only have half sync.
+  }
+  else { decoderStatus.syncStatus = SyncStatus::Partial; } //If nothing is using sequential, we  set half sync bit
+
+  currentStatus.startRevolutions++;  
+}
+
 static void triggerPri_RoverMEMS(void)
 {
-  curTime = micros();
+  uint32_t curTime = micros();
   curGap = curTime - toothLastToothTime;      
 
   if ( curGap >= triggerFilterTime ) //Pulses should never be less than triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
@@ -5468,7 +5494,7 @@ static void triggerPri_RoverMEMS(void)
             configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
-          triggerRoverMEMSCommon();                         
+          triggerRoverMEMSCommon(curTime);                         
         }                             //123456789012345678901234567890123456
         else if( roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
         {
@@ -5483,7 +5509,7 @@ static void triggerPri_RoverMEMS(void)
             configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
-          triggerRoverMEMSCommon();                         
+          triggerRoverMEMSCommon(curTime);                         
         }                             //123456789012345678901234567890123456
         else if(roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- (#3)
         {
@@ -5498,7 +5524,7 @@ static void triggerPri_RoverMEMS(void)
             configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           } 
-          triggerRoverMEMSCommon();                           
+          triggerRoverMEMSCommon(curTime);                           
         }                             //12345678901234567890123456789012
         else if(roverMEMSTeethSeen == 0b11111101111101111111111110111101) // Binary pattern for trigger pattern 11-5-12-4- (#2)
         {
@@ -5513,7 +5539,7 @@ static void triggerPri_RoverMEMS(void)
             configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
             triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
           }  
-          triggerRoverMEMSCommon();  
+          triggerRoverMEMSCommon(curTime);  
         }                             //12345678901234567890123456789012
         else if(roverMEMSTeethSeen == 0b11111111111101111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
         {
@@ -5526,7 +5552,7 @@ static void triggerPri_RoverMEMS(void)
             configPage4.triggerMissingTeeth = 2; // this should be read in from the config file, but people could adjust it.            
             triggerActualTeeth = 36; // should be 34 if not hacking toothcounter 
           }
-          triggerRoverMEMSCommon(); 
+          triggerRoverMEMSCommon(curTime); 
         }
         else if(toothCurrentCount > triggerActualTeeth+1) // no patterns match after a rotation when we only need 32 teeth to match, we've lost sync
         {
@@ -5550,35 +5576,6 @@ static void triggerPri_RoverMEMS(void)
     }     
   }
 
-}
-
-
-static void triggerRoverMEMSCommon(void)
-{
-  // pattern 1 isn't unique & if we don't have a cam we need special code to identify if we're tooth 18 or 36 - this allows batch injection but not spark to run
-  // as we have to be greater than 18 teeth when using the cam this code also works for that.
-  if( toothCurrentCount > 18) 
-  {
-    toothCurrentCount = 1;
-    toothOneMinusOneTime = toothOneTime;
-    toothOneTime = curTime;
-    revolutionOne = !revolutionOne; //Flip sequential revolution tracker   
-  }
-
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
-  {
-    //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
-    if( (secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
-    {
-      decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit
-      if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
-    }
-    else if(decoderStatus.syncStatus!=SyncStatus::Full) 
-    { decoderStatus.syncStatus = SyncStatus::Partial; } //If there is primary trigger but no secondary we only have half sync.
-  }
-  else { decoderStatus.syncStatus = SyncStatus::Partial; } //If nothing is using sequential, we  set half sync bit
-
-  currentStatus.startRevolutions++;  
 }
 
 static void triggerSec_RoverMEMS(void) 
@@ -5786,7 +5783,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 */
 static void triggerPri_SuzukiK6A(void)
 {
-  curTime = micros();  
+  uint32_t curTime = micros();  
   curGap = curTime - toothLastToothTime;
   if ( (curGap >= triggerFilterTime) || (currentStatus.startRevolutions == 0U) )
   {    
@@ -6124,7 +6121,7 @@ Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have 
  * */
 static void triggerPri_FordTFI(void)
 {
-  curTime = micros(); // Get current time and gap duration with micros rollover
+  uint32_t curTime = micros(); // Get current time and gap duration with micros rollover
   if (curTime >= toothLastToothTime) 
     { curGap = curTime - toothLastToothTime; } 
   else
