@@ -26,6 +26,7 @@ void runAllDecoderTests(void)
     extern void testDecoderInit(void);
     extern void testDecoderApiCoverage(void);
     extern void testinterrupt_t(void);
+    extern void testgetCrankAngle(void);
     
     testMissingTooth();
     testDualWheel();
@@ -41,6 +42,7 @@ void runAllDecoderTests(void)
     testDecoderInit();
     testDecoderApiCoverage();
     testinterrupt_t();
+    testgetCrankAngle();
 }
 
 TEST_HARNESS(runAllDecoderTests)

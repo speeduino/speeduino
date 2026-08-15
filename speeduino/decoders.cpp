@@ -298,7 +298,7 @@ static decoder_status_t sharedGetStatus(void) noexcept
   return decoderStatus; // Never reached, just to avoid compiler warning
 }
 
-static uint16_t timeToAngleIntervalTooth(uint32_t time)
+TESTABLE_STATIC uint16_t timeToAngleIntervalTooth(uint32_t time)
 {
     noInterrupts();
     //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
