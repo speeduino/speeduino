@@ -53,7 +53,6 @@ static inline void triggerRecordVVT1Angle (void);
 
 static volatile unsigned long curGap;
 static volatile unsigned long curGap2;
-static volatile unsigned long curTime3;
 static volatile unsigned long curGap3;
 static volatile unsigned long lastGap;
 static volatile unsigned long targetGap;
@@ -736,7 +735,7 @@ static void triggerThird_missingTooth(void)
 //NB no filtering of this signal with current implementation unlike Cam (VVT1)
 
   int16_t curAngle;
-  curTime3 = micros();
+  uint32_t curTime3 = micros();
   curGap3 = curTime3 - toothLastThirdToothTime;
 
   //Safety check for initial startup
