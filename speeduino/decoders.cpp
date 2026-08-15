@@ -52,7 +52,6 @@ A full copy of the license may be found in the projects root directory
 static inline void triggerRecordVVT1Angle (void);
 
 static volatile unsigned long curGap;
-static volatile unsigned long curTime2;
 static volatile unsigned long curGap2;
 static volatile unsigned long curTime3;
 static volatile unsigned long curGap3;
@@ -653,7 +652,7 @@ static void triggerPri_missingTooth(void)
 
 static void triggerSec_missingTooth(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
   //Safety check for initial startup
@@ -969,7 +968,7 @@ static void triggerPri_DualWheel(void)
  * */
 static void triggerSec_DualWheel(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 >= triggerSecFilterTime )
   {
@@ -1678,7 +1677,7 @@ static void triggerPri_4G63(void)
 
 static void triggerSec_4G63(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( (curGap2 >= triggerSecFilterTime) )//|| (currentStatus.startRevolutions == 0) )
   {
@@ -2195,7 +2194,7 @@ static void triggerPri_Audi135(void)
 static void triggerSec_Audi135(void)
 {
   /*
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 < triggerSecFilterTime ) { return; }
   toothLastSecToothTime = curTime2;
@@ -2613,7 +2612,7 @@ static void triggerPri_Miata9905(void)
 
 static void triggerSec_Miata9905(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
   if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) || (decoderStatus.syncStatus!=SyncStatus::Full) )
@@ -2845,7 +2844,7 @@ static void triggerPri_MazdaAU(void)
 
 static void triggerSec_MazdaAU(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   lastGap = curGap2;
   curGap2 = curTime2 - toothLastSecToothTime;
   //if ( curGap2 < triggerSecFilterTime ) { return; }
@@ -3073,7 +3072,7 @@ static void triggerPri_Nissan360(void)
 
 static void triggerSec_Nissan360(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   //if ( curGap2 < triggerSecFilterTime ) { return; }
   toothLastSecToothTime = curTime2;
@@ -3397,7 +3396,7 @@ static void triggerSec_Subaru67(void)
 {
   if( ((toothSystemCount == 0) || (toothSystemCount == 3)) )
   {
-    curTime2 = micros();
+    uint32_t curTime2 = micros();
     curGap2 = curTime2 - toothLastSecToothTime;
     
     if ( curGap2 > triggerSecFilterTime ) 
@@ -4401,7 +4400,7 @@ static void triggerPri_Webber(void)
 
 static void triggerSec_Webber(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
   if ( curGap2 >= triggerSecFilterTime )
@@ -4467,7 +4466,7 @@ Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running
 */
 static void triggerSec_FordST170(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
   //Safety check for initial startup
@@ -4630,7 +4629,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
 /** @} */
 static void triggerSec_DRZ400(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
   if ( curGap2 >= triggerSecFilterTime )
   {
@@ -4808,7 +4807,7 @@ static void triggerSec_NGC4(void)
     return;
   }
 
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
 
   // We need to know the polarity of the missing tooth to determine position
   if (currentStatus.decoder.secondary.isPinHigh()) {
@@ -4860,7 +4859,7 @@ static void triggerSec_NGC68(void)
     return;
   }
 
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
 
   curGap2 = curTime2 - toothLastSecToothTime;
 
@@ -5580,7 +5579,7 @@ static void triggerPri_RoverMEMS(void)
 
 static void triggerSec_RoverMEMS(void) 
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   curGap2 = curTime2 - toothLastSecToothTime;
 
   //Safety check for initial startup
@@ -6168,7 +6167,7 @@ static void triggerPri_FordTFI(void)
  * */
 static void triggerSec_FordTFI(void)
 {
-  curTime2 = micros();
+  uint32_t curTime2 = micros();
   if (curTime2 >= toothLastSecToothTime) 
     { curGap2 = curTime2 - toothLastSecToothTime; } 
   else
