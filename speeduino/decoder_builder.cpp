@@ -6,7 +6,7 @@
 
 static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
 static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
-static int16_t nullGetCrankAngle(void){return 0;} //initialisation function for getCrankAngle, returns safe value of 0
+static int16_t nullGetCrankAngle(uint32_t currMicros){ UNUSED(currMicros); return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
 static decoder_status_t nullGetStatus(void) noexcept { return decoder_status_t{}; }
 static decoder_features_t nullGetFeatures(void) { return decoder_features_t(); }
@@ -30,7 +30,7 @@ decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
     (void)setSecondaryTrigger(decoder.secondary);
     (void)setTertiaryTrigger(decoder.tertiary);
     (void)setGetRPM(decoder.getRPM);
-    (void)setGetCrankAngle(decoder.getCrankAngle);
+    (void)setGetCrankAngle(decoder.pGetCrankAngle);
     (void)setSetEndTeeth(decoder.setEndTeeth);
     (void)setReset(decoder.reset);
     (void)setIsEngineRunning(decoder.isEngineRunning);
@@ -88,7 +88,7 @@ decoder_builder_t& decoder_builder_t::setGetRPM(decoder_t::getRPM_t getRPM)
 
 decoder_builder_t& decoder_builder_t::setGetCrankAngle(decoder_t::getCrankAngle_t getCrankAngle)
 {
-    _decoder.getCrankAngle = getCrankAngle==nullptr ? &nullGetCrankAngle : getCrankAngle;
+    _decoder.pGetCrankAngle = getCrankAngle==nullptr ? &nullGetCrankAngle : getCrankAngle;
     return *this;
 }
 

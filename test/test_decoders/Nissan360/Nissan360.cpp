@@ -1,9 +1,10 @@
-#include <decoders.h>
-#include <globals.h>
-#include <unity.h>
+#include "decoders.h"
+#include "decoder_init.h"
+#include "globals.h"
 #include "scheduler.h"
-#include "../../test_utils.h"
+#include "test_utils.h"
 #include "scheduler_ignition_controller.h"
+#include "crankMaths.h"
 
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
@@ -153,11 +154,41 @@ void test_nissan360_newIgn_12_trigNeg360_1()
     TEST_ASSERT_EQUAL(351, ignitionEndTeeth[0]);
 }
 
+static void test_getCrankAngle(void)
+{
+    extern volatile unsigned long toothLastToothTime;
+    extern volatile unsigned long toothLastMinusOneToothTime;
+    extern volatile int toothCurrentCount;
+    extern decoder_status_t decoderStatus;
+
+    auto decoder = triggerSetup_Nissan360();
+
+    auto run_case = [&](int toothNum, unsigned long elapsedDelta, int trigAngle, int16_t expected) {
+        // Set deterministic tooth times so halfTooth is known
+        toothLastMinusOneToothTime = 1000;
+        toothLastToothTime = 1500; // halfTooth = 250
+        toothCurrentCount = toothNum;
+        decoderStatus.syncStatus = SyncStatus::Full;
+        configPage4.triggerAngle = trigAngle;
+
+        int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + elapsedDelta);
+        TEST_ASSERT_INT16_WITHIN_MESSAGE(0, expected, angle, "Nissan360 Crank Angle");
+    };
+
+    // halfTooth = (1500-1000)/2 = 250
+    // Cases: elapsed <=250 -> no extra degree; elapsed >250 -> +1 degree
+    run_case(1, 100, 0, 0);       // tooth 1, before half -> 0 deg
+    run_case(1, 300, 0, 1);       // tooth 1, after half -> 1 deg
+    run_case(2, 100, 0, 2);       // tooth 2 -> 2 deg
+    run_case(36, 100, 90, 160);   // tooth 36: (35*2)=70 + 90 = 160
+    run_case(180, 300, 0, 359);   // tooth 180: (179*2)=358 + 1 => 359 deg
+    // Negative triggerAngle should wrap into positive range
+    run_case(1, 100, -90, 270);   // -90 -> +360 => 270
+}
+
 void testNissan360()
 {
   SET_UNITY_FILENAME() {
-
-
     RUN_TEST_P(test_nissan360_newIgn_12_trig0_1);
     RUN_TEST_P(test_nissan360_newIgn_12_trig90_1);
     RUN_TEST_P(test_nissan360_newIgn_12_trig180_1);
@@ -167,5 +198,6 @@ void testNissan360()
     RUN_TEST_P(test_nissan360_newIgn_12_trigNeg180_1);
     RUN_TEST_P(test_nissan360_newIgn_12_trigNeg270_1);
     RUN_TEST_P(test_nissan360_newIgn_12_trigNeg360_1);
+    RUN_TEST_P(test_getCrankAngle);
   }
 }

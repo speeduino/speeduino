@@ -39,7 +39,7 @@ static void assert_decoder(const decoder_t &decoder)
     TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.getRPM, defaultDecoder.getRPM, "getRPM");
     
     // Mandatory
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.getCrankAngle, defaultDecoder.getCrankAngle, "getCrankAngle");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.pGetCrankAngle, defaultDecoder.pGetCrankAngle, "getCrankAngle");
 
     // Per tooth ignition is optional
     if (decoder.getFeatures().supportsPerToothIgnition)

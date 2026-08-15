@@ -71,6 +71,8 @@ static void test_toothLogger(uint8_t decoderNum, uint8_t configSetting, uint8_t 
 
   pinNumbers.pinTrigger = 19; // Example pin number
   configPage4.TrigEdge = configSetting;
+  configPage4.triggerTeeth = 12;
+  configPage2.nCylinders = 4;
   currentStatus.initialisationComplete = false;
   auto decoder = buildDecoder(decoderNum);
 
