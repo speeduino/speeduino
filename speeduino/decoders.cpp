@@ -77,9 +77,9 @@ static volatile unsigned long targetGap3;
 TESTABLE_STATIC volatile unsigned long toothOneTime = 0; //The time (micros()) that tooth 1 last triggered
 TESTABLE_STATIC volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to last time (micros()) that tooth 1 last triggered
 static volatile unsigned long lastSyncRevolution = 0; // the revolution value of last valid sync
-static volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
+TESTABLE_STATIC volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 
-static volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
+TESTABLE_STATIC volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 
 static uint16_t triggerActualTeeth;
 TESTABLE_STATIC volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
@@ -783,7 +783,7 @@ static uint16_t getRPM_missingTooth(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_missingTooth(void)
+static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -801,7 +801,7 @@ static int16_t getCrankAngle_missingTooth(void)
     //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
     if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
 
-    lastCrankAngleCalc = micros();
+    lastCrankAngleCalc = currMicros;
     elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
     crankAngle += timeToAngle(elapsedTime);
 
@@ -1025,7 +1025,7 @@ static uint16_t getRPM_DualWheel(void)
 /** Dual Wheel - Get Crank angle.
  * 
  * */
-static int16_t getCrankAngle_DualWheel(void)
+static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1036,7 +1036,7 @@ static int16_t getCrankAngle_DualWheel(void)
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
     tempRevolutionOne = revolutionOne;
-    lastCrankAngleCalc = micros();
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     //Handle case where the secondary tooth was the last one seen
@@ -1210,7 +1210,7 @@ static uint16_t getRPM_BasicDistributor(void)
   return tempRPM;
 
 }
-static int16_t getCrankAngle_BasicDistributor(void)
+static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1219,7 +1219,7 @@ static int16_t getCrankAngle_BasicDistributor(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
@@ -1412,7 +1412,7 @@ static uint16_t getRPM_GM7X(void)
 {
    return stdGetRPM(CRANK_SPEED);
 }
-static int16_t getCrankAngle_GM7X(void)
+static int16_t getCrankAngle_GM7X(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1421,7 +1421,7 @@ static int16_t getCrankAngle_GM7X(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
@@ -1784,7 +1784,7 @@ static uint16_t getRPM_4G63(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_4G63(void)
+static int16_t getCrankAngle_4G63(uint32_t currMicros)
 {
     int crankAngle = 0;
     if(decoderStatus.syncStatus==SyncStatus::Full)
@@ -1796,7 +1796,7 @@ static int16_t getCrankAngle_4G63(void)
       noInterrupts();
       tempToothCurrentCount = toothCurrentCount;
       tempToothLastToothTime = toothLastToothTime;
-      lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+      lastCrankAngleCalc = currMicros;
       interrupts();
 
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
@@ -1966,7 +1966,7 @@ static uint16_t getRPM_24X(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int16_t getCrankAngle_24X(void)
+static int16_t getCrankAngle_24X(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -1976,7 +1976,7 @@ static int16_t getCrankAngle_24X(void)
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
     tempRevolutionOne = revolutionOne;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     int crankAngle;
@@ -2097,7 +2097,7 @@ static uint16_t getRPM_Jeep2000(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int16_t getCrankAngle_Jeep2000(void)
+static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2106,7 +2106,7 @@ static int16_t getCrankAngle_Jeep2000(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     int crankAngle;
@@ -2227,7 +2227,7 @@ static uint16_t getRPM_Audi135(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int16_t getCrankAngle_Audi135(void)
+static int16_t getCrankAngle_Audi135(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2238,7 +2238,7 @@ static int16_t getCrankAngle_Audi135(void)
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
     tempRevolutionOne = revolutionOne;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     //Handle case where the secondary tooth was the last one seen
@@ -2336,7 +2336,7 @@ static uint16_t getRPM_HondaD17(void)
    return stdGetRPM(CRANK_SPEED);
 }
 
-static int16_t getCrankAngle_HondaD17(void)
+static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2345,7 +2345,7 @@ static int16_t getCrankAngle_HondaD17(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     //Check if the last tooth seen was the reference tooth 13 (Number 0 here). All others can be calculated, but tooth 3 has a unique angle
@@ -2469,7 +2469,7 @@ static uint16_t getRPM_HondaJ32(void)
   return RpmFromRevolutionTimeUs(currentStatus.revolutionTime); // currentStatus.revolutionTime set by SetRevolutionTime()
 }
 
-static int16_t getCrankAngle_HondaJ32(void)
+static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
 {
   // Returns values from 0 to 360.
   // Tooth 1 time occurs 360/24 degrees after TDC.
@@ -2478,7 +2478,7 @@ static int16_t getCrankAngle_HondaJ32(void)
   uint16_t tempToothCurrentCount;
   noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     elapsedTime = lastCrankAngleCalc - toothLastToothTime;
   interrupts();
 
@@ -2682,7 +2682,7 @@ static uint16_t getRPM_Miata9905(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_Miata9905(void)
+static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
 {
     int crankAngle = 0;
     //if(decoderStatus.syncStatus==SyncStatus::Full)
@@ -2694,7 +2694,7 @@ static int16_t getCrankAngle_Miata9905(void)
       noInterrupts();
       tempToothCurrentCount = toothCurrentCount;
       tempToothLastToothTime = toothLastToothTime;
-      lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+      lastCrankAngleCalc = currMicros;
       interrupts();
 
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
@@ -2910,7 +2910,7 @@ static uint16_t getRPM_MazdaAU(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_MazdaAU(void)
+static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
 {
     int crankAngle = 0;
     if(decoderStatus.syncStatus==SyncStatus::Full)
@@ -2922,7 +2922,7 @@ static int16_t getCrankAngle_MazdaAU(void)
       noInterrupts();
       tempToothCurrentCount = toothCurrentCount;
       tempToothLastToothTime = toothLastToothTime;
-      lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+      lastCrankAngleCalc = currMicros;
       interrupts();
 
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
@@ -2986,7 +2986,7 @@ static uint16_t getRPM_non360(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_non360(void)
+static int16_t getCrankAngle_non360(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -2995,7 +2995,7 @@ static int16_t getCrankAngle_non360(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     //Handle case where the secondary tooth was the last one seen
@@ -3203,7 +3203,7 @@ static uint16_t getRPM_Nissan360(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_Nissan360(void)
+static int16_t getCrankAngle_Nissan360(uint32_t currMicros)
 {
   //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
   int crankAngle = 0;
@@ -3215,7 +3215,7 @@ static int16_t getCrankAngle_Nissan360(void)
   tempToothLastToothTime = toothLastToothTime;
   tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
   tempToothCurrentCount = toothCurrentCount;
-  lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+  lastCrankAngleCalc = currMicros;
   interrupts();
 
   crankAngle = ( (tempToothCurrentCount - 1) * 2) + configPage4.triggerAngle;
@@ -3461,7 +3461,7 @@ static uint16_t getRPM_Subaru67(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_Subaru67(void)
+static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
 {
   int crankAngle = 0;
   if( decoderStatus.syncStatus==SyncStatus::Full )
@@ -3473,7 +3473,7 @@ static int16_t getCrankAngle_Subaru67(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
@@ -3670,7 +3670,7 @@ static uint16_t getRPM_Daihatsu(void)
   return tempRPM;
 
 }
-static int16_t getCrankAngle_Daihatsu(void)
+static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -3680,7 +3680,7 @@ static int16_t getCrankAngle_Daihatsu(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     crankAngle = toothAngles[tempToothCurrentCount-1] + configPage4.triggerAngle; //Crank angle of the last tooth seen
@@ -3817,7 +3817,7 @@ static uint16_t getRPM_Harley(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_Harley(void)
+static int16_t getCrankAngle_Harley(uint32_t currMicros)
 {
   //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
   unsigned long tempToothLastToothTime;
@@ -3826,7 +3826,7 @@ static int16_t getCrankAngle_Harley(void)
   noInterrupts();
   tempToothCurrentCount = toothCurrentCount;
   tempToothLastToothTime = toothLastToothTime;
-  lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+  lastCrankAngleCalc = currMicros;
   interrupts();
 
   //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
@@ -4289,7 +4289,7 @@ static uint16_t getRPM_420a(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_420a(void)
+static int16_t getCrankAngle_420a(uint32_t currMicros)
 {
   //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
   unsigned long tempToothLastToothTime;
@@ -4298,7 +4298,7 @@ static int16_t getCrankAngle_420a(void)
   noInterrupts();
   tempToothCurrentCount = toothCurrentCount;
   tempToothLastToothTime = toothLastToothTime;
-  lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+  lastCrankAngleCalc = currMicros;
   interrupts();
 
   int crankAngle;
@@ -4551,7 +4551,7 @@ static uint16_t getRPM_FordST170(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_FordST170(void)
+static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -4569,7 +4569,7 @@ static int16_t getCrankAngle_FordST170(void)
     //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
     if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
 
-    lastCrankAngleCalc = micros();
+    lastCrankAngleCalc = currMicros;
     elapsedTime = (lastCrankAngleCalc - tempToothLastToothTime);
     crankAngle += timeToAngle(elapsedTime);
 
@@ -5195,7 +5195,7 @@ static uint16_t getRPM_Vmax(void)
 }
 
 
-static int16_t getCrankAngle_Vmax(void)
+static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 {
   //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
   unsigned long tempToothLastToothTime;
@@ -5204,7 +5204,7 @@ static int16_t getCrankAngle_Vmax(void)
   noInterrupts();
   tempsecondaryToothCount = secondaryToothCount;
   tempToothLastToothTime = toothLastToothTime;
-  lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+  lastCrankAngleCalc = currMicros;
   interrupts();
 
   //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
@@ -6023,13 +6023,13 @@ static uint16_t getRPM_SuzukiK6A(void)
   return tempRPM;
 }
 
-static int16_t getCrankAngle_SuzukiK6A(void)
+static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
 {
   //Grab some variables that are used in the trigger code and assign them to temp variables.
   noInterrupts();
   uint16_t tempToothCurrentCount = toothCurrentCount;
   unsigned long tempToothLastToothTime = toothLastToothTime;
-  lastCrankAngleCalc = micros(); //micros() is no longer interrupt safe
+  lastCrankAngleCalc = currMicros;
   interrupts();
 
   if (tempToothCurrentCount>0U) {
@@ -6277,7 +6277,7 @@ static uint16_t getRPM_FordTFI(void)
 /** Ford TFI - Get Crank angle.
  * 
  * */
-static int16_t getCrankAngle_FordTFI(void)
+static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
 {
     //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
     unsigned long tempToothLastToothTime;
@@ -6286,7 +6286,7 @@ static int16_t getCrankAngle_FordTFI(void)
     noInterrupts();
     tempToothCurrentCount = toothCurrentCount;
     tempToothLastToothTime = toothLastToothTime;
-    lastCrankAngleCalc = micros();
+    lastCrankAngleCalc = currMicros;
     interrupts();
 
     //Handle case where the secondary tooth was the last one seen

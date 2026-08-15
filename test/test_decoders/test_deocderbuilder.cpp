@@ -11,7 +11,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     TEST_ASSERT_NOT_NULL(decoder.tertiary.callback);
 
     TEST_ASSERT_NOT_NULL(decoder.getRPM);
-    TEST_ASSERT_NOT_NULL(decoder.getCrankAngle);
+    TEST_ASSERT_NOT_NULL(decoder.pGetCrankAngle);
     TEST_ASSERT_NOT_NULL(decoder.setEndTeeth);
     TEST_ASSERT_NOT_NULL(decoder.reset);
     TEST_ASSERT_NOT_NULL(decoder.getStatus);
@@ -102,7 +102,7 @@ static void test_setGetRPM(void)
     assert_decoder_builder( builder );
 }
 
-static int16_t incrementGetCrankAngle(void)
+static int16_t incrementGetCrankAngle(uint32_t)
 {
     counter++;
     return 0;

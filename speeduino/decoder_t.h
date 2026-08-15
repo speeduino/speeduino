@@ -108,8 +108,15 @@ struct decoder_t
 
   /// @{
   /** @brief The function to get the crank angle */
-  using getCrankAngle_t = int16_t(*)(void);
-  getCrankAngle_t getCrankAngle;
+  using getCrankAngle_t = int16_t(*)(uint32_t);
+  getCrankAngle_t pGetCrankAngle;
+  /// @}
+
+  /// @{
+  /** @brief The function to get the crank angle */
+  int16_t getCrankAngle(void) const {
+    return pGetCrankAngle(micros());
+  };
   /// @}
 
   /// @{
