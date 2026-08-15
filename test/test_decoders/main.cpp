@@ -27,7 +27,17 @@ void runAllDecoderTests(void)
     extern void testDecoderApiCoverage(void);
     extern void testinterrupt_t(void);
     extern void testgetCrankAngle(void);
-    
+    extern void testGM7X(void);
+    extern void testHondaJ32(void);
+    extern void test4G63(void);
+    extern void test24X(void);
+    extern void testJeep2000(void);
+    extern void testMiata9905(void);
+    extern void testMazdaAU(void);
+    extern void testSubaru67(void);
+    extern void test420a(void);
+    extern void testVMax(void);
+
     testMissingTooth();
     testDualWheel();
     testRenix();
@@ -36,6 +46,17 @@ void runAllDecoderTests(void)
     testNGC();
     testSuzukiK6A_setEndTeeth();
     testSuzukiK6A_getCrankAngle();
+    testGM7X();
+    testHondaJ32();
+    test4G63();
+    test24X();
+    testJeep2000();
+    testMiata9905();
+    testMazdaAU();
+    testSubaru67();
+    test420a();
+    testVMax();
+
     testDecoder_General();
     testToothLoggers();
     testDecoderBuilder();
