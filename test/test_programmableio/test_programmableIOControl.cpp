@@ -68,10 +68,10 @@ static void test_ProgrammableIOGetData_two_byte_entry(void)
 static void test_ProgrammableIOGetData_special_indices(void)
 {
     runSecsX10 = 1000U;
-    TEST_ASSERT_EQUAL_INT16(32768, programmableIOGetData(239U, mockGetLogEntry));
+    TEST_ASSERT_EQUAL_INT16(1000, programmableIOGetData(239U, mockGetLogEntry));
 
-    runSecsX10 = 40000U;
-    TEST_ASSERT_EQUAL_INT16(40000, programmableIOGetData(239U, mockGetLogEntry));
+    runSecsX10 = INT16_MAX + 999;
+    TEST_ASSERT_EQUAL_INT16(INT16_MAX, programmableIOGetData(239U, mockGetLogEntry));
 
     static const byte logData[] = { 0, 0, 0, 0, 0, 0, 12, 18 }; // Little-endian representation of 0x1234
     mockLogEntryData = logData;
