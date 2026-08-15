@@ -7,7 +7,7 @@ static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
   extern volatile unsigned long toothLastToothTime;
-  extern volatile uint8_t toothCurrentCount;
+  extern volatile uint16_t toothCurrentCount;
 
   auto decoder = triggerSetup_Jeep2000();
 

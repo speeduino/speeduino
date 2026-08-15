@@ -10,7 +10,7 @@ void tearDown(void)
   detachInterrupt( digitalPinToInterrupt(pinNumbers.pinTrigger3) );
 }
 
-void runAllDecoderTests(void)
+void runAllTests(void)
 {
     extern void testMissingTooth(void);
     extern void testDualWheel(void);
@@ -20,13 +20,6 @@ void runAllDecoderTests(void)
     extern void testNGC(void);
     extern void testSuzukiK6A_setEndTeeth(void);
     extern void testSuzukiK6A_getCrankAngle(void);
-    extern void testDecoder_General(void);
-    extern void testToothLoggers(void);
-    extern void testDecoderBuilder(void);
-    extern void testDecoderInit(void);
-    extern void testDecoderApiCoverage(void);
-    extern void testinterrupt_t(void);
-    extern void testgetCrankAngle(void);
     extern void testGM7X(void);
     extern void testHondaJ32(void);
     extern void test4G63(void);
@@ -56,14 +49,6 @@ void runAllDecoderTests(void)
     testSubaru67();
     test420a();
     testVMax();
-
-    testDecoder_General();
-    testToothLoggers();
-    testDecoderBuilder();
-    testDecoderInit();
-    testDecoderApiCoverage();
-    testinterrupt_t();
-    testgetCrankAngle();
 }
 
-TEST_HARNESS(runAllDecoderTests)
+TEST_HARNESS(runAllTests)

@@ -8,7 +8,7 @@ extern decoder_status_t decoderStatus;
 extern volatile unsigned long toothLastToothTime;
 extern volatile unsigned long toothLastMinusOneToothTime;
 extern volatile uint16_t triggerToothAngle;
-extern volatile uint8_t toothCurrentCount;
+extern volatile uint16_t toothCurrentCount;
 extern volatile bool revolutionOne; 
 
 extern uint16_t timeToAngleIntervalTooth(uint32_t time);
