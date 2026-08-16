@@ -3,6 +3,7 @@
 #include "decoders.h"
 #include "init.h"
 #include "globals.h"
+#include "crankMaths.h"
 
 extern volatile uint16_t triggerToothAngle;
 extern volatile uint16_t toothCurrentCount;
@@ -12,11 +13,12 @@ static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCran
     configPage4.triggerAngle = 0U;
 
     extern volatile unsigned long toothLastToothTime;
-    toothLastToothTime = micros() - 150U;
+    uint32_t currMicros = 5000;
+    toothLastToothTime = currMicros - 150U;
     toothCurrentCount = toothNum;
-    // Allow some variance since the algorithm relies on calling micros();
-    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expectedCrankAngle, decoder.getCrankAngle(), "Crank Angle");
-    TEST_ASSERT_EQUAL_MESSAGE(expectedToothAngle, triggerToothAngle, "Tooth Angle");
+    setAngleConverterRevolutionTime(0);
+    TEST_ASSERT_INT16_WITHIN(1, expectedCrankAngle, decoder.pGetCrankAngle(currMicros));
+    TEST_ASSERT_EQUAL(expectedToothAngle, triggerToothAngle);
 }
 
 static void test_k6a_getCrankAngle_tooth0(void) {
