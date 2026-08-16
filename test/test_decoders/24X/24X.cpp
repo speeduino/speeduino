@@ -38,6 +38,9 @@ static void test_getCrankAngle(void)
   run_case(0, 0 + dt_add);
 
   // When revolutionOne is set, result should be += 360
+  configPage4.TrigSpeed = CAM_SPEED;
+  run_case(0, 0 + dt_add, true);
+  configPage4.TrigSpeed = CRANK_SPEED;
   run_case(0, 0 + dt_add + 360, true);
 
   // trigger angle offset
