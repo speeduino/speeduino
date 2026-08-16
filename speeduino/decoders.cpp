@@ -454,6 +454,16 @@ TESTABLE_STATIC __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bo
   return currentStatus.RPM;
 }
 
+static int16_t getSecondRevolutionOffset(bool isRevolutionOne, const config4 &page4)
+{
+  //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
+  if ( (isRevolutionOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
+  { 
+    return 360; 
+  }
+  return 0;
+}
+
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
 {
   auto crankMax = std::max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ);
@@ -795,9 +805,7 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     
-    //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-    if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
-
+    crankAngle += getSecondRevolutionOffset(tempRevolutionOne, configPage4);
     crankAngle += timeToAngle(timeElapsed(currMicros, tempToothLastToothTime));
 
     return clampCrankAngle(crankAngle);
@@ -1036,9 +1044,7 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
 
     crankAngle += timeToAngle(currMicros - tempToothLastToothTime);
-
-    //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-    if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
+    crankAngle += getSecondRevolutionOffset(tempRevolutionOne, configPage4);
 
     return clampCrankAngle(crankAngle);
 }
@@ -1951,11 +1957,8 @@ static int16_t getCrankAngle_24X(uint32_t currMicros)
     if (tempToothCurrentCount == 0) { crankAngle = 0 + configPage4.triggerAngle; } //This is the special case to handle when the 'last tooth' seen was the cam tooth. 0 is the angle at which the crank tooth goes high (Within 360 degrees).
     else { crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle;} //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
-    //Estimate the number of degrees travelled since the last tooth}
     crankAngle += timeToAngle(currMicros - tempToothLastToothTime);
-
-    //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-    if (tempRevolutionOne == 1) { crankAngle += 360; }
+    crankAngle += getSecondRevolutionOffset(tempRevolutionOne, configPage4);
 
     return clampCrankAngle(crankAngle);
 }
@@ -2206,9 +2209,7 @@ static int16_t getCrankAngle_Audi135(uint32_t currMicros)
     
     //Estimate the number of degrees travelled since the last tooth}
     crankAngle += timeToAngle(currMicros - tempToothLastToothTime);
-
-    //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-    if (tempRevolutionOne) { crankAngle += 360; }
+    crankAngle += getSecondRevolutionOffset(tempRevolutionOne, configPage4);
  
     return clampCrankAngle(crankAngle);
 }
@@ -4469,9 +4470,7 @@ static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 
     int crankAngle = ((tempToothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
     
-    //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-    if ( (tempRevolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) ) { crankAngle += 360; }
-
+    crankAngle += getSecondRevolutionOffset(tempRevolutionOne, configPage4);
     crankAngle += timeToAngle(currMicros - tempToothLastToothTime);
     
     return clampCrankAngle(crankAngle);
