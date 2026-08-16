@@ -16,7 +16,7 @@ static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCran
     uint32_t currMicros = 5000;
     toothLastToothTime = currMicros - 150U;
     toothCurrentCount = toothNum;
-    setAngleConverterRevolutionTime(0);
+    setAngleConverterRevolutionTime(1);
     TEST_ASSERT_INT16_WITHIN(1, expectedCrankAngle, decoder.pGetCrankAngle(currMicros));
     TEST_ASSERT_EQUAL(expectedToothAngle, triggerToothAngle);
 }
