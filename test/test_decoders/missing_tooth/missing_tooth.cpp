@@ -31,346 +31,119 @@ extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 
-void test_missingtooth_newIgn_36_1_trig0_1()
+static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, IgnitionSchedule &schedule, uint8_t index, int8_t advance)
 {
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=0
+    schedule.dischargeAngle = 360 + advance; 
+    decoder.setEndTeeth();
+    TEST_ASSERT_EQUAL(expected, ignitionEndTeeth[index]);
+}
+
+static void test_missingtooth_newIgn_36_1()
+{
     decoder_t decoder = test_setup_36_1();
     configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
+    
     configPage4.triggerAngle = 0; //No trigger offset
+    assert_setEndTeeth(34, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(35, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(35, decoder, ignitionSchedule1, 0, 10);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
+    configPage4.triggerAngle = 90;
+    assert_setEndTeeth(25, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(26, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(27, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = 180;
+    assert_setEndTeeth(16, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(17, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(18, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = 270;
+    assert_setEndTeeth(7, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(8, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(9, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = 360;
+    assert_setEndTeeth(34, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(35, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(35, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = -90;
+    assert_setEndTeeth(7, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(8, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(9, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = -180;
+    assert_setEndTeeth(16, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(17, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(18, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = -270;
+    assert_setEndTeeth(25, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(26, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(27, decoder, ignitionSchedule1, 0, 10);
+    
+    configPage4.triggerAngle = -360;
+    assert_setEndTeeth(34, decoder, ignitionSchedule1, 0, -10);
+    assert_setEndTeeth(35, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(35, decoder, ignitionSchedule1, 0, 10);
 }
 
-void test_missingtooth_newIgn_36_1_trig90_1()
+static void test_missingtooth_newIgn_60_2()
 {
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=90
-    decoder_t decoder = test_setup_36_1();
+    decoder_t decoder = test_setup_60_2();
     configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 90; //No trigger offset
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trig180_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=180
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 180; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trig270_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=270
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 270; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trig360_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=360
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 360; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg90_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-90
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -90; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg180_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-180
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -180; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg270_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-270
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -270; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[0]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg360_1()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-360
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule1.dischargeAngle = 360 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -360; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
-}
-
-// ******* CHannel 2 *******
-void test_missingtooth_newIgn_36_1_trig0_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=0
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
     configPage4.triggerAngle = 0; //No trigger offset
+    assert_setEndTeeth(57, decoder, ignitionSchedule1, 0, -7);
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trig90_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=90
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 90; //No trigger offset
+    configPage4.triggerAngle = 90;
+    assert_setEndTeeth(43, decoder, ignitionSchedule1, 0, -6);
+    assert_setEndTeeth(44, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(45, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trig180_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=180
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 180; //No trigger offset
+    configPage4.triggerAngle = 180;
+    assert_setEndTeeth(28, decoder, ignitionSchedule1, 0, -6);
+    assert_setEndTeeth(29, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(30, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trig270_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=270
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 270; //No trigger offset
+    configPage4.triggerAngle = 270;
+    assert_setEndTeeth(13, decoder, ignitionSchedule1, 0, -6);
+    assert_setEndTeeth(14, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(15, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trig360_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=360
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 360; //No trigger offset
+    configPage4.triggerAngle = 360;
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, -7);
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg90_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-90
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -90; //No trigger offset
+    configPage4.triggerAngle = -90;
+    assert_setEndTeeth(13, decoder, ignitionSchedule1, 0, -6);
+    assert_setEndTeeth(14, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(15, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg180_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-180
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -180; //No trigger offset
+    configPage4.triggerAngle = -180;
+    assert_setEndTeeth(28, decoder, ignitionSchedule1, 0, -6);
+    assert_setEndTeeth(29, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(30, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg270_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-270
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -270; //No trigger offset
+    configPage4.triggerAngle = -270;
+    assert_setEndTeeth(43, decoder, ignitionSchedule1, 0, -6);
+    assert_setEndTeeth(44, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(45, decoder, ignitionSchedule1, 0, 6);
     
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_36_1_trigNeg360_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 36-1
-    //Advance: 10
-    //triggerAngle=-360
-    decoder_t decoder = test_setup_36_1();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = -360; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_60_2_trig0_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 60-2
-    //Advance: 10
-    //triggerAngle=300
-    auto decoder = test_setup_60_2();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 0; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(57, ignitionEndTeeth[1]);
-}
-
-void test_missingtooth_newIgn_60_2_trig181_2()
-{
-    //Test the set end tooth function. Conditions:
-    //Trigger: 60-2
-    //Advance: 10
-    //triggerAngle=300
-    auto decoder = test_setup_60_2();
-    configPage4.sparkMode = IGN_MODE_WASTED;
-    ignitionSchedule2.dischargeAngle = 180 - 10; //Set 10 degrees advance
-    configPage4.triggerAngle = 181; //No trigger offset
-    
-    decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(58, ignitionEndTeeth[1]);
-}
-
-
-void test_missingtooth_newIgn_2()
-{
-
-}
-void test_missingtooth_newIgn_3()
-{
-
-}
-void test_missingtooth_newIgn_4()
-{
-
+    configPage4.triggerAngle = -360;
+    assert_setEndTeeth(57, decoder, ignitionSchedule1, 0, -7);
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 0);
+    assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 6);
 }
 
 void testMissingTooth()
 {
-   SET_UNITY_FILENAME() {
-
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig0_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig90_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig180_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig270_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig360_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg90_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg180_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg270_1);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg360_1);
-
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig0_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig90_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig180_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig270_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trig360_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg90_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg180_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg270_2);
-  RUN_TEST_P(test_missingtooth_newIgn_36_1_trigNeg360_2);
-
-  //RUN_TEST_P(test_missingtooth_newIgn_60_2_trig181_2);
-  //RUN_TEST_P(test_missingtooth_newIgn_60_2_trig182_2);
-   }
+    SET_UNITY_FILENAME() {
+        RUN_TEST_P(test_missingtooth_newIgn_36_1);
+        RUN_TEST_P(test_missingtooth_newIgn_60_2);
+    }
 }
