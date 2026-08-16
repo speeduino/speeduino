@@ -156,9 +156,9 @@ static void test_getCrankAngle(void)
         decoderStatus.syncStatus = SyncStatus::Full;
         decoderStatus.toothAngleIsCorrect = true;
         configPage4.triggerAngle = trigAngle;
+        CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
         setAngleConverterRevolutionTime(2000);
-        int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
-        TEST_ASSERT_EQUAL(expected, angle);
+        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
     };
 
     // For 36-1 wheel: triggerToothAngle = 10 degrees. timeToAngle(100) ~= 18 deg

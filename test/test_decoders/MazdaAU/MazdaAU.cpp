@@ -2,6 +2,7 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "crankMaths.h"
 
 static void test_getCrankAngle(void)
 {
@@ -17,6 +18,7 @@ static void test_getCrankAngle(void)
     decoderStatus.toothAngleIsCorrect = true;
     decoderStatus.syncStatus = SyncStatus::Full;
     configPage4.triggerAngle = trigAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
   };
 
