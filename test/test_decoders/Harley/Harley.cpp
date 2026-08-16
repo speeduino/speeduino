@@ -11,8 +11,9 @@ static void test_getCrankAngle(void)
   auto decoder = triggerSetup_Harley();
 
   // Make time->angle deterministic for tests
+  CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
   setAngleConverterRevolutionTime(2000);
-
+    
   // Base case: tooth 1 should map to 0 + triggerAngle
   configPage4.triggerAngle = 0;
   toothLastToothTime = 10000;

@@ -19,9 +19,9 @@ static void test_getCrankAngle(void)
     decoderStatus.toothAngleIsCorrect = true;
     revolutionOne = revOne ? 1 : 0;
     configPage4.triggerAngle = trigAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_EQUAL(expected, angle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg with revolutionTime 2000

@@ -2,6 +2,7 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "crankMaths.h"
 
 static void test_getCrankAngle(void)
 {
@@ -16,9 +17,9 @@ static void test_getCrankAngle(void)
     toothCurrentCount = toothNum;
     decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_EQUAL(expected, angle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg when revolution time is 2000us

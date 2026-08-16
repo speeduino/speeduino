@@ -16,6 +16,7 @@ static void test_getCrankAngle(void)
   toothLastToothTime = 2000;
   toothLastMinusOneToothTime = toothLastToothTime - 500;
   decoderStatus.toothAngleIsCorrect = true;
+  CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
   setAngleConverterRevolutionTime(2000);
 
   // 100us after the last tooth — use same delta for all checks

@@ -11,6 +11,7 @@ static void test_getCrankAngle(void)
   auto decoder = triggerSetup_HondaD17();
 
   // Use deterministic time->angle conversion
+  CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
   setAngleConverterRevolutionTime(2000);
 
   // Setup common deterministic state
