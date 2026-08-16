@@ -140,10 +140,51 @@ static void test_missingtooth_newIgn_60_2()
     assert_setEndTeeth(58, decoder, ignitionSchedule1, 0, 6);
 }
 
+static void test_getCrankAngle(void)
+{
+    extern decoder_status_t decoderStatus;
+    extern volatile unsigned long toothLastToothTime;
+    extern volatile int toothCurrentCount;
+    extern volatile bool revolutionOne;
+
+    decoder_t decoder = test_setup_36_1();
+
+    auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
+        toothLastToothTime = 2000;
+        toothCurrentCount = toothCount;
+        revolutionOne = revOne;
+        decoderStatus.syncStatus = SyncStatus::Full;
+        decoderStatus.toothAngleIsCorrect = true;
+        configPage4.triggerAngle = trigAngle;
+        setAngleConverterRevolutionTime(2000);
+        int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
+        TEST_ASSERT_EQUAL(expected, angle);
+    };
+
+    // For 36-1 wheel: triggerToothAngle = 10 degrees. timeToAngle(100) ~= 18 deg
+    const int dt = 18;
+
+    // Basic teeth
+    run_case(1, false, 100, 0, 0 + dt);
+    run_case(2, false, 100, 0, 10 + dt);
+    run_case(10, false, 100, 0, 90 + dt);
+    run_case(35, false, 100, 0, 340 + dt);
+
+    // Trigger angle offset
+    run_case(1, false, 100, 90, 90 + dt);
+
+    // Revolution one true should add 360 degrees
+    configPage4.TrigSpeed = CAM_SPEED;
+    run_case(1, true, 100, 0, 0 + dt);
+    configPage4.TrigSpeed = CRANK_SPEED;
+    run_case(1, true, 100, 0, 360 + 0 + dt);
+}
+
 void testMissingTooth()
 {
     SET_UNITY_FILENAME() {
         RUN_TEST_P(test_missingtooth_newIgn_36_1);
         RUN_TEST_P(test_missingtooth_newIgn_60_2);
+        RUN_TEST_P(test_getCrankAngle);
     }
 }

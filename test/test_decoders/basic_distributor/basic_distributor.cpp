@@ -7,13 +7,17 @@ static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
   extern volatile unsigned long toothLastToothTime;
-  extern volatile int secondaryToothCount;
+  extern volatile int toothCurrentCount;
 
-  auto decoder = triggerSetup_Vmax();
+  // Configure a 4-tooth distributor (4-cylinder cam-spaced)
+  configPage2.nCylinders = 4;
+  configPage4.triggerTeeth = 4;
 
-  auto run_case = [&](int secTooth, int delta, int trigAngle, int16_t expected) {
+  auto decoder = triggerSetup_BasicDistributor();
+
+  auto run_case = [&](int toothCount, int delta, int trigAngle, int16_t expected) {
     toothLastToothTime = 2000;
-    secondaryToothCount = secTooth;
+    toothCurrentCount = toothCount;
     decoderStatus.syncStatus = SyncStatus::Full;
     decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
@@ -22,21 +26,19 @@ static void test_getCrankAngle(void)
     TEST_ASSERT_EQUAL(expected, angle);
   };
 
-  // timeToAngle(100) ~= 18 deg
-  const int dt = 18;
+  // timeToAngleIntervalTooth(100) ~ 18 deg when revolution time = 2000
+  const int dt = 36;
 
   run_case(1, 100, 0, 0 + dt);
-  run_case(2, 100, 0, 40 + dt);
-  run_case(3, 100, 0, 110 + dt);
-  run_case(4, 100, 0, 180 + dt);
-  run_case(5, 100, 0, 220 + dt);
-  run_case(6, 100, 0, 290 + dt);
+  run_case(2, 100, 0, 180 + dt);
+  run_case(3, 100, 0, 360 + dt);
+  run_case(4, 100, 0, 540 + dt);
 
-  // trigger angle offset
-  run_case(3, 100, 10, 110 + dt + 10);
+  // trigger offset
+  run_case(1, 100, 30, 30 + dt);
 }
 
-void testVMax(void)
+void testBasicDistributor(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);

@@ -13,7 +13,7 @@ static void test_getCrankAngle(void)
 
   auto decoder = triggerSetup_Subaru67();
 
-  auto run_case = [&](int toothNum, int trigAngle, int delta, int16_t expected) {
+  auto setup_case = [&](int toothNum, int trigAngle) {
     toothLastMinusOneToothTime = 1500;
     toothLastToothTime = 2000; // toothTime = 500
     triggerToothAngle = 90; // scale interval-based angle to make delta noticeable
@@ -21,8 +21,11 @@ static void test_getCrankAngle(void)
     decoderStatus.syncStatus = SyncStatus::Full;
     decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
-    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expected, angle, "Subaru67 Crank Angle");
+  };
+
+  auto run_case = [&](int toothNum, int trigAngle, int delta, int16_t expected) {
+    setup_case(toothNum, trigAngle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
   };
 
   // dt = timeToAngleIntervalTooth(100) = 100*90/500 = 18
@@ -44,6 +47,14 @@ static void test_getCrankAngle(void)
 
   // trigger angle offset
   run_case(2, 10, 100,  83 + dt + 10);
+
+  // Zero if not full sync
+  setup_case(1, 0);
+  decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
+  setup_case(1, 0);
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
 }
 
 void testSubaru67(void)

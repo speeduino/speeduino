@@ -30,6 +30,13 @@ void runAllTests(void)
     extern void testSubaru67(void);
     extern void test420a(void);
     extern void testVMax(void);
+    extern void testBasicDistributor(void);
+    extern void testAudi135(void);
+    extern void testDaihatsu(void);
+    extern void testFordTFI(void);
+    extern void testHarley(void);
+    extern void testHondaD17(void);
+    extern void testNon360(void);
 
     testMissingTooth();
     testDualWheel();
@@ -49,6 +56,13 @@ void runAllTests(void)
     testSubaru67();
     test420a();
     testVMax();
+    testBasicDistributor();
+    testAudi135();
+    testDaihatsu();
+    testFordTFI();
+    testHarley();
+    testHondaD17();
+    testNon360();
 }
 
 TEST_HARNESS(runAllTests)

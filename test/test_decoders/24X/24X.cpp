@@ -21,7 +21,7 @@ static void test_getCrankAngle(void)
     configPage4.triggerAngle = trigAngle;
     setAngleConverterRevolutionTime(2000);
     int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_INT16_WITHIN(2, expected, angle);
+    TEST_ASSERT_EQUAL(expected, angle);
   };
 
   // timeToAngle(100) ~= 18 deg with revolutionTime 2000
@@ -29,19 +29,19 @@ static void test_getCrankAngle(void)
 
   // Test several teeth
   run_case(1, 12 + dt_add);   // toothAngles[0] = 12
-//   run_case(2, 18 + dt_add);   // toothAngles[1] = 18
-//   run_case(3, 33 + dt_add);   // toothAngles[2] = 33
-//   run_case(12, 177 + dt_add); // toothAngles[11] = 177
-//   run_case(24, 357 + dt_add); // toothAngles[23] = 357 -> 375
+  run_case(2, 18 + dt_add);   // toothAngles[1] = 18
+  run_case(3, 33 + dt_add);   // toothAngles[2] = 33
+  run_case(12, 177 + dt_add); // toothAngles[11] = 177
+  run_case(24, 357 + dt_add); // toothAngles[23] = 357 -> 375
 
-//   // Cam tooth (0): should yield triggerAngle + dt_add
-//   run_case(0, 0 + dt_add);
+  // Cam tooth (0): should yield triggerAngle + dt_add
+  run_case(0, 0 + dt_add);
 
-//   // When revolutionOne is set, result should be += 360
-//   run_case(0, 0 + dt_add + 360, true);
+  // When revolutionOne is set, result should be += 360
+  run_case(0, 0 + dt_add + 360, true);
 
-//   // trigger angle offset
-//   run_case(1, 12 + dt_add + 10, false, 10);
+  // trigger angle offset
+  run_case(1, 12 + dt_add + 10, false, 10);
 }
 
 void test24X(void)
