@@ -7,7 +7,7 @@
 
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 extern decoder_status_t decoderStatus;
-extern volatile unsigned long toothLastToothTime;
+extern volatile uint32_t toothLastToothTime;
 extern volatile int toothCurrentCount;
 extern volatile bool revolutionOne;
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);

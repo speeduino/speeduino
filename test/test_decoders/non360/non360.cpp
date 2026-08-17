@@ -3,11 +3,15 @@
 #include "../test_utils.h"
 #include "globals.h"
 
+extern volatile uint32_t toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+extern decoder_status_t decoderStatus;
+
 static void test_getCrankAngle(void)
 {
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile int toothCurrentCount;
-
   // Configure a simple non360 wheel: 8 teeth, no multiplier
   configPage4.triggerTeeth = 8;
   configPage4.TrigAngMul = 1;
@@ -49,13 +53,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile int toothCurrentCount;
-  extern decoder_status_t decoderStatus;
-
   // Configure wheel and build decoder
   configPage4.triggerTeeth = 8;
   auto decoder = triggerSetup_non360();

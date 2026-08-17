@@ -4,13 +4,16 @@
 #include "globals.h"
 #include "crankMaths.h"
 
+extern volatile uint32_t toothLastToothTime;
+extern decoder_status_t decoderStatus;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile uint16_t toothCurrentCount;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+extern volatile uint16_t triggerToothAngle;
+
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile uint16_t toothCurrentCount;
-
   // helper to setup times and call
   auto call_angle = [&](auto &decoder, uint8_t toothNum, uint32_t deltaSinceLast, int trigAngle = 0){
     toothLastToothTime = 2000;
@@ -69,13 +72,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile uint16_t triggerToothAngle;
-
   auto decoder = triggerSetup_4G63();
 
   // Cranking path: currentStatus.RPM < currentStatus.crankRPM

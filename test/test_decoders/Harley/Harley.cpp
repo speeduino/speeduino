@@ -3,11 +3,16 @@
 #include "../test_utils.h"
 #include "globals.h"
 
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+extern volatile uint32_t toothLastToothTime;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern decoder_status_t decoderStatus;
+extern unsigned int triggerToothAngle;
+extern volatile int toothCurrentCount;
+
 static void test_getCrankAngle(void)
 {
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile int toothCurrentCount;
-      
   auto decoder = triggerSetup_Harley();
 
   // Make time->angle deterministic for tests
@@ -63,12 +68,6 @@ static void test_getCrankAngle(void)
 static void test_getRPM(void)
 {
   auto decoder = triggerSetup_Harley();
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern decoder_status_t decoderStatus;
-  extern unsigned int triggerToothAngle;
 
   // Ensure sync present
   decoderStatus.syncStatus = SyncStatus::Full;

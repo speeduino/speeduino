@@ -12,7 +12,7 @@ static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCran
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     configPage4.triggerAngle = 0U;
 
-    extern volatile unsigned long toothLastToothTime;
+    extern volatile uint32_t toothLastToothTime;
     uint32_t currMicros = 5000;
     toothLastToothTime = currMicros - 150U;
     toothCurrentCount = toothNum;

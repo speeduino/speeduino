@@ -4,12 +4,15 @@
 #include "globals.h"
 #include "crankMaths.h"
 
+extern decoder_status_t decoderStatus;
+extern volatile uint32_t toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile int toothCurrentCount;
-
   auto decoder = triggerSetup_MazdaAU();
 
   auto setup_case = [&](int toothNum, int trigAngle) {
@@ -50,12 +53,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern decoder_status_t decoderStatus;
-
   auto decoder = triggerSetup_MazdaAU();
 
   // Ensure sync present
