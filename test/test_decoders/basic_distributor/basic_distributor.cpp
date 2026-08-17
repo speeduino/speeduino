@@ -3,13 +3,15 @@
 #include "../test_utils.h"
 #include "globals.h"
 
+extern decoder_status_t decoderStatus;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile uint32_t toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile int toothCurrentCount;
-
   // Configure a 4-tooth distributor (4-cylinder cam-spaced)
   configPage2.nCylinders = 4;
   configPage4.triggerTeeth = 4;
@@ -42,12 +44,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   // Configure a 4-tooth distributor (4-cylinder cam-spaced)
   configPage2.nCylinders = 4;
   configPage2.strokes = FOUR_STROKE;

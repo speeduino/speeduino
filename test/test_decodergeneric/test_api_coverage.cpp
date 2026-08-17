@@ -8,7 +8,7 @@
 extern decoder_status_t decoderStatus;
 extern volatile unsigned long toothOneTime;
 extern volatile unsigned long toothOneMinusOneTime;
-extern volatile unsigned long toothLastToothTime;
+extern volatile uint32_t toothLastToothTime;
 extern volatile unsigned long toothLastMinusOneToothTime;
 extern uint16_t toothCurrentCount;
 extern unsigned long MAX_STALL_TIME;

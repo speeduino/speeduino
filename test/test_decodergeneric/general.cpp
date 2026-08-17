@@ -5,6 +5,7 @@
 extern bool sharedEngineIsRunning(uint32_t curTime);
 extern uint16_t stdGetRPM(bool isCamTeeth);
 extern int crankingGetRPM(byte totalTeeth, bool isCamTeeth);
+extern volatile uint32_t toothLastToothTime;
 
 static void test_stdGetRPM(void)
 {  
@@ -42,7 +43,6 @@ static void test_stdGetRPM(void)
 
 static void test_crankingGetRPM(void)
 {
-  extern volatile unsigned long toothLastToothTime;
   extern volatile unsigned long toothLastMinusOneToothTime;
   extern decoder_status_t decoderStatus;
 
@@ -74,7 +74,6 @@ static void test_crankingGetRPM(void)
 
 static void test_sharedEngineIsRunning(void)
 {
-    extern volatile unsigned long toothLastToothTime;
     extern unsigned long MAX_STALL_TIME;
   
     MAX_STALL_TIME = 1000;

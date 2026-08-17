@@ -1,6 +1,7 @@
 #include "decoder_tooth_tracker.h"
 #include "crankMaths.h"
 #include "elapsed_time.h"
+#include "atomic.h"
 
 static int16_t refineCrankAngle(int16_t crankAngle, uint32_t currMicros, const tooth_tracker_t &tracker)
 {
@@ -12,6 +13,12 @@ static int16_t applyTriggerAngle(int16_t crankAngle, const config4 &page4)
 {
   // Offset the angle by the user defined offset from TDC
   return crankAngle + page4.triggerAngle;
+}
+
+tooth_tracker_t::tooth_tracker_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime)
+: toothCurrentCount(_toothCurrentCount)
+, toothLastToothTime(_toothLastToothTime)
+{
 }
 
 int16_t tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
@@ -58,6 +65,12 @@ static uint16_t getSecondRevolutionOffset(const seq_tooth_tracker_t &tracker, co
   return 0;
 }
 
+seq_tooth_tracker_t::seq_tooth_tracker_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool _revZeroOrOne)
+: tooth_tracker_t(toothCurrentCount, toothLastToothTime)
+, revZeroOrOne(_revZeroOrOne)
+{
+}
+
 int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
 {
     return tooth_tracker_t::calculateCrankAngle(currMicros, triggerToothAngle, page4) + getSecondRevolutionOffset(*this, page4);
@@ -66,4 +79,13 @@ int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t t
 int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
     return tooth_tracker_t::calculateCrankAngle(currMicros, toothAngles, page4) + getSecondRevolutionOffset(*this, page4);
+}
+
+seq_tooth_tracker_t atomic_make_stt(const uint16_t &toothCurrentCount, const volatile uint32_t &toothLastToothTime, const volatile bool &revZeroOrOne)
+{
+  ATOMIC()
+  {
+    return seq_tooth_tracker_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
+  }
+  return seq_tooth_tracker_t(); // Fix spurious compiler warning
 }

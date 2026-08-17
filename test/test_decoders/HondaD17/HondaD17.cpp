@@ -5,7 +5,7 @@
 
 static void test_getCrankAngle(void)
 {
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile int toothCurrentCount;
   extern bool revolutionOne;      
   auto decoder = triggerSetup_HondaD17();
