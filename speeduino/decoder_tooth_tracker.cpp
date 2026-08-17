@@ -16,6 +16,11 @@ static int16_t applyTriggerAngle(int16_t crankAngle, const config4 &page4)
 
 int16_t tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
 {
+  if (toothCurrentCount==0U)
+  {
+    return refineCrankAngle(page4.triggerAngle, currMicros, *this);
+  }
+
   return refineCrankAngle(
           applyTriggerAngle(
             // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus
@@ -28,11 +33,11 @@ int16_t tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t trigg
 
 int16_t tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
-  if (toothCurrentCount==0U)
+  if ((toothCurrentCount==0U) || (toothAngles==nullptr))
   {
     return refineCrankAngle(page4.triggerAngle, currMicros, *this);
-
   }
+
   return refineCrankAngle(
           applyTriggerAngle(
             // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
