@@ -40,6 +40,7 @@
 #include "src/controllers/aircon/airconController.h"
 #include "src/controllers/nitrous/nitrousController.h"
 #include "src/controllers/progammableIO/programmableIOControl.h"
+#include "src/controllers/tacho/tachoController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -222,7 +223,6 @@ void initialiseAll(void)
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.engineProtect.reset();
-    ms_counter = 0;
     fixedCrankingOverride = 0;
     toothHistoryIndex = 0;
     
@@ -246,17 +246,11 @@ void initialiseAll(void)
     interrupts();
     initialiseCLT();
     initialiseTPS();
+    initialiseTachoControl(pinNumbers.pinTachOut, configPage2, configPage6, currentStatus);
 
-    /* tacho sweep function. */
-    currentStatus.tachoSweepEnabled = (configPage2.useTachoSweep > 0);
-    /* SweepMax is stored as a byte, RPM/100. divide by 60 to convert min to sec (net 5/3).  Multiply by ignition pulses per rev.
-       tachoSweepIncr is also the number of tach pulses per second */
-    tachoSweepIncr = configPage2.tachoSweepMaxRPM * currentStatus.maxIgnOutputs * 5 / 3;
-   
     currentStatus.initialisationComplete = true;
     digitalWrite(LED_BUILTIN, HIGH);
 }
-
 
 /** Set board / microcontroller specific pin mappings / assignments.
  * The boardID is switch-case compared against raw boardID integers (not enum or defined label, and probably no need for that either)
@@ -333,8 +327,6 @@ void setPinMapping(byte boardID)
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
-
-  initTacho(pinNumbers.pinTachOut);
 
   //And for inputs
   #if defined(CORE_STM32)

@@ -3,6 +3,7 @@
 #include "acc_mc33810.h"
 #include "timers.h"
 #include "globals.h"
+#include "src/controllers/tacho/tachoController.h"
 
 #if defined(MC33810_SUPPORT)
 static bool controlModeDirect = true;
@@ -28,9 +29,6 @@ void __attribute__((optimize("Os"))) initialiseIgnitionIO(const config4 &page4, 
 
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
- 
-static void tachoOutputOn(void) { if(configPage6.tachoMode) { tachoPulseLow(); } else { tachoOutputFlag = READY; } }
-static void tachoOutputOff(void) { if(configPage6.tachoMode) { tachoPulseHigh(); } }
 
 void beginCoilCharge(uint8_t channel) 
 { 

@@ -18,7 +18,6 @@ static void test_increments_counters_and_sets_1KHz(void)
 {
   setup_oneMsInterval();
   oneMSInterval();
-  TEST_ASSERT_EQUAL_UINT32(1UL, ms_counter);
   TEST_ASSERT_TRUE(BIT_CHECK(TIMER_mask, BIT_TIMER_1KHZ));
   TEST_ASSERT_EQUAL_UINT8(1U, loop5ms);
   TEST_ASSERT_EQUAL_UINT8(1U, loop20ms);
