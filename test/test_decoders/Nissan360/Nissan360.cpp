@@ -6,7 +6,14 @@
 #include "scheduler_ignition_controller.h"
 #include "crankMaths.h"
 
+extern volatile uint32_t toothLastToothTime;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile int toothCurrentCount;
+extern decoder_status_t decoderStatus;
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
 static void assert_setEndTeeth(uint16_t expected, decoder_t &decoder, IgnitionSchedule &schedule, uint8_t index, int8_t advance)
@@ -53,11 +60,6 @@ void test_setEndTeeth_channel1()
 
 static void test_getCrankAngle(void)
 {
-    extern volatile unsigned long toothLastToothTime;
-    extern volatile unsigned long toothLastMinusOneToothTime;
-    extern volatile int toothCurrentCount;
-    extern decoder_status_t decoderStatus;
-
     auto decoder = triggerSetup_Nissan360();
 
     auto run_case = [&](int toothNum, unsigned long elapsedDelta, int trigAngle, int16_t expected) {
@@ -85,12 +87,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-        extern volatile unsigned long toothLastToothTime;
-        extern volatile unsigned long toothLastMinusOneToothTime;
-        extern volatile unsigned long toothOneTime;
-        extern volatile unsigned long toothOneMinusOneTime;
-        extern decoder_status_t decoderStatus;
-
         auto decoder = triggerSetup_Nissan360();
 
         // --- Cranking path: startRevolutions < 2 -> revTime = gap * 180

@@ -6,7 +6,7 @@
 static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile uint16_t toothCurrentCount;
   extern volatile bool revolutionOne;
 

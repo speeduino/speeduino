@@ -3,12 +3,15 @@
 #include "../test_utils.h"
 #include "globals.h"
 
+extern decoder_status_t decoderStatus;
+extern volatile uint32_t toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile int toothCurrentCount;
-
   auto run_case = [&](decoder_t &decoder, uint8_t toothCount, uint8_t trigTeeth, int16_t delta, int16_t trigAngle, int16_t expected) {
     // trigTeeth is number of cylinders (configPage2.nCylinders)
     configPage2.nCylinders = trigTeeth;
@@ -59,12 +62,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   auto decoder = triggerSetup_FordTFI();
 
   // Prepare for cranking path: RPM < crankRPM
