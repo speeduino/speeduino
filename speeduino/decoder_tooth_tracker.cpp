@@ -3,82 +3,69 @@
 #include "elapsed_time.h"
 #include "atomic.h"
 
-static int16_t refineCrankAngle(int16_t crankAngle, uint32_t currMicros, const tooth_tracker_t &tracker)
-{
-  // Estimate the number of degrees travelled since the last tooth
-   return crankAngle + timeToAngle(timeElapsed(currMicros, tracker.toothLastToothTime));  
-}
-    
-static int16_t applyTriggerAngle(int16_t crankAngle, const config4 &page4)
-{
-  // Offset the angle by the user defined offset from TDC
-  return crankAngle + page4.triggerAngle;
-}
-
-tooth_tracker_t::tooth_tracker_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime)
+seq_tooth_tracker_t::seq_tooth_tracker_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime, bool _revZeroOrOne)
 : toothCurrentCount(_toothCurrentCount)
 , toothLastToothTime(_toothLastToothTime)
-{
-}
-
-int16_t tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
-{
-  if (toothCurrentCount==0U)
-  {
-    return refineCrankAngle(page4.triggerAngle, currMicros, *this);
-  }
-
-  return refineCrankAngle(
-          applyTriggerAngle(
-            // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus
-            // the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-            (toothCurrentCount - 1) * triggerToothAngle, 
-            page4),
-          currMicros,
-          *this);
-}
-
-int16_t tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
-{
-  if ((toothCurrentCount==0U) || (toothAngles==nullptr))
-  {
-    return refineCrankAngle(page4.triggerAngle, currMicros, *this);
-  }
-
-  return refineCrankAngle(
-          applyTriggerAngle(
-            // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-            toothAngles[toothCurrentCount - 1],
-            page4),
-          currMicros,
-          *this);
-}
-
-
-static uint16_t getSecondRevolutionOffset(const seq_tooth_tracker_t &tracker, const config4 &page4)
-{
-  //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-  if ( (tracker.revZeroOrOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
-  { 
-    return 360; 
-  }
-  return 0;
-}
-
-seq_tooth_tracker_t::seq_tooth_tracker_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool _revZeroOrOne)
-: tooth_tracker_t(toothCurrentCount, toothLastToothTime)
 , revZeroOrOne(_revZeroOrOne)
 {
 }
 
+uint16_t seq_tooth_tracker_t::getSecondRevolutionOffset(const config4 &page4) const
+{
+  uint16_t offset = 0;
+  //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
+  if ( (revZeroOrOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
+  { 
+    offset = 360; 
+  }
+  return offset;
+}
+
+int16_t seq_tooth_tracker_t::calculateAdjustmentSinceLastTooth(uint32_t currMicros) const
+{
+  // Estimate the number of degrees travelled since the last tooth
+  return timeToAngle(timeElapsed(currMicros, toothLastToothTime));  
+}
+
+int16_t seq_tooth_tracker_t::calculateInitialAngle(uint16_t triggerToothAngle) const
+{
+  int16_t initial = 0;
+  if (toothCurrentCount!=0U)
+  {
+    // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus
+    // the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    initial = (toothCurrentCount - 1) * triggerToothAngle;
+  }
+  return initial;
+}
+
+int16_t seq_tooth_tracker_t::calculateInitialAngle(const int16_t toothAngles[]) const
+{
+  int16_t initial = 0;
+  if ((toothCurrentCount!=0U) && (toothAngles!=nullptr))
+  {
+    // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+    initial = toothAngles[toothCurrentCount - 1];
+  }
+  return initial;
+}
+
+int16_t seq_tooth_tracker_t::calculateCrankAngleInner(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
+{
+  return  initialCrankAngle 
+        + page4.triggerAngle 
+        + calculateAdjustmentSinceLastTooth(currMicros)
+        + getSecondRevolutionOffset(page4);
+}
+
 int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
 {
-    return tooth_tracker_t::calculateCrankAngle(currMicros, triggerToothAngle, page4) + getSecondRevolutionOffset(*this, page4);
+  return calculateCrankAngleInner(calculateInitialAngle(triggerToothAngle), currMicros, page4);
 }
     
 int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
-    return tooth_tracker_t::calculateCrankAngle(currMicros, toothAngles, page4) + getSecondRevolutionOffset(*this, page4);
+  return calculateCrankAngleInner(calculateInitialAngle(toothAngles), currMicros, page4);
 }
 
 seq_tooth_tracker_t atomic_make_stt(const uint16_t &toothCurrentCount, const volatile uint32_t &toothLastToothTime, const volatile bool &revZeroOrOne)
@@ -87,5 +74,5 @@ seq_tooth_tracker_t atomic_make_stt(const uint16_t &toothCurrentCount, const vol
   {
     return seq_tooth_tracker_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
   }
-  return seq_tooth_tracker_t(); // Fix spurious compiler warning
+  __builtin_unreachable(); 
 }
