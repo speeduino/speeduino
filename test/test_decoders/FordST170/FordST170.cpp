@@ -155,19 +155,65 @@ void test_fordst170_newIgn_12_trigNeg360_1()
     TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
 }
 
+static void test_getCrankAngle(void)
+{
+    extern decoder_status_t decoderStatus;
+    extern volatile unsigned long toothLastToothTime;
+    extern volatile int toothCurrentCount;
+    extern volatile bool revolutionOne;
+
+    auto decoder = triggerSetup_FordST170();
+
+    auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
+        toothLastToothTime = 2000;
+        toothCurrentCount = toothCount;
+        revolutionOne = revOne;
+        decoderStatus.syncStatus = SyncStatus::Full;
+        decoderStatus.toothAngleIsCorrect = true;
+        configPage4.triggerAngle = trigAngle;
+        setAngleConverterRevolutionTime(2000);
+        int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
+        TEST_ASSERT_EQUAL(expected, angle);
+    };
+
+    // timeToAngle(100) ~= 18 deg when revolution time = 2000
+    const int dt = 18;
+
+    // Basic teeth
+    run_case(1, false, 100, 0, 0 + dt);
+    run_case(2, false, 100, 0, 10 + dt);
+    run_case(18, false, 100, 0, 170 + dt);
+    run_case(36, false, 100, 0, 350 + dt);
+
+    // Trigger angle offset
+    run_case(3, false, 100, 90, (3 - 1) * 10 + 90 + dt);
+
+    // Revolution one true should add 360 degrees
+    configPage4.TrigSpeed = CAM_SPEED;
+    run_case(1, true, 100, 0, 0 + dt);
+    configPage4.TrigSpeed = CRANK_SPEED;
+    run_case(1, true, 100, 0, 360 + 0 + dt);
+
+    // Wrap-around when >720: expect subtraction of 720
+    {
+        int raw = (36 - 1) * 10 + dt + 360; // 350 + dt + 360
+        int wrapped = raw >= 720 ? raw - 720 : raw;
+        run_case(36, true, 100, 0, wrapped);
+    }
+}
+
 void testFordST170()
 {
     SET_UNITY_FILENAME() {
-
-    RUN_TEST_P(test_fordst170_newIgn_12_trig0_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trig90_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trig180_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trig270_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trig360_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trigNeg90_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trigNeg180_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trigNeg270_1);
-    RUN_TEST_P(test_fordst170_newIgn_12_trigNeg360_1);
-    
+        RUN_TEST_P(test_fordst170_newIgn_12_trig0_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trig90_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trig180_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trig270_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trig360_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trigNeg90_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trigNeg180_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trigNeg270_1);
+        RUN_TEST_P(test_fordst170_newIgn_12_trigNeg360_1);
+        RUN_TEST_P(test_getCrankAngle);    
     }
 }

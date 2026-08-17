@@ -18,7 +18,7 @@ static void test_getCrankAngle(void)
     configPage4.triggerAngle = trigAngle;
     setAngleConverterRevolutionTime(2000);
     int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expected, angle, "Jeep2000 Crank Angle");
+    TEST_ASSERT_EQUAL(expected, angle);
   };
 
   // timeToAngle(100) ~= 18 deg

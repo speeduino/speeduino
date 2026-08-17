@@ -11,15 +11,18 @@ static void test_getCrankAngle(void)
 
   auto decoder = triggerSetup_MazdaAU();
 
-  auto run_case = [&](int toothNum, int16_t expected, int trigAngle = 0) {
+  auto setup_case = [&](int toothNum, int trigAngle) {
     toothLastToothTime = 2000;
     toothCurrentCount = toothNum;
     decoderStatus.toothAngleIsCorrect = true;
     decoderStatus.syncStatus = SyncStatus::Full;
     configPage4.triggerAngle = trigAngle;
     setAngleConverterRevolutionTime(2000);
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expected, angle, "MazdaAU Crank Angle");
+  };
+
+  auto run_case = [&](int toothNum, int16_t expected, int trigAngle = 0) {
+    setup_case(toothNum, trigAngle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg
@@ -33,6 +36,14 @@ static void test_getCrankAngle(void)
 
   // trigger angle offset
   run_case(2, 96 + dt + 10, 10);
+
+  // Zero if not full sync
+  setup_case(1, 0);
+  decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
+  setup_case(1, 0);
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
 }
 
 void testMazdaAU(void)

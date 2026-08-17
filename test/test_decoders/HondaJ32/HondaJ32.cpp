@@ -18,7 +18,7 @@ static void test_getCrankAngle(void)
     configPage4.triggerAngle = triggerAngle;
     setAngleConverterRevolutionTime(2000);
     int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_INT16_WITHIN_MESSAGE(2, expected, angle, "Crank Angle");
+    TEST_ASSERT_EQUAL(expected, angle);
   };
 
   // Basic teeth
