@@ -18,6 +18,8 @@ void runAllTests(void)
     extern void testDecoderInit(void);
     extern void testDecoderApiCoverage(void);
     extern void testinterrupt_t(void);
+    extern void testToothTracker(void);
+    extern void testSequentialToothTracker(void);
 
     testDecoder_General();
     testToothLoggers();
@@ -25,6 +27,8 @@ void runAllTests(void)
     testDecoderInit();
     testDecoderApiCoverage();
     testinterrupt_t();
+    testToothTracker();
+    testSequentialToothTracker();
 }
 
 TEST_HARNESS(runAllTests)
