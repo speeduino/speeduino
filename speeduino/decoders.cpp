@@ -455,21 +455,43 @@ TESTABLE_STATIC __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bo
   return currentStatus.RPM;
 }
 
+/**
+ * @brief Atomically copy the **forwarding reference** arguments into a std::tuple<>
+ * 
+ * Using a forwarding reference (Args&&...) preserves the arguments value catgeory (lvalue, rvalue)
+ * and cv-qualifier. E.g.
+ *  volatile uint32_t foo;
+ *  volatile uint8_t bar;
+ *  // This calls atomic_copy(volatile uint32_t &, volatile uint8_t &)
+ *  auto copy = atomic_copy(foo, bar); 
+ */
+template <typename... Args>
+static inline auto atomic_copy(Args&&... args)
+{
+  ATOMIC()
+  {
+    // At this point we make copies of all the arguments.
+    // Since the arguments are references, we are not making copies of copies
+    return std::make_tuple(std::forward<Args>(args)...);
+  }
+  __builtin_unreachable(); 
+}
+
 static crank_angle_calculator_t atomic_make_caa(void)
 {
-  return atomic_make_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
+  return crank_angle_calculator_t(atomic_copy(toothCurrentCount, toothLastToothTime, revolutionOne));
 }
 static lookup_crank_angle_calculator_t atomic_make_lookup_caa(void)
 {
-  return atomic_make_lookup_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
+  return lookup_crank_angle_calculator_t(atomic_copy(toothCurrentCount, toothLastToothTime, revolutionOne));
 }
 static lookup_crank_angle_calculator_t atomic_make_lookup_caa_secondary(void)
 {
-  return atomic_make_lookup_caa(secondaryToothCount, toothLastToothTime, revolutionOne);
+  return lookup_crank_angle_calculator_t(atomic_copy(secondaryToothCount, toothLastToothTime, revolutionOne));
 }
 static trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(void)
 {
-  return atomic_make_angle_caa(toothCurrentCount, toothLastToothTime, revolutionOne, triggerToothAngle);
+  return trigger_angle_crank_angle_calculator_t(atomic_copy(toothCurrentCount, toothLastToothTime, revolutionOne, triggerToothAngle));
 }
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)

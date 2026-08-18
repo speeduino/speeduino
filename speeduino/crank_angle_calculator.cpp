@@ -2,10 +2,26 @@
 #include "crankMaths.h"
 #include "elapsed_time.h"
 
-crank_angle_calculator_t::crank_angle_calculator_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime, bool _revZeroOrOne)
-: toothCurrentCount(_toothCurrentCount)
-, toothLastToothTime(_toothLastToothTime)
-, revZeroOrOne(_revZeroOrOne)
+// Helper function to reconstruct the tuple without the last element
+template <typename Tuple, std::size_t... Is>
+constexpr auto pop_back_impl(Tuple&& t, std::index_sequence<Is...>) {
+    return std::make_tuple(std::get<Is>(std::forward<Tuple>(t))...);
+}
+
+// Main function to remove the last element
+template <typename Tuple>
+constexpr auto pop_back(Tuple&& t) {
+    constexpr std::size_t size = std::tuple_size<std::decay_t<Tuple>>::value;
+    static_assert(size > 0, "Cannot pop from an empty tuple!");
+    
+    // Generate sequences from 0 up to (size - 2)
+    return pop_back_impl(std::forward<Tuple>(t), std::make_index_sequence<size - 1>{});
+}
+
+crank_angle_calculator_t::crank_angle_calculator_t(const tuple_type &data)
+: toothCurrentCount(std::get<0>(data))
+, toothLastToothTime(std::get<1>(data))
+, revZeroOrOne(std::get<2>(data))
 {
 }
 
@@ -50,11 +66,10 @@ int16_t lookup_crank_angle_calculator_t::calculateInitialAngle(const int16_t too
   return initial;
 }
 
-trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool revZeroOrOne, uint16_t _toothAngle)
-: crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne)
-, toothAngle(_toothAngle)
+trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(const tuple_type &data)
+: crank_angle_calculator_t(pop_back(data))
+, toothAngle(std::get<3>(data))
 {
-
 }
 
 int16_t trigger_angle_crank_angle_calculator_t::calculate(uint32_t currMicros, const config4 &page4) const
