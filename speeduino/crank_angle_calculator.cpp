@@ -49,7 +49,7 @@ int16_t crank_angle_calculator_t::calculateInitialAngle(const int16_t toothAngle
   return initial;
 }
 
-int16_t crank_angle_calculator_t::calculateInner(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
+int16_t crank_angle_calculator_t::calculateFromInitial(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 
         + page4.triggerAngle 
@@ -59,10 +59,10 @@ int16_t crank_angle_calculator_t::calculateInner(int16_t initialCrankAngle, uint
 
 int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
 {
-  return calculateInner(calculateInitialAngle(triggerToothAngle), currMicros, page4);
+  return calculateFromInitial(calculateInitialAngle(triggerToothAngle), currMicros, page4);
 }
     
 int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
-  return calculateInner(calculateInitialAngle(toothAngles), currMicros, page4);
+  return calculateFromInitial(calculateInitialAngle(toothAngles), currMicros, page4);
 }

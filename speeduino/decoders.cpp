@@ -1361,23 +1361,22 @@ static int16_t getCrankAngle_GM7X(uint32_t currMicros)
   auto shadowTT = atomic_make_caa();
 
   //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
-  int16_t crankAngle;
+  int16_t crankAngle = 0;
   if( shadowTT.toothCurrentCount == 3 )
   {
-    crankAngle = 112;
+    crankAngle = shadowTT.calculateFromInitial(112, currMicros, configPage4);
   }
   else
   {
-    --shadowTT.toothCurrentCount;
     if (shadowTT.toothCurrentCount >= 3 )
     {
       --shadowTT.toothCurrentCount;
     }
-    crankAngle = (shadowTT.toothCurrentCount * triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    crankAngle = shadowTT.calculate(currMicros, triggerToothAngle, configPage4)+42;
   }
 
   //Estimate the number of degrees travelled since the last tooth}
-  return clampCrankAngle(crankAngle + timeToAngle(timeElapsed(currMicros , shadowTT.toothLastToothTime)));
+  return clampCrankAngle(crankAngle);
 }
 
 static void triggerSetEndTeeth_GM7X(void)
@@ -1994,21 +1993,21 @@ static uint16_t getRPM_Jeep2000(void)
 static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
 {
   auto shadowTT = atomic_make_caa();
-  int16_t crankAngle = configPage4.triggerAngle;
+
+  int16_t crankAngle = 0;
   // This is the special case to handle when the 'last tooth' seen was the cam tooth. Since
   // the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
-  if (toothCurrentCount == 0)
+  if (shadowTT.toothCurrentCount == 0)
   {
-    crankAngle += 114; 
+    crankAngle = shadowTT.calculateFromInitial(114, currMicros, configPage4); 
   } 
   else
   { 
-    //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-    crankAngle += toothAngles[(shadowTT.toothCurrentCount - 1)];
+    crankAngle = shadowTT.calculate(currMicros, toothAngles, configPage4);
   }
 
   //Estimate the number of degrees travelled since the last tooth}
-  return clampCrankAngle(crankAngle + timeToAngle(timeElapsed(currMicros , shadowTT.toothLastToothTime)));
+  return clampCrankAngle(crankAngle);
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
@@ -2784,11 +2783,10 @@ static int16_t getCrankAngle_non360(uint32_t currMicros)
   if(shadowTT.toothCurrentCount == 0) { shadowTT.toothCurrentCount = configPage4.triggerTeeth; }
 
   //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-  int16_t crankAngle = (shadowTT.toothCurrentCount - 1) * triggerToothAngle;
-  crankAngle = (crankAngle / configPage4.TrigAngMul) + configPage4.triggerAngle; //Have to divide by the multiplier to get back to actual crank angle.
+  //Have to divide by the multiplier to get back to actual crank angle.
+  int16_t crankAngle = ((shadowTT.toothCurrentCount - 1) * triggerToothAngle) / configPage4.TrigAngMul;
 
-  //Estimate the number of degrees travelled since the last tooth}
-  return clampCrankAngle(crankAngle + timeToAngle(timeElapsed(currMicros , shadowTT.toothLastToothTime)));
+  return clampCrankAngle(shadowTT.calculateFromInitial(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
@@ -3572,7 +3570,7 @@ static int16_t getCrankAngle_Harley(uint32_t currMicros)
   {
     crankAngle = 0;
   }
-  return clampCrankAngle(crankAngle + timeToAngle(timeElapsed(currMicros , shadowTT.toothLastToothTime)) + configPage4.triggerAngle);
+  return clampCrankAngle(shadowTT.calculateFromInitial(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
