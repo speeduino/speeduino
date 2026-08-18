@@ -1,15 +1,15 @@
-#include "decoder_tooth_tracker.h"
+#include "crank_angle_calculator.h"
 #include "crankMaths.h"
 #include "elapsed_time.h"
 
-seq_tooth_tracker_t::seq_tooth_tracker_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime, bool _revZeroOrOne)
+crank_angle_calculator_t::crank_angle_calculator_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime, bool _revZeroOrOne)
 : toothCurrentCount(_toothCurrentCount)
 , toothLastToothTime(_toothLastToothTime)
 , revZeroOrOne(_revZeroOrOne)
 {
 }
 
-uint16_t seq_tooth_tracker_t::getSecondRevolutionOffset(const config4 &page4) const
+uint16_t crank_angle_calculator_t::getSecondRevolutionOffset(const config4 &page4) const
 {
   uint16_t offset = 0;
   //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
@@ -20,13 +20,13 @@ uint16_t seq_tooth_tracker_t::getSecondRevolutionOffset(const config4 &page4) co
   return offset;
 }
 
-int16_t seq_tooth_tracker_t::calculateAdjustmentSinceLastTooth(uint32_t currMicros) const
+int16_t crank_angle_calculator_t::calculateAdjustmentSinceLastTooth(uint32_t currMicros) const
 {
   // Estimate the number of degrees travelled since the last tooth
   return timeToAngle(timeElapsed(currMicros, toothLastToothTime));  
 }
 
-int16_t seq_tooth_tracker_t::calculateInitialAngle(uint16_t triggerToothAngle) const
+int16_t crank_angle_calculator_t::calculateInitialAngle(uint16_t triggerToothAngle) const
 {
   int16_t initial = 0;
   if (toothCurrentCount!=0U)
@@ -38,7 +38,7 @@ int16_t seq_tooth_tracker_t::calculateInitialAngle(uint16_t triggerToothAngle) c
   return initial;
 }
 
-int16_t seq_tooth_tracker_t::calculateInitialAngle(const int16_t toothAngles[]) const
+int16_t crank_angle_calculator_t::calculateInitialAngle(const int16_t toothAngles[]) const
 {
   int16_t initial = 0;
   if ((toothCurrentCount!=0U) && (toothAngles!=nullptr))
@@ -49,7 +49,7 @@ int16_t seq_tooth_tracker_t::calculateInitialAngle(const int16_t toothAngles[]) 
   return initial;
 }
 
-int16_t seq_tooth_tracker_t::calculateCrankAngleInner(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
+int16_t crank_angle_calculator_t::calculateInner(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 
         + page4.triggerAngle 
@@ -57,12 +57,12 @@ int16_t seq_tooth_tracker_t::calculateCrankAngleInner(int16_t initialCrankAngle,
         + getSecondRevolutionOffset(page4);
 }
 
-int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
+int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
 {
-  return calculateCrankAngleInner(calculateInitialAngle(triggerToothAngle), currMicros, page4);
+  return calculateInner(calculateInitialAngle(triggerToothAngle), currMicros, page4);
 }
     
-int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
+int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
-  return calculateCrankAngleInner(calculateInitialAngle(toothAngles), currMicros, page4);
+  return calculateInner(calculateInitialAngle(toothAngles), currMicros, page4);
 }
