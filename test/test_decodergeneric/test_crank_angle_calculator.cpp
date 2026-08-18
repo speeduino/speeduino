@@ -9,7 +9,7 @@ static void test_calculateCrankAngle_zeroToothCount(void)
     config4 page4;
     page4.triggerAngle = 33;
 
-    crank_angle_calculator_t subject;
+    trigger_angle_crank_angle_calculator_t subject;
     TEST_ASSERT_EQUAL(0, subject.toothCurrentCount);
     TEST_ASSERT_EQUAL(page4.triggerAngle, subject.calculate(1000, -55, page4));
 }
@@ -34,7 +34,7 @@ static void assert_calculateCrankAngle_triggerangle(uint16_t toothCount, uint32_
     setAngleConverterRevolutionTime(360);
 
     config4 page4;
-    crank_angle_calculator_t subject;
+    trigger_angle_crank_angle_calculator_t subject;
     page4.triggerAngle = triggerAngle;
 
     subject.toothLastToothTime = 1111;
@@ -103,17 +103,17 @@ static void test_calculateCrankAngle_whichRev(void)
     subject.toothCurrentCount = 3;
     subject.revZeroOrOne = false;
     page4.TrigSpeed = CAM_SPEED;
-    int16_t initial = subject.calculate(subject.toothLastToothTime, 55, page4);
+    int16_t initial = subject.calculateFromInitial(55, subject.toothLastToothTime, page4);
     TEST_ASSERT_LESS_THAN(360, initial);
     TEST_ASSERT_GREATER_THAN(0, initial);
 
     subject.revZeroOrOne = true;
     page4.TrigSpeed = CAM_SPEED;
-    TEST_ASSERT_EQUAL(initial, subject.calculate(subject.toothLastToothTime, 55, page4));
+    TEST_ASSERT_EQUAL(initial, subject.calculateFromInitial(55, subject.toothLastToothTime, page4));
 
     subject.revZeroOrOne = true;
     page4.TrigSpeed = CRANK_SPEED;
-    TEST_ASSERT_EQUAL(initial+360, subject.calculate(subject.toothLastToothTime, 55, page4));
+    TEST_ASSERT_EQUAL(initial+360, subject.calculateFromInitial(55, subject.toothLastToothTime, page4));
 }
 
 void testSequentialToothTracker(void)
