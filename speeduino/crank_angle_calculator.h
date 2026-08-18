@@ -19,9 +19,9 @@
 
     int16_t calculate(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const;
     int16_t calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const;
+    int16_t calculateFromInitial(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const;
 
 private:
-    int16_t calculateInner(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const;
     int16_t calculateAdjustmentSinceLastTooth(uint32_t currMicros) const;
     int16_t calculateInitialAngle(uint16_t triggerToothAngle) const;
     int16_t calculateInitialAngle(const int16_t toothAngles[]) const;
