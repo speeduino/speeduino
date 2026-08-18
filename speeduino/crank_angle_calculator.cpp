@@ -26,18 +26,6 @@ int16_t crank_angle_calculator_t::calculateAdjustmentSinceLastTooth(uint32_t cur
   return timeToAngle(timeElapsed(currMicros, toothLastToothTime));  
 }
 
-int16_t crank_angle_calculator_t::calculateInitialAngle(uint16_t triggerToothAngle) const
-{
-  int16_t initial = 0;
-  if (toothCurrentCount!=0U)
-  {
-    // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus
-    // the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-    initial = (toothCurrentCount - 1) * triggerToothAngle;
-  }
-  return initial;
-}
-
 int16_t crank_angle_calculator_t::calculateFromInitial(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 
@@ -46,11 +34,6 @@ int16_t crank_angle_calculator_t::calculateFromInitial(int16_t initialCrankAngle
         + getSecondRevolutionOffset(page4);
 }
 
-int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, uint16_t triggerToothAngle, const config4 &page4) const
-{
-  return calculateFromInitial(calculateInitialAngle(triggerToothAngle), currMicros, page4);
-}
-    
 int16_t lookup_crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
   return calculateFromInitial(calculateInitialAngle(toothAngles), currMicros, page4);
@@ -63,6 +46,23 @@ int16_t lookup_crank_angle_calculator_t::calculateInitialAngle(const int16_t too
   {
     // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
     initial = toothAngles[toothCurrentCount - 1];
+  }
+  return initial;
+}
+
+int16_t trigger_angle_crank_angle_calculator_t::calculate(uint32_t currMicros, uint16_t toothAngle, const config4 &page4) const
+{
+  return calculateFromInitial(calculateInitialAngle(toothAngle), currMicros, page4);
+}
+
+int16_t trigger_angle_crank_angle_calculator_t::calculateInitialAngle(uint16_t toothAngle) const
+{
+  int16_t initial = 0;
+  if (toothCurrentCount!=0U)
+  {
+    // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus
+    // the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+    initial = (toothCurrentCount - 1) * toothAngle;
   }
   return initial;
 }
