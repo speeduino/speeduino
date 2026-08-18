@@ -70,7 +70,12 @@ static inline lookup_crank_angle_calculator_t atomic_make_lookup_caa(TCount &too
  */
 struct trigger_angle_crank_angle_calculator_t : public crank_angle_calculator_t
 {
-  using crank_angle_calculator_t::crank_angle_calculator_t;
+  uint16_t toothAngle;
+
+  trigger_angle_crank_angle_calculator_t() = default;
+  trigger_angle_crank_angle_calculator_t(const trigger_angle_crank_angle_calculator_t&) = default;
+  trigger_angle_crank_angle_calculator_t(trigger_angle_crank_angle_calculator_t&&) = default;    
+  explicit trigger_angle_crank_angle_calculator_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool revZeroOrOne, uint16_t toothAngle);
 
   /**
    * @brief Calculate the crank angle
@@ -79,18 +84,18 @@ struct trigger_angle_crank_angle_calculator_t : public crank_angle_calculator_t
    * @param toothAngle The tooth angle
    * @param page4 The tunr
    */
-  int16_t calculate(uint32_t currMicros, uint16_t toothAngle, const config4 &page4) const;
+  int16_t calculate(uint32_t currMicros, const config4 &page4) const;
 
 private:
-  int16_t calculateInitialAngle(uint16_t toothAngle) const;
+  int16_t calculateInitialAngle(void) const;
 };
 
-template <typename TCount, typename TTime, typename TRev>
-static inline trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(TCount &toothCurrentCount, TTime &toothLastToothTime, TRev &revZeroOrOne)
+template <typename TCount, typename TTime, typename TRev, typename TAngle>
+static inline trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(TCount &toothCurrentCount, TTime &toothLastToothTime, TRev &revZeroOrOne, TAngle &toothAngle)
 {
   ATOMIC()
   {
-    return trigger_angle_crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
+    return trigger_angle_crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne, toothAngle);
   }
   __builtin_unreachable(); 
 }

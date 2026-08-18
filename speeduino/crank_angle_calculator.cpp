@@ -50,12 +50,19 @@ int16_t lookup_crank_angle_calculator_t::calculateInitialAngle(const int16_t too
   return initial;
 }
 
-int16_t trigger_angle_crank_angle_calculator_t::calculate(uint32_t currMicros, uint16_t toothAngle, const config4 &page4) const
+trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool revZeroOrOne, uint16_t _toothAngle)
+: crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne)
+, toothAngle(_toothAngle)
 {
-  return calculateFromInitial(calculateInitialAngle(toothAngle), currMicros, page4);
+
 }
 
-int16_t trigger_angle_crank_angle_calculator_t::calculateInitialAngle(uint16_t toothAngle) const
+int16_t trigger_angle_crank_angle_calculator_t::calculate(uint32_t currMicros, const config4 &page4) const
+{
+  return calculateFromInitial(calculateInitialAngle(), currMicros, page4);
+}
+
+int16_t trigger_angle_crank_angle_calculator_t::calculateInitialAngle(void) const
 {
   int16_t initial = 0;
   if (toothCurrentCount!=0U)
