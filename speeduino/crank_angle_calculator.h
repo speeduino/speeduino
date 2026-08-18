@@ -3,8 +3,9 @@
  * @brief Crank calculations. To be reused by individual decoders
  */
 #pragma once
+#include "src/utils/nominmax.h"
+#include <tuple>
 #include "config_pages.h"
-#include "atomic.h"
 
  struct crank_angle_calculator_t
  {
@@ -12,10 +13,10 @@
     uint32_t toothLastToothTime = 0;  ///< Time in µS that the current tooth was last detected
     bool revZeroOrOne = false;        ///< When calculating over 720°, tells the calculator if we are in the 1st revolution (false) or the 2nd (true)
 
+    using tuple_type = std::tuple<uint16_t, uint32_t, bool>;
+
     crank_angle_calculator_t() = default;
-    crank_angle_calculator_t(const crank_angle_calculator_t&) = default;
-    crank_angle_calculator_t(crank_angle_calculator_t&&) = default;    
-    explicit crank_angle_calculator_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool revZeroOrOne);
+    explicit crank_angle_calculator_t(const tuple_type &data);
 
     int16_t calculateFromInitial(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const;
 
@@ -23,16 +24,6 @@ private:
     int16_t calculateAdjustmentSinceLastTooth(uint32_t currMicros) const;
     uint16_t getSecondRevolutionOffset(const config4 &page4) const;
 };
-
-template <typename TCount, typename TTime, typename TRev>
-static inline crank_angle_calculator_t atomic_make_caa(TCount &toothCurrentCount, TTime &toothLastToothTime, TRev &revZeroOrOne)
-{
-  ATOMIC()
-  {
-    return crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
-  }
-  __builtin_unreachable(); 
-}
 
 /** @brief A crank angle calculator that looks up the initial crank angle from an array.
  * 
@@ -54,16 +45,6 @@ private:
   int16_t calculateInitialAngle(const int16_t toothAngles[]) const;
 };
 
-template <typename TCount, typename TTime, typename TRev>
-static inline lookup_crank_angle_calculator_t atomic_make_lookup_caa(TCount &toothCurrentCount, TTime &toothLastToothTime, TRev &revZeroOrOne)
-{
-  ATOMIC()
-  {
-    return lookup_crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
-  }
-  __builtin_unreachable(); 
-}
-
 /** @brief A crank angle calculator that computes the initial crank angle from a tooth angle
  * 
  * Useful when the teeth are evenly spaced and the same width
@@ -72,10 +53,10 @@ struct trigger_angle_crank_angle_calculator_t : public crank_angle_calculator_t
 {
   uint16_t toothAngle;
 
+  using tuple_type = std::tuple<uint16_t, uint32_t, bool, uint16_t>;
+
   trigger_angle_crank_angle_calculator_t() = default;
-  trigger_angle_crank_angle_calculator_t(const trigger_angle_crank_angle_calculator_t&) = default;
-  trigger_angle_crank_angle_calculator_t(trigger_angle_crank_angle_calculator_t&&) = default;    
-  explicit trigger_angle_crank_angle_calculator_t(uint16_t toothCurrentCount, uint32_t toothLastToothTime, bool revZeroOrOne, uint16_t toothAngle);
+  explicit trigger_angle_crank_angle_calculator_t(const tuple_type &data);
 
   /**
    * @brief Calculate the crank angle
@@ -89,13 +70,3 @@ struct trigger_angle_crank_angle_calculator_t : public crank_angle_calculator_t
 private:
   int16_t calculateInitialAngle(void) const;
 };
-
-template <typename TCount, typename TTime, typename TRev, typename TAngle>
-static inline trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(TCount &toothCurrentCount, TTime &toothLastToothTime, TRev &revZeroOrOne, TAngle &toothAngle)
-{
-  ATOMIC()
-  {
-    return trigger_angle_crank_angle_calculator_t(toothCurrentCount, toothLastToothTime, revZeroOrOne, toothAngle);
-  }
-  __builtin_unreachable(); 
-}
