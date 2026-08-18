@@ -74,7 +74,7 @@ TESTABLE_STATIC volatile unsigned long toothOneMinusOneTime = 0; //The 2nd to la
 static volatile unsigned long lastSyncRevolution = 0; // the revolution value of last valid sync
 TESTABLE_STATIC volatile bool revolutionOne = 0; // For sequential operation, this tracks whether the current revolution is 1 or 2 (not 1)
 
-TESTABLE_STATIC volatile unsigned int secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
+TESTABLE_STATIC volatile uint16_t secondaryToothCount; //Used for identifying the current secondary (Usually cam) tooth for patterns with multiple secondary teeth
 
 static uint16_t triggerActualTeeth;
 TESTABLE_STATIC volatile unsigned long triggerFilterTime; // The shortest time (in uS) that pulses will be accepted (Used for debounce filtering)
@@ -462,6 +462,10 @@ static crank_angle_calculator_t atomic_make_caa(void)
 static lookup_crank_angle_calculator_t atomic_make_lookup_caa(void)
 {
   return atomic_make_lookup_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
+}
+static lookup_crank_angle_calculator_t atomic_make_lookup_caa_secondary(void)
+{
+  return atomic_make_lookup_caa(secondaryToothCount, toothLastToothTime, revolutionOne);
 }
 static trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(void)
 {
@@ -4884,23 +4888,9 @@ static uint16_t getRPM_Vmax(void)
 
 static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 {
-  //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
-  unsigned long tempToothLastToothTime;
-  int tempsecondaryToothCount;
-  //Grab some variables that are used in the trigger code and assign them to temp variables.
-  noInterrupts();
-  tempsecondaryToothCount = secondaryToothCount;
-  tempToothLastToothTime = toothLastToothTime;
-  interrupts();
-
-  //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
-  int crankAngle;
-  crankAngle=toothAngles[tempsecondaryToothCount] + configPage4.triggerAngle;
-  
-  //Estimate the number of degrees travelled since the last tooth}
-  crankAngle += timeToAngle(timeElapsed(currMicros, tempToothLastToothTime));
-
-  return clampCrankAngle(crankAngle);
+  auto calculator = atomic_make_lookup_caa_secondary();
+  ++calculator.toothCurrentCount; // Since calculate() uses 0-based indices
+  return clampCrankAngle(calculator.calculate(currMicros, toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
