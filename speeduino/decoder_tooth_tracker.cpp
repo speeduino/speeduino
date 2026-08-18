@@ -1,7 +1,6 @@
 #include "decoder_tooth_tracker.h"
 #include "crankMaths.h"
 #include "elapsed_time.h"
-#include "atomic.h"
 
 seq_tooth_tracker_t::seq_tooth_tracker_t(uint16_t _toothCurrentCount, uint32_t _toothLastToothTime, bool _revZeroOrOne)
 : toothCurrentCount(_toothCurrentCount)
@@ -66,13 +65,4 @@ int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, uint16_t t
 int16_t seq_tooth_tracker_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
   return calculateCrankAngleInner(calculateInitialAngle(toothAngles), currMicros, page4);
-}
-
-seq_tooth_tracker_t atomic_make_stt(const uint16_t &toothCurrentCount, const volatile uint32_t &toothLastToothTime, const volatile bool &revZeroOrOne)
-{
-  ATOMIC()
-  {
-    return seq_tooth_tracker_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
-  }
-  __builtin_unreachable(); 
 }

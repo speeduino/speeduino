@@ -4,6 +4,7 @@
  */
 #pragma once
 #include "config_pages.h"
+#include "atomic.h"
 
  struct seq_tooth_tracker_t
  {
@@ -27,4 +28,12 @@ private:
     uint16_t getSecondRevolutionOffset(const config4 &page4) const;
 };
 
- seq_tooth_tracker_t atomic_make_stt(const uint16_t &toothCurrentCount, const volatile uint32_t &toothLastToothTime, const volatile bool &revZeroOrOne);
+template <typename TCount, typename TTime, typename TRev>
+static inline seq_tooth_tracker_t atomic_make_stt(TCount &toothCurrentCount, TTime &toothLastToothTime, TRev &revZeroOrOne)
+{
+  ATOMIC()
+  {
+    return seq_tooth_tracker_t(toothCurrentCount, toothLastToothTime, revZeroOrOne);
+  }
+  __builtin_unreachable(); 
+}
