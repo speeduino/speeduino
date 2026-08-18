@@ -465,7 +465,7 @@ static lookup_crank_angle_calculator_t atomic_make_lookup_caa(void)
 }
 static trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(void)
 {
-  return atomic_make_angle_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
+  return atomic_make_angle_caa(toothCurrentCount, toothLastToothTime, revolutionOne, triggerToothAngle);
 }
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
@@ -796,7 +796,7 @@ static uint16_t getRPM_missingTooth(void)
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, configPage4));
 }
 
 static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
@@ -1020,7 +1020,7 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
   //Handle case where the secondary tooth was the last one seen
   if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = configPage4.triggerTeeth; }
 
-  return clampCrankAngle(calculator.calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -1380,7 +1380,7 @@ static int16_t getCrankAngle_GM7X(uint32_t currMicros)
     {
       --calculator.toothCurrentCount;
     }
-    crankAngle = calculator.calculate(currMicros, triggerToothAngle, configPage4)+42;
+    crankAngle = calculator.calculate(currMicros, configPage4)+42;
   }
 
   //Estimate the number of degrees travelled since the last tooth}
@@ -2129,7 +2129,7 @@ static int16_t getCrankAngle_Audi135(uint32_t currMicros)
   //Handle case where the secondary tooth was the last one seen
   if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = 45; }
 
-  return clampCrankAngle(calculator.calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
@@ -2219,7 +2219,7 @@ static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
     calculator.toothCurrentCount = 12;
   }
   
-  return clampCrankAngle(calculator.calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
@@ -2328,7 +2328,7 @@ static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
 
   // Tooth 1 time occurs 360/24 degrees after TDC.
   ++calculator.toothCurrentCount;
-  int16_t crankAngle = calculator.calculate(currMicros, triggerToothAngle, configPage4);
+  int16_t crankAngle = calculator.calculate(currMicros, configPage4);
 
   // Teeth 14 and 22 are unusually sized (18 degrees), but the missing tooth is smaller (12 degrees), 
   // so this oddity only applies when toothCurrentCount = 14 || 22 (15 || 23 since we incremented toothCurrentCount above)
@@ -2785,14 +2785,14 @@ static uint16_t getRPM_non360(void)
 
 static int16_t getCrankAngle_non360(uint32_t currMicros)
 {
-  auto calculator = atomic_make_caa();
+  auto calculator = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
   if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = configPage4.triggerTeeth; }
 
   //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
   //Have to divide by the multiplier to get back to actual crank angle.
-  int16_t crankAngle = ((calculator.toothCurrentCount - 1) * triggerToothAngle) / configPage4.TrigAngMul;
+  int16_t crankAngle = ((calculator.toothCurrentCount - 1) * calculator.toothAngle) / configPage4.TrigAngMul;
 
   return clampCrankAngle(calculator.calculateFromInitial(crankAngle, currMicros, configPage4));
 }
@@ -4263,7 +4263,7 @@ static uint16_t getRPM_FordST170(void)
 
 static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, configPage4));
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -5953,7 +5953,7 @@ static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
   //Handle case where the secondary tooth was the last one seen
   if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = 2; } 
 
-  return clampCrankAngle(calculator.calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
 
 /** Ford TFI - Set End Teeth.
