@@ -463,7 +463,10 @@ static lookup_crank_angle_calculator_t atomic_make_lookup_caa(void)
 {
   return atomic_make_lookup_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
 }
-
+static trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(void)
+{
+  return atomic_make_angle_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
+}
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
 {
@@ -793,7 +796,7 @@ static uint16_t getRPM_missingTooth(void)
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_caa().calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, triggerToothAngle, configPage4));
 }
 
 static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
@@ -1012,7 +1015,7 @@ static uint16_t getRPM_DualWheel(void)
  * */
 static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 {
-  auto stt = atomic_make_caa();
+  auto stt = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
   if(stt.toothCurrentCount == 0) { stt.toothCurrentCount = configPage4.triggerTeeth; }
@@ -1363,7 +1366,7 @@ static uint16_t getRPM_GM7X(void)
 }
 static int16_t getCrankAngle_GM7X(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();
+  auto shadowTT = atomic_make_angle_caa();
 
   //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
   int16_t crankAngle = 0;
@@ -2121,7 +2124,7 @@ static uint16_t getRPM_Audi135(void)
 
 static int16_t getCrankAngle_Audi135(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();
+  auto shadowTT = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
   if(shadowTT.toothCurrentCount == 0) { shadowTT.toothCurrentCount = 45; }
@@ -2208,7 +2211,7 @@ static uint16_t getRPM_HondaD17(void)
 
 static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();
+  auto shadowTT = atomic_make_angle_caa();
 
   // if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference.
   if(shadowTT.toothCurrentCount == 0 )
@@ -2321,7 +2324,7 @@ static uint16_t getRPM_HondaJ32(void)
 
 static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();  
+  auto shadowTT = atomic_make_angle_caa();  
 
   // Tooth 1 time occurs 360/24 degrees after TDC.
   ++shadowTT.toothCurrentCount;
@@ -4260,7 +4263,7 @@ static uint16_t getRPM_FordST170(void)
 
 static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_caa().calculate(currMicros, triggerToothAngle, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, triggerToothAngle, configPage4));
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -5945,7 +5948,7 @@ static uint16_t getRPM_FordTFI(void)
  * */
 static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();
+  auto shadowTT = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
   if(shadowTT.toothCurrentCount == 0) { shadowTT.toothCurrentCount = 2; } 
