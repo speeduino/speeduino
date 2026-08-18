@@ -459,6 +459,11 @@ static crank_angle_calculator_t atomic_make_caa(void)
 {
   return atomic_make_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
 }
+static lookup_crank_angle_calculator_t atomic_make_lookup_caa(void)
+{
+  return atomic_make_lookup_caa(toothCurrentCount, toothLastToothTime, revolutionOne);
+}
+
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
 {
@@ -1886,7 +1891,7 @@ static uint16_t getRPM_24X(void)
 
 static int16_t getCrankAngle_24X(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
@@ -1992,7 +1997,7 @@ static uint16_t getRPM_Jeep2000(void)
 
 static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();
+  auto shadowTT = atomic_make_lookup_caa();
 
   int16_t crankAngle = 0;
   // This is the special case to handle when the 'last tooth' seen was the cam tooth. Since
@@ -2513,7 +2518,7 @@ static uint16_t getRPM_Miata9905(void)
 
 static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
 }
 
 int getCamAngle_Miata9905(void)
@@ -2721,7 +2726,7 @@ static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
   int16_t crankAngle = 0;
   if(decoderStatus.syncStatus==SyncStatus::Full)
   {
-    crankAngle = atomic_make_caa().calculate(currMicros, toothAngles, configPage4);
+    crankAngle = atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4);
   }
 
   return clampCrankAngle(crankAngle);
@@ -3436,7 +3441,7 @@ static uint16_t getRPM_Daihatsu(void)
 }
 static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
@@ -4015,7 +4020,7 @@ static uint16_t getRPM_420a(void)
 
 static int16_t getCrankAngle_420a(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
 }
 
 static void triggerSetEndTeeth_420a(void)
@@ -5697,7 +5702,7 @@ static uint16_t getRPM_SuzukiK6A(void)
 
 static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
 {
-  auto shadowTT = atomic_make_caa();
+  auto shadowTT = atomic_make_lookup_caa();
 
   // TODO: check if this can be removed.
   if (shadowTT.toothCurrentCount!=0U) {

@@ -38,17 +38,6 @@ int16_t crank_angle_calculator_t::calculateInitialAngle(uint16_t triggerToothAng
   return initial;
 }
 
-int16_t crank_angle_calculator_t::calculateInitialAngle(const int16_t toothAngles[]) const
-{
-  int16_t initial = 0;
-  if ((toothCurrentCount!=0U) && (toothAngles!=nullptr))
-  {
-    // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-    initial = toothAngles[toothCurrentCount - 1];
-  }
-  return initial;
-}
-
 int16_t crank_angle_calculator_t::calculateFromInitial(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 
@@ -62,7 +51,18 @@ int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, uint16_t trigge
   return calculateFromInitial(calculateInitialAngle(triggerToothAngle), currMicros, page4);
 }
     
-int16_t crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
+int16_t lookup_crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
   return calculateFromInitial(calculateInitialAngle(toothAngles), currMicros, page4);
+}
+
+int16_t lookup_crank_angle_calculator_t::calculateInitialAngle(const int16_t toothAngles[]) const
+{
+  int16_t initial = 0;
+  if ((toothCurrentCount!=0U) && (toothAngles!=nullptr))
+  {
+    // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+    initial = toothAngles[toothCurrentCount - 1];
+  }
+  return initial;
 }
