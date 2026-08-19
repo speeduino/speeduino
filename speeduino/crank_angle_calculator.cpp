@@ -1,75 +1,114 @@
 #include "crank_angle_calculator.h"
+#include "src/utils/tuple.h"
 #include "crankMaths.h"
 #include "elapsed_time.h"
-#include "src/utils/tuple.h"
 
-crank_angle_calculator_t::crank_angle_calculator_t(const tuple_type &data)
-: toothCurrentCount(std::get<0>(data))
-, toothLastToothTime(std::get<1>(data))
-, revZeroOrOne(std::get<2>(data))
+// ================================ Calculator Mixins =====================================
+
+last_tooth_rev_calculator_t::last_tooth_rev_calculator_t(uint32_t toothLastToothTime)
+: _toothLastToothTime(toothLastToothTime)
+{
+}
+    
+int16_t last_tooth_rev_calculator_t::calculate(uint32_t currMicros) const
+{
+  // Estimate the number of degrees travelled since the last tooth
+  return timeToAngle(timeElapsed(currMicros, _toothLastToothTime));
+}
+
+lookup_initial_calculator_t::lookup_initial_calculator_t(uint16_t toothCurrentCount)
+: _toothCurrentCount(toothCurrentCount)
 {
 }
 
-uint16_t crank_angle_calculator_t::getSecondRevolutionOffset(const config4 &page4) const
+int16_t lookup_initial_calculator_t::calculate(const int16_t toothAngles[]) const
 {
-  uint16_t offset = 0;
+  int16_t initial = 0;
+  if ((_toothCurrentCount!=0U) && (toothAngles!=nullptr))
+  {
+    // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+    initial = toothAngles[_toothCurrentCount - 1];
+  }
+  return initial;
+}
+
+
+compute_initial_calculator_t::compute_initial_calculator_t(uint16_t toothCurrentCount, uint16_t toothAngle)
+: _toothCurrentCount(toothCurrentCount)
+, _toothAngle(toothAngle)
+{
+}
+  
+int16_t compute_initial_calculator_t::calculate(void) const
+{
+  int16_t initial = 0;
+  if (_toothCurrentCount!=0U)
+  {
+    // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents,
+    // This gives accuracy only to the nearest tooth.
+    initial = (_toothCurrentCount - 1) * _toothAngle;
+  }
+  return initial;
+}
+
+sequential_correction_calculator_t::sequential_correction_calculator_t(bool revZeroOrOne)
+: _revZeroOrOne(revZeroOrOne)
+{
+}
+
+int16_t sequential_correction_calculator_t::calculate(const config4 &page4) const
+{
+  int16_t offset = 0;
   //Sequential check (simply sets whether we're on the first or 2nd revolution of the cycle)
-  if ( (revZeroOrOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
+  if ( (_revZeroOrOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
   { 
     offset = 360; 
   }
   return offset;
 }
 
-int16_t crank_angle_calculator_t::calculateAdjustmentSinceLastTooth(uint32_t currMicros) const
+// ================================ Calculators =====================================
+
+simple_crank_angle_calculator_t::simple_crank_angle_calculator_t(const std::tuple<uint32_t, bool> &data)
+: last_tooth_rev_calculator_t(std::get<0>(data))
+, sequential_correction_calculator_t(std::get<1>(data))
 {
-  // Estimate the number of degrees travelled since the last tooth
-  return timeToAngle(timeElapsed(currMicros, toothLastToothTime));  
 }
 
-int16_t crank_angle_calculator_t::calculateFromInitial(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
+int16_t simple_crank_angle_calculator_t::calculate(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 
         + page4.triggerAngle 
-        + calculateAdjustmentSinceLastTooth(currMicros)
-        + getSecondRevolutionOffset(page4);
+        + last_tooth_rev_calculator_t::calculate(currMicros)
+        + sequential_correction_calculator_t::calculate(page4);
+}
+
+lookup_crank_angle_calculator_t::lookup_crank_angle_calculator_t(const std::tuple<uint32_t, bool, uint16_t> &data)
+: last_tooth_rev_calculator_t(std::get<0>(data))
+, sequential_correction_calculator_t(std::get<1>(data))
+, lookup_initial_calculator_t(std::get<2>(data))
+{
 }
 
 int16_t lookup_crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
-  return calculateFromInitial(calculateInitialAngle(toothAngles), currMicros, page4);
+  return lookup_initial_calculator_t::calculate(toothAngles)
+        + page4.triggerAngle 
+        + last_tooth_rev_calculator_t::calculate(currMicros)
+        + sequential_correction_calculator_t::calculate(page4);
 }
 
-int16_t lookup_crank_angle_calculator_t::calculateInitialAngle(const int16_t toothAngles[]) const
-{
-  int16_t initial = 0;
-  if ((toothCurrentCount!=0U) && (toothAngles!=nullptr))
-  {
-    // Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-    initial = toothAngles[toothCurrentCount - 1];
-  }
-  return initial;
-}
-
-trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(const tuple_type &data)
-: crank_angle_calculator_t(stdext::pop_back(data))
-, toothAngle(std::get<3>(data))
+trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(const data_type &data)
+: last_tooth_rev_calculator_t(std::get<0>(data))
+, sequential_correction_calculator_t(std::get<1>(data))
+, compute_initial_calculator_t(std::get<2>(data), std::get<3>(data))
 {
 }
 
 int16_t trigger_angle_crank_angle_calculator_t::calculate(uint32_t currMicros, const config4 &page4) const
 {
-  return calculateFromInitial(calculateInitialAngle(), currMicros, page4);
-}
-
-int16_t trigger_angle_crank_angle_calculator_t::calculateInitialAngle(void) const
-{
-  int16_t initial = 0;
-  if (toothCurrentCount!=0U)
-  {
-    // Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus
-    // the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-    initial = (toothCurrentCount - 1) * toothAngle;
-  }
-  return initial;
+  return compute_initial_calculator_t::calculate()
+        + page4.triggerAngle 
+        + last_tooth_rev_calculator_t::calculate(currMicros)
+        + sequential_correction_calculator_t::calculate(page4);
 }

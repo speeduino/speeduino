@@ -10,8 +10,8 @@ static void test_calculateCrankAngle_zeroToothCount(void)
     page4.triggerAngle = 33;
 
     trigger_angle_crank_angle_calculator_t subject;
-    subject.toothAngle = -55;
-    TEST_ASSERT_EQUAL(0, subject.toothCurrentCount);
+    subject._toothAngle = -55;
+    TEST_ASSERT_EQUAL(0, subject._toothCurrentCount);
     TEST_ASSERT_EQUAL(page4.triggerAngle, subject.calculate(1000, page4));
 }
 
@@ -23,10 +23,10 @@ static void test_calculateCrankAngle_zeroToothCount_lookup(void)
     page4.triggerAngle = 33;
 
     lookup_crank_angle_calculator_t subject;
-    TEST_ASSERT_EQUAL(0, subject.toothCurrentCount);
+    TEST_ASSERT_EQUAL(0, subject._toothCurrentCount);
     TEST_ASSERT_EQUAL(page4.triggerAngle, subject.calculate(1000, nullptr, page4));
     TEST_ASSERT_EQUAL(page4.triggerAngle, subject.calculate(1000, angles, page4));
-    subject.toothCurrentCount = 4;
+    subject._toothCurrentCount = 4;
     TEST_ASSERT_EQUAL(page4.triggerAngle, subject.calculate(1000, nullptr, page4));
 }
 
@@ -38,10 +38,10 @@ static void assert_calculateCrankAngle_triggerangle(uint16_t toothCount, uint32_
     trigger_angle_crank_angle_calculator_t subject;
     page4.triggerAngle = triggerAngle;
 
-    subject.toothLastToothTime = 1111;
-    subject.toothCurrentCount = toothCount;
-    subject.toothAngle = toothAngle;
-    TEST_ASSERT_EQUAL_INT16((toothAngle * (toothCount-1)) + triggerAngle + timeDelta, subject.calculate(subject.toothLastToothTime+timeDelta, page4));
+    subject._toothLastToothTime = 1111;
+    subject._toothCurrentCount = toothCount;
+    subject._toothAngle = toothAngle;
+    TEST_ASSERT_EQUAL_INT16((toothAngle * (toothCount-1)) + triggerAngle + timeDelta, subject.calculate(subject._toothLastToothTime+timeDelta, page4));
 }
 
 static void test_calculateCrankAngle_triggerangle(void)
@@ -69,9 +69,9 @@ static void assert_calculateCrankAngle_lookup(uint16_t toothNum, int16_t toothAn
     lookup_crank_angle_calculator_t subject;
     page4.triggerAngle = triggerAngle;
 
-    subject.toothLastToothTime = 1111;
-    subject.toothCurrentCount = toothNum;
-    TEST_ASSERT_EQUAL_INT16(toothAngles[toothNum-1] + triggerAngle + timeDelta, subject.calculate(subject.toothLastToothTime+timeDelta, toothAngles, page4));
+    subject._toothLastToothTime = 1111;
+    subject._toothCurrentCount = toothNum;
+    TEST_ASSERT_EQUAL_INT16(toothAngles[toothNum-1] + triggerAngle + timeDelta, subject.calculate(subject._toothLastToothTime+timeDelta, toothAngles, page4));
 }
 
 static void assert_calculateCrankAngle_lookup(uint32_t timeDelta, int16_t triggerAngle)
@@ -98,24 +98,23 @@ static void test_calculateCrankAngle_whichRev(void)
     setAngleConverterRevolutionTime(360);
 
     config4 page4;
-    crank_angle_calculator_t subject;
+    simple_crank_angle_calculator_t subject;
     page4.triggerAngle = 33;
 
-    subject.toothLastToothTime = 1111;
-    subject.toothCurrentCount = 3;
-    subject.revZeroOrOne = false;
+    subject._toothLastToothTime = 1111;
+    subject._revZeroOrOne = false;
     page4.TrigSpeed = CAM_SPEED;
-    int16_t initial = subject.calculateFromInitial(55, subject.toothLastToothTime, page4);
+    int16_t initial = subject.calculate(55, subject._toothLastToothTime, page4);
     TEST_ASSERT_LESS_THAN(360, initial);
     TEST_ASSERT_GREATER_THAN(0, initial);
 
-    subject.revZeroOrOne = true;
+    subject._revZeroOrOne = true;
     page4.TrigSpeed = CAM_SPEED;
-    TEST_ASSERT_EQUAL(initial, subject.calculateFromInitial(55, subject.toothLastToothTime, page4));
+    TEST_ASSERT_EQUAL(initial, subject.calculate(55, subject._toothLastToothTime, page4));
 
-    subject.revZeroOrOne = true;
+    subject._revZeroOrOne = true;
     page4.TrigSpeed = CRANK_SPEED;
-    TEST_ASSERT_EQUAL(initial+360, subject.calculateFromInitial(55, subject.toothLastToothTime, page4));
+    TEST_ASSERT_EQUAL(initial+360, subject.calculate(55, subject._toothLastToothTime, page4));
 }
 
 void testSequentialToothTracker(void)

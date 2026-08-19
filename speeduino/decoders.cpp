@@ -477,21 +477,17 @@ static inline auto atomic_copy(Args&&... args)
   __builtin_unreachable(); 
 }
 
-static crank_angle_calculator_t atomic_make_caa(void)
+static auto atomic_make_lookup_caa(void)
 {
-  return crank_angle_calculator_t(atomic_copy(toothCurrentCount, toothLastToothTime, revolutionOne));
+  return lookup_crank_angle_calculator_t(atomic_copy(toothLastToothTime, revolutionOne, toothCurrentCount));
 }
-static lookup_crank_angle_calculator_t atomic_make_lookup_caa(void)
+static auto atomic_make_lookup_caa_secondary(void)
 {
-  return lookup_crank_angle_calculator_t(atomic_copy(toothCurrentCount, toothLastToothTime, revolutionOne));
+  return lookup_crank_angle_calculator_t(atomic_copy(toothLastToothTime, revolutionOne, secondaryToothCount));
 }
-static lookup_crank_angle_calculator_t atomic_make_lookup_caa_secondary(void)
+static auto atomic_make_angle_caa(void)
 {
-  return lookup_crank_angle_calculator_t(atomic_copy(secondaryToothCount, toothLastToothTime, revolutionOne));
-}
-static trigger_angle_crank_angle_calculator_t atomic_make_angle_caa(void)
-{
-  return trigger_angle_crank_angle_calculator_t(atomic_copy(toothCurrentCount, toothLastToothTime, revolutionOne, triggerToothAngle));
+  return trigger_angle_crank_angle_calculator_t(atomic_copy(toothLastToothTime, revolutionOne, toothCurrentCount, triggerToothAngle));
 }
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
@@ -1044,7 +1040,7 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
   auto calculator = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
-  if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = configPage4.triggerTeeth; }
+  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = configPage4.triggerTeeth; }
 
   return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
@@ -1205,12 +1201,12 @@ static uint16_t getRPM_BasicDistributor(void)
 }
 static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 {
-  auto calculator = atomic_make_caa();
+  auto data = atomic_copy(toothLastToothTime, toothCurrentCount);
 
-  int crankAngle = ((calculator.toothCurrentCount - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+  int crankAngle = ((std::get<1>(data) - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
   
   //Estimate the number of degrees travelled since the last tooth}
-  crankAngle += timeToAngleIntervalTooth(timeElapsed(currMicros, calculator.toothLastToothTime));
+  crankAngle += timeToAngleIntervalTooth(timeElapsed(currMicros, std::get<0>(data)));
   
   return clampCrankAngle(crankAngle);
 }
@@ -1392,19 +1388,21 @@ static uint16_t getRPM_GM7X(void)
 }
 static int16_t getCrankAngle_GM7X(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();
+  auto data = atomic_copy(toothLastToothTime, revolutionOne, toothCurrentCount, triggerToothAngle);
 
   //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
   int16_t crankAngle = 0;
-  if( calculator.toothCurrentCount == 3 )
+  if( std::get<2>(data) == 3 )
   {
-    crankAngle = calculator.calculateFromInitial(112, currMicros, configPage4);
+    auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
+    crankAngle = simple_crank_angle_calculator_t(data2).calculate(112, currMicros, configPage4);
   }
   else
   {
-    if (calculator.toothCurrentCount >= 3 )
+    auto calculator = trigger_angle_crank_angle_calculator_t(data);
+    if (calculator._toothCurrentCount > 3 )
     {
-      --calculator.toothCurrentCount;
+      --calculator._toothCurrentCount;
     }
     crankAngle = calculator.calculate(currMicros, configPage4)+42;
   }
@@ -1753,12 +1751,12 @@ static int16_t getCrankAngle_4G63(uint32_t currMicros)
   int16_t crankAngle = 0;
   if(decoderStatus.syncStatus==SyncStatus::Full)
   {
-    auto calculator = atomic_make_caa();
+    auto data = atomic_copy(toothLastToothTime, toothCurrentCount);
 
-    crankAngle = toothAngles[(calculator.toothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
+    crankAngle = toothAngles[(std::get<1>(data) - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
     //Estimate the number of degrees travelled since the last tooth}
-    crankAngle += timeToAngleIntervalTooth(timeElapsed(currMicros, calculator.toothLastToothTime));
+    crankAngle += timeToAngleIntervalTooth(timeElapsed(currMicros, std::get<0>(data)));
   }
   return clampCrankAngle(crankAngle);
 }
@@ -2026,18 +2024,19 @@ static uint16_t getRPM_Jeep2000(void)
 
 static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
 {
-  auto calculator = atomic_make_lookup_caa();
+  auto data = atomic_copy(toothLastToothTime, revolutionOne, toothCurrentCount);
 
   int16_t crankAngle = 0;
   // This is the special case to handle when the 'last tooth' seen was the cam tooth. Since
   // the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
-  if (calculator.toothCurrentCount == 0)
+  if (std::get<2>(data) == 0)
   {
-    crankAngle = calculator.calculateFromInitial(114, currMicros, configPage4); 
+    auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
+    crankAngle = simple_crank_angle_calculator_t(data2).calculate(114, currMicros, configPage4);
   } 
   else
   { 
-    crankAngle = calculator.calculate(currMicros, toothAngles, configPage4);
+    crankAngle = lookup_crank_angle_calculator_t(data).calculate(currMicros, toothAngles, configPage4);
   }
 
   //Estimate the number of degrees travelled since the last tooth}
@@ -2153,7 +2152,7 @@ static int16_t getCrankAngle_Audi135(uint32_t currMicros)
   auto calculator = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
-  if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = 45; }
+  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 45; }
 
   return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
@@ -2240,9 +2239,9 @@ static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
   auto calculator = atomic_make_angle_caa();
 
   // if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference.
-  if(calculator.toothCurrentCount == 0 )
+  if(calculator._toothCurrentCount == 0 )
   {
-    calculator.toothCurrentCount = 12;
+    calculator._toothCurrentCount = 12;
   }
   
   return clampCrankAngle(calculator.calculate(currMicros, configPage4));
@@ -2353,12 +2352,12 @@ static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
   auto calculator = atomic_make_angle_caa();  
 
   // Tooth 1 time occurs 360/24 degrees after TDC.
-  ++calculator.toothCurrentCount;
+  ++calculator._toothCurrentCount;
   int16_t crankAngle = calculator.calculate(currMicros, configPage4);
 
   // Teeth 14 and 22 are unusually sized (18 degrees), but the missing tooth is smaller (12 degrees), 
   // so this oddity only applies when toothCurrentCount = 14 || 22 (15 || 23 since we incremented toothCurrentCount above)
-  if ((calculator.toothCurrentCount == 15) || (calculator.toothCurrentCount == 23))
+  if ((calculator._toothCurrentCount == 15) || (calculator._toothCurrentCount == 23))
   {
     constexpr uint16_t HALF_TOOTH_WIDTH_DEG = (18U-12U)/2U;
     crankAngle += HALF_TOOTH_WIDTH_DEG;
@@ -2811,16 +2810,21 @@ static uint16_t getRPM_non360(void)
 
 static int16_t getCrankAngle_non360(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();
+  auto data = atomic_copy(toothLastToothTime, revolutionOne, toothCurrentCount, triggerToothAngle);
 
   //Handle case where the secondary tooth was the last one seen
-  if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = configPage4.triggerTeeth; }
+  uint16_t toothCount = std::get<2>(data);
+  if(toothCount == 0)
+  { 
+    toothCount = configPage4.triggerTeeth; 
+  }
 
   //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
   //Have to divide by the multiplier to get back to actual crank angle.
-  int16_t crankAngle = ((calculator.toothCurrentCount - 1) * calculator.toothAngle) / configPage4.TrigAngMul;
+  int16_t crankAngle = ((toothCount - 1) * std::get<3>(data)) / configPage4.TrigAngMul;
 
-  return clampCrankAngle(calculator.calculateFromInitial(crankAngle, currMicros, configPage4));
+  auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
+  return clampCrankAngle(simple_crank_angle_calculator_t(data2).calculate(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
@@ -3597,14 +3601,16 @@ static uint16_t getRPM_Harley(void)
 
 static int16_t getCrankAngle_Harley(uint32_t currMicros)
 {
-  auto calculator = atomic_make_caa();
+  auto data = atomic_copy(toothLastToothTime, revolutionOne, toothCurrentCount);
 
   int16_t crankAngle = 157;
-  if ( (calculator.toothCurrentCount == 1U) || (calculator.toothCurrentCount == 3U) )
+  if ( (std::get<2>(data) == 1U) || (std::get<2>(data) == 3U) )
   {
     crankAngle = 0;
   }
-  return clampCrankAngle(calculator.calculateFromInitial(crankAngle, currMicros, configPage4));
+
+  auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
+  return clampCrankAngle(simple_crank_angle_calculator_t(data2).calculate(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
@@ -4911,7 +4917,7 @@ static uint16_t getRPM_Vmax(void)
 static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 {
   auto calculator = atomic_make_lookup_caa_secondary();
-  ++calculator.toothCurrentCount; // Since calculate() uses 0-based indices
+  ++calculator._toothCurrentCount; // Since calculate() uses 0-based indices
   return clampCrankAngle(calculator.calculate(currMicros, toothAngles, configPage4));
 }
 
@@ -5720,10 +5726,10 @@ static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
   auto calculator = atomic_make_lookup_caa();
 
   // TODO: check if this can be removed.
-  if (calculator.toothCurrentCount!=0U) {
-    triggerToothAngle = (uint16_t)toothAngles[calculator.toothCurrentCount] - (uint16_t)toothAngles[calculator.toothCurrentCount-1U];
+  if (calculator._toothCurrentCount!=0U) {
+    triggerToothAngle = (uint16_t)toothAngles[calculator._toothCurrentCount] - (uint16_t)toothAngles[calculator._toothCurrentCount-1U];
   }
-  ++calculator.toothCurrentCount;
+  ++calculator._toothCurrentCount;
   
   return clampCrankAngle(calculator.calculate(currMicros, toothAngles, configPage4));
 }
@@ -5963,7 +5969,7 @@ static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
   auto calculator = atomic_make_angle_caa();
 
   //Handle case where the secondary tooth was the last one seen
-  if(calculator.toothCurrentCount == 0) { calculator.toothCurrentCount = 2; } 
+  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 2; } 
 
   return clampCrankAngle(calculator.calculate(currMicros, configPage4));
 }
