@@ -114,7 +114,7 @@ int16_t lookup_crank_angle_calculator_t::calculate(uint32_t currMicros, const in
         + sequential_correction_calculator_t::calculate(page4);
 }
 
-trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(const data_type &data)
+trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(const std::tuple<uint32_t, bool, uint16_t, uint16_t> &data)
 : last_tooth_rev_calculator_t(std::get<0>(data))
 , sequential_correction_calculator_t(std::get<1>(data))
 , compute_initial_calculator_t(std::get<2>(data), std::get<3>(data))
