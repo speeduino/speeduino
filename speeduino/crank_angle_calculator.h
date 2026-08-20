@@ -29,7 +29,9 @@ struct last_tooth_rev_calculator_t
 {
   uint32_t _toothLastToothTime = 0;  ///< Time in µS that the current tooth was last detected
 
+#if !defined(UNIT_TEST)
 protected:
+#endif
   last_tooth_rev_calculator_t() = default;
   explicit last_tooth_rev_calculator_t(uint32_t toothLastToothTime);
   
@@ -45,7 +47,9 @@ struct tooth_interval_calculator_t
   uint16_t _toothAngle = 0;                 ///< Tooth angle (1-359°)
   bool _toothAngleCorrect;                  ///< Is @ref _toothAngle valid
 
+#if !defined(UNIT_TEST)
 protected:
+#endif
   tooth_interval_calculator_t() = default;
   explicit tooth_interval_calculator_t(uint32_t toothLastToothTime, uint32_t toothLastMinusOneToothTime, uint16_t toothAngle, bool toothAngleCorrect);
   
@@ -59,7 +63,9 @@ struct lookup_initial_calculator_t
 {
   uint16_t _toothCurrentCount = 0;   ///< 1-based tooth number
 
+#if !defined(UNIT_TEST)
 protected:
+#endif
   lookup_initial_calculator_t() = default;
   explicit lookup_initial_calculator_t(uint16_t toothCurrentCount);
   
@@ -79,7 +85,9 @@ struct compute_initial_calculator_t
   uint16_t _toothCurrentCount = 0;  ///< 1-based tooth number
   uint16_t _toothAngle = 0;         ///< Tooth angle (1-359°)
 
+#if !defined(UNIT_TEST)
 protected:
+#endif
   compute_initial_calculator_t() = default;
   explicit compute_initial_calculator_t(uint16_t toothCurrentCount, uint16_t toothAngle);
   
@@ -91,7 +99,9 @@ struct sequential_correction_calculator_t
 {
   bool _revZeroOrOne = false; ///< When calculating over 720°, tells the calculator if we are in the 1st revolution (false) or the 2nd (true)
 
+#if !defined(UNIT_TEST)
 protected:
+#endif
   sequential_correction_calculator_t() = default;
   explicit sequential_correction_calculator_t(bool revZeroOrOne);
   
