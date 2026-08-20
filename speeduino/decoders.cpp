@@ -63,7 +63,7 @@ TESTABLE_STATIC volatile unsigned long toothSystemLastToothTime = 0; //As below,
 TESTABLE_STATIC volatile uint32_t toothLastToothTime = 0; //The time (micros()) that the last tooth was registered
 TESTABLE_STATIC volatile unsigned long toothLastSecToothTime = 0; //The time (micros()) that the last tooth was registered on the secondary input
 TESTABLE_STATIC volatile unsigned long toothLastThirdToothTime = 0; //The time (micros()) that the last tooth was registered on the second cam input
-TESTABLE_STATIC volatile unsigned long toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
+TESTABLE_STATIC volatile uint32_t toothLastMinusOneToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered
 TESTABLE_STATIC volatile unsigned long toothLastMinusOneSecToothTime = 0; //The time (micros()) that the tooth before the last tooth was registered on secondary input
 TESTABLE_STATIC volatile unsigned long toothLastToothRisingTime = 0; //The time (micros()) that the last tooth rose (used by special decoders to determine missing teeth polarity)
 TESTABLE_STATIC volatile unsigned long toothLastSecToothRisingTime = 0; //The time (micros()) that the last tooth rose on the secondary input (used by special decoders to determine missing teeth polarity)
@@ -2993,21 +2993,11 @@ static uint16_t getRPM_Nissan360(void)
 
 static int16_t getCrankAngle_Nissan360(uint32_t currMicros)
 {
-  //As each tooth represents 2 crank degrees, we only need to determine whether we're more or less than halfway between teeth to know whether to add another 1 degrees
-  int16_t crankAngle = 0;
-  int tempToothLastToothTime;
-  int tempToothLastMinusOneToothTime;
-  int tempToothCurrentCount;
+  auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, toothCurrentCount);
 
-  noInterrupts();
-  tempToothLastToothTime = toothLastToothTime;
-  tempToothLastMinusOneToothTime = toothLastMinusOneToothTime;
-  tempToothCurrentCount = toothCurrentCount;
-  interrupts();
-
-  crankAngle = ( (tempToothCurrentCount - 1) * 2) + configPage4.triggerAngle;
-  unsigned long halfTooth = (tempToothLastToothTime - tempToothLastMinusOneToothTime) / 2;
-  uint32_t elapsedTime = timeElapsed(currMicros, tempToothLastToothTime);
+  int16_t crankAngle = ( (std::get<2>(data) - 1U) * 2U) + configPage4.triggerAngle;
+  uint32_t halfTooth = (std::get<0>(data) - std::get<1>(data)) / 2U;
+  uint32_t elapsedTime = timeElapsed(currMicros, std::get<0>(data));
   if (elapsedTime > halfTooth)
   {
     //Means we're over halfway to the next tooth, so add on 1 degree
