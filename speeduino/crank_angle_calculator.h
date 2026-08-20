@@ -18,6 +18,22 @@ struct last_tooth_rev_calculator_t
   int16_t calculate(uint32_t currMicros) const;
 };
 
+/** @brief A crank angle calculator that computes a temporal adjustment based on  the gap between the 2 most recent 
+ * teeth rather than the last full revolution
+ */
+struct tooth_interval_calculator_t
+{
+  uint32_t _toothLastToothTime = 0;         ///< Time in µS that the current tooth was last detected
+  uint32_t _toothLastMinusOneToothTime = 0; ///< Time in µS that the tooth before the last tooth was detected
+  uint16_t _toothAngle = 0;                 ///< Tooth angle (1-359°)
+  bool _toothAngleCorrect;                  ///< Is @ref _toothAngle valid
+
+  tooth_interval_calculator_t() = default;
+  explicit tooth_interval_calculator_t(uint32_t toothLastToothTime, uint32_t toothLastMinusOneToothTime, uint16_t toothAngle, bool toothAngleCorrect);
+  
+  int16_t calculate(uint32_t currMicros) const;
+};
+
 /** @brief A crank angle calculator that looks up the initial crank angle from an array.
  * 
  * Useful when the teeth are unevenly spaced or of varying widths
@@ -98,6 +114,35 @@ struct trigger_angle_crank_angle_calculator_t : public last_tooth_rev_calculator
 
   trigger_angle_crank_angle_calculator_t() = default;
   explicit trigger_angle_crank_angle_calculator_t(const data_type &data);
+
+  /**
+   * @brief Calculate the crank angle
+   * 
+   * @param currMicros Current time in µS. Usually the result of a call to micros()
+   * @param page4 The tune
+   */
+  int16_t calculate(uint32_t currMicros, const config4 &page4) const;
+};
+
+struct lookup_crank_angle_calculator_tooth_interval_t : public tooth_interval_calculator_t, sequential_correction_calculator_t, lookup_initial_calculator_t
+{
+  lookup_crank_angle_calculator_tooth_interval_t() = default;
+  explicit lookup_crank_angle_calculator_tooth_interval_t(const std::tuple<uint32_t, uint32_t, bool, uint16_t, uint16_t, bool> &data);
+
+  /**
+   * @brief Calculate the crank angle
+   * 
+   * @param currMicros Current time in µS. Usually the result of a call to micros()
+   * @param toothAngles Array to lookup. Note that teeth numbers are 1-based, but arrays are 0-based
+   * @param page4 The tune
+   */
+  int16_t calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const;
+};
+
+struct compute_crank_angle_calculator_tooth_interval_t : public tooth_interval_calculator_t, sequential_correction_calculator_t, compute_initial_calculator_t
+{
+  compute_crank_angle_calculator_tooth_interval_t() = default;
+  explicit compute_crank_angle_calculator_tooth_interval_t(const std::tuple<uint32_t, uint32_t, bool, uint16_t, uint16_t, bool> &data);
 
   /**
    * @brief Calculate the crank angle

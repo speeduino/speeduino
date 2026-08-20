@@ -11,6 +11,7 @@ extern volatile uint16_t toothCurrentCount;
 extern volatile unsigned long toothOneTime;
 extern volatile unsigned long toothOneMinusOneTime;
 extern volatile uint16_t triggerToothAngle;
+extern bool revolutionOne;
 
 static void test_getCrankAngle(void)
 {
@@ -19,6 +20,7 @@ static void test_getCrankAngle(void)
     toothLastToothTime = 2000;
     toothLastMinusOneToothTime = toothLastToothTime - 500; // tooth interval = 500
     toothCurrentCount = toothNum;
+    revolutionOne = false;
     decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
