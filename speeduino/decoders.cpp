@@ -291,23 +291,6 @@ static decoder_status_t sharedGetStatus(void) noexcept
   return decoderStatus; // Never reached, just to avoid compiler warning
 }
 
-TESTABLE_STATIC uint16_t timeToAngleIntervalTooth(uint32_t time)
-{
-  ATOMIC() 
-  {
-    //Still uses a last interval method (ie retrospective), but bases the interval on the gap between the 2 most recent teeth rather than the last full revolution
-    if(decoderStatus.toothAngleIsCorrect)
-    {
-      return (time * triggerToothAngle) / timeElapsed(toothLastToothTime, toothLastMinusOneToothTime);
-    }
-    else { 
-      //Safety check. This can occur if the last tooth seen was outside the normal pattern etc
-      return timeToAngle(time);
-    }
-  }
-  return 0U; // Silence incorrect compiler warning
-}
-
 static inline bool IsCranking(const statuses &status) {
   return (status.RPM < status.crankRPM) && (status.startRevolutions == 0U);
 }
@@ -1201,14 +1184,8 @@ static uint16_t getRPM_BasicDistributor(void)
 }
 static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 {
-  auto data = atomic_copy(toothLastToothTime, toothCurrentCount);
-
-  int crankAngle = ((std::get<1>(data) - 1) * triggerToothAngle) + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-  
-  //Estimate the number of degrees travelled since the last tooth}
-  crankAngle += timeToAngleIntervalTooth(timeElapsed(currMicros, std::get<0>(data)));
-  
-  return clampCrankAngle(crankAngle);
+  auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, revolutionOne, toothCurrentCount, triggerToothAngle, decoderStatus.toothAngleIsCorrect);
+  return clampCrankAngle(compute_crank_angle_calculator_tooth_interval_t(data).calculate(currMicros, configPage4));
 }
 
 static void triggerSetEndTeeth_BasicDistributor(void)
@@ -1751,12 +1728,8 @@ static int16_t getCrankAngle_4G63(uint32_t currMicros)
   int16_t crankAngle = 0;
   if(decoderStatus.syncStatus==SyncStatus::Full)
   {
-    auto data = atomic_copy(toothLastToothTime, toothCurrentCount);
-
-    crankAngle = toothAngles[(std::get<1>(data) - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-
-    //Estimate the number of degrees travelled since the last tooth}
-    crankAngle += timeToAngleIntervalTooth(timeElapsed(currMicros, std::get<0>(data)));
+    auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, revolutionOne, toothCurrentCount, triggerToothAngle, decoderStatus.toothAngleIsCorrect);
+    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculate(currMicros, toothAngles, configPage4);
   }
   return clampCrankAngle(crankAngle);
 }
@@ -3274,19 +3247,8 @@ static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
   int16_t crankAngle = 0;
   if( decoderStatus.syncStatus==SyncStatus::Full )
   {
-    //This is the current angle ATDC the engine is at. This is the last known position based on what tooth was last 'seen'. It is only accurate to the resolution of the trigger wheel (Eg 36-1 is 10 degrees)
-    unsigned long tempToothLastToothTime;
-    int tempToothCurrentCount;
-    //Grab some variables that are used in the trigger code and assign them to temp variables.
-    noInterrupts();
-    tempToothCurrentCount = toothCurrentCount;
-    tempToothLastToothTime = toothLastToothTime;
-    interrupts();
-
-    crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
-
-    //Estimate the number of degrees travelled since the last tooth}
-    crankAngle += timeToAngleIntervalTooth(currMicros - tempToothLastToothTime);
+    auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, revolutionOne, toothCurrentCount, triggerToothAngle, decoderStatus.toothAngleIsCorrect);
+    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculate(currMicros, toothAngles, configPage4);
   }
   return clampCrankAngle(crankAngle);
 }
