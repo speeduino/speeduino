@@ -91,12 +91,6 @@ int16_t sequential_correction_calculator_t::calculate(const config4 &page4) cons
 
 // ================================ Calculators =====================================
 
-simple_crank_angle_calculator_t::simple_crank_angle_calculator_t(const std::tuple<uint32_t, bool> &data)
-: last_tooth_rev_calculator_t(std::get<0>(data))
-, sequential_correction_calculator_t(std::get<1>(data))
-{
-}
-
 int16_t simple_crank_angle_calculator_t::calculate(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 

@@ -1371,12 +1371,13 @@ static int16_t getCrankAngle_GM7X(uint32_t currMicros)
   int16_t crankAngle = 0;
   if( std::get<2>(data) == 3 )
   {
-    auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
-    crankAngle = simple_crank_angle_calculator_t(data2).calculate(112, currMicros, configPage4);
+    simple_crank_angle_calculator_t calculator;
+    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
+    crankAngle = calculator.calculate(112, currMicros, configPage4);
   }
   else
   {
-    auto calculator = trigger_angle_crank_angle_calculator_t(data);
+    trigger_angle_crank_angle_calculator_t calculator(data);
     if (calculator._toothCurrentCount > 3 )
     {
       --calculator._toothCurrentCount;
@@ -2004,8 +2005,9 @@ static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
   // the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
   if (std::get<2>(data) == 0)
   {
-    auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
-    crankAngle = simple_crank_angle_calculator_t(data2).calculate(114, currMicros, configPage4);
+    simple_crank_angle_calculator_t calculator;
+    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
+    crankAngle = calculator.calculate(114, currMicros, configPage4);
   } 
   else
   { 
@@ -2796,8 +2798,9 @@ static int16_t getCrankAngle_non360(uint32_t currMicros)
   //Have to divide by the multiplier to get back to actual crank angle.
   int16_t crankAngle = ((toothCount - 1) * std::get<3>(data)) / configPage4.TrigAngMul;
 
-  auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
-  return clampCrankAngle(simple_crank_angle_calculator_t(data2).calculate(crankAngle, currMicros, configPage4));
+  simple_crank_angle_calculator_t calculator;
+  std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
+  return clampCrankAngle(calculator.calculate(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
@@ -3571,8 +3574,9 @@ static int16_t getCrankAngle_Harley(uint32_t currMicros)
     crankAngle = 0;
   }
 
-  auto data2 = std::make_tuple(std::get<0>(data), std::get<1>(data));
-  return clampCrankAngle(simple_crank_angle_calculator_t(data2).calculate(crankAngle, currMicros, configPage4));
+  simple_crank_angle_calculator_t calculator;
+  std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
+  return clampCrankAngle(calculator.calculate(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
