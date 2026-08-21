@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "crank_angle_calculator.h"
+#include "src/decoders/crank_angle_calculator.h"
 #include "crankMaths.h"
 
 static void test_last_tooth_rev_calculator_t(void)
