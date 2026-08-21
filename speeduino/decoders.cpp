@@ -46,7 +46,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO_ign.h"
 #include "src/pins/boardInputPin.h"
 #include "scheduler_ignition_controller.h"
-#include "crank_angle_calculator.h"
+#include "src/decoders/crank_angle_calculator.h"
 
 static inline void triggerRecordVVT1Angle (void);
 
