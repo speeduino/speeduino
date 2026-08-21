@@ -596,7 +596,7 @@ static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const stat
 #endif
 }
 
-static inline void calculateNonRotaryIgnitionAngles(const config2 &page2, const config4 &page4, const config13 &page13, uint16_t dwellAngle, const statuses &current)
+static inline void calculateNonRotaryIgnitionAngles(const config4 &page4, const config13 &page13, uint16_t dwellAngle, const statuses &current)
 {
   const bool useIndividualTrim = isFullSequentialIgnition(page4, current.decoder.getStatus());
 
@@ -666,7 +666,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
   }
   else
   {
-    calculateNonRotaryIgnitionAngles(page2, page4, page13, dwellAngle, current);
+    calculateNonRotaryIgnitionAngles(page4, page13, dwellAngle, current);
   }
   
   //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
