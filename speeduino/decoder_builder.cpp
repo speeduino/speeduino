@@ -110,12 +110,14 @@ decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_runni
     return *this;
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnoexcept-type"
 decoder_builder_t& decoder_builder_t::setGetStatus(decoder_t::status_fun_t getStatus)
 {
     _decoder.getStatus = getStatus==nullptr ? &nullGetStatus : getStatus;
     return *this;
 }
-
+#pragma GCC diagnostic pop
 
 decoder_builder_t& decoder_builder_t::setGetFeatures(decoder_t::feature_fun_t getFeatures)
 {

@@ -62,7 +62,10 @@ void __attribute__((optimize("Os"))) setCallbacks(Schedule &schedule, Schedule::
 
 // Event duration cannot be longer than the maximum timer period
 static inline uint16_t clipDuration(uint16_t duration) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtype-limits"
   if (MAX_TIMER_PERIOD < (uint32_t)UINT16_MAX)
+#pragma GCC diagnostic pop
   {
     return min((uint16_t)(MAX_TIMER_PERIOD - 1U), duration);
   }
