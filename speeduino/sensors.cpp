@@ -927,7 +927,12 @@ BEGIN_LTO_ALWAYS_INLINE(void) readPolledSensors(byte loopTimer)
     {BIT_TIMER_4HZ, updateOilPressure},
   };
   
-  static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
+  auto readSensor = [loopTimer](uint8_t i) {
+    if (BIT_CHECK(loopTimer, polledSensors[i].timerBit)) {
+      polledSensors[i].pCallback();
+    }
+  };
+  static_for<_countof(polledSensors)>(readSensor);
 }
 END_LTO_INLINE()
 
