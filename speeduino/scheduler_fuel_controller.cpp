@@ -593,12 +593,9 @@ TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t calcAngularCylin
 
 TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t getOddfireAngle(const config2 &page2, uint8_t channel)
 {
-  switch (channel)
+  if (channel>1U && channel<_countof(page2.oddfire)+2)
   {
-    case 2: return page2.oddfire2; break;
-    case 3: return page2.oddfire3; break;
-    case 4: return page2.oddfire4; break;
-    default: break;
+    return page2.oddfire[channel-2U];
   }
   return 0U;
 }
@@ -818,8 +815,8 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateInjectionSetup(conf
   //
   page2.injLayout = validateInjLayout(page2.injLayout, page2);
 
-  // Oddfire only supported on up to 4 cylinders
-  if ((page2.engineType == ODD_FIRE) && (page2.nCylinders>4U))
+  // Oddfire only supported on up to number of oddfire angles
+  if ((page2.engineType == ODD_FIRE) && (page2.nCylinders>_countof(page2.oddfire)+1U))
   {
     page2.engineType = EVEN_FIRE;
   }

@@ -1386,9 +1386,9 @@ static init_context_t setup_oddfire(uint8_t nCylinders)
   context.setup_4stroke(nCylinders);
   context.page2.engineType = ODD_FIRE;
   context.page2.injLayout = INJ_SEQUENTIAL;
-  context.page2.oddfire2 = 13;
-  context.page2.oddfire3 = 111;
-  context.page2.oddfire4 = 217;
+  context.page2.oddfire[0] = 13;
+  context.page2.oddfire[1] = 111;
+  context.page2.oddfire[2] = 217;
   return context;
 }
 

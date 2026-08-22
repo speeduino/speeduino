@@ -363,9 +363,9 @@ static config2 setup_oddfire(void)
   page2.engineType = ODD_FIRE;
   page2.injTiming = true;
   page2.nCylinders = 2;
-  page2.oddfire2 = 5;
-  page2.oddfire3 = 15;
-  page2.oddfire4 = 25;
+  page2.oddfire[0] = 5;
+  page2.oddfire[1] = 15;
+  page2.oddfire[2] = 25;
   return page2;
 }
 
@@ -376,9 +376,9 @@ static void test_getOddfireAngle(void)
   TEST_ASSERT_EQUAL(0, getOddfireAngle(page2, 1));
   TEST_ASSERT_EQUAL(0, getOddfireAngle(page2, 5));
 
-  TEST_ASSERT_EQUAL(page2.oddfire2, getOddfireAngle(page2, 2));
-  TEST_ASSERT_EQUAL(page2.oddfire3, getOddfireAngle(page2, 3));
-  TEST_ASSERT_EQUAL(page2.oddfire4, getOddfireAngle(page2, 4));
+  TEST_ASSERT_EQUAL(page2.oddfire[0], getOddfireAngle(page2, 2));
+  TEST_ASSERT_EQUAL(page2.oddfire[1], getOddfireAngle(page2, 3));
+  TEST_ASSERT_EQUAL(page2.oddfire[2], getOddfireAngle(page2, 4));
 }
 
 static config2 setup_evenfire(void)
