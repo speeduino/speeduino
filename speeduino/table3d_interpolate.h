@@ -109,10 +109,9 @@ extern table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues,
  * @tparam xFactor The factor used to scale the lookup value to/from the same units as the axis values.
  * @tparam yFactor The factor for the Y axis values.
  * @param pValueCache Pointer to the value cache structure.
- * @param axisSize The size of the axis.
- * @param pValues Pointer to the table values.
- * @param pXAxis Pointer to the X axis array.
- * @param pYAxis Pointer to the Y axis array.
+ * @param values The table values.
+ * @param xAxis The X axis array.
+ * @param yAxis The Y axis array.
  * @param lookupValues The X axis and Y axis values to look up.
  * @return The interpolated value from the table.
  */

@@ -75,8 +75,7 @@ TESTABLE_INLINE_STATIC QU1X8_t mulQU1X8(QU1X8_t a, QU1X8_t b)
  * *This retains the full precision of the axis values, thus the computed position and eventually the final interpolated result*
  * 
  * @param value The value to check.
- * @param upperBinIndex The upper bin index into pAxis.
- * @param pAxis The axis array.
+ * @param bin The axis bin.
  * @param multiplier The multiplier for the axis values.
  * @return QU1X8_t The % position of the value within the bin.
  */
@@ -152,12 +151,11 @@ TESTABLE_INLINE_STATIC table3d_value_t bilinear_interpolation( const table3d_val
  * @brief Interpolate a table value from axis bins & values.
  * 
  * @param lookUpValues The x & y axis values we are interpolating
- * @param upperBinIndices The x & y axis bin indices that contain lookUpValues
  * @param axisSize The length of an axis
  * @param pValues The interpolation source values
- * @param pXAxis The x-axis
+ * @param xBin The x-axis bin containing lookUpValues.x
  * @param xMultiplier The x-axis multiplier
- * @param pYAxis The y-axis
+ * @param yBin The y-axis bin containing lookUpValues.y
  * @param yMultiplier The y-axis multiplier
  * @return table3d_value_t 
  */
