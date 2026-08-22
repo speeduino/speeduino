@@ -101,10 +101,7 @@ void programmableIOControl(const config13& page13)
 }
 // LCOV_EXCL_STOP
 
-/** Get single I/O data var (from current) for comparison.
- * @param index - Field index/number (?)
- * @return 16 bit (int) result
- */
+/** @brief Get single I/O data var (from current) for comparison. */
 TESTABLE_INLINE_STATIC int16_t programmableIOGetData(uint16_t index, byte (*pGetLogEntry)(uint16_t byteNum))
 {
   int16_t result;

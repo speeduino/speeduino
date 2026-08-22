@@ -183,8 +183,8 @@ struct config2 : public config_page_t {
   byte useTachoSweep : 1;
   byte aeApplyMode : 1; ///< Acceleration enrichment calc mode: 0 = Multiply | 1 = Add (AE_MODE_ADDER)
   byte multiplyMAP : 2; ///< MAP value processing: 0 = off, 1 = div by currentStatus.baro, 2 = div by 100 (to gain usable value)
-  byte wueValues[10];   ///< Warm up enrichment array (10 bytes, transferred to @ref WUETable)
-  byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
+  byte wueValues[10];   ///< Warm up enrichment array
+  byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.cpp)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
   byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinNumbers.pinTachOut, which defaults to board assigned tach pin)
   byte tachoDiv : 2;    ///< Whether to change the tacho speed ("half speed tacho" ?)
@@ -221,7 +221,7 @@ struct config2 : public config_page_t {
   //config2 in ini
   // cppcheck-suppress misra-c2012-6.1
   LoadSource fuelAlgorithm : 3;///< Fuel algorithm - 0=Manifold pressure/MAP (LOAD_SOURCE_MAP, default, proven), 1=Throttle/TPS (LOAD_SOURCE_TPS), 2=IMAP/EMAP (LOAD_SOURCE_IMAPEMAP)
-  byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref configPage4.FixAng)
+  byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref config4.FixAng)
   byte nInjectors : 4;   ///< Number of injectors
 
 
@@ -271,7 +271,7 @@ struct config2 : public config_page_t {
 
   byte fanWhenOff : 1;      ///< Allow running fan with engine off: 0 = Only run fan when engine is running, 1 = Allow even with engine off
   byte fanWhenCranking : 1; ///< Set whether the fan output will stay on when the engine is cranking (0=force off, 1=allow on)
-  byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref configPage4.dwellRun, 1=Use @ref dwellTable)
+  byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref config4.dwellRun, 1=Use @ref dwellTable)
   byte fanEnable : 2;       ///< Fan mode. 0=Off, 1=On/Off, 2=PWM
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
@@ -355,7 +355,7 @@ constexpr uint8_t CAM_SPEED   = 1U;
 struct config4 : public config_page_t {
 
   int16_t triggerAngle; ///< Angle (ATDC) when tooth No:1 on the primary wheel sends signal (-360 to +360 deg.)
-  int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref configPage2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
+  int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref config2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
   int8_t CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
   byte TrigAngMul; ///< Multiplier for non evenly divisible tooth counts.
 
@@ -398,7 +398,7 @@ struct config4 : public config_page_t {
   byte HardRevLim;    ///< Hard rev limit (RPM/100)
   byte taeBins[4];    ///< TPS based acceleration enrichment bins (Unit: %/s)
   byte taeValues[4];  ///< TPS based acceleration enrichment rates (Unit: % to add), values matched to thresholds of taeBins
-  byte wueBins[10];   ///< Warmup Enrichment bins (Values are in @ref configPage2.wueValues OLD:configTable1)
+  byte wueBins[10];   ///< Warmup Enrichment bins (Values are in @ref config2.wueValues OLD:configTable1)
   byte dwellLimit;
   byte dwellCorrectionValues[6]; ///< Correction table for dwell vs battery voltage
   byte iatRetBins[6]; ///< Inlet Air Temp timing retard curve bins (Unit: ...)
@@ -752,8 +752,8 @@ struct config10 : public config_page_t {
 
   byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinNumbers.pinFuelPressure)
-  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinNumbers.pinOilPressure)
+  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinNumbers_t.pinFuelPressure)
+  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinNumbers_t.pinOilPressure)
   byte oilPressureProtEnbl : 1;
   byte oilPressurePin : 5;
 
@@ -824,8 +824,8 @@ struct config10 : public config_page_t {
 
 } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
-/** Config for programmable I/O comparison operation (between 2 vars).
- * Operations are implemented in utilities.ino (@ref checkProgrammableIO()).
+/** @brief Config for programmable I/O comparison operation (between 2 vars).
+ * Operations are implemented in @ref programmableIOControl().
  */
 struct cmpOperation {
   uint8_t firstCompType : 3;  ///< First cmp. op (COMPARATOR_* ops, see below)
@@ -840,7 +840,7 @@ constexpr uint8_t SD_LOGGER_RATE_30HZ = 3;
 
 /**
 Page 13 - Programmable outputs logic rules.
-128 bytes long. Rules implemented in utilities.ino @ref checkProgrammableIO().
+128 bytes long. Rules implemented in @ref programmableIOControl().
 */
 struct config13 : public config_page_t {
   uint8_t outputInverted; ///< Invert (on/off) value before writing to output pin (for all programmable I/O:s).

@@ -32,7 +32,7 @@ struct interrupt_t
   /**
    * @brief Does the pin state match the edge setting? 
    * 
-   * @note Will always return true for the @ref CHANGE trigger edge
+   * @note Will always return true for the `CHANGE` trigger edge
   */
   bool isTriggered(void) const;
 

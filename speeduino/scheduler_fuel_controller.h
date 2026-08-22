@@ -45,7 +45,7 @@ uint16_t setFuelChannelSchedules(const statuses &current);
 /**
  * @brief Apply the calculated pulse widths to the fuel schedules
  * 
- * @param pulseWidths Result of computePulseWidths()
+ * @param pulse_widths Result of computePulseWidths()
  * @param page2 Tune settings
  * @param page4 Tune settings
  * @param page6 Tune settings

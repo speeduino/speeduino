@@ -683,6 +683,8 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
   }
 }
 
+void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag) { sendValues(offset, packetLength, cmd, targetPort, targetStatusFlag, &getTSLogEntry); } //Defaults to using the standard TS log function
+
 /** Send a status record back to tuning/logging SW.
  * This will "live" information from @ref currentStatus struct.
  * @param offset - Start field number
@@ -692,9 +694,7 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
  * @param targetStatusFlag - The status flag that will be set to indicate the status of the transmission
  * @param logFunction - The function that should be called to retrieve the log value
  * E.g. tuning sw command 'A' (Send all values) will send data from field number 0, LOG_ENTRY_SIZE fields.
- * @return the current values of a fixed group of variables
- */
-void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag) { sendValues(offset, packetLength, cmd, targetPort, targetStatusFlag, &getTSLogEntry); } //Defaults to using the standard TS log function
+  */
 void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &targetPort, SerialStatus &targetStatusFlag, uint8_t (*logFunction)(uint16_t))
 {  
   if (&targetPort == &secondarySerial)

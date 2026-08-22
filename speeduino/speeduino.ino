@@ -134,7 +134,7 @@ static void onPowerSourceSwitch(uint8_t originalBatteryVoltage, const statuses &
  * - Check crank/cam/tooth/timing sync (skip remaining ops if out-of-sync)
  * - execute doCrankSpeedCalcs()
  * 
- * single byte variable @ref currentStatus.LOOP_TIMER plays a big part here as:
+ * single byte variable @ref statuses.LOOP_TIMER plays a big part here as:
  * - it contains expire-bits for interval based frequency driven events (e.g. 15Hz, 4Hz, 1Hz)
  * - Can be tested for certain frequency interval being expired by (eg) BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_15HZ)
  * 

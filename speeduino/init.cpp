@@ -103,7 +103,7 @@ static void processResetStorageRequest(void) {
  * - Stop any coil charging and close injectors
  * - Initialise schedulers, Idle, Fan, auxPWM, Corrections, AD-conversions, Programmable I/O
  * - Initialise baro (ambient pressure) by reading MAP (before engine runs)
- * - Initialise triggers (by @ref initialiseTriggers() )
+ * - Initialise triggers 
  * - Perform cyl. count based initialisations (@ref config2.nCylinders)
  * - Perform injection and spark mode based setup
  *   - Assign injector open/close and coil charge begin/end functions to their dedicated global vars

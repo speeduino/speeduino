@@ -188,11 +188,6 @@ TESTABLE_STATIC uint16_t calcPulsesPerKm(const statuses &current, const config2 
   return page2.vssPulsesPerKm;
 }
 
-/**
- * @brief 
- * 
- * @param command The command number of the button that was clicked. See TS_CommendButtonHandler.h for a list of button IDs
- */
 bool handleTsCommand(uint16_t command, statuses &current, config2 &page2)
 {
   if (commandRequiresStoppedEngine(command) && current.RPM != 0)
