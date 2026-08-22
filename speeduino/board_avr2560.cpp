@@ -2,7 +2,7 @@
 
 #if defined(CORE_AVR)
 #include "globals.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "comms_secondary.h"
 #include "idle.h"
 #include "timers.h"

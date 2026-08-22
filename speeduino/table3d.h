@@ -103,7 +103,7 @@ TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 // =============================== Table function calls =========================
 
 template <typename TTable>
-static inline table3d_value_t get3DTableValue(const TTable *pTable, const uint16_t y, const uint16_t x) 
+static inline table3d_value_t get3DTableValue(const TTable *pTable, const uint16_t y, const uint16_t x)  noexcept
 { 
     constexpr uint16_t xFactor = getConversionFactor(TTable::XDomain);
     constexpr uint16_t yFactor = getConversionFactor(TTable::YDomain);

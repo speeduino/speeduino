@@ -1,7 +1,24 @@
 #pragma once
 
-#include <stdint.h>
+#include "src/controllers/vvt/vvtController.h"
 
-constexpr uint8_t TANK_EMPTY_PIN = 11;
+struct test_context_t
+{
+    statuses current;
+    pinNumbers_t pins;
+    config4 page4;
+    config6 page6;
+    config10 page10;
 
-void setup_wmi_tune(uint8_t mode);
+    void initialise(void)
+    {
+        initialiseVvtWmi(current, pins, page4, page6, page10);
+    }
+
+    void wmiControl(void)
+    {
+        ::wmiControl(current, page10);
+    }
+};
+
+test_context_t setup_wmi_tune(uint8_t mode);

@@ -17,7 +17,6 @@ A full copy of the license may be found in the projects root directory
 #include "corrections.h"
 #include "pages.h"
 #include "decoder_init.h"
-#include "auxiliaries.h"
 #include "elapsed_time.h"
 #include "unit_testing.h"
 #include "sensors_map_structs.h"

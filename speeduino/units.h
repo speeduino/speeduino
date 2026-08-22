@@ -116,6 +116,12 @@ static constexpr conversionFactor<uint16_t, uint8_t> TIME_TWENTY_MILLIS = { .sca
  */
 static constexpr conversionFactor<uint16_t, uint8_t> TIME_TEN_MILLIS = { .scale=100U, .translate=0U };
 
+/** @brief Time values stored in 2 milliseconds 
+ * 
+ * We convert to/from secs/0.1
+ */
+static constexpr conversionFactor<uint16_t, uint8_t> TIME_TWO_MILLIS = { .scale=50U, .translate=0U };
+
 /** @brief MAP values: kpa */
 static constexpr conversionFactor<uint16_t, uint8_t> MAP = { .scale=2U, .translate=0U };
 
