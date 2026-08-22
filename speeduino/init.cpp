@@ -10,7 +10,7 @@
 #include "comms_secondary.h"
 #include "comms_CAN.h"
 #include "scheduler_fuel_controller.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "sensors.h"
 #include "decoders.h"
 #include "corrections.h"
@@ -176,7 +176,7 @@ void initialiseAll(void)
     initialiseBoost(pinNumbers.pinBoost);
     initialiseAirCon();
     initialiseNitrous();
-    initialiseAuxPWM();
+    initialiseVvtWmi(currentStatus, pinNumbers, configPage4, configPage6, configPage10);
     initialiseCorrections();
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();

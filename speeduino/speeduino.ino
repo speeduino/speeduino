@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "timers.h"
 #include "decoders.h"
 #include "idle.h"
-#include "auxiliaries.h"
+#include "src/controllers/vvt/vvtController.h"
 #include "sensors.h"
 #include "storage.h"
 #include "crankMaths.h"
@@ -41,7 +41,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "secondaryTables.h"
 #include "comms_CAN.h"
 #include "SD_logger.h"
-#include "auxiliaries.h"
 #include "load_source.h"
 #include "board_definition.h"
 #include "unit_testing.h"
@@ -221,10 +220,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { 
         currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
       }
-
-      vvt1Off();
-      vvt2Off();
-      DISABLE_VVT_TIMER();
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
@@ -243,9 +238,9 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //Most boost tends to run at about 30Hz, so placing it here ensures a new target time is fetched frequently enough
       boostControl();
       //VVT may eventually need to be synced with the cam readings (ie run once per cam rev) but for now run at 30Hz
-      vvtControl();
+      vvtControl(currentStatus, configPage4, configPage6, configPage10);
       //Water methanol injection
-      wmiControl();
+      wmiControl(currentStatus, configPage10);
       
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(30);
