@@ -605,9 +605,7 @@ TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t getOddfireAngle(
 
 TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) bool useEvenFire(const config2 &page2)
 {
-    return (page2.engineType == EVEN_FIRE) 
-        || (page2.nCylinders!=2U) // Oddfire only supported on 2 cylinders (not sure why, should go up to 4 cylinders?)
-        ;
+    return (page2.engineType == EVEN_FIRE);
 }
 
 TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t getEvenFireAngle(const statuses &current, const config2 &page2, uint8_t channel)
@@ -820,8 +818,8 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateInjectionSetup(conf
   //
   page2.injLayout = validateInjLayout(page2.injLayout, page2);
 
-  // Oddfire only supported on 2 cylinders (not sure why, should go up to 4 cylinders?)
-  if ((page2.engineType == ODD_FIRE) && (page2.nCylinders!=2U))
+  // Oddfire only supported on up to 4 cylinders
+  if ((page2.engineType == ODD_FIRE) && (page2.nCylinders>4U))
   {
     page2.engineType = EVEN_FIRE;
   }
