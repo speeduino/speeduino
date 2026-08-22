@@ -2,6 +2,7 @@
 
 // Capture boilerplate code into these macros
 // Avoid repeated code in tests
+#include "board_definition.h"
 
 #if INJ_CHANNELS >= 1
 #define RUNIF_INJCHANNEL1(codeBlock, ignored) (codeBlock);

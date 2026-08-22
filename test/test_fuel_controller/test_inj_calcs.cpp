@@ -1,7 +1,6 @@
-#include <Arduino.h>
+// #include <Arduino.h>
 #include <unity.h>
-#include "test_calcs_common.h"
-#include "scheduler.h"
+#include "../test_calcs_common.h"
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include <type_traits>
@@ -435,20 +434,20 @@ static void test_calculateAngularTime_event_greaterthan_crank(void)
 }
 
 // 
-void test_calc_inj_timeout(void)
+void testInjCalcs(void)
 {
   SET_UNITY_FILENAME() {
 
-    RUN_TEST(test_calc_inj_timeout_360);
-    RUN_TEST(test_calc_inj_timeout_720);
-    RUN_TEST(test_calculateOpenAngle_basic_no_wrap);
-    RUN_TEST(test_calculateOpenAngle_wraps_when_pw_is_larger);
-    RUN_TEST(test_calculateOpenAngle_clamps_above_maxAngle);
-    RUN_TEST(test_calculateOpenAngle_preserves_720_maxAngle);
+    RUN_TEST_P(test_calc_inj_timeout_360);
+    RUN_TEST_P(test_calc_inj_timeout_720);
+    RUN_TEST_P(test_calculateOpenAngle_basic_no_wrap);
+    RUN_TEST_P(test_calculateOpenAngle_wraps_when_pw_is_larger);
+    RUN_TEST_P(test_calculateOpenAngle_clamps_above_maxAngle);
+    RUN_TEST_P(test_calculateOpenAngle_preserves_720_maxAngle);
     RUN_TEST_P(test_calculateOpenAngle_large_pw);
     RUN_TEST_P(test_updatePwAngleCache_basic);
     RUN_TEST_P(test_updatePwAngleCache_within_threshoold);
-    RUN_TEST(test_calculateInjectorTimeout);
+    RUN_TEST_P(test_calculateInjectorTimeout);
     RUN_TEST_P(test_calculateAngularTime_eventcrank_equal);
     RUN_TEST_P(test_calculateAngularTime_event_lessthan_crank);
     RUN_TEST_P(test_calculateAngularTime_event_greaterthan_crank);

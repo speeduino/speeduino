@@ -170,7 +170,7 @@ void initialiseAll(void)
     digitalWrite(pinNumbers.pinTachOut, HIGH);
     //Perform all initialisations
     initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, pinNumbers);
-    initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage10, pinNumbers);
+    initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage6, configPage10, pinNumbers);
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);
     initialiseBoost(pinNumbers.pinBoost);

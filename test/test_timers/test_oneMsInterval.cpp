@@ -176,8 +176,8 @@ static void test_inj_priming_runs_when_rpm_zero(void)
   currentStatus.injPrimed = false;
   currentStatus.initialisationComplete = true;
   currentStatus.RPM = 0U;
-  currentStatus.numPrimaryInjOutputs = 0U;    // Skip actual fuel-schedule dispatch
-  currentStatus.numSecondaryInjOutputs = 0U;    // Skip actual fuel-schedule dispatch
+  currentStatus.injOutputs.primary = 0U;    // Skip actual fuel-schedule dispatch
+  currentStatus.injOutputs.secondary = 0U;    // Skip actual fuel-schedule dispatch
   configPage2.primingDelay = 0U;        // seclx10 >= 0 always
 
   run_n_intervals(100);                 // Crosses 10Hz boundary, hits priming branch

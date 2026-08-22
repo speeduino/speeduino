@@ -2,7 +2,7 @@
 #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler_fuel_controller.h"
-#include "channel_test_helpers.h"
+#include "../channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 
 static void test_status_initial_off_inj(FuelSchedule &schedule)

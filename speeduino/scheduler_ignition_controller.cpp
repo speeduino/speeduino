@@ -280,7 +280,7 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
       current.maxIgnOutputs = 2;
 #if IGN_CHANNELS >= 2
       if (page2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
-      else { ignitionSchedule2.channelDegrees = page2.oddfire2; }
+      else { ignitionSchedule2.channelDegrees = page2.oddfire[0]; }
 #endif
 
       //Sequential ignition works identically on a 2 cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
@@ -317,10 +317,10 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
       else
       {
 #if IGN_CHANNELS >= 2
-        ignitionSchedule2.channelDegrees = page2.oddfire2;
+        ignitionSchedule2.channelDegrees = page2.oddfire[0];
 #endif
 #if IGN_CHANNELS >= 3
-        ignitionSchedule3.channelDegrees = page2.oddfire3;
+        ignitionSchedule3.channelDegrees = page2.oddfire[1];
 #endif
       }
       break;
@@ -362,13 +362,13 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
       else
       {
 #if IGN_CHANNELS >= 2
-        ignitionSchedule2.channelDegrees = page2.oddfire2;
+        ignitionSchedule2.channelDegrees = page2.oddfire[0];
 #endif
 #if IGN_CHANNELS >= 3
-        ignitionSchedule3.channelDegrees = page2.oddfire3;
+        ignitionSchedule3.channelDegrees = page2.oddfire[1];
 #endif
 #if IGN_CHANNELS >= 4
-        ignitionSchedule4.channelDegrees = page2.oddfire4;
+        ignitionSchedule4.channelDegrees = page2.oddfire[2];
 #endif
         current.maxIgnOutputs= 4;
       }
