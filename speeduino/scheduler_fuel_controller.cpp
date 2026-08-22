@@ -235,8 +235,8 @@ TESTABLE_STATIC table2D_u8_u16_4 injectorAngleTable(&configPage2.injAngRPM, &con
 TESTABLE_INLINE_STATIC uint16_t lookupInjectorAngle(const statuses &current)
 {
   uint16_t injAngle = table2D_getValue(&injectorAngleTable, current.RPMdiv100);
-  // Do not combine min() & table2D_getValue() - if min() is a macro, we could call table2D_getValue twice
-  return min(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
+  // Do not combine (std::min)() & table2D_getValue() - if (std::min)() is a macro, we could call table2D_getValue twice
+  return (std::min)(uint16_t(CRANK_ANGLE_MAX_INJ), injAngle);
 }
 
 TESTABLE_INLINE_STATIC uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCalcCache *pCache) {
@@ -1137,7 +1137,7 @@ static __attribute__((optimize("Os"))) uint8_t calulateDefaultSquirts(const conf
   }
 
   //Safety check. Should never happen as TS will give an error, but leave in case tune is manually altered etc. 
-  return max((uint8_t)1, nSquirts);
+  return (std::max)((uint8_t)1, nSquirts);
 }
 
 void __attribute__((optimize("Os"))) initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10, const pinNumbers_t &pins)

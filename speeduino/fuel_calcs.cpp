@@ -79,7 +79,7 @@ TESTABLE_INLINE_STATIC uint16_t calculatePWLimit(const config2 &page2, const sta
       tempLimit = fast_div (tempLimit, current.nSquirts);
       break;
   }
-  return (uint16_t)min(tempLimit, (uint32_t)UINT16_MAX);
+  return (uint16_t)(std::min)(tempLimit, (uint32_t)UINT16_MAX);
 }
 
 
@@ -153,13 +153,13 @@ TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, cons
       REQ_FUEL, page2, current);
 
   // Make sure this won't overflow when we convert to uInt. This means the maximum pulsewidth possible is 65.535mS
-  return pwApplyNitrous((uint16_t)min(intermediate, (uint32_t)UINT16_MAX), page10, current);
+  return pwApplyNitrous((uint16_t)(std::min)(intermediate, (uint32_t)UINT16_MAX), page10, current);
 }
 
 // Apply the pwLimit if staging is disabled and engine is not cranking
 TESTABLE_INLINE_STATIC uint16_t applyPwLimits(uint16_t pw, uint16_t pwLimit, const config10 &page10, const statuses &current) {
   if( (current.rotationStatus!=EngineRotationStatus::Cranking) && (page10.stagingEnabled == false) ) { 
-    return min(pw, pwLimit);
+    return (std::min)(pw, pwLimit);
   }
   return pw;
 }
@@ -197,12 +197,12 @@ static inline pulseWidths applyStagingModeTable(uint16_t primaryPW, uint16_t inj
     uint32_t primary = percentageApprox((uint8_t)(100U - stagingSplit), pwPrimaryStaged) + injOpenTime;
     uint32_t secondary = percentageApprox(stagingSplit, pwSecondaryStaged) + injOpenTime;
     return { 
-      (uint16_t)min(primary, (uint32_t)UINT16_MAX),
-      (uint16_t)min(secondary, (uint32_t)UINT16_MAX),
+      (uint16_t)(std::min)(primary, (uint32_t)UINT16_MAX),
+      (uint16_t)(std::min)(secondary, (uint32_t)UINT16_MAX),
     };
   }
 
-  return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
+  return { (uint16_t)(std::min)(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
 }
 
 static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLimit, uint16_t injOpenTime, const config10 &page10) {
@@ -216,11 +216,11 @@ static inline pulseWidths applyStagingModeAuto(uint16_t primaryPW, uint16_t pwLi
     uint32_t secondary = fast_div(extraPW * page10.stagedInjSizePri, page10.stagedInjSizeSec) + injOpenTime;
     return { 
       pwLimit,
-      (uint16_t)min(secondary, (uint32_t)UINT16_MAX),
+      (uint16_t)(std::min)(secondary, (uint32_t)UINT16_MAX),
     };
   }
 
-  return { (uint16_t)min(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
+  return { (uint16_t)(std::min)(pwPrimaryStaged + injOpenTime, (uint32_t)UINT16_MAX), 0U};
 }
 
 

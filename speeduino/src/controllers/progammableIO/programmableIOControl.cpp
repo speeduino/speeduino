@@ -113,7 +113,7 @@ TESTABLE_INLINE_STATIC int16_t programmableIOGetData(uint16_t index, byte (*pGet
     //Special cases for temperatures
     if( (index == 6) || (index == 7) ) { result = temperatureRemoveOffset(result); }
   }
-  else if ( index == 239U ) { result = (int16_t)min((uint32_t)runSecsX10, (uint32_t)INT16_MAX); }
+  else if ( index == 239U ) { result = (int16_t)(std::min)((uint32_t)runSecsX10, (uint32_t)INT16_MAX); }
   else { result = -1; } //Index is bigger than fullStatus array
   return result;
 }

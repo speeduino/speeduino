@@ -1,7 +1,9 @@
 #pragma once
 
+#include <iterator>
 #include "table3d_typedefs.h"
 #include "maths.h"
+#include "table2d.h"
 
 /**
  * @file 
@@ -60,20 +62,14 @@ static inline void invalidate_cache(table3DGetValueCache *pCache)
 
 /// @cond
 // private to table3D implementation
-
-extern table3d_dim_t find_bin_max(
-  const table3d_axis_t &value,
-  const table3d_axis_t *pAxis,
-  table3d_dim_t length,
-  table3d_dim_t lastBinMax);
+using table3d_bin_t = _table2d_detail::Bin<table3d_axis_t>;
 
 extern table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues, 
-                    const xy_coord2d &axisCoords,
                     const table3d_dim_t &axisSize,
                     const table3d_value_t *pValues,
-                    const table3d_axis_t *pXAxis,
+                    const table3d_bin_t &xBin,
                     const uint16_t xMultiplier,
-                    const table3d_axis_t *pYAxis,
+                    const table3d_bin_t &yBin,
                     const uint16_t yMultiplier);
 
 /// @endcond
@@ -113,19 +109,17 @@ extern table3d_value_t interpolate_3d_value(const xy_pair_t &lookUpValues,
  * @tparam xFactor The factor used to scale the lookup value to/from the same units as the axis values.
  * @tparam yFactor The factor for the Y axis values.
  * @param pValueCache Pointer to the value cache structure.
- * @param axisSize The size of the axis.
- * @param pValues Pointer to the table values.
- * @param pXAxis Pointer to the X axis array.
- * @param pYAxis Pointer to the Y axis array.
+ * @param values The table values.
+ * @param xAxis The X axis array.
+ * @param yAxis The Y axis array.
  * @param lookupValues The X axis and Y axis values to look up.
  * @return The interpolated value from the table.
  */
-template <uint16_t xFactor, uint16_t yFactor>
+template <uint16_t xFactor, uint16_t yFactor, typename TValues, typename TXAxis, typename TYAxis>
 table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache, 
-                    const table3d_dim_t axisSize,
-                    const table3d_value_t *pValues,
-                    const table3d_axis_t *pXAxis,
-                    const table3d_axis_t *pYAxis,
+                    const TValues &values,
+                    const TXAxis &xAxis,
+                    const TYAxis &yAxis,
                     const xy_pair_t &lookupValues) {
   
 #if !defined(UNIT_TEST) // No caching during unit testing
@@ -137,15 +131,18 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
   }
 #endif
 
+  constexpr table3d_dim_t axisSize = std::tuple_size<TXAxis>::value;
+
   // Figure out where on the axes the incoming coord are
-  // LCOV_EXCL_BR_START
-  pValueCache->lastBinMax.x = find_bin_max(div_round_closest_u16<xFactor>(lookupValues.x), pXAxis, axisSize, pValueCache->lastBinMax.x);
-  pValueCache->lastBinMax.y = find_bin_max(div_round_closest_u16<yFactor>(lookupValues.y), pYAxis, axisSize, pValueCache->lastBinMax.y);
-  // LCOV_EXCL_BR_STOP
+  auto xBin = _table2d_detail::findCachedBin(pValueCache->lastBinMax.x, std::begin(xAxis), std::end(xAxis), (table3d_dim_t)div_round_closest_u16<xFactor>(lookupValues.x));
+  auto yBin = _table2d_detail::findCachedBin(pValueCache->lastBinMax.y, std::begin(yAxis), std::end(yAxis), (table3d_dim_t)div_round_closest_u16<yFactor>(lookupValues.y));
+  
   // Interpolate based on the bin positions
-  pValueCache->lastOutput = interpolate_3d_value(lookupValues, pValueCache->lastBinMax, axisSize, pValues, pXAxis, xFactor, pYAxis, yFactor);
+  pValueCache->lastOutput = interpolate_3d_value(lookupValues, axisSize, values.data(), xBin, xFactor, yBin, yFactor);
   // Store the last lookup values so we can check them next time
   pValueCache->last_lookup = lookupValues;
+  pValueCache->lastBinMax.x = xBin.upperIndex;
+  pValueCache->lastBinMax.y = yBin.upperIndex;
 
   return pValueCache->lastOutput;
 

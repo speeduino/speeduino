@@ -188,7 +188,7 @@ TESTABLE_INLINE_STATIC uint8_t applyEngineProtectionRevLimit(uint8_t curLimit, c
 {
   if ((current.engineProtect.boostCut) || (current.engineProtect.oil) || (current.engineProtect.afr))
   {
-    return min(curLimit, page4.engineProtectMaxRPM);
+    return (std::min)(curLimit, page4.engineProtectMaxRPM);
   }
 
   return curLimit;
@@ -198,7 +198,7 @@ TESTABLE_INLINE_STATIC uint8_t applyHardLaunchRevLimit(uint8_t curLimit, const s
 {
   if (current.launchingHard)
   {
-    return min(curLimit, page6.lnchHardLim);
+    return (std::min)(curLimit, page6.lnchHardLim);
   }
 
   return curLimit;
@@ -208,7 +208,7 @@ TESTABLE_INLINE_STATIC uint16_t applyFlatShiftRevLimit(uint16_t curLimit, const 
 {
   if ( current.flatShiftingHard ) 
   {
-    return min(curLimit, (uint16_t)current.clutchEngagedRPM);
+    return (std::min)(curLimit, (uint16_t)current.clutchEngagedRPM);
   }
   return curLimit;
 }
@@ -378,7 +378,7 @@ TESTABLE_STATIC bool supportPendingIgnitionCut(const config2 &page2, const confi
 TESTABLE_STATIC statuses::scheduler_cut_t applyRollingCutPercentage(const statuses &current, const config6 &page6, uint8_t cutPercent, bool supportPendingIgnitionCut)
 {
   statuses::scheduler_cut_t cutState = current.schedulerCutState;
-  for(uint8_t channel=0; channel<max(current.maxIgnOutputs, getTotalInjChannelCount(current)); ++channel)
+  for(uint8_t channel=0; channel<(std::max)(current.maxIgnOutputs, getTotalInjChannelCount(current)); ++channel)
   {  
     if( rollingCutRandFunc() < cutPercent )
     {

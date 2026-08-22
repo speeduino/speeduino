@@ -115,29 +115,6 @@ static void test_all_incrementing(void)
   TEST_IGNORE_MESSAGE("Test takes too long on device");
 #endif
 }
-extern table3d_dim_t linear_bin_search(const table3d_axis_t *array, 
-                            const table3d_dim_t length,
-                            const table3d_axis_t value);
-
-static void test_linear_bin_search(void) {
-  // Test the linear search function used in the table lookup
-  // This is a simple test to ensure that the linear search returns the correct index
-  constexpr table3d_axis_t axis[] = { 10, 20, 30, 40, 50 };
-  // Below axis min value
-  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 5));
-  // Middle of bins & the bin edges
-  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 10));
-  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 15));
-  TEST_ASSERT_EQUAL(1U, linear_bin_search(axis, _countof(axis), 20));
-  TEST_ASSERT_EQUAL(2U, linear_bin_search(axis, _countof(axis), 25));
-  TEST_ASSERT_EQUAL(2U, linear_bin_search(axis, _countof(axis), 30));
-  TEST_ASSERT_EQUAL(3U, linear_bin_search(axis, _countof(axis), 35));
-  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 40));
-  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 45));
-  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 50));
-  // Above axis max value
-  TEST_ASSERT_EQUAL(4U, linear_bin_search(axis, _countof(axis), 55));
-}
 
 extern uint16_t mulQU1X8(uint16_t a, uint16_t b);
 extern uint16_t QU1X8_ONE;
@@ -154,24 +131,24 @@ static void test_mulQU1X8(void) {
   TEST_ASSERT_EQUAL(144U, mulQU1X8(QU1X8_QTR*3U, QU1X8_QTR*3U));
 }
 
-extern uint16_t compute_bin_position(const uint16_t &value, const table3d_dim_t &upperBinIndex, const table3d_axis_t *pAxis, const uint16_t &multiplier);
+extern uint16_t compute_bin_position(const uint16_t &value, const table3d_bin_t &bin, const uint16_t &multiplier);
 
 static void assert_compute_bin_position(table3d_axis_t *axis, uint16_t multiplier, uint8_t percent) {
   uint16_t value = intermediate(axis[0U]*multiplier, axis[1U]*multiplier, percent);
   char msg[64];
   snprintf(msg, _countof(msg)-1, "Mul: %u, Pct: %u, V: %u", multiplier, percent, value);  
-  TEST_ASSERT_INT_WITHIN_MESSAGE(2U, percentage(percent, QU1X8_ONE), compute_bin_position(value, 1U, axis, multiplier), msg);
+  TEST_ASSERT_INT_WITHIN_MESSAGE(2U, percentage(percent, QU1X8_ONE), compute_bin_position(value, table3d_bin_t(axis, 1U), multiplier), msg);
 }
 
 static void assert_compute_bin_position_mult(table3d_axis_t *axis, uint16_t multiplier) {
   char msg[64];
   snprintf(msg, _countof(msg)-1, "Mul: %u", multiplier);
   // Below/at min
-  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[0U]*multiplier, 1U, axis, multiplier), msg);
-  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[0U]-5U)*multiplier, 1U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position(axis[0U]*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(0U, compute_bin_position((axis[0U]-5U)*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
   // Above/at max
-  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[1U]*multiplier, 1U, axis, multiplier), msg);
-  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[1U]+5U)*multiplier, 1U, axis, multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position(axis[1U]*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
+  TEST_ASSERT_EQUAL_MESSAGE(QU1X8_ONE, compute_bin_position((axis[1U]+5U)*multiplier, table3d_bin_t(axis, 1U), multiplier), msg);
   // Intermediate
   assert_compute_bin_position(axis, multiplier, 50U);
   assert_compute_bin_position(axis, multiplier, 25U);
@@ -253,7 +230,6 @@ void testTables()
   RUN_TEST(test_tableLookup_underMinX);
   RUN_TEST(test_tableLookup_underMinY);
   RUN_TEST(test_tableLookup_roundUp);
-  RUN_TEST(test_linear_bin_search);
   RUN_TEST(test_mulQU1X8);
   RUN_TEST(test_compute_bin_position);
   RUN_TEST(test_bilinear_interpolation);

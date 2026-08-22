@@ -67,7 +67,7 @@ static inline uint16_t clipDuration(uint16_t duration) {
   if (MAX_TIMER_PERIOD < (uint32_t)UINT16_MAX)
 #pragma GCC diagnostic pop
   {
-    return min((uint16_t)(MAX_TIMER_PERIOD - 1U), duration);
+    return (std::min)((uint16_t)(MAX_TIMER_PERIOD - 1U), duration);
   }
   return duration;
 }

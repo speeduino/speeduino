@@ -4,8 +4,11 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
+#include "src/utils/nominmax.h"
+#include <algorithm>
 #include <stdint.h>
 #include <Arduino.h>
+#include "preprocessor.h"
 
 /// @cond
 // private to table2D implementation
@@ -67,14 +70,39 @@ struct Bin {
   T _lowerValue;
 };
 
-template <typename T, uint8_t sizeT>
-static inline Bin<T> findBin(const T *const array, const T value) 
+
+template <typename TIter, typename TValue>
+static inline uint8_t findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
 {
-  // Loop from the upper end of the axis back down to the 1st bin [0,1]
-  // Assume array is ordered [min...max]
-  const T *binLower = array+sizeT-2U;
-  while ( (*binLower >= value) && (binLower != array) ) { --binLower; }
-  return Bin<T>(binLower-array+1U, *(binLower+1U), *binLower);
+  auto it = std::lower_bound(pStart, pEnd, value);
+
+  if (it == pStart) {
+    ++it;
+  }
+  if (it != pEnd) {
+    return std::distance(pStart, it);
+  }
+  return std::distance(pStart, pEnd)-1U;
+}
+
+template <typename TIter, typename TValue>
+static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, TIter pEnd, const TValue &value)  
+{
+  // Ignore the cache during tests
+#if !defined(UNIT_TEST)
+  // LCOV_EXCL_START
+  auto bin = Bin<TValue>(pStart, cachedUpperIndex);
+  if (bin.withinBin(value))
+  {
+    return bin;  
+  }
+  // LCOV_EXCL_STOP
+#else
+  UNUSED(cachedUpperIndex);
+#endif
+
+  // If we're not in the same bin, search 
+  return Bin<TValue>(pStart, findBinUpperIndex(pStart, pEnd, value));
 }
 
 // Generic interpolation
@@ -149,15 +177,7 @@ struct table2D
     else 
     {
       // None of the cached or last values match, so we need to find the new value
-      // 1st check is whether we're still in the same X bin as last time
-      _table2d_detail::Bin<axis_t> xBin = _table2d_detail::Bin<axis_t>(axis, cache.lastBinUpperIndex);
-      if (!xBin.withinBin(axisValue))
-      {
-        // LCOV_EXCL_BR_START
-        //If we're not in the same bin, search 
-        xBin = _table2d_detail::findBin<axis_t, sizeT>(axis, axisValue);
-        // LCOV_EXCL_BR_STOP
-      }
+      auto xBin = _table2d_detail::findCachedBin(cache.lastBinUpperIndex, axis, axis+sizeT, axisValue);
 
       // We are exactly at the bin upper bound, so no need to interpolate
       if (axisValue==xBin.upperValue()) 

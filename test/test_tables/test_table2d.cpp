@@ -211,7 +211,7 @@ static void test_withinBin(void) {
 template <typename axis_t, uint8_t sizeT>
 static void assert_findBin(axis_t (&pAxisBin)[sizeT], axis_t lookUp, uint8_t expectedUpperIndex)
 {
-    _table2d_detail::Bin<axis_t> result = _table2d_detail::findBin<axis_t, sizeT>(pAxisBin, lookUp);
+    _table2d_detail::Bin<axis_t> result = _table2d_detail::findCachedBin(UINT8_MAX, pAxisBin, pAxisBin+sizeT, lookUp);
     TEST_ASSERT_EQUAL(expectedUpperIndex, result.upperIndex);
     TEST_ASSERT_EQUAL(pAxisBin[expectedUpperIndex-1], result.lowerValue());
     TEST_ASSERT_EQUAL(pAxisBin[expectedUpperIndex], result.upperValue());

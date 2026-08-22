@@ -1,6 +1,6 @@
 
 #pragma once
-#include "src/utils/minmax.h"
+#include "src/utils/nominmax.h"
 #include <stdint.h>
 #include <unity.h>
 #include <algorithm>

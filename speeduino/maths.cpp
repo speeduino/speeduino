@@ -1,7 +1,8 @@
 #include <Arduino.h>
+#include "src/utils/nominmax.h"
+#include <algorithm>
 #include "maths.h"
 #include "board_definition.h"
-#include "src/utils/minmax.h"
 
 //Generates a random number from 1 to 100 (inclusive).
 //The initial seed used is always based on micros(), though this is unlikely to cause an issue as the first run is nearly random itself
@@ -32,6 +33,6 @@ uint8_t random1to100(void) noexcept
 
 uint16_t pwmFreqToTicks(uint16_t frequency)
 {
-  frequency = max(frequency, (uint16_t)1); // Prevent division by zero
+  frequency = (std::max)(frequency, (uint16_t)1); // Prevent division by zero
   return (uint16_t)(MICROS_PER_SEC / (getPwmTimerResolution() * frequency));
 }

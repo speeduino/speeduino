@@ -25,7 +25,7 @@ A full copy of the license may be found in the projects root directory
 #include "atomic.h"
 #include "board_definition.h"
 #include "preprocessor.h"
-#include "static_for.hpp"
+#include "src/utils/static_for.hpp"
 #include "polling.hpp"
 #include "decoders.h"
 #include "src/pins/boardInputPin.h"
@@ -350,7 +350,7 @@ TESTABLE_INLINE_STATIC bool cycleAverageMAPReading(const statuses &current, cons
 
 static inline bool cycleMinimumAccumulate(map_cycle_min_t &cycle_min, const map_adc_readings_t &sensorReadings) {
   //Check whether the current reading is lower than the running minimum
-  cycle_min.mapMinimum = min(sensorReadings.mapADC, cycle_min.mapMinimum); 
+  cycle_min.mapMinimum = (std::min)(sensorReadings.mapADC, cycle_min.mapMinimum); 
 
   // We are *not* ready to derive new maps readings yet
   return false;
@@ -497,7 +497,7 @@ TESTABLE_INLINE_STATIC void storeLastMAPReadings(uint32_t currTime, map_last_rea
 static inline uint16_t mapADCToMAP(uint16_t mapADC, int8_t mapMin, uint16_t mapMax) 
 {
   int16_t mapped = fastMap10Bit(mapADC, mapMin, mapMax); //Get the current MAP value
-  return max((int16_t)0, mapped);  //Sanity check
+  return (std::max)((int16_t)0, mapped);  //Sanity check
 }
 
 TESTABLE_INLINE_STATIC void setMAPValuesFromReadings(const map_adc_readings_t &readings, const config2 &page2, bool useEMAP, statuses &current) 
@@ -646,7 +646,7 @@ static inline void setBaroFromSensorReading(uint16_t sensorReading)
 {
   currentStatus.baroADC = sensorReading;
   int16_t tempValue = fastMap10Bit(currentStatus.baroADC, configPage2.baroMin, configPage2.baroMax);
-  currentStatus.baro = (uint8_t)max((int16_t)0, tempValue);
+  currentStatus.baro = (uint8_t)(std::max)((int16_t)0, tempValue);
 }
 
 // Should only be called when the engine isn't running.
@@ -927,7 +927,12 @@ BEGIN_LTO_ALWAYS_INLINE(void) readPolledSensors(byte loopTimer)
     {BIT_TIMER_4HZ, updateOilPressure},
   };
   
-  static_for<0, _countof(polledSensors)>::repeat_n(executePolledArrayAction, polledSensors, loopTimer);
+  auto readSensor = [loopTimer](uint8_t i) {
+    if (BIT_CHECK(loopTimer, polledSensors[i].timerBit)) {
+      polledSensors[i].pCallback();
+    }
+  };
+  static_for<_countof(polledSensors)>(readSensor);
 }
 END_LTO_INLINE()
 

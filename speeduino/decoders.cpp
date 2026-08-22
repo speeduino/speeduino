@@ -47,7 +47,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/boardInputPin.h"
 #include "scheduler_ignition_controller.h"
 
-#define CRANK_ANGLE_MAX (max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
+#define CRANK_ANGLE_MAX ((std::max)(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ))
 
 static inline void triggerRecordVVT1Angle (void);
 
@@ -806,7 +806,7 @@ static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
 
 static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder) {
   if(toothNum > triggerActualTeeth && toothNum <= configPage4.triggerTeeth) { toothNum = triggerActualTeeth; }
-  return min(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
+  return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(const IgnitionSchedule &schedule, uint8_t toothAdder) {

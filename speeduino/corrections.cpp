@@ -176,7 +176,7 @@ TESTABLE_INLINE_STATIC uint16_t correctionCranking(void)
     // just need to keep MISRA checker happy.
   }
 
-  return max((uint16_t)NO_FUEL_CORRECTION, (uint16_t)crankingPercent);
+  return (std::max)((uint16_t)NO_FUEL_CORRECTION, (uint16_t)crankingPercent);
 }
 
 // ============================= After Start Enrichment =============================
@@ -854,7 +854,7 @@ uint16_t correctionsFuel(void)
   sumCorrections = combineCorrections(sumCorrections, correctionDFCOfuel());
 
   //This is the maximum allowable increase
-  return min((uint16_t)1500U, (uint16_t)sumCorrections);
+  return (std::min)((uint16_t)1500U, (uint16_t)sumCorrections);
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
@@ -1231,7 +1231,7 @@ static inline int8_t correctionKnockTiming(int8_t advance)
     // Unknown knock mode - do nothing, keep MISRA checker happy.
   }
 
-  tmpKnockRetard = min(tmpKnockRetard, configPage10.knock_maxRetard); //Ensure the commanded retard is not higher than the maximum allowed.
+  tmpKnockRetard = (std::min)(tmpKnockRetard, configPage10.knock_maxRetard); //Ensure the commanded retard is not higher than the maximum allowed.
   currentStatus.knockRetard = tmpKnockRetard;
   return (int8_t)((int16_t)advance - (int16_t)tmpKnockRetard);
 }

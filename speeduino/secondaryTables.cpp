@@ -59,7 +59,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
     current.secondFuelTableActive = true;
     //Fuel 2 table is treated as a % value. Table 1 and 2 are multiplied together and divided by 100
     auto combinedVE = percentage(current.VE2, current.VE1);
-    current.VE = (uint8_t)min((uint32_t)UINT8_MAX, combinedVE);
+    current.VE = (uint8_t)(std::min)((uint32_t)UINT8_MAX, combinedVE);
   }
   else if(page10.fuel2Mode == FUEL2_MODE_ADD)
   {
@@ -67,7 +67,7 @@ void calculateSecondaryFuel(const config10 &page10, const table3d16RpmLoad &veLo
     current.secondFuelTableActive = true;
     //Fuel tables are added together, but a check is made to make sure this won't overflow the 8-bit VE value
     uint16_t combinedVE = (uint16_t)current.VE1 + (uint16_t)current.VE2;
-    current.VE = (uint8_t)min((uint16_t)UINT8_MAX, combinedVE);
+    current.VE = (uint8_t)(std::min)((uint16_t)UINT8_MAX, combinedVE);
   }
   else if(fuelModeCondSwitchActive(page10, current) || fuelModeInputSwitchActive(page10))
   {

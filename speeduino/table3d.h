@@ -44,7 +44,7 @@
  */
 
 #pragma once
-#include "src/utils/minmax.h"
+#include "src/utils/nominmax.h"
 #include "table3d_interpolate.h"
 #include "table3d_axes.h"
 #include <array>
@@ -108,10 +108,9 @@ static inline table3d_value_t get3DTableValue(const TTable *pTable, const uint16
     constexpr uint16_t xFactor = getConversionFactor(TTable::XDomain);
     constexpr uint16_t yFactor = getConversionFactor(TTable::YDomain);
     return get3DTableValue<xFactor, yFactor>( &pTable->get_value_cache,
-                            pTable->axisX.size(),
-                            pTable->values.data(),
-                            pTable->axisX.data(),
-                            pTable->axisY.data(),
+                            pTable->values,
+                            pTable->axisX,
+                            pTable->axisY,
                             { x, y });
 } 
 
