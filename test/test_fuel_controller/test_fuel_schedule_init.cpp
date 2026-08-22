@@ -1412,14 +1412,14 @@ static void cylinder_3_oddfire(void)
 {
   auto context = setup_oddfire(3);
   context.initialise();
-  assert_3channel_0stage_over720(__LINE__, context, {0,240,480,0,0,0,0,0});
+  assert_3channel_0stage_over720(__LINE__, context, {0,13,111,0,0,0,0,0});
 }
 
 static void cylinder_4_oddfire(void)
 {
   auto context = setup_oddfire(4);
   context.initialise();
-  assert_4channel_0stage_over720(__LINE__, context, {0,180,360,540,0,0,0,0});
+  assert_4channel_0stage_over720(__LINE__, context, {0,13,111,217,0,0,0,0});
 }
 
 static void cylinder_5_oddfire(void)

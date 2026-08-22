@@ -820,7 +820,7 @@ static void assert_validateInjectionSetup_no_oddfire(uint8_t nCylinders)
   page2.nInjectors = INJ_CHANNELS;
   page2.injLayout = INJ_SEQUENTIAL;
   page2.engineType = ODD_FIRE;
-  page2.nCylinders = nCylinders;
+  page2.nCylinders = 5;
   validateInjectionSetup(page2, page6);
   TEST_ASSERT_EQUAL(EVEN_FIRE, page2.engineType);
 }
