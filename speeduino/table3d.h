@@ -80,9 +80,9 @@ struct table3d_t
 };
 
 // Generate the 3D table types
-#define TABLE3D_GEN_TYPE(size, xDom, yDom) \
+#define TABLE3D_GEN_TYPE_INNER(size, xDom, yDom, typeName) \
     /** @brief A 3D table with size x size dimensions, xDom x-axis and yDom y-axis */ \
-    struct TABLE3D_TYPENAME_BASE(size, xDom, yDom) : public table3d_t \
+    struct typeName : public table3d_t \
     { \
         /* This will take up zero space unless we take the address somewhere */ \
         static constexpr TableType type_key = TableType::TO_TYPE_KEY(size, xDom, yDom); \
@@ -94,6 +94,8 @@ struct table3d_t
         std::array<table3d_axis_t, (size)> axisX; \
         std::array<table3d_axis_t, (size)> axisY; \
     };
+#define TABLE3D_GEN_TYPE(size, xDom, yDom) TABLE3D_GEN_TYPE_INNER(size, xDom, yDom, TABLE3D_TYPENAME_BASE(size, xDom, yDom))
+
 // LCOV_EXCL_START
 TABLE3D_GENERATOR(TABLE3D_GEN_TYPE)
 // LCOV_EXCL_STOP

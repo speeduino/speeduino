@@ -202,6 +202,7 @@ void moveToNextState(IgnitionSchedule &schedule) noexcept;
  * was originally passed to calculateIgnitionTimeout. So we can increase the
  * spark accuracy
  * 
+ * @param current Current system status 
  * @param schedule The schedule to modify 
  * @param crankAngle The new crank angle in degrees
  */

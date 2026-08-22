@@ -76,6 +76,8 @@ static constexpr uint16_t TS_CMD_VSS_RATIO6 = 39174U;
  * @brief Process a command from TunerStudio
  * 
  * @param command One of the above commands. 
+ * @param current Current system status to be mutated
+ * @param page2 
  * @return true if the command was processed, false otherwise
  */
 bool handleTsCommand(uint16_t command, statuses &current, config2 &page2);

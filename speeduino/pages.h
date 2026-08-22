@@ -198,22 +198,18 @@ byte getEntityValue(const entity_t &entity,  /**< [in] The entity to update */
                     uint16_t offset          /**< [in] The offset within the entity */
                     );
 
-/**
- * @brief Sets a single value from a page, with data aligned as per the ini file
- * @returns true if value set, false otherwise
- */
+/** @brief Sets a single value from a page, with data aligned as per the ini file */
 bool setEntityValue(entity_t &entity,  /**< [in] The entity to update */ 
                     uint16_t offset,   /**< [in] The offset within the entity */
                     byte value         /**< [in] The new value */
                     );
 
 /**
- * Initiates iteration over a pages entities.
+ * @brief Initiates iteration over a pages entities.
+ * 
  * Test `entity.type==End` to determine the end of the page.
  */
 page_iterator_t page_begin(uint8_t pageNum /**< [in] The page number to iterate over. */);
 
-/**
- * Moves the iterator to the next sub-entity on the page
- */
+/** @brief Moves the iterator to the next sub-entity on the page */
 page_iterator_t advance(const page_iterator_t &it /**< [in] The current iterator */);

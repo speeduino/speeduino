@@ -125,19 +125,19 @@ void moveToNextState(FuelSchedule &schedule) noexcept
 
 ///@}
 
-/**
- * @defgroup ignition-schedule-ISR Ignition schedule timer ISRs 
- *   
- * @{
- */
-
  /** @brief Increment a volatile variable correctly */
  template <typename T>
  static inline void increment_volatile(volatile T& value) {
   T next = value;
   ++next;
   value = next;
- }
+}
+
+/**
+ * @defgroup ignition-schedule-ISR Ignition schedule timer ISRs 
+ *   
+ * @{
+ */
 
 /**
  * @brief Called when an ignition event ends. I.e. a spark fires
@@ -182,6 +182,8 @@ void moveToNextState(IgnitionSchedule &schedule)  noexcept
 {
   movetoNextState(schedule, ignitionPendingToRunning, ignitionRunningToOff, ignitionRunningToPending);
 }
+
+///@}
 
 void adjustCrankAngle(const statuses &current, IgnitionSchedule &schedule, int16_t crankAngle) {
   constexpr uint8_t MIN_CYCLES_FOR_CORRECTION = 6U;

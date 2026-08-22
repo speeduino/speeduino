@@ -17,6 +17,7 @@
  * not recognised.
  * 
  * @param table 3d table instance to visit
+ * @param key Table type identifier
  * @param visitor Visitor to apply to the table
  * @return TReturn Return value from the visitor, if any
  */

@@ -376,11 +376,7 @@ static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
   return clamp(fast_div_closest(MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
 }
 
-/** Compute RPM.
-* As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
-* @param degreesOver - the number of crank degrees between tooth #1s. Some patterns have a tooth #1 every crank rev, others are every cam rev.
-* @return RPM
-*/
+// As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
 static __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
 {
   if (UpdateRevolutionTimeFromTeeth(isCamTeeth)) {

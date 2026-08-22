@@ -28,7 +28,7 @@ struct Table2DCache
   constexpr Table2DCache(void) = default;
 };
 
-extern uint8_t getCacheTime(void);
+uint8_t getCacheTime(void);
 
 // LCOV_EXCL_START
 template <typename axis_t, typename value_t>

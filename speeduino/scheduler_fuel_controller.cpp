@@ -255,12 +255,12 @@ TESTABLE_INLINE_STATIC uint16_t updatePwAngleCache(uint16_t pw, injectorAngleCal
 /**
  * @brief Compute the injector open angle for an injection channel
  * 
+ * @param schedule Fuel schedule to calculate for
  * @param pwDegrees How many crank degrees the calculated PW will take at the current speed
- * @param tdcOffset The number of crank degrees until cylinder is at TDC (at rest)
  * @param injAngle The requested injection angle
  * @return uint16_t 
  */
-TESTABLE_INLINE_STATIC uint16_t _calculateOpenAngle(FuelSchedule &schedule, uint16_t pwDegrees, uint16_t injAngle)
+TESTABLE_INLINE_STATIC uint16_t _calculateOpenAngle(const FuelSchedule &schedule, uint16_t pwDegrees, uint16_t injAngle)
 {
   // 0<=injAngle<=720°
   // 0<=injChannelDegrees<=720°

@@ -513,13 +513,13 @@ int16_t getReadableLogEntry(uint16_t logIndex)
   return statusValue;
 }
 
+#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32 //cppcheck-suppress misra-c2012-20.9
 /** 
  * An expansion to the @ref getReadableLogEntry function for systems that have an FPU. It will provide a floating point value for any parameter that this is appropriate for, otherwise will return the result of @ref getReadableLogEntry.
  * See logger.h for the field names and order
  * @param logIndex - The log index required. Note that this is NOT the byte number, but the index in the log
  * @return float value of the requested log entry. 
  */
-#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32 //cppcheck-suppress misra-c2012-20.9
 float getReadableFloatLogEntry(uint16_t logIndex)
 {
   float statusValue = 0.0;
