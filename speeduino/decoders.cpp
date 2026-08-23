@@ -801,7 +801,7 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 
 static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
   int16_t toothRange = (int16_t)configPage4.triggerTeeth + (int16_t)toothAdder;
-  return (uint16_t)nudge((int16_t)1, toothRange, toothNum, toothRange);
+  return (uint16_t)nudge((int16_t)1, (int16_t)(toothRange+1), toothNum, toothRange);
 }
 
 static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder) {
@@ -4538,7 +4538,7 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const Igniti
 #else
   tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
 #endif  
-  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder),  (int16_t)(tempEndTooth - 1), (int16_t)(36U + toothAdder));
+  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder +1U),  (int16_t)(tempEndTooth - 1), (int16_t)(36U + toothAdder));
   return clampToActualTeeth((uint16_t)tempEndTooth, toothAdder);
 }
 

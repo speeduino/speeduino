@@ -18,8 +18,8 @@ static void test_nudge_i16(void)
   // value equal to min should be unchanged
   TEST_ASSERT_EQUAL_INT16(10, nudge((int16_t)10, (int16_t)20, (int16_t)10, (int16_t)4));
 
-  // value equal to max should be unchanged
-  TEST_ASSERT_EQUAL_INT16(20, nudge((int16_t)10, (int16_t)20, (int16_t)20, (int16_t)4));
+  // value equal to max should be changed
+  TEST_ASSERT_EQUAL_INT16(16, nudge((int16_t)10, (int16_t)20, (int16_t)20, (int16_t)4));
 }
 
 // Tests for clamp()
