@@ -2,6 +2,7 @@
 #define MATH_H
 
 #include <stdint.h>
+#include <type_traits>
 #include <avr-fast-shift.h>
 #include <avr-fast-div.h>
 #ifdef USE_LIBDIVIDE
@@ -352,6 +353,28 @@ static inline T nudge(T min, T max, T value)
     T nudgeAmount = max - min;
     if (value<min) { return value + nudgeAmount; }
     if (value>=max) { return value - nudgeAmount; }
+    return value;
+}
+
+/**
+ * @brief Correcting the value into the range [min, max) by adding or subtracting (max-min)
+ * 
+ * @param min Minimum value (inclusive)
+ * @param max Maximum value (exclusive)
+ * @param value Value to nudge
+ */
+template <typename T>
+static inline T normalize(T min, T max, T value)
+{
+    T range = max - min;
+    while (value < min)
+    {
+        value += range;
+    }
+    while (value >= max)
+    {
+        value -= range;
+    }
     return value;
 }
 
