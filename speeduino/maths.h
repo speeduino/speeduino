@@ -340,16 +340,16 @@ static inline uint16_t halfPercentage(uint8_t percent, uint16_t value) {
 }
 
 /**
- * @brief Make one pass at correcting the value into the range [min, max)
+ * @brief Make **one* pass at correcting the value into the range [min, max)
  * 
  * @param min Minimum value (inclusive)
  * @param max Maximum value (exclusive)
  * @param value Value to nudge
- * @param nudgeAmount Amount to change value by 
  */
 template <typename T>
-static inline T nudge(T min, T max, T value, T nudgeAmount)
+static inline T nudge(T min, T max, T value)
 {
+    T nudgeAmount = max - min;
     if (value<min) { return value + nudgeAmount; }
     if (value>=max) { return value - nudgeAmount; }
     return value;

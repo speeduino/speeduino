@@ -7,19 +7,37 @@
 static void test_nudge_i16(void)
 {
   // value below min should be nudged upwards
-  TEST_ASSERT_EQUAL_INT16(8, nudge((int16_t)10, (int16_t)20, (int16_t)5, (int16_t)3));
+  TEST_ASSERT_EQUAL_INT16(-19, nudge((int16_t)-7, (int16_t)11, (int16_t)-37));
 
   // value above max should be nudged downwards
-  TEST_ASSERT_EQUAL_INT16(23, nudge((int16_t)10, (int16_t)20, (int16_t)25, (int16_t)2));
+  TEST_ASSERT_EQUAL_INT16(37, nudge((int16_t)-7, (int16_t)11, (int16_t)55));
 
   // value within range should be unchanged
-  TEST_ASSERT_EQUAL_INT16(15, nudge((int16_t)10, (int16_t)20, (int16_t)15, (int16_t)5));
+  TEST_ASSERT_EQUAL_INT16(-3, nudge((int16_t)-7, (int16_t)11, (int16_t)-3));
 
   // value equal to min should be unchanged
-  TEST_ASSERT_EQUAL_INT16(10, nudge((int16_t)10, (int16_t)20, (int16_t)10, (int16_t)4));
+  TEST_ASSERT_EQUAL_INT16(-5, nudge((int16_t)-7, (int16_t)11, (int16_t)-5));
 
   // value equal to max should be changed
-  TEST_ASSERT_EQUAL_INT16(16, nudge((int16_t)10, (int16_t)20, (int16_t)20, (int16_t)4));
+  TEST_ASSERT_EQUAL_INT16(-7, nudge((int16_t)-7, (int16_t)11, (int16_t)11));
+}
+
+static void test_nudge_u16(void)
+{
+  // value below min should be nudged upwards
+  TEST_ASSERT_EQUAL_UINT16(15, nudge((uint16_t)7, (uint16_t)19U, (uint16_t)3));
+
+  // value above max should be nudged downwards
+  TEST_ASSERT_EQUAL_UINT16(21, nudge((uint16_t)7, (uint16_t)19U, (uint16_t)33));
+
+  // value within range should be unchanged
+  TEST_ASSERT_EQUAL_UINT16(11, nudge((uint16_t)7, (uint16_t)19U, (uint16_t)11));
+
+  // value equal to min should be unchanged
+  TEST_ASSERT_EQUAL_UINT16(7, nudge((uint16_t)7, (uint16_t)19U, (uint16_t)7));
+
+  // value equal to max should be changed
+  TEST_ASSERT_EQUAL_UINT16(7, nudge((uint16_t)7, (uint16_t)19U, (uint16_t)19));
 }
 
 // Tests for clamp()
@@ -71,6 +89,7 @@ static void test_pwmFreqToTicks(void)
 void testOther(void) {
   SET_UNITY_FILENAME() {
     RUN_TEST(test_nudge_i16);
+    RUN_TEST_P(test_nudge_u16);
     RUN_TEST(test_clamp);
     RUN_TEST(test_pwmFreqToTicks);
   }
