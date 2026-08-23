@@ -198,6 +198,28 @@ static void test_initialiseProgrammableIO_used_physical_pin(void)
     TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[1]).isPinValid);  // Should be valid
 }
 
+static void test_initialiseProgrammableIO_clears_conflicting_pin(void)
+{
+    programmableIOTestContext_t context;
+
+    pinNumbers.pinCLT = 10;               // pin 10 is claimed by the CLT sensor
+
+    context.page13.outputPin[0] = 10;     // conflicts with the CLT pin
+    context.page13.outputPin[1] = 11;     // free physical pin
+    context.page13.outputPin[2] = 130;    // virtual/cascade rule (>=128)
+    context.page13.outputPin[3] = 0;      // already disabled
+
+    initialiseProgrammableIO(context.page13);
+
+    // The conflicting physical pin is cleared in the tune (so the page CRC changes and
+    // TunerStudio surfaces the conflict) instead of the rule silently never running.
+    TEST_ASSERT_EQUAL_UINT8(0, context.page13.outputPin[0]);
+    // A free pin, a virtual rule and an already-disabled slot are left untouched.
+    TEST_ASSERT_EQUAL_UINT8(11, context.page13.outputPin[1]);
+    TEST_ASSERT_EQUAL_UINT8(130, context.page13.outputPin[2]);
+    TEST_ASSERT_EQUAL_UINT8(0, context.page13.outputPin[3]);
+}
+
 static void test_checkProgrammableIO_disabled_pin(void)
 {
     programmableIOTestContext_t context;
@@ -838,6 +860,7 @@ void testProgrammableIOControl(void)
         RUN_TEST_P(test_initialiseProgrammableIO_mixed_configuration);
         RUN_TEST_P(test_initialiseProgrammableIO_physical_pins);
         RUN_TEST_P(test_initialiseProgrammableIO_used_physical_pin);
+        RUN_TEST_P(test_initialiseProgrammableIO_clears_conflicting_pin);
         RUN_TEST_P(test_checkProgrammableIO_disabled_pin);
         RUN_TEST_P(test_checkProgrammableIO_skips_invalid_pins);
         RUN_TEST_P(test_checkProgrammableIO_all_cascade_rules);
