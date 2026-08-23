@@ -25,7 +25,6 @@ A full copy of the license may be found in the projects root directory
 #include "board_definition.h"
 #include "preprocessor.h"
 #include "src/utils/static_for.hpp"
-#include "polling.hpp"
 #include "decoders.h"
 #include "src/pins/boardInputPin.h"
 #include "src/pins/pinMapping.h"
@@ -909,7 +908,11 @@ static inline void updateOilPressure(void)
 
 BEGIN_LTO_ALWAYS_INLINE(void) readPolledSensors(byte loopTimer)
 {
-  static constexpr polledAction_t polledSensors[] = {
+  static constexpr 
+  struct {
+    uint8_t timerBit; ///< The timer bit to poll this action. E.g. BIT_TIMER_1HZ
+    void (*pCallback)(void); ///< The function to call when the timer bit is set
+  } polledSensors[] = {
     {TPS_READ_TIMER_BIT, readTPS},
     {CLT_READ_TIMER_BIT, readCLT},
     {IAT_READ_TIMER_BIT, readIAT},
@@ -926,8 +929,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) readPolledSensors(byte loopTimer)
     {BIT_TIMER_4HZ, updateOilPressure},
   };
   
-  auto readSensor = [loopTimer](uint8_t i) {
-    if (BIT_CHECK(loopTimer, polledSensors[i].timerBit)) {
+  auto readSensor = [loopTimer](uint8_t i) __attribute__((always_inline)) {
+    if (BIT_CHECK(loopTimer, polledSensors[i].timerBit))  {
       polledSensors[i].pCallback();
     }
   };
