@@ -15,13 +15,13 @@ static void test_initialise(void)
     acRPMLockoutDelay = 99;
     acStandAloneFanIsEnabled = true;
 
-    currentStatus.airconRequested = true;
-    currentStatus.airconCompressorOn = true;
-    currentStatus.airconRpmLockout = true;
-    currentStatus.airconTpsLockout = true;
-    currentStatus.airconTurningOn = true;
-    currentStatus.airconCltLockout = true;
-    currentStatus.airconFanOn = true;
+    context.current.airconRequested = true;
+    context.current.airconCompressorOn = true;
+    context.current.airconRpmLockout = true;
+    context.current.airconTpsLockout = true;
+    context.current.airconTurningOn = true;
+    context.current.airconCltLockout = true;
+    context.current.airconFanOn = true;
 
     context.initialise();
     assert_ac_off();
@@ -34,13 +34,13 @@ static void test_initialise(void)
     TEST_ASSERT_EQUAL(0, acTPSLockoutDelay);
     TEST_ASSERT_EQUAL(0, acRPMLockoutDelay);
 
-    TEST_ASSERT_FALSE(currentStatus.airconRequested);
-    TEST_ASSERT_FALSE(currentStatus.airconCompressorOn);
-    TEST_ASSERT_FALSE(currentStatus.airconRpmLockout);
-    TEST_ASSERT_FALSE(currentStatus.airconTpsLockout);
-    TEST_ASSERT_FALSE(currentStatus.airconTurningOn);
-    TEST_ASSERT_FALSE(currentStatus.airconCltLockout);
-    TEST_ASSERT_FALSE(currentStatus.airconFanOn);
+    TEST_ASSERT_FALSE(context.current.airconRequested);
+    TEST_ASSERT_FALSE(context.current.airconCompressorOn);
+    TEST_ASSERT_FALSE(context.current.airconRpmLockout);
+    TEST_ASSERT_FALSE(context.current.airconTpsLockout);
+    TEST_ASSERT_FALSE(context.current.airconTurningOn);
+    TEST_ASSERT_FALSE(context.current.airconCltLockout);
+    TEST_ASSERT_FALSE(context.current.airconFanOn);
 
     TEST_ASSERT_TRUE(acIsEnabled);
     TEST_ASSERT_FALSE(acStandAloneFanIsEnabled);

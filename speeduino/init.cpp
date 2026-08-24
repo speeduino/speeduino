@@ -175,7 +175,7 @@ void initialiseAll(void)
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);
     initialiseBoost(pinNumbers.pinBoost);
-    initialiseAirCon(pinNumbers);
+    initialiseAirCon(currentStatus, pinNumbers);
     initialiseNitrous();
     initialiseVvtWmi(currentStatus, pinNumbers, configPage4, configPage6, configPage10);
     initialiseCorrections();
