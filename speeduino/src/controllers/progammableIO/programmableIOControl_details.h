@@ -95,6 +95,8 @@ struct channel_state_t
   bool isPinValid(void) const {
     return _pin!=NOT_A_PIN;
   }
+
+  void updateStatus(bool ruleActive) noexcept;
 };
 
 /**
