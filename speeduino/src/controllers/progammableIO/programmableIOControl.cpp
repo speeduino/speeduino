@@ -43,7 +43,7 @@ static inline void updateChannelStatus(processing_channel_t& channel, bool ruleA
 {
   channel._channel_state.isOutputActive = channel.isOutputInverted ? !ruleActive : ruleActive;
   if (channel.isPhysicalPin()) { 
-    digitalWrite(channel.outputPin, channel._channel_state.isOutputActive); 
+    digitalWrite(channel._channel_state._pin, channel._channel_state.isOutputActive); 
   } else {
     channel._channel_state.isRuleActive = channel._channel_state.isOutputActive;
   }

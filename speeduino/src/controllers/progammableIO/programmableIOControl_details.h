@@ -79,6 +79,7 @@ struct channel_state_t
   uint8_t _index : 3;
   uint8_t activationDelayCount = 0;
   uint8_t outputDelayCount = 0;
+  uint8_t _pin = NOT_A_PIN;
 
   channel_state_t()
   : isRuleActive(false), isOutputActive(false), _index(0U)
