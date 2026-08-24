@@ -91,14 +91,14 @@ static inline bool isRPMLockoutActive(const statuses &current, const config15 &p
   // --------------------
   // High/Low RPM Lockout
   // --------------------
-  if ( (current.RPM < (page15.airConMinRPMdiv10 * 10)) ||
+  if ( (current.RPM < RPM_MEDIUM.toUser(page15.airConMinRPMdiv10)) ||
        (current.RPMdiv100 > page15.airConMaxRPMdiv100) )
   {
     // A/C is cut off due to high/low RPM
     lockout = true;
     airConState.rpmLockoutDelay = 0;
   }
-  else if ( (current.RPM >= (page15.airConMinRPMdiv10 * 10)) &&
+  else if ( (current.RPM >= RPM_MEDIUM.toUser(page15.airConMinRPMdiv10)) &&
             (current.RPMdiv100 <= page15.airConMaxRPMdiv100) )
   {
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
