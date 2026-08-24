@@ -42,7 +42,7 @@ TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const processing_ch
 static inline void updateChannelStatus(processing_channel_t& channel, bool ruleActive) noexcept
 {
   channel._channel_state.isOutputActive = channel._channel_state.isOutputInverted ? !ruleActive : ruleActive;
-  if (channel.isPhysicalPin()) { 
+  if (channel._channel_state.isPhysicalPin()) { 
     digitalWrite(channel._channel_state._pin, channel._channel_state.isOutputActive); 
   } else {
     channel._channel_state.isRuleActive = channel._channel_state.isOutputActive;
@@ -71,18 +71,19 @@ static inline void processChannelInactive(processing_channel_t &channel)
   channel._channel_state.activationDelayCount = 0;
 }
 
-static inline void processChannel(processing_channel_t &channel, const config13& page13, getDataFn pGetData)
+static inline void processChannel(channel_state_t &channel, const config13& page13, getDataFn pGetData)
 {
-  if ( channel.isPinValid )
+  if ( channel.isPinValid() )
   {
-    rule_t rule(page13, channel._channel_state._index);
-    if (isRuleActive(rule, channel, pGetData))
+    rule_t rule(page13, channel._index);
+    processing_channel_t processingChannel(page13, channel);
+    if (isRuleActive(rule, processingChannel, pGetData))
     {
-      processChannelActive(channel);
+      processChannelActive(processingChannel);
     }
     else
     {
-      processChannelInactive(channel);
+      processChannelInactive(processingChannel);
     }
   }
 }
@@ -96,8 +97,7 @@ TESTABLE_INLINE_STATIC void programmableIOControl(const config13& page13, getDat
 {
   for (auto& channel_state: state.channels)
   {
-    processing_channel_t channel(page13, channel_state);
-    processChannel(channel, page13, pGetData);
+    processChannel(channel_state, page13, pGetData);
   }
 }
 
