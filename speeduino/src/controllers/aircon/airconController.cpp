@@ -175,12 +175,12 @@ static void airConFanOff(void)
   }
 }
 
-void __attribute__((optimize("Os"))) initialiseAirCon(void)
+void __attribute__((optimize("Os"))) initialiseAirCon(const pinNumbers_t &pins)
 {
   if( (configPage15.airConEnable) &&
-      !pinIsReserved(pinNumbers.pinAirConRequest) &&
-      !pinIsReserved(pinNumbers.pinAirConComp) &&
-      !pinIsOutput(pinNumbers.pinAirConRequest))
+      !pinIsReserved(pins.pinAirConRequest) &&
+      !pinIsReserved(pins.pinAirConComp) &&
+      !pinIsOutput(pins.pinAirConRequest))
   {
     // Hold the A/C off until a few seconds after cranking
     acAfterEngineStartDelay = 0;
@@ -197,14 +197,14 @@ void __attribute__((optimize("Os"))) initialiseAirCon(void)
     currentStatus.airconTurningOn = false;
     currentStatus.airconCltLockout = false;
     currentStatus.airconFanOn = false;
-    aircon_req_pin.setPin(pinNumbers.pinAirConRequest, getAirConRequestPinMode(configPage15));
-    aircon_comp_pin.setPin(pinNumbers.pinAirConComp, OUTPUT);
+    aircon_req_pin.setPin(pins.pinAirConRequest, getAirConRequestPinMode(configPage15));
+    aircon_comp_pin.setPin(pins.pinAirConComp, OUTPUT);
   
     airConOff();
 
-    if((configPage15.airConFanEnabled) && (pinIsReserved(pinNumbers.pinAirConFan)))
+    if((configPage15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan)))
     {
-      aircon_fan_pin.setPin(pinNumbers.pinAirConFan, OUTPUT);
+      aircon_fan_pin.setPin(pins.pinAirConFan, OUTPUT);
       airConFanOff();
       acStandAloneFanIsEnabled = true;
     }

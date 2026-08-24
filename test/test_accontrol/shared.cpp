@@ -11,10 +11,14 @@ void assert_ac_off(void)
     TEST_ASSERT_FALSE(currentStatus.airconFanOn);
 }
 
-void setup_ac_tune(void)
+constexpr uint8_t TEST_ACREQUEST_PIN = 11;
+constexpr uint8_t TEST_ACCOMP_PIN = 12;
+
+test_context setup_ac_tune(void)
 {
-    pinNumbers.pinAirConComp = TEST_ACCOMP_PIN;
-    pinNumbers.pinAirConRequest = TEST_ACREQUEST_PIN;
+    test_context context;
+    context.pins.pinAirConComp = TEST_ACCOMP_PIN;
+    context.pins.pinAirConRequest = TEST_ACREQUEST_PIN;
 
     configPage15.airConEnable = true;
     configPage15.airConCompPol = false;
@@ -27,4 +31,6 @@ void setup_ac_tune(void)
     configPage15.airConMaxRPMdiv100 = RPM_COARSE.toRaw(3000);
     configPage15.airConRPMCutTime = 11;
     configPage15.airConCompOnDelay = 7;
+
+    return context;
 }
