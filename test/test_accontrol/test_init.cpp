@@ -1,5 +1,4 @@
 #include "../test_utils.h"
-#include "globals.h"
 #include "src/controllers/aircon/airconController.h"
 #include "shared.h"
 
@@ -24,7 +23,7 @@ static void test_initialise(void)
     context.current.airconFanOn = true;
 
     context.initialise();
-    assert_ac_off();
+    assert_ac_off(context);
     
     TEST_ASSERT_EQUAL(0, acAfterEngineStartDelay);
 
@@ -49,12 +48,12 @@ static void test_initialise(void)
 static void test_initialise_inversepolarity_comp(void)
 {
     auto context = setup_ac_tune();
-    configPage15.airConCompPol = !configPage15.airConCompPol;
+    context.page15.airConCompPol = !context.page15.airConCompPol;
 
     acIsEnabled = false;
     context.initialise();
     TEST_ASSERT_TRUE(acIsEnabled);
-    assert_ac_off();
+    assert_ac_off(context);
 }
 
 static void assert_init_acdisabled(test_context &context)
@@ -67,7 +66,7 @@ static void assert_init_acdisabled(test_context &context)
 static void test_initialise_disabled(void)
 {
     auto context = setup_ac_tune();
-    configPage15.airConEnable = false;
+    context.page15.airConEnable = false;
 
     assert_init_acdisabled(context);
 }

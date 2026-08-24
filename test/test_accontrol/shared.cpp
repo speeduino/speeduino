@@ -1,14 +1,17 @@
-#include <unity.h>
+#include "../test_utils.h"
+
 #include "shared.h"
-#include "globals.h"
 #include "units.h"
 
-void assert_ac_off(void)
+void assert_ac_off(const test_context &context)
 {
-    TEST_ASSERT_TRUE(configPage15.airConCompPol==aircon_comp_pin._pin.isPinHigh());
-    TEST_ASSERT_TRUE(configPage15.airConFanPol==aircon_fan_pin._pin.isPinHigh());
-    TEST_ASSERT_FALSE(currentStatus.airconCompressorOn); 
-    TEST_ASSERT_FALSE(currentStatus.airconFanOn);
+  SET_UNITY_FILENAME()
+  {
+    TEST_ASSERT_TRUE(context.page15.airConCompPol==aircon_comp_pin._pin.isPinHigh());
+    TEST_ASSERT_TRUE(!acStandAloneFanIsEnabled || context.page15.airConFanPol==aircon_fan_pin._pin.isPinHigh());
+    TEST_ASSERT_FALSE(context.current.airconCompressorOn); 
+    TEST_ASSERT_FALSE(context.current.airconFanOn);
+  }
 }
 
 constexpr uint8_t TEST_ACREQUEST_PIN = 11;
@@ -20,17 +23,17 @@ test_context setup_ac_tune(void)
     context.pins.pinAirConComp = TEST_ACCOMP_PIN;
     context.pins.pinAirConRequest = TEST_ACREQUEST_PIN;
 
-    configPage15.airConEnable = true;
-    configPage15.airConCompPol = false;
-    configPage15.airConFanEnabled = false; // See issue #1544
-    configPage15.airConAfterStartDelay = 17;
-    configPage15.airConClTempCut = TEMPERATURE.toRaw(100);
-    configPage15.airConTPSCut = 75;
-    configPage15.airConTPSCutTime = 13;
-    configPage15.airConMinRPMdiv10 = RPM_MEDIUM.toRaw(500);
-    configPage15.airConMaxRPMdiv100 = RPM_COARSE.toRaw(3000);
-    configPage15.airConRPMCutTime = 11;
-    configPage15.airConCompOnDelay = 7;
+    context.page15.airConEnable = true;
+    context.page15.airConCompPol = false;
+    context.page15.airConFanEnabled = false; // See issue #1544
+    context.page15.airConAfterStartDelay = 17;
+    context.page15.airConClTempCut = TEMPERATURE.toRaw(100);
+    context.page15.airConTPSCut = 75;
+    context.page15.airConTPSCutTime = 13;
+    context.page15.airConMinRPMdiv10 = RPM_MEDIUM.toRaw(500);
+    context.page15.airConMaxRPMdiv100 = RPM_COARSE.toRaw(3000);
+    context.page15.airConRPMCutTime = 11;
+    context.page15.airConCompOnDelay = 7;
 
     return context;
 }

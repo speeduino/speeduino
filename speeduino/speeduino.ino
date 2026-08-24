@@ -277,7 +277,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       programmableIOControl(configPage13);
       
       // Air conditioning control
-      airConControl(currentStatus);
+      airConControl(currentStatus, configPage15);
 
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(10);
