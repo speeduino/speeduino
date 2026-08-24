@@ -41,7 +41,7 @@ TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const processing_ch
 
 static inline void updateChannelStatus(processing_channel_t& channel, bool ruleActive) noexcept
 {
-  channel._channel_state.isOutputActive = channel.isOutputInverted ? !ruleActive : ruleActive;
+  channel._channel_state.isOutputActive = channel._channel_state.isOutputInverted ? !ruleActive : ruleActive;
   if (channel.isPhysicalPin()) { 
     digitalWrite(channel._channel_state._pin, channel._channel_state.isOutputActive); 
   } else {

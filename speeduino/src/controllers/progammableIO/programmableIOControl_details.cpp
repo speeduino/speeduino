@@ -20,14 +20,15 @@ void __attribute__((optimize("Os"))) channel_state_t::initialize(const config13&
   activationDelayCount = 0;
   outputDelayCount = 0;
   _pin = validatePin(page13.outputPin[index]);
+  isOutputInverted = BIT_CHECK(page13.outputInverted, index);
 
   processing_channel_t pChannel(page13, *this);
-  isOutputActive = pChannel.isPinValid && pChannel.isOutputInverted;
+  isOutputActive = pChannel.isPinValid && isOutputInverted;
         
   if (pChannel.isPinValid && pChannel.isPhysicalPin()) 
   {
     pinMode(_pin, OUTPUT);
-    digitalWrite(_pin, pChannel.isOutputInverted);
+    digitalWrite(_pin, isOutputInverted);
   }
 }
 
@@ -35,7 +36,6 @@ processing_channel_t::processing_channel_t(const config13 &page13, channel_state
 : _channel_state(channel_state)
 , outputPin(channel_state._pin)
 , isPinValid(channel_state._pin!=NOT_A_PIN)
-, isOutputInverted(BIT_CHECK(page13.outputInverted, channel_state._index))
 , limitType(BIT_CHECK(page13.kindOfLimiting, channel_state._index) ? LimitingType::Max : LimitingType::Min)
 , outputTimeLimit(page13.outputTimeLimit[channel_state._index])
 , activationDelay(page13.outputDelay[channel_state._index])
