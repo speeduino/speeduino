@@ -1,4 +1,5 @@
 #include "airconController.h"
+#include "airconController_details.h"
 #include "../../pins/inputPin.h"
 #include "../../pins/outputPin.h"
 #include "../../../unit_testing.h"
@@ -7,16 +8,7 @@
 #include "../../../globals.h"
 #include "../../../units.h"
 
-TESTABLE_STATIC inputPin_t aircon_req_pin;
-TESTABLE_STATIC outputPin_t aircon_comp_pin;
-TESTABLE_STATIC outputPin_t aircon_fan_pin;
-TESTABLE_STATIC bool acIsEnabled;
-TESTABLE_STATIC bool acStandAloneFanIsEnabled;
-TESTABLE_STATIC uint8_t acStartDelay;
-TESTABLE_STATIC uint8_t acTPSLockoutDelay;
-TESTABLE_STATIC uint8_t acRPMLockoutDelay;
-TESTABLE_STATIC uint8_t acAfterEngineStartDelay;
-TESTABLE_STATIC bool waitedAfterCranking; // This starts false and prevents the A/C from running until a few seconds after cranking
+TESTABLE_STATIC airConController::details::state_t airConState;
 
 static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const config15 &page15)
 {
@@ -67,24 +59,24 @@ static inline void checkAirConTPSLockout(statuses &current, const config15 &page
   {
     // A/C is cut off due to high TPS
     current.airconTpsLockout = true;
-    acTPSLockoutDelay = 0;
+    airConState.tpsLockoutDelay = 0;
   }
   else if ( (current.airconTpsLockout == true) &&
             (current.TPS <= page15.airConTPSCut) )
   {
     // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
-    if (acTPSLockoutDelay >= page15.airConTPSCutTime)
+    if (airConState.tpsLockoutDelay >= page15.airConTPSCutTime)
     {
       current.airconTpsLockout = false;
     }
     else
     {
-      acTPSLockoutDelay++;
+      airConState.tpsLockoutDelay++;
     }
   }
   else
   {
-    acTPSLockoutDelay = 0;
+    airConState.tpsLockoutDelay = 0;
   }
 }
 
@@ -98,24 +90,24 @@ static inline void checkAirConRPMLockout(statuses &current, const config15 &page
   {
     // A/C is cut off due to high/low RPM
     current.airconRpmLockout = true;
-    acRPMLockoutDelay = 0;
+    airConState.rpmLockoutDelay = 0;
   }
   else if ( (current.RPM >= (page15.airConMinRPMdiv10 * 10)) &&
             (current.RPMdiv100 <= page15.airConMaxRPMdiv100) )
   {
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
-    if (acRPMLockoutDelay >= page15.airConRPMCutTime)
+    if (airConState.rpmLockoutDelay >= page15.airConRPMCutTime)
     {
       current.airconRpmLockout = false;
     }
     else
     {
-      acRPMLockoutDelay++;
+      airConState.rpmLockoutDelay++;
     }
   }
   else
   {
-    acRPMLockoutDelay = 0;
+    airConState.rpmLockoutDelay = 0;
   }
 }
 
@@ -124,11 +116,11 @@ TESTABLE_STATIC void airConOn(statuses &current, const config15 &page15)
   ATOMIC() { 
     if (page15.airConCompPol)
     {
-      aircon_comp_pin.setPinLow();
+      airConState.compPin.setPinLow();
     }
     else
     {
-      aircon_comp_pin.setPinHigh();
+      airConState.compPin.setPinHigh();
     }
     current.airconCompressorOn = true; 
   }  
@@ -138,11 +130,11 @@ TESTABLE_STATIC void airConOff(statuses &current, const config15 &page15)
   ATOMIC() { 
     if (page15.airConCompPol)
     {
-      aircon_comp_pin.setPinHigh();
+      airConState.compPin.setPinHigh();
     }
     else
     {
-      aircon_comp_pin.setPinLow();
+      airConState.compPin.setPinLow();
     }
     current.airconCompressorOn = false; 
   }
@@ -152,11 +144,11 @@ static void airConFanOn(statuses &current, const config15 &page15)
   ATOMIC() { 
     if (page15.airConFanPol)
     {
-      aircon_fan_pin.setPinLow();
+      airConState.fanPin.setPinLow();
     }
     else
     {
-      aircon_fan_pin.setPinHigh();
+      airConState.fanPin.setPinHigh();
     }
     current.airconFanOn = true; 
   }
@@ -166,11 +158,11 @@ static void airConFanOff(statuses &current, const config15 &page15)
   ATOMIC() { 
     if (page15.airConFanPol)
     {
-      aircon_fan_pin.setPinHigh();
+      airConState.fanPin.setPinHigh();
     }
     else
     {
-      aircon_fan_pin.setPinLow();
+      airConState.fanPin.setPinLow();
     }
     current.airconFanOn = false; 
   }
@@ -178,18 +170,15 @@ static void airConFanOff(statuses &current, const config15 &page15)
 
 void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const config15 &page15, const pinNumbers_t &pins)
 {
+  airConState = airConController::details::state_t();
+
   if( (page15.airConEnable) &&
       !pinIsReserved(pins.pinAirConRequest) &&
       !pinIsReserved(pins.pinAirConComp) &&
       !pinIsOutput(pins.pinAirConRequest))
   {
-    // Hold the A/C off until a few seconds after cranking
-    acAfterEngineStartDelay = 0;
-    waitedAfterCranking = false;
-
-    acStartDelay = 0;
-    acTPSLockoutDelay = 0;
-    acRPMLockoutDelay = 0;
+    airConState.reqPin.setPin(pins.pinAirConRequest, getAirConRequestPinMode(page15));
+    airConState.compPin.setPin(pins.pinAirConComp, OUTPUT);
 
     current.airconRequested = false;
     current.airconCompressorOn = false;
@@ -198,64 +187,57 @@ void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const c
     current.airconTurningOn = false;
     current.airconCltLockout = false;
     current.airconFanOn = false;
-    aircon_req_pin.setPin(pins.pinAirConRequest, getAirConRequestPinMode(page15));
-    aircon_comp_pin.setPin(pins.pinAirConComp, OUTPUT);
   
     airConOff(current, page15);
 
     if((page15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan)))
     {
-      aircon_fan_pin.setPin(pins.pinAirConFan, OUTPUT);
+      airConState.fanPin.setPin(pins.pinAirConFan, OUTPUT);
       airConFanOff(current, page15);
-      acStandAloneFanIsEnabled = true;
+      airConState.standAloneFanIsEnabled = true;
     }
     else
     {
-      acStandAloneFanIsEnabled = false;
+      airConState.standAloneFanIsEnabled = false;
     }
 
-    acIsEnabled = true;
-
-  }
-  else
-  {
-    acIsEnabled = false;
+    airConState.isEnabled = true;
   }
 }
 
 static bool READ_AIRCON_REQUEST(statuses &current, const config15 &page15)
 {
-  if(acIsEnabled == false)
+  if(airConState.isEnabled == false)
   {
     return false;
   }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  current.airconRequested = aircon_req_pin.isPinHigh()==page15.airConReqPol;
+  current.airconRequested = airConState.reqPin.isPinHigh()==page15.airConReqPol;
   return current.airconRequested;
 }
 
 void airConControl(statuses &current, const config15 &page15)
 {
-  if(acIsEnabled == true)
+  if(airConState.isEnabled == true)
   {
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
     // ------------------------------------------------------------------------------------------------------
     if (current.rotationStatus==EngineRotationStatus::Running)
     {
-      if(acAfterEngineStartDelay >= page15.airConAfterStartDelay)
+      if(airConState.afterEngineStartDelay >= page15.airConAfterStartDelay)
       {
-        waitedAfterCranking = true;
+        airConState.waitedAfterCranking = true;
       }
       else
       {
-        acAfterEngineStartDelay++;
+        airConState.afterEngineStartDelay++;
       }
     }
     else
     {
-      acAfterEngineStartDelay = 0;
-      waitedAfterCranking = false;
+      airConState.afterEngineStartDelay = 0;
+      airConState.waitedAfterCranking = false;
     }
     
     // --------------------------------------------------------------------
@@ -270,7 +252,7 @@ void airConControl(statuses &current, const config15 &page15)
     // Check the A/C Request Signal (A/C Button)
     // -----------------------------------------
     if( READ_AIRCON_REQUEST(current, page15) == true &&
-        waitedAfterCranking == true &&
+        airConState.waitedAfterCranking == true &&
         current.airconTpsLockout == false &&
         current.airconRpmLockout == false &&
         current.airconCltLockout == false )
@@ -279,19 +261,19 @@ void airConControl(statuses &current, const config15 &page15)
       current.airconTurningOn = true;
 
       // Stand-alone fan operation
-      if(acStandAloneFanIsEnabled == true)
+      if(airConState.standAloneFanIsEnabled == true)
       {
         airConFanOn(current, page15);
       }
 
       // Start the A/C compressor after the "Compressor On" delay period
-      if(acStartDelay >= page15.airConCompOnDelay)
+      if(airConState.startDelay >= page15.airConCompOnDelay)
       {
         airConOn(current, page15);
       }
       else
       {
-        acStartDelay++;
+        airConState.startDelay++;
       }
     }
     else
@@ -299,13 +281,13 @@ void airConControl(statuses &current, const config15 &page15)
       current.airconTurningOn = false;
 
       // Stand-alone fan operation
-      if(acStandAloneFanIsEnabled == true)
+      if(airConState.standAloneFanIsEnabled == true)
       {
         airConFanOff(current, page15);
       }
 
       airConOff(current, page15);
-      acStartDelay = 0;
+      airConState.startDelay = 0;
     }
   }
 }
