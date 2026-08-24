@@ -27,16 +27,15 @@ static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const con
 }
 
 
-static inline void checkAirConCoolantLockout(statuses &current, const config15 &page15)
+static inline bool isCoolantLockoutActive(const statuses &current, const config15 &page15)
 {
-  // ---------------------------
-  // Coolant Temperature Lockout
-  // ---------------------------
-  int offTemp = temperatureRemoveOffset(page15.airConClTempCut);
+  bool lockout = current.acStatus.cltLockoutActive;
+
+  int16_t offTemp = temperatureRemoveOffset(page15.airConClTempCut);
   if (current.coolant > offTemp)
   {
     // A/C is cut off due to high coolant
-    current.acStatus.cltLockoutActive = true;
+    lockout = true;
   }
   else if (current.coolant < (offTemp - 1))
   {
@@ -45,20 +44,23 @@ static inline void checkAirConCoolantLockout(statuses &current, const config15 &
     // e.g. if offTemp is 100, it needs to go GREATER than 100 to enable, i.e. 101, and then 98 to disable,
     // because the coolant temp is an integer. So 98.5 degrees to 100.5 degrees is the analog null zone where nothing happens,
     // depending on sensor calibration and table interpolation.
-    // Hopefully offTemp wasn't -40... otherwise underflow... but that would be ridiculous
-    current.acStatus.cltLockoutActive = false;
+    lockout = false;
   }
+  else
+  {
+    // Use default
+  }
+  return lockout;
 }
 
-static inline void checkAirConTPSLockout(statuses &current, const config15 &page15)
+static inline bool isTPSLockoutActive(const statuses &current, const config15 &page15)
 {
-  // ------------------------------
-  // High Throttle Position Lockout
-  // ------------------------------
+  bool lockout = current.acStatus.tpsLockoutActive;
+
   if (current.TPS > page15.airConTPSCut)
   {
     // A/C is cut off due to high TPS
-    current.acStatus.tpsLockoutActive = true;
+    lockout = true;
     airConState.tpsLockoutDelay = 0;
   }
   else if ( (current.acStatus.tpsLockoutActive == true) &&
@@ -67,7 +69,7 @@ static inline void checkAirConTPSLockout(statuses &current, const config15 &page
     // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
     if (airConState.tpsLockoutDelay >= page15.airConTPSCutTime)
     {
-      current.acStatus.tpsLockoutActive = false;
+      lockout = false;
     }
     else
     {
@@ -78,10 +80,14 @@ static inline void checkAirConTPSLockout(statuses &current, const config15 &page
   {
     airConState.tpsLockoutDelay = 0;
   }
+
+  return lockout;
 }
 
-static inline void checkAirConRPMLockout(statuses &current, const config15 &page15)
+static inline bool isRPMLockoutActive(const statuses &current, const config15 &page15)
 {
+  bool lockout = current.acStatus.rpmLockoutActive;
+
   // --------------------
   // High/Low RPM Lockout
   // --------------------
@@ -89,7 +95,7 @@ static inline void checkAirConRPMLockout(statuses &current, const config15 &page
        (current.RPMdiv100 > page15.airConMaxRPMdiv100) )
   {
     // A/C is cut off due to high/low RPM
-    current.acStatus.rpmLockoutActive = true;
+    lockout = true;
     airConState.rpmLockoutDelay = 0;
   }
   else if ( (current.RPM >= (page15.airConMinRPMdiv10 * 10)) &&
@@ -98,7 +104,7 @@ static inline void checkAirConRPMLockout(statuses &current, const config15 &page
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
     if (airConState.rpmLockoutDelay >= page15.airConRPMCutTime)
     {
-      current.acStatus.rpmLockoutActive = false;
+      lockout = false;
     }
     else
     {
@@ -109,6 +115,8 @@ static inline void checkAirConRPMLockout(statuses &current, const config15 &page
   {
     airConState.rpmLockoutDelay = 0;
   }
+
+  return lockout;
 }
 
 TESTABLE_STATIC void airConOn(statuses &current, const config15 &page15)
@@ -237,9 +245,9 @@ void airConControl(statuses &current, const config15 &page15)
     // Determine the A/C lockouts based on the noted parameters
     // These functions set/clear the globl current.airConStatus bits.
     // --------------------------------------------------------------------
-    checkAirConCoolantLockout(current, page15);
-    checkAirConTPSLockout(current, page15);
-    checkAirConRPMLockout(current, page15);
+    current.acStatus.cltLockoutActive = isCoolantLockoutActive(current, page15);
+    current.acStatus.tpsLockoutActive = isTPSLockoutActive(current, page15);
+    current.acStatus.rpmLockoutActive = isRPMLockoutActive(current, page15);
     
     // -----------------------------------------
     // Check the A/C Request Signal (A/C Button)
