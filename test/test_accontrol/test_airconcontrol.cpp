@@ -33,8 +33,8 @@ static void setup_acon_status(void)
 
 static void test_reset_startdelay_when_stopped(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     acAfterEngineStartDelay = 99;
@@ -48,8 +48,8 @@ static void test_reset_startdelay_when_stopped(void)
 
 static void test_disabled_no_effect(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     acAfterEngineStartDelay = 99;
@@ -63,8 +63,8 @@ static void test_disabled_no_effect(void)
 
 static void test_startdelay_counter(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     acAfterEngineStartDelay = 0;
@@ -82,8 +82,8 @@ static void test_startdelay_counter(void)
 
 static void test_checkAirConCoolantLockout(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     airConControl();
@@ -101,8 +101,8 @@ static void test_checkAirConCoolantLockout(void)
 
 static void test_checkAirConTPSLockout(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     acTPSLockoutDelay = 99;
@@ -126,8 +126,8 @@ static void test_checkAirConTPSLockout(void)
 
 static void test_checkAirConTPSLockout_delay(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     currentStatus.TPS = configPage15.airConTPSCut-2;
@@ -148,8 +148,8 @@ static void test_checkAirConTPSLockout_delay(void)
 
 static void test_checkAirConRPMLockout(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     acRPMLockoutDelay = 99;
@@ -192,8 +192,8 @@ static void test_checkAirConRPMLockout(void)
 
 static void test_checkAirConRMPLockout_delay(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     currentStatus.setRpm(RPM_MEDIUM.toUser(configPage15.airConMinRPMdiv10+1));
@@ -214,8 +214,8 @@ static void test_checkAirConRMPLockout_delay(void)
 
 static void test_ac_request_pin(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
 
     setup_acon_status();
     currentStatus.airconRequested = false;
@@ -227,9 +227,9 @@ static void test_ac_request_pin(void)
 
 static void test_ac_request_pin_inverted(void)
 {
-    setup_ac_tune();
+    auto context = setup_ac_tune();
     configPage15.airConReqPol = !configPage15.airConReqPol;
-    initialiseAirCon();
+    context.initialise();
 
     setup_acon_status();
     currentStatus.airconRequested = false;
@@ -255,8 +255,8 @@ void assert_ac_on(void)
 
 static void test_start_delay(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
     setup_acon_status();
 
     acStartDelay = 0;
@@ -275,8 +275,8 @@ static void test_start_delay(void)
 
 static void test_airConOn(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
 
     currentStatus.airconCompressorOn = false;
     airConOn();
@@ -286,9 +286,9 @@ static void test_airConOn(void)
 
 static void test_airConOn_inversepolarity(void)
 {
-    setup_ac_tune();
+    auto context = setup_ac_tune();
     configPage15.airConCompPol = !configPage15.airConCompPol;
-    initialiseAirCon();
+    context.initialise();
 
     currentStatus.airconCompressorOn = false;
     airConOn();
@@ -298,8 +298,8 @@ static void test_airConOn_inversepolarity(void)
 
 static void test_airConOff(void)
 {
-    setup_ac_tune();
-    initialiseAirCon();
+    auto context = setup_ac_tune();
+    context.initialise();
 
     currentStatus.airconCompressorOn = true;
     airConOff();
@@ -309,9 +309,9 @@ static void test_airConOff(void)
 
 static void test_airConOff_inversepolarity(void)
 {
-    setup_ac_tune();
+    auto context = setup_ac_tune();
     configPage15.airConCompPol = !configPage15.airConCompPol;
-    initialiseAirCon();
+    context.initialise();
 
     currentStatus.airconCompressorOn = true;
     airConOff();

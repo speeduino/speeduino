@@ -1,7 +1,8 @@
 #pragma once
 
-#include "src/pins/boardOutputPin.h"
-#include "src/pins/boardInputPin.h"
+#include "src/controllers/aircon/airconController.h"
+#include "src/pins/outputPin.h"
+#include "src/pins/inputPin.h"
 
 extern bool acIsEnabled;
 extern bool acStandAloneFanIsEnabled;
@@ -14,8 +15,20 @@ extern outputPin_t aircon_comp_pin;
 extern outputPin_t aircon_fan_pin;
 extern inputPin_t aircon_req_pin;
 
-constexpr uint8_t TEST_ACREQUEST_PIN = 11;
-constexpr uint8_t TEST_ACCOMP_PIN = 12;
+struct test_context
+{
+    pinNumbers_t pins;
+
+    void initialise(void)
+    {
+        ::initialiseAirCon(pins);
+    }
+
+    void control(void)
+    {
+        ::airConControl();
+    }
+};
 
 void assert_ac_off(void);
-void setup_ac_tune(void);
+test_context setup_ac_tune(void);

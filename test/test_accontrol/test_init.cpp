@@ -5,7 +5,7 @@
 
 static void test_initialise(void)
 {
-    setup_ac_tune();
+    auto context = setup_ac_tune();
 
     acAfterEngineStartDelay = 99;
     waitedAfterCranking = true;
@@ -23,7 +23,7 @@ static void test_initialise(void)
     currentStatus.airconCltLockout = true;
     currentStatus.airconFanOn = true;
 
-    initialiseAirCon();
+    context.initialise();
     assert_ac_off();
     
     TEST_ASSERT_EQUAL(0, acAfterEngineStartDelay);
@@ -48,44 +48,44 @@ static void test_initialise(void)
 
 static void test_initialise_inversepolarity_comp(void)
 {
-    setup_ac_tune();
+    auto context = setup_ac_tune();
     configPage15.airConCompPol = !configPage15.airConCompPol;
 
     acIsEnabled = false;
-    initialiseAirCon();
+    context.initialise();
     TEST_ASSERT_TRUE(acIsEnabled);
     assert_ac_off();
 }
 
-static void assert_init_acdisabled(void)
+static void assert_init_acdisabled(test_context &context)
 {
     acIsEnabled = true;
-    initialiseAirCon();
+    context.initialise();
     TEST_ASSERT_FALSE(acIsEnabled);    
 }
 
 static void test_initialise_disabled(void)
 {
-    setup_ac_tune();
+    auto context = setup_ac_tune();
     configPage15.airConEnable = false;
 
-    assert_init_acdisabled();
+    assert_init_acdisabled(context);
 }
 
 static void test_initialise_badcomppin(void)
 {
-    setup_ac_tune();
-    pinNumbers.pinAirConComp = NOT_A_PIN;
+    auto context = setup_ac_tune();
+    context.pins.pinAirConComp = NOT_A_PIN;
 
-    assert_init_acdisabled();
+    assert_init_acdisabled(context);
 }
 
 static void test_initialise_badreqin(void)
 {
-    setup_ac_tune();
-    pinNumbers.pinAirConRequest = NOT_A_PIN;
+    auto context = setup_ac_tune();
+    context.pins.pinAirConRequest = NOT_A_PIN;
 
-    assert_init_acdisabled();
+    assert_init_acdisabled(context);
 }
 
 static void test_initialize_fan(void)
