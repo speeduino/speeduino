@@ -714,9 +714,8 @@ static inline void triggerRecordVVT1Angle (void)
   //Record the VVT Angle
   if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) )
   {
-    int16_t curAngle;
-    curAngle = currentStatus.decoder.getCrankAngle();
-    while(curAngle > 360) { curAngle -= 360; }
+    int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
+
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
 
@@ -729,7 +728,6 @@ static void triggerThird_missingTooth(void)
 //Record the VVT2 Angle (the only purpose of the third trigger)
 //NB no filtering of this signal with current implementation unlike Cam (VVT1)
 
-  int16_t curAngle;
   uint32_t curTime3 = micros();
   curGap3 = curTime3 - toothLastThirdToothTime;
 
@@ -744,11 +742,10 @@ static void triggerThird_missingTooth(void)
   {
     triggerThirdFilterTime = curGap3 >> 2; //Next third filter is 25% the current gap
     
-    curAngle = currentStatus.decoder.getCrankAngle();
-    while(curAngle > 360) { curAngle -= 360; }
+    int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
+
     curAngle -= configPage4.triggerAngle; //Value at TDC
     if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
-    //currentStatus.vvt2.angle = int8_t (curAngle); //vvt1.angle is only int8, but +/-127 degrees is enough for VVT control
     currentStatus.vvt2.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2.angle);    
 
     toothLastThirdToothTime = curTime3;
@@ -801,7 +798,7 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 
 static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
   int16_t toothRange = (int16_t)configPage4.triggerTeeth + (int16_t)toothAdder;
-  return (uint16_t)nudge(1, toothRange, toothNum, toothRange);
+  return (uint16_t)nudge((int16_t)1, (int16_t)(toothRange+1), toothNum);
 }
 
 static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder) {
@@ -4475,9 +4472,7 @@ static void triggerSec_FordST170(void)
     //cycle even when the VVT is at either end of its full swing.
     if( (configPage6.vvtEnabled > 0) && (revolutionOne == 1) && (secondaryToothCount == 1) )
     {
-      int16_t curAngle;
-      curAngle = currentStatus.decoder.getCrankAngle();
-      while(curAngle > 360) { curAngle -= 360; }
+      int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
       {
         curAngle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
@@ -4538,7 +4533,7 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const Igniti
 #else
   tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
 #endif  
-  tempEndTooth = nudge(1, 36U + toothAdder,  tempEndTooth - 1, 36U + toothAdder);
+  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
   return clampToActualTeeth((uint16_t)tempEndTooth, toothAdder);
 }
 
@@ -5575,9 +5570,8 @@ static void triggerSec_RoverMEMS(void)
         ( (configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) || 
           (configPage4.trigPatternSec == SEC_TRIGGER_5_3_2 && secondaryToothCount == 6 ) ) )
     {
-      int16_t curAngle;
-      curAngle = currentStatus.decoder.getCrankAngle();
-      while(curAngle > 360) { curAngle -= 360; }
+      int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
+
       curAngle -= configPage4.triggerAngle; //Value at TDC
       if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
 

@@ -52,7 +52,7 @@ extern int16_t CRANK_ANGLE_MAX_INJ; ///< The number of crank degrees that the sy
  * @return int16_t 
  */
 static inline int16_t ignitionLimits(int16_t angle) {
-    return nudge(0, CRANK_ANGLE_MAX_IGN-1, angle, CRANK_ANGLE_MAX_IGN);
+    return nudge((int16_t)0, (int16_t)CRANK_ANGLE_MAX_IGN, angle);
 }
 
 /**

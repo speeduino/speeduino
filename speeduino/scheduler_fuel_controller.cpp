@@ -269,12 +269,7 @@ TESTABLE_INLINE_STATIC uint16_t _calculateOpenAngle(const FuelSchedule &schedule
   // (CRANK_ANGLE_MAX_INJ can be as small as 360/nCylinders. E.g. 45° for 8 cylinder)
 
   uint16_t startAngle = injAngle + schedule.channelDegrees;
-  
-  while (startAngle<pwDegrees) { startAngle = startAngle + (uint16_t)CRANK_ANGLE_MAX_INJ; } // Avoid underflow
-  startAngle = startAngle - pwDegrees; // startAngle guaranteed to be >=0.
-  while (startAngle>=(uint16_t)CRANK_ANGLE_MAX_INJ) { startAngle = startAngle - (uint16_t)CRANK_ANGLE_MAX_INJ; } // Clamp to 0<=startAngle<=CRANK_ANGLE_MAX_INJ
-
-  return startAngle;
+  return normalize((int16_t)0, (int16_t)CRANK_ANGLE_MAX_INJ, (int16_t)((int16_t)startAngle - (int16_t)pwDegrees));
 }
 
 /**
@@ -352,11 +347,10 @@ TESTABLE_INLINE_STATIC uint16_t setFuelChannelSchedules(uint16_t crankAngle, byt
   return injAngle;
 }
 
-/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ] */
+/** @brief Clamp the angle to within [0,CRANK_ANGLE_MAX_INJ) */
 TESTABLE_INLINE_STATIC uint16_t injectorLimits(uint16_t angle)
 {
-    while(angle >= (uint16_t)CRANK_ANGLE_MAX_INJ ) { angle -= (uint16_t)CRANK_ANGLE_MAX_INJ; }
-    return angle;
+  return normalize((uint16_t)0, (uint16_t)CRANK_ANGLE_MAX_INJ, angle);
 }
 
 // LCOV_EXCL_START
