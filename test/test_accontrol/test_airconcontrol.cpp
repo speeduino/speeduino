@@ -13,8 +13,8 @@ static void setup_acon_status(test_context &context)
     context.current.TPS = context.page15.airConTPSCut-5;
     context.current.setRpm(RPM_COARSE.toUser(context.page15.airConMaxRPMdiv100-5));
 
-    context.current.airconTpsLockout = false;
-    context.current.airconRpmLockout = false;
+    context.current.acStatus.tpsLockoutActive = false;
+    context.current.acStatus.rpmLockoutActive = false;
 
     airConState.isEnabled = true;
     airConState.afterEngineStartDelay = context.page15.airConAfterStartDelay+1;
@@ -86,15 +86,15 @@ static void test_checkAirConCoolantLockout(void)
     setup_acon_status(context);
 
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconCltLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.cltLockoutActive);
 
     context.current.coolant = TEMPERATURE.toUser(context.page15.airConClTempCut);
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconCltLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.cltLockoutActive);
 
     context.current.coolant = TEMPERATURE.toUser(context.page15.airConClTempCut+1);
     context.control();
-    TEST_ASSERT_TRUE(context.current.airconCltLockout);
+    TEST_ASSERT_TRUE(context.current.acStatus.cltLockoutActive);
     assert_ac_off(context);
 }
 
@@ -106,19 +106,19 @@ static void test_checkAirConTPSLockout(void)
 
     airConState.tpsLockoutDelay = 99;
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconTpsLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.tpsLockoutActive);
     TEST_ASSERT_EQUAL(0, airConState.tpsLockoutDelay);
 
     airConState.tpsLockoutDelay = 99;
     context.current.TPS = context.page15.airConTPSCut;
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconTpsLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.tpsLockoutActive);
     TEST_ASSERT_EQUAL(0, airConState.tpsLockoutDelay);
 
     airConState.tpsLockoutDelay = context.page15.airConTPSCutTime+1;
     context.current.TPS = context.page15.airConTPSCut+2;
     context.control();
-    TEST_ASSERT_TRUE(context.current.airconTpsLockout);
+    TEST_ASSERT_TRUE(context.current.acStatus.tpsLockoutActive);
     TEST_ASSERT_EQUAL(0, airConState.tpsLockoutDelay);
     assert_ac_off(context);
 }
@@ -130,19 +130,19 @@ static void test_checkAirConTPSLockout_delay(void)
     setup_acon_status(context);
 
     context.current.TPS = context.page15.airConTPSCut-2;
-    context.current.airconTpsLockout = true;
+    context.current.acStatus.tpsLockoutActive = true;
 
     airConState.tpsLockoutDelay = 0;
     for (uint8_t index=airConState.tpsLockoutDelay; index<context.page15.airConTPSCutTime; ++index)
     {
         context.control();
         TEST_ASSERT_EQUAL(index+1, airConState.tpsLockoutDelay);
-        TEST_ASSERT_TRUE(context.current.airconTpsLockout);
+        TEST_ASSERT_TRUE(context.current.acStatus.tpsLockoutActive);
         assert_ac_off(context);
     }
 
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconTpsLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.tpsLockoutActive);
 }
 
 static void test_checkAirConRPMLockout(void)
@@ -153,7 +153,7 @@ static void test_checkAirConRPMLockout(void)
 
     airConState.rpmLockoutDelay = 99;
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconRpmLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.rpmLockoutActive);
     TEST_ASSERT_EQUAL(99, airConState.rpmLockoutDelay);
 
     // Max
@@ -161,14 +161,14 @@ static void test_checkAirConRPMLockout(void)
     airConState.rpmLockoutDelay = 99;
     context.current.setRpm(RPM_COARSE.toUser(context.page15.airConMaxRPMdiv100));
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconRpmLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.rpmLockoutActive);
     TEST_ASSERT_EQUAL(99, airConState.rpmLockoutDelay);
 
     setup_acon_status(context);
     airConState.rpmLockoutDelay = 99;
     context.current.setRpm(RPM_COARSE.toUser(context.page15.airConMaxRPMdiv100+1));
     context.control();
-    TEST_ASSERT_TRUE(context.current.airconRpmLockout);
+    TEST_ASSERT_TRUE(context.current.acStatus.rpmLockoutActive);
     TEST_ASSERT_EQUAL(0, airConState.rpmLockoutDelay);
     assert_ac_off(context);
 
@@ -177,14 +177,14 @@ static void test_checkAirConRPMLockout(void)
     airConState.rpmLockoutDelay = 99;
     context.current.setRpm(RPM_MEDIUM.toUser(context.page15.airConMinRPMdiv10));
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconRpmLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.rpmLockoutActive);
     TEST_ASSERT_EQUAL(99, airConState.rpmLockoutDelay);
 
     setup_acon_status(context);
     airConState.rpmLockoutDelay = 99;
     context.current.setRpm(RPM_MEDIUM.toUser(context.page15.airConMinRPMdiv10-1));
     context.control();
-    TEST_ASSERT_TRUE(context.current.airconRpmLockout);
+    TEST_ASSERT_TRUE(context.current.acStatus.rpmLockoutActive);
     TEST_ASSERT_EQUAL(0, airConState.rpmLockoutDelay);
     assert_ac_off(context);
 }
@@ -196,19 +196,19 @@ static void test_checkAirConRMPLockout_delay(void)
     setup_acon_status(context);
 
     context.current.setRpm(RPM_MEDIUM.toUser(context.page15.airConMinRPMdiv10+1));
-    context.current.airconRpmLockout = true;
+    context.current.acStatus.rpmLockoutActive = true;
 
     airConState.rpmLockoutDelay = 0;
     for (uint8_t index=airConState.rpmLockoutDelay; index<context.page15.airConRPMCutTime; ++index)
     {
         context.control();
         TEST_ASSERT_EQUAL(index+1, airConState.rpmLockoutDelay);
-        TEST_ASSERT_TRUE(context.current.airconRpmLockout);
+        TEST_ASSERT_TRUE(context.current.acStatus.rpmLockoutActive);
         assert_ac_off(context);
     }
 
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconRpmLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.rpmLockoutActive);
 }
 
 static void test_ac_request_pin(void)
@@ -217,11 +217,11 @@ static void test_ac_request_pin(void)
     context.initialise();
 
     setup_acon_status(context);
-    context.current.airconRequested = false;
-    context.current.airconTurningOn = false;
+    context.current.acStatus.acRequested = false;
+    context.current.acStatus.turningOn = false;
     context.control();
-    TEST_ASSERT_TRUE(context.current.airconRequested);
-    TEST_ASSERT_TRUE(context.current.airconTurningOn);
+    TEST_ASSERT_TRUE(context.current.acStatus.acRequested);
+    TEST_ASSERT_TRUE(context.current.acStatus.turningOn);
 }
 
 static void test_ac_request_pin_inverted(void)
@@ -231,11 +231,11 @@ static void test_ac_request_pin_inverted(void)
     context.initialise();
 
     setup_acon_status(context);
-    context.current.airconRequested = false;
-    context.current.airconTurningOn = false;
+    context.current.acStatus.acRequested = false;
+    context.current.acStatus.turningOn = false;
     context.control();
-    TEST_ASSERT_TRUE(context.current.airconRequested);
-    TEST_ASSERT_TRUE(context.current.airconTurningOn);
+    TEST_ASSERT_TRUE(context.current.acStatus.acRequested);
+    TEST_ASSERT_TRUE(context.current.acStatus.turningOn);
 }
 
 static void test_fanon_when_acon(void)
@@ -247,8 +247,8 @@ void assert_ac_on(const test_context &context)
 {
     TEST_ASSERT_TRUE(context.page15.airConCompPol!=airConState.compPin._pin.isPinHigh());
     TEST_ASSERT_TRUE(!airConState.standAloneFanIsEnabled || context.page15.airConFanPol==airConState.fanPin._pin.isPinHigh());
-    TEST_ASSERT_TRUE(context.current.airconCompressorOn); 
-    TEST_ASSERT_TRUE(!airConState.standAloneFanIsEnabled || context.current.airconFanOn);
+    TEST_ASSERT_TRUE(context.current.acStatus.compressorOn); 
+    TEST_ASSERT_TRUE(!airConState.standAloneFanIsEnabled || context.current.acStatus.fanOn);
 }
 
 static void test_start_delay(void)
@@ -263,11 +263,11 @@ static void test_start_delay(void)
         context.control();
         TEST_ASSERT_EQUAL(index+1, airConState.startDelay);
         assert_ac_off(context);
-        TEST_ASSERT_TRUE(context.current.airconTurningOn); 
+        TEST_ASSERT_TRUE(context.current.acStatus.turningOn); 
     }
 
     context.control();
-    TEST_ASSERT_FALSE(context.current.airconRpmLockout);
+    TEST_ASSERT_FALSE(context.current.acStatus.rpmLockoutActive);
     assert_ac_on(context);
 }
 
@@ -276,9 +276,9 @@ static void test_airConOn(void)
     auto context = setup_ac_tune();
     context.initialise();
 
-    context.current.airconCompressorOn = false;
+    context.current.acStatus.compressorOn = false;
     airConOn(context.current, context.page15);
-    TEST_ASSERT_TRUE(context.current.airconCompressorOn);
+    TEST_ASSERT_TRUE(context.current.acStatus.compressorOn);
     TEST_ASSERT_TRUE(context.page15.airConCompPol!=airConState.compPin._pin.isPinHigh());
 }
 
@@ -288,9 +288,9 @@ static void test_airConOn_inversepolarity(void)
     context.page15.airConCompPol = !context.page15.airConCompPol;
     context.initialise();
 
-    context.current.airconCompressorOn = false;
+    context.current.acStatus.compressorOn = false;
     airConOn(context.current, context.page15);
-    TEST_ASSERT_TRUE(context.current.airconCompressorOn);
+    TEST_ASSERT_TRUE(context.current.acStatus.compressorOn);
     TEST_ASSERT_TRUE(context.page15.airConCompPol!=airConState.compPin._pin.isPinHigh());
 }
 
@@ -299,9 +299,9 @@ static void test_airConOff(void)
     auto context = setup_ac_tune();
     context.initialise();
 
-    context.current.airconCompressorOn = true;
+    context.current.acStatus.compressorOn = true;
     airConOff(context.current, context.page15);
-    TEST_ASSERT_FALSE(context.current.airconCompressorOn);
+    TEST_ASSERT_FALSE(context.current.acStatus.compressorOn);
     TEST_ASSERT_TRUE(context.page15.airConCompPol==airConState.compPin._pin.isPinHigh());
 }
 
@@ -311,9 +311,9 @@ static void test_airConOff_inversepolarity(void)
     context.page15.airConCompPol = !context.page15.airConCompPol;
     context.initialise();
 
-    context.current.airconCompressorOn = true;
+    context.current.acStatus.compressorOn = true;
     airConOff(context.current, context.page15);
-    TEST_ASSERT_FALSE(context.current.airconCompressorOn);
+    TEST_ASSERT_FALSE(context.current.acStatus.compressorOn);
     TEST_ASSERT_TRUE(context.page15.airConCompPol==airConState.compPin._pin.isPinHigh());
 }
 

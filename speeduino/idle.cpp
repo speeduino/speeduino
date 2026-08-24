@@ -442,7 +442,7 @@ void idleControl(void)
           currentStatus.idleLoad = table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-        if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
+        if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
       }
 
       if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
@@ -484,7 +484,7 @@ void idleControl(void)
           
           // Add an offset to the duty cycle, outside of the closed loop. When tuned correctly, the extra load from
           // the air conditioning should exactly cancel this out and the PID loop will be relatively unaffected.
-          if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true)
+          if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true)
           {
             // Add air conditioning idle-up
             // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count
@@ -536,7 +536,7 @@ void idleControl(void)
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
-        if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true)
+        if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true)
         {
           // Add air conditioning idle-up
           // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count <<2 (PWM count * 4)
@@ -607,7 +607,7 @@ void idleControl(void)
             if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             
             // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-            if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+            if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
             
             iacStepTime_uS = configPage6.iacStepTime * 1000;
             iacCoolTime_uS = configPage9.iacCoolTime * 1000;
@@ -681,7 +681,7 @@ void idleControl(void)
           idleStepper.targetIdleStep = idle_pid_target_value>>2; //Increase resolution
 
           // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
-          if(configPage15.airConIdleSteps>0 && currentStatus.airconTurningOn == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
+          if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true) { idleStepper.targetIdleStep += configPage15.airConIdleSteps; }
         }
         
         if(currentStatus.idleUpActive == true) { idleStepper.targetIdleStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
