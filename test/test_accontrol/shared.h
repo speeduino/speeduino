@@ -18,15 +18,16 @@ extern inputPin_t aircon_req_pin;
 struct test_context
 {
     pinNumbers_t pins;
+    statuses current;
 
     void initialise(void)
     {
-        ::initialiseAirCon(pins);
+        ::initialiseAirCon(current, pins);
     }
 
     void control(void)
     {
-        ::airConControl();
+        ::airConControl(current);
     }
 };
 
