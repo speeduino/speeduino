@@ -32,7 +32,6 @@ void __attribute__((optimize("Os"))) channel_state_t::initialize(const config13&
 
 processing_channel_t::processing_channel_t(const config13 &page13, channel_state_t& channel_state)
 : _channel_state(channel_state)
-, outputPin(channel_state._pin)
 , limitType(BIT_CHECK(page13.kindOfLimiting, channel_state._index) ? LimitingType::Max : LimitingType::Min)
 , outputTimeLimit(page13.outputTimeLimit[channel_state._index])
 , activationDelay(page13.outputDelay[channel_state._index])
