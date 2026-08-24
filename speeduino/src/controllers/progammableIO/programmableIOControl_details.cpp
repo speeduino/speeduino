@@ -30,6 +30,17 @@ void __attribute__((optimize("Os"))) channel_state_t::initialize(const config13&
   }
 }
 
+void channel_state_t::updateStatus(bool ruleActive) noexcept
+{
+  isOutputActive = isOutputInverted ? !ruleActive : ruleActive;
+  if (isPhysicalPin()) { 
+    digitalWrite(_pin, isOutputActive); 
+  } else {
+    isRuleActive = isOutputActive;
+  }
+}
+
+
 processing_channel_t::processing_channel_t(const config13 &page13, channel_state_t& channel_state)
 : _channel_state(channel_state)
 , limitType(BIT_CHECK(page13.kindOfLimiting, channel_state._index) ? LimitingType::Max : LimitingType::Min)
