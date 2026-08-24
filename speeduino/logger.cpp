@@ -144,13 +144,13 @@ byte buildSdCardStatus(const statuses &current)
 static byte buildAirConStatus(const statuses &current)
 {
   bool bits[] = {
-    current.airconRequested,
-    current.airconCompressorOn,
-    current.airconRpmLockout,
-    current.airconTpsLockout,
-    current.airconTurningOn,
-    current.airconCltLockout,
-    current.airconFanOn,
+    current.acStatus.acRequested,
+    current.acStatus.compressorOn,
+    current.acStatus.rpmLockoutActive,
+    current.acStatus.tpsLockoutActive,
+    current.acStatus.turningOn,
+    current.acStatus.cltLockoutActive,
+    current.acStatus.fanOn,
   };
   return setStatusBits(0, bits);
 }

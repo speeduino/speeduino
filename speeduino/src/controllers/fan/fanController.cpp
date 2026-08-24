@@ -58,7 +58,7 @@ void fanControl(void)
     if ( (fanPermit == true) &&
          ((currentStatus.coolant >= onTemp) || 
            ((configPage15.airConTurnsFanOn) == 1 &&
-           currentStatus.airconTurningOn == true)) )
+           currentStatus.acStatus.turningOn == true)) )
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
       if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) && (configPage2.fanWhenCranking == 0))
@@ -99,7 +99,7 @@ void fanControl(void)
       {
         byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureAddOffset(currentStatus.coolant)); //In normal situation read PWM duty from the table
         if((configPage15.airConTurnsFanOn) == 1 &&
-           currentStatus.airconTurningOn == true)
+           currentStatus.acStatus.turningOn == true)
         {
           // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
           if(tempFanDuty < configPage15.airConPwmFanMinDuty)
