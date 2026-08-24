@@ -7,8 +7,8 @@ void assert_ac_off(const test_context &context)
 {
   SET_UNITY_FILENAME()
   {
-    TEST_ASSERT_TRUE(context.page15.airConCompPol==aircon_comp_pin._pin.isPinHigh());
-    TEST_ASSERT_TRUE(!acStandAloneFanIsEnabled || context.page15.airConFanPol==aircon_fan_pin._pin.isPinHigh());
+    TEST_ASSERT_TRUE(context.page15.airConCompPol==airConState.compPin._pin.isPinHigh());
+    TEST_ASSERT_TRUE(!airConState.standAloneFanIsEnabled || context.page15.airConFanPol==airConState.fanPin._pin.isPinHigh());
     TEST_ASSERT_FALSE(context.current.airconCompressorOn); 
     TEST_ASSERT_FALSE(context.current.airconFanOn);
   }

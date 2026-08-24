@@ -6,13 +6,13 @@ static void test_initialise(void)
 {
     auto context = setup_ac_tune();
 
-    acAfterEngineStartDelay = 99;
-    waitedAfterCranking = true;
-    acIsEnabled = false;
-    acStartDelay = 99;
-    acTPSLockoutDelay = 99;
-    acRPMLockoutDelay = 99;
-    acStandAloneFanIsEnabled = true;
+    airConState.afterEngineStartDelay = 99;
+    airConState.waitedAfterCranking = true;
+    airConState.isEnabled = false;
+    airConState.startDelay = 99;
+    airConState.tpsLockoutDelay = 99;
+    airConState.rpmLockoutDelay = 99;
+    airConState.standAloneFanIsEnabled = true;
 
     context.current.airconRequested = true;
     context.current.airconCompressorOn = true;
@@ -25,13 +25,13 @@ static void test_initialise(void)
     context.initialise();
     assert_ac_off(context);
     
-    TEST_ASSERT_EQUAL(0, acAfterEngineStartDelay);
+    TEST_ASSERT_EQUAL(0, airConState.afterEngineStartDelay);
 
-    TEST_ASSERT_FALSE(waitedAfterCranking);
+    TEST_ASSERT_FALSE(airConState.waitedAfterCranking);
 
-    TEST_ASSERT_EQUAL(0, acStartDelay);
-    TEST_ASSERT_EQUAL(0, acTPSLockoutDelay);
-    TEST_ASSERT_EQUAL(0, acRPMLockoutDelay);
+    TEST_ASSERT_EQUAL(0, airConState.startDelay);
+    TEST_ASSERT_EQUAL(0, airConState.tpsLockoutDelay);
+    TEST_ASSERT_EQUAL(0, airConState.rpmLockoutDelay);
 
     TEST_ASSERT_FALSE(context.current.airconRequested);
     TEST_ASSERT_FALSE(context.current.airconCompressorOn);
@@ -41,8 +41,8 @@ static void test_initialise(void)
     TEST_ASSERT_FALSE(context.current.airconCltLockout);
     TEST_ASSERT_FALSE(context.current.airconFanOn);
 
-    TEST_ASSERT_TRUE(acIsEnabled);
-    TEST_ASSERT_FALSE(acStandAloneFanIsEnabled);
+    TEST_ASSERT_TRUE(airConState.isEnabled);
+    TEST_ASSERT_FALSE(airConState.standAloneFanIsEnabled);
 }
 
 static void test_initialise_inversepolarity_comp(void)
@@ -50,17 +50,17 @@ static void test_initialise_inversepolarity_comp(void)
     auto context = setup_ac_tune();
     context.page15.airConCompPol = !context.page15.airConCompPol;
 
-    acIsEnabled = false;
+    airConState.isEnabled = false;
     context.initialise();
-    TEST_ASSERT_TRUE(acIsEnabled);
+    TEST_ASSERT_TRUE(airConState.isEnabled);
     assert_ac_off(context);
 }
 
 static void assert_init_acdisabled(test_context &context)
 {
-    acIsEnabled = true;
+    airConState.isEnabled = true;
     context.initialise();
-    TEST_ASSERT_FALSE(acIsEnabled);    
+    TEST_ASSERT_FALSE(airConState.isEnabled);    
 }
 
 static void test_initialise_disabled(void)

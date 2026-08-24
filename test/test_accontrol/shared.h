@@ -1,19 +1,11 @@
 #pragma once
 
 #include "src/controllers/aircon/airconController.h"
+#include "src/controllers/aircon/airconController_details.h"
 #include "src/pins/outputPin.h"
 #include "src/pins/inputPin.h"
 
-extern bool acIsEnabled;
-extern bool acStandAloneFanIsEnabled;
-extern uint8_t acStartDelay;
-extern uint8_t acTPSLockoutDelay;
-extern uint8_t acRPMLockoutDelay;
-extern uint8_t acAfterEngineStartDelay;
-extern bool waitedAfterCranking;
-extern outputPin_t aircon_comp_pin;
-extern outputPin_t aircon_fan_pin;
-extern inputPin_t aircon_req_pin;
+extern airConController::details::state_t airConState;
 
 struct test_context
 {
