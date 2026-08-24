@@ -94,8 +94,7 @@ static void test_initialiseProgrammableIO_disabled(void)
 
     // pinIsValid should be all zeros since no pins are configured
     for (auto &channel_state : state.channels) {
-        processing_channel_t channel(context.page13, channel_state);
-        TEST_ASSERT_FALSE(channel.isPinValid);
+        TEST_ASSERT_FALSE(channel_state.isPinValid());
     }
 }
 
@@ -113,8 +112,8 @@ static void test_initialiseProgrammableIO_cascade_rules(void)
     processing_channel_t channel1(context.page13, state.channels[1]);
 
     // Cascade rules should set pinIsValid bits
-    TEST_ASSERT_TRUE(channel0.isPinValid);
-    TEST_ASSERT_TRUE(channel1.isPinValid);
+    TEST_ASSERT_TRUE(channel0._channel_state.isPinValid());
+    TEST_ASSERT_TRUE(channel1._channel_state.isPinValid());
 
     // Output status should match inverted config
     TEST_ASSERT_TRUE(channel0._channel_state.isOutputActive);
@@ -150,16 +149,16 @@ static void test_initialiseProgrammableIO_mixed_configuration(void)
     initialiseProgrammableIO(context.page13);
 
     // Check pinIsValid bits - only cascade rules should be valid
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[0]).isPinValid); // Disabled
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[1]).isPinValid);  // Cascade
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[2]).isPinValid);  // Cascade
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[3]).isPinValid); // Disabled
+    TEST_ASSERT_FALSE(state.channels[0].isPinValid()); // Disabled
+    TEST_ASSERT_TRUE(state.channels[1].isPinValid());  // Cascade
+    TEST_ASSERT_TRUE(state.channels[2].isPinValid());  // Cascade
+    TEST_ASSERT_FALSE(state.channels[3].isPinValid()); // Disabled
 
     // Remaining pins should not be valid
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[4]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[5]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[6]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[7]).isPinValid);
+    TEST_ASSERT_FALSE(state.channels[4].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[5].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[6].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[7].isPinValid());
 }
 
 static void test_initialiseProgrammableIO_physical_pins(void)
@@ -174,8 +173,8 @@ static void test_initialiseProgrammableIO_physical_pins(void)
     initialiseProgrammableIO(context.page13);
 
     // Physical pins should set pinIsValid bits if not already used
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[0]).isPinValid); // Pin 10 should be valid
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[1]).isPinValid); // Pin 11 should be valid
+    TEST_ASSERT_TRUE(state.channels[0].isPinValid()); // Pin 10 should be valid
+    TEST_ASSERT_TRUE(state.channels[1].isPinValid()); // Pin 11 should be valid
 
     // Output status should match inverted config
     TEST_ASSERT_FALSE(state.channels[0].isOutputActive); // Not inverted
@@ -194,8 +193,8 @@ static void test_initialiseProgrammableIO_used_physical_pin(void)
     initialiseProgrammableIO(context.page13);
 
     // Pin 0 should be invalid if used, pin 10 should be valid
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[0]).isPinValid); // Should be invalid if used
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[1]).isPinValid);  // Should be valid
+    TEST_ASSERT_FALSE(state.channels[0].isPinValid()); // Should be invalid if used
+    TEST_ASSERT_TRUE(state.channels[1].isPinValid());  // Should be valid
 }
 
 static void test_initialiseProgrammableIO_clears_conflicting_pin(void)
@@ -768,14 +767,14 @@ static void test_FlatShiftBlink_EveryHalfSecond(void)
     initialiseProgrammableIO(context.page13);
 
     // Rules 2, 3, and 4 are valid
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[0]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[1]).isPinValid);
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[2]).isPinValid);
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[3]).isPinValid);
-    TEST_ASSERT_TRUE(processing_channel_t(context.page13, state.channels[4]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[5]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[6]).isPinValid);
-    TEST_ASSERT_FALSE(processing_channel_t(context.page13, state.channels[7]).isPinValid);
+    TEST_ASSERT_FALSE(state.channels[0].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[1].isPinValid());
+    TEST_ASSERT_TRUE(state.channels[2].isPinValid());
+    TEST_ASSERT_TRUE(state.channels[3].isPinValid());
+    TEST_ASSERT_TRUE(state.channels[4].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[5].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[6].isPinValid());
+    TEST_ASSERT_FALSE(state.channels[7].isPinValid());
 
     mockDataValues[RPM_INDEX] = RPM_THRESHOLD - 100;
     mockDataValues[MAP_INDEX] = MAP_THRESHOLD - 10;

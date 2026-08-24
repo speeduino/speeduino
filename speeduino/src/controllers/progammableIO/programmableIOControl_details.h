@@ -87,6 +87,14 @@ struct channel_state_t
   {}
 
   void initialize(const config13& page13, uint8_t index);
+
+  bool isPhysicalPin(void) const {
+    return _pin < 128U;
+  }
+
+  bool isPinValid(void) const {
+    return _pin!=NOT_A_PIN;
+  }
 };
 
 /**
@@ -101,16 +109,11 @@ struct processing_channel_t
 {
   channel_state_t& _channel_state;
   uint8_t outputPin = 0;   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
-  bool isPinValid : 1;
   LimitingType limitType; ///< Select which kind of output limiting are active (0 - minimum | 1 - maximum)
   uint8_t outputTimeLimit = 0; ///< Output delay for each programmable I/O, kindOfLimiting bit dependent(Unit: 0.1S)
   uint8_t activationDelay = 0; ///< Output write delay for each programmable I/O (Unit: 0.1S)
 
   processing_channel_t(const config13 &page13, channel_state_t& channel_state);
-
-  bool isPhysicalPin(void) const {
-    return outputPin < 128U;
-  }
 
   bool hasMaxLimit(void) const {
     return (limitType==LimitingType::Max) && (outputTimeLimit != 0);
