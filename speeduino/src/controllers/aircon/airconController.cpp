@@ -200,6 +200,7 @@ static bool readRequestPin(const config15 &page15)
   return airConState.reqPin.isPinHigh()==page15.airConReqPol;
 }
 
+
 void airConControl(statuses &current, const config15 &page15)
 {
   if(airConState.isEnabled == true)
@@ -229,11 +230,10 @@ void airConControl(statuses &current, const config15 &page15)
     // Check the A/C Request Signal (A/C Button)
     // -----------------------------------------
     current.acStatus.acRequested = readRequestPin(page15);
+    
     if(  current.acStatus.acRequested == true &&
         waitedAfterCranking == true &&
-        current.acStatus.tpsLockoutActive == false &&
-        current.acStatus.rpmLockoutActive == false &&
-        current.acStatus.cltLockoutActive == false )
+        !current.acStatus.isLockoutActive())
     {
       // Set the flag bit to notify the idle system to idle up & the cooling fan to start (if enabled)
       current.acStatus.turningOn = true;
