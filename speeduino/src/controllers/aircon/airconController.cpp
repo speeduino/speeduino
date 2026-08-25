@@ -113,59 +113,82 @@ static inline bool isRPMLockoutActive(const statuses &current, const config15 &p
 
 TESTABLE_STATIC void airConOn(statuses &current, const config15 &page15)
 {
-  ATOMIC() { 
-    if (page15.airConCompPol)
-    {
-      airConState.compPin.setPinLow();
-    }
-    else
-    {
-      airConState.compPin.setPinHigh();
-    }
-    current.acStatus.compressorOn = true; 
-  }  
-}
-TESTABLE_STATIC void airConOff(statuses &current, const config15 &page15)
-{
-  ATOMIC() { 
-    if (page15.airConCompPol)
-    {
-      airConState.compPin.setPinHigh();
-    }
-    else
-    {
-      airConState.compPin.setPinLow();
-    }
-    current.acStatus.compressorOn = false; 
+  if (airConState.compPin.isValid())
+  {
+    ATOMIC() { 
+      if (page15.airConCompPol)
+      {
+        airConState.compPin.setPinLow();
+      }
+      else
+      {
+        airConState.compPin.setPinHigh();
+      }
+      current.acStatus.compressorOn = true; 
+    }  
   }
 }
+
+TESTABLE_STATIC void airConOff(statuses &current, const config15 &page15)
+{
+  if (airConState.compPin.isValid())
+  {
+    ATOMIC() { 
+      if (page15.airConCompPol)
+      {
+        airConState.compPin.setPinHigh();
+      }
+      else
+      {
+        airConState.compPin.setPinLow();
+      }
+      current.acStatus.compressorOn = false; 
+    }
+  }
+}
+
 static void airConFanOn(statuses &current, const config15 &page15)
 {
-  ATOMIC() { 
-    if (page15.airConFanPol)
-    {
-      airConState.fanPin.setPinLow();
+  if (airConState.fanPin.isValid())
+  {
+    ATOMIC() { 
+      if (page15.airConFanPol)
+      {
+        airConState.fanPin.setPinLow();
+      }
+      else
+      {
+        airConState.fanPin.setPinHigh();
+      }
+      current.acStatus.fanOn = true; 
     }
-    else
-    {
-      airConState.fanPin.setPinHigh();
-    }
-    current.acStatus.fanOn = true; 
   }
 }
 static void airConFanOff(statuses &current, const config15 &page15)
 {
-  ATOMIC() { 
-    if (page15.airConFanPol)
-    {
-      airConState.fanPin.setPinHigh();
+  if (airConState.fanPin.isValid())
+  {
+    ATOMIC() { 
+      if (page15.airConFanPol)
+      {
+        airConState.fanPin.setPinHigh();
+      }
+      else
+      {
+        airConState.fanPin.setPinLow();
+      }
+      current.acStatus.fanOn = false; 
     }
-    else
-    {
-      airConState.fanPin.setPinLow();
-    }
-    current.acStatus.fanOn = false; 
   }
+}
+
+static __attribute__((optimize("Os"))) bool enableAc(const config15 &page15, const pinNumbers_t &pins)
+{
+  return (page15.airConEnable) &&
+      !pinIsReserved(pins.pinAirConRequest) &&
+      !pinIsReserved(pins.pinAirConComp) &&
+      !pinIsOutput(pins.pinAirConRequest)
+      ;
 }
 
 void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const config15 &page15, const pinNumbers_t &pins)
@@ -173,18 +196,11 @@ void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const c
   airConState = airConController::details::state_t();
   current.acStatus = airConStatus_t();
 
-  airConState.isEnabled = (page15.airConEnable) &&
-      !pinIsReserved(pins.pinAirConRequest) &&
-      !pinIsReserved(pins.pinAirConComp) &&
-      !pinIsOutput(pins.pinAirConRequest);
-      
-  if(airConState.isEnabled)
+  if(enableAc(page15, pins))
   {
-    airConState.standAloneFanIsEnabled = (page15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan));
-
     airConState.reqPin.setPin(pins.pinAirConRequest, getAirConRequestPinMode(page15));
     airConState.compPin.setPin(pins.pinAirConComp, OUTPUT);
-    if(airConState.standAloneFanIsEnabled)
+    if ((page15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan)))
     {
       airConState.fanPin.setPin(pins.pinAirConFan, OUTPUT);
     }
@@ -200,10 +216,9 @@ static bool readRequestPin(const config15 &page15)
   return airConState.reqPin.isPinHigh()==page15.airConReqPol;
 }
 
-
 void airConControl(statuses &current, const config15 &page15)
 {
-  if(airConState.isEnabled == true)
+  if(airConState.compPin.isValid())
   {
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
@@ -230,7 +245,7 @@ void airConControl(statuses &current, const config15 &page15)
     // Check the A/C Request Signal (A/C Button)
     // -----------------------------------------
     current.acStatus.acRequested = readRequestPin(page15);
-    
+
     if(  current.acStatus.acRequested == true &&
         waitedAfterCranking == true &&
         !current.acStatus.isLockoutActive())
@@ -239,10 +254,7 @@ void airConControl(statuses &current, const config15 &page15)
       current.acStatus.turningOn = true;
 
       // Stand-alone fan operation
-      if(airConState.standAloneFanIsEnabled == true)
-      {
-        airConFanOn(current, page15);
-      }
+      airConFanOn(current, page15);
 
       // Start the A/C compressor after the "Compressor On" delay period
       if(airConState.nextStartDelay(page15))
@@ -253,13 +265,7 @@ void airConControl(statuses &current, const config15 &page15)
     else
     {
       current.acStatus.turningOn = false;
-
-      // Stand-alone fan operation
-      if(airConState.standAloneFanIsEnabled == true)
-      {
-        airConFanOff(current, page15);
-      }
-
+      airConFanOff(current, page15);
       airConOff(current, page15);
       airConState.resetStartDelay();
     }

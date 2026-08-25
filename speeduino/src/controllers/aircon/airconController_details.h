@@ -14,8 +14,6 @@ namespace details {
         inputPin_t reqPin;
         outputPin_t compPin;
         outputPin_t fanPin;
-        bool isEnabled = false;
-        bool standAloneFanIsEnabled = false;
         uint8_t startDelay = 0;
         uint8_t tpsLockoutDelay = 0;
         uint8_t rpmLockoutDelay = 0;
