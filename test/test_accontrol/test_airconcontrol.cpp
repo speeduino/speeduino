@@ -18,7 +18,6 @@ static void setup_acon_status(test_context &context)
 
     airConState.isEnabled = true;
     airConState.afterEngineStartDelay = context.page15.airConAfterStartDelay+1;
-    airConState.waitedAfterCranking = true;
     airConState.tpsLockoutDelay = context.page15.airConTPSCutTime + 1;
     if (context.page15.airConReqPol)
     {
@@ -37,12 +36,10 @@ static void test_reset_startdelay_when_stopped(void)
     setup_acon_status(context);
 
     airConState.afterEngineStartDelay = 99;
-    airConState.waitedAfterCranking = true;
     context.current.rotationStatus = EngineRotationStatus::Stopped;
     context.control();
 
     TEST_ASSERT_EQUAL(0, airConState.afterEngineStartDelay);
-    TEST_ASSERT_FALSE(airConState.waitedAfterCranking);
 }
 
 static void test_disabled_no_effect(void)
@@ -52,31 +49,29 @@ static void test_disabled_no_effect(void)
     setup_acon_status(context);
 
     airConState.afterEngineStartDelay = 99;
-    airConState.waitedAfterCranking = true;
     airConState.isEnabled = false;
     context.control();
 
-    TEST_ASSERT_EQUAL(99, airConState.afterEngineStartDelay);
-    TEST_ASSERT_TRUE(airConState.waitedAfterCranking);    
+    TEST_ASSERT_EQUAL(99, airConState.afterEngineStartDelay);  
 }
 
 static void test_startdelay_counter(void)
 {
     auto context = setup_ac_tune();
+    context.page15.airConCompOnDelay = 0;
     context.initialise();
     setup_acon_status(context);
 
     airConState.afterEngineStartDelay = 0;
-    airConState.waitedAfterCranking = false;
-    for (uint8_t index=airConState.afterEngineStartDelay; index<context.page15.airConAfterStartDelay; ++index)
+    for (uint8_t index=airConState.afterEngineStartDelay; index<context.page15.airConAfterStartDelay-1; ++index)
     {
         context.control();
-        TEST_ASSERT_EQUAL(index+1, airConState.afterEngineStartDelay);
-        TEST_ASSERT_FALSE(airConState.waitedAfterCranking);    
+        TEST_ASSERT_EQUAL(index+1, airConState.afterEngineStartDelay);  
+        TEST_ASSERT_TRUE(airConState.compPin._pin.isPinLow());    
     }
 
     context.control();
-    TEST_ASSERT_TRUE(airConState.waitedAfterCranking);    
+    TEST_ASSERT_TRUE(airConState.compPin._pin.isPinHigh());    
 }
 
 static void test_checkAirConCoolantLockout(void)

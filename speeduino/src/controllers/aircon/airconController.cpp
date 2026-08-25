@@ -212,9 +212,10 @@ void airConControl(statuses &current, const config15 &page15)
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
     // ------------------------------------------------------------------------------------------------------
+    bool waitedAfterCranking = false;
     if (current.rotationStatus==EngineRotationStatus::Running)
     {
-      airConState.nextAfterEngineStartDelay(page15);
+      waitedAfterCranking = airConState.nextAfterEngineStartDelay(page15);
     }
     else
     {
@@ -233,7 +234,7 @@ void airConControl(statuses &current, const config15 &page15)
     // Check the A/C Request Signal (A/C Button)
     // -----------------------------------------
     if( READ_AIRCON_REQUEST(current, page15) == true &&
-        airConState.waitedAfterCranking == true &&
+        waitedAfterCranking == true &&
         current.acStatus.tpsLockoutActive == false &&
         current.acStatus.rpmLockoutActive == false &&
         current.acStatus.cltLockoutActive == false )
