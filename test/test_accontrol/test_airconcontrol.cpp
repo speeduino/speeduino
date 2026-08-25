@@ -16,7 +16,6 @@ static void setup_acon_status(test_context &context)
     context.current.acStatus.tpsLockoutActive = false;
     context.current.acStatus.rpmLockoutActive = false;
 
-    airConState.isEnabled = true;
     airConState.afterEngineStartDelay = context.page15.airConAfterStartDelay+1;
     airConState.tpsLockoutDelay = context.page15.airConTPSCutTime + 1;
     if (context.page15.airConReqPol)
@@ -49,7 +48,6 @@ static void test_disabled_no_effect(void)
     setup_acon_status(context);
 
     airConState.afterEngineStartDelay = 99;
-    airConState.isEnabled = false;
     context.control();
 
     TEST_ASSERT_EQUAL(99, airConState.afterEngineStartDelay);  
@@ -241,9 +239,9 @@ static void test_fanon_when_acon(void)
 void assert_ac_on(const test_context &context)
 {
     TEST_ASSERT_TRUE(context.page15.airConCompPol!=airConState.compPin._pin.isPinHigh());
-    TEST_ASSERT_TRUE(!airConState.standAloneFanIsEnabled || context.page15.airConFanPol==airConState.fanPin._pin.isPinHigh());
+    TEST_ASSERT_TRUE(!airConState.fanPin.isValid() || context.page15.airConFanPol==airConState.fanPin._pin.isPinHigh());
     TEST_ASSERT_TRUE(context.current.acStatus.compressorOn); 
-    TEST_ASSERT_TRUE(!airConState.standAloneFanIsEnabled || context.current.acStatus.fanOn);
+    TEST_ASSERT_TRUE(!airConState.fanPin.isValid() || context.current.acStatus.fanOn);
 }
 
 static void test_start_delay(void)

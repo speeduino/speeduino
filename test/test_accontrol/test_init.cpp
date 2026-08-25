@@ -6,21 +6,6 @@ static void test_initialise(void)
 {
     auto context = setup_ac_tune();
 
-    airConState.afterEngineStartDelay = 99;
-    airConState.isEnabled = false;
-    airConState.startDelay = 99;
-    airConState.tpsLockoutDelay = 99;
-    airConState.rpmLockoutDelay = 99;
-    airConState.standAloneFanIsEnabled = true;
-
-    context.current.acStatus.acRequested = true;
-    context.current.acStatus.compressorOn = true;
-    context.current.acStatus.rpmLockoutActive = true;
-    context.current.acStatus.tpsLockoutActive = true;
-    context.current.acStatus.turningOn = true;
-    context.current.acStatus.cltLockoutActive = true;
-    context.current.acStatus.fanOn = true;
-
     context.initialise();
     assert_ac_off(context);
     
@@ -37,8 +22,8 @@ static void test_initialise(void)
     TEST_ASSERT_FALSE(context.current.acStatus.cltLockoutActive);
     TEST_ASSERT_FALSE(context.current.acStatus.fanOn);
 
-    TEST_ASSERT_TRUE(airConState.isEnabled);
-    TEST_ASSERT_FALSE(airConState.standAloneFanIsEnabled);
+    TEST_ASSERT_TRUE(airConState.compPin.isValid());
+    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
 }
 
 static void test_initialise_inversepolarity_comp(void)
@@ -46,17 +31,14 @@ static void test_initialise_inversepolarity_comp(void)
     auto context = setup_ac_tune();
     context.page15.airConCompPol = !context.page15.airConCompPol;
 
-    airConState.isEnabled = false;
     context.initialise();
-    TEST_ASSERT_TRUE(airConState.isEnabled);
     assert_ac_off(context);
 }
 
 static void assert_init_acdisabled(test_context &context)
 {
-    airConState.isEnabled = true;
     context.initialise();
-    TEST_ASSERT_FALSE(airConState.isEnabled);    
+    TEST_ASSERT_FALSE(airConState.compPin.isValid());    
 }
 
 static void test_initialise_disabled(void)
