@@ -26,7 +26,6 @@ static __attribute__((optimize("Os"))) uint8_t getAirConRequestPinMode(const con
   }
 }
 
-
 static inline bool isCoolantLockoutActive(const statuses &current, const config15 &page15)
 {
   bool lockout = current.acStatus.cltLockoutActive;
@@ -223,10 +222,9 @@ void airConControl(statuses &current, const config15 &page15)
     // ------------------------------------------------------------------------------------------------------
     // Check that the engine has been running past the post-start delay period before enabling the compressor
     // ------------------------------------------------------------------------------------------------------
-    bool waitedAfterCranking = false;
     if (current.rotationStatus==EngineRotationStatus::Running)
     {
-      waitedAfterCranking = airConState.nextAfterEngineStartDelay(page15);
+      (void)airConState.nextAfterEngineStartDelay(page15);
     }
     else
     {
@@ -246,13 +244,13 @@ void airConControl(statuses &current, const config15 &page15)
     // -----------------------------------------
     current.acStatus.acRequested = readRequestPin(page15);
 
-    if(  current.acStatus.acRequested == true &&
-        waitedAfterCranking == true &&
-        !current.acStatus.isLockoutActive())
-    {
-      // Set the flag bit to notify the idle system to idle up & the cooling fan to start (if enabled)
-      current.acStatus.turningOn = true;
+    // Set the flag bit to notify the idle system to idle up & the cooling fan to start (if enabled)
+    current.acStatus.turningOn = current.acStatus.acRequested
+                              && airConState.afterEngineStartDelayExpired(page15)
+                              && !current.acStatus.isLockoutActive();
 
+    if (current.acStatus.turningOn)
+    {
       // Stand-alone fan operation
       airConFanOn(current, page15);
 
@@ -264,7 +262,6 @@ void airConControl(statuses &current, const config15 &page15)
     }
     else
     {
-      current.acStatus.turningOn = false;
       airConFanOff(current, page15);
       airConOff(current, page15);
       airConState.resetStartDelay();

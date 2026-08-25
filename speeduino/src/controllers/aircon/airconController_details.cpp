@@ -10,13 +10,19 @@ bool state_t::nextAfterEngineStartDelay(const config15 &page15)
     {
         ++afterEngineStartDelay;
     }
-    return afterEngineStartDelay >= page15.airConAfterStartDelay;
+    return afterEngineStartDelayExpired(page15);
 }
 
 void state_t::resetAfterEngineStartDelay(void)
 {
     afterEngineStartDelay = 0;
 }
+
+bool state_t::afterEngineStartDelayExpired(const config15 &page15) const
+{
+    return afterEngineStartDelay >= page15.airConAfterStartDelay;
+}
+
 
 bool state_t::nextStartDelay(const config15 &page15)
 {

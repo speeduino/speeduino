@@ -21,6 +21,7 @@ namespace details {
 
         bool nextAfterEngineStartDelay(const config15 &page15);
         void resetAfterEngineStartDelay(void);
+        bool afterEngineStartDelayExpired(const config15 &page15) const;
 
         bool nextStartDelay(const config15 &page15);
         void resetStartDelay(void);
