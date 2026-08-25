@@ -194,15 +194,10 @@ void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const c
   }
 }
 
-static bool READ_AIRCON_REQUEST(statuses &current, const config15 &page15)
+static bool readRequestPin(const config15 &page15)
 {
-  if(airConState.isEnabled == false)
-  {
-    return false;
-  }
   // Read the status of the A/C request pin (A/C button), taking into account the pin's polarity
-  current.acStatus.acRequested = airConState.reqPin.isPinHigh()==page15.airConReqPol;
-  return current.acStatus.acRequested;
+  return airConState.reqPin.isPinHigh()==page15.airConReqPol;
 }
 
 void airConControl(statuses &current, const config15 &page15)
@@ -233,7 +228,8 @@ void airConControl(statuses &current, const config15 &page15)
     // -----------------------------------------
     // Check the A/C Request Signal (A/C Button)
     // -----------------------------------------
-    if( READ_AIRCON_REQUEST(current, page15) == true &&
+    current.acStatus.acRequested = readRequestPin(page15);
+    if(  current.acStatus.acRequested == true &&
         waitedAfterCranking == true &&
         current.acStatus.tpsLockoutActive == false &&
         current.acStatus.rpmLockoutActive == false &&
