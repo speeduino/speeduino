@@ -87,6 +87,14 @@ struct airConStatus_t
   bool turningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
   bool cltLockoutActive : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
   bool fanOn : 1;  ///< Indicates whether the A/C fan is running
+
+  bool isLockoutActive(void) const
+  {
+    return rpmLockoutActive
+        || tpsLockoutActive
+        || cltLockoutActive
+        ;
+  }
 };
 
 /** @brief The status struct with current values for all 'live' variables.
