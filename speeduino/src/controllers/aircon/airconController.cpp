@@ -181,28 +181,24 @@ void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const c
   airConState = airConController::details::state_t();
   current.acStatus = airConStatus_t();
 
-  if( (page15.airConEnable) &&
+  airConState.isEnabled = (page15.airConEnable) &&
       !pinIsReserved(pins.pinAirConRequest) &&
       !pinIsReserved(pins.pinAirConComp) &&
-      !pinIsOutput(pins.pinAirConRequest))
+      !pinIsOutput(pins.pinAirConRequest);
+      
+  if(airConState.isEnabled)
   {
+    airConState.standAloneFanIsEnabled = (page15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan));
+
     airConState.reqPin.setPin(pins.pinAirConRequest, getAirConRequestPinMode(page15));
     airConState.compPin.setPin(pins.pinAirConComp, OUTPUT);
-
-    airConOff(current, page15);
-
-    if((page15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan)))
+    if(airConState.standAloneFanIsEnabled)
     {
       airConState.fanPin.setPin(pins.pinAirConFan, OUTPUT);
-      airConFanOff(current, page15);
-      airConState.standAloneFanIsEnabled = true;
-    }
-    else
-    {
-      airConState.standAloneFanIsEnabled = false;
     }
 
-    airConState.isEnabled = true;
+    airConOff(current, page15);
+    airConFanOff(current, page15);
   }
 }
 
