@@ -4,22 +4,18 @@ namespace airConController {
 
 namespace details {
 
-void state_t::nextAfterEngineStartDelay(const config15 &page15)
+bool state_t::nextAfterEngineStartDelay(const config15 &page15)
 {
-    if(afterEngineStartDelay >= page15.airConAfterStartDelay)
+    if(afterEngineStartDelay < page15.airConAfterStartDelay)
     {
-        waitedAfterCranking = true;
+        ++afterEngineStartDelay;
     }
-    else
-    {
-        afterEngineStartDelay++;
-    }
+    return afterEngineStartDelay >= page15.airConAfterStartDelay;
 }
 
 void state_t::resetAfterEngineStartDelay(void)
 {
     afterEngineStartDelay = 0;
-    waitedAfterCranking = false;
 }
 
 bool state_t::nextStartDelay(const config15 &page15)

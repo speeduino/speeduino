@@ -7,7 +7,6 @@ static void test_initialise(void)
     auto context = setup_ac_tune();
 
     airConState.afterEngineStartDelay = 99;
-    airConState.waitedAfterCranking = true;
     airConState.isEnabled = false;
     airConState.startDelay = 99;
     airConState.tpsLockoutDelay = 99;
@@ -26,9 +25,6 @@ static void test_initialise(void)
     assert_ac_off(context);
     
     TEST_ASSERT_EQUAL(0, airConState.afterEngineStartDelay);
-
-    TEST_ASSERT_FALSE(airConState.waitedAfterCranking);
-
     TEST_ASSERT_EQUAL(0, airConState.startDelay);
     TEST_ASSERT_EQUAL(0, airConState.tpsLockoutDelay);
     TEST_ASSERT_EQUAL(0, airConState.rpmLockoutDelay);
