@@ -61,24 +61,20 @@ static inline bool isTPSLockoutActive(const statuses &current, const config15 &p
   {
     // A/C is cut off due to high TPS
     lockout = true;
-    airConState.tpsLockoutDelay = 0;
+    airConState.resetTpsLockoutDelay();
   }
   else if ( (current.acStatus.tpsLockoutActive == true) &&
             (current.TPS <= page15.airConTPSCut) )
   {
     // No need for hysteresis as we have the stand-down delay period after the high TPS condition goes away.
-    if (airConState.tpsLockoutDelay >= page15.airConTPSCutTime)
+    if (airConState.nextTpsLockoutDelay(page15))
     {
       lockout = false;
-    }
-    else
-    {
-      airConState.tpsLockoutDelay++;
     }
   }
   else
   {
-    airConState.tpsLockoutDelay = 0;
+    airConState.resetTpsLockoutDelay();
   }
 
   return lockout;
@@ -96,24 +92,20 @@ static inline bool isRPMLockoutActive(const statuses &current, const config15 &p
   {
     // A/C is cut off due to high/low RPM
     lockout = true;
-    airConState.rpmLockoutDelay = 0;
+    airConState.resetRpmLockoutDelay();
   }
   else if ( (current.RPM >= RPM_MEDIUM.toUser(page15.airConMinRPMdiv10)) &&
             (current.RPMdiv100 <= page15.airConMaxRPMdiv100) )
   {
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
-    if (airConState.rpmLockoutDelay >= page15.airConRPMCutTime)
+    if (airConState.nextRpmLockoutDelay(page15))
     {
       lockout = false;
-    }
-    else
-    {
-      airConState.rpmLockoutDelay++;
     }
   }
   else
   {
-    airConState.rpmLockoutDelay = 0;
+    airConState.resetRpmLockoutDelay();
   }
 
   return lockout;
@@ -222,19 +214,11 @@ void airConControl(statuses &current, const config15 &page15)
     // ------------------------------------------------------------------------------------------------------
     if (current.rotationStatus==EngineRotationStatus::Running)
     {
-      if(airConState.afterEngineStartDelay >= page15.airConAfterStartDelay)
-      {
-        airConState.waitedAfterCranking = true;
-      }
-      else
-      {
-        airConState.afterEngineStartDelay++;
-      }
+      airConState.nextAfterEngineStartDelay(page15);
     }
     else
     {
-      airConState.afterEngineStartDelay = 0;
-      airConState.waitedAfterCranking = false;
+      airConState.resetAfterEngineStartDelay();
     }
     
     // --------------------------------------------------------------------
@@ -264,13 +248,9 @@ void airConControl(statuses &current, const config15 &page15)
       }
 
       // Start the A/C compressor after the "Compressor On" delay period
-      if(airConState.startDelay >= page15.airConCompOnDelay)
+      if(airConState.nextStartDelay(page15))
       {
         airConOn(current, page15);
-      }
-      else
-      {
-        airConState.startDelay++;
       }
     }
     else
@@ -284,7 +264,7 @@ void airConControl(statuses &current, const config15 &page15)
       }
 
       airConOff(current, page15);
-      airConState.startDelay = 0;
+      airConState.resetStartDelay();
     }
   }
 }
