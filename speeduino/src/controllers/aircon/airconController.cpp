@@ -110,21 +110,28 @@ static inline bool isRPMLockoutActive(const statuses &current, const config15 &p
   return lockout;
 }
 
+static bool targetPinHigh(bool pinOnOrOff, bool isPolarityInverted)
+{
+  return (pinOnOrOff != isPolarityInverted);
+}
+
+static void setPinOnOrOff(outputPin_t &pin, bool pinOnOrOff, bool isPolarityInverted)
+{
+  if (targetPinHigh(pinOnOrOff, isPolarityInverted))
+  {
+    pin.setPinHigh();
+  }
+  else
+  {
+    pin.setPinLow();
+  }
+}
 TESTABLE_STATIC void airConOn(statuses &current, const config15 &page15)
 {
   if (airConState.compPin.isValid())
   {
-    ATOMIC() { 
-      if (page15.airConCompPol)
-      {
-        airConState.compPin.setPinLow();
-      }
-      else
-      {
-        airConState.compPin.setPinHigh();
-      }
-      current.acStatus.compressorOn = true; 
-    }  
+    setPinOnOrOff(airConState.compPin, true, page15.airConCompPol);
+    current.acStatus.compressorOn = true; 
   }
 }
 
@@ -132,17 +139,8 @@ TESTABLE_STATIC void airConOff(statuses &current, const config15 &page15)
 {
   if (airConState.compPin.isValid())
   {
-    ATOMIC() { 
-      if (page15.airConCompPol)
-      {
-        airConState.compPin.setPinHigh();
-      }
-      else
-      {
-        airConState.compPin.setPinLow();
-      }
-      current.acStatus.compressorOn = false; 
-    }
+    setPinOnOrOff(airConState.compPin, false, page15.airConCompPol);
+    current.acStatus.compressorOn = false; 
   }
 }
 
@@ -150,34 +148,17 @@ static void airConFanOn(statuses &current, const config15 &page15)
 {
   if (airConState.fanPin.isValid())
   {
-    ATOMIC() { 
-      if (page15.airConFanPol)
-      {
-        airConState.fanPin.setPinLow();
-      }
-      else
-      {
-        airConState.fanPin.setPinHigh();
-      }
-      current.acStatus.fanOn = true; 
-    }
+    setPinOnOrOff(airConState.fanPin, true, page15.airConFanPol);
+    current.acStatus.fanOn = true; 
   }
 }
+
 static void airConFanOff(statuses &current, const config15 &page15)
 {
   if (airConState.fanPin.isValid())
   {
-    ATOMIC() { 
-      if (page15.airConFanPol)
-      {
-        airConState.fanPin.setPinHigh();
-      }
-      else
-      {
-        airConState.fanPin.setPinLow();
-      }
-      current.acStatus.fanOn = false; 
-    }
+    setPinOnOrOff(airConState.fanPin, false, page15.airConFanPol);
+    current.acStatus.fanOn = false; 
   }
 }
 
