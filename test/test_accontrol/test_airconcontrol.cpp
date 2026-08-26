@@ -233,13 +233,19 @@ static void test_ac_request_pin_inverted(void)
 
 static void test_fanon_when_acon(void)
 {
-    TEST_IGNORE_MESSAGE("Fill in when bug is fixed");
+    auto context = setup_ac_tune();
+    context.initialise();
+
+    setup_acon_status(context);
+    context.control();
+    TEST_ASSERT_TRUE(context.current.acStatus.fanOn);
+    TEST_ASSERT_TRUE(airConState.fanPin._pin.isPinHigh());
 }
 
 void assert_ac_on(const test_context &context)
 {
     TEST_ASSERT_TRUE(context.page15.airConCompPol!=airConState.compPin._pin.isPinHigh());
-    TEST_ASSERT_TRUE(!airConState.fanPin.isValid() || context.page15.airConFanPol==airConState.fanPin._pin.isPinHigh());
+    TEST_ASSERT_TRUE(!airConState.fanPin.isValid() || context.page15.airConFanPol!=airConState.fanPin._pin.isPinHigh());
     TEST_ASSERT_TRUE(context.current.acStatus.compressorOn); 
     TEST_ASSERT_TRUE(!airConState.fanPin.isValid() || context.current.acStatus.fanOn);
 }
@@ -255,7 +261,7 @@ static void test_start_delay(void)
     {
         context.control();
         TEST_ASSERT_EQUAL(index+1, airConState.startDelay);
-        assert_ac_off(context);
+        assert_ac_off_fan_on(context);
         TEST_ASSERT_TRUE(context.current.acStatus.turningOn); 
     }
 

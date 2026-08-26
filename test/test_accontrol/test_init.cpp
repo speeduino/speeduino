@@ -23,7 +23,7 @@ static void test_initialise(void)
     TEST_ASSERT_FALSE(context.current.acStatus.fanOn);
 
     TEST_ASSERT_TRUE(airConState.compPin.isValid());
-    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
+    TEST_ASSERT_TRUE(airConState.fanPin.isValid());
 }
 
 static void test_initialise_inversepolarity_comp(void)
@@ -39,6 +39,7 @@ static void assert_init_acdisabled(test_context &context)
 {
     context.initialise();
     TEST_ASSERT_FALSE(airConState.compPin.isValid());    
+    TEST_ASSERT_FALSE(airConState.fanPin.isValid());    
 }
 
 static void test_initialise_disabled(void)
@@ -67,7 +68,19 @@ static void test_initialise_badreqin(void)
 
 static void test_initialize_fan(void)
 {
-    TEST_IGNORE_MESSAGE("Fill in when bug is fixed");
+    auto context = setup_ac_tune();
+    context.initialise();
+    TEST_ASSERT_TRUE(airConState.fanPin.isValid());
+
+    context = setup_ac_tune();
+    context.page15.airConFanEnabled = false;
+    context.initialise();
+    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
+
+    context = setup_ac_tune();
+    context.pins.pinAirConFan = NOT_A_PIN;
+    context.initialise();
+    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
 }
 
 void testAcInit(void)

@@ -25,4 +25,5 @@ struct test_context
 };
 
 void assert_ac_off(const test_context &context);
+void assert_ac_off_fan_on(const test_context &context);
 test_context setup_ac_tune(void);
