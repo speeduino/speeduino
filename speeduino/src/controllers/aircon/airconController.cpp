@@ -93,18 +93,13 @@ static inline bool isRPMLockoutActive(const statuses &current, const config15 &p
     lockout = true;
     airConState.resetRpmLockoutDelay();
   }
-  else if ( (current.RPM >= RPM_MEDIUM.toUser(page15.airConMinRPMdiv10)) &&
-            (current.RPMdiv100 <= page15.airConMaxRPMdiv100) )
+  else
   {
     // No need to add hysteresis as we have the stand-down delay period after the high/low RPM condition goes away.
     if (airConState.nextRpmLockoutDelay(page15))
     {
       lockout = false;
     }
-  }
-  else
-  {
-    airConState.resetRpmLockoutDelay();
   }
 
   return lockout;
