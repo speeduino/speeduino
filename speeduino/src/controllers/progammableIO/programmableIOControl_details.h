@@ -86,7 +86,7 @@ struct channel_state_t
   : isRuleActive(false), isOutputActive(false), _index(0U)
   {}
 
-  void initialize(const config13& page13, uint8_t index);
+  void initialize(config13& page13, uint8_t index);
 
   bool isPhysicalPin(void) const {
     return _pin < 128U;

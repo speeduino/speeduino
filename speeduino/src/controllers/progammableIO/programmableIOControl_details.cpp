@@ -13,13 +13,19 @@ static uint8_t validatePin(uint8_t pin)
   return pin;
 }
 
-void __attribute__((optimize("Os"))) channel_state_t::initialize(const config13& page13, uint8_t index) 
+void __attribute__((optimize("Os"))) channel_state_t::initialize(config13& page13, uint8_t index) 
 {
   _index = index;
   isRuleActive = false;
   activationDelayCount = 0;
   outputDelayCount = 0;
-  _pin = validatePin(page13.outputPin[index]);
+  // A physical output pin can only be driven by one function. If this rule's pin is
+  // already claimed elsewhere, clear it in the tune (disabling the rule) rather than
+  // letting the rule silently never run. Clearing the pin changes the page CRC, so
+  // TunerStudio detects the conflict and surfaces it to the user. Virtual/cascade
+  // pins (>=128) and already-disabled slots (0) are left untouched.
+  page13.outputPin[index] = _pin = validatePin(page13.outputPin[index]);
+
   isOutputInverted = BIT_CHECK(page13.outputInverted, index);
   isOutputActive = isPinValid() && isOutputInverted;
         
@@ -32,11 +38,14 @@ void __attribute__((optimize("Os"))) channel_state_t::initialize(const config13&
 
 void channel_state_t::updateStatus(bool ruleActive) noexcept
 {
-  isOutputActive = isOutputInverted ? !ruleActive : ruleActive;
-  if (isPhysicalPin()) { 
-    digitalWrite(_pin, isOutputActive); 
-  } else {
-    isRuleActive = isOutputActive;
+  if (isPinValid())
+  {
+    isOutputActive = isOutputInverted ? !ruleActive : ruleActive;
+    if (isPhysicalPin()) { 
+      digitalWrite(_pin, isOutputActive); 
+    } else {
+      isRuleActive = isOutputActive;
+    }
   }
 }
 

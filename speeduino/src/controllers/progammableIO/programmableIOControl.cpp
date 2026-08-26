@@ -18,13 +18,6 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(config13& page13)
 {
   for (uint8_t y = 0; y < _countof(state_t::channels); ++y)
   {
-    // A physical output pin can only be driven by one function. If this rule's pin is
-    // already claimed elsewhere, clear it in the tune (disabling the rule) rather than
-    // letting the rule silently never run. Clearing the pin changes the page CRC, so
-    // TunerStudio detects the conflict and surfaces it to the user. Virtual/cascade
-    // pins (>=128) and already-disabled slots (0) are left untouched.
-    const uint8_t outputPin = page13.outputPin[y];
-    if ((outputPin > 0U) && (outputPin < 128U) && pinIsUsed(outputPin)) { page13.outputPin[y] = 0U; }
     state.channels[y].initialize(page13, y);
   }
 }
