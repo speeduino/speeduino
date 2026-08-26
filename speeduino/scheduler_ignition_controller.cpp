@@ -464,14 +464,45 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
   }
 }
 
+TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t validateSparkMode(uint8_t mode, const config2 &page2)
+{
+  // Sequential only applies if enough channels.
+  if (mode == IGN_MODE_SEQUENTIAL) {
+    // If those conditions aren't met, revert to wasted spark.
+    if (page2.nCylinders>IGN_CHANNELS) {
+      mode = IGN_MODE_WASTED;
+    }
+  }
 
-void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, const config2 &page2, config4 &page4, const config10 &page10, const pinNumbers_t &pins)
+  return mode;
+}
+
+TESTABLE_STATIC __attribute__((optimize("Os"))) void validateIgnitionSetup(config2 &page2, config4 &page4, config13 &page13)
+{
+  page4.sparkMode = validateSparkMode(page4.sparkMode, page2);
+
+  // Oddfire only supported on up to number of oddfire angles
+  if ((page2.engineType == ODD_FIRE) && (page2.nCylinders>_countof(page2.oddfire)+1U))
+  {
+    page2.engineType = EVEN_FIRE;
+  }
+
+  // Ignition trims are only applied in sequential mode.
+  if (page4.sparkMode!=IGN_MODE_SEQUENTIAL)
+  {
+    std::fill(page13.ignTrim, page13.ignTrim+_countof(page13.ignTrim), 0);
+  }
+}
+
+void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, config2 &page2, config4 &page4, const config10 &page10, config13 &page13, const pinNumbers_t &pins)
 {
   initialiseIgnitionIO(page4, pins);
-
   stopAllCoilsCharging();
 
   resetIgnitionSchedulers();
+
+  validateIgnitionSetup(page2, page4, page13);
+
   initScheduleAngles(current, page2, page4);
   setCallbacks(page4.sparkMode, page2.nCylinders, page10.rotaryType);
 }

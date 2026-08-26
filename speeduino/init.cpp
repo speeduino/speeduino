@@ -166,7 +166,7 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinNumbers.pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, pinNumbers);
+    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, configPage13, pinNumbers);
     initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage6, configPage10, pinNumbers);
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);
