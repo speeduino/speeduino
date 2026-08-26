@@ -39,7 +39,19 @@ static void assert_init_acdisabled(test_context &context)
 {
     context.initialise();
     TEST_ASSERT_FALSE(airConState.compPin.isValid());    
-    TEST_ASSERT_FALSE(airConState.fanPin.isValid());    
+    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
+
+    auto oldStatus = context.current.acStatus;
+    context.control(); // Should do nothing
+    TEST_ASSERT_TRUE(0==memcmp(&oldStatus, &context.current.acStatus, sizeof(oldStatus)));
+
+    context.current.acStatus.compressorOn = false;
+    airConOn(context.current, context.page15);
+    TEST_ASSERT_FALSE(context.current.acStatus.compressorOn);
+    
+    context.current.acStatus.compressorOn = true;
+    airConOff(context.current, context.page15);
+    TEST_ASSERT_TRUE(context.current.acStatus.compressorOn);
 }
 
 static void test_initialise_disabled(void)
@@ -66,21 +78,44 @@ static void test_initialise_badreqin(void)
     assert_init_acdisabled(context);
 }
 
+static void assert_fan_on(test_context &context)
+{
+    TEST_ASSERT_TRUE(airConState.fanPin.isValid());
+    context.current.acStatus.fanOn = false;
+    airConFanOn(context.current, context.page15);
+    TEST_ASSERT_TRUE(context.current.acStatus.fanOn);
+    airConFanOff(context.current, context.page15);
+    TEST_ASSERT_FALSE(context.current.acStatus.fanOn);
+}
+
+static void assert_fan_off(test_context &context)
+{
+    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
+    
+    context.current.acStatus.fanOn = false;
+    airConFanOn(context.current, context.page15);
+    TEST_ASSERT_FALSE(context.current.acStatus.fanOn);
+    
+    context.current.acStatus.fanOn = true;
+    airConFanOff(context.current, context.page15);
+    TEST_ASSERT_TRUE(context.current.acStatus.fanOn);
+}
+
 static void test_initialize_fan(void)
 {
     auto context = setup_ac_tune();
     context.initialise();
-    TEST_ASSERT_TRUE(airConState.fanPin.isValid());
+    assert_fan_on(context);
 
     context = setup_ac_tune();
     context.page15.airConFanEnabled = false;
     context.initialise();
-    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
+    assert_fan_off(context);
 
     context = setup_ac_tune();
     context.pins.pinAirConFan = NOT_A_PIN;
     context.initialise();
-    TEST_ASSERT_FALSE(airConState.fanPin.isValid());
+    assert_fan_off(context);
 }
 
 void testAcInit(void)

@@ -3,9 +3,6 @@
 #include "shared.h"
 #include "units.h"
 
-extern void airConOn(statuses &current, const config15 &page15);
-extern void airConOff(statuses &current, const config15 &page15);
-
 static void setup_acon_status(test_context &context)
 {
     context.current.rotationStatus = EngineRotationStatus::Running;
