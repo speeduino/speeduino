@@ -144,7 +144,7 @@ TESTABLE_STATIC void airConOff(statuses &current, const config15 &page15)
   }
 }
 
-static void airConFanOn(statuses &current, const config15 &page15)
+TESTABLE_STATIC void airConFanOn(statuses &current, const config15 &page15)
 {
   if (airConState.fanPin.isValid())
   {
@@ -153,7 +153,7 @@ static void airConFanOn(statuses &current, const config15 &page15)
   }
 }
 
-static void airConFanOff(statuses &current, const config15 &page15)
+TESTABLE_STATIC void airConFanOff(statuses &current, const config15 &page15)
 {
   if (airConState.fanPin.isValid())
   {

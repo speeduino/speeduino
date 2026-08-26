@@ -6,6 +6,10 @@
 #include "src/pins/inputPin.h"
 
 extern airConController::details::state_t airConState;
+extern void airConOn(statuses &current, const config15 &page15);
+extern void airConOff(statuses &current, const config15 &page15);
+extern void airConFanOn(statuses &current, const config15 &page15);
+extern void airConFanOff(statuses &current, const config15 &page15);
 
 struct test_context
 {
