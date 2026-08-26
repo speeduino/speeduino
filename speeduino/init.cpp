@@ -25,10 +25,6 @@
 #endif
 #include "fuel_calcs.h"
 #include "decoder_init.h"
-#include "scheduledIO_ign.h"
-#include "scheduledIO_inj.h"
-#include "scheduledIO_direct_ign.h"
-#include "scheduledIO_direct_inj.h"
 #include "src/pins/pinMapping.h"
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
