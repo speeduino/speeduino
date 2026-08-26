@@ -6,7 +6,7 @@
 /** @brief Initialise the programmable I/O system.
  * @param page13 The tune
  */
-void initialiseProgrammableIO(const config13& page13);
+void initialiseProgrammableIO(config13& page13);
 
 /** @brief Control function for the programmable I/O system.
  * Should be called regularly (e.g. in main loop) to check the rules and update outputs accordingly.
