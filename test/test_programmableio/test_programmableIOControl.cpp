@@ -70,7 +70,7 @@ static void test_ProgrammableIOGetData_special_indices(void)
     runSecsX10 = 1000U;
     TEST_ASSERT_EQUAL_INT16(1000, programmableIOGetData(239U, mockGetLogEntry));
 
-    runSecsX10 = INT16_MAX + 999;
+    runSecsX10 = (uint32_t)INT16_MAX + 999;
     TEST_ASSERT_EQUAL_INT16(INT16_MAX, programmableIOGetData(239U, mockGetLogEntry));
 
     static const byte logData[] = { 0, 0, 0, 0, 0, 0, 12, 18 }; // Little-endian representation of 0x1234
