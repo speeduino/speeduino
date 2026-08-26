@@ -228,8 +228,13 @@ static void run_4_cylinder_4stroke_tests(void)
 
 static void assert_cylinder5_stroke4_seq_even(const statuses &current)
 {
+#if IGN_CHANNELS>=5
   const uint16_t angle[] = {0,144,288,432,576,0,0,0};
   assert_ignition_schedules(720U, 5U, angle, current);
+#else
+  const uint16_t angle[] = {0,72,144,216,288,0,0,0};
+  assert_ignition_schedules(360U, 5U, angle, current);
+#endif
 }
 
 static void cylinder5_stroke4_seq_even(void)
