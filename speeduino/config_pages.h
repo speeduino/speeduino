@@ -247,9 +247,7 @@ struct config2 : public config_page_t {
   uint16_t mapMax;
   byte fpPrime; ///< Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;  ///< Stoichiometric ratio (x10, so e.g. 14.7 => 147)
-  uint16_t oddfire2; ///< The ATDC angle of channel 2 for oddfire
-  uint16_t oddfire3; ///< The ATDC angle of channel 3 for oddfire
-  uint16_t oddfire4; ///< The ATDC angle of channel 4 for oddfire
+  uint16_t oddfire[3]; ///< The ATDC angle of channel 2, 3 & 4 for oddfire
 
   byte idleUpPin : 6;
   byte idleUpPolarity : 1;

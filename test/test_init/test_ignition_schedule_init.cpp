@@ -4,7 +4,7 @@
 #include "init.h"
 #include "../test_utils.h"
 #include "storage.h"
-#include "../test_schedules/channel_test_helpers.h"
+#include "../channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 #include "../fake_decoder_status.h"
 #include "decoder_builder.h"
@@ -113,9 +113,9 @@ static void cylinder2_stroke4_seq_odd(void)
 {
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = ODD_FIRE;
-  configPage2.oddfire2 = 13;
-  configPage2.oddfire3 = 111;
-  configPage2.oddfire4 = 217;
+  configPage2.oddfire[0] = 13;
+  configPage2.oddfire[1] = 111;
+  configPage2.oddfire[2] = 217;
 
   initialiseAll(); //Run the main initialise function
   const uint16_t angle[] = {0,13,0,0,0,0,0,0};
@@ -160,9 +160,9 @@ static void cylinder3_stroke4_wasted_odd(void)
 {
   configPage4.sparkMode = IGN_MODE_WASTED;
   configPage2.engineType = ODD_FIRE;
-  configPage2.oddfire2 = 13;
-  configPage2.oddfire3 = 111;
-  configPage2.oddfire4 = 217;
+  configPage2.oddfire[0] = 13;
+  configPage2.oddfire[1] = 111;
+  configPage2.oddfire[2] = 217;
   initialiseAll(); //Run the main initialise function
   const uint16_t angle[] = {0,13,111,0,0,0,0,0};
   assert_ignition_schedules(360U, 3U, angle, currentStatus);
@@ -206,9 +206,9 @@ static void cylinder4_stroke4_seq_odd(void)
 {
   configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
   configPage2.engineType = ODD_FIRE;
-  configPage2.oddfire2 = 13;
-  configPage2.oddfire3 = 111;
-  configPage2.oddfire4 = 217;
+  configPage2.oddfire[0] = 13;
+  configPage2.oddfire[1] = 111;
+  configPage2.oddfire[2] = 217;
   initialiseAll(); //Run the main initialise function
   const uint16_t angle[] = {0,13,111,217,0,0,0,0};
   assert_ignition_schedules(360U, 4U, angle, currentStatus);

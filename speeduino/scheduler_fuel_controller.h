@@ -51,7 +51,7 @@ uint16_t setFuelChannelSchedules(const statuses &current);
  * @param page6 Tune settings
  * @param current Current system state
  */
-void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, statuses &current);
+void applyPwToInjectorChannels(const pulseWidths &pulse_widths, const config2 &page2, const config4 &page4, const config6 &page6, const config10 &page10, statuses &current);
 
 /** @brief Start the timers that drive schedulers */
 void startFuelSchedulers(void);
@@ -63,7 +63,7 @@ void stopFuelSchedulers(void);
 void beginInjectorPriming(const statuses &current, const config4 &page4);
 
 /** @brief Initialise this module */
-void initialiseFuelSchedules(statuses &current, const config2 &page2, const config4 &page4, const config10 &page10, const pinNumbers_t &pins);
+void initialiseFuelSchedules(statuses &current, config2 &page2, const config4 &page4, config6 &page6, config10 &page10, const pinNumbers_t &pins);
 
 /** @brief Utility function to close all injectors */
 void closeAllInjectors(void);
