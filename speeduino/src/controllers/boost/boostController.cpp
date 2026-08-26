@@ -48,7 +48,7 @@ static uint16_t getBoostDuty(const statuses &current, const config2 &page2, cons
   bool usingExternalVss = isExternalVssMode(page2);
   if( (page9.boostByGearEnabled == BOOST_BY_GEAR_PERCENT) && usingExternalVss )
   {
-    duty = ( ((uint16_t)getBoostByGearFactor(current, page9) * (uint16_t)get3DTableValue(&boostTable, (current.TPS * 2U), current.RPM))  ) << 2;
+    duty = ((uint16_t)getBoostByGearFactor(current, page9) * (uint16_t)get3DTableValue(&boostTable, (current.TPS * 2U), current.RPM)) << 2;
   }
   else if( (page9.boostByGearEnabled == BOOST_BY_GEAR_CONSTANT) && usingExternalVss) 
   {
@@ -160,7 +160,11 @@ void boostControl(statuses &current, const config2 &page2, const config4 &page4,
         //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
         current.boostDuty = page15.boostDCWhenDisabled*100;
       } //MAP above boost + hyster
-    } //Open / Cloosed loop   
+    } //Open / Cloosed loop
+    else
+    {
+      // Unknown boost type
+    } 
   }
   else { // Disable timer channel and zero the flex boost correction status
     boostPID.initialize(current.MAP); //This resets the ITerm value to prevent rubber banding
