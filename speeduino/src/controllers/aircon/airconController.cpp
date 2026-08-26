@@ -180,7 +180,7 @@ void __attribute__((optimize("Os"))) initialiseAirCon(statuses &current, const c
   {
     airConState.reqPin.setPin(pins.pinAirConRequest, getAirConRequestPinMode(page15));
     airConState.compPin.setPin(pins.pinAirConComp, OUTPUT);
-    if ((page15.airConFanEnabled) && (pinIsReserved(pins.pinAirConFan)))
+    if ((page15.airConFanEnabled) && (!pinIsReserved(pins.pinAirConFan)))
     {
       airConState.fanPin.setPin(pins.pinAirConFan, OUTPUT);
     }
