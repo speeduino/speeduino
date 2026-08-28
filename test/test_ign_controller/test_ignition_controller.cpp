@@ -10,6 +10,7 @@ static void test_validateSparkMode(void)
 {
     config2 page2 = {};
     page2.nCylinders = 1;
+    page2.strokes = FOUR_STROKE;
 
     TEST_ASSERT_EQUAL(IGN_MODE_WASTED, validateSparkMode(IGN_MODE_WASTED, page2));
     TEST_ASSERT_EQUAL(IGN_MODE_SINGLE, validateSparkMode(IGN_MODE_SINGLE, page2));
@@ -17,7 +18,14 @@ static void test_validateSparkMode(void)
     TEST_ASSERT_EQUAL(IGN_MODE_SEQUENTIAL, validateSparkMode(IGN_MODE_SEQUENTIAL, page2));
     TEST_ASSERT_EQUAL(IGN_MODE_ROTARY, validateSparkMode(IGN_MODE_ROTARY, page2));
 
+    page2 = {};
     page2.nCylinders = IGN_CHANNELS+1;
+    page2.strokes = FOUR_STROKE;
+    TEST_ASSERT_EQUAL(IGN_MODE_WASTED, validateSparkMode(IGN_MODE_SEQUENTIAL, page2));
+
+    page2 = {};
+    page2.nCylinders = 1;
+    page2.strokes = TWO_STROKE;
     TEST_ASSERT_EQUAL(IGN_MODE_WASTED, validateSparkMode(IGN_MODE_SEQUENTIAL, page2));
 }
 

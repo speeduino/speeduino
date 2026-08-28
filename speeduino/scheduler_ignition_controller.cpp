@@ -323,7 +323,7 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
         ignitionSchedule2.channelDegrees = 180;
 #endif
 
-        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page2.strokes == FOUR_STROKE) )
+        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) )
         {
 #if IGN_CHANNELS >= 3
           ignitionSchedule3.channelDegrees = 360;
@@ -450,7 +450,7 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t validateSparkMode(uint8_
   // Sequential only applies if enough channels.
   if (mode == IGN_MODE_SEQUENTIAL) {
     // If those conditions aren't met, revert to wasted spark.
-    if (page2.nCylinders>IGN_CHANNELS) {
+    if ((page2.nCylinders>IGN_CHANNELS) || (page2.strokes!=FOUR_STROKE)) {
       mode = IGN_MODE_WASTED;
     }
   }
@@ -484,8 +484,7 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateIgnitionSetup(confi
 
 static inline bool isSequential720(const config2 &page2, const config4 &page4)
 {
-  return (page2.strokes == FOUR_STROKE)
-      && (page4.sparkMode == IGN_MODE_SEQUENTIAL)
+  return (page4.sparkMode == IGN_MODE_SEQUENTIAL)
       && (
         //Sequential ignition works identically on a 1-/2-cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
         (page2.nCylinders==1U) || (page2.nCylinders==2U)
