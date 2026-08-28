@@ -486,8 +486,10 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateIgnitionSetup(confi
   {
     // Force Going Low ignition mode (Going high is never used for rotary)
     page4.IgInv = GOING_LOW; 
-    // Rotary must be 4 stroke!
+    // Rotary must be 4 stroke...
     page2.strokes = FOUR_STROKE;
+    // ...even fire.
+    page2.engineType = EVEN_FIRE;
   }
 }
 

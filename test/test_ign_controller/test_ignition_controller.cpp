@@ -74,9 +74,11 @@ static void test_validateIgnitionSetup_rotary(void)
     page4.sparkMode = IGN_MODE_ROTARY;
     page4.IgInv = GOING_HIGH;
     page2.strokes = TWO_STROKE;
+    page2.engineType = ODD_FIRE;
     validateIgnitionSetup(page2, page4, page13);
     TEST_ASSERT_EQUAL(GOING_LOW, page4.IgInv);
     TEST_ASSERT_EQUAL(FOUR_STROKE, page2.strokes);
+    TEST_ASSERT_EQUAL(EVEN_FIRE, page2.engineType);
 
     page2.nCylinders = 5U;
     validateIgnitionSetup(page2, page4, page13);
