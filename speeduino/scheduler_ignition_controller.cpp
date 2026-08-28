@@ -267,12 +267,10 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
   switch (page2.nCylinders) {
   case 1:
       ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs = 1;
       break;
 
   case 2:
       ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs = 2;
 #if IGN_CHANNELS >= 2
       if (page2.engineType == EVEN_FIRE ) { ignitionSchedule2.channelDegrees = 180; }
       else { ignitionSchedule2.channelDegrees = page2.oddfire[0]; }
@@ -281,7 +279,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 
   case 3:
       ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs= 3;
       if (page2.engineType == EVEN_FIRE )
       {
         //Sequential and Single channel modes both run over 720 crank degrees, but only on 4 stroke engines.
@@ -316,7 +313,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
       break;
   case 4:
       ignitionSchedule1.channelDegrees = 0;
-      current.maxIgnOutputs = 2; //Default value for 4 cylinder, may be changed below
       if (page2.engineType == EVEN_FIRE )
       {
 #if IGN_CHANNELS >= 2
@@ -331,7 +327,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #if IGN_CHANNELS >= 4
           ignitionSchedule4.channelDegrees = 540;
 #endif
-          current.maxIgnOutputs= 4;
         }
         if(page4.sparkMode == IGN_MODE_ROTARY)
         {
@@ -342,7 +337,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #if IGN_CHANNELS >= 4
           ignitionSchedule4.channelDegrees = 180;
 #endif
-          current.maxIgnOutputs= 4;
         }
       }
       else
@@ -356,7 +350,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #if IGN_CHANNELS >= 4
         ignitionSchedule4.channelDegrees = page2.oddfire[2];
 #endif
-        current.maxIgnOutputs= 4;
       }
       break;
   case 5:
@@ -373,8 +366,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #if (IGN_CHANNELS >= 5)
       ignitionSchedule5.channelDegrees = 288;
 #endif
-      current.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
-
       if( ( (page4.sparkMode == IGN_MODE_SEQUENTIAL) || (page4.sparkMode == IGN_MODE_SINGLE) ) && (page2.strokes == FOUR_STROKE) )
       {
 #if IGN_CHANNELS >= 2
@@ -399,15 +390,12 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #if IGN_CHANNELS >= 3
       ignitionSchedule3.channelDegrees = 240;
 #endif
-      current.maxIgnOutputs= 3;
-
   #if IGN_CHANNELS >= 6
       if( (page4.sparkMode == IGN_MODE_SEQUENTIAL))
       {
       ignitionSchedule4.channelDegrees = 360;
       ignitionSchedule5.channelDegrees = 480;
       ignitionSchedule6.channelDegrees = 600;
-      current.maxIgnOutputs= 6;
       }
   #endif
       break;
@@ -422,13 +410,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #if IGN_CHANNELS >= 4
       ignitionSchedule4.channelDegrees = 270;
 #endif
-      current.maxIgnOutputs= 4;
-
-      if( (page4.sparkMode == IGN_MODE_SINGLE))
-      {
-        current.maxIgnOutputs= 4;
-      }
-  
   #if IGN_CHANNELS >= 8
       if( (page4.sparkMode == IGN_MODE_SEQUENTIAL))
       {
@@ -436,7 +417,6 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
       ignitionSchedule6.channelDegrees = 450;
       ignitionSchedule7.channelDegrees = 540;
       ignitionSchedule8.channelDegrees = 630;
-      current.maxIgnOutputs= 8;
       }
   #endif
       break;
@@ -518,6 +498,20 @@ static __attribute__((optimize("Os"))) uint16_t calculateMaxIgnCrankAngle(const 
   return is720(page2, page4) ? 720 : 360;
 }
 
+static __attribute__((optimize("Os"))) uint8_t calculateMaxIgnChannels(const config2 &page2, const config4 &page4)
+{
+  if ((page2.nCylinders<4)
+   || (page2.nCylinders==5)
+   || (page2.engineType == ODD_FIRE)
+   || (page4.sparkMode == IGN_MODE_SEQUENTIAL)
+   || (page4.sparkMode==IGN_MODE_ROTARY))
+  {
+    return page2.nCylinders;
+  }
+  INTERNAL_TEST_ASSERT(page2.nCylinders%2==0);
+  return page2.nCylinders/2;
+}
+
 void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &current, config2 &page2, config4 &page4, const config10 &page10, config13 &page13, const pinNumbers_t &pins)
 {
   initialiseIgnitionIO(page4, pins);
@@ -528,6 +522,8 @@ void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &curre
   validateIgnitionSetup(page2, page4, page13);
 
   CRANK_ANGLE_MAX_IGN = calculateMaxIgnCrankAngle(page2, page4);
+  current.maxIgnOutputs = calculateMaxIgnChannels(page2, page4);
+
   initScheduleAngles(current, page2, page4);
   setCallbacks(page4.sparkMode, page2.nCylinders, page10.rotaryType);
 }
