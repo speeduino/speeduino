@@ -168,6 +168,15 @@ static void cylinder3_stroke4_wasted_odd(void)
   assert_ignition_schedules(360U, 3U, angle, currentStatus);
 }  
 
+static void cylinder3_stroke4_single_even(void)
+{
+  configPage4.sparkMode = IGN_MODE_SINGLE;
+  configPage2.engineType = EVEN_FIRE;
+  initialiseAll(); //Run the main initialise function
+  const uint16_t angle[] = {0,240,480,0,0,0,0,0};
+  assert_ignition_schedules(720U, 3U, angle, currentStatus);
+}  
+
 static void run_3_cylinder_4stroke_tests(void)
 {
   prepareForInitialiseAll(3U);
@@ -177,6 +186,7 @@ static void run_3_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder3_stroke4_seq_even);
   RUN_TEST_P(cylinder3_stroke4_wasted_even);
   RUN_TEST_P(cylinder3_stroke4_wasted_odd);
+  RUN_TEST_P(cylinder3_stroke4_single_even);
 }
 
 static void assert_cylinder4_stroke4_seq_even(const statuses &current)
@@ -214,6 +224,14 @@ static void cylinder4_stroke4_seq_odd(void)
   assert_ignition_schedules(360U, 4U, angle, currentStatus);
 }
 
+static void cylinder4_stroke4_single_even(void)
+{
+  configPage4.sparkMode = IGN_MODE_SINGLE;
+  configPage2.engineType = EVEN_FIRE;
+  initialiseAll(); //Run the main initialise function
+  const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+  assert_ignition_schedules(360U, 2U, angle, currentStatus);
+}  
 
 static void run_4_cylinder_4stroke_tests(void)
 {
@@ -224,6 +242,7 @@ static void run_4_cylinder_4stroke_tests(void)
   RUN_TEST_P(cylinder4_stroke4_seq_even);
   RUN_TEST_P(cylinder4_stroke4_wasted_even);
   RUN_TEST_P(cylinder4_stroke4_seq_odd);
+  RUN_TEST_P(cylinder4_stroke4_single_even);
 }
 
 static void assert_cylinder5_stroke4_seq_even(const statuses &current)
