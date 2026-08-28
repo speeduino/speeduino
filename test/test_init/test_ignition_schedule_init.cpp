@@ -218,10 +218,10 @@ static void cylinder4_stroke4_seq_odd(void)
   configPage2.engineType = ODD_FIRE;
   configPage2.oddfire[0] = 13;
   configPage2.oddfire[1] = 111;
-  configPage2.oddfire[2] = 217;
+  configPage2.oddfire[2] = 699;
   initialiseAll(); //Run the main initialise function
-  const uint16_t angle[] = {0,13,111,217,0,0,0,0};
-  assert_ignition_schedules(360U, 4U, angle, currentStatus);
+  const uint16_t angle[] = {0,13,111,699,0,0,0,0};
+  assert_ignition_schedules(720U, 4U, angle, currentStatus);
 }
 
 static void cylinder4_stroke4_single_even(void)
