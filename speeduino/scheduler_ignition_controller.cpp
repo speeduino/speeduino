@@ -474,12 +474,13 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateIgnitionSetup(confi
     std::fill(page13.ignTrim, page13.ignTrim+_countof(page13.ignTrim), 0);
   }
 
-  // Force Going Low ignition mode (Going high is never used for rotary)
   if (page4.sparkMode == IGN_MODE_ROTARY)
   {
+    // Force Going Low ignition mode (Going high is never used for rotary)
     page4.IgInv = GOING_LOW; 
+    // Rotary must be 4 stroke!
+    page2.strokes = FOUR_STROKE;
   }
-
 }
 
 static inline bool isSequential720(const config2 &page2, const config4 &page4)
