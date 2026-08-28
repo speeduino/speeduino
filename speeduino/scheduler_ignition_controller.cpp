@@ -447,10 +447,18 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 
 TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t validateSparkMode(uint8_t mode, const config2 &page2)
 {
-  // Sequential only applies if enough channels.
   if (mode == IGN_MODE_SEQUENTIAL) {
-    // If those conditions aren't met, revert to wasted spark.
-    if ((page2.nCylinders>IGN_CHANNELS) || (page2.strokes!=FOUR_STROKE)) {
+        // Sequential only applies if enough channels.
+    if ((page2.nCylinders>IGN_CHANNELS) 
+        // And 4 stroke
+     || (page2.strokes!=FOUR_STROKE)) {
+      mode = IGN_MODE_WASTED;
+    }
+  }
+
+  if (mode == IGN_MODE_ROTARY) {
+    // Rotary is only supported on 4 "cylinder"
+    if (page2.nCylinders!=4U) {
       mode = IGN_MODE_WASTED;
     }
   }
