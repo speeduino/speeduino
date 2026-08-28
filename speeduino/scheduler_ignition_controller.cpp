@@ -485,14 +485,7 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) void validateIgnitionSetup(confi
 
 static inline bool isSequential720(const config2 &page2, const config4 &page4)
 {
-  return (page4.sparkMode == IGN_MODE_SEQUENTIAL)
-      && (
-        //Sequential ignition works identically on a 1-/2-cylinder whether it's odd or even fire (With the default being a 180 degree second cylinder).
-        (page2.nCylinders==1U) || (page2.nCylinders==2U)
-        // 3-cylinder and higher require even fire.
-        || (page2.engineType == EVEN_FIRE )
-      )
-      ;
+  return (page4.sparkMode == IGN_MODE_SEQUENTIAL);
 }
 
 static inline bool isSingle720(const config2 &page2, const config4 &page4)
