@@ -51,11 +51,24 @@ static void test_validateIgnitionSetup_trims(void)
     TEST_ASSERT_EACH_EQUAL_INT8 (0, page13.ignTrim, _countof(page13.ignTrim));
 }
 
+static void test_validateIgnitionSetup_rotary(void)
+{
+    config2 page2 = {};
+    config4 page4 = {};
+    config13 page13 = {};
+
+    page4.sparkMode = IGN_MODE_ROTARY;
+    page4.IgInv = GOING_HIGH;
+    validateIgnitionSetup(page2, page4, page13);
+    TEST_ASSERT_EQUAL(GOING_LOW, page4.IgInv);
+}
+
 void testIgnitionController(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_validateSparkMode);
     RUN_TEST_P(test_validateIgnitionSetup_oddfire);
     RUN_TEST_P(test_validateIgnitionSetup_trims);
+    RUN_TEST_P(test_validateIgnitionSetup_rotary);
   }
 }
