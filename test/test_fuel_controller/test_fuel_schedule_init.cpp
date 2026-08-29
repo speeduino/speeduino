@@ -1093,7 +1093,7 @@ static void cylinder5_stroke4_semiseq_nostage(void)
 
   context.initialise();
   
-  assert_5channel_0stage_over720(__LINE__, context, {0,72U,144U,216U,288U,0,0,0});
+  assert_4channel_0stage_over720(__LINE__, context, {0,72U,144U,216U,288U,0,0,0});
   assert_injlayout(INJ_CHANNELS>=5 ? INJ_SEMISEQUENTIAL : INJ_PAIRED, context);
 }
 

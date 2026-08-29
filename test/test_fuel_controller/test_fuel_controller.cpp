@@ -241,21 +241,31 @@ static void assert_calcNumPrimaryInjectors_nonsequential(config2 &page2)
   TEST_ASSERT_EQUAL(1, calcNumPrimaryInjectors(current, page2));
   page2.nCylinders = 2;
   TEST_ASSERT_EQUAL(2, calcNumPrimaryInjectors(current, page2));
-  page2.nCylinders = 5;
-  TEST_ASSERT_EQUAL(INJ_CHANNELS>=5 ? 5 : INJ_CHANNELS, calcNumPrimaryInjectors(current, page2));
+  // page2.nCylinders = 5;
+  // TEST_ASSERT_EQUAL(INJ_CHANNELS>=5 ? 5 : INJ_CHANNELS, calcNumPrimaryInjectors(current, page2));
   page2.nCylinders = 6;
   TEST_ASSERT_EQUAL(3, calcNumPrimaryInjectors(current, page2));
 }
 
 static void test_calcNumPrimaryInjectors_nonsequential(void)
 {
-    config2 page2 = {};
-    page2.injLayout = INJ_PAIRED;
-    assert_calcNumPrimaryInjectors_nonsequential(page2);
-    page2.injLayout = INJ_SEMISEQUENTIAL;
-    assert_calcNumPrimaryInjectors_nonsequential(page2);
-    page2.injLayout = INJ_BANKED;
-    assert_calcNumPrimaryInjectors_nonsequential(page2);
+  config2 page2 = {};
+  statuses current = {};
+
+  page2.injLayout = INJ_PAIRED;
+  assert_calcNumPrimaryInjectors_nonsequential(page2);
+  current.injLayout = page2.injLayout;
+  page2.nCylinders = 5;
+  TEST_ASSERT_EQUAL(INJ_CHANNELS>=5 ? 5 : INJ_CHANNELS, calcNumPrimaryInjectors(current, page2));
+
+  page2.injLayout = INJ_SEMISEQUENTIAL;
+  assert_calcNumPrimaryInjectors_nonsequential(page2);
+  page2.nCylinders = 5;
+  current.injLayout = page2.injLayout;
+  TEST_ASSERT_EQUAL(INJ_CHANNELS>=4 ? 4 : INJ_CHANNELS, calcNumPrimaryInjectors(current, page2));
+
+  page2.injLayout = INJ_BANKED;
+  assert_calcNumPrimaryInjectors_nonsequential(page2);
 }
 
 static void test_calcNumPrimaryInjectors_sequential(void)

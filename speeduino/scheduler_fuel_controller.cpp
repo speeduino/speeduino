@@ -736,7 +736,10 @@ TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint8_t calcNumPrimaryInj
                  || (page2.nCylinders==5U)
                  || (current.injLayout == INJ_SEQUENTIAL)           
                  ? page2.nCylinders : page2.nCylinders/2U;
-
+  if ((page2.nCylinders==5U) && (current.injLayout == INJ_SEMISEQUENTIAL))
+  {
+    primary = 4;
+  }
   return clamp(primary, (uint8_t)1, (uint8_t)INJ_CHANNELS);
 }
 
