@@ -448,6 +448,9 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t validateSparkMode(uint8_
 
 TESTABLE_STATIC __attribute__((optimize("Os"))) void validateIgnitionSetup(config2 &page2, config4 &page4, config13 &page13)
 {
+  // Can't have zero cylinders!
+  page2.nCylinders = (std::max)((uint8_t)1, (uint8_t)page2.nCylinders);
+
   page4.sparkMode = validateSparkMode(page4.sparkMode, page2);
 
   // Oddfire only supported on up to number of oddfire angles
