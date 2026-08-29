@@ -583,7 +583,7 @@ static void test_initialiseIgnitionSchedules_5cyl_singlechannel(void)
     context.page2.strokes = FOUR_STROKE;
     context.page4.sparkMode = IGN_MODE_SINGLE;
 
-    initialiseIgnitionSchedules(context.current, context.page2, context.page4, context.page10, context.pins);
+    initialiseIgnitionSchedules(context.current, context.page2, context.page4, context.page10, context.page13, context.pins);
 
     TEST_ASSERT_EQUAL_UINT16(720U, CRANK_ANGLE_MAX_IGN);
     TEST_ASSERT_EQUAL_UINT8(5U, context.current.maxIgnOutputs);
