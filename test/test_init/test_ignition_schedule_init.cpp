@@ -91,7 +91,7 @@ static void run_1_cylinder_4stroke_tests(void)
 
 static void assert_cylinder2_stroke4_seq_even(const statuses &current)
 {
-  const uint16_t angle[] = {0,180,0,0,0,0,0,0};
+  const uint16_t angle[] = {0,360,0,0,0,0,0,0};
   assert_ignition_schedules(720U, 2U, angle, current);
 }
 
