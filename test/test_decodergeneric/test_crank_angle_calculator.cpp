@@ -145,12 +145,12 @@ static void test_simple_crank_angle_calculator_t(void)
     subject._revZeroOrOne = false;
     page4.TrigSpeed = CAM_SPEED;
     // initial + trigger + delta
-    TEST_ASSERT_EQUAL_INT16(5 + 10 + 20, subject.calculate(5, subject._toothLastToothTime + 20, page4));
+    TEST_ASSERT_EQUAL_INT16(5 + 10 + 20, subject.calculateCrankAngle(5, subject._toothLastToothTime + 20, page4));
 
     // when sequential and CRANK_SPEED, adds 360
     subject._revZeroOrOne = true;
     page4.TrigSpeed = CRANK_SPEED;
-    TEST_ASSERT_EQUAL_INT16(5 + 10 + 20 + 360, subject.calculate(5, subject._toothLastToothTime + 20, page4));
+    TEST_ASSERT_EQUAL_INT16(5 + 10 + 20 + 360, subject.calculateCrankAngle(5, subject._toothLastToothTime + 20, page4));
 }
 
 static void test_lookup_crank_angle_calculator_t(void)
@@ -167,7 +167,7 @@ static void test_lookup_crank_angle_calculator_t(void)
     int16_t toothAngles[] = { 1, 2, 3 };
 
     // lookup (toothAngles[1]=2) + trigger + delta
-    TEST_ASSERT_EQUAL_INT16(2 + 7 + 15, subject.calculate(subject._toothLastToothTime + 15, toothAngles, page4));
+    TEST_ASSERT_EQUAL_INT16(2 + 7 + 15, subject.calculateCrankAngle(subject._toothLastToothTime + 15, toothAngles, page4));
 }
 
 static void test_trigger_angle_crank_angle_calculator_t(void)
@@ -183,7 +183,7 @@ static void test_trigger_angle_crank_angle_calculator_t(void)
     subject._revZeroOrOne = false;
     page4.TrigSpeed = CAM_SPEED;
 
-    TEST_ASSERT_EQUAL_INT16(40 + 9 + 30, subject.calculate(subject._toothLastToothTime + 30, page4));
+    TEST_ASSERT_EQUAL_INT16(40 + 9 + 30, subject.calculateCrankAngle(subject._toothLastToothTime + 30, page4));
 }
 
 static void test_lookup_crank_angle_calculator_tooth_interval_t(void)
@@ -204,7 +204,7 @@ static void test_lookup_crank_angle_calculator_tooth_interval_t(void)
     // lookup tooth 1 -> toothAngles[0]
     int16_t toothAngles[] = { 5, 6 };
     // elapsed 20 -> (20*40)/100 = 8
-    TEST_ASSERT_EQUAL_INT16(5 + 4 + 8, subject.calculate(subject._toothLastToothTime + 20, toothAngles, page4));
+    TEST_ASSERT_EQUAL_INT16(5 + 4 + 8, subject.calculateCrankAngle(subject._toothLastToothTime + 20, toothAngles, page4));
 }
 
 static void test_compute_crank_angle_calculator_tooth_interval_t(void)
@@ -224,7 +224,7 @@ static void test_compute_crank_angle_calculator_tooth_interval_t(void)
     page4.TrigSpeed = CAM_SPEED;
 
     // elapsed 10 -> (10*30)/100 = 3
-    TEST_ASSERT_EQUAL_INT16(60 + 6 + 3, subject.calculate(subject._toothLastToothTime + 10, page4));
+    TEST_ASSERT_EQUAL_INT16(60 + 6 + 3, subject.calculateCrankAngle(subject._toothLastToothTime + 10, page4));
 }
 
 void testCrankAngleCalculators(void)

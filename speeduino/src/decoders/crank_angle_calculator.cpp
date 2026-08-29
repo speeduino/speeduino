@@ -91,7 +91,7 @@ int16_t sequential_correction_calculator_t::calculate(const config4 &page4) cons
 
 // ================================ Calculators =====================================
 
-int16_t simple_crank_angle_calculator_t::calculate(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
+int16_t simple_crank_angle_calculator_t::calculateCrankAngle(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const
 {
   return  initialCrankAngle 
         + page4.triggerAngle 
@@ -106,7 +106,7 @@ lookup_crank_angle_calculator_t::lookup_crank_angle_calculator_t(const std::tupl
 {
 }
 
-int16_t lookup_crank_angle_calculator_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
+int16_t lookup_crank_angle_calculator_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
   return lookup_initial_calculator_t::calculate(toothAngles)
         + page4.triggerAngle 
@@ -121,7 +121,7 @@ trigger_angle_crank_angle_calculator_t::trigger_angle_crank_angle_calculator_t(c
 {
 }
 
-int16_t trigger_angle_crank_angle_calculator_t::calculate(uint32_t currMicros, const config4 &page4) const
+int16_t trigger_angle_crank_angle_calculator_t::calculateCrankAngle(uint32_t currMicros, const config4 &page4) const
 {
   return compute_initial_calculator_t::calculate()
         + page4.triggerAngle 
@@ -136,7 +136,7 @@ lookup_crank_angle_calculator_tooth_interval_t::lookup_crank_angle_calculator_to
 {
 }
 
-int16_t lookup_crank_angle_calculator_tooth_interval_t::calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
+int16_t lookup_crank_angle_calculator_tooth_interval_t::calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const
 {
   return lookup_initial_calculator_t::calculate(toothAngles)
         + page4.triggerAngle 
@@ -152,7 +152,7 @@ compute_crank_angle_calculator_tooth_interval_t::compute_crank_angle_calculator_
 {
 }
 
-int16_t compute_crank_angle_calculator_tooth_interval_t::calculate(uint32_t currMicros, const config4 &page4) const
+int16_t compute_crank_angle_calculator_tooth_interval_t::calculateCrankAngle(uint32_t currMicros, const config4 &page4) const
 {
   return compute_initial_calculator_t::calculate()
         + page4.triggerAngle 

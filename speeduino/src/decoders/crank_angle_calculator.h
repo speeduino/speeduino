@@ -118,7 +118,7 @@ protected:
  */
 struct simple_crank_angle_calculator_t : last_tooth_rev_calculator_t, sequential_correction_calculator_t
  {
-    int16_t calculate(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const;
+    int16_t calculateCrankAngle(int16_t initialCrankAngle, uint32_t currMicros, const config4 &page4) const;
 };
 
 struct lookup_crank_angle_calculator_t : public last_tooth_rev_calculator_t, sequential_correction_calculator_t, lookup_initial_calculator_t
@@ -133,7 +133,7 @@ struct lookup_crank_angle_calculator_t : public last_tooth_rev_calculator_t, seq
    * @param toothAngles Array to lookup. Note that teeth numbers are 1-based, but arrays are 0-based
    * @param page4 The tune
    */
-  int16_t calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const;
+  int16_t calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const;
 };
 
 struct trigger_angle_crank_angle_calculator_t : public last_tooth_rev_calculator_t, sequential_correction_calculator_t, compute_initial_calculator_t
@@ -147,7 +147,7 @@ struct trigger_angle_crank_angle_calculator_t : public last_tooth_rev_calculator
    * @param currMicros Current time in µS. Usually the result of a call to micros()
    * @param page4 The tune
    */
-  int16_t calculate(uint32_t currMicros, const config4 &page4) const;
+  int16_t calculateCrankAngle(uint32_t currMicros, const config4 &page4) const;
 };
 
 struct lookup_crank_angle_calculator_tooth_interval_t : public tooth_interval_calculator_t, sequential_correction_calculator_t, lookup_initial_calculator_t
@@ -162,7 +162,7 @@ struct lookup_crank_angle_calculator_tooth_interval_t : public tooth_interval_ca
    * @param toothAngles Array to lookup. Note that teeth numbers are 1-based, but arrays are 0-based
    * @param page4 The tune
    */
-  int16_t calculate(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const;
+  int16_t calculateCrankAngle(uint32_t currMicros, const int16_t toothAngles[], const config4 &page4) const;
 };
 
 struct compute_crank_angle_calculator_tooth_interval_t : public tooth_interval_calculator_t, sequential_correction_calculator_t, compute_initial_calculator_t
@@ -176,7 +176,7 @@ struct compute_crank_angle_calculator_tooth_interval_t : public tooth_interval_c
    * @param currMicros Current time in µS. Usually the result of a call to micros()
    * @param page4 The tune
    */
-  int16_t calculate(uint32_t currMicros, const config4 &page4) const;
+  int16_t calculateCrankAngle(uint32_t currMicros, const config4 &page4) const;
 };
 
 /// @}
