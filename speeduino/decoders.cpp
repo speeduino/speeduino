@@ -801,7 +801,7 @@ static uint16_t getRPM_missingTooth(void)
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
 }
 
 static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
@@ -1025,7 +1025,7 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
   //Handle case where the secondary tooth was the last one seen
   if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = configPage4.triggerTeeth; }
 
-  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -1185,7 +1185,7 @@ static uint16_t getRPM_BasicDistributor(void)
 static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 {
   auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, revolutionOne, toothCurrentCount, triggerToothAngle, decoderStatus.toothAngleIsCorrect);
-  return clampCrankAngle(compute_crank_angle_calculator_tooth_interval_t(data).calculate(currMicros, configPage4));
+  return clampCrankAngle(compute_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, configPage4));
 }
 
 static void triggerSetEndTeeth_BasicDistributor(void)
@@ -1373,7 +1373,7 @@ static int16_t getCrankAngle_GM7X(uint32_t currMicros)
   {
     simple_crank_angle_calculator_t calculator;
     std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
-    crankAngle = calculator.calculate(112, currMicros, configPage4);
+    crankAngle = calculator.calculateCrankAngle(112, currMicros, configPage4);
   }
   else
   {
@@ -1382,7 +1382,7 @@ static int16_t getCrankAngle_GM7X(uint32_t currMicros)
     {
       --calculator._toothCurrentCount;
     }
-    crankAngle = calculator.calculate(currMicros, configPage4)+42;
+    crankAngle = calculator.calculateCrankAngle(currMicros, configPage4)+42;
   }
 
   //Estimate the number of degrees travelled since the last tooth}
@@ -1730,7 +1730,7 @@ static int16_t getCrankAngle_4G63(uint32_t currMicros)
   if(decoderStatus.syncStatus==SyncStatus::Full)
   {
     auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, revolutionOne, toothCurrentCount, triggerToothAngle, decoderStatus.toothAngleIsCorrect);
-    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculate(currMicros, toothAngles, configPage4);
+    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, toothAngles, configPage4);
   }
   return clampCrankAngle(crankAngle);
 }
@@ -1892,7 +1892,7 @@ static uint16_t getRPM_24X(void)
 
 static int16_t getCrankAngle_24X(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
@@ -2007,11 +2007,11 @@ static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
   {
     simple_crank_angle_calculator_t calculator;
     std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
-    crankAngle = calculator.calculate(114, currMicros, configPage4);
+    crankAngle = calculator.calculateCrankAngle(114, currMicros, configPage4);
   } 
   else
   { 
-    crankAngle = lookup_crank_angle_calculator_t(data).calculate(currMicros, toothAngles, configPage4);
+    crankAngle = lookup_crank_angle_calculator_t(data).calculateCrankAngle(currMicros, toothAngles, configPage4);
   }
 
   //Estimate the number of degrees travelled since the last tooth}
@@ -2129,7 +2129,7 @@ static int16_t getCrankAngle_Audi135(uint32_t currMicros)
   //Handle case where the secondary tooth was the last one seen
   if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 45; }
 
-  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
@@ -2219,7 +2219,7 @@ static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
     calculator._toothCurrentCount = 12;
   }
   
-  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
@@ -2328,7 +2328,7 @@ static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
 
   // Tooth 1 time occurs 360/24 degrees after TDC.
   ++calculator._toothCurrentCount;
-  int16_t crankAngle = calculator.calculate(currMicros, configPage4);
+  int16_t crankAngle = calculator.calculateCrankAngle(currMicros, configPage4);
 
   // Teeth 14 and 22 are unusually sized (18 degrees), but the missing tooth is smaller (12 degrees), 
   // so this oddity only applies when toothCurrentCount = 14 || 22 (15 || 23 since we incremented toothCurrentCount above)
@@ -2521,7 +2521,7 @@ static uint16_t getRPM_Miata9905(void)
 
 static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, toothAngles, configPage4));
 }
 
 int getCamAngle_Miata9905(void)
@@ -2729,7 +2729,7 @@ static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
   int16_t crankAngle = 0;
   if(decoderStatus.syncStatus==SyncStatus::Full)
   {
-    crankAngle = atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4);
+    crankAngle = atomic_make_lookup_caa().calculateCrankAngle(currMicros, toothAngles, configPage4);
   }
 
   return clampCrankAngle(crankAngle);
@@ -2800,7 +2800,7 @@ static int16_t getCrankAngle_non360(uint32_t currMicros)
 
   simple_crank_angle_calculator_t calculator;
   std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
-  return clampCrankAngle(calculator.calculate(crankAngle, currMicros, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
@@ -3241,7 +3241,7 @@ static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
   if( decoderStatus.syncStatus==SyncStatus::Full )
   {
     auto data = atomic_copy(toothLastToothTime, toothLastMinusOneToothTime, revolutionOne, toothCurrentCount, triggerToothAngle, decoderStatus.toothAngleIsCorrect);
-    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculate(currMicros, toothAngles, configPage4);
+    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, toothAngles, configPage4);
   }
   return clampCrankAngle(crankAngle);
 }
@@ -3429,7 +3429,7 @@ static uint16_t getRPM_Daihatsu(void)
 }
 static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
@@ -3566,7 +3566,7 @@ static int16_t getCrankAngle_Harley(uint32_t currMicros)
 
   simple_crank_angle_calculator_t calculator;
   std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
-  return clampCrankAngle(calculator.calculate(crankAngle, currMicros, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
@@ -4011,7 +4011,7 @@ static uint16_t getRPM_420a(void)
 
 static int16_t getCrankAngle_420a(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, toothAngles, configPage4));
 }
 
 static void triggerSetEndTeeth_420a(void)
@@ -4251,7 +4251,7 @@ static uint16_t getRPM_FordST170(void)
 
 static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_angle_caa().calculate(currMicros, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -4874,7 +4874,7 @@ static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 {
   auto calculator = atomic_make_lookup_caa_secondary();
   ++calculator._toothCurrentCount; // Since calculate() uses 0-based indices
-  return clampCrankAngle(calculator.calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(currMicros, toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
@@ -5687,7 +5687,7 @@ static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
   }
   ++calculator._toothCurrentCount;
   
-  return clampCrankAngle(calculator.calculate(currMicros, toothAngles, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(currMicros, toothAngles, configPage4));
 }
 
 // Assumes no advance greater than 48 degrees. Triggers on the tooth before the ignition event
@@ -5927,7 +5927,7 @@ static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
   //Handle case where the secondary tooth was the last one seen
   if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 2; } 
 
-  return clampCrankAngle(calculator.calculate(currMicros, configPage4));
+  return clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
 }
 
 /** Ford TFI - Set End Teeth.
