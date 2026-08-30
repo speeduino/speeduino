@@ -377,7 +377,7 @@ static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
 }
 
 // As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
-static __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
+TESTABLE_STATIC __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
 {
   if (UpdateRevolutionTimeFromTeeth(isCamTeeth)) {
     return RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
@@ -432,7 +432,7 @@ It can only be used on patterns where the teeth are evenly spaced.
 It takes an argument of the full (COMPLETE) number of teeth per revolution.
 For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
 */
-static __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bool isCamTeeth)
+TESTABLE_STATIC __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bool isCamTeeth)
 {
   if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (decoderStatus.syncStatus!=SyncStatus::None) )
   {
