@@ -88,7 +88,7 @@ static unsigned long lastVVTtime; //The time between the vvt reference pulse and
 
 TESTABLE_STATIC uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
-static int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
+TESTABLE_STATIC int16_t toothAngles[24]; //An array for storing fixed tooth angles. Currently sized at 24 for the GM 24X decoder, but may grow later if there are other decoders that use this style
 
 TESTABLE_STATIC decoder_status_t decoderStatus;
 

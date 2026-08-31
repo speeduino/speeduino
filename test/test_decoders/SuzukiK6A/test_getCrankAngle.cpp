@@ -60,6 +60,12 @@ static void test_k6a_getCrankAngle_tooth8(void) {
     test_k6a_getCrankAngle_tooth(8, 0, 70);
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_SuzukiK6A();
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void testSuzukiK6A_getCrankAngle()
 {
     SET_UNITY_FILENAME() {
@@ -73,6 +79,6 @@ void testSuzukiK6A_getCrankAngle()
         RUN_TEST_P(test_k6a_getCrankAngle_tooth6);
         RUN_TEST_P(test_k6a_getCrankAngle_tooth7);
         RUN_TEST_P(test_k6a_getCrankAngle_tooth8);
-
+        RUN_TEST_P(test_getRPM);
     }
 }

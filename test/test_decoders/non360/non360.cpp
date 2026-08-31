@@ -47,9 +47,54 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL(97, decoder.pGetCrankAngle(toothLastToothTime + 10));
 }
 
+static void test_getRPM(void)
+{
+  extern volatile unsigned long toothLastToothTime;
+  extern volatile unsigned long toothLastMinusOneToothTime;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+  extern volatile int toothCurrentCount;
+  extern decoder_status_t decoderStatus;
+
+  // Configure wheel and build decoder
+  configPage4.triggerTeeth = 8;
+  auto decoder = triggerSetup_non360();
+
+  // Ensure staging allows cranking calculation
+  configPage4.StgCycles = 0;
+
+  // --- Cranking path: currentStatus.RPM < crankRPM -> crankingGetRPM
+  currentStatus.setRpm(0);
+  currentStatus.crankRPM = 400;
+  currentStatus.startRevolutions = 0; // cranking
+  currentStatus.revolutionTime = UINT32_MAX; // Ensure this changes
+  decoderStatus.syncStatus = SyncStatus::Full;
+  toothCurrentCount = 1;
+  toothLastMinusOneToothTime = 1000UL;
+  // Choose gap so (gap * triggerTeeth) == 60000us -> 1000 RPM
+  toothLastToothTime = toothLastMinusOneToothTime + (60000UL / configPage4.triggerTeeth); // 60000/8 = 7500
+  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+  // --- Running path: use stdGetRPM(CRANK_SPEED) via toothOne pair
+  currentStatus.setRpm(2000);
+  currentStatus.startRevolutions = 1; // not cranking
+  currentStatus.revolutionTime = UINT32_MAX; // Ensure this changes
+  decoderStatus.syncStatus = SyncStatus::Full;
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
+  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+  // --- Fallback: when sync lost, expect 0
+  decoderStatus.syncStatus = SyncStatus::None;
+  currentStatus.revolutionTime = UINT32_MAX; // Ensure this changes
+  TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
+
+}
+
 void testNon360(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

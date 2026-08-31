@@ -35,9 +35,16 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL(112, decoder.pGetCrankAngle(toothLastToothTime + 10));
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_HondaD17();
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void testHondaD17(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

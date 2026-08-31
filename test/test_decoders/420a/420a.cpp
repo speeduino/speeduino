@@ -45,9 +45,24 @@ static void test_getCrankAngle(void)
   run_case(2, 111 + dt + 10, 10);
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_420a();
+
+  currentStatus.crankRPM = 400;
+  currentStatus.setRpm(currentStatus.crankRPM*2);
+  auto rpm1 = decoder.getRPM();
+  TEST_ASSERT_NOT_EQUAL(0, rpm1);
+
+  currentStatus.setRpm(currentStatus.crankRPM/2);
+  TEST_ASSERT_NOT_EQUAL(rpm1, decoder.getRPM());
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void test420a(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);    
   }
 }

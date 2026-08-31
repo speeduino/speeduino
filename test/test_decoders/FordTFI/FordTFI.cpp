@@ -56,9 +56,45 @@ static void test_getCrankAngle(void)
 #endif
 }
 
+static void test_getRPM(void)
+{
+  extern decoder_status_t decoderStatus;
+  extern volatile unsigned long toothLastToothTime;
+  extern volatile unsigned long toothLastMinusOneToothTime;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+
+  auto decoder = triggerSetup_FordTFI();
+
+  // Prepare for cranking path: RPM < crankRPM
+  configPage4.StgCycles = 0;
+  currentStatus.startRevolutions = 1;
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.setRpm(0);
+  currentStatus.crankRPM = 400;
+  // Ensure SetRevolutionTime will update
+  currentStatus.revolutionTime = 99999UL;
+  toothLastMinusOneToothTime = 1000UL;
+  toothLastToothTime = toothLastMinusOneToothTime + 30000UL; // gap=30000 -> revTime = gap*totalTeeth/2 = 30000*4/2 = 60000
+  TEST_ASSERT_EQUAL_UINT16(500, decoder.getRPM());
+
+  // Running path: should return stdGetRPM(CAM_SPEED) -> currentStatus.RPM when no toothOne* update
+  currentStatus.setRpm(2000);
+  toothOneMinusOneTime = 0;
+  toothOneTime = 0;
+  decoderStatus.syncStatus = SyncStatus::Full;
+  TEST_ASSERT_EQUAL_UINT16(2000U, decoder.getRPM());
+
+  // If not synced, should return currentStatus.RPM
+  decoderStatus.syncStatus = SyncStatus::None;
+  currentStatus.setRpm(555);
+  TEST_ASSERT_EQUAL_UINT16(555U, decoder.getRPM());
+}
+
 void testFordTFI(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

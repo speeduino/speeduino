@@ -43,9 +43,36 @@ static void test_getCrankAngle(void)
   run_case(dec3, 4, 0, 100, 480 + dt);
 }
 
+static void test_getRPM(void)
+{
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+  extern decoder_status_t decoderStatus;
+
+  auto decoder = triggerSetup_Daihatsu();
+
+  // Prepare state so UpdateRevolutionTimeFromTeeth will succeed
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.startRevolutions = 1; // not cranking
+  currentStatus.setRpm(2000);
+  currentStatus.revolutionTime = 12345UL; // ensure SetRevolutionTime will change
+
+  // Cam-speed: set times such that (toothOneTime - toothOneMinusOneTime) >> 1 == 60000us => 1000 RPM
+  toothOneMinusOneTime = 2000UL;
+  toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 -> 60000
+  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+  // Fallback: when not synced, should return currentStatus.RPM
+  currentStatus.revolutionTime = 12345UL;
+  decoderStatus.syncStatus = SyncStatus::None;
+  currentStatus.setRpm(777);
+  TEST_ASSERT_EQUAL_UINT16(777U, decoder.getRPM());
+}
+
 void testDaihatsu(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

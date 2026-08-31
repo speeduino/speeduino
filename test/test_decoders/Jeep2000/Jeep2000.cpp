@@ -46,9 +46,16 @@ static void test_getCrankAngle(void)
   run_case(1, 174 + dt + 10, 10);
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_Jeep2000();
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void testJeep2000(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

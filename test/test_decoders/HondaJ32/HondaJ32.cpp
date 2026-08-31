@@ -42,9 +42,17 @@ static void test_getCrankAngle(void)
   run_case(1, 15 + 18 + 10, 10);
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_HondaJ32();
+  currentStatus.revolutionTime = 1000;
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void testHondaJ32(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

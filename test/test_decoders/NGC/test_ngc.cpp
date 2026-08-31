@@ -126,6 +126,50 @@ void test_ngc_newIgn_12_trigNeg360_1()
     TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
 }
 
+static void test_getRPM(void)
+{
+    extern volatile unsigned long toothLastToothTime;
+    extern volatile unsigned long toothLastMinusOneToothTime;
+    extern volatile unsigned long toothOneTime;
+    extern volatile unsigned long toothOneMinusOneTime;
+    extern decoder_status_t decoderStatus;
+
+    auto decoder = triggerSetup_NGC();
+
+    // Ensure staging allows cranking calculation
+    configPage4.StgCycles = 0;
+    currentStatus.crankRPM = 400;
+
+    // --- Cranking path: tooth-angle correct -> use crankingGetRPM(36, CRANK_SPEED)
+    currentStatus.setRpm(currentStatus.crankRPM/2U);
+    currentStatus.startRevolutions = 0; // cranking
+    decoderStatus.toothAngleIsCorrect = true;
+    decoderStatus.syncStatus = SyncStatus::Full;
+    currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
+    toothLastMinusOneToothTime = 1000UL;
+    toothLastToothTime = toothLastMinusOneToothTime + 1667UL; // gap ~=1667 -> revTime ~=60012 -> ~1000 RPM
+    TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+    // --- If tooth angle not correct, return currentStatus.RPM
+    decoderStatus.toothAngleIsCorrect = false;
+    TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+
+    // --- Running path: use stdGetRPM(CRANK_SPEED)
+    currentStatus.setRpm(currentStatus.crankRPM*2U);
+    currentStatus.startRevolutions = 1; // not cranking
+    decoderStatus.toothAngleIsCorrect = true;
+    decoderStatus.syncStatus = SyncStatus::Full;
+    currentStatus.revolutionTime = 12345UL; // ensure update
+    toothOneMinusOneTime = 1000UL;
+    toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
+    TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+    // --- Fallback: when sync lost, stdGetRPM returns currentStatus.RPM
+    decoderStatus.syncStatus = SyncStatus::None;
+    currentStatus.setRpm(777);
+    TEST_ASSERT_EQUAL_UINT16(777U, decoder.getRPM());
+}
+
 void testNGC()
 {
    SET_UNITY_FILENAME() {
@@ -139,5 +183,6 @@ void testNGC()
     RUN_TEST_P(test_ngc_newIgn_12_trigNeg180_1);
     RUN_TEST_P(test_ngc_newIgn_12_trigNeg270_1);
     RUN_TEST_P(test_ngc_newIgn_12_trigNeg360_1);
+    RUN_TEST_P(test_getRPM);
    }
 }
