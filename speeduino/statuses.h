@@ -78,6 +78,25 @@ struct num_injector_t
   }
 };
 
+struct airConStatus_t
+{
+  bool acRequested : 1; ///< Indicates whether the A/C button is pressed
+  bool compressorOn : 1; ///< Indicates whether the A/C compressor is running
+  bool rpmLockoutActive : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
+  bool tpsLockoutActive : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
+  bool turningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
+  bool cltLockoutActive : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
+  bool fanOn : 1;  ///< Indicates whether the A/C fan is running
+
+  bool isLockoutActive(void) const
+  {
+    return rpmLockoutActive
+        || tpsLockoutActive
+        || cltLockoutActive
+        ;
+  }
+};
+
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -318,21 +337,7 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool sdCardUnused : 1;  ///< true if unused, false if not
 
-  // airConStatus fields.
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconRequested : 1; ///< Indicates whether the A/C button is pressed
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconCompressorOn : 1; ///< Indicates whether the A/C compressor is running
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconRpmLockout : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconTpsLockout : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconTurningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconCltLockout : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool airconFanOn : 1;  ///< Indicates whether the A/C fan is running
+  airConStatus_t acStatus = {};
   
   uint8_t systemTemp;
   uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)

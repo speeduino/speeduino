@@ -277,7 +277,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       programmableIOControl(configPage13);
       
       // Air conditioning control
-      airConControl();
+      airConControl(currentStatus, configPage15);
 
       #if defined(NATIVE_CAN_AVAILABLE)
       sendCANBroadcast(10);
@@ -295,7 +295,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       if( (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
       {
         currentStatus.CLIdleTarget = table2D_getValue(&idleTargetTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
-        if(currentStatus.airconTurningOn) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
+        if(currentStatus.acStatus.turningOn) { currentStatus.CLIdleTarget += configPage15.airConIdleUpRPMAdder;  } //Adds Idle Up RPM amount if active
       }
 
       #ifdef SD_LOGGING

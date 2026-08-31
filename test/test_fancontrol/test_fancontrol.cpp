@@ -23,7 +23,7 @@ static void setup_status_fanoff(void)
   currentStatus.fanOn = false;
   currentStatus.fanDuty = 0U;
   currentStatus.rotationStatus = EngineRotationStatus::Stopped;
-  currentStatus.airconTurningOn = false;
+  currentStatus.acStatus.turningOn = false;
   set_coolant_below_ontemp();
 }
 
@@ -32,7 +32,7 @@ static void setup_status_fanon(void)
   currentStatus.fanOn = true;
   currentStatus.fanDuty = 50U;
   currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.airconTurningOn = false;
+  currentStatus.acStatus.turningOn = false;
   set_coolant_above_ontemp();
 }
 
@@ -286,7 +286,7 @@ static void setup_fanControl_aircon_request_turns_fan_on(void)
 
   setup_status_fanoff();
   currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.airconTurningOn = true;
+  currentStatus.acStatus.turningOn = true;
 }
 
 static void test_fanControl_nopwm_aircon_request_turns_fan_on(void)
