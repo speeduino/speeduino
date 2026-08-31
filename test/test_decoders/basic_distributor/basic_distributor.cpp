@@ -3,13 +3,15 @@
 #include "../test_utils.h"
 #include "globals.h"
 
+extern decoder_status_t decoderStatus;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile uint32_t toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile int toothCurrentCount;
-
   // Configure a 4-tooth distributor (4-cylinder cam-spaced)
   configPage2.nCylinders = 4;
   configPage4.triggerTeeth = 4;
@@ -23,9 +25,9 @@ static void test_getCrankAngle(void)
     decoderStatus.syncStatus = SyncStatus::Full;
     decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
-    TEST_ASSERT_EQUAL(expected, angle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
   };
 
   // timeToAngleIntervalTooth(100) ~ 18 deg when revolution time = 2000
@@ -42,12 +44,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   // Configure a 4-tooth distributor (4-cylinder cam-spaced)
   configPage2.nCylinders = 4;
   configPage2.strokes = FOUR_STROKE;

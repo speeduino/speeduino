@@ -6,7 +6,7 @@ void configureStateForPrimaryTrigger(uint8_t decoder, decoder_status_t &status)
     extern volatile uint8_t toothSystemCount;
     extern volatile unsigned long toothLastToothRisingTime;
     extern volatile unsigned long toothLastSecToothRisingTime;
-    extern volatile unsigned long toothLastToothTime;
+    extern volatile uint32_t toothLastToothTime;
     extern volatile unsigned long toothSystemLastToothTime;
     extern volatile uint16_t toothCurrentCount;
     extern volatile unsigned long triggerFilterTime;

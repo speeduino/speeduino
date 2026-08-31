@@ -6,7 +6,7 @@
 static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile uint16_t toothCurrentCount;
   extern volatile bool revolutionOne;
 
@@ -19,9 +19,9 @@ static void test_getCrankAngle(void)
     decoderStatus.toothAngleIsCorrect = true;
     revolutionOne = revOne ? 1 : 0;
     configPage4.triggerAngle = trigAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_EQUAL(expected, angle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg with revolutionTime 2000
@@ -38,6 +38,9 @@ static void test_getCrankAngle(void)
   run_case(0, 0 + dt_add);
 
   // When revolutionOne is set, result should be += 360
+  configPage4.TrigSpeed = CAM_SPEED;
+  run_case(0, 0 + dt_add, true);
+  configPage4.TrigSpeed = CRANK_SPEED;
   run_case(0, 0 + dt_add + 360, true);
 
   // trigger angle offset

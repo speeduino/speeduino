@@ -5,6 +5,11 @@
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
 
+extern volatile uint32_t toothLastToothTime;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+extern decoder_status_t decoderStatus;
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
@@ -128,12 +133,6 @@ void test_ngc_newIgn_12_trigNeg360_1()
 
 static void test_getRPM(void)
 {
-    extern volatile unsigned long toothLastToothTime;
-    extern volatile unsigned long toothLastMinusOneToothTime;
-    extern volatile unsigned long toothOneTime;
-    extern volatile unsigned long toothOneMinusOneTime;
-    extern decoder_status_t decoderStatus;
-
     auto decoder = triggerSetup_NGC();
 
     // Ensure staging allows cranking calculation

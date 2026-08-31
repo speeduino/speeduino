@@ -7,7 +7,7 @@
 
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 extern decoder_status_t decoderStatus;
-extern volatile unsigned long toothLastToothTime;
+extern volatile uint32_t toothLastToothTime;
 extern volatile int toothCurrentCount;
 extern volatile bool revolutionOne;
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
@@ -170,9 +170,9 @@ static void test_getCrankAngle(void)
         decoderStatus.syncStatus = SyncStatus::Full;
         decoderStatus.toothAngleIsCorrect = true;
         configPage4.triggerAngle = trigAngle;
+        CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
         setAngleConverterRevolutionTime(2000);
-        int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
-        TEST_ASSERT_EQUAL(expected, angle);
+        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
     };
 
     // timeToAngle(100) ~= 18 deg when revolution time = 2000

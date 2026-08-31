@@ -2,11 +2,12 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "crankMaths.h"
 
 static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile unsigned long toothLastMinusOneToothTime;
   extern volatile uint16_t triggerToothAngle;
   extern volatile int toothCurrentCount;
@@ -14,6 +15,7 @@ static void test_getCrankAngle(void)
   auto decoder = triggerSetup_Subaru67();
 
   auto setup_case = [&](int toothNum, int trigAngle) {
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     toothLastMinusOneToothTime = 1500;
     toothLastToothTime = 2000; // toothTime = 500
     triggerToothAngle = 90; // scale interval-based angle to make delta noticeable

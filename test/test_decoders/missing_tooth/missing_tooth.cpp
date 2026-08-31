@@ -5,6 +5,14 @@
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
 
+extern decoder_status_t decoderStatus;
+extern volatile uint32_t toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile bool revolutionOne;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+
 static decoder_t test_setup_36_1()
 {
     //Setup a 36-1 wheel
@@ -142,11 +150,6 @@ static void test_missingtooth_newIgn_60_2()
 
 static void test_getCrankAngle(void)
 {
-    extern decoder_status_t decoderStatus;
-    extern volatile unsigned long toothLastToothTime;
-    extern volatile int toothCurrentCount;
-    extern volatile bool revolutionOne;
-
     decoder_t decoder = test_setup_36_1();
 
     auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
@@ -156,9 +159,9 @@ static void test_getCrankAngle(void)
         decoderStatus.syncStatus = SyncStatus::Full;
         decoderStatus.toothAngleIsCorrect = true;
         configPage4.triggerAngle = trigAngle;
+        CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
         setAngleConverterRevolutionTime(2000);
-        int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + delta);
-        TEST_ASSERT_EQUAL(expected, angle);
+        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
     };
 
     // For 36-1 wheel: triggerToothAngle = 10 degrees. timeToAngle(100) ~= 18 deg
@@ -182,13 +185,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
-    extern volatile unsigned long toothLastToothTime;
-    extern volatile unsigned long toothLastMinusOneToothTime;
-    extern volatile unsigned long toothOneTime;
-    extern volatile unsigned long toothOneMinusOneTime;
-    extern volatile int toothCurrentCount;
-    extern decoder_status_t decoderStatus;
-
     auto decoder = triggerSetup_missingTooth();
 
     // Ensure staging allows cranking calculation

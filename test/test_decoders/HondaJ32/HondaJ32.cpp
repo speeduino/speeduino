@@ -2,11 +2,12 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "crankMaths.h"
 
 static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile uint16_t toothCurrentCount;
 
   auto decoder = triggerSetup_HondaJ32();
@@ -16,9 +17,9 @@ static void test_getCrankAngle(void)
     toothCurrentCount = toothNum;
     decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = triggerAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 360;
     setAngleConverterRevolutionTime(2000);
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
-    TEST_ASSERT_EQUAL(expected, angle);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));  
   };
 
   // Basic teeth
