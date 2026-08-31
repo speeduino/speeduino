@@ -186,6 +186,44 @@ static void test_getCrankAngle(void)
     run_case(1, 100, -90, 270);   // -90 -> +360 => 270
 }
 
+static void test_getRPM(void)
+{
+        extern volatile unsigned long toothLastToothTime;
+        extern volatile unsigned long toothLastMinusOneToothTime;
+        extern volatile unsigned long toothOneTime;
+        extern volatile unsigned long toothOneMinusOneTime;
+        extern decoder_status_t decoderStatus;
+
+        auto decoder = triggerSetup_Nissan360();
+
+        // --- Cranking path: startRevolutions < 2 -> revTime = gap * 180
+        currentStatus.setRpm(0);
+        currentStatus.crankRPM = 400;
+        currentStatus.startRevolutions = 0; // cranking
+        decoderStatus.syncStatus = SyncStatus::Full;
+        currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
+        toothLastMinusOneToothTime = 1000UL;
+        toothLastToothTime = toothLastMinusOneToothTime + 333UL; // gap = 333 -> revTime = 333*180
+        uint32_t revTime = (toothLastToothTime - toothLastMinusOneToothTime) * 180UL;
+        uint16_t expected = (uint16_t)((MICROS_PER_MIN + (revTime / 2U)) / revTime);
+        TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+
+        // --- Running path: use the toothOne pair and >>1 scaling
+        currentStatus.setRpm(2000);
+        currentStatus.startRevolutions = 2; // not cranking
+        decoderStatus.syncStatus = SyncStatus::Full;
+        toothOneMinusOneTime = 1000UL;
+        toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 => 60000 uS revTime -> 1000 RPM
+        revTime = ((toothOneTime - toothOneMinusOneTime) >> 1);
+        expected = (uint16_t)((MICROS_PER_MIN + (revTime / 2U)) / revTime);
+        TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+
+        // --- Fallback: when sync lost or tooth times not present, expect 0
+        decoderStatus.syncStatus = SyncStatus::None;
+        TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
+
+}
+
 void testNissan360()
 {
   SET_UNITY_FILENAME() {
@@ -199,5 +237,6 @@ void testNissan360()
     RUN_TEST_P(test_nissan360_newIgn_12_trigNeg270_1);
     RUN_TEST_P(test_nissan360_newIgn_12_trigNeg360_1);
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

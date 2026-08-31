@@ -50,9 +50,16 @@ static void test_getCrankAngle(void)
   }
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_Audi135();
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void testAudi135(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

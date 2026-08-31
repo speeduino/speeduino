@@ -6,6 +6,10 @@
 #include "scheduler_ignition_controller.h"
 
 extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+extern decoder_status_t decoderStatus;
+extern volatile unsigned long toothLastToothTime;
+extern volatile int toothCurrentCount;
+extern volatile bool revolutionOne;
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
 void test_fordst170_newIgn_12_trig0_1()
@@ -157,11 +161,6 @@ void test_fordst170_newIgn_12_trigNeg360_1()
 
 static void test_getCrankAngle(void)
 {
-    extern decoder_status_t decoderStatus;
-    extern volatile unsigned long toothLastToothTime;
-    extern volatile int toothCurrentCount;
-    extern volatile bool revolutionOne;
-
     auto decoder = triggerSetup_FordST170();
 
     auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
@@ -202,6 +201,28 @@ static void test_getCrankAngle(void)
     }
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_FordST170();
+
+  currentStatus.crankRPM = 400;
+
+  // Running
+  currentStatus.setRpm(currentStatus.crankRPM*2);
+  auto rpm1 = decoder.getRPM();
+  TEST_ASSERT_NOT_EQUAL(0, rpm1);
+
+  // Cranking
+  toothCurrentCount = 2;
+  currentStatus.setRpm(currentStatus.crankRPM/2);
+  TEST_ASSERT_NOT_EQUAL(rpm1, decoder.getRPM());
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+
+  toothCurrentCount = 1;
+  currentStatus.setRpm(currentStatus.crankRPM/2);
+  TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+}
+
 void testFordST170()
 {
     SET_UNITY_FILENAME() {
@@ -214,6 +235,7 @@ void testFordST170()
         RUN_TEST_P(test_fordst170_newIgn_12_trigNeg180_1);
         RUN_TEST_P(test_fordst170_newIgn_12_trigNeg270_1);
         RUN_TEST_P(test_fordst170_newIgn_12_trigNeg360_1);
-        RUN_TEST_P(test_getCrankAngle);    
+        RUN_TEST_P(test_getCrankAngle);   
+        RUN_TEST_P(test_getRPM);         
     }
 }

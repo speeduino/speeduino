@@ -180,11 +180,59 @@ static void test_getCrankAngle(void)
     run_case(1, true, 100, 0, 360 + 0 + dt);
 }
 
+static void test_getRPM(void)
+{
+    extern volatile unsigned long toothLastToothTime;
+    extern volatile unsigned long toothLastMinusOneToothTime;
+    extern volatile unsigned long toothOneTime;
+    extern volatile unsigned long toothOneMinusOneTime;
+    extern volatile int toothCurrentCount;
+    extern decoder_status_t decoderStatus;
+
+    auto decoder = triggerSetup_missingTooth();
+
+    // Ensure staging allows cranking calculation
+    configPage4.StgCycles = 0;
+
+    // --- Cranking path: currentStatus.RPM < crankRPM and not at tooth #1
+    currentStatus.crankRPM = 400;
+    currentStatus.setRpm(currentStatus.crankRPM/2U);
+    currentStatus.startRevolutions = 0; // cranking
+    decoderStatus.syncStatus = SyncStatus::Full;
+    // Choose gap so that revTime = gap * 36 =~ 60000 -> gap ~= 1667
+    toothLastMinusOneToothTime = 1000UL;
+    toothLastToothTime = toothLastMinusOneToothTime + 1667UL;
+    toothCurrentCount = 2;
+    currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
+    TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+    // --- If at tooth #1, cranking path should return currentStatus.RPM
+    // currentStatus.setRpm(555);
+    toothCurrentCount = 1;
+    decoderStatus.syncStatus = SyncStatus::Full;
+    TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+
+    // --- Running path: stdGetRPM should be used when not cranking
+    currentStatus.setRpm(currentStatus.crankRPM*2U);
+    currentStatus.startRevolutions = 1; // not cranking
+    decoderStatus.syncStatus = SyncStatus::Full;
+    currentStatus.revolutionTime = 12345UL; // ensure update
+    toothOneMinusOneTime = 1000UL;
+    toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
+    TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+    // --- Fallback: when sync lost, return currentStatus.RPM
+    decoderStatus.syncStatus = SyncStatus::None;
+    currentStatus.setRpm(777);
+    TEST_ASSERT_EQUAL_UINT16(777U, decoder.getRPM());
+}
+
 void testMissingTooth()
 {
     SET_UNITY_FILENAME() {
         RUN_TEST_P(test_missingtooth_newIgn_36_1);
         RUN_TEST_P(test_missingtooth_newIgn_60_2);
         RUN_TEST_P(test_getCrankAngle);
+        RUN_TEST_P(test_getRPM);
     }
 }

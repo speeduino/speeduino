@@ -48,9 +48,16 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL_INT16(70, decoder.pGetCrankAngle(callTime));
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_GM7X();
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void testGM7X(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

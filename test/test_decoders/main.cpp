@@ -37,6 +37,9 @@ void runAllTests(void)
     extern void testHarley(void);
     extern void testHondaD17(void);
     extern void testNon360(void);
+    extern void testRoverMems(void);
+    extern void testThirtySixMinus21(void);
+    extern void testThirtySixMinus22(void);
 
     testMissingTooth();
     testDualWheel();
@@ -63,6 +66,9 @@ void runAllTests(void)
     testHarley();
     testHondaD17();
     testNon360();
+    testRoverMems();
+    testThirtySixMinus21();
+    testThirtySixMinus22();
 }
 
 TEST_HARNESS(runAllTests)

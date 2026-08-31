@@ -44,9 +44,16 @@ static void test_getCrankAngle(void)
   run_case(1, 12 + dt_add + 10, false, 10);
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_24X();
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+}
+
 void test24X(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }

@@ -32,9 +32,17 @@ static UQ1X15_t degreesPerMicro;
 static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
 void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept {
-  microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
-  constexpr uint32_t UQ1X15_360 = UINT32_C(360) << degreesPerMicro_Shift;
-  degreesPerMicro = (uint16_t)fast_div_closest(UQ1X15_360, revolutionTime);
+  if (revolutionTime!=0U)
+  {
+    microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
+    constexpr uint32_t UQ1X15_360 = UINT32_C(360) << degreesPerMicro_Shift;
+    degreesPerMicro = (uint16_t)fast_div_closest(UQ1X15_360, revolutionTime);
+  }
+  else
+  {
+    microsPerDegree = 0;
+    degreesPerMicro = 0;
+  }
 }
 
 BEGIN_LTO_ALWAYS_INLINE(uint32_t) angleToTime(uint16_t angle) noexcept {

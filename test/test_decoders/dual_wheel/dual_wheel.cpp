@@ -1,9 +1,11 @@
-#include <decoders.h>
-#include <globals.h>
-#include <unity.h>
+#include "decoders.h"
+#include "globals.h"
 #include "scheduler.h"
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
+
+extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+extern decoder_status_t decoderStatus;
 
 static decoder_t test_setup_dualwheel_12_1()
 {
@@ -15,8 +17,6 @@ static decoder_t test_setup_dualwheel_12_1()
 
     return triggerSetup_DualWheel();
 }
-
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 
@@ -129,10 +129,32 @@ static void test_getCrankAngle(void)
     run_case(1, true, 100, 0, 360 + 0 + dt);
 }
 
+static void test_getRPM(void)
+{
+  auto decoder = triggerSetup_DualWheel();
+
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.crankRPM = 400;
+  currentStatus.setRpm(currentStatus.crankRPM*2);
+  auto rpm1 = decoder.getRPM();
+  TEST_ASSERT_NOT_EQUAL(0, rpm1);
+
+  currentStatus.setRpm(currentStatus.crankRPM/2);
+  TEST_ASSERT_NOT_EQUAL(rpm1, decoder.getRPM());
+  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+
+  decoderStatus.syncStatus = SyncStatus::Partial;
+  TEST_ASSERT_EQUAL(0, decoder.getRPM());
+
+  decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL(0, decoder.getRPM());
+}
+
 void testDualWheel()
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_dualwheel_newIgn_12_1);
-    RUN_TEST_P(test_getCrankAngle)
+    RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRPM);
   }
 }
