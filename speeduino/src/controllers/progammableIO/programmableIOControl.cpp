@@ -18,13 +18,6 @@ void __attribute__((optimize("Os"))) initialiseProgrammableIO(config13& page13)
 {
   for (uint8_t y = 0; y < _countof(state_t::channels); ++y)
   {
-    // A physical output pin can only be driven by one function. If this rule's pin is
-    // already claimed elsewhere, clear it in the tune (disabling the rule) rather than
-    // letting the rule silently never run. Clearing the pin changes the page CRC, so
-    // TunerStudio detects the conflict and surfaces it to the user. Virtual/cascade
-    // pins (>=128) and already-disabled slots (0) are left untouched.
-    const uint8_t outputPin = page13.outputPin[y];
-    if ((outputPin > 0U) && (outputPin < 128U) && pinIsUsed(outputPin)) { page13.outputPin[y] = 0U; }
     state.channels[y].initialize(page13, y);
   }
 }
@@ -39,23 +32,13 @@ TESTABLE_INLINE_STATIC bool isRuleActive(const rule_t& rule, const processing_ch
   return applyOutputTimeLimit(channel, rule.evaluate(state, pGetData));
 }
 
-static inline void updateChannelStatus(processing_channel_t& channel, bool ruleActive) noexcept
-{
-  channel._channel_state.isOutputActive = channel.isOutputInverted ? !ruleActive : ruleActive;
-  if (channel.isPhysicalPin()) { 
-    digitalWrite(channel.outputPin, channel._channel_state.isOutputActive); 
-  } else {
-    channel._channel_state.isRuleActive = channel._channel_state.isOutputActive;
-  }
-}
-
 static inline void processChannelActive(processing_channel_t &channel)
 {
   channel.incrementActivationDelay();
   if (channel.activationDelayExpired())
   {
     if (channel._channel_state.isOutputActive && !channel.outputDelayExpired()) { ++channel._channel_state.outputDelayCount; }
-    updateChannelStatus(channel, true);
+    channel._channel_state.updateStatus(true);
   }
 }
 
@@ -65,24 +48,25 @@ static inline void processChannelInactive(processing_channel_t &channel)
   if (channel.outputDelayExpired())
   {
     if(channel.limitType==LimitingType::Min) { channel._channel_state.outputDelayCount = 0; }
-    updateChannelStatus(channel, false);
+    channel._channel_state.updateStatus(false);
   }
 
   channel._channel_state.activationDelayCount = 0;
 }
 
-static inline void processChannel(processing_channel_t &channel, const config13& page13, getDataFn pGetData)
+static inline void processChannel(channel_state_t &channel, const config13& page13, getDataFn pGetData)
 {
-  if ( channel.isPinValid )
+  if ( channel.isPinValid() )
   {
-    rule_t rule(page13, channel._channel_state._index);
-    if (isRuleActive(rule, channel, pGetData))
+    rule_t rule(page13, channel._index);
+    processing_channel_t processingChannel(page13, channel);
+    if (isRuleActive(rule, processingChannel, pGetData))
     {
-      processChannelActive(channel);
+      processChannelActive(processingChannel);
     }
     else
     {
-      processChannelInactive(channel);
+      processChannelInactive(processingChannel);
     }
   }
 }
@@ -96,8 +80,7 @@ TESTABLE_INLINE_STATIC void programmableIOControl(const config13& page13, getDat
 {
   for (auto& channel_state: state.channels)
   {
-    processing_channel_t channel(page13, channel_state);
-    processChannel(channel, page13, pGetData);
+    processChannel(channel_state, page13, pGetData);
   }
 }
 

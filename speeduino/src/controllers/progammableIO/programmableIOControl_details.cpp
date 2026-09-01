@@ -4,34 +4,54 @@
 
 namespace programmableIOControl_details {
 
-void __attribute__((optimize("Os"))) channel_state_t::initialize(const config13& page13, uint8_t index) 
+static uint8_t validatePin(uint8_t pin)
 {
-    _index = index;
-    isRuleActive = false;
-    activationDelayCount = 0;
-    outputDelayCount = 0;
-    processing_channel_t pChannel(page13, *this);
-    isOutputActive = pChannel.isPinValid && pChannel.isOutputInverted;
-          
-    if (pChannel.isPinValid && pChannel.isPhysicalPin()) 
-    {
-      pinMode(pChannel.outputPin, OUTPUT);
-      digitalWrite(pChannel.outputPin, pChannel.isOutputInverted);
-    }
+  if (pinIsUsed(pin))
+  {
+    return NOT_A_PIN;
+  }
+  return pin;
 }
 
-static inline bool isValidOutputPin(uint8_t pin)
+void __attribute__((optimize("Os"))) channel_state_t::initialize(config13& page13, uint8_t index) 
 {
-  return (pin>0U)
-      && ((pin>128U) || !pinIsUsed(pin))
-  ;
+  _index = index;
+  isRuleActive = false;
+  activationDelayCount = 0;
+  outputDelayCount = 0;
+  // A physical output pin can only be driven by one function. If this rule's pin is
+  // already claimed elsewhere, clear it in the tune (disabling the rule) rather than
+  // letting the rule silently never run. Clearing the pin changes the page CRC, so
+  // TunerStudio detects the conflict and surfaces it to the user. Virtual/cascade
+  // pins (>=128) and already-disabled slots (0) are left untouched.
+  page13.outputPin[index] = _pin = validatePin(page13.outputPin[index]);
+
+  isOutputInverted = BIT_CHECK(page13.outputInverted, index);
+  isOutputActive = isPinValid() && isOutputInverted;
+        
+  if (isPinValid() && isPhysicalPin()) 
+  {
+    pinMode(_pin, OUTPUT);
+    digitalWrite(_pin, isOutputInverted);
+  }
 }
+
+void channel_state_t::updateStatus(bool ruleActive) noexcept
+{
+  if (isPinValid())
+  {
+    isOutputActive = isOutputInverted ? !ruleActive : ruleActive;
+    if (isPhysicalPin()) { 
+      digitalWrite(_pin, isOutputActive); 
+    } else {
+      isRuleActive = isOutputActive;
+    }
+  }
+}
+
 
 processing_channel_t::processing_channel_t(const config13 &page13, channel_state_t& channel_state)
 : _channel_state(channel_state)
-, outputPin(page13.outputPin[channel_state._index])
-, isPinValid(isValidOutputPin(page13.outputPin[channel_state._index]))
-, isOutputInverted(BIT_CHECK(page13.outputInverted, channel_state._index))
 , limitType(BIT_CHECK(page13.kindOfLimiting, channel_state._index) ? LimitingType::Max : LimitingType::Min)
 , outputTimeLimit(page13.outputTimeLimit[channel_state._index])
 , activationDelay(page13.outputDelay[channel_state._index])
