@@ -119,95 +119,96 @@ static void __attribute__((optimize("Os"))) setSingleChannelCallbacks(void)
 #endif
 }
 
+static void __attribute__((optimize("Os"))) set4CylinderWastedCOPCallbacks(void)
+{
+  //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
+  setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
+#if IGN_CHANNELS >= 2
+  setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+#endif
+}
+
+static void __attribute__((optimize("Os"))) set6CylinderWastedCOPCallbacks(void)
+{
+  //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
+  setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
+#if IGN_CHANNELS >= 2
+  setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
+#endif
+#if IGN_CHANNELS >= 3
+  setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+#endif
+}
+
+static void __attribute__((optimize("Os"))) set8CylinderWastedCOPCallbacks(void)
+{
+  //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
+  setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
+#if IGN_CHANNELS >= 2
+  setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
+#endif
+#if IGN_CHANNELS >= 3
+  setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
+#endif
+#if IGN_CHANNELS >= 4
+  setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+#endif
+}
+
 static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCylinders)
 {
   //Wasted COP mode. Note, most of the boards can only run this for 4-cyl only.
   switch (numCylinders)
   {
-  //If the person has inadvertently selected this when running more than 4 cylinders or other than 6 cylinders, just use standard Wasted spark mode
-  default:
-  //1-3 cylinder wasted COP is the same as regular wasted mode
-  case 1:
-  case 2:
-  case 3:
-    setWastedSparkCallbacks();
-    break;
+  case 4: set4CylinderWastedCOPCallbacks(); break;
+  case 6: set6CylinderWastedCOPCallbacks(); break;
+  case 8: set8CylinderWastedCOPCallbacks(); break;
+  default: setWastedSparkCallbacks(); break;
+  }
+}
 
-  case 4:
-    //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-    setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
+static void __attribute__((optimize("Os"))) setRotaryFcCallbacks(void)
+{
+  //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
+  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-    setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-#endif
-    break;
-  
-  case 6:
-    //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
-    setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
-#if IGN_CHANNELS >= 2
-    setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
+  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 3
-    setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-#endif
-    break;
-  
-  case 8:
-    //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
-    setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
-#if IGN_CHANNELS >= 2
-    setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
-#endif
-#if IGN_CHANNELS >= 3
-    setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
+  setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
 #endif
 #if IGN_CHANNELS >= 4
-    setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+  setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
+#endif  
+}
+
+static void __attribute__((optimize("Os"))) setRotaryFdCallbacks(void)
+{
+  //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
+  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+#if IGN_CHANNELS >= 2
+  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
 #endif
-  }
+
+  //Trailing coils have their own channel each
+  //IGN2 = front rotor trailing spark
+#if IGN_CHANNELS >= 3
+  setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
+  //IGN3 = rear rotor trailing spark
+#endif
+#if IGN_CHANNELS >= 4
+  setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
+#endif
 }
 
 static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryType)
 {
   switch (rotaryType)
   {
-  case ROTARY_IGN_FC:
-    //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-    setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 2
-    setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 3
-    setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
-#endif
-#if IGN_CHANNELS >= 4
-    setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
-#endif
-    break;
-
-    case ROTARY_IGN_FD:
-    //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-    setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 2
-    setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-#endif
-
-    //Trailing coils have their own channel each
-    //IGN2 = front rotor trailing spark
-#if IGN_CHANNELS >= 3
-    setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
-    //IGN3 = rear rotor trailing spark
-#endif
-#if IGN_CHANNELS >= 4
-    setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
-#endif
-    break;
-  
-  case ROTARY_IGN_RX8:
-    //RX8 outputs are simply 1 coil and 1 output per plug
-    setSequentialCallbacks(4U);
-    break;
-
+  case ROTARY_IGN_FC: setRotaryFcCallbacks(); break;
+  case ROTARY_IGN_FD: setRotaryFdCallbacks(); break;
+  // RX8 outputs are simply 1 coil and 1 output per plug
+  case ROTARY_IGN_RX8: setSequentialCallbacks(4U); break;
   default:
     //No action for other RX ignition modes (Future expansion / MISRA compliant). 
     break;
@@ -222,7 +223,6 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkM
   case IGN_MODE_WASTEDCOP: setWastedCOPCallbacks(numCylinders); break;
   case IGN_MODE_SEQUENTIAL: setSequentialCallbacks(IGN_CHANNELS); break;
   case IGN_MODE_ROTARY: setRotaryCallbacks(rotaryMode); break;
-  case IGN_MODE_WASTED:
   default:
     setWastedSparkCallbacks(); break;
   }
@@ -354,6 +354,15 @@ TESTABLE_STATIC __attribute__((optimize("Os"))) uint8_t validateSparkMode(uint8_
   if (mode == IGN_MODE_ROTARY) {
     // Rotary is only supported on 4 "cylinder"
     if (page2.nCylinders!=4U) {
+      mode = IGN_MODE_WASTED;
+    }
+  }
+
+  if (mode == IGN_MODE_WASTEDCOP) {
+    // Wasted COP is only supported on 4-/6-/8- cylinder
+    if ((page2.nCylinders!=4U)
+     && (page2.nCylinders!=6U)
+     && (page2.nCylinders!=8U)) {
       mode = IGN_MODE_WASTED;
     }
   }

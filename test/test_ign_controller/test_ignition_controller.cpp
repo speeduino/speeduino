@@ -14,10 +14,15 @@ static void test_validateSparkMode(void)
 
     TEST_ASSERT_EQUAL(IGN_MODE_WASTED, validateSparkMode(IGN_MODE_WASTED, page2));
     TEST_ASSERT_EQUAL(IGN_MODE_SINGLE, validateSparkMode(IGN_MODE_SINGLE, page2));
-    TEST_ASSERT_EQUAL(IGN_MODE_WASTEDCOP, validateSparkMode(IGN_MODE_WASTEDCOP, page2));
     TEST_ASSERT_EQUAL(IGN_MODE_SEQUENTIAL, validateSparkMode(IGN_MODE_SEQUENTIAL, page2));
     page2.nCylinders = 4U;
     TEST_ASSERT_EQUAL(IGN_MODE_ROTARY, validateSparkMode(IGN_MODE_ROTARY, page2));
+    page2.nCylinders = 4U;
+    TEST_ASSERT_EQUAL(IGN_MODE_WASTEDCOP, validateSparkMode(IGN_MODE_WASTEDCOP, page2));
+    page2.nCylinders = 6U;
+    TEST_ASSERT_EQUAL(IGN_MODE_WASTEDCOP, validateSparkMode(IGN_MODE_WASTEDCOP, page2));
+    page2.nCylinders = 8U;
+    TEST_ASSERT_EQUAL(IGN_MODE_WASTEDCOP, validateSparkMode(IGN_MODE_WASTEDCOP, page2));
 
     page2 = {};
     page2.nCylinders = IGN_CHANNELS+1;
@@ -32,6 +37,10 @@ static void test_validateSparkMode(void)
     page2 = {};
     page2.nCylinders = 1;
     TEST_ASSERT_EQUAL(IGN_MODE_WASTED, validateSparkMode(IGN_MODE_ROTARY, page2));
+
+    page2 = {};
+    page2.nCylinders = 1;
+    TEST_ASSERT_EQUAL(IGN_MODE_WASTED, validateSparkMode(IGN_MODE_WASTEDCOP, page2));
 }
 
 static void test_validateIgnitionSetup_oddfire(void)
