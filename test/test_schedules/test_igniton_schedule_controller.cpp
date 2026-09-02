@@ -561,6 +561,38 @@ static void test_initialize_rotary_rx8_callbacks(void)
     RUNIF_IGNCHANNEL8( { assert_callbacks(ignitionSchedule8, nullCallback, nullCallback); }, {});
 }
 
+static void test_initialiseIgnitionSchedules_5cyl_singlechannel(void)
+{
+    statuses current = {};
+    config2 page2 = {};
+    config4 page4 = {};
+    config10 page10 = {};
+    pinNumbers_t pins = {};
+
+    page2.nCylinders = 5U;
+    page2.strokes = FOUR_STROKE;
+    page4.sparkMode = IGN_MODE_SINGLE;
+
+    initialiseIgnitionSchedules(current, page2, page4, page10, pins);
+
+    TEST_ASSERT_EQUAL_UINT16(720U, CRANK_ANGLE_MAX_IGN);
+    TEST_ASSERT_EQUAL_UINT8(5U, current.maxIgnOutputs);
+
+    TEST_ASSERT_EQUAL_UINT16(0U, ignitionSchedule1.channelDegrees);
+#if IGN_CHANNELS >= 2
+    TEST_ASSERT_EQUAL_UINT16(144U, ignitionSchedule2.channelDegrees);
+#endif
+#if IGN_CHANNELS >= 3
+    TEST_ASSERT_EQUAL_UINT16(288U, ignitionSchedule3.channelDegrees);
+#endif
+#if IGN_CHANNELS >= 4
+    TEST_ASSERT_EQUAL_UINT16(432U, ignitionSchedule4.channelDegrees);
+#endif
+#if IGN_CHANNELS >= 5
+    TEST_ASSERT_EQUAL_UINT16(576U, ignitionSchedule5.channelDegrees);
+#endif
+}
+
 void test_ignition_schedule_controller(void)
 {
   SET_UNITY_FILENAME() {
@@ -588,27 +620,6 @@ void test_ignition_schedule_controller(void)
     RUN_TEST_P(test_initialize_rotary_fc_callbacks);
     RUN_TEST_P(test_initialize_rotary_fd_callbacks);
     RUN_TEST_P(test_initialize_rotary_rx8_callbacks);
-    RUN_TEST_P(test_calculateIgnitionAngles_nonrotary);
-    RUN_TEST_P(test_calculateIgnitionAngles_rotary);
-    RUN_TEST_P(test_calculateIgnitionAngles_rotary_non_4_output_uses_non_rotary);
-    RUN_TEST_P(test_calculateIgnitionAngles_sync_state_transitions);
-    RUN_TEST_P(test_setIgnitionChannels_mask_enables_and_disables_channels);
-    RUN_TEST_P(test_changeIgnitionToFullSequential);
-    RUN_TEST_P(test_changeIgnitionToFullSequential_running_schedule);
-    RUN_TEST_P(test_changeIgnitionToHalfSync);
-    RUN_TEST_P(test_changeIgnitionToHalfSync_runningschedule);
-    RUN_TEST_P(test_isAnyIgnScheduleRunning);
-    RUN_TEST_P(test_initialize_singlechannel_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP1_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP2_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP3_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP4_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP5_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP6_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP8_callbacks);
-    RUN_TEST_P(test_initialize_sequential_callbacks);
-    RUN_TEST_P(test_initialize_rotary_fc_callbacks);
-    RUN_TEST_P(test_initialize_rotary_fd_callbacks);
-    RUN_TEST_P(test_initialize_rotary_rx8_callbacks);
+    RUN_TEST_P(test_initialiseIgnitionSchedules_5cyl_singlechannel);
   }
 }
