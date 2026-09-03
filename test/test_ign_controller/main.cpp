@@ -5,9 +5,13 @@ void runAllTests(void)
 {
     extern void testIgnitionController(void);
     extern void testIgnitionScheduleInit(void);
+    extern void testControllerCalcs(void);
+    extern void testOverDwell(void);
 
     testIgnitionController();
     testIgnitionScheduleInit();
+    testControllerCalcs();
+    testOverDwell();
 }
 
 TEST_HARNESS(runAllTests)
