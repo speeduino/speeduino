@@ -5,18 +5,17 @@ TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
 
 void fuelPumpOn(void)
 {
-    if (!pump_state.isPumpOn)
+    if (!pump_state.pump_pin.isPinHigh())
     {
         pump_state.pump_pin.setPinHigh();
-        pump_state.isPumpOn = true;
+
     }
 }
 void fuelPumpOff(void)
 {
-    if (pump_state.isPumpOn)
+    if (pump_state.pump_pin.isPinHigh())
     {
         pump_state.pump_pin.setPinLow();
-        pump_state.isPumpOn = false;
     }
 }
 
@@ -58,7 +57,6 @@ void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current,
 {
   pump_state = fuelPumpController::detsil::pump_state_t();
   pump_state.pump_pin.setPin(pumpPin, OUTPUT);
-  pump_state.isPumpOn = true; // This forces fuelPumpOff() to run.
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
   startPumpPriming(current, page2);
