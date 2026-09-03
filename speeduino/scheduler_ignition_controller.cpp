@@ -389,7 +389,7 @@ static void __attribute__((optimize("Os"))) initScheduleAngles(statuses &current
 #endif
       current.maxIgnOutputs= 5; //Only 4 actual outputs, so that's all that can be cut
 
-      if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
+      if( ( (page4.sparkMode == IGN_MODE_SEQUENTIAL) || (page4.sparkMode == IGN_MODE_SINGLE) ) && (page2.strokes == FOUR_STROKE) )
       {
 #if IGN_CHANNELS >= 2
         ignitionSchedule2.channelDegrees = 144;
