@@ -1,16 +1,42 @@
-#include <Arduino.h>
-#include <unity.h>
-#include "globals.h"
-#include "init.h"
 #include "../test_utils.h"
-#include "storage.h"
 #include "../channel_test_helpers.h"
 #include "scheduler_ignition_controller.h"
 #include "../fake_decoder_status.h"
 #include "decoder_builder.h"
+#include "src/pins/pinMapping.h"
 
-extern void prepareForInitialiseAll(uint8_t boardId);
 extern void matchIgnitionSchedulersToSyncState(const config2 &page2, const config4 &page4, statuses &current);
+
+struct test_context_t
+{
+  statuses current = {};
+  config2 page2;
+  config4 page4;
+  config10 page10;
+  config13 page13;
+  pinNumbers_t pins;
+
+  test_context_t(uint8_t boardId)
+  {
+    page2.pinMapping = boardId;
+    pins = getPinMapping(boardId);
+  }
+
+  void initialise(void)
+  {
+    ::initialiseIgnitionSchedules(current, page2, page4, page10, page13, pins);
+  }
+};
+
+auto setupContext(uint8_t boardId, uint8_t nCylinders, uint8_t strokes)
+{
+  test_context_t context(boardId);
+
+  context.page2.nCylinders = nCylinders;
+  context.page2.strokes = strokes;
+
+  return context;
+}
 
 static void assert_ignition_channel(uint16_t angle, uint8_t channel, const IgnitionSchedule &schedule, const statuses &current)
 {
@@ -54,36 +80,35 @@ static void assert_cylinder1_stroke4_seq_even(const statuses &current)
 
 static void cylinder1_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder1_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 1, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder1_stroke4_seq_even(context.current);
 }
 
 static void cylinder1_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 1, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_ignition_schedules(360U, 1U, angle, currentStatus);
+  assert_ignition_schedules(360U, 1U, angle, context.current);
 }  
 
 static void cylinder1_stroke4_seq_odd(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = ODD_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 1, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = ODD_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,0,0,0,0,0,0,0};
-  assert_ignition_schedules(720U, 1U, angle, currentStatus);
+  assert_ignition_schedules(720U, 1U, angle, context.current);
 }
 
 static void run_1_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 1;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder1_stroke4_seq_even);
   RUN_TEST_P(cylinder1_stroke4_wasted_even);
   RUN_TEST_P(cylinder1_stroke4_seq_odd);
@@ -97,40 +122,39 @@ static void assert_cylinder2_stroke4_seq_even(const statuses &current)
 
 static void cylinder2_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder2_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 2, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder2_stroke4_seq_even(context.current);
 }
 
 static void cylinder2_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 2, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_ignition_schedules(360U, 2U, angle, currentStatus);
+  assert_ignition_schedules(360U, 2U, angle, context.current);
 }  
 
 static void cylinder2_stroke4_seq_odd(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = ODD_FIRE;
-  configPage2.oddfire[0] = 13;
-  configPage2.oddfire[1] = 111;
-  configPage2.oddfire[2] = 217;
+  auto context = setupContext(3, 2, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = ODD_FIRE;
+  context.page2.oddfire[0] = 13;
+  context.page2.oddfire[1] = 111;
+  context.page2.oddfire[2] = 217;
 
-  initialiseAll(); //Run the main initialise function
+  context.initialise();
   const uint16_t angle[] = {0,13,0,0,0,0,0,0};
-  assert_ignition_schedules(720U, 2U, angle, currentStatus);
+  assert_ignition_schedules(720U, 2U, angle, context.current);
 }
 
 static void run_2_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 2;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder2_stroke4_seq_even);
   RUN_TEST_P(cylinder2_stroke4_wasted_even);
   RUN_TEST_P(cylinder2_stroke4_seq_odd);
@@ -144,48 +168,48 @@ static void assert_cylinder3_stroke4_seq_even(const statuses &current)
 
 static void cylinder3_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder3_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 3, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder3_stroke4_seq_even(context.current);
 }
 
 static void cylinder3_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 3, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-  assert_ignition_schedules(360U, 3U, angle, currentStatus);
+  assert_ignition_schedules(360U, 3U, angle, context.current);
 }  
 
 static void cylinder3_stroke4_wasted_odd(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = ODD_FIRE;
-  configPage2.oddfire[0] = 13;
-  configPage2.oddfire[1] = 111;
-  configPage2.oddfire[2] = 217;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 3, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = ODD_FIRE;
+  context.page2.oddfire[0] = 13;
+  context.page2.oddfire[1] = 111;
+  context.page2.oddfire[2] = 217;
+  context.initialise();
   const uint16_t angle[] = {0,13,111,0,0,0,0,0};
-  assert_ignition_schedules(360U, 3U, angle, currentStatus);
+  assert_ignition_schedules(360U, 3U, angle, context.current);
 }  
 
 static void cylinder3_stroke4_single_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SINGLE;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 3, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SINGLE;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,240,480,0,0,0,0,0};
-  assert_ignition_schedules(720U, 3U, angle, currentStatus);
+  assert_ignition_schedules(720U, 3U, angle, context.current);
 }  
 
 static void run_3_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 3;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder3_stroke4_seq_even);
   RUN_TEST_P(cylinder3_stroke4_wasted_even);
   RUN_TEST_P(cylinder3_stroke4_wasted_odd);
@@ -200,48 +224,48 @@ static void assert_cylinder4_stroke4_seq_even(const statuses &current)
 
 static void cylinder4_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder4_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder4_stroke4_seq_even(context.current);
 }
 
 static void cylinder4_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_ignition_schedules(360U, 2U, angle, currentStatus);
+  assert_ignition_schedules(360U, 2U, angle, context.current);
 }  
 
 static void cylinder4_stroke4_seq_odd(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = ODD_FIRE;
-  configPage2.oddfire[0] = 13;
-  configPage2.oddfire[1] = 111;
-  configPage2.oddfire[2] = 699;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = ODD_FIRE;
+  context.page2.oddfire[0] = 13;
+  context.page2.oddfire[1] = 111;
+  context.page2.oddfire[2] = 699;
+  context.initialise();
   const uint16_t angle[] = {0,13,111,699,0,0,0,0};
-  assert_ignition_schedules(720U, 4U, angle, currentStatus);
+  assert_ignition_schedules(720U, 4U, angle, context.current);
 }
 
 static void cylinder4_stroke4_single_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SINGLE;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SINGLE;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,180,0,0,0,0,0,0};
-  assert_ignition_schedules(360U, 2U, angle, currentStatus);
+  assert_ignition_schedules(360U, 2U, angle, context.current);
 }  
 
 static void run_4_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 4;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder4_stroke4_seq_even);
   RUN_TEST_P(cylinder4_stroke4_wasted_even);
   RUN_TEST_P(cylinder4_stroke4_seq_odd);
@@ -256,27 +280,25 @@ static void assert_cylinder5_stroke4_seq_even(const statuses &current)
 
 static void cylinder5_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder5_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 5, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder5_stroke4_seq_even(context.current);
 }
 
 static void cylinder5_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 5, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,72,144,216,288,0,0,0};
-  assert_ignition_schedules(360U, 5U, angle, currentStatus);
+  assert_ignition_schedules(360U, 5U, angle, context.current);
 }  
 
 static void run_5_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 5;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder5_stroke4_seq_even);
   RUN_TEST_P(cylinder5_stroke4_wasted_even);
 }
@@ -294,27 +316,25 @@ static void assert_cylinder6_stroke4_seq_even(const statuses &current)
 
 static void cylinder6_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder6_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 6, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder6_stroke4_seq_even(context.current);
 }
 
 static void cylinder6_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 6, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,120,240,0,0,0,0,0};
-  assert_ignition_schedules(360U, 3U, angle, currentStatus);
+  assert_ignition_schedules(360U, 3U, angle, context.current);
 } 
 
 static void run_6_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 6;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder6_stroke4_seq_even);
   RUN_TEST_P(cylinder6_stroke4_wasted_even); 
 }
@@ -332,27 +352,25 @@ static void assert_cylinder8_stroke4_seq_even(const statuses &current)
 
 static void cylinder8_stroke4_seq_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  assert_cylinder8_stroke4_seq_even(currentStatus);
+  auto context = setupContext(3, 8, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  assert_cylinder8_stroke4_seq_even(context.current);
 }
 
 static void cylinder8_stroke4_wasted_even(void)
 {
-  configPage4.sparkMode = IGN_MODE_WASTED;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
+  auto context = setupContext(3, 8, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_WASTED;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
   const uint16_t angle[] = {0,90,180,270,0,0,0,0};
-  assert_ignition_schedules(360U, 4U, angle, currentStatus);
+  assert_ignition_schedules(360U, 4U, angle, context.current);
 }  
 
 static void run_8_cylinder_4stroke_tests(void)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = 8;
-  configPage2.strokes = FOUR_STROKE;
-
   RUN_TEST_P(cylinder8_stroke4_seq_even);
   RUN_TEST_P(cylinder8_stroke4_wasted_even);
 }
@@ -378,18 +396,16 @@ struct partial_sync_context_t
 
 static partial_sync_context_t setupPartialSyncTest(uint8_t cylinders)
 {
-  prepareForInitialiseAll(3U);
-  configPage2.nCylinders = cylinders;
-  configPage2.strokes = FOUR_STROKE;
-  configPage4.sparkMode = IGN_MODE_SEQUENTIAL;
-  configPage2.engineType = EVEN_FIRE;
-  initialiseAll(); //Run the main initialise function
-  currentStatus.decoder = decoder_builder_t(currentStatus.decoder).setGetStatus(getFakeDecoderStatus).build();
+  auto initContext = setupContext(3, cylinders, FOUR_STROKE);
+  initContext.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  initContext.page2.engineType = EVEN_FIRE;
+  initContext.initialise();
 
   partial_sync_context_t context;
-  context.page2 = configPage2;
-  context.page4 = configPage4;
-  context.current = currentStatus;
+  context.page2 = initContext.page2;
+  context.page4 = initContext.page4;
+  context.current = initContext.current;
+  context.current.decoder = decoder_builder_t(context.current.decoder).setGetStatus(getFakeDecoderStatus).build();
   return context;
 }
 
@@ -541,7 +557,7 @@ static void run_partial_sync_tests(void)
   RUN_TEST_P(test_partial_sync_8_cylinder);
 }
 
-void testIgnitionScheduleInit()
+void testIgnitionScheduleInit(void)
 {
   SET_UNITY_FILENAME() {
 

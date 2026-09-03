@@ -4,8 +4,10 @@
 void runAllTests(void)
 {
     extern void testIgnitionController(void);
+    extern void testIgnitionScheduleInit(void);
 
     testIgnitionController();
+    testIgnitionScheduleInit();
 }
 
 TEST_HARNESS(runAllTests)
