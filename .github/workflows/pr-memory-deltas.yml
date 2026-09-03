@@ -44,7 +44,7 @@ jobs:
     - name: Build PR Envs
       run: |
         source PIO/bin/activate
-        platformio run -d ${{ env.PR_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} &> ${{ env.PR_LOG_FILE }}
+        platformio run -d ${{ env.PR_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} 2>&1 | tee ${{ env.PR_LOG_FILE }}
     
     - name: Checkout Base Branch
       uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
     - name: Build Base Envs
       run: |
         source PIO/bin/activate
-        platformio run -d ${{ env.BASE_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} &> ${{ env.BASE_LOG_FILE }}
+        platformio run -d ${{ env.BASE_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} 2>&1 | tee ${{ env.BASE_LOG_FILE }}
 
     - name: Generate artifacts
       run: |
