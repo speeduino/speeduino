@@ -276,12 +276,24 @@ static void cylinder5_stroke4_wasted_even(void)
   context.initialise();
   const uint16_t angle[] = {0,72,144,216,288,0,0,0};
   assert_ignition_schedules(360U, 5U, angle, context.current);
-}  
+}
+
+static void cylinder5_stroke4_single_even(void)
+{
+  auto context = setupContext(3, 5, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_SINGLE;
+
+  context.initialise();
+
+  constexpr uint16_t angles[] = { 0, 144, 288, 432, 576, 0, 0, 0};
+  assert_ignition_schedules(720, 5, angles, context.current);
+}
 
 static void run_5_cylinder_4stroke_tests(void)
 {
   RUN_TEST_P(cylinder5_stroke4_seq_even);
   RUN_TEST_P(cylinder5_stroke4_wasted_even);
+  RUN_TEST_P(cylinder5_stroke4_single_even);
 }
 
 static void assert_cylinder6_stroke4_seq_even(const statuses &current)
@@ -767,18 +779,60 @@ static void test_initialize_rotary_rx8_callbacks(void)
     RUNIF_IGNCHANNEL8( { assert_callbacks(ignitionSchedule8, nullCallback, nullCallback); }, {});
 }
 
-static void test_initialiseIgnitionSchedules_5cyl_singlechannel(void)
+static void run_callback_tests(void)
 {
-    test_context_t context;
+  RUN_TEST_P(test_initialize_singlechannel_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP1_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP2_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP3_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP4_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP5_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP6_callbacks);
+  RUN_TEST_P(test_initialize_wastedCOP8_callbacks);
+  RUN_TEST_P(test_initialize_sequential_callbacks);
+  RUN_TEST_P(test_initialize_rotary_fc_callbacks);
+  RUN_TEST_P(test_initialize_rotary_fd_callbacks);
+  RUN_TEST_P(test_initialize_rotary_rx8_callbacks);
+}
 
-    context.page2.nCylinders = 5U;
-    context.page2.strokes = FOUR_STROKE;
-    context.page4.sparkMode = IGN_MODE_SINGLE;
+static void test_rotary_fc(void)
+{
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_ROTARY;
+  context.page10.rotaryType = ROTARY_IGN_FC;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  const uint16_t angles[] = {0,180,0,180,0,0,0,0};
+  assert_ignition_schedules(360U, 4U, angles, context.current);
+}
 
-    context.initialise();
+static void test_rotary_fd(void)
+{
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_ROTARY;
+  context.page10.rotaryType = ROTARY_IGN_FD;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  const uint16_t angles[] = {0,180,0,180,0,0,0,0};
+  assert_ignition_schedules(360U, 4U, angles, context.current);
+}
 
-    constexpr uint16_t angles[] = { 0, 144, 288, 432, 576, 0, 0, 0};
-    assert_ignition_schedules(720, 5, angles, context.current);
+static void test_rotary_rx8(void)
+{
+  auto context = setupContext(3, 4, FOUR_STROKE);
+  context.page4.sparkMode = IGN_MODE_ROTARY;
+  context.page10.rotaryType = ROTARY_IGN_RX8;
+  context.page2.engineType = EVEN_FIRE;
+  context.initialise();
+  const uint16_t angles[] = {0,180,0,180,0,0,0,0};
+  assert_ignition_schedules(360U, 4U, angles, context.current);
+}
+
+static void run_rotary_tests(void)
+{
+  RUN_TEST_P(test_rotary_fc);
+  RUN_TEST_P(test_rotary_fd);
+  RUN_TEST_P(test_rotary_rx8);
 }
 
 void testIgnitionScheduleInit(void)
@@ -792,18 +846,7 @@ void testIgnitionScheduleInit(void)
     run_6_cylinder_4stroke_tests();
     run_8_cylinder_4stroke_tests();
     run_partial_sync_tests();
-    RUN_TEST_P(test_initialize_singlechannel_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP1_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP2_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP3_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP4_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP5_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP6_callbacks);
-    RUN_TEST_P(test_initialize_wastedCOP8_callbacks);
-    RUN_TEST_P(test_initialize_sequential_callbacks);
-    RUN_TEST_P(test_initialize_rotary_fc_callbacks);
-    RUN_TEST_P(test_initialize_rotary_fd_callbacks);
-    RUN_TEST_P(test_initialize_rotary_rx8_callbacks);
-    RUN_TEST_P(test_initialiseIgnitionSchedules_5cyl_singlechannel);
+    run_callback_tests();
+    run_rotary_tests();
   }
 }

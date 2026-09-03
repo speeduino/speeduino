@@ -209,9 +209,11 @@ static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryTyp
   case ROTARY_IGN_FD: setRotaryFdCallbacks(); break;
   // RX8 outputs are simply 1 coil and 1 output per plug
   case ROTARY_IGN_RX8: setSequentialCallbacks(4U); break;
+  // LCOV_EXCL_BR_START
   default:
     //No action for other RX ignition modes (Future expansion / MISRA compliant). 
     break;
+  // LCOV_EXCL_BR_STOP
   }
 }
 
@@ -223,8 +225,10 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkM
   case IGN_MODE_WASTEDCOP: setWastedCOPCallbacks(numCylinders); break;
   case IGN_MODE_SEQUENTIAL: setSequentialCallbacks(IGN_CHANNELS); break;
   case IGN_MODE_ROTARY: setRotaryCallbacks(rotaryMode); break;
+  // LCOV_EXCL_BR_START
   default:
     setWastedSparkCallbacks(); break;
+  // LCOV_EXCL_BR_STOP
   }
 }
 
@@ -293,7 +297,10 @@ static void __attribute__((optimize("Os"))) setRotaryScheduleAngles(void)
 
 static void __attribute__((optimize("Os"))) setEvenfireScheduleAngles(const statuses &current)
 {
+  // LCOV_EXCL_START
   INTERNAL_TEST_ASSERT(current.maxIgnOutputs!=0);
+  // LCOV_EXCL_STOP
+
   uint16_t interCylinderAngle = CRANK_ANGLE_MAX_IGN/current.maxIgnOutputs;
 
 #define SET_CHANNEL_ANGLE(channel) ignitionSchedule ##channel .channelDegrees = ((channel)-1)*interCylinderAngle;
@@ -435,7 +442,9 @@ static __attribute__((optimize("Os"))) uint8_t calculateMaxIgnChannels(const con
   {
     return page2.nCylinders;
   }
+  // LCOV_EXCL_START
   INTERNAL_TEST_ASSERT(page2.nCylinders%2==0);
+  // LCOV_EXCL_STOP
   return page2.nCylinders/2;
 }
 
@@ -757,6 +766,7 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
 }
 // LCOV_EXCL_STOP
 
+// LCOV_EXCL_START
 void __attribute__((optimize("Os"))) startIgnitionSchedulers(void)
 {
   IGN1_TIMER_ENABLE();
@@ -782,6 +792,7 @@ void __attribute__((optimize("Os"))) startIgnitionSchedulers(void)
   IGN8_TIMER_ENABLE();
 #endif  
 }
+// LCOV_EXCL_STOP
 
 void __attribute__((optimize("Os"))) stopIgnitionSchedulers(void)
 {
