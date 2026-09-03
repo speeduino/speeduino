@@ -15,9 +15,6 @@ void runAllScheduleTests(void)
   extern void test_schedule(void);
   extern void test_fuel_schedule(void);
   extern void test_ignition_schedule(void);
-  extern void test_ignition_controller();
-  extern void test_overdwell(void);
-  extern void test_ignition_schedule_controller();
 
   initialiseAll();
 
@@ -32,9 +29,6 @@ void runAllScheduleTests(void)
   test_schedule();
   test_fuel_schedule();
   test_ignition_schedule();
-  test_ignition_controller();
-  test_overdwell();
-  test_ignition_schedule_controller();
 }
 
 TEST_HARNESS(runAllScheduleTests)

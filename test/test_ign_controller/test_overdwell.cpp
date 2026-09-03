@@ -1,8 +1,9 @@
-#include <unity.h>
+// #include <unity.h>
 #include "../test_utils.h"
 #include "scheduler.h"
 #include <type_traits>
-#include "globals.h"
+#include "statuses.h"
+#include "config_pages.h"
 
 using raw_counter_t = std::remove_reference<IgnitionSchedule::counter_t>::type;
 using raw_compare_t = std::remove_reference<IgnitionSchedule::compare_t>::type;
@@ -142,7 +143,7 @@ static void test_applyChannelOverDwellProtection_running_timeout_rollover(void) 
   TEST_ASSERT_EQUAL(1, counter); // Dwell limit exceeded: the coil must be cut
 }
 
-void test_overdwell(void)
+void testOverDwell(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_isOverDwellActive_rpmAboveLimit);

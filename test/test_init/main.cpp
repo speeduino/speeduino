@@ -27,11 +27,9 @@ void prepareForInitialiseAll(uint8_t boardId) {
 void runAllInitTests(void)
 {
     extern void testInitialisation(void);
-    extern void testIgnitionScheduleInit(void);
     extern void testPinMapping(void);
 
     testInitialisation();
-    testIgnitionScheduleInit();
     testPinMapping();
 }
 
