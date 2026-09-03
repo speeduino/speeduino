@@ -17,8 +17,10 @@ struct ignition_test_context_t
 {
     config2 page2 = {};
     config4 page4 = {};
+    config10 page10 = {};
     config13 page13 = {};
     statuses current = {};
+    pinNumbers_t pins = {};
 
     ignition_test_context_t() {
         // Set basic engine config defaults
@@ -63,6 +65,18 @@ static void assert_ignition_angles(const ignition_test_context_t &context)
     RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedule6.chargeAngle + ignitionSchedule6.dischargeAngle); }}, {});
     RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedule7.chargeAngle + ignitionSchedule7.dischargeAngle); }}, {});
     RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedule8.chargeAngle + ignitionSchedule8.dischargeAngle); }}, {});
+}
+
+static void assert_channel_angles(const ignition_test_context_t &context, const uint16_t (&angles)[8])
+{
+    RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_EQUAL_UINT16(angles[0], ignitionSchedule1.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL2( { if (context.current.maxIgnOutputs>=2) { TEST_ASSERT_EQUAL_UINT16(angles[1], ignitionSchedule2.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL3( { if (context.current.maxIgnOutputs>=3) { TEST_ASSERT_EQUAL_UINT16(angles[2], ignitionSchedule3.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL4( { if (context.current.maxIgnOutputs>=4) { TEST_ASSERT_EQUAL_UINT16(angles[3], ignitionSchedule4.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL5( { if (context.current.maxIgnOutputs>=5) { TEST_ASSERT_EQUAL_UINT16(angles[4], ignitionSchedule5.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_EQUAL_UINT16(angles[5], ignitionSchedule6.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_EQUAL_UINT16(angles[6], ignitionSchedule7.channelDegrees); }}, {});
+    RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_EQUAL_UINT16(angles[7], ignitionSchedule8.channelDegrees); }}, {});
 }
 
 static void test_calculateIgnitionAngles_nonrotary(void)
@@ -563,34 +577,18 @@ static void test_initialize_rotary_rx8_callbacks(void)
 
 static void test_initialiseIgnitionSchedules_5cyl_singlechannel(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    config4 page4 = {};
-    config10 page10 = {};
-    pinNumbers_t pins = {};
+    ignition_test_context_t context;
 
-    page2.nCylinders = 5U;
-    page2.strokes = FOUR_STROKE;
-    page4.sparkMode = IGN_MODE_SINGLE;
+    context.page2.nCylinders = 5U;
+    context.page2.strokes = FOUR_STROKE;
+    context.page4.sparkMode = IGN_MODE_SINGLE;
 
-    initialiseIgnitionSchedules(current, page2, page4, page10, pins);
+    initialiseIgnitionSchedules(context.current, context.page2, context.page4, context.page10, context.pins);
 
     TEST_ASSERT_EQUAL_UINT16(720U, CRANK_ANGLE_MAX_IGN);
-    TEST_ASSERT_EQUAL_UINT8(5U, current.maxIgnOutputs);
-
-    TEST_ASSERT_EQUAL_UINT16(0U, ignitionSchedule1.channelDegrees);
-#if IGN_CHANNELS >= 2
-    TEST_ASSERT_EQUAL_UINT16(144U, ignitionSchedule2.channelDegrees);
-#endif
-#if IGN_CHANNELS >= 3
-    TEST_ASSERT_EQUAL_UINT16(288U, ignitionSchedule3.channelDegrees);
-#endif
-#if IGN_CHANNELS >= 4
-    TEST_ASSERT_EQUAL_UINT16(432U, ignitionSchedule4.channelDegrees);
-#endif
-#if IGN_CHANNELS >= 5
-    TEST_ASSERT_EQUAL_UINT16(576U, ignitionSchedule5.channelDegrees);
-#endif
+    TEST_ASSERT_EQUAL_UINT8(5U, context.current.maxIgnOutputs);
+    constexpr uint16_t angles[] = { 0, 144, 288, 432, 576, 0, 0, 0};
+    assert_channel_angles(context, angles);
 }
 
 void test_ignition_schedule_controller(void)
