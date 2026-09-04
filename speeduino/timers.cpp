@@ -163,9 +163,6 @@ void oneMSInterval(void)
     {
        fanControl();            // Function to turn the cooling fan on/off
     }
-
-    //Check whether fuel pump priming is complete
-    stopPumpPriming(currentStatus, configPage2);
     
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
