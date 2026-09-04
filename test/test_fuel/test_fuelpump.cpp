@@ -86,7 +86,7 @@ static void test_fuelPumpControl_engine_onoff(void)
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
 
-static void test_fuelPumpControl_priming_lt(void)
+static void test_fuelPumpControl_priming_not_elapsed(void)
 {
     statuses current = {};
     config2 page2 = {};
@@ -104,7 +104,7 @@ static void test_fuelPumpControl_priming_lt(void)
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
 
-static void test_fuelPumpControl_priming_eq(void)
+static void test_fuelPumpControl_priming_elapsed_eq(void)
 {
     statuses current = {};
     config2 page2 = {};
@@ -122,7 +122,7 @@ static void test_fuelPumpControl_priming_eq(void)
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
 
-static void test_fuelPumpControl_priming_gt(void)
+static void test_fuelPumpControl_priming_elapsed_gt(void)
 {
     statuses current = {};
     config2 page2 = {};
@@ -140,12 +140,13 @@ static void test_fuelPumpControl_priming_gt(void)
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
 
-static void test_fuelPumpControl_priming_rollover(void)
+static void test_fuelPumpControl_priming_elapsed_rollover(void)
 {
     statuses current = {};
     config2 page2 = {};
     page2.fpPrime = 5U;
     current.rotationStatus = EngineRotationStatus::Stopped;
+    current.secl = 99;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
     TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
@@ -165,9 +166,9 @@ void testFuelPump(void)
     RUN_TEST_P(test_initialiseFuelPump_no_prime_pumpoff);
     RUN_TEST_P(test_initialiseFuelPump_with_prime_pumpon);
     RUN_TEST_P(test_fuelPumpControl_engine_onoff);
-    RUN_TEST_P(test_fuelPumpControl_priming_lt);
-    RUN_TEST_P(test_fuelPumpControl_priming_eq);
-    RUN_TEST_P(test_fuelPumpControl_priming_gt);
-    RUN_TEST_P(test_fuelPumpControl_priming_rollover);
+    RUN_TEST_P(test_fuelPumpControl_priming_not_elapsed);
+    RUN_TEST_P(test_fuelPumpControl_priming_elapsed_eq);
+    RUN_TEST_P(test_fuelPumpControl_priming_elapsed_gt);
+    RUN_TEST_P(test_fuelPumpControl_priming_elapsed_rollover);
   }
 }

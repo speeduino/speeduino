@@ -1,5 +1,6 @@
 #include "fuelPumpController.h"
 #include "fuelPumpController_detail.h"
+#include "elapsed_time.h"
 
 TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
 
@@ -35,8 +36,7 @@ void __attribute__((optimize("Os"))) startPumpPriming(const statuses &current, c
 
 static inline bool primingTimeExpired(const statuses &current, const config2 &page2)
 {
-  return (current.secl>=pump_state.fpPrimeTime) // Unlikely, but prevent unsigned overflow
-      && ((current.secl - pump_state.fpPrimeTime) >= page2.fpPrime);
+  return hasIntervalElapsed(current.secl, pump_state.fpPrimeTime, page2.fpPrime);
 }
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin)
