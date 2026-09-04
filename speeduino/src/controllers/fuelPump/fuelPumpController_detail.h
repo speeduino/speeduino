@@ -4,7 +4,7 @@
 
 namespace fuelPumpController {
 
-namespace detsil {
+namespace detail {
 
 struct pump_state_t
 {
