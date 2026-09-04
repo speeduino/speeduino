@@ -2,7 +2,7 @@
 #include "src/controllers/fuelPump/fuelPumpController.h"
 #include "src/controllers/fuelPump/fuelPumpController_detail.h"
 
-extern fuelPumpController::detsil::pump_state_t pump_state;
+extern fuelPumpController::detail::pump_state_t pump_state;
 extern void fuelPumpControlCore(const statuses &current, const config2 &page2);
 
 constexpr uint8_t TEST_PUMP_PIN = 17;

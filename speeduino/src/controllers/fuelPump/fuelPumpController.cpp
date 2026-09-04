@@ -2,7 +2,7 @@
 #include "fuelPumpController_detail.h"
 #include "elapsed_time.h"
 
-TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
+TESTABLE_STATIC fuelPumpController::detail::pump_state_t pump_state;
 
 static void fuelPumpOn(void)
 {
@@ -35,7 +35,7 @@ static inline bool primingTimeExpired(const statuses &current, const config2 &pa
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin)
 {
-  pump_state = fuelPumpController::detsil::pump_state_t();
+  pump_state = fuelPumpController::detail::pump_state_t();
   pump_state.pump_pin.setPin(pumpPin, OUTPUT);
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
