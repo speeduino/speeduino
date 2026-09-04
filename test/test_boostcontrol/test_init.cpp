@@ -2,22 +2,19 @@
 #include "globals.h"
 #include "src/controllers/boost/boostController.h"
 #include "shared.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
 
-extern uint8_t boostCounter;
-extern boardOutputPin_t boost_pin;
+extern PwmOutputChannel boostOutput;
 
 static void test_initialise(void)
 {
-    setup_simplepid_tune();
-    currentStatus.boostDuty = 99;
-    boostCounter = 101;
+    auto context = setup_boost_tune(false, VSS_MODE_OFF, BOOST_MODE_SIMPLE, BOOST_BY_GEAR_OFF);
+    context.current.boostDuty = 99;
 
-    initialiseBoost(TEST_BOOST_PIN);
+    context.initialise();
 
-    TEST_ASSERT_EQUAL(0, currentStatus.boostDuty);
-    TEST_ASSERT_EQUAL(0, boostCounter);
-    TEST_ASSERT_TRUE(boost_pin._pin.isPinLow());
+    TEST_ASSERT_EQUAL_UINT16(0, context.current.boostDuty);
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
 }
 
 void testBoostInit(void)

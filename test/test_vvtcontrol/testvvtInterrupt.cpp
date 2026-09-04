@@ -3,11 +3,11 @@
 #include "units.h"
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
-#include "src/controllers/vvt/VvtOutputChannel.h"
+#include "src/pwm/PwmOutputChannel.h"
 
 // External declarations for testing VVT PWM interrupt handler
-extern VvtOutputChannel vvtChannel1;
-extern VvtOutputChannel vvtChannel2;
+extern PwmOutputChannel vvtChannel1;
+extern PwmOutputChannel vvtChannel2;
 extern uint16_t lastVvtComparatorOffset;
 
 constexpr uint8_t LOOP_COUNT = 6; // Number of iterations for each test loop
@@ -32,8 +32,8 @@ static void test_vvt1_off_vvt2_off(void)
     setup_vvt_interrupt_base();
 
     // Both PWM values are zero (off), state is idle
-    vvtChannel1.setTargetDutyFromDuty(0);
-    vvtChannel2.setTargetDutyFromDuty(0);
+    vvtChannel1.setTargetDuty(0);
+    vvtChannel2.setTargetDuty(0);
 
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -52,8 +52,8 @@ static void test_vvt1_partial_vvt2_off(void)
     setup_vvt_interrupt_base();
 
     // Set VVT1 to 50% duty from idle state
-    vvtChannel1.setTargetDutyFromDuty(100);
-    vvtChannel2.setTargetDutyFromDuty(0);
+    vvtChannel1.setTargetDuty(100);
+    vvtChannel2.setTargetDuty(0);
 
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -78,8 +78,8 @@ static void test_vvt1_off_vvt2_partial(void)
     setup_vvt_interrupt_base();
     
     // Set VVT2 to 50% duty, VVT1 off
-    vvtChannel1.setTargetDutyFromDuty(0);
-    vvtChannel2.setTargetDutyFromDuty(100);
+    vvtChannel1.setTargetDuty(0);
+    vvtChannel2.setTargetDuty(100);
     
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -104,8 +104,8 @@ static void test_both_same_duty_cycle(void)
     setup_vvt_interrupt_base();
     
     // Both at 50% duty
-    vvtChannel1.setTargetDutyFromDuty(100);
-    vvtChannel2.setTargetDutyFromDuty(100);
+    vvtChannel1.setTargetDuty(100);
+    vvtChannel2.setTargetDuty(100);
     
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -130,8 +130,8 @@ static void test_vvt1_fullon_vvt2_off(void)
     setup_vvt_interrupt_base();
     
     // Set VVT1 to 100% duty (max)
-    vvtChannel1.setTargetDutyFromDuty(200);
-    vvtChannel2.setTargetDutyFromDuty(0);
+    vvtChannel1.setTargetDuty(200);
+    vvtChannel2.setTargetDuty(0);
     
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -151,8 +151,8 @@ static void test_vvt1_later_than_vvt2(void)
     setup_vvt_interrupt_base();
     
     // VVT2 has shorter pulse (earlier edge)
-    vvtChannel1.setTargetDutyFromDuty(140);
-    vvtChannel2.setTargetDutyFromDuty(60);
+    vvtChannel1.setTargetDuty(140);
+    vvtChannel2.setTargetDuty(60);
 
    for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -181,8 +181,8 @@ static void test_vvt1_earlier_than_vvt2(void)
     setup_vvt_interrupt_base();
     
     // VVT2 has shorter pulse (earlier edge)
-    vvtChannel1.setTargetDutyFromDuty(60);
-    vvtChannel2.setTargetDutyFromDuty(140);
+    vvtChannel1.setTargetDuty(60);
+    vvtChannel2.setTargetDuty(140);
 
    for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -211,8 +211,8 @@ static void test_vvt1_off_vvt2_fullon(void)
     setup_vvt_interrupt_base();
     
     // VVT2 at max, VVT1 off
-    vvtChannel1.setTargetDutyFromDuty(0);
-    vvtChannel2.setTargetDutyFromDuty(200);
+    vvtChannel1.setTargetDuty(0);
+    vvtChannel2.setTargetDuty(200);
     
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -231,8 +231,8 @@ static void test_vvt1_fullon_vvt2_fullon(void)
     setup_vvt_interrupt_base();
     
     // Both at 100% duty
-    vvtChannel1.setTargetDutyFromDuty(200);
-    vvtChannel2.setTargetDutyFromDuty(200);
+    vvtChannel1.setTargetDuty(200);
+    vvtChannel2.setTargetDuty(200);
 
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {
@@ -252,8 +252,8 @@ static void test_vvt1_partial_vvt2_max(void)
     setup_vvt_interrupt_base();
     
     // VVT2 longer than VVT1 (100% means always on) at same time
-    vvtChannel1.setTargetDutyFromDuty(100);
-    vvtChannel2.setTargetDutyFromDuty(200);
+    vvtChannel1.setTargetDuty(100);
+    vvtChannel2.setTargetDuty(200);
     
     // Enter idle state and activate both
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
@@ -278,8 +278,8 @@ static void test_vvt1_max_vvt2_partial(void)
     
     // Scenario: VVT1 at 100% (always on), VVT2 at a different value
     // When VVT1 is 100%, it doesn't actually turn on/off like normal PWM
-    vvtChannel1.setTargetDutyFromDuty(200);
-    vvtChannel2.setTargetDutyFromDuty(100);
+    vvtChannel1.setTargetDuty(200);
+    vvtChannel2.setTargetDuty(100);
   
     for (uint8_t i=0; i<LOOP_COUNT; ++i)
     {

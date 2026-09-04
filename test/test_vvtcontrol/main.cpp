@@ -6,12 +6,12 @@ void runAllTests(void)
     extern void testVvtControl(void);
     extern void testVvtInterrupt(void);
     extern void testInit(void);
-    extern void testVvtOutputChannel(void);
+    extern void testPwmOutputChannel(void);
 
     testVvtControl();
     testVvtInterrupt();
     testInit();
-    testVvtOutputChannel();
+    testPwmOutputChannel();
 }
 
 TEST_HARNESS(runAllTests)

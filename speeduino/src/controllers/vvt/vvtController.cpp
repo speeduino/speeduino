@@ -17,7 +17,7 @@ A full copy of the license may be found in the projects root directory
 #include "../../pins/fastInputPin.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../scheduler_fuel_controller.h"
-#include "VvtOutputChannel.h"
+#include "../../pwm/PwmOutputChannel.h"
 
 enum class NextInterruptEvent : uint8_t
 {
@@ -45,8 +45,8 @@ inline NextInterruptEvent operator&(NextInterruptEvent lhs, NextInterruptEvent r
     );
 }
 
-TESTABLE_STATIC VvtOutputChannel vvtChannel1;
-TESTABLE_STATIC VvtOutputChannel vvtChannel2;
+TESTABLE_STATIC PwmOutputChannel vvtChannel1;
+TESTABLE_STATIC PwmOutputChannel vvtChannel2;
 TESTABLE_STATIC NextInterruptEvent nextVVT;
 TESTABLE_STATIC uint32_t vvtWarmStartTime;
 TESTABLE_STATIC inputPin_t wmiTankEmptyPin;
@@ -72,8 +72,8 @@ static void initialiseVvtPid(integerPID &pid, const config10 &page10, bool isRev
 
 void __attribute__((optimize("Os"))) initialiseVvtWmi(statuses &current, const pinNumbers_t &pins, const config4 &page4, const config6 &page6, config10 &page10)
 {
-  vvtChannel1 = VvtOutputChannel(pins.pinVVT_1, FREQUENCY.toUser(page6.vvtFreq));
-  vvtChannel2 = VvtOutputChannel(pins.pinVVT_2, FREQUENCY.toUser(page6.vvtFreq));
+  vvtChannel1 = PwmOutputChannel(pins.pinVVT_1, FREQUENCY.toUser(page6.vvtFreq));
+  vvtChannel2 = PwmOutputChannel(pins.pinVVT_2, FREQUENCY.toUser(page6.vvtFreq));
 
   wmiTankEmptyPin.setPin(pins.pinWMIEmpty);
   wmiIsEnabledPin.setPin(pins.pinWMIEnabled);
@@ -240,10 +240,10 @@ void vvtControl(statuses &current, const config4 &page4, const config6 &page6, c
   } 
 
   ATOMIC() {
-    vvtChannel1.setTargetDutyFromDuty(current.vvt1.duty);
+    vvtChannel1.setTargetDuty(current.vvt1.duty);
     if (page10.vvt2Enabled) // same for VVT2 if it's enabled
     {
-      vvtChannel2.setTargetDutyFromDuty(current.vvt2.duty);
+      vvtChannel2.setTargetDuty(current.vvt2.duty);
     }
     setTimerState();
   }
@@ -311,7 +311,7 @@ void wmiControl(statuses &current, const config10 &page10)
   if (page10.wmiEnabled)
   {
     ATOMIC() {
-      vvtChannel2.setTargetDutyFromDuty(current.wmiPW);
+      vvtChannel2.setTargetDuty(current.wmiPW);
       if (vvtChannel2.isNoDuty())
       {
         wmiIsEnabledPin.setPinLow();
@@ -341,12 +341,12 @@ static void setVvtTimerCompare(uint16_t offset)
   SET_COMPARE(VVT_TIMER_COMPARE, VVT_TIMER_COUNTER + offset);
 }
 
-static bool isVvtOff(const VvtOutputChannel &channel)
+static bool isVvtOff(const PwmOutputChannel &channel)
 {
   return channel.pin.isPinLow() || channel.isFullDuty();
 }
 
-static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2) noexcept
+static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const PwmOutputChannel &channel1, const PwmOutputChannel &channel2) noexcept
 {
   if (!channel1.isPartialDuty() && !channel2.isPartialDuty())
   {
@@ -359,7 +359,7 @@ static NextInterruptEvent overrideNextEvent(NextInterruptEvent next, const VvtOu
   return next;
 }
 
-static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent event, NextInterruptEvent onEvent, NextInterruptEvent offEvent) noexcept
+static void applyEventToChannel(PwmOutputChannel &channel, NextInterruptEvent event, NextInterruptEvent onEvent, NextInterruptEvent offEvent) noexcept
 {
   if (channel.isPartialDuty())
   {
@@ -378,7 +378,7 @@ static void applyEventToChannel(VvtOutputChannel &channel, NextInterruptEvent ev
   }
 }
 
-static NextInterruptEvent calculateNextInterruptSingleOff(const VvtOutputChannel &primary, NextInterruptEvent primaryOff, const VvtOutputChannel &other, uint16_t &offset) noexcept
+static NextInterruptEvent calculateNextInterruptSingleOff(const PwmOutputChannel &primary, NextInterruptEvent primaryOff, const PwmOutputChannel &other, uint16_t &offset) noexcept
 {
     if(primary.pin.isPinHigh())
     { 
@@ -393,7 +393,7 @@ static NextInterruptEvent calculateNextInterruptSingleOff(const VvtOutputChannel
 
 }
 
-static NextInterruptEvent calculateNextInterrupt(NextInterruptEvent currentEvent, const VvtOutputChannel &channel1, const VvtOutputChannel &channel2, uint16_t &offset) noexcept
+static NextInterruptEvent calculateNextInterrupt(NextInterruptEvent currentEvent, const PwmOutputChannel &channel1, const PwmOutputChannel &channel2, uint16_t &offset) noexcept
 {
   if(currentEvent == NextInterruptEvent::BothOn)
   {
