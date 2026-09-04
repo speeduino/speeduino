@@ -3,7 +3,7 @@
 
 TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
 
-void fuelPumpOn(void)
+static void fuelPumpOn(void)
 {
     if (!pump_state.pump_pin.isPinHigh())
     {
@@ -11,7 +11,7 @@ void fuelPumpOn(void)
     }
 }
 
-void fuelPumpOff(void)
+static void fuelPumpOff(void)
 {
     if (pump_state.pump_pin.isPinHigh())
     {
@@ -37,20 +37,6 @@ static inline bool primingTimeExpired(const statuses &current, const config2 &pa
 {
   return (current.secl>=pump_state.fpPrimeTime) // Unlikely, but prevent unsigned overflow
       && ((current.secl - pump_state.fpPrimeTime) >= page2.fpPrime);
-}
-
-void __attribute__((optimize("Os"))) stopPumpPriming(const statuses &current, const config2 &page2)
-{
-  //Check whether fuel pump priming is complete
-  if(!pump_state.isPrimingComplete && primingTimeExpired(current, page2))
-  {
-    pump_state.isPrimingComplete = true; //Mark the priming as being completed
-    if(current.RPM == 0)
-    {
-      //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-      fuelPumpOff();
-    }
-  }
 }
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin)
