@@ -6,18 +6,12 @@ TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
 
 static void fuelPumpOn(void)
 {
-    if (!pump_state.pump_pin.isPinHigh())
-    {
-        pump_state.pump_pin.setPinHigh();
-    }
+  pump_state.pump_pin.setPinHigh();
 }
 
 static void fuelPumpOff(void)
 {
-    if (pump_state.pump_pin.isPinHigh())
-    {
-        pump_state.pump_pin.setPinLow();
-    }
+  pump_state.pump_pin.setPinLow();
 }
 
 void __attribute__((optimize("Os"))) startPumpPriming(const statuses &current, const config2 &page2)
