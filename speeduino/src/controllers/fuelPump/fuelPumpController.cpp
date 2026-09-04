@@ -8,9 +8,9 @@ void fuelPumpOn(void)
     if (!pump_state.pump_pin.isPinHigh())
     {
         pump_state.pump_pin.setPinHigh();
-
     }
 }
+
 void fuelPumpOff(void)
 {
     if (pump_state.pump_pin.isPinHigh())
@@ -61,3 +61,50 @@ void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current,
 
   startPumpPriming(current, page2);
 }
+
+TESTABLE_STATIC void fuelPumpControlCore(const statuses &current, const config2 &page2)
+{
+  bool pumpOn = false;
+
+  // Engine is rotating
+  if (current.rotationStatus!=EngineRotationStatus::Stopped)
+  {
+    pumpOn = true;
+    pump_state.offDelay = 2; //0.2 sec delay for debouncing in case of noise
+  }
+  else if(!pump_state.isPrimingComplete) // Engine not running and not primed
+  {
+    pump_state.isPrimingComplete = primingTimeExpired(current, page2);
+    pumpOn = !pump_state.isPrimingComplete;
+    pump_state.offDelay = 0;
+  }
+  else if(pump_state.offDelay == 0)
+  { 
+    pumpOn = false;  // not running and prime completed and off delay done, turn off pump.
+  }
+  else 
+  { 
+    pumpOn = true;
+    --pump_state.offDelay; // count down off delay.
+  }
+
+  // Single place to align target fuel pump status with actual fuel pump state
+  if (pumpOn) 
+  { 
+    fuelPumpOn(); 
+  }
+  else 
+  { 
+    fuelPumpOff(); 
+  }
+}
+
+// LCOV_EXCL_START
+void fuelPumpControl(const statuses &current, const config2 &page2)
+{
+  if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_10HZ))
+  {
+    fuelPumpControlCore(current, page2);
+  }
+}
+// LCOV_EXCL_STOP
