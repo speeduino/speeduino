@@ -5,17 +5,22 @@
 extern fuelPumpController::detsil::pump_state_t pump_state;
 extern void fuelPumpControlCore(const statuses &current, const config2 &page2);
 
+constexpr uint8_t TEST_PUMP_PIN = 17;
+
 static void test_startPumpPriming_prime(void)
 {
     statuses current = {};
     config2 page2 = {};
 
-    page2.fpPrime = true;
+    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
+
+    page2.fpPrime = 5;
     current.secl = 99;
     startPumpPriming(current, page2);
 
     TEST_ASSERT_FALSE(pump_state.isPrimingComplete);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(current.secl, pump_state.fpPrimeTime);
 }
 
@@ -24,17 +29,17 @@ static void test_startPumpPriming_noprime(void)
     statuses current = {};
     config2 page2 = {};
 
-    page2.fpPrime = false;
-    pump_state.pump_pin.setPinLow();;
+    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
+
+    page2.fpPrime = 0;
     current.secl = 99;
     startPumpPriming(current, page2);
 
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(0, pump_state.fpPrimeTime);
 }
-
-constexpr uint8_t TEST_PUMP_PIN = 17;
 
 static void test_initialiseFuelPump_no_prime_pumpoff(void)
 {
@@ -43,7 +48,9 @@ static void test_initialiseFuelPump_no_prime_pumpoff(void)
     page2.fpPrime = 0U;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
+    TEST_ASSERT_EQUAL(0, pump_state.fpPrimeTime);
 }
 
 static void test_initialiseFuelPump_with_prime_pumpon(void)
@@ -51,9 +58,12 @@ static void test_initialiseFuelPump_with_prime_pumpon(void)
     statuses current = {};
     config2 page2 = {};
     page2.fpPrime = 5U;
+    current.secl = 99;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.isPrimingComplete);
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
+    TEST_ASSERT_EQUAL(current.secl, pump_state.fpPrimeTime);
 }
 
 static void test_fuelPumpControl_engine_onoff(void)
@@ -62,27 +72,27 @@ static void test_fuelPumpControl_engine_onoff(void)
     config2 page2 = {};
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
 
     current.rotationStatus = EngineRotationStatus::Running;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
     current.rotationStatus = EngineRotationStatus::Cranking;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());    
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());    
 
     current.rotationStatus = EngineRotationStatus::Stopped;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(1, pump_state.offDelay);
 
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
 
@@ -95,11 +105,11 @@ static void test_fuelPumpControl_priming_not_elapsed(void)
     current.secl = 99;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
     current.secl = (pump_state.fpPrimeTime + page2.fpPrime)-1;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_FALSE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
@@ -113,11 +123,11 @@ static void test_fuelPumpControl_priming_elapsed_eq(void)
     current.secl = 99;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
     current.secl = pump_state.fpPrimeTime + page2.fpPrime;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
@@ -131,11 +141,11 @@ static void test_fuelPumpControl_priming_elapsed_gt(void)
     current.secl = 99;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
     current.secl = pump_state.fpPrimeTime + page2.fpPrime + 1;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
@@ -149,11 +159,11 @@ static void test_fuelPumpControl_priming_elapsed_rollover(void)
     current.secl = 99;
 
     initialiseFuelPump(current, page2, TEST_PUMP_PIN);
-    TEST_ASSERT_TRUE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
     current.secl = pump_state.fpPrimeTime - 1;
     fuelPumpControlCore(current, page2);
-    TEST_ASSERT_FALSE(pump_state.pump_pin.isPinHigh());
+    TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
