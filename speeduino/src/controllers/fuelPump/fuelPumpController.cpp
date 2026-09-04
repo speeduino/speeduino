@@ -1,23 +1,17 @@
 #include "fuelPumpController.h"
 #include "fuelPumpController_detail.h"
+#include "elapsed_time.h"
 
-TESTABLE_STATIC fuelPumpController::detsil::pump_state_t pump_state;
+TESTABLE_STATIC fuelPumpController::detail::pump_state_t pump_state;
 
-void fuelPumpOn(void)
+static void fuelPumpOn(void)
 {
-    if (!pump_state.isPumpOn)
-    {
-        pump_state.pump_pin.setPinHigh();
-        pump_state.isPumpOn = true;
-    }
+  pump_state.pump_pin.setPinHigh();
 }
-void fuelPumpOff(void)
+
+static void fuelPumpOff(void)
 {
-    if (pump_state.isPumpOn)
-    {
-        pump_state.pump_pin.setPinLow();
-        pump_state.isPumpOn = false;
-    }
+  pump_state.pump_pin.setPinLow();
 }
 
 void __attribute__((optimize("Os"))) startPumpPriming(const statuses &current, const config2 &page2)
@@ -36,30 +30,61 @@ void __attribute__((optimize("Os"))) startPumpPriming(const statuses &current, c
 
 static inline bool primingTimeExpired(const statuses &current, const config2 &page2)
 {
-  return (current.secl>=pump_state.fpPrimeTime) // Unlikely, but prevent unsigned overflow
-      && ((current.secl - pump_state.fpPrimeTime) >= page2.fpPrime);
-}
-
-void __attribute__((optimize("Os"))) stopPumpPriming(const statuses &current, const config2 &page2)
-{
-  //Check whether fuel pump priming is complete
-  if(!pump_state.isPrimingComplete && primingTimeExpired(current, page2))
-  {
-    pump_state.isPrimingComplete = true; //Mark the priming as being completed
-    if(current.RPM == 0)
-    {
-      //If we reach here then the priming is complete, however only turn off the fuel pump if the engine isn't running
-      fuelPumpOff();
-    }
-  }
+  return hasIntervalElapsed(current.secl, pump_state.fpPrimeTime, page2.fpPrime);
 }
 
 void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin)
 {
-  pump_state = fuelPumpController::detsil::pump_state_t();
+  pump_state = fuelPumpController::detail::pump_state_t();
   pump_state.pump_pin.setPin(pumpPin, OUTPUT);
-  pump_state.isPumpOn = true; // This forces fuelPumpOff() to run.
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
   startPumpPriming(current, page2);
 }
+
+TESTABLE_STATIC void fuelPumpControlCore(const statuses &current, const config2 &page2)
+{
+  bool pumpOn = false;
+
+  // Engine is rotating
+  if (current.rotationStatus!=EngineRotationStatus::Stopped)
+  {
+    pumpOn = true;
+    pump_state.offDelay = 2; //0.2 sec delay for debouncing in case of noise
+  }
+  else if(!pump_state.isPrimingComplete) // Engine not running and not primed
+  {
+    pump_state.isPrimingComplete = primingTimeExpired(current, page2);
+    pumpOn = !pump_state.isPrimingComplete;
+    pump_state.offDelay = 0;
+  }
+  else if(pump_state.offDelay == 0)
+  { 
+    pumpOn = false;  // not running and prime completed and off delay done, turn off pump.
+  }
+  else 
+  { 
+    pumpOn = true;
+    --pump_state.offDelay; // count down off delay.
+  }
+
+  // Single place to align target fuel pump status with actual fuel pump state
+  if (pumpOn) 
+  { 
+    fuelPumpOn(); 
+  }
+  else 
+  { 
+    fuelPumpOff(); 
+  }
+}
+
+// LCOV_EXCL_START
+void fuelPumpControl(const statuses &current, const config2 &page2)
+{
+  if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_10HZ))
+  {
+    fuelPumpControlCore(current, page2);
+  }
+}
+// LCOV_EXCL_STOP

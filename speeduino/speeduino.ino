@@ -188,10 +188,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     if ( currentStatus.decoder.isEngineRunning(currentLoopTime) )
     {
       currentStatus.setRpm(currentStatus.decoder.getRPM());
-      if (currentStatus.RPM > 0)
-      {
-        fuelPumpOn();
-      }
     }
     else
     {
@@ -207,7 +203,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.rpmDOT = 0;
       initialiseCorrections();
       ignitionCount = 0;
-      stopPumpPriming(currentStatus, configPage2); //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       currentStatus.wueIsActive = false; //Same as above except for WUE
       currentStatus.rotationStatus = EngineRotationStatus::Stopped;
@@ -223,6 +218,9 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       boostDisable();
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
+
+    fuelPumpControl(currentStatus, configPage2);
+
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readPolledSensors(currentStatus.LOOP_TIMER);

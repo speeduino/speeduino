@@ -5,8 +5,6 @@
 
 void initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin);
 
-void startPumpPriming(const statuses &current, const config2 &page2);
-void stopPumpPriming(const statuses &current, const config2 &page2);
+void fuelPumpControl(const statuses &current, const config2 &page2);
 
-void fuelPumpOn(void);
-void fuelPumpOff(void);
+void startPumpPriming(const statuses &current, const config2 &page2);
