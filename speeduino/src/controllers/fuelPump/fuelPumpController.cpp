@@ -33,10 +33,10 @@ static inline bool primingTimeExpired(const statuses &current, const config2 &pa
   return hasIntervalElapsed(current.secl, pump_state.fpPrimeTime, page2.fpPrime);
 }
 
-void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, uint8_t pumpPin)
+void __attribute__((optimize("Os"))) initialiseFuelPump(const statuses &current, const config2 &page2, const pinNumbers_t &pins)
 {
   pump_state = fuelPumpController::detail::pump_state_t();
-  pump_state.pump_pin.setPin(pumpPin, OUTPUT);
+  pump_state.pump_pin.setPin(pins.pinFuelPump, OUTPUT);
   fuelPumpOff();  //Initialise program with the fuel pump in the off state
 
   startPumpPriming(current, page2);
