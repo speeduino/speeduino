@@ -6,35 +6,53 @@ extern fuelPumpController::detail::pump_state_t pump_state;
 extern void fuelPumpControlCore(const statuses &current, const config2 &page2);
 
 constexpr uint8_t TEST_PUMP_PIN = 17;
-
-static void test_startPumpPriming_prime(void)
+struct test_context_t
 {
     statuses current = {};
     config2 page2 = {};
+    pinNumbers_t pins = {};
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    test_context_t()
+    {
+        pins.pinFuelPump = TEST_PUMP_PIN;
+    }
+
+    void iniitialise(void)
+    {
+        initialiseFuelPump(current, page2, pins);
+    }
+
+    void fuelPumpControl(void)
+    {
+        fuelPumpControlCore(current, page2);
+    }
+};
+
+static void test_startPumpPriming_prime(void)
+{
+    test_context_t context;
+    context.iniitialise();
+
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
 
-    page2.fpPrime = 5;
-    current.secl = 99;
-    startPumpPriming(current, page2);
+    context.page2.fpPrime = 5;
+    context.current.secl = 99;
+    startPumpPriming(context.current, context.page2);
 
     TEST_ASSERT_FALSE(pump_state.isPrimingComplete);
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
-    TEST_ASSERT_EQUAL(current.secl, pump_state.fpPrimeTime);
+    TEST_ASSERT_EQUAL(context.current.secl, pump_state.fpPrimeTime);
 }
 
 static void test_startPumpPriming_noprime(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    test_context_t context;
+    context.iniitialise();
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
 
-    page2.fpPrime = 0;
-    current.secl = 99;
-    startPumpPriming(current, page2);
+    context.page2.fpPrime = 0;
+    context.current.secl = 99;
+    startPumpPriming(context.current, context.page2);
 
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
@@ -43,11 +61,10 @@ static void test_startPumpPriming_noprime(void)
 
 static void test_initialiseFuelPump_no_prime_pumpoff(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    page2.fpPrime = 0U;
+    test_context_t context;
+    context.page2.fpPrime = 0U;
+    context.iniitialise();
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(0, pump_state.fpPrimeTime);
@@ -55,60 +72,60 @@ static void test_initialiseFuelPump_no_prime_pumpoff(void)
 
 static void test_initialiseFuelPump_with_prime_pumpon(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    page2.fpPrime = 5U;
-    current.secl = 99;
+    test_context_t context;
+    context.page2.fpPrime = 5U;
+    context.current.secl = 99;
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    context.iniitialise();
+
     TEST_ASSERT_FALSE(pump_state.isPrimingComplete);
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
-    TEST_ASSERT_EQUAL(current.secl, pump_state.fpPrimeTime);
+    TEST_ASSERT_EQUAL(context.current.secl, pump_state.fpPrimeTime);
 }
 
 static void test_fuelPumpControl_engine_onoff(void)
 {
-    statuses current = {};
-    config2 page2 = {};
+    test_context_t context;
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    context.iniitialise();
+
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
 
-    current.rotationStatus = EngineRotationStatus::Running;
-    fuelPumpControlCore(current, page2);
+    context.current.rotationStatus = EngineRotationStatus::Running;
+    context.fuelPumpControl();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
-    current.rotationStatus = EngineRotationStatus::Cranking;
-    fuelPumpControlCore(current, page2);
+    context.current.rotationStatus = EngineRotationStatus::Cranking;
+    context.fuelPumpControl();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());    
 
-    current.rotationStatus = EngineRotationStatus::Stopped;
-    fuelPumpControlCore(current, page2);
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
+    context.fuelPumpControl();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(1, pump_state.offDelay);
 
-    fuelPumpControlCore(current, page2);
+    context.fuelPumpControl();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 
-    fuelPumpControlCore(current, page2);
+    context.fuelPumpControl();
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
 }
 
 static void test_fuelPumpControl_priming_not_elapsed(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    page2.fpPrime = 5U;
-    current.rotationStatus = EngineRotationStatus::Stopped;
-    current.secl = 99;
+    test_context_t context;
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    context.page2.fpPrime = 5U;
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
+    context.current.secl = 99;
+
+    context.iniitialise();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
-    current.secl = (pump_state.fpPrimeTime + page2.fpPrime)-1;
-    fuelPumpControlCore(current, page2);
+    context.current.secl = (pump_state.fpPrimeTime + context.page2.fpPrime)-1;
+    context.fuelPumpControl();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_FALSE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
@@ -116,17 +133,16 @@ static void test_fuelPumpControl_priming_not_elapsed(void)
 
 static void test_fuelPumpControl_priming_elapsed_eq(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    page2.fpPrime = 5U;
-    current.rotationStatus = EngineRotationStatus::Stopped;
-    current.secl = 99;
+    test_context_t context;
+    context.page2.fpPrime = 5U;
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
+    context.current.secl = 99;
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    context.iniitialise();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
-    current.secl = pump_state.fpPrimeTime + page2.fpPrime;
-    fuelPumpControlCore(current, page2);
+    context.current.secl = pump_state.fpPrimeTime + context.page2.fpPrime;
+    context.fuelPumpControl();
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
@@ -134,17 +150,16 @@ static void test_fuelPumpControl_priming_elapsed_eq(void)
 
 static void test_fuelPumpControl_priming_elapsed_gt(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    page2.fpPrime = 5U;
-    current.rotationStatus = EngineRotationStatus::Stopped;
-    current.secl = 99;
+    test_context_t context;
+    context.page2.fpPrime = 5U;
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
+    context.current.secl = 99;
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    context.iniitialise();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
-    current.secl = pump_state.fpPrimeTime + page2.fpPrime + 1;
-    fuelPumpControlCore(current, page2);
+    context.current.secl = pump_state.fpPrimeTime + context.page2.fpPrime + 1;
+    context.fuelPumpControl();
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
@@ -152,17 +167,16 @@ static void test_fuelPumpControl_priming_elapsed_gt(void)
 
 static void test_fuelPumpControl_priming_elapsed_rollover(void)
 {
-    statuses current = {};
-    config2 page2 = {};
-    page2.fpPrime = 5U;
-    current.rotationStatus = EngineRotationStatus::Stopped;
-    current.secl = 99;
+    test_context_t context;
+    context.page2.fpPrime = 5U;
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
+    context.current.secl = 99;
 
-    initialiseFuelPump(current, page2, TEST_PUMP_PIN);
+    context.iniitialise();
     TEST_ASSERT_TRUE(pump_state.pump_pin._pin.isPinHigh());
 
-    current.secl = pump_state.fpPrimeTime - 1;
-    fuelPumpControlCore(current, page2);
+    context.current.secl = pump_state.fpPrimeTime - 1;
+    context.fuelPumpControl();
     TEST_ASSERT_FALSE(pump_state.pump_pin._pin.isPinHigh());
     TEST_ASSERT_TRUE(pump_state.isPrimingComplete);
     TEST_ASSERT_EQUAL(0, pump_state.offDelay);
