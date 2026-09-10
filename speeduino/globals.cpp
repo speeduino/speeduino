@@ -43,31 +43,31 @@ struct config13 configPage13;
 struct config15 configPage15;
 
 //These function do checks on a pin to determine if it is already in use by another (higher importance) active function
-bool pinIsOutput(byte pin)
+bool pinIsOutput(byte pin, const pinNumbers_t &pins)
 {
   bool used = false;
   bool isIdlePWM = isPwmIac(configPage6);
   bool isIdleStepper = isStepperIac(configPage6);
   used = used 
       //Injector?
-      || pinNumbers.injectorPins.isPinUsed(pin)
+      || pins.injectorPins.isPinUsed(pin)
       //Ignition?
-      || pinNumbers.coilPins.isPinUsed(pin);
+      || pins.coilPins.isPinUsed(pin);
   //Functions?
-  if ((pin == pinNumbers.pinFuelPump)
-  || ((pin == pinNumbers.pinFan) && ((configPage2.fanEnable == 1) || (configPage2.fanEnable == 2)))
-  || ((pin == pinNumbers.pinVVT_1) && (configPage6.vvtEnabled > 0))
-  || ((pin == pinNumbers.pinVVT_2) && (configPage10.wmiEnabled > 0))
-  || ((pin == pinNumbers.pinVVT_2) && (configPage10.vvt2Enabled > 0))
-  || ((pin == pinNumbers.pinBoost) && (configPage6.boostEnabled == 1))
-  || ((pin == pinNumbers.pinIdle1) && isIdlePWM)
-  || ((pin == pinNumbers.pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
-  || ((pin == pinNumbers.pinStepperEnable) && isIdleStepper)
-  || ((pin == pinNumbers.pinStepperStep) && isIdleStepper)
-  || ((pin == pinNumbers.pinStepperDir) && isIdleStepper)
-  || (pin == pinNumbers.pinTachOut)
-  || ((pin == pinNumbers.pinAirConComp) && (configPage15.airConEnable > 0))
-  || ((pin == pinNumbers.pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
+  if ((pin == pins.pinFuelPump)
+  || ((pin == pins.pinFan) && ((configPage2.fanEnable == 1) || (configPage2.fanEnable == 2)))
+  || ((pin == pins.pinVVT_1) && (configPage6.vvtEnabled > 0))
+  || ((pin == pins.pinVVT_2) && (configPage10.wmiEnabled > 0))
+  || ((pin == pins.pinVVT_2) && (configPage10.vvt2Enabled > 0))
+  || ((pin == pins.pinBoost) && (configPage6.boostEnabled == 1))
+  || ((pin == pins.pinIdle1) && isIdlePWM)
+  || ((pin == pins.pinIdle2) && isIdlePWM && (configPage6.iacChannels == 1))
+  || ((pin == pins.pinStepperEnable) && isIdleStepper)
+  || ((pin == pins.pinStepperStep) && isIdleStepper)
+  || ((pin == pins.pinStepperDir) && isIdleStepper)
+  || (pin == pins.pinTachOut)
+  || ((pin == pins.pinAirConComp) && (configPage15.airConEnable > 0))
+  || ((pin == pins.pinAirConFan) && (configPage15.airConEnable > 0) && (configPage15.airConFanEnabled > 0)) )
   {
     used = true;
   }
@@ -77,19 +77,22 @@ bool pinIsOutput(byte pin)
   return used;
 }
 
-#define pinIsSensor(pin)    ( ((pin) == pinNumbers.pinCLT) || ((pin) == pinNumbers.pinIAT) || ((pin) == pinNumbers.pinMAP) || ((pin) == pinNumbers.pinTPS) || ((pin) == pinNumbers.pinO2) || ((pin) == pinNumbers.pinBat) || (((pin) == pinNumbers.pinFlex) && (configPage2.flexEnabled != 0)) )
+static inline bool pinIsSensor(byte pin, const pinNumbers_t &pins, const config2 &page2)
+{
+  return ((pin == pins.pinCLT) || (pin == pins.pinIAT) || (pin == pins.pinMAP) || (pin == pins.pinTPS) || (pin == pins.pinO2) || (pin == pins.pinBat) || ((pin == pins.pinFlex) && (page2.flexEnabled != 0)));
+}
 
-bool pinIsUsed(byte pin)
+bool pinIsUsed(byte pin, const pinNumbers_t &pins)
 {
   bool used = false;
 
   //Analog input?
-  if ( pinIsSensor(pin) )
+  if ( pinIsSensor(pin, pins, configPage2) )
   {
     used = true;
   }
   //Functions?
-  if ( pinIsOutput(pin) )
+  if ( pinIsOutput(pin, pins) )
   {
     used = true;
   }
