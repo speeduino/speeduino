@@ -84,14 +84,14 @@ static void test_pinMappings(void)
     if (memcmp(&pins, &defaultPins, sizeof(pinNumbers_t)) != 0)
     {
       // Special case: pin 50 is repeated in the V04 shield mapping!
-      if (boardId==3U)
+      if ((boardId==3U) && (pins.injectorPins.size()>4)) 
       {
         pins.injectorPins[5] = NOT_A_PIN;
       }
       char szName[128];
-      snprintf(szName, sizeof(szName), "test_pinMapping_%d", boardId);
+      snprintf(szName, sizeof(szName), "%d", boardId);
       testPins = pins;
-      UnityDefaultTestRun(test_pinMapping, szName, __LINE__);
+      RUN_TEST_POSTFIX_P(test_pinMapping, szName);
     }
   }
 }
