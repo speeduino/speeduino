@@ -158,12 +158,7 @@ void oneMSInterval(void)
     //increment secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
     currentStatus.secl++;
     //**************************************************************************************************************************************************
-    //Check the fan output status
-    if (configPage2.fanEnable >= 1)
-    {
-       fanControl();            // Function to turn the cooling fan on/off
-    }
-    
+
     //**************************************************************************************************************************************************
     //Set the flex reading (if enabled). The flexCounter is updated with every pulse from the sensor. If cleared once per second, we get a frequency reading
     if(configPage2.flexEnabled == true)
