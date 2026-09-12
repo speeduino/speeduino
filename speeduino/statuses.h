@@ -209,8 +209,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool fanOn : 1; ///< Engine fan status (true == on, false == off)
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool stagingActive : 1; ///< Is fuel injection staging active (true) or not (false) 

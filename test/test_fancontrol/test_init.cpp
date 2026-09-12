@@ -11,11 +11,9 @@ extern long fan_pwm_value;
 static void test_initialiseFan_resets_state(void)
 {
   setup_nopwm_tune();
-  currentStatus.fanOn = true;
   currentStatus.fanDuty = 99U;
   initialiseFan(TEST_FAN_PIN);
 
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.fanDuty);
   // Normal polarity off -> pin LOW
   TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
