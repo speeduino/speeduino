@@ -30,7 +30,6 @@ void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 {
   fan_pin.setPin(fanPin, OUTPUT);
   fanOff();  //Initialise program with the fan in the off state
-  currentStatus.fanOn = false;
   currentStatus.fanDuty = 0;
 
 #if defined(PWM_FAN_AVAILABLE)
@@ -60,13 +59,13 @@ void fanControl(void)
     {
       //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
       fanOn();
-      currentStatus.fanOn = true;
+      currentStatus.fanDuty = 200;
     }
     else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
     {
       //Fan needs to be turned off. 
       fanOff();
-      currentStatus.fanOn = false;
+      currentStatus.fanDuty = 0;
     }
   }
   else if( configPage2.fanEnable == 2 )// PWM Fan control
@@ -79,7 +78,6 @@ void fanControl(void)
       if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) && (configPage2.fanWhenCranking == 0))
       {
         currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
-        currentStatus.fanOn = false;
         #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
           DISABLE_FAN_TIMER();
         #endif
@@ -102,7 +100,6 @@ void fanControl(void)
           if (currentStatus.fanDuty > 0)
           {
             ENABLE_FAN_TIMER();
-            currentStatus.fanOn = true;
           }
         #endif
       }
@@ -110,7 +107,6 @@ void fanControl(void)
     else if (!fanPermit)
     {
       currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
-      currentStatus.fanOn = false;
     }
 
     #if defined(PWM_FAN_AVAILABLE)
@@ -118,14 +114,12 @@ void fanControl(void)
       {
         //Make sure fan has 0% duty)
         fanOff();
-        currentStatus.fanOn = false;
         DISABLE_FAN_TIMER();
       }
       else if (currentStatus.fanDuty == 200)
       {
         //Make sure fan has 100% duty
         fanOn();
-        currentStatus.fanOn = true;
         DISABLE_FAN_TIMER();
       }
     #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
@@ -133,13 +127,11 @@ void fanControl(void)
       {
         //Make sure fan has 0% duty)
         fanOff();
-        currentStatus.fanOn = false;
       }
       else if (currentStatus.fanDuty > 0)
       {
         //Make sure fan has 100% duty
         fanOn();
-        currentStatus.fanOn = true;
       }
     #endif
   }

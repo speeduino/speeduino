@@ -20,7 +20,6 @@ static void set_coolant_below_ontemp(void)
 
 static void setup_status_fanoff(void)
 {
-  currentStatus.fanOn = false;
   currentStatus.fanDuty = 0U;
   currentStatus.rotationStatus = EngineRotationStatus::Stopped;
   currentStatus.acStatus.turningOn = false;
@@ -29,7 +28,6 @@ static void setup_status_fanoff(void)
 
 static void setup_status_fanon(void)
 {
-  currentStatus.fanOn = true;
   currentStatus.fanDuty = 50U;
   currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.acStatus.turningOn = false;
@@ -46,12 +44,12 @@ static void test_fanControl_disabled_does_nothing(void)
   setup_status_fanon(); 
   fanControl();
   // fanOn flag is only modified inside fanEnable branches -> stays whatever it was
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 
   setup_status_fanoff(); 
   fanControl();
   // fanOn flag is only modified inside fanEnable branches -> stays whatever it was
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void setup_fanControl_on_when_engine_running_and_hot(void)
@@ -70,7 +68,7 @@ static void test_fanControl_nopwm_on_when_engine_running_and_hot(void)
   setup_fanControl_on_when_engine_running_and_hot();
   fanControl();
   TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 }
 
 
@@ -82,7 +80,7 @@ static void test_fanControl_pwm_on_when_engine_running_and_hot(void)
 
   setup_fanControl_on_when_engine_running_and_hot();
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
@@ -101,7 +99,7 @@ static void test_fanControl_nopwm_off_when_engine_stopped(void)
   setup_nopwm_tune();
   seetup_fanControl_with_engine_stopped();
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
 }
 
@@ -111,7 +109,7 @@ static void test_fanControl_pwm_off_when_engine_stopped(void)
   setup_pwm_tune();
   seetup_fanControl_with_engine_stopped();
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
@@ -130,7 +128,7 @@ static void test_fanControl_nopwm_runs_when_fanWhenOff_set(void)
   setup_nopwm_tune();
   setup_fanControl_with_fanWhenOff_set();
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void test_fanControl_pwm_runs_when_fanWhenOff_set(void)
@@ -140,7 +138,7 @@ static void test_fanControl_pwm_runs_when_fanWhenOff_set(void)
   setup_fanControl_with_fanWhenOff_set();
   fanControl();
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
 
@@ -158,7 +156,7 @@ static void test_fanControl_nopwm_when_below_hysteresis(void)
   setup_nopwm_tune();
   setup_fanControl_below_hysteresis();
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void test_fanControl_pwm_when_below_hysteresis(void)
@@ -167,7 +165,7 @@ static void test_fanControl_pwm_when_below_hysteresis(void)
   setup_pwm_tune();
   setup_fanControl_below_hysteresis();
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
@@ -187,13 +185,13 @@ static void test_fanControl_nopwm_holds_in_hysteresis_band(void)
   setup_nopwm_tune();
   setup_fanControl_in_hysteresis_band();
 
-  currentStatus.fanOn = false;
+  currentStatus.fanDuty = 0;
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 
-  currentStatus.fanOn = true;
+  currentStatus.fanDuty = 50;
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void test_fanControl_pwm_holds_in_hysteresis_band(void)
@@ -202,14 +200,12 @@ static void test_fanControl_pwm_holds_in_hysteresis_band(void)
   setup_pwm_tune();
   setup_fanControl_in_hysteresis_band();
 
-  currentStatus.fanOn = false;
+  currentStatus.fanDuty = 0;
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 
-  currentStatus.fanOn = true;
+  currentStatus.fanDuty = 50;
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
@@ -230,7 +226,7 @@ static void test_fanControl_nopwm_disables_during_crank_when_configured(void)
   setup_fanControl_disabled_during_crank();
 
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
 }
 
@@ -241,7 +237,7 @@ static void test_fanControl_pwm_disables_during_crank_when_configured(void)
   setup_fanControl_disabled_during_crank();
 
   fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
@@ -263,7 +259,7 @@ static void test_fanControl_nopwm_runs_during_crank_when_permitted(void)
   setup_fanControl_running_during_crank();
   
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void test_fanControl_pwm_runs_during_crank_when_permitted(void)
@@ -273,7 +269,7 @@ static void test_fanControl_pwm_runs_during_crank_when_permitted(void)
   setup_fanControl_running_during_crank();
   
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 #endif
 }
@@ -295,7 +291,7 @@ static void test_fanControl_nopwm_aircon_request_turns_fan_on(void)
   setup_fanControl_aircon_request_turns_fan_on();
 
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void test_fanControl_pwm_aircon_request_turns_fan_on(void)
@@ -305,7 +301,7 @@ static void test_fanControl_pwm_aircon_request_turns_fan_on(void)
   setup_fanControl_aircon_request_turns_fan_on();
 
   fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
   TEST_ASSERT_GREATER_OR_EQUAL(configPage15.airConPwmFanMinDuty, currentStatus.fanDuty);
 #endif
@@ -313,7 +309,14 @@ static void test_fanControl_pwm_aircon_request_turns_fan_on(void)
 
 static void assert_fan_pin_state(bool active)
 {
-  TEST_ASSERT_EQUAL(active, currentStatus.fanOn);
+  if (active)
+  {
+    TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
+  }
+  else
+  {
+    TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
+  }
   TEST_ASSERT_EQUAL(active != (configPage6.fanInv != 0U), fan_pin._pin.isPinHigh());
 }
 
