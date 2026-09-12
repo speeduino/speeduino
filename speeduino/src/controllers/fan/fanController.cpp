@@ -42,31 +42,62 @@ void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 #endif
 }
 
+static void matchFanStateToDuty(const statuses &current)
+{
+  if (current.fanDuty==0)
+  {
+    fanOff();
+  }
+  else
+  {
+    fanOn();
+  }
+}
+
+static bool airConTurnsFanOn(const statuses &current, const config15 &page15)
+{
+  return page15.airConTurnsFanOn && current.acStatus.turningOn;
+}
+
+static uint8_t getDutyOnOffMode(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+{
+  int16_t onTemp = temperatureRemoveOffset(page6.fanSP);
+  int16_t offTemp = onTemp - page6.fanHyster;
+  // Cranking inhibition must also override a held-on state in the hysteresis band.
+  const bool fanPermit = (page2.fanWhenOff || current.rotationStatus == EngineRotationStatus::Running)
+                      && (current.rotationStatus != EngineRotationStatus::Cranking || page2.fanWhenCranking);
+
+  uint8_t duty = current.fanDuty;
+  if ( fanPermit &&
+       ((current.coolant >= onTemp) || airConTurnsFanOn(current, page15)) )
+  {
+    //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
+    duty = 200;
+  }
+  else if ( (current.coolant <= offTemp) || (!fanPermit) )
+  {
+    //Fan needs to be turned off. 
+    duty = 0;
+  }
+  else
+  {
+    // No change - send back current duty
+  }
+
+  return duty;
+}
+
+static void fanControlOnOffMode(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+{
+  current.fanDuty = getDutyOnOffMode(current, page2, page6, page15);
+  matchFanStateToDuty(current);
+}
+
 void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
-    int onTemp = temperatureRemoveOffset(configPage6.fanSP);
-    int offTemp = onTemp - configPage6.fanHyster;
-    // Cranking inhibition must also override a held-on state in the hysteresis band.
-    const bool fanPermit = (configPage2.fanWhenOff || currentStatus.rotationStatus == EngineRotationStatus::Running)
-                        && (currentStatus.rotationStatus != EngineRotationStatus::Cranking || configPage2.fanWhenCranking);
-
-    if ( (fanPermit == true) &&
-         ((currentStatus.coolant >= onTemp) || 
-           ((configPage15.airConTurnsFanOn) == 1 &&
-           currentStatus.acStatus.turningOn == true)) )
-    {
-      //Fan needs to be turned on - either by high coolant temp, or from an A/C request (to ensure there is airflow over the A/C radiator).
-      fanOn();
-      currentStatus.fanDuty = 200;
-    }
-    else if ( (currentStatus.coolant <= offTemp) || (!fanPermit) )
-    {
-      //Fan needs to be turned off. 
-      fanOff();
-      currentStatus.fanDuty = 0;
-    }
+    fanControlOnOffMode(currentStatus, configPage2, configPage6, configPage15);
   }
   else if( configPage2.fanEnable == 2 )// PWM Fan control
   {
