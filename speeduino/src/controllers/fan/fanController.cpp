@@ -13,13 +13,13 @@ TESTABLE_CONSTEXPR table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configP
 
 TESTABLE_STATIC boardOutputPin_t fan_pin;
 
-void fanOn(void) 
+TESTABLE_STATIC void fanOn(void) 
 {
   ATOMIC() { 
     ((configPage6.fanInv) ? fan_pin.setPinLow() : fan_pin.setPinHigh()); 
   }
 }
-void fanOff(void)
+TESTABLE_STATIC void fanOff(void)
 {
   ATOMIC() { 
     ((configPage6.fanInv) ? fan_pin.setPinHigh() : fan_pin.setPinLow()); 

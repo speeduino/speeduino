@@ -5,7 +5,9 @@
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
 
- extern boardOutputPin_t fan_pin;
+extern boardOutputPin_t fan_pin;
+extern void fanOn(void);
+extern void fanOff(void);
 
 static void test_fanOnOff_normal_polarity(void)
 {
