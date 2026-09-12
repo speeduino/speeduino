@@ -426,44 +426,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       
       currentStatus.injAngle = setFuelChannelSchedules(currentStatus);
     
-      //***********************************************************************************************
-      //| BEGIN IGNITION SCHEDULES
-      //Same as above, except for ignition
-
-      //fixedCrankingOverride is used to extend the dwell during cranking so that the decoder can trigger the spark upon seeing a certain tooth. Currently only available on the basic distributor and 4g63 decoders.
-      if ( currentStatus.isFixedCrankingIgnitionTimingActive(configPage4))
-      {
-        fixedCrankingOverride = currentStatus.dwell * 3;
-        //This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred. It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
-        if(currentStatus.RPM < 250)
-        {
-          ignitionSchedule1.chargeAngle -= 5;
-#if IGN_CHANNELS >= 2
-          ignitionSchedule2.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 3          
-          ignitionSchedule3.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 4          
-          ignitionSchedule4.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 5
-          ignitionSchedule5.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 6          
-          ignitionSchedule6.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 7
-          ignitionSchedule7.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 8
-          ignitionSchedule8.chargeAngle -= 5;
-#endif
-        }
-      }
-      else { fixedCrankingOverride = 0; }
-
-      setIgnitionChannels(currentStatus, currentStatus.decoder.getCrankAngle(), currentStatus.dwell + fixedCrankingOverride);
+      setIgnitionChannels(currentStatus, configPage4, currentStatus.decoder.getCrankAngle());
 
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
