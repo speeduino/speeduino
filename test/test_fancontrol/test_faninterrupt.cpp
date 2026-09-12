@@ -5,6 +5,8 @@
 #include "shared.h"
 
 extern bool fan_pwm_state;
+extern void fanOn(void);
+extern void fanOff(void);
 
 static void test_fan_state_true(void)
 {
