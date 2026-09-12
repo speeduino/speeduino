@@ -332,12 +332,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           if(syncSDLog()) { msSinceLastSDSync = 0; } //Run SD sync and reset  
         }
       #endif
-      
-      //Check the fan output status
-      if (configPage2.fanEnable >= 1)
-      {
-        fanControl();            // Function to turn the cooling fan on/off
-      }
+
+      fanControl();
     } //1Hz timer
 
     // Run idlecontrol every loop for stepper idle...
