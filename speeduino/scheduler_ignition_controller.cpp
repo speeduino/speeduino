@@ -658,7 +658,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) calculateIgnitionAngles(c
   }
   
   //If ignition timing is being tracked per tooth, perform the calcs to get the end teeth
-  if (page2.perToothIgn == true) { current.decoder.setEndTeeth(); }
+  if (page2.perToothIgn) { current.decoder.setEndTeeth(); }
 }
 END_LTO_INLINE()
 
@@ -680,8 +680,52 @@ static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crank
   }
 }
 
-BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime) {
+// Fixed cranking override is used to extend the dwell during cranking so that the decoder 
+// can trigger the spark upon seeing a certain tooth. 
+static uint16_t applyFixedCrankingOverride(const statuses &current, const config4 &page4)
+{
+  uint16_t dwellAdjust = 0;
+  if ( current.isFixedCrankingIgnitionTimingActive(page4))
+  {
+    dwellAdjust = current.dwell * 3;
+
+    // This is a safety step to prevent the ignition start time occurring AFTER the target tooth pulse has already occurred.
+    // It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
+    if(current.RPM < 250) // Why 250?
+    {
+      ignitionSchedule1.chargeAngle -= 5;
+#if IGN_CHANNELS >= 2
+      ignitionSchedule2.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 3          
+      ignitionSchedule3.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 4          
+      ignitionSchedule4.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 5
+      ignitionSchedule5.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 6          
+      ignitionSchedule6.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 7
+      ignitionSchedule7.chargeAngle -= 5;
+#endif
+#if IGN_CHANNELS >= 8
+      ignitionSchedule8.chargeAngle -= 5;
+#endif
+    }
+  }
+
+  return dwellAdjust;
+}
+
+BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const statuses &current, const config4 &page4, uint16_t crankAngle) {
   crankAngle = ignitionLimits(crankAngle);
+  
+  uint16_t dwellTime = current.dwell + applyFixedCrankingOverride(current, page4);
+
   #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
 
   SET_IGNITION_CHANNEL(1)

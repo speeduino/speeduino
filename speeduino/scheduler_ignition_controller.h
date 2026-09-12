@@ -54,7 +54,7 @@ void calculateIgnitionAngles(const config2 &page2, const config4 &page4, const c
  * @param crankAngle Crank angle
  * @param dwellTime Target dwell time
  */
-void setIgnitionChannels(const statuses &current, uint16_t crankAngle, uint16_t dwellTime);
+void setIgnitionChannels(const statuses &current, const config4 &page4, uint16_t crankAngle);
 
 /** @brief Start the timers that drive schedulers  */
 void startIgnitionSchedulers(void);

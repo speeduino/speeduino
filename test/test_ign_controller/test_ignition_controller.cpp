@@ -12,6 +12,11 @@ extern bool isAnyIgnScheduleRunning(void);
 extern void resetIgnitionSchedulers(void);
 extern void setCallbacks(uint8_t sparkMode, uint8_t numCylinders, uint8_t rotaryMode);
 
+static decoder_features_t fakeDecoderFeatures = {};
+static decoder_features_t fakeGetFeatures(void) noexcept
+{
+    return fakeDecoderFeatures;
+}
 static void test_validateSparkMode(void)
 {
     config2 page2 = {};
@@ -126,7 +131,7 @@ static void test_setIgnitionChannels_mask_enables_and_disables_channels(void)
         context.current.maxIgnOutputs = index;
         // Enable channels 1, 3, 5 & 7
         context.current.schedulerCutState.ignitionChannels = 0b01010101;
-        setIgnitionChannels(context.current, 0U, context.current.dwell);
+        setIgnitionChannels(context.current, context.page4, 0U);
 
         // Enabled channels should be pending, disabled should remain OFF
         RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule1._status); } }, {});
@@ -266,6 +271,78 @@ static void test_isAnyIgnScheduleRunning(void)
     RUNIF_IGNCHANNEL8( { assert_isAnyIgnScheduleRunning(ignitionSchedule8); }, {});
 }
 
+
+static void test_setIgnitionChannels_fixed_cranking_override(void)
+{
+    test_context_t context;
+    context.current.maxIgnOutputs = IGN_CHANNELS;
+    context.page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    CRANK_ANGLE_MAX_IGN = 720U;
+    setup_ignition_channel_angles();
+    context.current.crankRPM = 400;
+    context.current.decoder.getFeatures = fakeGetFeatures;
+    fakeDecoderFeatures.hasFixedCrankingTiming = false;
+    context.page4.ignCranklock = true;
+    context.current.rotationStatus = EngineRotationStatus::Cranking;
+    context.current.schedulerCutState.ignitionChannels = 0b11111111;
+
+    TEST_ASSERT_FALSE(context.current.isFixedCrankingIgnitionTimingActive(context.page4));
+    resetIgnitionSchedulers();
+    context.calculateIgnitionAngles();
+    setIgnitionChannels(context.current, context.page4, 0U);
+
+    int16_t originalAngles[IGN_CHANNELS];
+    uint32_t originalDurations[IGN_CHANNELS];
+    RUNIF_IGNCHANNEL1( { originalAngles[0] = ignitionSchedule1.chargeAngle; originalDurations[0] = ignitionSchedule1._duration; }, {});
+    RUNIF_IGNCHANNEL2( { originalAngles[1] = ignitionSchedule1.chargeAngle; originalDurations[1] = ignitionSchedule2._duration; }, {});
+    RUNIF_IGNCHANNEL3( { originalAngles[2] = ignitionSchedule3.chargeAngle; originalDurations[2] = ignitionSchedule3._duration; }, {});
+    RUNIF_IGNCHANNEL4( { originalAngles[3] = ignitionSchedule4.chargeAngle; originalDurations[3] = ignitionSchedule4._duration; }, {});
+    RUNIF_IGNCHANNEL5( { originalAngles[4] = ignitionSchedule5.chargeAngle; originalDurations[4] = ignitionSchedule4._duration; }, {});
+    RUNIF_IGNCHANNEL6( { originalAngles[5] = ignitionSchedule6.chargeAngle; originalDurations[5] = ignitionSchedule6._duration; }, {});
+    RUNIF_IGNCHANNEL7( { originalAngles[6] = ignitionSchedule7.chargeAngle; originalDurations[6] = ignitionSchedule7._duration; }, {});
+    RUNIF_IGNCHANNEL8( { originalAngles[7] = ignitionSchedule8.chargeAngle; originalDurations[7] = ignitionSchedule8._duration; }, {});
+
+    context.current.setRpm(context.current.crankRPM-10);
+    fakeDecoderFeatures.hasFixedCrankingTiming = true;
+    TEST_ASSERT_TRUE(context.current.isFixedCrankingIgnitionTimingActive(context.page4));
+    resetIgnitionSchedulers();
+    context.calculateIgnitionAngles();
+    setIgnitionChannels(context.current, context.page4, 0U);
+
+    #define ASSERT_DURATION_CHANGE_ANGLE_SAME(channel) \
+        CONCAT(RUNIF_IGNCHANNEL, channel) ( { \
+            TEST_ASSERT_EQUAL(originalAngles[channel-1], ignitionSchedule ## channel.chargeAngle); \
+            TEST_ASSERT_NOT_EQUAL(originalDurations[channel-1], ignitionSchedule ## channel._duration); \
+        }, {} )
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(1);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(2);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(3);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(4);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(5);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(6);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(7);
+    ASSERT_DURATION_CHANGE_ANGLE_SAME(8);
+
+    context.current.setRpm(200);
+    TEST_ASSERT_TRUE(context.current.isFixedCrankingIgnitionTimingActive(context.page4));
+    resetIgnitionSchedulers();
+    context.calculateIgnitionAngles();
+    setIgnitionChannels(context.current, context.page4, 0U);
+    #define ASSERT_DURATION_CHANGE_ANGLE_CHANGE(channel) \
+        CONCAT(RUNIF_IGNCHANNEL, channel) ( { \
+            TEST_ASSERT_NOT_EQUAL(originalAngles[channel-1], ignitionSchedule ## channel.chargeAngle); \
+            TEST_ASSERT_NOT_EQUAL(originalDurations[channel-1], ignitionSchedule ## channel._duration); \
+        }, {} )
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(1);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(2);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(3);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(4);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(5);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(6);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(7);
+    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(8);
+}
+
 void testIgnitionController(void)
 {
   SET_UNITY_FILENAME() {
@@ -274,6 +351,7 @@ void testIgnitionController(void)
     RUN_TEST_P(test_validateIgnitionSetup_trims);
     RUN_TEST_P(test_validateIgnitionSetup_rotary);
     RUN_TEST_P(test_setIgnitionChannels_mask_enables_and_disables_channels);
+    RUN_TEST_P(test_setIgnitionChannels_fixed_cranking_override);
     RUN_TEST_P(test_changeIgnitionToFullSequential);
     RUN_TEST_P(test_changeIgnitionToFullSequential_running_schedule);
     RUN_TEST_P(test_changeIgnitionToHalfSync);
