@@ -378,9 +378,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             currentStatus.rotationStatus = EngineRotationStatus::Cranking;
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); }
-
-            //Check whether the user has selected to disable to the fan during cranking
-            if(configPage2.fanWhenCranking == 0) { fanOff(); }
           }
         }
 
