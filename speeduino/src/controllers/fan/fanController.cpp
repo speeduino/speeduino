@@ -46,15 +46,20 @@ static bool airConTurnsFanOn(const statuses &current, const config15 &page15)
   return page15.airConTurnsFanOn && current.acStatus.turningOn;
 }
 
+static bool isFanPermitted(const statuses &current, const config2 &page2)
+{
+  return (page2.fanWhenOff || current.rotationStatus == EngineRotationStatus::Running)
+      && (current.rotationStatus != EngineRotationStatus::Cranking || page2.fanWhenCranking);
+}
+
 static uint8_t getDutyOnOffMode(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
 {
   int16_t onTemp = temperatureRemoveOffset(page6.fanSP);
   int16_t offTemp = onTemp - page6.fanHyster;
   // Cranking inhibition must also override a held-on state in the hysteresis band.
-  const bool fanPermit = (page2.fanWhenOff || current.rotationStatus == EngineRotationStatus::Running)
-                      && (current.rotationStatus != EngineRotationStatus::Cranking || page2.fanWhenCranking);
 
   uint8_t duty = current.fanDuty;
+  const bool fanPermit = isFanPermitted(current, page2);
   if ( fanPermit &&
        ((current.coolant >= onTemp) || airConTurnsFanOn(current, page15)) )
   {
@@ -76,12 +81,9 @@ static uint8_t getDutyOnOffMode(const statuses &current, const config2 &page2, c
 
 static uint8_t getDutyPwmMode(const statuses &current, const config2 &page2, const config15 &page15)
 {
-  const bool fanPermit = (page2.fanWhenOff || current.rotationStatus == EngineRotationStatus::Running)
-                      && (current.rotationStatus != EngineRotationStatus::Cranking || page2.fanWhenCranking);
-
   uint8_t duty = 0;
 
-  if(fanPermit)
+  if(isFanPermitted(current, page2))
   {
     duty = table2D_getValue(&fanPWMTable, temperatureAddOffset(current.coolant)); //In normal situation read PWM duty from the table
     if(airConTurnsFanOn(current, page15))
