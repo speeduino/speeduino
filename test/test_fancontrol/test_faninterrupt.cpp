@@ -3,10 +3,13 @@
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
+#include "src/pins/outputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/invertableOutputPin.h"
 
-extern bool fan_pwm_state;
-extern void fanOn(void);
-extern void fanOff(void);
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+extern fanPwmChannel_t _fanPwm;
+
 
 static void test_fan_state_true(void)
 {
@@ -14,14 +17,11 @@ static void test_fan_state_true(void)
   setup_pwm_tune();
   initialiseFan(TEST_FAN_PIN);
 
-  fanOn();
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_FAN_PIN));
-
-  fan_pwm_state = true;
+  _fanPwm.setTargetDuty(100);
+  _fanPwm.pin.setPinHigh();
   fanInterrupt();
 
-  TEST_ASSERT_FALSE(fan_pwm_state);
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_FALSE(_fanPwm.pin.isPinHigh());
 #else
   TEST_IGNORE_MESSAGE("PWM fan not available");
 #endif
@@ -33,14 +33,11 @@ static void test_fan_state_false(void)
   setup_pwm_tune();
   initialiseFan(TEST_FAN_PIN);
 
-  fanOff();
-  TEST_ASSERT_EQUAL(LOW, digitalRead(TEST_FAN_PIN));
-
-  fan_pwm_state = false;
+  _fanPwm.setTargetDuty(100);
+  _fanPwm.pin.setPinLow();
   fanInterrupt();
 
-  TEST_ASSERT_TRUE(fan_pwm_state);
-  TEST_ASSERT_EQUAL(HIGH, digitalRead(TEST_FAN_PIN));
+  TEST_ASSERT_TRUE(_fanPwm.pin.isPinHigh());
 #else
   TEST_IGNORE_MESSAGE("PWM fan not available");
 #endif

@@ -3,9 +3,12 @@
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pins/outputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/invertableOutputPin.h"
 
- extern boardOutputPin_t fan_pin;
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+extern fanPwmChannel_t _fanPwm;
  extern table2D_u8_u8_4 fanPWMTable;
 
 static void assert_nopwm_fan_pin_state(bool active)
@@ -18,7 +21,7 @@ static void assert_nopwm_fan_pin_state(bool active)
   {
     TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
   }
-  TEST_ASSERT_EQUAL(active != (configPage6.fanInv != 0U), fan_pin._pin.isPinHigh());
+  TEST_ASSERT_EQUAL(active, _fanPwm.pin.isPinHigh());
 }
 
 static void set_coolant_above_ontemp(void)
