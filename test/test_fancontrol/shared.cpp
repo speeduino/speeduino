@@ -32,7 +32,7 @@ void setup_pwm_tune(void)
          (uint8_t)((configPage6.fanSP - configPage6.fanHyster) - 1U), 
          configPage6.fanSP, 
          (uint8_t)((configPage6.fanSP + configPage6.fanHyster) + 1U)};
-    const uint8_t values[] = {0, 0, 200, 200};
+    const uint8_t values[] = {0, 75, 150, 200};
     populate_2dtable(&fanPWMTable, values, bins);
     configPage2.fanEnable = 2U;
     configPage6.fanFreq = 55;
