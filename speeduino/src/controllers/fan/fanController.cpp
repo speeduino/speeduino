@@ -39,6 +39,11 @@ void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
     fan_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.fanFreq));
     fan_pwm_value = 0;
   }
+#else
+  if ( configPage2.fanEnable == 2 ) // PWM Fan control
+  {
+    configPage2.fanEnable = 1;
+  }
 #endif
 }
 
@@ -140,17 +145,6 @@ void fanControl(void)
     else
     {
       ENABLE_FAN_TIMER();
-    }
-#else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
-    if(currentStatus.fanDuty == 0)
-    {
-      //Make sure fan has 0% duty)
-      fanOff();
-    }
-    else if (currentStatus.fanDuty > 0)
-    {
-      //Make sure fan has 100% duty
-      fanOn();
     }
 #endif
   }
