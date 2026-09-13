@@ -3,10 +3,12 @@
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pins/outputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/invertableOutputPin.h"
 
-extern boardOutputPin_t fan_pin;
-extern long fan_pwm_value;
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+extern fanPwmChannel_t _fanPwm;
 
 static void test_initialiseFan_resets_state(void)
 {
@@ -16,7 +18,7 @@ static void test_initialiseFan_resets_state(void)
 
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.fanDuty);
   // Normal polarity off -> pin LOW
-  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(_fanPwm.pin.isPinLow());
 }
 
 static void test_initialiseFan_reverse_polarity(void)
@@ -26,7 +28,7 @@ static void test_initialiseFan_reverse_polarity(void)
 
   initialiseFan(TEST_FAN_PIN);
   // Revere polarity off -> pin HIGH
-  TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
+  TEST_ASSERT_TRUE(_fanPwm.pin._pin.isPinHigh());
 }
 
 
@@ -36,7 +38,7 @@ static void test_initialisePWMFan_resets_state(void)
   setup_pwm_tune();
   initialiseFan(TEST_FAN_PIN);
 
-  TEST_ASSERT_EQUAL(0, fan_pwm_value);
+  TEST_ASSERT_EQUAL(0, _fanPwm.targetDuty);
 #endif
 }
 

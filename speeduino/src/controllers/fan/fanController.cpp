@@ -2,61 +2,43 @@
 #include "../../../units.h"
 #include "../../../unit_testing.h"
 #include "../../../globals.h"
+#include "src/pins/invertableOutputPin.h"
+#include "src/pins/outputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
 
-#if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-TESTABLE_STATIC volatile bool fan_pwm_state;
-static uint16_t fan_pwm_max_count; //Used for variable PWM frequency
-static volatile unsigned int fan_pwm_cur_value;
-TESTABLE_STATIC long fan_pwm_value;
-#endif
 TESTABLE_CONSTEXPR table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+TESTABLE_STATIC fanPwmChannel_t _fanPwm;
 
-TESTABLE_STATIC boardOutputPin_t fan_pin;
+static void applyDutyToPwm(const statuses &current)
+{
+  _fanPwm.setTargetDuty(current.fanDuty);
 
-TESTABLE_STATIC void fanOn(void) 
-{
-  ATOMIC() { 
-    ((configPage6.fanInv) ? fan_pin.setPinLow() : fan_pin.setPinHigh()); 
+#if defined(PWM_FAN_AVAILABLE)
+  if (_fanPwm.isPartialDuty())
+  { 
+    ENABLE_FAN_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
   }
-}
-TESTABLE_STATIC void fanOff(void)
-{
-  ATOMIC() { 
-    ((configPage6.fanInv) ? fan_pin.setPinHigh() : fan_pin.setPinLow()); 
+  else
+  {
+    DISABLE_FAN_TIMER(); 
   }
+#endif
 }
 
 void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 {
-  fan_pin.setPin(fanPin, OUTPUT);
-  fanOff();  //Initialise program with the fan in the off state
-  currentStatus.fanDuty = 0;
-
-#if defined(PWM_FAN_AVAILABLE)
-  DISABLE_FAN_TIMER(); //disable FAN timer if available
-  if ( configPage2.fanEnable == 2 ) // PWM Fan control
-  {
-    fan_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.fanFreq));
-    fan_pwm_value = 0;
-  }
-#else
+#if !defined(PWM_FAN_AVAILABLE)
   if ( configPage2.fanEnable == 2 ) // PWM Fan control
   {
     configPage2.fanEnable = 1;
-  }
+  }  
 #endif
-}
 
-static void matchFanStateToDuty(const statuses &current)
-{
-  if (current.fanDuty==0)
-  {
-    fanOff();
-  }
-  else
-  {
-    fanOn();
-  }
+  _fanPwm = fanPwmChannel_t(fanPin, FREQUENCY.toUser(configPage6.fanFreq));
+  _fanPwm.pin.setInverted(configPage6.fanInv);
+  currentStatus.fanDuty = 0;
+  applyDutyToPwm(currentStatus);
 }
 
 static bool airConTurnsFanOn(const statuses &current, const config15 &page15)
@@ -92,13 +74,6 @@ static uint8_t getDutyOnOffMode(const statuses &current, const config2 &page2, c
   return duty;
 }
 
-static void fanControlOnOffMode(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
-{
-  current.fanDuty = getDutyOnOffMode(current, page2, page6, page15);
-  matchFanStateToDuty(current);
-}
-
-
 static uint8_t getDutyPwmMode(const statuses &current, const config2 &page2, const config15 &page15)
 {
   const bool fanPermit = (page2.fanWhenOff || current.rotationStatus == EngineRotationStatus::Running)
@@ -123,49 +98,33 @@ void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
   {
-    fanControlOnOffMode(currentStatus, configPage2, configPage6, configPage15);
+    currentStatus.fanDuty = getDutyOnOffMode(currentStatus, configPage2, configPage6, configPage15);
   }
+#if defined(PWM_FAN_AVAILABLE)
   else if( configPage2.fanEnable == 2 )// PWM Fan control
   {
     currentStatus.fanDuty = getDutyPwmMode(currentStatus, configPage2, configPage15);
-#if defined(PWM_FAN_AVAILABLE)
-    fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
-    if(currentStatus.fanDuty == 0)
-    {
-      //Make sure fan has 0% duty)
-      fanOff();
-      DISABLE_FAN_TIMER();
-    }
-    else if (currentStatus.fanDuty == 200)
-    {
-      //Make sure fan has 100% duty
-      fanOn();
-      DISABLE_FAN_TIMER();
-    }
-    else
-    {
-      ENABLE_FAN_TIMER();
-    }
-#endif
   }
+#endif
+  applyDutyToPwm(currentStatus);
 }
 
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
 void fanInterrupt(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  if (fan_pwm_state == true)
+  if (_fanPwm.isPartialDuty())
   {
-    fanOff();
-    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + (fan_pwm_max_count - fan_pwm_cur_value);
-    fan_pwm_state = false;
-  }
-  else
-  {
-    fanOn();
-    FAN_TIMER_COMPARE = FAN_TIMER_COUNTER + fan_pwm_value;
-    fan_pwm_cur_value = fan_pwm_value;
-    fan_pwm_state = true;
+    if (_fanPwm.pin.isPinHigh())
+    {
+      _fanPwm.pin.setPinLow();
+      SET_COMPARE(FAN_TIMER_COMPARE, FAN_TIMER_COUNTER + (_fanPwm.maxDuty - _fanPwm.targetDuty) );
+    }
+    else
+    {
+      _fanPwm.pin.setPinHigh();
+      SET_COMPARE(FAN_TIMER_COMPARE, FAN_TIMER_COUNTER + _fanPwm.targetDuty);
+    }
   }
 #endif
 }
