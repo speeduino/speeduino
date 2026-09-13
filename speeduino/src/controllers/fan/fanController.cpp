@@ -93,6 +93,27 @@ static void fanControlOnOffMode(statuses &current, const config2 &page2, const c
   matchFanStateToDuty(current);
 }
 
+
+static uint8_t getDutyPwmMode(const statuses &current, const config2 &page2, const config15 &page15)
+{
+  const bool fanPermit = (page2.fanWhenOff || current.rotationStatus == EngineRotationStatus::Running)
+                      && (current.rotationStatus != EngineRotationStatus::Cranking || page2.fanWhenCranking);
+
+  uint8_t duty = 0;
+
+  if(fanPermit)
+  {
+    duty = table2D_getValue(&fanPWMTable, temperatureAddOffset(current.coolant)); //In normal situation read PWM duty from the table
+    if(airConTurnsFanOn(current, page15))
+    {
+      // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
+      duty = (std::max)(duty, page15.airConPwmFanMinDuty);
+    }
+  }
+
+  return duty;
+}
+
 void fanControl(void)
 {
   if( configPage2.fanEnable == 1 ) // regular on/off fan control
@@ -101,70 +122,37 @@ void fanControl(void)
   }
   else if( configPage2.fanEnable == 2 )// PWM Fan control
   {
-    bool fanPermit = false;
-    if ( configPage2.fanWhenOff == true) { fanPermit = true; }
-    else { fanPermit = currentStatus.rotationStatus==EngineRotationStatus::Running; }
-    if (fanPermit == true)
-      {
-      if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) && (configPage2.fanWhenCranking == 0))
-      {
-        currentStatus.fanDuty = 0; //If the user has elected to disable the fan during cranking, make sure it's off 
-        #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-          DISABLE_FAN_TIMER();
-        #endif
-      }
-      else
-      {
-        byte tempFanDuty = table2D_getValue(&fanPWMTable, temperatureAddOffset(currentStatus.coolant)); //In normal situation read PWM duty from the table
-        if((configPage15.airConTurnsFanOn) == 1 &&
-           currentStatus.acStatus.turningOn == true)
-        {
-          // Clamp the fan duty to airConPwmFanMinDuty or above, to ensure there is airflow over the A/C radiator
-          if(tempFanDuty < configPage15.airConPwmFanMinDuty)
-          {
-            tempFanDuty = configPage15.airConPwmFanMinDuty;
-          }
-        }
-        currentStatus.fanDuty = tempFanDuty;
-        #if defined(PWM_FAN_AVAILABLE)
-          fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
-          if (currentStatus.fanDuty > 0)
-          {
-            ENABLE_FAN_TIMER();
-          }
-        #endif
-      }
-    }
-    else if (!fanPermit)
+    currentStatus.fanDuty = getDutyPwmMode(currentStatus, configPage2, configPage15);
+#if defined(PWM_FAN_AVAILABLE)
+    fan_pwm_value = halfPercentage(currentStatus.fanDuty, fan_pwm_max_count); //update FAN PWM value last
+    if(currentStatus.fanDuty == 0)
     {
-      currentStatus.fanDuty = 0; ////If the user has elected to disable the fan when engine is not running, make sure it's off 
+      //Make sure fan has 0% duty)
+      fanOff();
+      DISABLE_FAN_TIMER();
     }
-
-    #if defined(PWM_FAN_AVAILABLE)
-      if(currentStatus.fanDuty == 0)
-      {
-        //Make sure fan has 0% duty)
-        fanOff();
-        DISABLE_FAN_TIMER();
-      }
-      else if (currentStatus.fanDuty == 200)
-      {
-        //Make sure fan has 100% duty
-        fanOn();
-        DISABLE_FAN_TIMER();
-      }
-    #else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
-      if(currentStatus.fanDuty == 0)
-      {
-        //Make sure fan has 0% duty)
-        fanOff();
-      }
-      else if (currentStatus.fanDuty > 0)
-      {
-        //Make sure fan has 100% duty
-        fanOn();
-      }
-    #endif
+    else if (currentStatus.fanDuty == 200)
+    {
+      //Make sure fan has 100% duty
+      fanOn();
+      DISABLE_FAN_TIMER();
+    }
+    else
+    {
+      ENABLE_FAN_TIMER();
+    }
+#else //Just in case if user still has selected PWM fan in TS, even though it warns that it doesn't work on mega.
+    if(currentStatus.fanDuty == 0)
+    {
+      //Make sure fan has 0% duty)
+      fanOff();
+    }
+    else if (currentStatus.fanDuty > 0)
+    {
+      //Make sure fan has 100% duty
+      fanOn();
+    }
+#endif
   }
 }
 
