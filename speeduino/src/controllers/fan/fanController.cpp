@@ -5,6 +5,7 @@
 #include "src/pins/invertableOutputPin.h"
 #include "src/pins/outputPin.h"
 #include "src/pwm/PwmOutputChannel.h"
+#include "src/pwm/interruptHandlers.h"
 
 TESTABLE_CONSTEXPR table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
@@ -129,18 +130,9 @@ void fanControl(void)
 void fanInterrupt(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  if (_fanPwm.isPartialDuty())
-  {
-    if (_fanPwm.pin.isPinHigh())
-    {
-      _fanPwm.pin.setPinLow();
-      SET_COMPARE(FAN_TIMER_COMPARE, FAN_TIMER_COUNTER + (_fanPwm.maxDuty - _fanPwm.targetDuty) );
-    }
-    else
-    {
-      _fanPwm.pin.setPinHigh();
-      SET_COMPARE(FAN_TIMER_COMPARE, FAN_TIMER_COUNTER + _fanPwm.targetDuty);
-    }
-  }
+  auto setTimerCallback =[](uint16_t tickDelta) {
+    SET_COMPARE(FAN_TIMER_COMPARE, FAN_TIMER_COUNTER + tickDelta );
+  };
+  pwmISR(_fanPwm, setTimerCallback);
 #endif
 }
