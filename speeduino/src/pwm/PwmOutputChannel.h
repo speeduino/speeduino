@@ -5,7 +5,7 @@ template <class TPin>
 struct PwmOutputChannel {
     uint16_t maxDuty = 0;        ///< Maximum duty based on motor frequency
     uint16_t targetDuty = 0;     ///< Requested duty cycle (0-100% or 0-255)
-    trackedOutputPin_t<TPin> pin; ///< The pin
+    trackedOutputPinAdapter_t<TPin> pin; ///< The pin
 
     /** @brief Default construction - not usable yet */
     PwmOutputChannel() = default;
