@@ -10,19 +10,14 @@
  * 2. Swapping pin modes resets pin state on some platforms 
  */
 template <class TPin>
-class trackedOutputPin_t
+class trackedOutputPinAdapter_t : public TPin
 {
 public:
 
     /** @brief Set the input pin */
     void setPin(uint8_t pin, uint8_t mode) noexcept {
-        _pin.setPin(pin, mode);
+        TPin::setPin(pin, mode);
         _pinState = LOW;
-    }
-
-    /** @brief Is the pin set? */
-    bool isValid(void) const {
-        return _pin.isValid();
     }
 
     /** @brief Check if the pin is set high */
@@ -38,7 +33,7 @@ public:
     /** @brief Set the pin high */
     void setPinHigh(void) noexcept {
         ATOMIC() {
-            _pin.setPinHigh();
+            TPin::setPinHigh();
             _pinState = HIGH;
         }
     }
@@ -46,12 +41,11 @@ public:
     /** @brief Set the pin low */
     void setPinLow(void) noexcept {
         ATOMIC() {
-            _pin.setPinLow();
+            TPin::setPinLow();
             _pinState = LOW;
         }
     }
 
 private:
-    TPin _pin;
     bool _pinState = LOW;
 };

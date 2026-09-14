@@ -3,8 +3,9 @@
 #include "src/controllers/boost/boostController.h"
 #include "shared.h"
 #include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/boardOutputPin.h"
 
-extern PwmOutputChannel boostOutput;
+extern PwmOutputChannel<boardOutputPin_t> boostOutput;
 
 static void test_duty_full(void)
 {

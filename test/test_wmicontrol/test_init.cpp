@@ -4,9 +4,10 @@
 #include "units.h"
 #include "shared.h"
 #include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/boardOutputPin.h"
 
-extern PwmOutputChannel vvtChannel1;
-extern PwmOutputChannel vvtChannel2;
+extern PwmOutputChannel<boardOutputPin_t> vvtChannel1;
+extern PwmOutputChannel<boardOutputPin_t> vvtChannel2;
 
 static void test_wmi_enabled(void)
 {
