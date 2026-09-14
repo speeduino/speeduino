@@ -6,6 +6,7 @@
 #include "../../../timers.h"
 #include "../../pwm/PwmOutputChannel.h"
 #include "src/pins/boardOutputPin.h"
+#include "src/pwm/interruptHandlers.h"
 
 TESTABLE_STATIC PwmOutputChannel<boardOutputPin_t> boostOutput;
 TESTABLE_STATIC integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
@@ -254,17 +255,8 @@ void boostControl(statuses &current, const config2 &page2, const config4 &page4,
 //The interrupt to control the Boost PWM
 void boostInterrupt(void)
 {
-  if (boostOutput.isPartialDuty())
-  {
-    if (boostOutput.pin.isPinHigh())
-    {
-      boostOutput.pin.setPinLow();
-      SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boostOutput.maxDuty - boostOutput.targetDuty) );
-    }
-    else
-    {
-      boostOutput.pin.setPinHigh();
-      SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boostOutput.targetDuty);
-    }
-  }
+  auto setTimerCallback =[](uint16_t tickDelta) {
+    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + tickDelta );
+  };
+  pwmISR(boostOutput, setTimerCallback);
 }
