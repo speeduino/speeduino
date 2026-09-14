@@ -1,14 +1,14 @@
-#include "VvtOutputChannel.h"
-#include "../../../maths.h"
-#include "../../../units.h"
+#include "PwmOutputChannel.h"
+#include "../../maths.h"
+#include "../../units.h"
 
-VvtOutputChannel::VvtOutputChannel(uint8_t pinNum, uint16_t motorFrequency)
-: maxDuty(pwmFreqToTicks(motorFrequency))
+PwmOutputChannel::PwmOutputChannel(uint8_t pinNum, uint16_t fullDuty)
+: maxDuty(pwmFreqToTicks(fullDuty))
 {
     pin.setPin(pinNum, OUTPUT);
 }
 
-void VvtOutputChannel::setTargetDutyFromDuty(uint8_t duty) noexcept
+void PwmOutputChannel::setTargetDuty(uint8_t duty) noexcept
 {
     if(duty == 0)
     {

@@ -60,9 +60,11 @@ public:
    * @param pOutput The new output: only valid when true is returned.
    * @return true if a calculation occurred, false otherwise 
    */
-  bool compute(uint32_t now, uint16_t input, uint16_t* pOutput);
-  
+  bool compute(uint32_t now, uint16_t input, uint16_t* pOutput) noexcept;
+
+#if !defined(UNIT_TEST)
 private:
+#endif
 
   uint16_t _setpoint = 0;
   uint16_t _sensitivity = 0;

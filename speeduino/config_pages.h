@@ -609,13 +609,7 @@ struct config9 : public config_page_t {
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
   byte idleAdvStartDelay;     //delay for idle advance engage
   
-  byte boostByGear1;
-  byte boostByGear2;
-  byte boostByGear3;
-  byte boostByGear4;
-  byte boostByGear5;
-  byte boostByGear6;
-
+  byte boostByGear[6];
   byte PWMFanDuty[4];
   byte hardRevMode : 2;
   byte coolantProtRPM[6];

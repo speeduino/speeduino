@@ -152,6 +152,9 @@ static constexpr conversionFactor<uint16_t, uint8_t> FREQUENCY = { .scale=2U, .t
 /** @brief IAC steps */
 static constexpr conversionFactor<uint16_t, uint8_t> IAC_STEPS = { .scale=3U, .translate=0U };
 
+/** @brief Pressure range from 0 to 512 kpa */
+static constexpr conversionFactor<uint16_t, uint8_t> PRESSURE = { .scale=2U, .translate=0U };
+
 ///@}
 
 /**

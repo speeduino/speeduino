@@ -2,40 +2,64 @@
 #include "globals.h"
 #include "src/controllers/boost/boostController.h"
 #include "shared.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
 
-extern volatile bool boost_pwm_state;
-extern boardOutputPin_t boost_pin;
+extern PwmOutputChannel boostOutput;
 
-static void test_on_to_off(void)
+static void test_duty_full(void)
 {
-    pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseBoost(TEST_BOOST_PIN);
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.initialise();
 
-    boost_pwm_state = true;
+  boostOutput.setTargetDuty(200);
+
+  for (uint8_t loop=0; loop<7; ++loop)
+  {
     boostInterrupt();
 
-    TEST_ASSERT_TRUE(boost_pin._pin.isPinLow());
-    TEST_ASSERT_FALSE(boost_pwm_state);
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinHigh());
+  }
 }
 
-static void test_off_to_on(void)
-{
-    pinNumbers.pinBoost = TEST_BOOST_PIN;
-    initialiseBoost(TEST_BOOST_PIN);
 
-    boost_pwm_state = false;
+static void test_partial_duty(void)
+{
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.initialise();
+
+  boostOutput.setTargetDuty(66*2);
+
+  for (uint8_t loop=0; loop<7; ++loop)
+  {
+    boostInterrupt();
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinHigh());
+
+    boostInterrupt();
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
+  }
+}
+
+static void test_duty_none(void)
+{
+  auto context = setup_boost_tune(false, VSS_MODE_EXTERNAL_MI, OPEN_LOOP_BOOST, BOOST_BY_GEAR_OFF);
+  context.initialise();
+
+  boostOutput.setTargetDuty(0);
+
+  for (uint8_t loop=0; loop<7; ++loop)
+  {
     boostInterrupt();
 
-    TEST_ASSERT_TRUE(boost_pin._pin.isPinHigh());
-    TEST_ASSERT_TRUE(boost_pwm_state);
+    TEST_ASSERT_TRUE(boostOutput.pin.isPinLow());
+  }
 }
 
 void testBoostInterrupt(void)
 {
   SET_UNITY_FILENAME()
   {
-    RUN_TEST_P(test_on_to_off);
-    RUN_TEST_P(test_off_to_on);
+    RUN_TEST_P(test_duty_none);
+    RUN_TEST_P(test_partial_duty);
+    RUN_TEST_P(test_duty_full);
   }
 }

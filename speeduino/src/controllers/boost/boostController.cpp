@@ -3,18 +3,27 @@
 #include "../../../unit_testing.h"
 #include "../../../units.h"
 #include "../../PID/integerPID_ideal.h"
+#include "../../../timers.h"
+#include "../../pwm/PwmOutputChannel.h"
 
-TESTABLE_STATIC byte boostCounter;
-TESTABLE_STATIC boardOutputPin_t boost_pin;
-TESTABLE_STATIC long boost_pwm_target_value;
-TESTABLE_STATIC volatile bool boost_pwm_state;
-TESTABLE_STATIC volatile unsigned int boost_pwm_cur_value = 0;
-static uint16_t boost_pwm_max_count; //Used for variable PWM frequency
-static integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+TESTABLE_STATIC PwmOutputChannel boostOutput;
+TESTABLE_STATIC integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
 
-static __attribute__((optimize("Os"))) void setBoostPidTunings(const config2 &page2, const config6 &page6, const config10 &page10)
+// Convert a percentage to half percentage (percentage * 2)
+static constexpr uint16_t percentToHalfPct(uint16_t percent)
+{
+  return percent * 2U;
+}
+
+// Convert a percentage to duty cycle (percentage * 100)
+static constexpr uint16_t percentToDuty(uint16_t percent)
+{
+  return percent * 100U;
+}
+
+static __attribute__((optimize("Os"))) void setBoostPidTunings(const config2 &page2, const config6 &page6, const config10 &page10) noexcept
 {
   if(page6.boostMode == BOOST_MODE_SIMPLE)
   {
@@ -29,286 +38,232 @@ static __attribute__((optimize("Os"))) void setBoostPidTunings(const config2 &pa
   boostPID.setSensitivity(page10.boostSens);
 }
 
-__attribute__((optimize("Os"))) void initialiseBoost(uint8_t boostPin)
+__attribute__((optimize("Os"))) void initialiseBoost(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const pinNumbers_t &pins)
 {
-  boost_pin.setPin(boostPin, OUTPUT);
-
-  setBoostPidTunings(configPage2, configPage6, configPage10);
-  boost_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.boostFreq));
-  currentStatus.boostDuty = 0;
-  boostCounter = 0;
+  boostOutput = PwmOutputChannel(pins.pinBoost, FREQUENCY.toUser(page6.boostFreq));
+  setBoostPidTunings(page2, page6, page10);
+  current.boostDuty = 0;
 }
 
-void boostDisable(void)
+static uint16_t getBoostByGearFactor(const statuses &current, const config9 &page9) noexcept
 {
-  boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
-  currentStatus.boostDuty = 0;
-  DISABLE_BOOST_TIMER(); //Turn off timer
-  boost_pin.setPinLow(); //Make sure solenoid is off (0% duty)
-}
-
-static void boostByGear(void)
-{
-  if(configPage4.boostType == OPEN_LOOP_BOOST)
+  if ((current.gear>0U) && (current.gear-1U)<_countof(page9.boostByGear))
   {
-    if( configPage9.boostByGearEnabled == 1 )
-    {
-      uint16_t combinedBoost = 0;
-      switch (currentStatus.gear)
-      {
-        case 1:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM))  ) << 2;
-          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
-          else{ currentStatus.boostDuty = 10000; }
-          break;
-        case 2:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM))  ) << 2;
-          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
-          else{ currentStatus.boostDuty = 10000; }
-          break;
-        case 3:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM))  ) << 2;
-          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
-          else{ currentStatus.boostDuty = 10000; }
-          break;
-        case 4:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM))  ) << 2;
-          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
-          else{ currentStatus.boostDuty = 10000; }
-          break;
-        case 5:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM))  ) << 2;
-          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
-          else{ currentStatus.boostDuty = 10000; }
-          break;
-        case 6:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM))  ) << 2;
-          if( combinedBoost <= 10000 ){ currentStatus.boostDuty = combinedBoost; }
-          else{ currentStatus.boostDuty = 10000; }
-          break;
-        default:
-          break;
-      }
-    }
-    else if( configPage9.boostByGearEnabled == 2 ) 
-    {
-      switch (currentStatus.gear)
-      {
-        case 1:
-          currentStatus.boostDuty = configPage9.boostByGear1 * 2 * 100;
-          break;
-        case 2:
-          currentStatus.boostDuty = configPage9.boostByGear2 * 2 * 100;
-          break;
-        case 3:
-          currentStatus.boostDuty = configPage9.boostByGear3 * 2 * 100;
-          break;
-        case 4:
-          currentStatus.boostDuty = configPage9.boostByGear4 * 2 * 100;
-          break;
-        case 5:
-          currentStatus.boostDuty = configPage9.boostByGear5 * 2 * 100;
-          break;
-        case 6:
-          currentStatus.boostDuty = configPage9.boostByGear6 * 2 * 100;
-          break;
-        default:
-          break;
-      }
-    }
+    return PRESSURE.toUser(page9.boostByGear[current.gear-1U]);
   }
-  else if (configPage4.boostType == CLOSED_LOOP_BOOST)
+  return 0U;
+}
+
+enum class BoostByGearMode : uint8_t
+{
+  Off,
+  Percent,
+  Constant
+};
+
+static inline BoostByGearMode getBoostByGearMode(const config2 &page2, const config9 &page9)
+{
+  if( (page9.boostByGearEnabled == BOOST_BY_GEAR_PERCENT) && isExternalVssMode(page2) )
   {
-    if( configPage9.boostByGearEnabled == 1 )
-    {
-      uint16_t combinedBoost = 0;
-      switch (currentStatus.gear)
-      {
-        case 1:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear1 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM)) / 100 ) << 2;
-          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-          else{ currentStatus.boostTarget = 511; }
-          break;
-        case 2:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear2 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM)) / 100 ) << 2;
-          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-          else{ currentStatus.boostTarget = 511; }
-          break;
-        case 3:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear3 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM)) / 100 ) << 2;
-          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-          else{ currentStatus.boostTarget = 511; }
-          break;
-        case 4:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear4 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM)) / 100 ) << 2;
-          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-          else{ currentStatus.boostTarget = 511; }
-          break;
-        case 5:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear5 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM)) / 100 ) << 2;
-          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-          else{ currentStatus.boostTarget = 511; }
-          break;
-        case 6:
-          combinedBoost = ( ((uint16_t)configPage9.boostByGear6 * (uint16_t)get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM)) / 100 ) << 2;
-          if( combinedBoost <= 511 ){ currentStatus.boostTarget = combinedBoost; }
-          else{ currentStatus.boostTarget = 511; }
-          break;
-        default:
-          break;
-      }
-    }
-    else if( configPage9.boostByGearEnabled == 2 ) 
-    {
-      switch (currentStatus.gear)
-      {
-        case 1:
-          currentStatus.boostTarget = (configPage9.boostByGear1 << 1);
-          break;
-        case 2:
-          currentStatus.boostTarget = (configPage9.boostByGear2 << 1);
-          break;
-        case 3:
-          currentStatus.boostTarget = (configPage9.boostByGear3 << 1);
-          break;
-        case 4:
-          currentStatus.boostTarget = (configPage9.boostByGear4 << 1);
-          break;
-        case 5:
-          currentStatus.boostTarget = (configPage9.boostByGear5 << 1);
-          break;
-        case 6:
-          currentStatus.boostTarget = (configPage9.boostByGear6 << 1);
-          break;
-        default:
-          break;
-      }
-    }
+    return BoostByGearMode::Percent;
+  }
+  else if( (page9.boostByGearEnabled == BOOST_BY_GEAR_CONSTANT) && isExternalVssMode(page2) )
+  {
+    return BoostByGearMode::Constant;
+  }
+  else
+  {
+    return BoostByGearMode::Off;
   }
 }
 
-void boostControl(void)
+static inline uint16_t lookupBoostTable(const statuses &current) noexcept
 {
-  if( configPage6.boostEnabled==1 )
-  {
-    if(configPage4.boostType == OPEN_LOOP_BOOST)
-    {
-      //Open loop
-      if ( (configPage9.boostByGearEnabled > 0) && isExternalVssMode(configPage2) ){ boostByGear(); }
-      else{ currentStatus.boostDuty = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) * 2 * 100; }
+  // In open loop mode, the values in this table are duty cycle %
+  // In closed loop mode, the values in this table are boost targets in kPa
+  // In both cases, the values are stored in the table as kPa/2 (i.e. 1kPa = 2 in the table)
+  return PRESSURE.toUser(get3DTableValue(&boostTable, percentToHalfPct(current.TPS), current.RPM));
+}
 
-      if(currentStatus.boostDuty > 10000) { currentStatus.boostDuty = 10000; } //Safety check
-      if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
-      else
-      {
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-      }
-    }
-    else if (configPage4.boostType == CLOSED_LOOP_BOOST)
+static uint16_t getBoostDuty(const statuses &current, const config2 &page2, const config9 &page9)
+{
+  uint16_t duty = 0;
+  if (getBoostByGearMode(page2, page9) == BoostByGearMode::Percent)
+  {
+    duty = getBoostByGearFactor(current, page9) * lookupBoostTable(current);
+  }
+  else if (getBoostByGearMode(page2, page9) == BoostByGearMode::Constant)
+  {
+    duty = percentToDuty(getBoostByGearFactor(current, page9));
+  }
+  else
+  {
+    duty = percentToDuty(lookupBoostTable(current));
+  }
+  return clamp(duty, (uint16_t)0, percentToDuty(100U));
+}
+
+static uint16_t getBoostTarget(const statuses &current, const config2 &page2, const config9 &page9)
+{
+  uint16_t target = 0;
+  if (getBoostByGearMode(page2, page9) == BoostByGearMode::Percent)
+  {
+    target = percentage(lookupBoostTable(current), getBoostByGearFactor(current, page9));
+  }
+  else if (getBoostByGearMode(page2, page9) == BoostByGearMode::Constant)
+  {
+    target = getBoostByGearFactor(current, page9);
+  }
+  else
+  {
+    // LCOV_EXCL_BR_START
+    INTERNAL_TEST_ASSERT(BoostByGearMode::Off == getBoostByGearMode(page2, page9));
+    // LCOV_EXCL_BR_STOP
+
+    //Boost target table is in kpa and divided by 2
+    target = lookupBoostTable(current);
+  }
+  // flexBoostCorrection is int16_t; beware of conversion under-/over-flow
+  int16_t correctedTarget = (int16_t)target+current.flexBoostCorrection;
+  return clamp(correctedTarget, (int16_t)0, (int16_t)511);
+}
+
+static int16_t getFlexCorrection(const statuses &current, const config2 &page2)
+{
+  //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
+  if( page2.flexEnabled )
+  {
+    return table2D_getValue(&flexBoostTable, current.ethanolPct);
+  }
+  return 0U;
+}
+
+static uint16_t convertTargetToDuty(const statuses &current, const config2 &page2, const config6 &page6, const config10 &page10)
+{
+  uint16_t duty = 0;
+  if(current.boostTarget > 0)
+  {
+    // LCOV_EXCL_BR_START
+    // The timer check *MUST* be a multiple of the boost control interval
+    // otherwise branch will NEVER be taken.
+    if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1HZ) )
+    // LCOV_EXCL_BR_STOP
     {
-      if( (boostCounter & 7) == 1) 
+      setBoostPidTunings(page2, page6, page10);
+    }
+
+    boostPID.setSetPoint(current.boostTarget);
+    boostPID.setFeedForwardTerm(get3DTableValue(&boostTableLookupDuty, current.boostTarget, current.RPM) * 50U);
+    // LCOV_EXCL_BR_START
+    (void)boostPID.compute(millis(), current.MAP, &duty);
+    // LCOV_EXCL_BR_STOP
+  }
+
+  return duty;
+}
+
+static void applyDutyToPwm(const statuses &current)
+{
+  // Convert boost duty (Which is a % multiplied by 100) to half percentage. I.e 0-200
+  boostOutput.setTargetDuty(fast_div_closest(current.boostDuty, 50U));
+
+  if (boostOutput.isPartialDuty())
+  { 
+    ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
+  }
+  // Check for 100% duty cycle
+  else
+  {
+    DISABLE_BOOST_TIMER(); 
+  }
+}
+
+static bool isBoostActive(const statuses &current, const config6 &page6)
+{
+  return (page6.boostEnabled)
+      && (current.rotationStatus==EngineRotationStatus::Running)
+  ;
+}
+
+static inline bool isBoostControlBaroActive(const statuses &current, const config15 &page15)
+{
+  return (page15.boostControlEnable == EN_BOOST_CONTROL_BARO) 
+      && (current.MAP >= current.baro)
+      ;
+}
+
+static inline bool isBoostControlFixedActive(const statuses &current, const config15 &page15)
+{
+  return (page15.boostControlEnable == EN_BOOST_CONTROL_FIXED) 
+      && (current.MAP >= page15.boostControlEnableThreshold)
+      ;
+}
+
+TESTABLE_STATIC void boostControlCore(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, const config15 &page15)
+{
+  if(isBoostActive(current, page6) )
+  {
+    if(page4.boostType == OPEN_LOOP_BOOST)
+    {
+      current.boostDuty = getBoostDuty(current, page2, page9);
+    }
+    else // CLOSED_LOOP_BOOST
+    {
+      // LCOV_EXCL_BR_START
+      // The timer check *MUST* be a multiple of the boost control interval
+      // otherwise branch will NEVER be taken.
+      if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_10HZ) )
+      // LCOV_EXCL_BR_STOP
       { 
-        if ( (configPage9.boostByGearEnabled > 0) && isExternalVssMode(configPage2) ){ boostByGear(); }
-        else{ currentStatus.boostTarget = get3DTableValue(&boostTable, (currentStatus.TPS * 2U), currentStatus.RPM) << 1; } //Boost target table is in kpa and divided by 2
-
-        //If flex fuel is enabled, there can be an adder to the boost target based on ethanol content
-        if( configPage2.flexEnabled == 1 )
-        {
-          currentStatus.flexBoostCorrection = table2D_getValue(&flexBoostTable, currentStatus.ethanolPct);
-          currentStatus.boostTarget += currentStatus.flexBoostCorrection;
-          currentStatus.boostTarget = (std::min)(currentStatus.boostTarget, (uint16_t)511U);
-        }
-        else
-        {
-          currentStatus.flexBoostCorrection = 0;
-        }
+        current.flexBoostCorrection = getFlexCorrection(current, page2);
+        current.boostTarget = getBoostTarget(current, page2, page9);
+        current.boostDuty = convertTargetToDuty(current, page2, page6, page10);
       } 
 
-      if(((configPage15.boostControlEnable == EN_BOOST_CONTROL_BARO) && (currentStatus.MAP >= currentStatus.baro)) || ((configPage15.boostControlEnable == EN_BOOST_CONTROL_FIXED) && (currentStatus.MAP >= configPage15.boostControlEnableThreshold))) //Only enables boost control above baro pressure or above user defined threshold (User defined level is usually set to boost with wastegate actuator only boost level)
+      // Only enables boost control above baro pressure or above user defined threshold 
+      // (User defined level is usually set to boost with wastegate actuator only boost level)
+      if(!isBoostControlBaroActive(current, page15) && !isBoostControlFixedActive(current, page15)) 
       {
-        if(currentStatus.boostTarget > 0)
-        {
-          //This only needs to be run very infrequently, once every 16 calls to boostControl(). This is approx. once per second
-          if( (boostCounter & 15) == 1)
-          {
-            setBoostPidTunings(configPage2, configPage6, configPage10);
-          }
-
-          boostPID.setSetPoint(currentStatus.boostTarget);
-          boostPID.setFeedForwardTerm(get3DTableValue(&boostTableLookupDuty, currentStatus.boostTarget, currentStatus.RPM) * 100/2);
-          //Compute() returns false if the required interval has not yet passed.
-          bool PIDcomputed = boostPID.compute(millis(), 
-                                              currentStatus.MAP,
-                                              &currentStatus.boostDuty);
-          
-          if(currentStatus.boostDuty == 0) { DISABLE_BOOST_TIMER(); boost_pin.setPinLow(); } //If boost duty is 0, shut everything down
-          else
-          {
-            if(PIDcomputed == true)
-            {
-              boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-            }
-          }
-        }
-        else
-        {
-          //If boost target is 0, turn everything off
-          boostDisable();
-        }
-      }
-      else
-      {
-        boostPID.initialize(currentStatus.MAP); //This resets the ITerm value to prevent rubber banding
-        //Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
-        currentStatus.boostDuty = configPage15.boostDCWhenDisabled*100;
-        boost_pwm_target_value = ((unsigned long)(currentStatus.boostDuty) * boost_pwm_max_count) / 10000; //Convert boost duty (Which is a % multiplied by 100) to a pwm count
-        ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
-        if(currentStatus.boostDuty == 0) { boostDisable(); } //If boost control does nothing disable PWM completely
+        boostPID.initialize(current.MAP); //This resets the ITerm value to prevent rubber banding
+        // Boost control needs to have a high duty cycle if control is below threshold (baro or fixed value). 
+        // This ensures the waste gate is closed as much as possible, this build boost as fast as possible.
+        current.boostDuty = page15.boostDCWhenDisabled*100;
       } //MAP above boost + hyster
     } //Open / Cloosed loop
-
-    //Check for 100% duty cycle
-    if(currentStatus.boostDuty >= 10000)
-    {
-      DISABLE_BOOST_TIMER(); //Turn off the compare unit (ie turn off the interrupt) if boost duty is 100%
-      boost_pin.setPinHigh(); //Turn on boost pin if duty is 100%
-    }
-    else if(currentStatus.boostDuty > 0)
-    {
-      ENABLE_BOOST_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty is > 0
-    }
-    
   }
   else { // Disable timer channel and zero the flex boost correction status
-    DISABLE_BOOST_TIMER();
-    currentStatus.flexBoostCorrection = 0;
+    boostPID.initialize(current.MAP); //This resets the ITerm value to prevent rubber banding
+    current.boostTarget = 0;
+    current.boostDuty = 0;
+    current.flexBoostCorrection = 0;
   }
-
-  boostCounter++;
+  applyDutyToPwm(current);
 }
+
+// LCOV_EXCL_START
+void boostControl(statuses &current, const config2 &page2, const config4 &page4, const config6 &page6, const config9 &page9, const config10 &page10, const config15 &page15)
+{
+  if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_30HZ) )
+  {
+    boostControlCore(current, page2, page4, page6, page9, page10, page15);
+  }
+}
+// LCOV_EXCL_STOP
 
 //The interrupt to control the Boost PWM
 void boostInterrupt(void)
 {
-  if (boost_pwm_state == true)
+  if (boostOutput.isPartialDuty())
   {
-    #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    boost_pin.setPinHigh();
-    #else
-    boost_pin.setPinLow();  // Switch pin to low
-    #endif
-    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boost_pwm_max_count - boost_pwm_cur_value) );
-    boost_pwm_state = false;
-  }
-  else
-  {
-    #if defined(CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    boost_pin.setPinLow();
-    #else
-    boost_pin.setPinHigh();  // Switch pin high
-    #endif
-    SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boost_pwm_target_value);
-    boost_pwm_cur_value = boost_pwm_target_value;
-    boost_pwm_state = true;
+    if (boostOutput.pin.isPinHigh())
+    {
+      boostOutput.pin.setPinLow();
+      SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + (boostOutput.maxDuty - boostOutput.targetDuty) );
+    }
+    else
+    {
+      boostOutput.pin.setPinHigh();
+      SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + boostOutput.targetDuty);
+    }
   }
 }

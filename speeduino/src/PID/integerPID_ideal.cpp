@@ -14,7 +14,7 @@ static inline int32_t calculateUnitlessError(uint16_t input, uint16_t setpoint, 
    return unitless_setpoint - unitless_input;
 }
 
-bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput)
+bool integerPID_ideal::compute(uint32_t now, uint16_t input, uint16_t* pOutput) noexcept
 {
    uint32_t timeChange = (now - _lastTime);
    if (timeChange < _sampleTime) return false;

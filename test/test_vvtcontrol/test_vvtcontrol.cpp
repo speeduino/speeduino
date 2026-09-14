@@ -2,11 +2,11 @@
 #include "src/controllers/vvt/vvtController.h"
 #include "units.h"
 #include "src/pins/boardOutputPin.h"
-#include "src/controllers/vvt/VvtOutputChannel.h"
+#include "src/pwm/PwmOutputChannel.h"
 #include "shared.h"
 
-extern VvtOutputChannel vvtChannel1;
-extern VvtOutputChannel vvtChannel2;
+extern PwmOutputChannel vvtChannel1;
+extern PwmOutputChannel vvtChannel2;
 extern uint32_t vvtWarmStartTime;
 extern volatile uint32_t runSecsX10;
 

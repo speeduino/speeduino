@@ -30,7 +30,10 @@ public:
     /** @brief Compute the next correction. */
     int32_t compute(int32_t feedForwardTerm, int32_t error, int32_t derivative);
 
+#if !defined(UNIT_TEST)
 private:
+#endif
+
     PidTuningParameters _pidParams;
 
     int32_t _integralTerm = 0;
