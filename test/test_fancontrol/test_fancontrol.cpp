@@ -54,7 +54,7 @@ static void setup_status_fanon(void)
 static void test_fanControl_disabled_zero_duty(void)
 {
   setup_nopwm_tune();
-  configPage2.fanEnable = 0U;
+  configPage2.fanEnable = FANMODE_OFF;
   initialiseFan(TEST_FAN_PIN);
 
   setup_status_fanon(); 

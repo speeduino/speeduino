@@ -30,9 +30,11 @@ static void applyDutyToPwm(const statuses &current)
 void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
 {
 #if !defined(PWM_FAN_AVAILABLE)
-  if ( configPage2.fanEnable == 2 ) // PWM Fan control
+  // PWM is unavailable, but the user selected it anyway...
+  if ( configPage2.fanEnable == FANMODE_PWM )
   {
-    configPage2.fanEnable = 1;
+    // ...force on/off mode
+    configPage2.fanEnable = FANMODE_ONOFF;
   }  
 #endif
 
@@ -102,12 +104,12 @@ static uint8_t calculateDutyPwmMode(const statuses &current, const config2 &page
 static uint8_t calculateDuty(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
 {
   uint8_t duty = 0;
-  if( page2.fanEnable == 1 ) // regular on/off fan control
+  if( page2.fanEnable == FANMODE_ONOFF)
   {
     duty = calculateDutyOnOffMode(current, page2, page6, page15);
   }
 #if defined(PWM_FAN_AVAILABLE)
-  else if( page2.fanEnable == 2 )// PWM Fan control
+  else if( page2.fanEnable == FANMODE_PWM )
   {
     duty = calculateDutyPwmMode(current, page2, page15);
   }

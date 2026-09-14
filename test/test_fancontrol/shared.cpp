@@ -13,7 +13,7 @@ static void setup_default_tune(void)
   configPage6.fanInv = 0U;
   configPage6.fanSP = temperatureAddOffset(80);   // ON above 80C
   configPage6.fanHyster = 5U;                      // OFF below 75C
-  configPage2.fanEnable = 0U;
+  configPage2.fanEnable = FANMODE_OFF;
   configPage2.fanWhenOff = 0U;
   configPage2.fanWhenCranking = 0U;
   configPage15.airConTurnsFanOn = 0U;
@@ -22,7 +22,7 @@ static void setup_default_tune(void)
 void setup_nopwm_tune(void)
 {
     setup_default_tune();
-    configPage2.fanEnable = 1U;
+    configPage2.fanEnable = FANMODE_ONOFF;
 }
 
 void setup_pwm_tune(void)
@@ -34,6 +34,6 @@ void setup_pwm_tune(void)
          (uint8_t)((configPage6.fanSP + configPage6.fanHyster) + 1U)};
     const uint8_t values[] = {0, 75, 150, 200};
     populate_2dtable(&fanPWMTable, values, bins);
-    configPage2.fanEnable = 2U;
+    configPage2.fanEnable = FANMODE_PWM;
     configPage6.fanFreq = 55;
 }
