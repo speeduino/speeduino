@@ -27,21 +27,21 @@ static void applyDutyToPwm(const statuses &current)
 #endif
 }
 
-void __attribute__((optimize("Os"))) initialiseFan(uint8_t fanPin)
+void __attribute__((optimize("Os"))) initialiseFan(statuses &current, config2 &page2, const config6 &page6, const pinNumbers_t &pins)
 {
 #if !defined(PWM_FAN_AVAILABLE)
   // PWM is unavailable, but the user selected it anyway...
-  if ( configPage2.fanEnable == FANMODE_PWM )
+  if ( page2.fanEnable == FANMODE_PWM )
   {
     // ...force on/off mode
-    configPage2.fanEnable = FANMODE_ONOFF;
+    page2.fanEnable = FANMODE_ONOFF;
   }  
 #endif
 
-  _fanPwm = fanPwmChannel_t(fanPin, FREQUENCY.toUser(configPage6.fanFreq));
-  _fanPwm.pin.setInverted(configPage6.fanInv);
-  currentStatus.fanDuty = 0;
-  applyDutyToPwm(currentStatus);
+  _fanPwm = fanPwmChannel_t(pins.pinFan, FREQUENCY.toUser(page6.fanFreq));
+  _fanPwm.pin.setInverted(page6.fanInv);
+  current.fanDuty = 0;
+  applyDutyToPwm(current);
 }
 
 static bool airConTurnsFanOn(const statuses &current, const config15 &page15)
@@ -122,10 +122,10 @@ static uint8_t calculateDuty(const statuses &current, const config2 &page2, cons
   return duty;
 }
 
-void fanControl(void)
+void fanControl(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
 {
-  currentStatus.fanDuty = calculateDuty(currentStatus, configPage2, configPage6, configPage15);
-  applyDutyToPwm(currentStatus);
+  current.fanDuty = calculateDuty(current, page2, page6, page15);
+  applyDutyToPwm(current);
 }
 
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones

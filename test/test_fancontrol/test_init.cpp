@@ -1,4 +1,3 @@
-#include "globals.h"
 #include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
@@ -12,21 +11,21 @@ extern fanPwmChannel_t _fanPwm;
 
 static void test_initialiseFan_resets_state(void)
 {
-  setup_nopwm_tune();
-  currentStatus.fanDuty = 99U;
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_nopwm_tune();
+  context.current.fanDuty = 99U;
+  context.initialise();
 
-  TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.fanDuty);
+  TEST_ASSERT_EQUAL_UINT8(0U, context.current.fanDuty);
   // Normal polarity off -> pin LOW
   TEST_ASSERT_TRUE(_fanPwm.pin.isPinLow());
 }
 
 static void test_initialiseFan_reverse_polarity(void)
 {
-  setup_nopwm_tune();
-  configPage6.fanInv = true;
+  auto context = setup_nopwm_tune();
+  context.page6.fanInv = true;
 
-  initialiseFan(TEST_FAN_PIN);
+  context.initialise();
   // Revere polarity off -> pin HIGH
   TEST_ASSERT_TRUE(_fanPwm.pin._pin.isPinHigh());
 }
@@ -35,8 +34,8 @@ static void test_initialiseFan_reverse_polarity(void)
 static void test_initialisePWMFan_resets_state(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_pwm_tune();
+  context.initialise();
 
   TEST_ASSERT_EQUAL(0, _fanPwm.targetDuty);
 #endif

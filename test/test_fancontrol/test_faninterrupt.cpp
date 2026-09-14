@@ -1,4 +1,3 @@
-#include "globals.h"
 #include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
@@ -10,12 +9,11 @@
 using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
 extern fanPwmChannel_t _fanPwm;
 
-
 static void test_fan_state_true(void)
 {
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-  setup_pwm_tune();
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_pwm_tune();
+  context.initialise();
 
   _fanPwm.setTargetDuty(100);
   _fanPwm.pin.setPinHigh();
@@ -30,8 +28,8 @@ static void test_fan_state_true(void)
 static void test_fan_state_false(void)
 {
 #if defined(PWM_FAN_AVAILABLE)//PWM fan not available on Arduino MEGA
-  setup_pwm_tune();
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_pwm_tune();
+  context.initialise();
 
   _fanPwm.setTargetDuty(100);
   _fanPwm.pin.setPinLow();
