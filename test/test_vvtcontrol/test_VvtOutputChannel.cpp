@@ -1,9 +1,12 @@
 #include "../test_utils.h"
 #include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/boardOutputPin.h"
+
+using testPwmChannel = PwmOutputChannel<boardOutputPin_t>;
 
 static void test_ctor(void)
 {
-    PwmOutputChannel subject(19, 1000);
+    testPwmChannel subject(19, 1000);
 
     TEST_ASSERT_TRUE(subject.pin.isValid());
     TEST_ASSERT_NOT_EQUAL(0, subject.maxDuty);
@@ -11,7 +14,7 @@ static void test_ctor(void)
 
 static void test_setTargetDuty(void)
 {
-    PwmOutputChannel subject(19, 1000);
+    testPwmChannel subject(19, 1000);
 
     // Test 0% duty
     subject.setTargetDuty(0);
