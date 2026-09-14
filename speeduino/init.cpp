@@ -169,7 +169,7 @@ void initialiseAll(void)
     initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, configPage13, pinNumbers);
     initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage6, configPage10, pinNumbers);
     initialiseIdle(true);
-    initialiseFan(pinNumbers.pinFan);
+    initialiseFan(currentStatus, configPage2, configPage6, pinNumbers);
     initialiseBoost(currentStatus, configPage2, configPage6, configPage10, pinNumbers);
     initialiseAirCon(currentStatus, configPage15, pinNumbers);
     initialiseNitrous();

@@ -333,7 +333,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         }
       #endif
 
-      fanControl();
+      fanControl(currentStatus, configPage2, configPage6, configPage15);
     } //1Hz timer
 
     // Run idlecontrol every loop for stepper idle...
