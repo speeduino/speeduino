@@ -122,11 +122,22 @@ static uint8_t calculateDuty(const statuses &current, const config2 &page2, cons
   return duty;
 }
 
-void fanControl(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+TESTABLE_STATIC void fanControlCore(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
 {
   current.fanDuty = calculateDuty(current, page2, page6, page15);
   applyDutyToPwm(current);
 }
+
+// LCOV_EXCL_START
+void fanControl(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+{
+  // Run fan control once per second
+  if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_1HZ))
+  {
+    fanControlCore(current, page2, page6, page15);
+  }
+}
+// LCOV_EXCL_START
 
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
 void fanInterrupt(void)

@@ -226,6 +226,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     //-----------------------------------------------------------------------------------------------------
     readPolledSensors(currentStatus.LOOP_TIMER);
     boostControl(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10, configPage15);
+    fanControl(currentStatus, configPage2, configPage6, configPage15);
 
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
@@ -332,8 +333,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           if(syncSDLog()) { msSinceLastSDSync = 0; } //Run SD sync and reset  
         }
       #endif
-
-      fanControl(currentStatus, configPage2, configPage6, configPage15);
     } //1Hz timer
 
     // Run idlecontrol every loop for stepper idle...

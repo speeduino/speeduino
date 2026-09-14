@@ -17,7 +17,8 @@ struct test_context_t
 
     void fanControl(void)
     {
-        ::fanControl(current, page2, page6, page15);
+        extern void fanControlCore(statuses &current, const config2 &page2, const config6 &page6, const config15 &page15);
+        fanControlCore(current, page2, page6, page15);
     }
 };
 
