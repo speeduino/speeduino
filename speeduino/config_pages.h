@@ -153,6 +153,10 @@ constexpr uint8_t BOOST_BY_GEAR_OFF      = 0U;
 constexpr uint8_t BOOST_BY_GEAR_PERCENT  = 1U;
 constexpr uint8_t BOOST_BY_GEAR_CONSTANT = 2U;
 
+constexpr uint8_t FANMODE_OFF   = 0U;
+constexpr uint8_t FANMODE_ONOFF = 1U;
+constexpr uint8_t FANMODE_PWM   = 2U;
+
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
   MAPSamplingCycleAverage = 1, 
