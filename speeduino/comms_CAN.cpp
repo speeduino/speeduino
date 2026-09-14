@@ -11,6 +11,7 @@ This is for handling the data broadcasted to various CAN dashes and instrument c
 
 #if defined(NATIVE_CAN_AVAILABLE)
 #include "comms_CAN.h"
+#include "can_input.h"
 #include "maths.h"
 #include "units.h"
 #include "src/controllers/progammableIO/programmableIOControl.h"
@@ -790,25 +791,11 @@ void readAuxCanBus()
     if (inMsg.id == channelAddress ) //Filters frame ID
     {
 
-      if (!BIT_CHECK(configPage9.caninput_source_num_bytes, i))
-      {
-        // Gets the one-byte value from the Data Field.
-        currentStatus.canin[i] = inMsg.buf[configPage9.caninput_source_start_byte[i]];
-      }
-      else if (configPage9.caninput_source_start_byte[i] < (_countof(inMsg.buf) - 1U)) // a 2-byte value can't start at the last byte of the CAN payload
-      {
-        if (configPage9.caninputEndianess == 1)
-        {
-          //Gets the two-byte value from the Data Field in Litlle Endian.
-          currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]]) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1] << 8));
-        }
-        else
-        {
-          //Gets the two-byte value from the Data Field in Big Endian.
-          currentStatus.canin[i] = ((inMsg.buf[configPage9.caninput_source_start_byte[i]] << 8) | (inMsg.buf[configPage9.caninput_source_start_byte[i] + 1]));
-        }
-      }
-      else { /* Misconfigured: 2-byte value can't start at byte 7. Leave canin[i] unchanged. */ }
+      (void)readCanInputValue(inMsg.buf, inMsg.len,
+                              configPage9.caninput_source_start_byte[i],
+                              BIT_CHECK(configPage9.caninput_source_num_bytes, i),
+                              configPage9.caninputEndianess == 1,
+                              currentStatus.canin[i]);
     }
   } 
 }
