@@ -52,7 +52,7 @@ static bool isFanPermitted(const statuses &current, const config2 &page2)
       && (current.rotationStatus != EngineRotationStatus::Cranking || page2.fanWhenCranking);
 }
 
-static uint8_t getDutyOnOffMode(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+static uint8_t calculateDutyOnOffMode(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
 {
   int16_t onTemp = temperatureRemoveOffset(page6.fanSP);
   int16_t offTemp = onTemp - page6.fanHyster;
@@ -79,7 +79,8 @@ static uint8_t getDutyOnOffMode(const statuses &current, const config2 &page2, c
   return duty;
 }
 
-static uint8_t getDutyPwmMode(const statuses &current, const config2 &page2, const config15 &page15)
+#if defined(PWM_FAN_AVAILABLE)
+static uint8_t calculateDutyPwmMode(const statuses &current, const config2 &page2, const config15 &page15)
 {
   uint8_t duty = 0;
 
@@ -95,19 +96,32 @@ static uint8_t getDutyPwmMode(const statuses &current, const config2 &page2, con
 
   return duty;
 }
+#endif
+
+static uint8_t calculateDuty(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+{
+  uint8_t duty = 0;
+  if( page2.fanEnable == 1 ) // regular on/off fan control
+  {
+    duty = calculateDutyOnOffMode(current, page2, page6, page15);
+  }
+#if defined(PWM_FAN_AVAILABLE)
+  else if( page2.fanEnable == 2 )// PWM Fan control
+  {
+    duty = calculateDutyPwmMode(current, page2, page15);
+  }
+  else
+  {
+    // Unknown mode
+  }
+#endif
+
+  return duty;
+}
 
 void fanControl(void)
 {
-  if( configPage2.fanEnable == 1 ) // regular on/off fan control
-  {
-    currentStatus.fanDuty = getDutyOnOffMode(currentStatus, configPage2, configPage6, configPage15);
-  }
-#if defined(PWM_FAN_AVAILABLE)
-  else if( configPage2.fanEnable == 2 )// PWM Fan control
-  {
-    currentStatus.fanDuty = getDutyPwmMode(currentStatus, configPage2, configPage15);
-  }
-#endif
+  currentStatus.fanDuty = calculateDuty(currentStatus, configPage2, configPage6, configPage15);
   applyDutyToPwm(currentStatus);
 }
 

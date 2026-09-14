@@ -51,7 +51,7 @@ static void setup_status_fanon(void)
 }
 
 
-static void test_fanControl_disabled_does_nothing(void)
+static void test_fanControl_disabled_zero_duty(void)
 {
   setup_nopwm_tune();
   configPage2.fanEnable = 0U;
@@ -60,14 +60,12 @@ static void test_fanControl_disabled_does_nothing(void)
   setup_status_fanon(); 
   currentStatus.fanDuty = 99;
   fanControl();
-  // fanOn flag is only modified inside fanEnable branches -> stays whatever it was
-  TEST_ASSERT_EQUAL(99, currentStatus.fanDuty);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 
   setup_status_fanoff(); 
   currentStatus.fanDuty = 99;
   fanControl();
-  // fanOn flag is only modified inside fanEnable branches -> stays whatever it was
-  TEST_ASSERT_EQUAL(99, currentStatus.fanDuty);
+  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
 }
 
 static void setup_fanControl_on_when_engine_running_and_hot(void)
@@ -392,7 +390,7 @@ void tesFanControl(void)
     RUN_TEST_P(test_fanControl_cranking_overrides_hysteresis);
     RUN_TEST_P(test_fanControl_cranking_overrides_hysteresis_inverted);
     RUN_TEST_P(test_fanControl_cranking_preserves_hysteresis_when_permitted);
-    RUN_TEST_P(test_fanControl_disabled_does_nothing);
+    RUN_TEST_P(test_fanControl_disabled_zero_duty);
     RUN_TEST_P(test_fanControl_nopwm_on_when_engine_running_and_hot);
     RUN_TEST_P(test_fanControl_pwm_on_when_engine_running_and_hot);
     RUN_TEST_P(test_fanControl_nopwm_off_when_engine_stopped);
