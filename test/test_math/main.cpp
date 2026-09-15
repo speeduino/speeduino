@@ -1,7 +1,6 @@
 #include "../test_harness_device.h"
 #include "../test_harness_native.h"
 
-
 void runAllMathTests(void)
 {
     extern void testCrankMaths(void);
@@ -9,6 +8,7 @@ void runAllMathTests(void)
     extern void testDivision(void);
     extern void test_LOW_PASS_FILTER(void);
     extern void test_fast_map(void);
+    extern void test_isWithin(void);
     extern void testUnitConversions(void);
     extern void testOther(void);
     extern void testCrankMath(void);
@@ -20,6 +20,7 @@ void runAllMathTests(void)
     testDivision();
     test_LOW_PASS_FILTER();
     test_fast_map();
+    test_isWithin();
     testUnitConversions();
     testOther();
     testCrankMath();
