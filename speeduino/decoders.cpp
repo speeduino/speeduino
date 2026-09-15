@@ -458,7 +458,7 @@ If it's the correct tooth, but the schedule is not yet started, calculate and an
 */
 static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth)
 {
-  if ( (fixedCrankingOverride == 0) && (currentStatus.RPM > 0) )
+  if ( !currentStatus.isFixedCrankingIgnitionTimingActive(configPage4) && (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) )
   {
     if ( (currentTooth == ignitionEndTeeth[0]) )
     {

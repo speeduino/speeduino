@@ -12,6 +12,9 @@
 #include "maths.h"
 #include "decoder_t.h"
 
+// Forward declares
+struct config4;
+
 using byte = uint8_t;
 
 constexpr uint8_t BIT_TIMER_1HZ = 0;
@@ -114,6 +117,8 @@ struct statuses {
    * @param rpm 
    */
   void setRpm(uint16_t rpm);
+
+  bool isFixedCrankingIgnitionTimingActive(const config4 &page4) const;
 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool initialisationComplete : 1; ///< Tracks whether the setup() function has run completely
