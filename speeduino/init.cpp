@@ -25,10 +25,6 @@
 #endif
 #include "fuel_calcs.h"
 #include "decoder_init.h"
-#include "scheduledIO_ign.h"
-#include "scheduledIO_inj.h"
-#include "scheduledIO_direct_ign.h"
-#include "scheduledIO_direct_inj.h"
 #include "src/pins/pinMapping.h"
 #include "resetControl.h"
 #include "scheduler_ignition_controller.h"
@@ -170,7 +166,7 @@ void initialiseAll(void)
     //Set the tacho output default state
     digitalWrite(pinNumbers.pinTachOut, HIGH);
     //Perform all initialisations
-    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, pinNumbers);
+    initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, configPage13, pinNumbers);
     initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage6, configPage10, pinNumbers);
     initialiseIdle(true);
     initialiseFan(pinNumbers.pinFan);

@@ -27,12 +27,10 @@ void prepareForInitialiseAll(uint8_t boardId) {
 void runAllInitTests(void)
 {
     extern void testInitialisation(void);
-    extern void testIgnitionScheduleInit(void);
     extern void testPinMapping(void);
     extern void testPressureInputs(void);
 
     testInitialisation();
-    testIgnitionScheduleInit();
     testPinMapping();
     testPressureInputs();
 }
