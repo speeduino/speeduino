@@ -15,7 +15,7 @@ jobs:
         SOURCE_ARTIFACT: sketches-report-all
 
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
     permissions:
       pull-requests: write
     
@@ -27,6 +27,23 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: ./
+
+      - name: Mark report from failed build
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        env:
+          SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          report = Path(os.environ["SIZE_REPORT_FILE"])
+          warning = (
+              "> **Build failed:** [View build logs](" + os.environ["SOURCE_RUN_URL"] + "). "
+              "The measurements below may be incomplete; N/A is not zero.\n\n"
+          )
+          report.write_text(warning + report.read_text(encoding="utf-8"), encoding="utf-8")
+          PY
 
       - name: Extract PR Number
         id: extract-pr-id

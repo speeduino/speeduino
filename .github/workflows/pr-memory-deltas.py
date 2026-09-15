@@ -2,6 +2,20 @@
 import sys
 import re
 
+def teensy_used_bytes(section, regions):
+    """Sum named occupied regions, never the free-space figures."""
+    values = {}
+    for region, body in re.findall(r"teensy_size:\s+(FLASH|RAM1|RAM2):([^\r\n]+)", section):
+        if region in regions:
+            body = body.split("free for", 1)[0]
+            fields = dict(re.findall(r"\b(code|data|headers|variables|padding):\s*(\d+)", body))
+            required = regions[region]
+            values[region] = sum(int(fields[key]) for key in required) if all(key in fields for key in required) else None
+    if all(values.get(region) is not None for region in regions):
+        return sum(values[region] for region in regions)
+    return None
+
+
 def parse_multi_env_log(log_path):
     """Parses a multi-environment PlatformIO log into an environment map."""
     env_data = {}
@@ -13,7 +27,7 @@ def parse_multi_env_log(log_path):
         return env_data
 
     # Split output log by PlatformIO environment target headers
-    sections = content.split("Processing ")
+    sections = re.sub(r"\x1b\[[0-9;]*m", "", content).split("Processing ")
     for section in sections[1:]:
         lines = section.split('\n')
         if not lines:
@@ -22,17 +36,14 @@ def parse_multi_env_log(log_path):
         # Extract environment tag name (e.g. 'uno' or 'esp32')
         env_name = lines[0].split()[0].strip()
         
-        # Capture raw used byte figures using regex
-        if env_name.casefold().startswith("Teensy".casefold()):
-            ram_match = re.search(r"teensy_size:\s+RAM1:.+free for local variables:(\d+)", section)
-            flash_match = re.search(r"teensy_size:\s+FLASH:.+free for files:(\d+)", section)
-        else:
-            ram_match = re.search(r"RAM:\s+\[.*\]\s+[\d.]+\%\s+\(used\s+(\d+)\s+bytes", section)
-            flash_match = re.search(r"Flash:\s+\[.*\]\s+[\d.]+\%\s+\(used\s+(\d+)\s+bytes", section)
-        
+        # Prefer PlatformIO's ordinary used-byte format when available.
+        ram_match = re.search(r"RAM:\s+\[.*\]\s+[\d.]+\%\s+\(used\s+(\d+)\s+bytes", section)
+        flash_match = re.search(r"Flash:\s+\[.*\]\s+[\d.]+\%\s+\(used\s+(\d+)\s+bytes", section)
         env_data[env_name] = {
-            'ram': int(ram_match.group(1)) if ram_match else 0,
-            'flash': int(flash_match.group(1)) if flash_match else 0
+            'ram': int(ram_match.group(1)) if ram_match else teensy_used_bytes(section, {
+                'RAM1': ('variables', 'code', 'padding'), 'RAM2': ('variables',)}),
+            'flash': int(flash_match.group(1)) if flash_match else teensy_used_bytes(section, {
+                'FLASH': ('code', 'data', 'headers')})
         }
     return env_data
 
@@ -44,6 +55,10 @@ def format_bytes(bytes_value):
     return f"{sign}{bytes_value:,} B"
 
 def format_delta_cols(base_size, pr_size):
+        if base_size is None or pr_size is None:
+            base = "N/A" if base_size is None else f"{base_size:,} B"
+            pr = "N/A" if pr_size is None else f"{pr_size:,} B"
+            return f"| {base} | {pr} | N/A | Unknown |"
         delta = pr_size - base_size
         emoji = "🟢" if delta <= 0 else "🔴"
 
@@ -75,13 +90,14 @@ def main():
         report.append("| :--- | :--- | :--- | :--- | :--- | :---: |")
 
         for env in all_envs:
-            base = base_data.get(env, {'ram': 0, 'flash': 0})
-            pr = pr_data.get(env, {'ram': 0, 'flash': 0})
+            base = base_data.get(env, {'ram': None, 'flash': None})
+            pr = pr_data.get(env, {'ram': None, 'flash': None})
 
             report.append(f"| **{env}** | RAM {format_delta_cols(base['ram'], pr['ram'])}")
             report.append(f"| | Flash {format_delta_cols(base['flash'], pr['flash'])}")
 
-        report.append("\n*Negative delta values represent optimized or reduced resource usage.*")
+        report.append("\n*Negative deltas indicate reduced used memory. N/A means no matching measurement was available.*")
+        report.append("*Teensy RAM includes RAM1 variables/code/padding and RAM2 variables; flash includes code/data/headers.*")
 
     print("\n".join(report))
 

@@ -40,20 +40,41 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: ${{ env.PR_FOLDER }}
+        fetch-depth: 2
+
+    - name: Identify comparison base
+      id: comparison_base
+      working-directory: ${{ env.PR_FOLDER }}
+      run: |
+        # Compare the tested merge with its actual base, which may be newer
+        # than the base SHA retained in the pull request event.
+        git rev-parse --verify HEAD^2 > /dev/null
+        echo "sha=$(git rev-parse HEAD^1)" >> "$GITHUB_OUTPUT"
+
+    - name: Test memory report parsing
+      run: python -m unittest discover -s "${{ env.PR_FOLDER }}/.github/workflows/tests"
 
     - name: Build PR Envs
+      id: build_pr
+      # Preserve measurements and logs before failing the final build check.
+      continue-on-error: true
       run: |
+        set -o pipefail
         source PIO/bin/activate
         platformio run -d ${{ env.PR_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} 2>&1 | tee ${{ env.PR_LOG_FILE }}
     
     - name: Checkout Base Branch
       uses: actions/checkout@v4
       with:
-        ref: master
+        ref: ${{ steps.comparison_base.outputs.sha }}
         path: ${{ env.BASE_FOLDER }}
 
     - name: Build Base Envs
+      id: build_base
+      # Preserve measurements and logs before failing the final build check.
+      continue-on-error: true
       run: |
+        set -o pipefail
         source PIO/bin/activate
         platformio run -d ${{ env.BASE_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} 2>&1 | tee ${{ env.BASE_LOG_FILE }}
 
@@ -68,11 +89,13 @@ jobs:
         fi
 
     - name: Upload build logs
-      if: ${{ env.ACT }}
+      if: ${{ always() }}
       uses: actions/upload-artifact@v4
       with:
+        name: memory-build-logs
         path: |
-            **/*.log
+          ${{ env.PR_LOG_FILE }}
+          ${{ env.BASE_LOG_FILE }}
 
       # This step is needed to pass the size data to the report job.
     - name: Upload sketches report to workflow artifact
@@ -82,3 +105,9 @@ jobs:
         path: |
           ${{ env.SIZE_REPORT_FILE }}
           ${{ env.PR_NUM_FILE }}
+
+    - name: Check build results
+      if: ${{ always() && (steps.build_pr.outcome == 'failure' || steps.build_base.outcome == 'failure') }}
+      run: |
+        echo "At least one firmware build failed; see memory-build-logs and the partial size report."
+        exit 1
