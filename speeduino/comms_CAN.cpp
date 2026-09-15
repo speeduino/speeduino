@@ -322,6 +322,7 @@ void DashMessage(uint16_t DashMessageID)
 
     case CAN_HALTECH_PW:
       outMsg.len = 8;
+      // TODO - replace with loop once test coverage is in place
       outMsg.buf[0] = highByte(fuelSchedules[0].pw);
       outMsg.buf[1] = lowByte(fuelSchedules[0].pw);
 #if (INJ_CHANNELS >= 2)

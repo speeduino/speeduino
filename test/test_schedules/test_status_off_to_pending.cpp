@@ -24,44 +24,11 @@ void test_status_off_to_pending_inj(FuelSchedule &schedule)
     stopFuelSchedulers();
 }
 
-void test_status_off_to_pending_inj1(void)
+void test_status_off_to_pending_inj(void)
 {
-    INJCHANNEL_TEST_HELPER1(test_status_off_to_pending_inj(fuelSchedules[0]));
-}
-
-void test_status_off_to_pending_inj2(void)
-{
-    INJCHANNEL_TEST_HELPER2(test_status_off_to_pending_inj(fuelSchedules[1]));
-}
-
-void test_status_off_to_pending_inj3(void)
-{
-    INJCHANNEL_TEST_HELPER3(test_status_off_to_pending_inj(fuelSchedules[2]));
-}
-
-void test_status_off_to_pending_inj4(void)
-{
-    INJCHANNEL_TEST_HELPER4(test_status_off_to_pending_inj(fuelSchedules[3]));
-}
-
-void test_status_off_to_pending_inj5(void)
-{
-    INJCHANNEL_TEST_HELPER5(test_status_off_to_pending_inj(fuelSchedules[4]));
-}
-
-void test_status_off_to_pending_inj6(void)
-{
-    INJCHANNEL_TEST_HELPER6(test_status_off_to_pending_inj(fuelSchedules[5]));
-}
-
-void test_status_off_to_pending_inj7(void)
-{
-    INJCHANNEL_TEST_HELPER7(test_status_off_to_pending_inj(fuelSchedules[6]));
-}
-
-void test_status_off_to_pending_inj8(void)
-{
-    INJCHANNEL_TEST_HELPER8(test_status_off_to_pending_inj(fuelSchedules[7]));
+  for (auto& schedule: fuelSchedules) {
+    test_status_off_to_pending_inj(schedule);
+  }
 }
 
 void test_status_off_to_pending_ign(IgnitionSchedule &schedule)
@@ -116,14 +83,7 @@ void test_status_off_to_pending(void)
 {
   SET_UNITY_FILENAME() {
 
-    RUN_TEST_P(test_status_off_to_pending_inj1);
-    RUN_TEST_P(test_status_off_to_pending_inj2);
-    RUN_TEST_P(test_status_off_to_pending_inj3);
-    RUN_TEST_P(test_status_off_to_pending_inj4);
-    RUN_TEST_P(test_status_off_to_pending_inj5);
-    RUN_TEST_P(test_status_off_to_pending_inj6);
-    RUN_TEST_P(test_status_off_to_pending_inj7);
-    RUN_TEST_P(test_status_off_to_pending_inj8);
+    RUN_TEST_P(test_status_off_to_pending_inj);
 
     RUN_TEST_P(test_status_off_to_pending_ign1);
     RUN_TEST_P(test_status_off_to_pending_ign2);
