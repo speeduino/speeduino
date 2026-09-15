@@ -4,16 +4,22 @@
 #include "globals.h"
 #include "units.h"
 
+extern volatile unsigned long toothOneTime;
+extern volatile unsigned long toothOneMinusOneTime;
+extern volatile uint32_t toothLastToothTime;
+extern volatile unsigned long toothLastMinusOneToothTime;
+extern decoder_status_t decoderStatus;
+extern volatile uint16_t triggerToothAngle;
+extern volatile int toothCurrentCount;
+
 static void test_getCrankAngle(void)
 {
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile int toothCurrentCount;
-      
   auto decoder = triggerSetup_Harley();
 
   // Make time->angle deterministic for tests
+  CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
   setAngleConverterRevolutionTime(2000);
-
+    
   // Base case: tooth 1 should map to 0 + triggerAngle
   configPage4.triggerAngle = 0;
   toothLastToothTime = 10000;
@@ -63,12 +69,6 @@ static void test_getCrankAngle(void)
 static void test_getRPM(void)
 {
   auto decoder = triggerSetup_Harley();
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern decoder_status_t decoderStatus;
-  extern volatile uint16_t triggerToothAngle;
 
   // Ensure sync present
   decoderStatus.syncStatus = SyncStatus::Full;
@@ -106,7 +106,7 @@ static void assert_getRPM_at_cranking_boundary(uint16_t rpm, uint16_t expected)
   extern decoder_status_t decoderStatus;
   extern volatile unsigned long toothOneTime;
   extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile unsigned long toothLastMinusOneToothTime;
   extern volatile uint16_t triggerToothAngle;
 

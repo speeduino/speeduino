@@ -6,7 +6,7 @@
 static void test_getCrankAngle(void)
 {
   extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile unsigned long toothLastMinusOneToothTime;
   extern volatile uint16_t toothCurrentCount;
 
@@ -16,6 +16,7 @@ static void test_getCrankAngle(void)
   toothLastToothTime = 2000;
   toothLastMinusOneToothTime = toothLastToothTime - 500;
   decoderStatus.toothAngleIsCorrect = true;
+  CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
   setAngleConverterRevolutionTime(2000);
 
   // 100us after the last tooth — use same delta for all checks
