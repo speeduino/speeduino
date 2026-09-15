@@ -326,10 +326,10 @@ void ftm0_isr(void)
   bool interrupt7 = (FTM0_C6SC & FTM_CSC_CHF);
   bool interrupt8 = (FTM0_C7SC & FTM_CSC_CHF);
 
-  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule1); }
-  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule2); }
-  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule3); }
-  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule4); }
+  if(interrupt1) { FTM0_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[0]); }
+  else if(interrupt2) { FTM0_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[1]); }
+  else if(interrupt3) { FTM0_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[2]); }
+  else if(interrupt4) { FTM0_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[3]); }
   else if(interrupt5) { FTM0_C4SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule1); }
   else if(interrupt6) { FTM0_C5SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule2); }
   else if(interrupt7) { FTM0_C6SC &= ~FTM_CSC_CHF; moveToNextState(ignitionSchedule3); }
@@ -341,19 +341,19 @@ void ftm3_isr(void)
 
 #if (INJ_CHANNELS >= 5)
   bool interrupt1 = (FTM3_C0SC & FTM_CSC_CHF);
-  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule5); }
+  if(interrupt1) { FTM3_C0SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[4]); }
 #endif
 #if (INJ_CHANNELS >= 6)
   bool interrupt2 = (FTM3_C1SC & FTM_CSC_CHF);
-  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule6); }
+  if(interrupt2) { FTM3_C1SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[5]); }
 #endif
 #if (INJ_CHANNELS >= 7)
   bool interrupt3 = (FTM3_C2SC & FTM_CSC_CHF);
-  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule7); }
+  if(interrupt3) { FTM3_C2SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[6]); }
 #endif
 #if (INJ_CHANNELS >= 8)
   bool interrupt4 = (FTM3_C3SC & FTM_CSC_CHF);
-  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedule8); }
+  if(interrupt4) { FTM3_C3SC &= ~FTM_CSC_CHF; moveToNextState(fuelSchedules[7]); }
 #endif
 #if (IGN_CHANNELS >= 5)
   bool interrupt5 = (FTM3_C4SC & FTM_CSC_CHF);

@@ -26,42 +26,42 @@ void test_status_off_to_pending_inj(FuelSchedule &schedule)
 
 void test_status_off_to_pending_inj1(void)
 {
-    INJCHANNEL_TEST_HELPER1(test_status_off_to_pending_inj(fuelSchedule1));
+    INJCHANNEL_TEST_HELPER1(test_status_off_to_pending_inj(fuelSchedules[0]));
 }
 
 void test_status_off_to_pending_inj2(void)
 {
-    INJCHANNEL_TEST_HELPER2(test_status_off_to_pending_inj(fuelSchedule2));
+    INJCHANNEL_TEST_HELPER2(test_status_off_to_pending_inj(fuelSchedules[1]));
 }
 
 void test_status_off_to_pending_inj3(void)
 {
-    INJCHANNEL_TEST_HELPER3(test_status_off_to_pending_inj(fuelSchedule3));
+    INJCHANNEL_TEST_HELPER3(test_status_off_to_pending_inj(fuelSchedules[2]));
 }
 
 void test_status_off_to_pending_inj4(void)
 {
-    INJCHANNEL_TEST_HELPER4(test_status_off_to_pending_inj(fuelSchedule4));
+    INJCHANNEL_TEST_HELPER4(test_status_off_to_pending_inj(fuelSchedules[3]));
 }
 
 void test_status_off_to_pending_inj5(void)
 {
-    INJCHANNEL_TEST_HELPER5(test_status_off_to_pending_inj(fuelSchedule5));
+    INJCHANNEL_TEST_HELPER5(test_status_off_to_pending_inj(fuelSchedules[4]));
 }
 
 void test_status_off_to_pending_inj6(void)
 {
-    INJCHANNEL_TEST_HELPER6(test_status_off_to_pending_inj(fuelSchedule6));
+    INJCHANNEL_TEST_HELPER6(test_status_off_to_pending_inj(fuelSchedules[5]));
 }
 
 void test_status_off_to_pending_inj7(void)
 {
-    INJCHANNEL_TEST_HELPER7(test_status_off_to_pending_inj(fuelSchedule7));
+    INJCHANNEL_TEST_HELPER7(test_status_off_to_pending_inj(fuelSchedules[6]));
 }
 
 void test_status_off_to_pending_inj8(void)
 {
-    INJCHANNEL_TEST_HELPER8(test_status_off_to_pending_inj(fuelSchedule8));
+    INJCHANNEL_TEST_HELPER8(test_status_off_to_pending_inj(fuelSchedules[7]));
 }
 
 void test_status_off_to_pending_ign(IgnitionSchedule &schedule)

@@ -34,42 +34,42 @@ static void test_accuracy_timeout_inj(FuelSchedule &schedule)
 
 static void test_accuracy_timeout_inj1(void)
 {
-    INJCHANNEL_TEST_HELPER1(test_accuracy_timeout_inj(fuelSchedule1));
+    INJCHANNEL_TEST_HELPER1(test_accuracy_timeout_inj(fuelSchedules[0]));
 }
 
 static void test_accuracy_timeout_inj2(void)
 {
-    INJCHANNEL_TEST_HELPER2(test_accuracy_timeout_inj(fuelSchedule2));
+    INJCHANNEL_TEST_HELPER2(test_accuracy_timeout_inj(fuelSchedules[1]));
 }
 
 static void test_accuracy_timeout_inj3(void)
 {
-    INJCHANNEL_TEST_HELPER3(test_accuracy_timeout_inj(fuelSchedule3));
+    INJCHANNEL_TEST_HELPER3(test_accuracy_timeout_inj(fuelSchedules[2]));
 }
 
 static void test_accuracy_timeout_inj4(void)
 {
-    INJCHANNEL_TEST_HELPER4(test_accuracy_timeout_inj(fuelSchedule4));
+    INJCHANNEL_TEST_HELPER4(test_accuracy_timeout_inj(fuelSchedules[3]));
 }
 
 static void test_accuracy_timeout_inj5(void)
 {
-    INJCHANNEL_TEST_HELPER5(test_accuracy_timeout_inj(fuelSchedule5))
+    INJCHANNEL_TEST_HELPER5(test_accuracy_timeout_inj(fuelSchedules[4]))
 }
 
 static void test_accuracy_timeout_inj6(void)
 {
-    INJCHANNEL_TEST_HELPER6(test_accuracy_timeout_inj(fuelSchedule6))
+    INJCHANNEL_TEST_HELPER6(test_accuracy_timeout_inj(fuelSchedules[5]))
 }
 
 static void test_accuracy_timeout_inj7(void)
 {
-    INJCHANNEL_TEST_HELPER7(test_accuracy_timeout_inj(fuelSchedule7));
+    INJCHANNEL_TEST_HELPER7(test_accuracy_timeout_inj(fuelSchedules[6]));
 }
 
 static void test_accuracy_timeout_inj8(void)
 {
-    INJCHANNEL_TEST_HELPER8(test_accuracy_timeout_inj(fuelSchedule8));
+    INJCHANNEL_TEST_HELPER8(test_accuracy_timeout_inj(fuelSchedules[7]));
 }
 
 static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)

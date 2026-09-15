@@ -4,32 +4,34 @@
 #include "table2d.h"
 #include "globals.h"
 
-FuelSchedule fuelSchedule1(FUEL1_COUNTER, FUEL1_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#if (INJ_CHANNELS >= 2)
-FuelSchedule fuelSchedule2(FUEL2_COUNTER, FUEL2_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 3)
-FuelSchedule fuelSchedule3(FUEL3_COUNTER, FUEL3_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 4)
-FuelSchedule fuelSchedule4(FUEL4_COUNTER, FUEL4_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 5)
-FuelSchedule fuelSchedule5(FUEL5_COUNTER, FUEL5_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 6)
-FuelSchedule fuelSchedule6(FUEL6_COUNTER, FUEL6_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 7)
-FuelSchedule fuelSchedule7(FUEL7_COUNTER, FUEL7_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
-#if (INJ_CHANNELS >= 8)
-FuelSchedule fuelSchedule8(FUEL8_COUNTER, FUEL8_COMPARE); //cppcheck-suppress misra-c2012-8.4
-#endif
+FuelSchedule fuelSchedules[INJ_CHANNELS] = {
+  FuelSchedule(FUEL1_COUNTER, FUEL1_COMPARE),
+  #if (INJ_CHANNELS >= 2)
+  FuelSchedule(FUEL2_COUNTER, FUEL2_COMPARE),
+  #endif
+  #if (INJ_CHANNELS >= 3)
+  FuelSchedule(FUEL3_COUNTER, FUEL3_COMPARE),
+  #endif
+  #if (INJ_CHANNELS >= 4)
+  FuelSchedule(FUEL4_COUNTER, FUEL4_COMPARE),
+  #endif
+  #if (INJ_CHANNELS >= 5)
+  FuelSchedule(FUEL5_COUNTER, FUEL5_COMPARE),
+  #endif
+  #if (INJ_CHANNELS >= 6)
+  FuelSchedule(FUEL6_COUNTER, FUEL6_COMPARE),
+  #endif
+  #if (INJ_CHANNELS >= 7)
+  FuelSchedule(FUEL7_COUNTER, FUEL7_COMPARE),
+  #endif
+  #if (INJ_CHANNELS >= 8)
+  FuelSchedule(FUEL8_COUNTER, FUEL8_COMPARE),
+  #endif
+};
 
 static __attribute__((optimize("Os"))) void setupSequentialCallbacks(void)
 {
-  #define SET_CALLBACKS(index) setCallbacks(fuelSchedule ## index, openInjector ## index, closeInjector ## index);\
+  #define SET_CALLBACKS(index) setCallbacks(fuelSchedules[index-1], openInjector ## index, closeInjector ## index);
   
   SET_CALLBACKS(1)
 #if INJ_CHANNELS >= 2
@@ -67,53 +69,53 @@ static __attribute__((optimize("Os"))) void setupSemiSequentialCallbacks(uint8_t
   {
     if(inj4cylPairing == INJ_PAIR_13_24)
     {
-      setCallbacks(fuelSchedule1, openInjector1and3, closeInjector1and3);
+      setCallbacks(fuelSchedules[0], openInjector1and3, closeInjector1and3);
 #if (INJ_CHANNELS >= 2)
-      setCallbacks(fuelSchedule2, openInjector2and4, closeInjector2and4);
+      setCallbacks(fuelSchedules[1], openInjector2and4, closeInjector2and4);
 #endif
     }
     else
     {
-      setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+      setCallbacks(fuelSchedules[0], openInjector1and4, closeInjector1and4);
 #if (INJ_CHANNELS >= 2)
-      setCallbacks(fuelSchedule2, openInjector2and3, closeInjector2and3);
+      setCallbacks(fuelSchedules[1], openInjector2and3, closeInjector2and3);
 #endif
     }
   }
   else if( nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
   {
-    setCallbacks(fuelSchedule1, openInjector1, closeInjector1);
+    setCallbacks(fuelSchedules[0], openInjector1, closeInjector1);
 #if (INJ_CHANNELS >= 2)
-    setCallbacks(fuelSchedule2, openInjector2, closeInjector2);
+    setCallbacks(fuelSchedules[1], openInjector2, closeInjector2);
 #endif
 #if (INJ_CHANNELS >= 3)
-    setCallbacks(fuelSchedule3, openInjector3and5, closeInjector3and5);
+    setCallbacks(fuelSchedules[2], openInjector3and5, closeInjector3and5);
 #endif
 #if (INJ_CHANNELS >= 4)
-    setCallbacks(fuelSchedule4, openInjector4, closeInjector4);
+    setCallbacks(fuelSchedules[3], openInjector4, closeInjector4);
 #endif
   }
   else if( nCylinders == 6 )
   {
-    setCallbacks(fuelSchedule1, openInjector1and4, closeInjector1and4);
+    setCallbacks(fuelSchedules[0], openInjector1and4, closeInjector1and4);
 #if (INJ_CHANNELS >= 2)
-    setCallbacks(fuelSchedule2, openInjector2and5, closeInjector2and5);
+    setCallbacks(fuelSchedules[1], openInjector2and5, closeInjector2and5);
 #endif
 #if (INJ_CHANNELS >= 3)
-    setCallbacks(fuelSchedule3, openInjector3and6, closeInjector3and6);
+    setCallbacks(fuelSchedules[2], openInjector3and6, closeInjector3and6);
 #endif
   }
   else if( nCylinders == 8 )
   {
-    setCallbacks(fuelSchedule1, openInjector1and5, closeInjector1and5);
+    setCallbacks(fuelSchedules[0], openInjector1and5, closeInjector1and5);
 #if (INJ_CHANNELS >= 2)
-    setCallbacks(fuelSchedule2, openInjector2and6, closeInjector2and6);
+    setCallbacks(fuelSchedules[1], openInjector2and6, closeInjector2and6);
 #endif
 #if (INJ_CHANNELS >= 3)
-    setCallbacks(fuelSchedule3, openInjector3and7, closeInjector3and7);
+    setCallbacks(fuelSchedules[2], openInjector3and7, closeInjector3and7);
 #endif
 #if (INJ_CHANNELS >= 4)
-    setCallbacks(fuelSchedule4, openInjector4and8, closeInjector4and8);
+    setCallbacks(fuelSchedules[3], openInjector4and8, closeInjector4and8);
 #endif
   }
   else
@@ -134,27 +136,27 @@ static __attribute__((optimize("Os"))) void setupCallbacks(uint8_t injLayout, ui
 }
 
 TESTABLE_INLINE_STATIC bool isAnyFuelScheduleRunning(void) {
-  return isRunning(fuelSchedule1)
+  return isRunning(fuelSchedules[0])
 #if (INJ_CHANNELS >= 2)
-      || isRunning(fuelSchedule2)
+      || isRunning(fuelSchedules[1])
 #endif
 #if (INJ_CHANNELS >= 3)
-      || isRunning(fuelSchedule3)
+      || isRunning(fuelSchedules[2])
 #endif
 #if (INJ_CHANNELS >= 4)
-      || isRunning(fuelSchedule4)
+      || isRunning(fuelSchedules[3])
 #endif
 #if INJ_CHANNELS >= 5      
-      || isRunning(fuelSchedule5)
+      || isRunning(fuelSchedules[4])
 #endif
 #if INJ_CHANNELS >= 6
-      || isRunning(fuelSchedule6)
+      || isRunning(fuelSchedules[5])
 #endif
 #if INJ_CHANNELS >= 7
-      || isRunning(fuelSchedule7)
+      || isRunning(fuelSchedules[6])
 #endif
 #if INJ_CHANNELS >= 8
-      || isRunning(fuelSchedule8)
+      || isRunning(fuelSchedules[7])
 #endif
       ;
 }
@@ -246,7 +248,7 @@ TESTABLE_INLINE_STATIC uint16_t setFuelChannelSchedules(uint16_t crankAngle, byt
 {
   injectorAngleCalcCache angleCalcCache;
 #define SET_FUEL_CHANNEL(channel) \
-  setFuelChannelSchedule(fuelSchedule ##channel, UINT8_C(channel), crankAngle, injChannelMask, injAngle, &angleCalcCache);
+  setFuelChannelSchedule(fuelSchedules[channel-1], UINT8_C(channel), crankAngle, injChannelMask, injAngle, &angleCalcCache);
 
   SET_FUEL_CHANNEL(1)
 #if INJ_CHANNELS >= 2
@@ -308,7 +310,7 @@ static inline uint16_t applyFuelTrim(const table3d6RpmLoad &trimTable, uint16_t 
 
 static inline void assignPrimaryPws(const pulseWidths &pulse_widths, const config6 &page6, const statuses &current)
 {
-  #define ASSIGN_PRIMARY_PW(index) fuelSchedule ## index .pw = applyFuelTrim(trimTables[index-1U], pulse_widths.primary, page6, current);
+  #define ASSIGN_PRIMARY_PW(index) fuelSchedules[index-1].pw = applyFuelTrim(trimTables[index-1U], pulse_widths.primary, page6, current);
 
   switch (current.injOutputs.primary)
   {
@@ -367,7 +369,7 @@ static inline void assignSecondaryPws(const pulseWidths &pulse_widths, const sta
   #define ASSIGN_SECONDARY_PW(index) \
     if (current.injOutputs.isSecondaryInjector(index)) \
     { \
-      fuelSchedule ## index .pw = pulse_widths.secondary; \
+      fuelSchedules[index-1].pw = pulse_widths.secondary; \
     }
 
   if (current.injOutputs.secondary>0U)
@@ -399,7 +401,7 @@ static inline void assignSecondaryPws(const pulseWidths &pulse_widths, const sta
 
 static inline void zeroAllChannels(void)
 {
-  #define ASSIGN_ZERO_PW(index) fuelSchedule ## index .pw = 0U;
+  #define ASSIGN_ZERO_PW(index) fuelSchedules[index-1].pw = 0U;
 
    ASSIGN_ZERO_PW(1);
 #if INJ_CHANNELS >= 2
@@ -428,27 +430,27 @@ static inline void zeroAllChannels(void)
 
 static void __attribute__((optimize("Os"))) resetFuelSchedules(void)
 {
-  fuelSchedule1.reset();
+  fuelSchedules[0].reset();
 #if (INJ_CHANNELS >= 2)
-  fuelSchedule2.reset();
+  fuelSchedules[1].reset();
 #endif
 #if (INJ_CHANNELS >= 3)
-  fuelSchedule3.reset();
+  fuelSchedules[2].reset();
 #endif
 #if (INJ_CHANNELS >= 4)
-  fuelSchedule4.reset();
+  fuelSchedules[3].reset();
 #endif
 #if INJ_CHANNELS >= 5
-  fuelSchedule5.reset();
+  fuelSchedules[4].reset();
 #endif
 #if INJ_CHANNELS >= 6
-  fuelSchedule6.reset();
+  fuelSchedules[5].reset();
 #endif
 #if INJ_CHANNELS >= 7
-  fuelSchedule7.reset();
+  fuelSchedules[6].reset();
 #endif
 #if INJ_CHANNELS >= 8
-  fuelSchedule8.reset();
+  fuelSchedules[7].reset();
 #endif
 }
 
@@ -520,27 +522,27 @@ void __attribute__((optimize("Os"))) beginInjectorPriming(const statuses &curren
     constexpr uint16_t PULSE_TS_SCALE_FACTOR = 100U * 5U; 
 
     primingValue = primingValue * PULSE_TS_SCALE_FACTOR; 
-    if ( current.injOutputs.getTotalInjectors() >= 1U ) { setSchedule(fuelSchedule1, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 1U ) { setSchedule(fuelSchedules[0], PRIMING_DELAY, primingValue, false); }
 #if (INJ_CHANNELS >= 2)
-    if ( current.injOutputs.getTotalInjectors() >= 2U ) { setSchedule(fuelSchedule2, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 2U ) { setSchedule(fuelSchedules[1], PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 3)
-    if ( current.injOutputs.getTotalInjectors() >= 3U ) { setSchedule(fuelSchedule3, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 3U ) { setSchedule(fuelSchedules[2], PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 4)
-    if ( current.injOutputs.getTotalInjectors() >= 4U ) { setSchedule(fuelSchedule4, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 4U ) { setSchedule(fuelSchedules[3], PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 5)
-    if ( current.injOutputs.getTotalInjectors() >= 5U ) { setSchedule(fuelSchedule5, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 5U ) { setSchedule(fuelSchedules[4], PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 6)
-    if ( current.injOutputs.getTotalInjectors() >= 6U ) { setSchedule(fuelSchedule6, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 6U ) { setSchedule(fuelSchedules[5], PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 7)
-    if ( current.injOutputs.getTotalInjectors() >= 7U) { setSchedule(fuelSchedule7, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 7U) { setSchedule(fuelSchedules[6], PRIMING_DELAY, primingValue, false); }
 #endif
 #if (INJ_CHANNELS >= 8)
-    if ( current.injOutputs.getTotalInjectors() >= 8U ) { setSchedule(fuelSchedule8, PRIMING_DELAY, primingValue, false); }
+    if ( current.injOutputs.getTotalInjectors() >= 8U ) { setSchedule(fuelSchedules[7], PRIMING_DELAY, primingValue, false); }
 #endif
   }
 }
@@ -647,7 +649,7 @@ TESTABLE_INLINE_STATIC __attribute__((optimize("Os"))) uint16_t calcScheduleAngl
 static inline __attribute__((optimize("Os"))) void setInjectorAngles(const statuses &current, const config2 &page2)
 {
   #define ASSIGN_PRIMARY_ANGLE(index) \
-    fuelSchedule ## index .channelDegrees = calcScheduleAngle(current, page2, index);
+    fuelSchedules[index-1].channelDegrees = calcScheduleAngle(current, page2, index);
 
   ASSIGN_PRIMARY_ANGLE(1);
 #if INJ_CHANNELS>=2

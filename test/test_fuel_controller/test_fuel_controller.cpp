@@ -447,14 +447,14 @@ static void test_calcScheduleAngle(void)
 
 static void set_all_schedules_off(void)
 {
-    RUNIF_INJCHANNEL1( { fuelSchedule1._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL2( { fuelSchedule2._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL3( { fuelSchedule3._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL4( { fuelSchedule4._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL5( { fuelSchedule5._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL6( { fuelSchedule6._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL7( { fuelSchedule7._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL8( { fuelSchedule8._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL1( { fuelSchedules[0]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL2( { fuelSchedules[1]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL3( { fuelSchedules[2]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL4( { fuelSchedules[3]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL5( { fuelSchedules[4]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL6( { fuelSchedules[5]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL7( { fuelSchedules[6]._status = ScheduleStatus::OFF; }, {});
+    RUNIF_INJCHANNEL8( { fuelSchedules[7]._status = ScheduleStatus::OFF; }, {});
 }
 
 static void test_isAnyFuelScheduleRunning(void)
@@ -463,35 +463,35 @@ static void test_isAnyFuelScheduleRunning(void)
   TEST_ASSERT_FALSE(isAnyFuelScheduleRunning());
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL1( { fuelSchedule1._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL1( { fuelSchedules[0]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL1( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, {});
   
   set_all_schedules_off();
-  RUNIF_INJCHANNEL2( { fuelSchedule2._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL2( { fuelSchedules[1]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL2( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL3( { fuelSchedule3._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL3( { fuelSchedules[2]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL3( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL4( { fuelSchedule4._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL4( { fuelSchedules[3]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL4( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL5( { fuelSchedule5._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL5( { fuelSchedules[4]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL5( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL6( { fuelSchedule6._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL6( { fuelSchedules[5]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL6( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL7( { fuelSchedule7._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL7( { fuelSchedules[6]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL7( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 
   set_all_schedules_off();
-  RUNIF_INJCHANNEL8( { fuelSchedule8._status = ScheduleStatus::RUNNING; }, {});
+  RUNIF_INJCHANNEL8( { fuelSchedules[7]._status = ScheduleStatus::RUNNING; }, {});
   RUNIF_INJCHANNEL8( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
 }
 
@@ -611,14 +611,14 @@ static void test_beginInjectorPriming_floodclear(void)
     current.injOutputs.primary = channel;
     beginInjectorPriming(current, page4);
 
-    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, false); }, {});
-    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedule2, false); }, {});
-    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedule3, false); }, {});
-    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedule4, false); }, {});
-    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedule5, false); }, {});
-    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedule6, false); }, {});
-    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, false); }, {});
-    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, false); }, {});
+    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedules[0], false); }, {});
+    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedules[1], false); }, {});
+    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedules[2], false); }, {});
+    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedules[3], false); }, {});
+    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedules[4], false); }, {});
+    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedules[5], false); }, {});
+    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedules[6], false); }, {});
+    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedules[7], false); }, {});
   }
 }
 
@@ -640,14 +640,14 @@ static void test_beginInjectorPriming(void)
     current.injOutputs.primary = channel;
     beginInjectorPriming(current, page4);
 
-    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, channel>=1); }, {});
-    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedule2, channel>=2); }, {});
-    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedule3, channel>=3); }, {});
-    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedule4, channel>=4); }, {});
-    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedule5, channel>=5); }, {});
-    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedule6, channel>=6); }, {});
-    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, channel>=7); }, {});
-    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, channel>=8); }, {});
+    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedules[0], channel>=1); }, {});
+    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedules[1], channel>=2); }, {});
+    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedules[2], channel>=3); }, {});
+    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedules[3], channel>=4); }, {});
+    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedules[4], channel>=5); }, {});
+    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedules[5], channel>=6); }, {});
+    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedules[6], channel>=7); }, {});
+    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedules[7], channel>=8); }, {});
   }
 }
 

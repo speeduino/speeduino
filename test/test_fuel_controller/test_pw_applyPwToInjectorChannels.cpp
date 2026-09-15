@@ -10,27 +10,27 @@ static statuses getRandomPW(void) {
   
   randomSeed(analogRead(0));
 
-  fuelSchedule1.pw = random(3, UINT16_MAX);
+  fuelSchedules[0].pw = random(3, UINT16_MAX);
 #if INJ_CHANNELS >= 2
-  fuelSchedule2.pw = random(3, UINT16_MAX);
+  fuelSchedules[1].pw = random(3, UINT16_MAX);
 #endif
 #if INJ_CHANNELS >= 3
-  fuelSchedule3.pw = random(3, UINT16_MAX);
+  fuelSchedules[2].pw = random(3, UINT16_MAX);
 #endif
 #if INJ_CHANNELS >= 4
-  fuelSchedule4.pw = random(3, UINT16_MAX);
+  fuelSchedules[3].pw = random(3, UINT16_MAX);
 #endif
 #if INJ_CHANNELS >= 5
-  fuelSchedule5.pw = random(3, UINT16_MAX);
+  fuelSchedules[4].pw = random(3, UINT16_MAX);
 #endif
 #if INJ_CHANNELS >= 6
-  fuelSchedule6.pw = random(3, UINT16_MAX);
+  fuelSchedules[5].pw = random(3, UINT16_MAX);
 #endif
 #if INJ_CHANNELS >= 7
-  fuelSchedule7.pw = random(3, UINT16_MAX);
+  fuelSchedules[6].pw = random(3, UINT16_MAX);
 #endif
 #if INJ_CHANNELS >= 8
-  fuelSchedule8.pw = random(3, UINT16_MAX);
+  fuelSchedules[7].pw = random(3, UINT16_MAX);
 #endif
 
   return current;
@@ -44,9 +44,9 @@ static statuses setPrimarySecondaryChannels(statuses current, uint8_t primary, u
 
 #define TEST_PW(index, expected, isIndexValid) \
   if ((isIndexValid)) { \
-    TEST_ASSERT_UINT16_WITHIN(1, expected, fuelSchedule##index.pw); \
+    TEST_ASSERT_UINT16_WITHIN(1, expected, fuelSchedules[index-1].pw); \
   } else { \
-    TEST_ASSERT_EQUAL_UINT16(0, fuelSchedule##index.pw); \
+    TEST_ASSERT_EQUAL_UINT16(0, fuelSchedules[index-1].pw); \
   }
 #if INJ_CHANNELS >= 2
   #define TEST_PW2(expected, isIndexValid) TEST_PW(2, expected, isIndexValid)

@@ -306,7 +306,7 @@ void DashMessage(uint16_t DashMessageID)
     case CAN_HALTECH_DATA3:
       temp_Advance = currentStatus.advance * 10U; //Note: Signed value
       //Convert PW into duty cycle
-      temp_DutyCycle = (fuelSchedule1.pw * 100UL * currentStatus.nSquirts) / currentStatus.revolutionTime; 
+      temp_DutyCycle = (fuelSchedules[0].pw * 100UL * currentStatus.nSquirts) / currentStatus.revolutionTime; 
       if (configPage2.strokes == FOUR_STROKE) { temp_DutyCycle = temp_DutyCycle / 2U; }
 
       outMsg.len = 8;
@@ -322,19 +322,19 @@ void DashMessage(uint16_t DashMessageID)
 
     case CAN_HALTECH_PW:
       outMsg.len = 8;
-      outMsg.buf[0] = highByte(fuelSchedule1.pw);
-      outMsg.buf[1] = lowByte(fuelSchedule1.pw);
+      outMsg.buf[0] = highByte(fuelSchedules[0].pw);
+      outMsg.buf[1] = lowByte(fuelSchedules[0].pw);
 #if (INJ_CHANNELS >= 2)
-      outMsg.buf[2] = highByte(fuelSchedule2.pw);
-      outMsg.buf[3] = lowByte(fuelSchedule2.pw);
+      outMsg.buf[2] = highByte(fuelSchedules[1].pw);
+      outMsg.buf[3] = lowByte(fuelSchedules[1].pw);
 #endif
 #if (INJ_CHANNELS >= 3)
-      outMsg.buf[4] = highByte(fuelSchedule3.pw);
-      outMsg.buf[5] = lowByte(fuelSchedule3.pw);
+      outMsg.buf[4] = highByte(fuelSchedules[2].pw);
+      outMsg.buf[5] = lowByte(fuelSchedules[2].pw);
 #endif
 #if (INJ_CHANNELS >= 4)
-      outMsg.buf[6] = highByte(fuelSchedule4.pw);
-      outMsg.buf[7] = lowByte(fuelSchedule4.pw);
+      outMsg.buf[6] = highByte(fuelSchedules[3].pw);
+      outMsg.buf[7] = lowByte(fuelSchedules[3].pw);
 #endif
     break;
 
