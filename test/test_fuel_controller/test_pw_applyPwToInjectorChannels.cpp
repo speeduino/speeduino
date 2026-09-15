@@ -10,28 +10,9 @@ static statuses getRandomPW(void) {
   
   randomSeed(analogRead(0));
 
-  fuelSchedules[0].pw = random(3, UINT16_MAX);
-#if INJ_CHANNELS >= 2
-  fuelSchedules[1].pw = random(3, UINT16_MAX);
-#endif
-#if INJ_CHANNELS >= 3
-  fuelSchedules[2].pw = random(3, UINT16_MAX);
-#endif
-#if INJ_CHANNELS >= 4
-  fuelSchedules[3].pw = random(3, UINT16_MAX);
-#endif
-#if INJ_CHANNELS >= 5
-  fuelSchedules[4].pw = random(3, UINT16_MAX);
-#endif
-#if INJ_CHANNELS >= 6
-  fuelSchedules[5].pw = random(3, UINT16_MAX);
-#endif
-#if INJ_CHANNELS >= 7
-  fuelSchedules[6].pw = random(3, UINT16_MAX);
-#endif
-#if INJ_CHANNELS >= 8
-  fuelSchedules[7].pw = random(3, UINT16_MAX);
-#endif
+  for (uint8_t index=0; index<_countof(fuelSchedules); ++index) {
+    fuelSchedules[index].pw = random(3, UINT16_MAX);
+  }
 
   return current;
 }
