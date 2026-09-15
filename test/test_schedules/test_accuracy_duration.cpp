@@ -30,44 +30,11 @@ static void test_accuracy_duration_inj(FuelSchedule &schedule)
     stopFuelSchedulers();
 }
 
-static void test_accuracy_duration_inj1(void)
+static void test_accuracy_duration_inj(void)
 {
-    INJCHANNEL_TEST_HELPER1(test_accuracy_duration_inj(fuelSchedules[0]));
-}
-
-static void test_accuracy_duration_inj2(void)
-{
-    INJCHANNEL_TEST_HELPER2(test_accuracy_duration_inj(fuelSchedules[1]));
-}
-
-static void test_accuracy_duration_inj3(void)
-{
-    INJCHANNEL_TEST_HELPER3(test_accuracy_duration_inj(fuelSchedules[2]));
-}
-
-static void test_accuracy_duration_inj4(void)
-{
-    INJCHANNEL_TEST_HELPER4(test_accuracy_duration_inj(fuelSchedules[3]));
-}
-
-static void test_accuracy_duration_inj5(void)
-{
-    INJCHANNEL_TEST_HELPER5(test_accuracy_duration_inj(fuelSchedules[4]));
-}
-
-static void test_accuracy_duration_inj6(void)
-{
-    INJCHANNEL_TEST_HELPER6(test_accuracy_duration_inj(fuelSchedules[5]));
-}
-
-static void test_accuracy_duration_inj7(void)
-{
-    INJCHANNEL_TEST_HELPER7(test_accuracy_duration_inj(fuelSchedules[6]));
-}
-
-static void test_accuracy_duration_inj8(void)
-{
-    INJCHANNEL_TEST_HELPER8(test_accuracy_duration_inj(fuelSchedules[7]));
+  for (auto& schedule: fuelSchedules) {
+    test_accuracy_duration_inj(schedule);
+  }
 }
 
 static void test_accuracy_duration_ign(IgnitionSchedule &schedule)
@@ -122,14 +89,7 @@ void test_accuracy_duration(void)
 {
   SET_UNITY_FILENAME() {
 
-    RUN_TEST_P(test_accuracy_duration_inj1);
-    RUN_TEST_P(test_accuracy_duration_inj2);
-    RUN_TEST_P(test_accuracy_duration_inj3);
-    RUN_TEST_P(test_accuracy_duration_inj4);
-    RUN_TEST_P(test_accuracy_duration_inj5);
-    RUN_TEST_P(test_accuracy_duration_inj6);
-    RUN_TEST_P(test_accuracy_duration_inj7);
-    RUN_TEST_P(test_accuracy_duration_inj8);
+    RUN_TEST_P(test_accuracy_duration_inj);
 
     RUN_TEST_P(test_accuracy_duration_ign1);
     RUN_TEST_P(test_accuracy_duration_ign2);

@@ -11,44 +11,11 @@ static void test_status_initial_off_inj(FuelSchedule &schedule)
     TEST_ASSERT_EQUAL(OFF, schedule._status);
 }
 
-static void test_status_initial_off_inj1(void)
+static void test_status_initial_off_inj(void)
 {
-    INJCHANNEL_TEST_HELPER1(test_status_initial_off_inj(fuelSchedules[0]));
-}
-
-static void test_status_initial_off_inj2(void)
-{
-    INJCHANNEL_TEST_HELPER2(test_status_initial_off_inj(fuelSchedules[1]));
-}
-
-static void test_status_initial_off_inj3(void)
-{
-    INJCHANNEL_TEST_HELPER3(test_status_initial_off_inj(fuelSchedules[2]));
-}
-
-static void test_status_initial_off_inj4(void)
-{
-    INJCHANNEL_TEST_HELPER4(test_status_initial_off_inj(fuelSchedules[3]));
-}
-
-static void test_status_initial_off_inj5(void)
-{
-    INJCHANNEL_TEST_HELPER5(test_status_initial_off_inj(fuelSchedules[4]));
-}
-
-static void test_status_initial_off_inj6(void)
-{
-    INJCHANNEL_TEST_HELPER6(test_status_initial_off_inj(fuelSchedules[5]));
-}
-
-static void test_status_initial_off_inj7(void)
-{
-    INJCHANNEL_TEST_HELPER7(test_status_initial_off_inj(fuelSchedules[6]));
-}
-
-static void test_status_initial_off_inj8(void)
-{
-    INJCHANNEL_TEST_HELPER8(test_status_initial_off_inj(fuelSchedules[7]));
+  for (auto& schedule: fuelSchedules) {
+    test_status_initial_off_inj(schedule);
+  }    
 }
 
 static void test_status_initial_off_ign(IgnitionSchedule &schedule)
@@ -101,15 +68,8 @@ void test_status_initial_off(void)
 {
   SET_UNITY_FILENAME() {
 
-    RUN_TEST_P(test_status_initial_off_inj1);
-    RUN_TEST_P(test_status_initial_off_inj2);
-    RUN_TEST_P(test_status_initial_off_inj3);
-    RUN_TEST_P(test_status_initial_off_inj4);
-    RUN_TEST_P(test_status_initial_off_inj5);
-    RUN_TEST_P(test_status_initial_off_inj6);
-    RUN_TEST_P(test_status_initial_off_inj7);
-    RUN_TEST_P(test_status_initial_off_inj8);
-
+    RUN_TEST_P(test_status_initial_off_inj);
+ 
     RUN_TEST_P(test_status_initial_off_ign1);
     RUN_TEST_P(test_status_initial_off_ign2);
     RUN_TEST_P(test_status_initial_off_ign3);
