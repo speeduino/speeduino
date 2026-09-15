@@ -141,8 +141,14 @@ STM32RTC& rtc = STM32RTC::getInstance();
   * Interrupt callback functions
   */
   #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
-  #define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
 
+  template <uint8_t index>
+  void fuelScheduleIsr(void) {
+      if (index<_countof(fuelSchedules)) 
+      {
+          moveToNextState(fuelSchedules[index]);
+      }
+  }
 
   #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
   void oneMSInterval(HardwareTimer*){oneMSInterval();}
@@ -150,34 +156,10 @@ STM32RTC& rtc = STM32RTC::getInstance();
   void idleInterrupt(HardwareTimer*){idleInterrupt();}
   void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
   void fanInterrupt(HardwareTimer*){fanInterrupt();}
-  #define STM_FUEL_INTERRUPT(index) void FUEL_INTERRUPT_NAME(index)(HardwareTimer*) {moveToNextState(fuelSchedule ## index);}
+  template <uint8_t index> void fuelScheduleIsr(HardwareTimer*) {fuelScheduleIsr<index>();}
   #define STM_IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(HardwareTimer*) {moveToNextState(ignitionSchedule ## index);}
   #else //End core<=1.8
-  #define STM_FUEL_INTERRUPT(index) void FUEL_INTERRUPT_NAME(index)(void) {moveToNextState(fuelSchedule ## index);}
   #define STM_IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(void) {moveToNextState(ignitionSchedule ## index);}
-  #endif
-
-  STM_FUEL_INTERRUPT(1)
-  #if (INJ_CHANNELS >= 2)
-  STM_FUEL_INTERRUPT(2)
-  #endif
-  #if (INJ_CHANNELS >= 3)
-  STM_FUEL_INTERRUPT(3)
-  #endif
-  #if (INJ_CHANNELS >= 4)
-  STM_FUEL_INTERRUPT(4)
-  #endif
-  #if (INJ_CHANNELS >= 5)
-  STM_FUEL_INTERRUPT(5)
-  #endif
-  #if (INJ_CHANNELS >= 6)
-  STM_FUEL_INTERRUPT(6)
-  #endif
-  #if (INJ_CHANNELS >= 7)
-  STM_FUEL_INTERRUPT(7)
-  #endif
-  #if (INJ_CHANNELS >= 8)
-  STM_FUEL_INTERRUPT(8)
   #endif
 
   STM_IGNITION_INTERRUPT(1)
@@ -319,15 +301,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #endif
     //Attach interrupt functions
     //Injection
-    Timer3.attachInterrupt(1, FUEL_INTERRUPT_NAME(1));
+    Timer3.attachInterrupt(1, fuelScheduleIsr<0>);
     #if (INJ_CHANNELS >= 2)
-    Timer3.attachInterrupt(2, FUEL_INTERRUPT_NAME(2));
+    Timer3.attachInterrupt(2, fuelScheduleIsr<1>);
     #endif
     #if (INJ_CHANNELS >= 3)
-    Timer3.attachInterrupt(3, FUEL_INTERRUPT_NAME(3));
+    Timer3.attachInterrupt(3, fuelScheduleIsr<2>);
     #endif
     #if (INJ_CHANNELS >= 4)
-    Timer3.attachInterrupt(4, FUEL_INTERRUPT_NAME(4));
+    Timer3.attachInterrupt(4, fuelScheduleIsr<3>);
     #endif
     #if (INJ_CHANNELS >= 5)
     Timer5.setOverflow((std::numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
@@ -337,7 +319,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(1, FUEL_INTERRUPT_NAME(5));
+    Timer5.attachInterrupt(1, fuelScheduleIsr<4>);
     #endif
     #if (INJ_CHANNELS >= 6)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -345,7 +327,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(2, FUEL_INTERRUPT_NAME(6));
+    Timer5.attachInterrupt(2, fuelScheduleIsr<5>);
     #endif
     #if (INJ_CHANNELS >= 7)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -353,7 +335,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(3, FUEL_INTERRUPT_NAME(7));
+    Timer5.attachInterrupt(3, fuelScheduleIsr<6>);
     #endif
     #if (INJ_CHANNELS >= 8)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -361,7 +343,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer5.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer5.attachInterrupt(4, FUEL_INTERRUPT_NAME(8));
+    Timer5.attachInterrupt(4, fuelScheduleIsr<7>);
     #endif
 
     //Ignition

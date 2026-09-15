@@ -31,7 +31,7 @@
 
 #define FUEL_INTERRUPT(index, avr_vector) \
   ISR((avr_vector)) { \
-    moveToNextState(fuelSchedule ## index); \
+    moveToNextState(fuelSchedules[index-1]); \
   }
 
 /** @brief ISR for fuel channel 1 */
