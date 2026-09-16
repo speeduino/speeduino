@@ -105,8 +105,16 @@ struct Schedule {
   {
   }
 
-  using callback = void(*)(void);
- 
+  /** @brief A start *or* end callback */
+  using callback_t = void(*)(void);
+
+  /** @brief The start *and* end callbacks */
+  struct callback_pair_t
+  {
+    callback_t start = &nullCallback;
+    callback_t end = &nullCallback;
+  }; 
+
   /**
    * @brief Scheduled duration (timer ticks) 
    *
@@ -116,8 +124,7 @@ struct Schedule {
    */
   volatile COMPARE_TYPE _duration = 0U;
   volatile ScheduleStatus _status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  callback _pStartCallback = &nullCallback; ///< Start Callback function for schedule
-  callback _pEndCallback = &nullCallback;   ///< End Callback function for schedule
+  callback_pair_t _callbacks;
   COMPARE_TYPE _nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
@@ -146,7 +153,7 @@ static inline bool isRunning(const Schedule &schedule) noexcept {
  * @param pStartCallback The new start callback - called when the schedule switches to RUNNING status
  * @param pEndCallback The new end callback - called when the schedule switches from RUNNING to OFF status
  */
-void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept;
+void setCallbacks(Schedule &schedule, Schedule::callback_t pStartCallback, Schedule::callback_t pEndCallback) noexcept;
 
 /**
  * @brief Set the schedule action to run for a certain duration in the future

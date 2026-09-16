@@ -28,9 +28,9 @@ static void assert_ignition_channel(uint16_t angle, uint8_t channel, const Ignit
     sprintf_P(msg, PSTR("channe%" PRIu8 "Degrees"), channel+1);
     TEST_ASSERT_EQUAL_MESSAGE(angle, schedule.channelDegrees, msg);
     sprintf_P(msg, PSTR("ign%" PRIu8 "StartFunction"), channel+1);
-    TEST_ASSERT_TRUE_MESSAGE(schedule._pStartCallback!=nullCallback, msg);
+    TEST_ASSERT_TRUE_MESSAGE(schedule._callbacks.start!=nullCallback, msg);
     sprintf_P(msg, PSTR("ign%" PRIu8 "EndFunction"), channel+1);
-    TEST_ASSERT_TRUE_MESSAGE(schedule._pEndCallback!=nullCallback, msg);
+    TEST_ASSERT_TRUE_MESSAGE(schedule._callbacks.end!=nullCallback, msg);
   }
 }
 
@@ -554,10 +554,10 @@ static void run_partial_sync_tests(void)
   RUN_TEST_P(test_partial_sync_6_cylinder);
   RUN_TEST_P(test_partial_sync_8_cylinder);
 }
-static void assert_callbacks(IgnitionSchedule &schedule, IgnitionSchedule::callback start, IgnitionSchedule::callback end)
+static void assert_callbacks(IgnitionSchedule &schedule, IgnitionSchedule::callback_t start, IgnitionSchedule::callback_t end)
 {
-    TEST_ASSERT_EQUAL_PTR (start, schedule._pStartCallback);
-    TEST_ASSERT_EQUAL_PTR (end, schedule._pEndCallback);
+    TEST_ASSERT_EQUAL_PTR (start, schedule._callbacks.start);
+    TEST_ASSERT_EQUAL_PTR (end, schedule._callbacks.end);
 }
 
 static void assert_singlechannel_callbacks(void)
