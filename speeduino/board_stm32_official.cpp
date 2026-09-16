@@ -142,49 +142,31 @@ STM32RTC& rtc = STM32RTC::getInstance();
   */
   #define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
 
-  template <uint8_t index>
-  void fuelScheduleIsr(void) {
-      if (index<_countof(fuelSchedules)) 
-      {
-          moveToNextState(fuelSchedules[index]);
-      }
-  }
+template <uint8_t index>
+void fuelScheduleIsr(void) {
+    if (index<_countof(fuelSchedules)) 
+    {
+        moveToNextState(fuelSchedules[index]);
+    }
+}
 
-  #if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
+template <uint8_t index>
+void ignitionScheduleIsr(void) {
+    if (index<_countof(ignitionSchedules)) 
+    {
+        moveToNextState(ignitionSchedules[index]);
+    }
+}
+
+#if ((STM32_CORE_VERSION_MINOR<=8) & (STM32_CORE_VERSION_MAJOR==1)) 
   void oneMSInterval(HardwareTimer*){oneMSInterval();}
   void boostInterrupt(HardwareTimer*){boostInterrupt();}
   void idleInterrupt(HardwareTimer*){idleInterrupt();}
   void vvtInterrupt(HardwareTimer*){vvtInterrupt();}
   void fanInterrupt(HardwareTimer*){fanInterrupt();}
   template <uint8_t index> void fuelScheduleIsr(HardwareTimer*) {fuelScheduleIsr<index>();}
-  #define STM_IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(HardwareTimer*) {moveToNextState(ignitionSchedule ## index);}
-  #else //End core<=1.8
-  #define STM_IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(void) {moveToNextState(ignitionSchedule ## index);}
+  template <uint8_t index> void ignitionScheduleIsr(HardwareTimer*) {ignitionScheduleIsr<index>();}
   #endif
-
-  STM_IGNITION_INTERRUPT(1)
-  #if (IGN_CHANNELS >= 2)
-  STM_IGNITION_INTERRUPT(2)
-  #endif
-  #if (IGN_CHANNELS >= 3)
-  STM_IGNITION_INTERRUPT(3)
-  #endif
-  #if (IGN_CHANNELS >= 4)
-  STM_IGNITION_INTERRUPT(4)
-  #endif
-  #if (IGN_CHANNELS >= 5)
-  STM_IGNITION_INTERRUPT(5)
-  #endif
-  #if (IGN_CHANNELS >= 6)
-  STM_IGNITION_INTERRUPT(6)
-  #endif
-  #if (IGN_CHANNELS >= 7)
-  STM_IGNITION_INTERRUPT(7)
-  #endif
-  #if (IGN_CHANNELS >= 8)
-  STM_IGNITION_INTERRUPT(8)
-  #endif
-
 
   void initBoard(uint32_t baudRate)
   {
@@ -347,15 +329,15 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #endif
 
     //Ignition
-    Timer2.attachInterrupt(1, IGNITION_INTERRUPT_NAME(1)); 
+    Timer2.attachInterrupt(1, ignitionScheduleIsr<0>); 
     #if (IGN_CHANNELS >= 2)
-    Timer2.attachInterrupt(2, IGNITION_INTERRUPT_NAME(2));
+    Timer2.attachInterrupt(2, ignitionScheduleIsr<1>);
     #endif
     #if (IGN_CHANNELS >= 3)
-    Timer2.attachInterrupt(3, IGNITION_INTERRUPT_NAME(3));
+    Timer2.attachInterrupt(3, ignitionScheduleIsr<2>);
     #endif
     #if (IGN_CHANNELS >= 4)
-    Timer2.attachInterrupt(4, IGNITION_INTERRUPT_NAME(4));
+    Timer2.attachInterrupt(4, ignitionScheduleIsr<3>);
     #endif
     #if (IGN_CHANNELS >= 5)
     Timer4.setOverflow((std::numeric_limits<COMPARE_TYPE>::max)(), TICK_FORMAT);
@@ -365,7 +347,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(1, IGNITION_INTERRUPT_NAME(5));
+    Timer4.attachInterrupt(1, ignitionScheduleIsr<4>);
     #endif
     #if (IGN_CHANNELS >= 6)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -373,7 +355,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(2, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(2, IGNITION_INTERRUPT_NAME(6));
+    Timer4.attachInterrupt(2, ignitionScheduleIsr<5>);
     #endif
     #if (IGN_CHANNELS >= 7)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -381,7 +363,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(3, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(3, IGNITION_INTERRUPT_NAME(7));
+    Timer4.attachInterrupt(3, ignitionScheduleIsr<6>);
     #endif
     #if (IGN_CHANNELS >= 8)
     #if ( STM32_CORE_VERSION_MAJOR < 2 )
@@ -389,7 +371,7 @@ STM32RTC& rtc = STM32RTC::getInstance();
     #else //2.0 forward
     Timer4.setMode(4, TIMER_OUTPUT_COMPARE_TOGGLE);
     #endif
-    Timer4.attachInterrupt(4, IGNITION_INTERRUPT_NAME(8));
+    Timer4.attachInterrupt(4, ignitionScheduleIsr<7>);
     #endif
 
     Serial.begin(baudRate);

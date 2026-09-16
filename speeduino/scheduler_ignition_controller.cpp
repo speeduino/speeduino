@@ -5,28 +5,30 @@
 #include "globals.h"
 #include "unit_testing.h"
 
-IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedules[IGN_CHANNELS] = {
+  IgnitionSchedule(IGN1_COUNTER, IGN1_COMPARE),
 #if IGN_CHANNELS >= 2
-IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN2_COUNTER, IGN2_COMPARE),
 #endif
 #if IGN_CHANNELS >= 3
-IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN3_COUNTER, IGN3_COMPARE),
 #endif
 #if IGN_CHANNELS >= 4
-IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN4_COUNTER, IGN4_COMPARE),
 #endif
 #if IGN_CHANNELS >= 5
-IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN5_COUNTER, IGN5_COMPARE),
 #endif
 #if IGN_CHANNELS >= 6
-IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN6_COUNTER, IGN6_COMPARE),
 #endif
 #if IGN_CHANNELS >= 7
-IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN7_COUNTER, IGN7_COMPARE),
 #endif
 #if IGN_CHANNELS >= 8
-IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN8_COUNTER, IGN8_COMPARE),
 #endif
+};
 
 constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
@@ -42,47 +44,47 @@ static inline int8_t getIgnitionTrimmedAdvance(const config13 &page13, int8_t ba
 
 static void __attribute__((optimize("Os"))) setSequentialCallbacks(uint8_t numChannels)
 {
-  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
   if (numChannels>=2)
   {
-    ignitionSchedule2.setCallbacks( beginCoil2Charge, endCoil2Charge);
+    ignitionSchedules[1].setCallbacks( beginCoil2Charge, endCoil2Charge);
   }
 #endif
 #if IGN_CHANNELS >= 3
   if (numChannels>=3)
   {
-    ignitionSchedule3.setCallbacks( beginCoil3Charge, endCoil3Charge);
+    ignitionSchedules[2].setCallbacks( beginCoil3Charge, endCoil3Charge);
   }
 #endif
 #if IGN_CHANNELS >= 4
   if (numChannels>=4)
   {
-    ignitionSchedule4.setCallbacks( beginCoil4Charge, endCoil4Charge);
+    ignitionSchedules[3].setCallbacks( beginCoil4Charge, endCoil4Charge);
   }
 #endif
 #if IGN_CHANNELS >= 5
   if (numChannels>=5)
   {
-    ignitionSchedule5.setCallbacks( beginCoil5Charge, endCoil5Charge);
+    ignitionSchedules[4].setCallbacks( beginCoil5Charge, endCoil5Charge);
   }
 #endif
 #if IGN_CHANNELS >= 6
   if (numChannels>=6)
   {
-    ignitionSchedule6.setCallbacks( beginCoil6Charge, endCoil6Charge);
+    ignitionSchedules[5].setCallbacks( beginCoil6Charge, endCoil6Charge);
   }
 #endif
 #if IGN_CHANNELS >= 7
   if (numChannels>=7)
   {
-    ignitionSchedule7.setCallbacks( beginCoil7Charge, endCoil7Charge);
+    ignitionSchedules[6].setCallbacks( beginCoil7Charge, endCoil7Charge);
   }
 #endif
 #if IGN_CHANNELS >= 8
   if (numChannels>=8)
   {
-    ignitionSchedule8.setCallbacks( beginCoil8Charge, endCoil8Charge);
+    ignitionSchedules[7].setCallbacks( beginCoil8Charge, endCoil8Charge);
   }
 #endif
 }
@@ -95,63 +97,63 @@ static void __attribute__((optimize("Os"))) setWastedSparkCallbacks(void)
 static void __attribute__((optimize("Os"))) setSingleChannelCallbacks(void)
 {
   //Single channel mode. All ignition pulses are on channel 1
-  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[1].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[2].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[3].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 5
-  ignitionSchedule5.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[4].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 6
-  ignitionSchedule6.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[5].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 7
-  ignitionSchedule7.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[6].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 8
-  ignitionSchedule8.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[7].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 }
 
 static void __attribute__((optimize("Os"))) set4CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-  ignitionSchedule1.setCallbacks( beginCoil1and3Charge, endCoil1and3Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1and3Charge, endCoil1and3Charge);
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.setCallbacks( beginCoil2and4Charge, endCoil2and4Charge);
+  ignitionSchedules[1].setCallbacks( beginCoil2and4Charge, endCoil2and4Charge);
 #endif
 }
 
 static void __attribute__((optimize("Os"))) set6CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
-  ignitionSchedule1.setCallbacks( beginCoil1and4Charge, endCoil1and4Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1and4Charge, endCoil1and4Charge);
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.setCallbacks( beginCoil2and5Charge, endCoil2and5Charge);
+  ignitionSchedules[1].setCallbacks( beginCoil2and5Charge, endCoil2and5Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.setCallbacks( beginCoil3and6Charge, endCoil3and6Charge);
+  ignitionSchedules[2].setCallbacks( beginCoil3and6Charge, endCoil3and6Charge);
 #endif
 }
 
 static void __attribute__((optimize("Os"))) set8CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
-  ignitionSchedule1.setCallbacks( beginCoil1and5Charge, endCoil1and5Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1and5Charge, endCoil1and5Charge);
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.setCallbacks( beginCoil2and6Charge, endCoil2and6Charge);
+  ignitionSchedules[1].setCallbacks( beginCoil2and6Charge, endCoil2and6Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.setCallbacks( beginCoil3and7Charge, endCoil3and7Charge);
+  ignitionSchedules[2].setCallbacks( beginCoil3and7Charge, endCoil3and7Charge);
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.setCallbacks( beginCoil4and8Charge, endCoil4and8Charge);
+  ignitionSchedules[3].setCallbacks( beginCoil4and8Charge, endCoil4and8Charge);
 #endif
 }
 
@@ -170,34 +172,34 @@ static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCyl
 static void __attribute__((optimize("Os"))) setRotaryFcCallbacks(void)
 {
   //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[1].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.setCallbacks( beginTrailingCoilCharge, endTrailingCoilCharge1);
+  ignitionSchedules[2].setCallbacks( beginTrailingCoilCharge, endTrailingCoilCharge1);
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.setCallbacks( beginTrailingCoilCharge, endTrailingCoilCharge2);
+  ignitionSchedules[3].setCallbacks( beginTrailingCoilCharge, endTrailingCoilCharge2);
 #endif  
 }
 
 static void __attribute__((optimize("Os"))) setRotaryFdCallbacks(void)
 {
   //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[0].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.setCallbacks( beginCoil1Charge, endCoil1Charge);
+  ignitionSchedules[1].setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 
   //Trailing coils have their own channel each
   //IGN2 = front rotor trailing spark
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.setCallbacks( beginCoil2Charge, endCoil2Charge);
+  ignitionSchedules[2].setCallbacks( beginCoil2Charge, endCoil2Charge);
   //IGN3 = rear rotor trailing spark
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.setCallbacks( beginCoil3Charge, endCoil3Charge);
+  ignitionSchedules[3].setCallbacks( beginCoil3Charge, endCoil3Charge);
 #endif
 }
 
@@ -234,27 +236,27 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkM
 
 TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(void)
 {
-  ignitionSchedule1.reset();
+  ignitionSchedules[0].reset();
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.reset();
+  ignitionSchedules[1].reset();
 #endif
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.reset();
+  ignitionSchedules[2].reset();
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.reset();
+  ignitionSchedules[3].reset();
 #endif
 #if (IGN_CHANNELS >= 5)
-  ignitionSchedule5.reset();
+  ignitionSchedules[4].reset();
 #endif
 #if IGN_CHANNELS >= 6
-  ignitionSchedule6.reset();
+  ignitionSchedules[5].reset();
 #endif
 #if IGN_CHANNELS >= 7
-  ignitionSchedule7.reset();
+  ignitionSchedules[6].reset();
 #endif
 #if IGN_CHANNELS >= 8
-  ignitionSchedule8.reset();
+  ignitionSchedules[7].reset();
 #endif
 }
 
@@ -268,30 +270,30 @@ void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
 
 static void __attribute__((optimize("Os"))) setOddfireScheduleAngles(const config2 &page2)
 {
-  ignitionSchedule1.channelDegrees = 0;
+  ignitionSchedules[0].channelDegrees = 0;
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.channelDegrees = page2.oddfire[0];
+  ignitionSchedules[1].channelDegrees = page2.oddfire[0];
 #endif
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.channelDegrees = page2.oddfire[1];
+  ignitionSchedules[2].channelDegrees = page2.oddfire[1];
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.channelDegrees = page2.oddfire[2];
+  ignitionSchedules[3].channelDegrees = page2.oddfire[2];
 #endif
 }
 
 static void __attribute__((optimize("Os"))) setRotaryScheduleAngles(void)
 {
-  ignitionSchedule1.channelDegrees = 0;
+  ignitionSchedules[0].channelDegrees = 0;
 #if IGN_CHANNELS >= 2
-  ignitionSchedule2.channelDegrees = 180;
+  ignitionSchedules[1].channelDegrees = 180;
 #endif
 //Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
 #if IGN_CHANNELS >= 3
-  ignitionSchedule3.channelDegrees = ignitionSchedule1.channelDegrees;
+  ignitionSchedules[2].channelDegrees = ignitionSchedules[0].channelDegrees;
 #endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.channelDegrees = ignitionSchedule2.channelDegrees;
+  ignitionSchedules[3].channelDegrees = ignitionSchedules[1].channelDegrees;
 #endif
 }
 
@@ -303,7 +305,7 @@ static void __attribute__((optimize("Os"))) setEvenfireScheduleAngles(const stat
 
   uint16_t interCylinderAngle = CRANK_ANGLE_MAX_IGN/current.maxIgnOutputs;
 
-#define SET_CHANNEL_ANGLE(channel) ignitionSchedule ##channel .channelDegrees = ((channel)-1)*interCylinderAngle;
+#define SET_CHANNEL_ANGLE(channel) ignitionSchedules[(channel)-1].channelDegrees = ((channel)-1)*interCylinderAngle;
 
   SET_CHANNEL_ANGLE(1);
 #if IGN_CHANNELS >= 2
@@ -465,27 +467,27 @@ void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &curre
 }
 
 TESTABLE_INLINE_STATIC bool isAnyIgnScheduleRunning(void) {
-  return isRunning(ignitionSchedule1)      
+  return isRunning(ignitionSchedules[0])      
 #if IGN_CHANNELS >= 2 
-      || isRunning(ignitionSchedule2)
+      || isRunning(ignitionSchedules[1])
 #endif      
 #if IGN_CHANNELS >= 3 
-      || isRunning(ignitionSchedule3)
+      || isRunning(ignitionSchedules[2])
 #endif      
 #if IGN_CHANNELS >= 4       
-      || isRunning(ignitionSchedule4)
+      || isRunning(ignitionSchedules[3])
 #endif      
 #if IGN_CHANNELS >= 5      
-      || isRunning(ignitionSchedule5)
+      || isRunning(ignitionSchedules[4])
 #endif
 #if IGN_CHANNELS >= 6
-      || isRunning(ignitionSchedule6)
+      || isRunning(ignitionSchedules[5])
 #endif
 #if IGN_CHANNELS >= 7
-      || isRunning(ignitionSchedule7)
+      || isRunning(ignitionSchedules[6])
 #endif
 #if IGN_CHANNELS >= 8
-      || isRunning(ignitionSchedule8)
+      || isRunning(ignitionSchedules[7])
 #endif
       ;
 }
@@ -574,13 +576,13 @@ TESTABLE_STATIC void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, 
 static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
 {
 #if IGN_CHANNELS>=4
-  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
-  calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedules[0], dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedules[1], dwellAngle, current.advance);
   uint8_t splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)current.ignLoad);
 
   //The trailing angles are set relative to the leading ones
-  calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
-  calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
+  calculateIgnitionTrailingRotary(ignitionSchedules[0], dwellAngle, splitDegrees, ignitionSchedules[2]);
+  calculateIgnitionTrailingRotary(ignitionSchedules[1], dwellAngle, splitDegrees, ignitionSchedules[3]);
 #endif
 }
 
@@ -592,50 +594,50 @@ static inline void calculateNonRotaryIgnitionAngles(const config4 &page4, const 
   {
   case 8:
 #if IGN_CHANNELS >= 8
-    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 7U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[7], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 7U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 7:
 #if IGN_CHANNELS >= 7
-    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 6U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[6], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 6U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 6:
 #if IGN_CHANNELS >= 6
-    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 5U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[5], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 5U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 5:
 #if IGN_CHANNELS >= 5
-    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 4U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[4], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 4U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 4:
 #if IGN_CHANNELS >= 4
-    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 3U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[3], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 3U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 3:
 #if IGN_CHANNELS >= 3
-    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 2U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[2], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 2U) : current.advance);
 #endif
     [[gnu::fallthrough]];
   //cppcheck-suppress misra-c2012-16.3
   case 2:
 #if IGN_CHANNELS >= 2
-    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 1U) : current.advance);
+    calculateIgnitionAngles(ignitionSchedules[1], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 1U) : current.advance);
 #endif
     break;
   default:
     // Do nothing
     break;
   }
-  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 0U) : current.advance);
+  calculateIgnitionAngles(ignitionSchedules[0], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 0U) : current.advance);
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
@@ -693,27 +695,27 @@ static uint16_t applyFixedCrankingOverride(const statuses &current, const config
     // It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
     if(current.RPM < 250) // Why 250?
     {
-      ignitionSchedule1.chargeAngle -= 5;
+      ignitionSchedules[0].chargeAngle -= 5;
 #if IGN_CHANNELS >= 2
-      ignitionSchedule2.chargeAngle -= 5;
+      ignitionSchedules[1].chargeAngle -= 5;
 #endif
 #if IGN_CHANNELS >= 3          
-      ignitionSchedule3.chargeAngle -= 5;
+      ignitionSchedules[2].chargeAngle -= 5;
 #endif
 #if IGN_CHANNELS >= 4          
-      ignitionSchedule4.chargeAngle -= 5;
+      ignitionSchedules[3].chargeAngle -= 5;
 #endif
 #if IGN_CHANNELS >= 5
-      ignitionSchedule5.chargeAngle -= 5;
+      ignitionSchedules[4].chargeAngle -= 5;
 #endif
 #if IGN_CHANNELS >= 6          
-      ignitionSchedule6.chargeAngle -= 5;
+      ignitionSchedules[5].chargeAngle -= 5;
 #endif
 #if IGN_CHANNELS >= 7
-      ignitionSchedule7.chargeAngle -= 5;
+      ignitionSchedules[6].chargeAngle -= 5;
 #endif
 #if IGN_CHANNELS >= 8
-      ignitionSchedule8.chargeAngle -= 5;
+      ignitionSchedules[7].chargeAngle -= 5;
 #endif
     }
   }
@@ -723,10 +725,9 @@ static uint16_t applyFixedCrankingOverride(const statuses &current, const config
 
 BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const statuses &current, const config4 &page4, uint16_t crankAngle) {
   crankAngle = ignitionLimits(crankAngle);
-  
   uint16_t dwellTime = current.dwell + applyFixedCrankingOverride(current, page4);
 
-  #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
+  #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedules[(channelIdx)-1], crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
 
   SET_IGNITION_CHANNEL(1)
 #if IGN_CHANNELS >= 2
@@ -784,27 +785,27 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
   if (isOverDwellActive(page4, current)) {
     uint32_t dwellLimit_uS = page4.dwellLimit * 1000U; //Convert to uS
 
-    applyChannelOverDwellProtection(ignitionSchedule1, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[0], dwellLimit_uS);
 #if IGN_CHANNELS >= 2
-    applyChannelOverDwellProtection(ignitionSchedule2, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[1], dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 3
-    applyChannelOverDwellProtection(ignitionSchedule3, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[2], dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 4
-    applyChannelOverDwellProtection(ignitionSchedule4, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[3], dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 5
-    applyChannelOverDwellProtection(ignitionSchedule5, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[4], dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 6
-    applyChannelOverDwellProtection(ignitionSchedule6, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[5], dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 7
-    applyChannelOverDwellProtection(ignitionSchedule7, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[6], dwellLimit_uS);
 #endif
 #if IGN_CHANNELS >= 8
-    applyChannelOverDwellProtection(ignitionSchedule8, dwellLimit_uS);
+    applyChannelOverDwellProtection(ignitionSchedules[7], dwellLimit_uS);
 #endif
   }
 }
