@@ -234,7 +234,6 @@ void initialiseAll(void)
     if( FLEX_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinNumbers.pinFlex), flexPulse, CHANGE); } //Secondary trigger input can safely be used for Flex sensor
 
     //Initial values for loop times
-    currentLoopTime = micros();
     mainLoopCount = 0;
       
     initialiseFuelPump(currentStatus, configPage2, pinNumbers.pinFuelPump);
