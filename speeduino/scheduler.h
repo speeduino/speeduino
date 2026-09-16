@@ -139,6 +139,8 @@ struct Schedule {
    */
   void setCallbacks(callback_t pStartCallback, callback_t pEndCallback) noexcept;
 
+  void setCallbacks(const callback_pair_t &callbacks) noexcept;
+
 protected:
   virtual void reset(void);
 };

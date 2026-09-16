@@ -3,6 +3,7 @@
 #include "units.h"
 #include "table2d.h"
 #include "globals.h"
+#include "prog_mem_support.h"
 
 FuelSchedule fuelSchedules[INJ_CHANNELS] = {
   FuelSchedule(FUEL1_COUNTER, FUEL1_COMPARE),
@@ -29,32 +30,29 @@ FuelSchedule fuelSchedules[INJ_CHANNELS] = {
   #endif
 };
 
+static __attribute__((optimize("Os"))) void setCallbacksP(const Schedule::callback_pair_t *begin, const Schedule::callback_pair_t *end)
+{
+  for (auto& schedule: fuelSchedules) {
+    if (begin!=end) {
+      schedule.setCallbacks(copyObject_P(begin));
+      ++begin;
+    }
+  }
+}
+
 static __attribute__((optimize("Os"))) void setupSequentialCallbacks(void)
 {
-  #define SET_CALLBACKS(index) fuelSchedules[index-1].setCallbacks(openInjector ## index, closeInjector ## index);
-  
-  SET_CALLBACKS(1)
-#if INJ_CHANNELS >= 2
-  SET_CALLBACKS(2)
-#endif
-#if INJ_CHANNELS >= 3
-  SET_CALLBACKS(3)
-#endif
-#if INJ_CHANNELS >= 4
-  SET_CALLBACKS(4)
-#endif
-#if INJ_CHANNELS >= 5
-  SET_CALLBACKS(5)
-#endif
-#if INJ_CHANNELS >= 6
-  SET_CALLBACKS(6)
-#endif
-#if INJ_CHANNELS >= 7
-  SET_CALLBACKS(7)
-#endif
-#if INJ_CHANNELS >= 8
-  SET_CALLBACKS(8)
-#endif
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { openInjector1, closeInjector1 },
+    { openInjector2, closeInjector2 },
+    { openInjector3, closeInjector3 },
+    { openInjector4, closeInjector4 },
+    { openInjector5, closeInjector5 },
+    { openInjector6, closeInjector6 },
+    { openInjector7, closeInjector7 },
+    { openInjector8, closeInjector8 },
+  };
+  setCallbacksP(std::begin(callbacks), std::end(callbacks));
 }
 
 static __attribute__((optimize("Os"))) void setupPairedCallbacks(void)
@@ -69,54 +67,49 @@ static __attribute__((optimize("Os"))) void setupSemiSequentialCallbacks(uint8_t
   {
     if(inj4cylPairing == INJ_PAIR_13_24)
     {
-      fuelSchedules[0].setCallbacks(openInjector1and3, closeInjector1and3);
-#if (INJ_CHANNELS >= 2)
-      fuelSchedules[1].setCallbacks(openInjector2and4, closeInjector2and4);
-#endif
+      static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+        { openInjector1and3, closeInjector1and3 },
+        { openInjector2and4, closeInjector2and4 },
+      };
+      setCallbacksP(std::begin(callbacks), std::end(callbacks));
     }
     else
     {
-      fuelSchedules[0].setCallbacks(openInjector1and4, closeInjector1and4);
-#if (INJ_CHANNELS >= 2)
-      fuelSchedules[1].setCallbacks(openInjector2and3, closeInjector2and3);
-#endif
+      static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+        { openInjector1and4, closeInjector1and4 },
+        { openInjector2and3, closeInjector2and3 },
+      };
+      setCallbacksP(std::begin(callbacks), std::end(callbacks));
     }
   }
   else if( nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
   {
-    fuelSchedules[0].setCallbacks(openInjector1, closeInjector1);
-#if (INJ_CHANNELS >= 2)
-    fuelSchedules[1].setCallbacks(openInjector2, closeInjector2);
-#endif
-#if (INJ_CHANNELS >= 3)
-    fuelSchedules[2].setCallbacks(openInjector3and5, closeInjector3and5);
-#endif
-#if (INJ_CHANNELS >= 4)
-    fuelSchedules[3].setCallbacks(openInjector4, closeInjector4);
-#endif
+    static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+      { openInjector1, closeInjector1 },
+      { openInjector2, closeInjector2 },
+      { openInjector3and5, closeInjector3and5 },
+      { openInjector4, closeInjector4 },
+    };
+    setCallbacksP(std::begin(callbacks), std::end(callbacks));
   }
   else if( nCylinders == 6 )
   {
-    fuelSchedules[0].setCallbacks(openInjector1and4, closeInjector1and4);
-#if (INJ_CHANNELS >= 2)
-    fuelSchedules[1].setCallbacks(openInjector2and5, closeInjector2and5);
-#endif
-#if (INJ_CHANNELS >= 3)
-    fuelSchedules[2].setCallbacks(openInjector3and6, closeInjector3and6);
-#endif
+    static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+      { openInjector1and4, closeInjector1and4 },
+      { openInjector2and5, closeInjector2and5 },
+      { openInjector3and6, closeInjector3and6 },
+    };
+    setCallbacksP(std::begin(callbacks), std::end(callbacks));
   }
   else if( nCylinders == 8 )
   {
-    fuelSchedules[0].setCallbacks(openInjector1and5, closeInjector1and5);
-#if (INJ_CHANNELS >= 2)
-    fuelSchedules[1].setCallbacks(openInjector2and6, closeInjector2and6);
-#endif
-#if (INJ_CHANNELS >= 3)
-    fuelSchedules[2].setCallbacks(openInjector3and7, closeInjector3and7);
-#endif
-#if (INJ_CHANNELS >= 4)
-    fuelSchedules[3].setCallbacks(openInjector4and8, closeInjector4and8);
-#endif
+    static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+      { openInjector1and5, closeInjector1and5 },
+      { openInjector2and6, closeInjector2and6 },
+      { openInjector3and7, closeInjector3and7 },
+      { openInjector4and8, closeInjector4and8 },
+    };
+    setCallbacksP(std::begin(callbacks), std::end(callbacks));
   }
   else
   {
