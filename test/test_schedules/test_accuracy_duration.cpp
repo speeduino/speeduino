@@ -16,7 +16,7 @@ static void endCallback(void) { end_time = micros(); }
 
 static void test_accuracy_duration(Schedule &schedule)
 {
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
     setSchedule(schedule, TIMEOUT, DURATION, true);
     while(schedule._status != OFF) /*Wait*/ ;
     TEST_ASSERT_UINT32_WITHIN(DELTA, DURATION, end_time - start_time);

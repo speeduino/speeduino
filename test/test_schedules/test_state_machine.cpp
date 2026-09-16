@@ -20,7 +20,7 @@ static void test_defaultPendingToRunning(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = PENDING;
     startCount = 0;
@@ -45,7 +45,7 @@ static void test_defaultRunningToOff(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = RUNNING;
     startCount = 0;
@@ -72,7 +72,7 @@ static void test_defaultRunningToPending(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = RUNNING;
     startCount = 0;
@@ -114,7 +114,7 @@ static void test_movetoNextState_pendingToRunning(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = PENDING;
     pendingToRunningCount = 0;
@@ -138,7 +138,7 @@ static void test_movetoNextState_runningToOff(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = RUNNING;
     pendingToRunningCount = 0;
@@ -162,7 +162,7 @@ static void test_movetoNextState_runningToPending(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = RUNNING_WITHNEXT;
     pendingToRunningCount = 0;
@@ -186,7 +186,7 @@ static void test_movetoNextState_off(void) {
     raw_counter_t counter = {0};
     raw_compare_t compare = {0};
     Schedule schedule(counter, compare);
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
 
     schedule._status = OFF;
     pendingToRunningCount = 0;

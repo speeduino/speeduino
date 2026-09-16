@@ -42,47 +42,47 @@ static inline int8_t getIgnitionTrimmedAdvance(const config13 &page13, int8_t ba
 
 static void __attribute__((optimize("Os"))) setSequentialCallbacks(uint8_t numChannels)
 {
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
   if (numChannels>=2)
   {
-    setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
+    ignitionSchedule2.setCallbacks( beginCoil2Charge, endCoil2Charge);
   }
 #endif
 #if IGN_CHANNELS >= 3
   if (numChannels>=3)
   {
-    setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
+    ignitionSchedule3.setCallbacks( beginCoil3Charge, endCoil3Charge);
   }
 #endif
 #if IGN_CHANNELS >= 4
   if (numChannels>=4)
   {
-    setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
+    ignitionSchedule4.setCallbacks( beginCoil4Charge, endCoil4Charge);
   }
 #endif
 #if IGN_CHANNELS >= 5
   if (numChannels>=5)
   {
-    setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
+    ignitionSchedule5.setCallbacks( beginCoil5Charge, endCoil5Charge);
   }
 #endif
 #if IGN_CHANNELS >= 6
   if (numChannels>=6)
   {
-    setCallbacks(ignitionSchedule6, beginCoil6Charge, endCoil6Charge);
+    ignitionSchedule6.setCallbacks( beginCoil6Charge, endCoil6Charge);
   }
 #endif
 #if IGN_CHANNELS >= 7
   if (numChannels>=7)
   {
-    setCallbacks(ignitionSchedule7, beginCoil7Charge, endCoil7Charge);
+    ignitionSchedule7.setCallbacks( beginCoil7Charge, endCoil7Charge);
   }
 #endif
 #if IGN_CHANNELS >= 8
   if (numChannels>=8)
   {
-    setCallbacks(ignitionSchedule8, beginCoil8Charge, endCoil8Charge);
+    ignitionSchedule8.setCallbacks( beginCoil8Charge, endCoil8Charge);
   }
 #endif
 }
@@ -95,63 +95,63 @@ static void __attribute__((optimize("Os"))) setWastedSparkCallbacks(void)
 static void __attribute__((optimize("Os"))) setSingleChannelCallbacks(void)
 {
   //Single channel mode. All ignition pulses are on channel 1
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule2.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule3.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule4.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 5
-  setCallbacks(ignitionSchedule5, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule5.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 6
-  setCallbacks(ignitionSchedule6, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule6.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 7
-  setCallbacks(ignitionSchedule7, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule7.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 8
-  setCallbacks(ignitionSchedule8, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule8.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 }
 
 static void __attribute__((optimize("Os"))) set4CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-  setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1and3Charge, endCoil1and3Charge);
 #if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
+  ignitionSchedule2.setCallbacks( beginCoil2and4Charge, endCoil2and4Charge);
 #endif
 }
 
 static void __attribute__((optimize("Os"))) set6CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
-  setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1and4Charge, endCoil1and4Charge);
 #if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
+  ignitionSchedule2.setCallbacks( beginCoil2and5Charge, endCoil2and5Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
+  ignitionSchedule3.setCallbacks( beginCoil3and6Charge, endCoil3and6Charge);
 #endif
 }
 
 static void __attribute__((optimize("Os"))) set8CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
-  setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1and5Charge, endCoil1and5Charge);
 #if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
+  ignitionSchedule2.setCallbacks( beginCoil2and6Charge, endCoil2and6Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
+  ignitionSchedule3.setCallbacks( beginCoil3and7Charge, endCoil3and7Charge);
 #endif
 #if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
+  ignitionSchedule4.setCallbacks( beginCoil4and8Charge, endCoil4and8Charge);
 #endif
 }
 
@@ -170,34 +170,34 @@ static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCyl
 static void __attribute__((optimize("Os"))) setRotaryFcCallbacks(void)
 {
   //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule2.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 #if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
+  ignitionSchedule3.setCallbacks( beginTrailingCoilCharge, endTrailingCoilCharge1);
 #endif
 #if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
+  ignitionSchedule4.setCallbacks( beginTrailingCoilCharge, endTrailingCoilCharge2);
 #endif  
 }
 
 static void __attribute__((optimize("Os"))) setRotaryFdCallbacks(void)
 {
   //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule1.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
+  ignitionSchedule2.setCallbacks( beginCoil1Charge, endCoil1Charge);
 #endif
 
   //Trailing coils have their own channel each
   //IGN2 = front rotor trailing spark
 #if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
+  ignitionSchedule3.setCallbacks( beginCoil2Charge, endCoil2Charge);
   //IGN3 = rear rotor trailing spark
 #endif
 #if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
+  ignitionSchedule4.setCallbacks( beginCoil3Charge, endCoil3Charge);
 #endif
 }
 

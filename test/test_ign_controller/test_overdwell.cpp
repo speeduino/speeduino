@@ -79,7 +79,7 @@ static void test_applyChannelOverDwellProtection_notRunning(void) {
   IgnitionSchedule schedule(counterReg, compareReg);
 
   counter = 0;
-  setCallbacks(schedule, counter_callback, counter_callback);
+  schedule.setCallbacks(counter_callback, counter_callback);
 
   schedule._status = PENDING;
   schedule._startTime = 0;
@@ -93,7 +93,7 @@ static void test_applyChannelOverDwellProtection_running_notimeout(void) {
   IgnitionSchedule schedule(counterReg, compareReg);
 
   counter = 0;
-  setCallbacks(schedule, counter_callback, counter_callback);
+  schedule.setCallbacks(counter_callback, counter_callback);
 
   schedule._status = RUNNING;
   schedule._startTime = 2000;
@@ -107,7 +107,7 @@ static void test_applyChannelOverDwellProtection_running_timeout(void) {
   IgnitionSchedule schedule(counterReg, compareReg);
 
   counter = 0;
-  setCallbacks(schedule, counter_callback, counter_callback);
+  schedule.setCallbacks(counter_callback, counter_callback);
 
   schedule._status = RUNNING;
   schedule._startTime = 0;
@@ -121,7 +121,7 @@ static void test_applyChannelOverDwellProtection_running_notimeout_rollover(void
   IgnitionSchedule schedule(counterReg, compareReg);
 
   counter = 0;
-  setCallbacks(schedule, counter_callback, counter_callback);
+  schedule.setCallbacks(counter_callback, counter_callback);
 
   schedule._status = RUNNING;
   schedule._startTime = UINT32_MAX - 500U; // Dwell started just before the micros() wrap
@@ -135,7 +135,7 @@ static void test_applyChannelOverDwellProtection_running_timeout_rollover(void) 
   IgnitionSchedule schedule(counterReg, compareReg);
 
   counter = 0;
-  setCallbacks(schedule, counter_callback, counter_callback);
+  schedule.setCallbacks(counter_callback, counter_callback);
 
   schedule._status = RUNNING;
   schedule._startTime = UINT32_MAX - 500U; // Dwell started just before the micros() wrap
