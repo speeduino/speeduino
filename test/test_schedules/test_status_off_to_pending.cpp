@@ -41,42 +41,42 @@ void test_status_off_to_pending_ign(IgnitionSchedule &schedule)
 
 void test_status_off_to_pending_ign1(void)
 {
-    IGNCHANNEL_TEST_HELPER1(test_status_off_to_pending_ign(ignitionSchedule1));
+    IGNCHANNEL_TEST_HELPER1(test_status_off_to_pending_ign(ignitionSchedules[0]));
 }
 
 void test_status_off_to_pending_ign2(void)
 {
-    IGNCHANNEL_TEST_HELPER2(test_status_off_to_pending_ign(ignitionSchedule2));
+    IGNCHANNEL_TEST_HELPER2(test_status_off_to_pending_ign(ignitionSchedules[1]));
 }
 
 void test_status_off_to_pending_ign3(void)
 {
-    IGNCHANNEL_TEST_HELPER3(test_status_off_to_pending_ign(ignitionSchedule3));
+    IGNCHANNEL_TEST_HELPER3(test_status_off_to_pending_ign(ignitionSchedules[2]));
 }
 
 void test_status_off_to_pending_ign4(void)
 {
-    IGNCHANNEL_TEST_HELPER4(test_status_off_to_pending_ign(ignitionSchedule4));
+    IGNCHANNEL_TEST_HELPER4(test_status_off_to_pending_ign(ignitionSchedules[3]));
 }
 
 void test_status_off_to_pending_ign5(void)
 {
-    IGNCHANNEL_TEST_HELPER5(test_status_off_to_pending_ign(ignitionSchedule5));
+    IGNCHANNEL_TEST_HELPER5(test_status_off_to_pending_ign(ignitionSchedules[4]));
 }
 
 void test_status_off_to_pending_ign6(void)
 {
-    IGNCHANNEL_TEST_HELPER6(test_status_off_to_pending_ign(ignitionSchedule6));
+    IGNCHANNEL_TEST_HELPER6(test_status_off_to_pending_ign(ignitionSchedules[5]));
 }
 
 void test_status_off_to_pending_ign7(void)
 {
-    IGNCHANNEL_TEST_HELPER7(test_status_off_to_pending_ign(ignitionSchedule7));
+    IGNCHANNEL_TEST_HELPER7(test_status_off_to_pending_ign(ignitionSchedules[6]));
 }
 
 void test_status_off_to_pending_ign8(void)
 {
-    IGNCHANNEL_TEST_HELPER8(test_status_off_to_pending_ign(ignitionSchedule8));
+    IGNCHANNEL_TEST_HELPER8(test_status_off_to_pending_ign(ignitionSchedules[7]));
 }
 
 void test_status_off_to_pending(void)

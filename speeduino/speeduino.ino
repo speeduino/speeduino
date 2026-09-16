@@ -427,7 +427,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.injAngle = setFuelChannelSchedules(currentStatus);
     
       setIgnitionChannels(currentStatus, configPage4, currentStatus.decoder.getCrankAngle());
-
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
     pulsedCommandController(currentStatus, configPage13);

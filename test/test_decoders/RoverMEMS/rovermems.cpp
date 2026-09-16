@@ -28,10 +28,10 @@ static void assert_rover_setEndTeeth(int triggerAngle, uint8_t sparkMode, uint8_
   configPage4.sparkMode = sparkMode;
   configPage4.TrigSpeed = trigSpeed;
 
-  ignitionSchedule1.dischargeAngle = dischargeAngles[0];
-  ignitionSchedule2.dischargeAngle = dischargeAngles[1];
-  ignitionSchedule3.dischargeAngle = dischargeAngles[2];
-  ignitionSchedule4.dischargeAngle = dischargeAngles[3];
+  ignitionSchedules[0].dischargeAngle = dischargeAngles[0];
+  ignitionSchedules[1].dischargeAngle = dischargeAngles[1];
+  ignitionSchedules[2].dischargeAngle = dischargeAngles[2];
+  ignitionSchedules[3].dischargeAngle = dischargeAngles[3];
 
   decoder.setEndTeeth();
 
