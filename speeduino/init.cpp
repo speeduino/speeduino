@@ -219,7 +219,6 @@ void initialiseAll(void)
     currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.engineProtect.reset();
-    fixedCrankingOverride = 0;
     toothHistoryIndex = 0;
     
     noInterrupts();
