@@ -56,8 +56,11 @@ void FuelSchedule::reset(void)
 
 void __attribute__((optimize("Os"))) Schedule::setCallbacks(callback_t pStartCallback, callback_t pEndCallback) noexcept
 {
-  _callbacks.start = pStartCallback;
-  _callbacks.end = pEndCallback;
+  setCallbacks({ pStartCallback, pEndCallback });
+}
+void __attribute__((optimize("Os"))) Schedule::setCallbacks(const callback_pair_t &callbacks) noexcept
+{
+  _callbacks = callbacks;
 }
 
 // Event duration cannot be longer than the maximum timer period
