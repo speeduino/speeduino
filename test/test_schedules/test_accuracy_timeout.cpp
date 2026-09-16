@@ -16,7 +16,7 @@ static void endCallback(void) { /*Empty*/ }
 
 static void test_accuracy_timeout(Schedule &schedule)
 {
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
     start_time = micros();
     setSchedule(schedule, TIMEOUT, DURATION, true);
     while(schedule._status == PENDING) /*Wait*/ ;
