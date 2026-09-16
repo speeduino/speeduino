@@ -31,7 +31,7 @@ FuelSchedule fuelSchedules[INJ_CHANNELS] = {
 
 static __attribute__((optimize("Os"))) void setupSequentialCallbacks(void)
 {
-  #define SET_CALLBACKS(index) setCallbacks(fuelSchedules[index-1], openInjector ## index, closeInjector ## index);
+  #define SET_CALLBACKS(index) fuelSchedules[index-1].setCallbacks(openInjector ## index, closeInjector ## index);
   
   SET_CALLBACKS(1)
 #if INJ_CHANNELS >= 2
@@ -69,53 +69,53 @@ static __attribute__((optimize("Os"))) void setupSemiSequentialCallbacks(uint8_t
   {
     if(inj4cylPairing == INJ_PAIR_13_24)
     {
-      setCallbacks(fuelSchedules[0], openInjector1and3, closeInjector1and3);
+      fuelSchedules[0].setCallbacks(openInjector1and3, closeInjector1and3);
 #if (INJ_CHANNELS >= 2)
-      setCallbacks(fuelSchedules[1], openInjector2and4, closeInjector2and4);
+      fuelSchedules[1].setCallbacks(openInjector2and4, closeInjector2and4);
 #endif
     }
     else
     {
-      setCallbacks(fuelSchedules[0], openInjector1and4, closeInjector1and4);
+      fuelSchedules[0].setCallbacks(openInjector1and4, closeInjector1and4);
 #if (INJ_CHANNELS >= 2)
-      setCallbacks(fuelSchedules[1], openInjector2and3, closeInjector2and3);
+      fuelSchedules[1].setCallbacks(openInjector2and3, closeInjector2and3);
 #endif
     }
   }
   else if( nCylinders == 5 ) //This is similar to the paired injection but uses five injector outputs instead of four
   {
-    setCallbacks(fuelSchedules[0], openInjector1, closeInjector1);
+    fuelSchedules[0].setCallbacks(openInjector1, closeInjector1);
 #if (INJ_CHANNELS >= 2)
-    setCallbacks(fuelSchedules[1], openInjector2, closeInjector2);
+    fuelSchedules[1].setCallbacks(openInjector2, closeInjector2);
 #endif
 #if (INJ_CHANNELS >= 3)
-    setCallbacks(fuelSchedules[2], openInjector3and5, closeInjector3and5);
+    fuelSchedules[2].setCallbacks(openInjector3and5, closeInjector3and5);
 #endif
 #if (INJ_CHANNELS >= 4)
-    setCallbacks(fuelSchedules[3], openInjector4, closeInjector4);
+    fuelSchedules[3].setCallbacks(openInjector4, closeInjector4);
 #endif
   }
   else if( nCylinders == 6 )
   {
-    setCallbacks(fuelSchedules[0], openInjector1and4, closeInjector1and4);
+    fuelSchedules[0].setCallbacks(openInjector1and4, closeInjector1and4);
 #if (INJ_CHANNELS >= 2)
-    setCallbacks(fuelSchedules[1], openInjector2and5, closeInjector2and5);
+    fuelSchedules[1].setCallbacks(openInjector2and5, closeInjector2and5);
 #endif
 #if (INJ_CHANNELS >= 3)
-    setCallbacks(fuelSchedules[2], openInjector3and6, closeInjector3and6);
+    fuelSchedules[2].setCallbacks(openInjector3and6, closeInjector3and6);
 #endif
   }
   else if( nCylinders == 8 )
   {
-    setCallbacks(fuelSchedules[0], openInjector1and5, closeInjector1and5);
+    fuelSchedules[0].setCallbacks(openInjector1and5, closeInjector1and5);
 #if (INJ_CHANNELS >= 2)
-    setCallbacks(fuelSchedules[1], openInjector2and6, closeInjector2and6);
+    fuelSchedules[1].setCallbacks(openInjector2and6, closeInjector2and6);
 #endif
 #if (INJ_CHANNELS >= 3)
-    setCallbacks(fuelSchedules[2], openInjector3and7, closeInjector3and7);
+    fuelSchedules[2].setCallbacks(openInjector3and7, closeInjector3and7);
 #endif
 #if (INJ_CHANNELS >= 4)
-    setCallbacks(fuelSchedules[3], openInjector4and8, closeInjector4and8);
+    fuelSchedules[3].setCallbacks(openInjector4and8, closeInjector4and8);
 #endif
   }
   else
