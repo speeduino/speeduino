@@ -3,20 +3,20 @@
 #include "preprocessor.h"
 
 BEGIN_LTO_ALWAYS_INLINE(void) defaultPendingToRunning(Schedule *schedule) {
-  schedule->_pStartCallback();
+  schedule->_callbacks.start();
   schedule->_status = RUNNING; //Set the status to be in progress (ie The start callback has been called, but not the end callback)
   SET_COMPARE(schedule->_compare, schedule->_counter + schedule->_duration);
 }
 END_LTO_INLINE()
 
 BEGIN_LTO_ALWAYS_INLINE(void) defaultRunningToOff(Schedule *schedule) {
-  schedule->_pEndCallback();
+  schedule->_callbacks.end();
   schedule->_status = OFF;
 }
 END_LTO_INLINE()
 
 BEGIN_LTO_ALWAYS_INLINE(void) defaultRunningToPending(Schedule *schedule) {
-  schedule->_pEndCallback();
+  schedule->_callbacks.end();
   SET_COMPARE(schedule->_compare, schedule->_nextStartCompare);
   schedule->_status = PENDING;
 }
