@@ -101,8 +101,8 @@ private:
   {
     if (&schedule1!=&schedule2)
     {
-      UNITY_TEST_ASSERT(schedule1._pStartCallback!=schedule2._pStartCallback, _assertLine, "_pStartCallback unique");
-      UNITY_TEST_ASSERT(schedule1._pEndCallback!=schedule2._pEndCallback, _assertLine, "_pEndCallback unique");
+      UNITY_TEST_ASSERT(schedule1._callbacks.start!=schedule2._callbacks.start, _assertLine, "_callbacks.start unique");
+      UNITY_TEST_ASSERT(schedule1._callbacks.end!=schedule2._callbacks.end, _assertLine, "_callbacks.end unique");
     }
   }
 
@@ -116,9 +116,9 @@ private:
       sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), channelIndex);
       UNITY_TEST_ASSERT_EQUAL_UINT16(angle, schedule.channelDegrees, _assertLine, msg);
       sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), channelIndex);
-      UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, _assertLine, msg);
+      UNITY_TEST_ASSERT(schedule._callbacks.start!=nullCallback, _assertLine, msg);
       sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), channelIndex);
-      UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, _assertLine, msg);
+      UNITY_TEST_ASSERT(schedule._callbacks.end!=nullCallback, _assertLine, msg);
       sprintf_P(msg, PSTR("injAngle"));
       UNITY_TEST_ASSERT_SMALLER_THAN_UINT16(CRANK_ANGLE_MAX_INJ, angle, _assertLine, msg);
 
