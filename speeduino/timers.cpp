@@ -180,7 +180,7 @@ void oneMSInterval(void)
       else if (flexCounter > (configPage2.flexFreqHigh + 1) ) //1 pulse buffer
       {
 
-        if(flexCounter < (configPage2.flexFreqLow + 19)) //20Hz above the max freq is considered an error condition. Everything below that should be treated as max value
+        if(flexCounter < (configPage2.flexFreqHigh + 20)) //20Hz above the max freq is considered an error condition. Everything below that should be treated as max value
         {
           tempEthPct = 100U;
           flexCounter = 0U;
@@ -200,6 +200,7 @@ void oneMSInterval(void)
 
       //Off by 1 error check
       if (tempEthPct == 1U) { tempEthPct = 0U; }
+      if (tempEthPct > 100U) { tempEthPct = 100U; }
 
       currentStatus.ethanolPct = (uint8_t)LOW_PASS_FILTER((uint16_t)tempEthPct, configPage4.FILTER_FLEX, (uint16_t)currentStatus.ethanolPct);
 
