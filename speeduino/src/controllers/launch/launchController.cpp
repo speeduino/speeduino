@@ -1,13 +1,22 @@
 #include "launchController.h"
-#include "../../../units.h"
+#include "units.h"
+#include "src/pins/inputPin.h"
+#include "unit_testing.h"
 
-static void updateClutchState(statuses &current, uint8_t launchPin, const config6 &page6)
+TESTABLE_STATIC inputPin_t launchPin;
+
+void __attribute__((optimize("Os"))) initialiseLaunchControl(const pinNumbers_t &pins)
+{
+  launchPin.setPin(pins.pinLaunch);
+}
+
+static void updateClutchState(statuses &current, const config6 &page6)
 {
   current.previousClutchTrigger = current.clutchTrigger;
   // Only read the shared clutch input when a function using it is enabled.
   if (page6.flatSEnable || page6.launchEnabled)
   {
-    current.clutchTrigger = (page6.launchHiLo == digitalRead(launchPin));
+    current.clutchTrigger = (page6.launchHiLo == launchPin.isPinHigh());
 
     current.clutchTriggerActive = current.clutchTrigger; // TunerStudio indication
   }
@@ -47,9 +56,9 @@ static bool aboveLaunchRpmLimit(const statuses &current, const config2 &page2, c
   return current.RPM > launchRpmLimit;
 }
 
-void checkLaunchAndFlatShift(statuses &current, uint8_t launchPin, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
+void checkLaunchAndFlatShift(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
 {
-  updateClutchState(current, launchPin, page6);
+  updateClutchState(current, page6);
 
   current.launchingHard = false;
   current.hardLaunchActive = false;

@@ -1,5 +1,15 @@
 #include "../test_utils.h"
 #include "src/controllers/launch/launchController.h"
+#include "src/pins/inputPin.h"
+
+extern inputPin_t launchPin;
+
+static void initLaunch(uint8_t pin)
+{
+    pinNumbers_t pins;
+    pins.pinLaunch = pin;
+    initialiseLaunchControl(pins);
+}
 
 static void test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet(void)
 {
@@ -9,9 +19,9 @@ static void test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet(v
     config10 page10 = {};
     config15 page15 = {};
 
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
-    digitalWrite(launchPin, HIGH);
+    constexpr uint8_t launchPinNumber = 13;
+    initLaunch(launchPinNumber);
+    launchPin._pin.setPinHigh();
 
     current.RPM = 11000;
     current.TPS = 90;
@@ -23,7 +33,7 @@ static void test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet(v
     page6.flatSArm = 200;
     page10.lnchCtrlTPS = 0;
 
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
+    checkLaunchAndFlatShift(current, page2, page6, page10, page15);
 
     TEST_ASSERT_TRUE(current.clutchTrigger);
     TEST_ASSERT_TRUE(current.clutchTriggerActive);
@@ -41,9 +51,9 @@ static void test_checkLaunchAndFlatShift_enablesFlatShiftWhenLaunchIsDisabled(vo
     config10 page10 = {};
     config15 page15 = {};
 
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
-    digitalWrite(launchPin, HIGH);
+    constexpr uint8_t launchPinNumber = 13;
+    initLaunch(launchPinNumber);
+    launchPin._pin.setPinHigh();
 
     current.clutchTrigger = true;
     current.previousClutchTrigger = true;
@@ -58,7 +68,7 @@ static void test_checkLaunchAndFlatShift_enablesFlatShiftWhenLaunchIsDisabled(vo
     page6.flatSArm = 100;
     page10.lnchCtrlTPS = 0;
 
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
+    checkLaunchAndFlatShift(current, page2, page6, page10, page15);
 
     TEST_ASSERT_TRUE(current.clutchTrigger);
     TEST_ASSERT_TRUE(current.clutchTriggerActive);
@@ -75,10 +85,9 @@ static void test_checkLaunchAndFlatShift_usesInvertedLaunchInput(void)
     config10 page10 = {};
     config15 page15 = {};
 
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, OUTPUT);
-    digitalWrite(launchPin, LOW);
-    pinMode(launchPin, INPUT);
+    constexpr uint8_t launchPinNumber = 13;
+    initLaunch(launchPinNumber);
+    launchPin._pin.setPinLow();
 
     current.RPM = 9500;
     current.TPS = 50;
@@ -90,7 +99,7 @@ static void test_checkLaunchAndFlatShift_usesInvertedLaunchInput(void)
     page6.flatSArm = 200;
     page10.lnchCtrlTPS = 0;
 
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
+    checkLaunchAndFlatShift(current, page2, page6, page10, page15);
 
     TEST_ASSERT_TRUE(current.clutchTrigger);
     TEST_ASSERT_TRUE(current.clutchTriggerActive);
@@ -106,9 +115,9 @@ static void test_checkLaunchAndFlatShift_appliesRollingCutDelta(void)
     config10 page10 = {};
     config15 page15 = {};
 
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
-    digitalWrite(launchPin, HIGH);
+    constexpr uint8_t launchPinNumber = 13;
+    initLaunch(launchPinNumber);
+    launchPin._pin.setPinHigh();
 
     current.RPM = 9000;
     current.TPS = 50;
@@ -122,7 +131,7 @@ static void test_checkLaunchAndFlatShift_appliesRollingCutDelta(void)
     page10.lnchCtrlTPS = 0;
     page15.rollingProtRPMDelta[0] = -5;
 
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
+    checkLaunchAndFlatShift(current, page2, page6, page10, page15);
 
     TEST_ASSERT_TRUE(current.launchingHard);
     TEST_ASSERT_TRUE(current.hardLaunchActive);
@@ -136,10 +145,12 @@ struct launch_fixture
     config6 page6 = {};
     config10 page10 = {};
     config15 page15 = {};
-    static constexpr uint8_t pin = 13;
 
     launch_fixture()
     {
+        constexpr uint8_t launchPinNumber = 13;
+        initLaunch(launchPinNumber);
+
         setClutch(true);
         current.clutchTrigger = true;
         current.clutchEngagedRPM = 3000;
@@ -157,14 +168,16 @@ struct launch_fixture
 
     void setClutch(bool engaged)
     {
-        pinMode(pin, OUTPUT);
-        digitalWrite(pin, engaged ? HIGH : LOW);
-        pinMode(pin, INPUT);
+        if (engaged) {
+            launchPin._pin.setPinHigh();
+        } else {
+            launchPin._pin.setPinLow();
+        }
     }
 
     void update()
     {
-        checkLaunchAndFlatShift(current, pin, page2, page6, page10, page15);
+        checkLaunchAndFlatShift(current, page2, page6, page10, page15);
     }
 
     void assertState(bool launch, bool flatShift)
