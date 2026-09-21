@@ -194,7 +194,7 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(voi
 
 void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
 {
-  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  for (uint8_t index=1; index<=_countof(ignitionSchedules); ++index)
   {
     endCoilCharge(index);
   }

@@ -20,9 +20,9 @@ static decoder_t test_setup_dualwheel_12_1()
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 
-static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, IgnitionSchedule &schedule, uint8_t index, int8_t advance)
+static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, uint8_t index, int8_t advance)
 {
-    schedule.dischargeAngle = 180 + advance; 
+    ignitionSchedules[index].dischargeAngle = 180 + advance; 
     decoder.setEndTeeth();
     TEST_ASSERT_EQUAL(expected, ignitionEndTeeth[index]);
 }
@@ -33,49 +33,49 @@ static void test_dualwheel_newIgn_12_1()
     auto decoder = test_setup_dualwheel_12_1();
 
     configPage4.triggerAngle = 0; //No trigger offset
-    assert_setEndTeeth(5, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(6, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(7, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(5, decoder, 0, -20);
+    assert_setEndTeeth(6, decoder, 0, 0);
+    assert_setEndTeeth(7, decoder, 0, 30);
 
     configPage4.triggerAngle = 90;
-    assert_setEndTeeth(2, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(3, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(4, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(2, decoder, 0, -20);
+    assert_setEndTeeth(3, decoder, 0, 0);
+    assert_setEndTeeth(4, decoder, 0, 30);
 
     configPage4.triggerAngle = 180;
-    assert_setEndTeeth(12, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(12, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(1, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(12, decoder, 0, -20);
+    assert_setEndTeeth(12, decoder, 0, 0);
+    assert_setEndTeeth(1, decoder, 0, 30);
 
     configPage4.triggerAngle = 270;
-    assert_setEndTeeth(9, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(9, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(10, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(9, decoder, 0, -20);
+    assert_setEndTeeth(9, decoder, 0, 0);
+    assert_setEndTeeth(10, decoder, 0, 30);
 
     configPage4.triggerAngle = 360;
-    assert_setEndTeeth(6, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(6, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(7, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(6, decoder, 0, -20);
+    assert_setEndTeeth(6, decoder, 0, 0);
+    assert_setEndTeeth(7, decoder, 0, 30);
 
     configPage4.triggerAngle = -90;
-    assert_setEndTeeth(8, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(9, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(10, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(8, decoder, 0, -20);
+    assert_setEndTeeth(9, decoder, 0, 0);
+    assert_setEndTeeth(10, decoder, 0, 30);
 
     configPage4.triggerAngle = -180;
-    assert_setEndTeeth(11, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(12, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(1, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(11, decoder, 0, -20);
+    assert_setEndTeeth(12, decoder, 0, 0);
+    assert_setEndTeeth(1, decoder, 0, 30);
 
     configPage4.triggerAngle = -270;
-    assert_setEndTeeth(2, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(3, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(4, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(2, decoder, 0, -20);
+    assert_setEndTeeth(3, decoder, 0, 0);
+    assert_setEndTeeth(4, decoder, 0, 30);
 
     configPage4.triggerAngle = -360;
-    assert_setEndTeeth(5, decoder, ignitionSchedules[0], 0, -20);
-    assert_setEndTeeth(6, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(7, decoder, ignitionSchedules[0], 0, 30);
+    assert_setEndTeeth(5, decoder, 0, -20);
+    assert_setEndTeeth(6, decoder, 0, 0);
+    assert_setEndTeeth(7, decoder, 0, 30);
 }
 
 static void test_getCrankAngle(void)
