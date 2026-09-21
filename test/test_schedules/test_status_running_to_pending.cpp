@@ -43,59 +43,19 @@ static void test_status_running_to_pending_ign(IgnitionSchedule &schedule)
     stopIgnitionSchedulers();
 }
 
-static void test_status_running_to_pending_ign1(void)
+static void test_status_running_to_pending_ign(void)
 {
-    IGNCHANNEL_TEST_HELPER1(test_status_running_to_pending_ign(ignitionSchedules[0]));
-}
-
-static void test_status_running_to_pending_ign2(void)
-{
-    IGNCHANNEL_TEST_HELPER2(test_status_running_to_pending_ign(ignitionSchedules[1]));
-}
-
-static void test_status_running_to_pending_ign3(void)
-{
-    IGNCHANNEL_TEST_HELPER3(test_status_running_to_pending_ign(ignitionSchedules[2]));
-}
-
-static void test_status_running_to_pending_ign4(void)
-{
-    IGNCHANNEL_TEST_HELPER4(test_status_running_to_pending_ign(ignitionSchedules[3]));
-}
-
-static void test_status_running_to_pending_ign5(void)
-{
-    IGNCHANNEL_TEST_HELPER5(test_status_running_to_pending_ign(ignitionSchedules[4]));
-}
-
-static void test_status_running_to_pending_ign6(void)
-{
-    IGNCHANNEL_TEST_HELPER6(test_status_running_to_pending_ign(ignitionSchedules[5]));
-}
-
-static void test_status_running_to_pending_ign7(void)
-{
-    IGNCHANNEL_TEST_HELPER7(test_status_running_to_pending_ign(ignitionSchedules[6]));
-}
-
-static void test_status_running_to_pending_ign8(void)
-{
-    IGNCHANNEL_TEST_HELPER8(test_status_running_to_pending_ign(ignitionSchedules[7]));
-}
+    for (auto& schedule: ignitionSchedules)
+    {
+        test_status_running_to_pending_ign(schedule);
+    }
+  }
 
 void test_status_running_to_pending(void)
 {
   SET_UNITY_FILENAME() {
 
     RUN_TEST_P(test_status_running_to_pending_inj);
-
-    RUN_TEST_P(test_status_running_to_pending_ign1);
-    RUN_TEST_P(test_status_running_to_pending_ign2);
-    RUN_TEST_P(test_status_running_to_pending_ign3);
-    RUN_TEST_P(test_status_running_to_pending_ign4);
-    RUN_TEST_P(test_status_running_to_pending_ign5);
-    RUN_TEST_P(test_status_running_to_pending_ign6);
-    RUN_TEST_P(test_status_running_to_pending_ign7);
-    RUN_TEST_P(test_status_running_to_pending_ign8);
+    RUN_TEST_P(test_status_running_to_pending_ign);
   }
 }

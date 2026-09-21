@@ -5,28 +5,20 @@
 
 static void setup_ignition_channel_angles(void)
 {
-    RUNIF_IGNCHANNEL1( { ignitionSchedules[0].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 0U; }, {});
-    RUNIF_IGNCHANNEL2( { ignitionSchedules[1].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 1U; }, {});
-    RUNIF_IGNCHANNEL3( { ignitionSchedules[2].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 2U; }, {});
-    RUNIF_IGNCHANNEL4( { ignitionSchedules[3].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 3U; }, {});
-    RUNIF_IGNCHANNEL5( { ignitionSchedules[4].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 4U; }, {});
-    RUNIF_IGNCHANNEL6( { ignitionSchedules[5].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 5U; }, {});
-    RUNIF_IGNCHANNEL7( { ignitionSchedules[6].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 6U; }, {});
-    RUNIF_IGNCHANNEL8( { ignitionSchedules[7].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 7U; }, {});
+    for (uint8_t i = 0; i < _countof(ignitionSchedules); i++)
+    {
+        ignitionSchedules[i].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * i;
+    }
 }
 
 static void assert_ignition_angles(const test_context_t &context)
 {
     // We only need to confirm the calculations were run. There
     // are separate detailed tests for the calculations.
-    RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[0].chargeAngle + ignitionSchedules[0].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL2( { if (context.current.maxIgnOutputs>=2) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[1].chargeAngle + ignitionSchedules[1].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL3( { if (context.current.maxIgnOutputs>=3) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[2].chargeAngle + ignitionSchedules[2].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL4( { if (context.current.maxIgnOutputs>=4) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[3].chargeAngle + ignitionSchedules[3].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL5( { if (context.current.maxIgnOutputs>=5) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[4].chargeAngle + ignitionSchedules[4].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[5].chargeAngle + ignitionSchedules[5].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[6].chargeAngle + ignitionSchedules[6].dischargeAngle); }}, {});
-    RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[7].chargeAngle + ignitionSchedules[7].dischargeAngle); }}, {});
+    for (uint8_t i = 0; i < context.current.maxIgnOutputs; i++)
+    {
+        TEST_ASSERT_GREATER_THAN(0U, ignitionSchedules[i].chargeAngle + ignitionSchedules[i].dischargeAngle);
+    }
 }
 
 static void test_calculateIgnitionAngles_nonrotary(void)
@@ -62,13 +54,18 @@ static void test_calculateIgnitionAngles_sequential_applies_individual_trim(void
     context.page13.ignTrim[1] = -2;
     context.page13.ignTrim[2] = 3;
     context.page13.ignTrim[3] = -4;
+    context.page13.ignTrim[4] = 4;
+    context.page13.ignTrim[5] = -7;
+    context.page13.ignTrim[6] = 7;
+    context.page13.ignTrim[7] = -94;
 
     context.calculateIgnitionAngles();
 
-    TEST_ASSERT_EQUAL_INT16(704, ignitionSchedules[0].dischargeAngle);
-    TEST_ASSERT_EQUAL_INT16(77, ignitionSchedules[1].dischargeAngle);
-    TEST_ASSERT_EQUAL_INT16(162, ignitionSchedules[2].dischargeAngle);
-    TEST_ASSERT_EQUAL_INT16(259, ignitionSchedules[3].dischargeAngle);
+    uint16_t expected[] = { 704, 77, 162, 259, 345, 435, 525, 615 };
+    for (uint8_t i = 0; i < _countof(ignitionSchedules); i++)
+    {
+        TEST_ASSERT_EQUAL_INT16(expected[i], ignitionSchedules[i].dischargeAngle);
+    }
 }
 
 static void test_calculateIgnitionAngles_wasted_ignores_individual_trim(void)

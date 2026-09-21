@@ -39,9 +39,9 @@ extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 
-static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, IgnitionSchedule &schedule, uint8_t index, int8_t advance)
+static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, uint8_t index, int8_t advance)
 {
-    schedule.dischargeAngle = 360 + advance; 
+    ignitionSchedules[index].dischargeAngle = 360 + advance; 
     decoder.setEndTeeth();
     TEST_ASSERT_EQUAL(expected, ignitionEndTeeth[index]);
 }
@@ -52,49 +52,49 @@ static void test_missingtooth_newIgn_36_1()
     configPage4.sparkMode = IGN_MODE_WASTED;
     
     configPage4.triggerAngle = 0; //No trigger offset
-    assert_setEndTeeth(34, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(35, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(35, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(34, decoder, 0, -10);
+    assert_setEndTeeth(35, decoder, 0, 0);
+    assert_setEndTeeth(35, decoder, 0, 10);
     
     configPage4.triggerAngle = 90;
-    assert_setEndTeeth(25, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(26, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(27, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(25, decoder, 0, -10);
+    assert_setEndTeeth(26, decoder, 0, 0);
+    assert_setEndTeeth(27, decoder, 0, 10);
     
     configPage4.triggerAngle = 180;
-    assert_setEndTeeth(16, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(17, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(18, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(16, decoder, 0, -10);
+    assert_setEndTeeth(17, decoder, 0, 0);
+    assert_setEndTeeth(18, decoder, 0, 10);
     
     configPage4.triggerAngle = 270;
-    assert_setEndTeeth(7, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(8, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(9, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(7, decoder, 0, -10);
+    assert_setEndTeeth(8, decoder, 0, 0);
+    assert_setEndTeeth(9, decoder, 0, 10);
     
     configPage4.triggerAngle = 360;
-    assert_setEndTeeth(34, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(35, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(35, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(34, decoder, 0, -10);
+    assert_setEndTeeth(35, decoder, 0, 0);
+    assert_setEndTeeth(35, decoder, 0, 10);
     
     configPage4.triggerAngle = -90;
-    assert_setEndTeeth(7, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(8, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(9, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(7, decoder, 0, -10);
+    assert_setEndTeeth(8, decoder, 0, 0);
+    assert_setEndTeeth(9, decoder, 0, 10);
     
     configPage4.triggerAngle = -180;
-    assert_setEndTeeth(16, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(17, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(18, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(16, decoder, 0, -10);
+    assert_setEndTeeth(17, decoder, 0, 0);
+    assert_setEndTeeth(18, decoder, 0, 10);
     
     configPage4.triggerAngle = -270;
-    assert_setEndTeeth(25, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(26, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(27, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(25, decoder, 0, -10);
+    assert_setEndTeeth(26, decoder, 0, 0);
+    assert_setEndTeeth(27, decoder, 0, 10);
     
     configPage4.triggerAngle = -360;
-    assert_setEndTeeth(34, decoder, ignitionSchedules[0], 0, -10);
-    assert_setEndTeeth(35, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(35, decoder, ignitionSchedules[0], 0, 10);
+    assert_setEndTeeth(34, decoder, 0, -10);
+    assert_setEndTeeth(35, decoder, 0, 0);
+    assert_setEndTeeth(35, decoder, 0, 10);
 }
 
 static void test_missingtooth_newIgn_60_2()
@@ -103,49 +103,49 @@ static void test_missingtooth_newIgn_60_2()
     configPage4.sparkMode = IGN_MODE_WASTED;
     
     configPage4.triggerAngle = 0; //No trigger offset
-    assert_setEndTeeth(57, decoder, ignitionSchedules[0], 0, -7);
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(57, decoder, 0, -7);
+    assert_setEndTeeth(58, decoder, 0, 0);
+    assert_setEndTeeth(58, decoder, 0, 6);
     
     configPage4.triggerAngle = 90;
-    assert_setEndTeeth(43, decoder, ignitionSchedules[0], 0, -6);
-    assert_setEndTeeth(44, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(45, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(43, decoder, 0, -6);
+    assert_setEndTeeth(44, decoder, 0, 0);
+    assert_setEndTeeth(45, decoder, 0, 6);
     
     configPage4.triggerAngle = 180;
-    assert_setEndTeeth(28, decoder, ignitionSchedules[0], 0, -6);
-    assert_setEndTeeth(29, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(30, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(28, decoder, 0, -6);
+    assert_setEndTeeth(29, decoder, 0, 0);
+    assert_setEndTeeth(30, decoder, 0, 6);
     
     configPage4.triggerAngle = 270;
-    assert_setEndTeeth(13, decoder, ignitionSchedules[0], 0, -6);
-    assert_setEndTeeth(14, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(15, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(13, decoder, 0, -6);
+    assert_setEndTeeth(14, decoder, 0, 0);
+    assert_setEndTeeth(15, decoder, 0, 6);
     
     configPage4.triggerAngle = 360;
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, -7);
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(58, decoder, 0, -7);
+    assert_setEndTeeth(58, decoder, 0, 0);
+    assert_setEndTeeth(58, decoder, 0, 6);
     
     configPage4.triggerAngle = -90;
-    assert_setEndTeeth(13, decoder, ignitionSchedules[0], 0, -6);
-    assert_setEndTeeth(14, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(15, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(13, decoder, 0, -6);
+    assert_setEndTeeth(14, decoder, 0, 0);
+    assert_setEndTeeth(15, decoder, 0, 6);
     
     configPage4.triggerAngle = -180;
-    assert_setEndTeeth(28, decoder, ignitionSchedules[0], 0, -6);
-    assert_setEndTeeth(29, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(30, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(28, decoder, 0, -6);
+    assert_setEndTeeth(29, decoder, 0, 0);
+    assert_setEndTeeth(30, decoder, 0, 6);
     
     configPage4.triggerAngle = -270;
-    assert_setEndTeeth(43, decoder, ignitionSchedules[0], 0, -6);
-    assert_setEndTeeth(44, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(45, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(43, decoder, 0, -6);
+    assert_setEndTeeth(44, decoder, 0, 0);
+    assert_setEndTeeth(45, decoder, 0, 6);
     
     configPage4.triggerAngle = -360;
-    assert_setEndTeeth(57, decoder, ignitionSchedules[0], 0, -7);
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, 0);
-    assert_setEndTeeth(58, decoder, ignitionSchedules[0], 0, 6);
+    assert_setEndTeeth(57, decoder, 0, -7);
+    assert_setEndTeeth(58, decoder, 0, 0);
+    assert_setEndTeeth(58, decoder, 0, 6);
 }
 
 static void test_getCrankAngle(void)

@@ -19,23 +19,20 @@ static void assert_rover_setEndTeeth(int triggerAngle, uint8_t sparkMode, uint8_
 {
   auto decoder = triggerSetup_RoverMEMS();
 
-  toothAngles[1] = skipTeeth[0];
-  toothAngles[2] = skipTeeth[1];
-  toothAngles[3] = skipTeeth[2];
-  toothAngles[4] = skipTeeth[3];
+  std::copy(std::begin(skipTeeth), std::end(skipTeeth), std::next(std::begin(toothAngles)));
 
   configPage4.triggerAngle = triggerAngle;
   configPage4.sparkMode = sparkMode;
   configPage4.TrigSpeed = trigSpeed;
 
-  ignitionSchedules[0].dischargeAngle = dischargeAngles[0];
-  ignitionSchedules[1].dischargeAngle = dischargeAngles[1];
-  ignitionSchedules[2].dischargeAngle = dischargeAngles[2];
-  ignitionSchedules[3].dischargeAngle = dischargeAngles[3];
+  for (uint8_t i = 0; i < std::min(4, IGN_CHANNELS); i++)
+  {
+    ignitionSchedules[i].dischargeAngle = dischargeAngles[i];
+  }
 
   decoder.setEndTeeth();
 
-  for (uint8_t i = 0; i < 4; i++)
+  for (uint8_t i = 0; i < std::min(4, IGN_CHANNELS); i++)
   {
     TEST_ASSERT_EQUAL_UINT16(expected[i], ignitionEndTeeth[i]);
   }
