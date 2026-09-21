@@ -181,8 +181,8 @@ void initialiseAll(void)
     initialiseMAPBaro();
     initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
-    initialiseLaunchControl(pinNumbers);
-    
+    initialiseLaunchControl(configPage6, pinNumbers);
+
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
