@@ -58,7 +58,7 @@ static bool aboveLaunchRpmLimit(const statuses &current, const config2 &page2, c
   return current.RPM > launchRpmLimit;
 }
 
-void checkLaunchAndFlatShift(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
+void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
 {
   updateClutchState(current, page6);
 
