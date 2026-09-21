@@ -48,7 +48,7 @@ struct launch_fixture
 
     void update()
     {
-        checkLaunchAndFlatShift(current, page2, page6, page10, page15);
+        updateLaunchAndFlatShift(current, page2, page6, page10, page15);
     }
 
     void assertState(bool launch, bool flatShift)
