@@ -37,6 +37,7 @@
 #include "src/controllers/nitrous/nitrousController.h"
 #include "src/controllers/progammableIO/programmableIOControl.h"
 #include "src/controllers/tacho/tachoController.h"
+#include "src/controllers/launch/launchController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -180,7 +181,8 @@ void initialiseAll(void)
     initialiseMAPBaro();
     initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
-
+    initialiseLaunchControl(pinNumbers);
+    
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
     {
