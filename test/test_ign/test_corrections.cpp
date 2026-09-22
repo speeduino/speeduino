@@ -28,6 +28,16 @@ static void test_correctionFixedTiming(void) {
     RUN_TEST_P(test_correctionFixedTiming_active);
 }
 
+static void test_correctionsIgn_dispatch(void) {
+    initialiseCorrections();
+    currentStatus.LOOP_TIMER = 0U;
+    configPage10.knock_mode = KNOCK_MODE_OFF;
+    configPage2.fixAngEnable = 1U;
+    configPage4.FixAng = 17;
+
+    TEST_ASSERT_EQUAL(17, correctionsIgn(-8));
+}
+
 extern int8_t correctionCLTadvance(int8_t advance);
 extern table2D_u8_u8_6 CLTAdvanceTable; ///< 6 bin ignition adjustment based on coolant temperature  (2D)
 
@@ -1056,6 +1066,7 @@ static void test_correctionsDwell(void) {
 void testIgnCorrections(void) {
     SET_UNITY_FILENAME() {
         test_correctionFixedTiming();
+        test_correctionsIgn_dispatch();
         test_correctionCLTadvance();
         test_correctionCrankingFixedTiming();
         test_correctionFlexTiming();
