@@ -829,6 +829,25 @@ static void test_correctionKnockTiming_analog_inactive_path_starts_retard(void) 
     TEST_ASSERT_EQUAL_UINT8(configPage10.knock_firstStep, currentStatus.knockRetard);
 }
 
+static void test_correctionKnockTiming_analog_active_path_increases_retard(void) {
+    setup_correctionKnockTiming(KNOCK_MODE_ANALOG);
+    configPage10.knock_threshold = 200U;
+    currentStatus.knockRetardActive = true;
+    currentStatus.knockRetard = configPage10.knock_firstStep;
+    currentStatus.knockCount = configPage10.knock_count;
+    analogKnockReading = configPage10.knock_threshold + 1U;
+    const uint32_t knockStart = 100000U;
+    const uint32_t currMicros = knockStart + (configPage10.knock_stepTime * 1000UL);
+    knockStartTime = knockStart;
+
+    TEST_ASSERT_EQUAL(20, correctionKnockTiming(25, currMicros, stubGetAnalogKnock));
+    TEST_ASSERT_TRUE(currentStatus.knockRetardActive);
+    TEST_ASSERT_EQUAL_UINT8(configPage10.knock_count + 1U, currentStatus.knockCount);
+    TEST_ASSERT_EQUAL_UINT8(5U, currentStatus.knockRetard);
+    TEST_ASSERT_EQUAL_UINT32(currMicros, knockStartTime);
+    TEST_ASSERT_EQUAL_UINT8(0U, knockLastRecoveryStep);
+}
+
 static void test_correctionKnockTiming_analog_active_path_noop_below_threshold(void) {
     setup_correctionKnockTiming(KNOCK_MODE_ANALOG);
     configPage10.knock_threshold = 200U;
@@ -902,6 +921,7 @@ static void test_correctionKnock(void) {
     RUN_TEST_P(test_correctionKnockTiming_digital_clamps_max_retard);
     RUN_TEST_P(test_correctionKnockTiming_analog_inactive_path_noop);
     RUN_TEST_P(test_correctionKnockTiming_analog_inactive_path_starts_retard);
+    RUN_TEST_P(test_correctionKnockTiming_analog_active_path_increases_retard);
     RUN_TEST_P(test_correctionKnockTiming_analog_active_path_noop_below_threshold);
     RUN_TEST_P(test_correctionKnockRecovery_before_duration_no_reduction);
     RUN_TEST_P(test_correctionKnockRecovery_partial_reduction);
