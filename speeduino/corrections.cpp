@@ -1158,7 +1158,7 @@ static inline uint8_t applyAdditionalDigitalKnockRetard(uint8_t knockRetard, uin
 
 /** Ignition knock (retard) correction.
  */
-TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros)
+TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros, uint8_t (*fnGetAnalogKnock)(void))
 {
   byte tmpKnockRetard = 0;
 
@@ -1196,7 +1196,7 @@ TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros
       if( hasIntervalElapsed(currMicros, knockStartTime, configPage10.knock_stepTime * 1000UL) )
       {
         //Sufficient time has passed, check the current knock value
-        uint16_t tmpKnockReading = getAnalogKnock();
+        uint16_t tmpKnockReading = fnGetAnalogKnock();
 
         if(tmpKnockReading > configPage10.knock_threshold)
         {
@@ -1213,7 +1213,7 @@ TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros
       //If not is not currently active, we read the analog pin every 30Hz
       if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_30HZ) ) 
       { 
-        uint16_t tmpKnockReading = getAnalogKnock();
+        uint16_t tmpKnockReading = fnGetAnalogKnock();
 
         if(tmpKnockReading > configPage10.knock_threshold)
         {
@@ -1345,7 +1345,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-  advance = correctionKnockTiming(advance, micros());
+  advance = correctionKnockTiming(advance, micros(), getAnalogKnock);
 
   advance = correctionDFCOignition(advance);
 
