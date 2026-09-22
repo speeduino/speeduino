@@ -100,6 +100,31 @@ struct airConStatus_t
   }
 };
 
+struct launchStatus_t
+{
+  bool launchingSoft : 1;
+  bool softLaunchActive : 1;
+  bool launchingHard : 1;
+  bool hardLaunchActive : 1;
+  bool flatShiftingHard : 1;
+  bool previousClutchTrigger : 1;
+  bool clutchTrigger : 1;
+  bool clutchTriggerActive : 1;
+  uint16_t clutchEngagedRPM = 0; ///< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift  
+
+  launchStatus_t()
+  : launchingSoft(false)
+  , softLaunchActive(false)
+  , launchingHard(false)
+  , hardLaunchActive(false)
+  , flatShiftingHard(false)
+  , previousClutchTrigger(false)
+  , clutchTrigger(false)
+  , clutchTriggerActive(false)
+  {
+  }
+};
+
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -122,10 +147,6 @@ struct statuses {
 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool initialisationComplete : 1; ///< Tracks whether the setup() function has run completely
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool clutchTrigger : 1;
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool previousClutchTrigger : 1;
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool injPrimed : 1; ///< Tracks whether or not the injector priming has been completed yet
     
@@ -184,13 +205,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
 
-  // Status2 fields as defined in the INI. 
-  // TODO: resolve duplication with launchingHard
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool hardLaunchActive : 1; ///< Hard Launch status: true == on, false == off 
-  // TODO: resolve duplication with launchingSoft
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool softLaunchActive : 1; ///< Soft Launch status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -228,9 +242,6 @@ struct statuses {
   bool knockRetardActive : 1; ///< Is knock retardation active (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool knockPulseDetected : 1;  ///<
-  // TODO: resolve duplication with clutchTrigger
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool clutchTriggerActive : 1; ///< Is the clutch trigger active (true) or not (false)
 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
@@ -247,13 +258,8 @@ struct statuses {
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
-  bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
-  bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
   // TODO: remove this: only updated & read in logger
   uint16_t freeRAM;
-  // TODO: make all RPMs uint16_t
-  unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
-  bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
   // TODO: resolve conflict with testActive
@@ -369,4 +375,6 @@ struct statuses {
 
   vvtStatus_t vvt1;
   vvtStatus_t vvt2;
+
+  launchStatus_t launchStatus;
 };

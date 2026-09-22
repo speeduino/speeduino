@@ -213,7 +213,7 @@ TESTABLE_INLINE_STATIC uint8_t applyEngineProtectionRevLimit(uint8_t curLimit, c
 
 TESTABLE_INLINE_STATIC uint8_t applyHardLaunchRevLimit(uint8_t curLimit, const statuses &current, const config6 &page6)
 {
-  if (current.launchingHard)
+  if (current.launchStatus.launchingHard)
   {
     return (std::min)(curLimit, page6.lnchHardLim);
   }
@@ -223,9 +223,9 @@ TESTABLE_INLINE_STATIC uint8_t applyHardLaunchRevLimit(uint8_t curLimit, const s
 
 TESTABLE_INLINE_STATIC uint16_t applyFlatShiftRevLimit(uint16_t curLimit, const statuses &current)
 {
-  if ( current.flatShiftingHard ) 
+  if ( current.launchStatus.flatShiftingHard ) 
   {
-    return (std::min)(curLimit, (uint16_t)current.clutchEngagedRPM);
+    return (std::min)(curLimit, (uint16_t)current.launchStatus.clutchEngagedRPM);
   }
   return curLimit;
 }

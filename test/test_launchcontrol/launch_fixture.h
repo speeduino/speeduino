@@ -17,8 +17,8 @@ struct launch_fixture
 
     launch_fixture()
     {
-        current.clutchTrigger = true;
-        current.clutchEngagedRPM = 3000;
+        current.launchStatus.clutchTrigger = true;
+        current.launchStatus.clutchEngagedRPM = 3000;
         current.setRpm(5000);
         current.TPS = 50;
         page6.launchEnabled = true;
@@ -53,8 +53,8 @@ struct launch_fixture
 
     void assertState(bool launch, bool flatShift)
     {
-        TEST_ASSERT_EQUAL(launch, current.launchingHard);
-        TEST_ASSERT_EQUAL(launch, current.hardLaunchActive);
-        TEST_ASSERT_EQUAL(flatShift, current.flatShiftingHard);
+        TEST_ASSERT_EQUAL(launch, current.launchStatus.launchingHard);
+        TEST_ASSERT_EQUAL(launch, current.launchStatus.hardLaunchActive);
+        TEST_ASSERT_EQUAL(flatShift, current.launchStatus.flatShiftingHard);
     }
 };
