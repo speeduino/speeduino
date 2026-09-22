@@ -19,8 +19,6 @@ static void updateClutchState(statuses &current, const config6 &page6)
   if (page6.flatSEnable || page6.launchEnabled)
   {
     current.launchStatus.clutchTrigger = (page6.launchHiLo == launchPin.isPinHigh());
-
-    current.launchStatus.clutchTriggerActive = current.launchStatus.clutchTrigger; // TunerStudio indication
   }
 
   // Capture RPM on engagement, then retain it while the clutch is held or released.
@@ -63,7 +61,6 @@ void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const con
   updateClutchState(current, page6);
 
   current.launchStatus.launchingHard = false;
-  current.launchStatus.hardLaunchActive = false;
   current.launchStatus.flatShiftingHard = false;
 
   if (isLaunchArmed(current, page6, page10))
@@ -73,7 +70,6 @@ void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const con
         && aboveLaunchRpmLimit(current, page2, page6, page15))
     {
       current.launchStatus.launchingHard = true;
-      current.launchStatus.hardLaunchActive = true;
     }
   }
   else if (page6.flatSEnable && current.launchStatus.clutchTrigger

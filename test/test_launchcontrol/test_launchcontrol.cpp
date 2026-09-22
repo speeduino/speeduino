@@ -22,10 +22,8 @@ static void test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet(v
     fixture.update();
 
     TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTriggerActive);
     TEST_ASSERT_EQUAL_UINT16(fixture.current.RPM, fixture.current.launchStatus.clutchEngagedRPM);
     TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.hardLaunchActive);
     TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingHard);
 }
 
@@ -51,10 +49,8 @@ static void test_checkLaunchAndFlatShift_enablesFlatShiftWhenLaunchIsDisabled(vo
     fixture.update();
 
     TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTriggerActive);
     TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftingHard);
     TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
-    TEST_ASSERT_FALSE(fixture.current.launchStatus.hardLaunchActive);
 }
 
 static void test_checkLaunchAndFlatShift_usesInvertedLaunchInput(void)
@@ -76,9 +72,7 @@ static void test_checkLaunchAndFlatShift_usesInvertedLaunchInput(void)
     fixture.update();
 
     TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTriggerActive);
     TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.hardLaunchActive);
 }
 
 static void test_checkLaunchAndFlatShift_appliesRollingCutDelta(void)
@@ -102,7 +96,6 @@ static void test_checkLaunchAndFlatShift_appliesRollingCutDelta(void)
     fixture.update();
 
     TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.hardLaunchActive);
 }
 
 static void assert_rpm_boundary(launch_fixture &fixture, uint16_t limit, bool flatShift)
@@ -223,7 +216,7 @@ static void test_clutch_rpm_is_captured_on_engagement(void)
     fixture.current.RPM = 3000;
     fixture.update();
     TEST_ASSERT_FALSE(fixture.current.launchStatus.previousClutchTrigger);
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTriggerActive);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
     TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
 
     fixture.current.RPM = 5000;
@@ -234,7 +227,7 @@ static void test_clutch_rpm_is_captured_on_engagement(void)
 
     fixture.setClutch(false);
     fixture.update();
-    TEST_ASSERT_FALSE(fixture.current.launchStatus.clutchTriggerActive);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.clutchTrigger);
     TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
     fixture.assertState(false, false);
 
