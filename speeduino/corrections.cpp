@@ -45,7 +45,7 @@ TESTABLE_STATIC PID egoPID;
 static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/TAE was activated. 
 
 TESTABLE_STATIC uint16_t AFRnextCycle;
-static unsigned long knockStartTime;
+TESTABLE_STATIC uint32_t knockStartTime;
 static uint8_t knockLastRecoveryStep;
 //static int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
 //static int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
@@ -1160,7 +1160,7 @@ static inline uint8_t applyAdditionalDigitalKnockRetard(uint8_t knockRetard)
 
 /** Ignition knock (retard) correction.
  */
-static inline int8_t correctionKnockTiming(int8_t advance)
+TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance)
 {
   byte tmpKnockRetard = 0;
 
