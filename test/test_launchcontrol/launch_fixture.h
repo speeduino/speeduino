@@ -54,7 +54,6 @@ struct launch_fixture
     void assertState(bool launch, bool flatShift)
     {
         TEST_ASSERT_EQUAL(launch, current.launchStatus.launchingHard);
-        TEST_ASSERT_EQUAL(launch, current.launchStatus.hardLaunchActive);
         TEST_ASSERT_EQUAL(flatShift, current.launchStatus.flatShiftingHard);
     }
 };

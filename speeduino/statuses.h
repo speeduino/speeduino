@@ -103,24 +103,18 @@ struct airConStatus_t
 struct launchStatus_t
 {
   bool launchingSoft : 1;
-  bool softLaunchActive : 1;
   bool launchingHard : 1;
-  bool hardLaunchActive : 1;
   bool flatShiftingHard : 1;
   bool previousClutchTrigger : 1;
   bool clutchTrigger : 1;
-  bool clutchTriggerActive : 1;
   uint16_t clutchEngagedRPM = 0; ///< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift  
 
   launchStatus_t()
   : launchingSoft(false)
-  , softLaunchActive(false)
   , launchingHard(false)
-  , hardLaunchActive(false)
   , flatShiftingHard(false)
   , previousClutchTrigger(false)
   , clutchTrigger(false)
-  , clutchTriggerActive(false)
   {
   }
 };
