@@ -58,10 +58,15 @@ static bool withinLaunchSpeedLimit(const statuses &current, const config2 &page2
   return (page2.vssMode == VSS_MODE_OFF) || (current.vss < page10.lnchCtrlVss);
 }
 
-static bool aboveLaunchRpmLimit(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
+static bool aboveHardLaunchRpmLimit(const statuses &current, const config2 &page2, const config6 &page6, const config15 &page15)
 {
   const uint16_t launchRpmLimit = getHardCutRpmLimit(RPM_COARSE.toUser(page6.lnchHardLim), page2, page15);
   return current.RPM > launchRpmLimit;
+}
+
+static bool aboveSoftLaunchRpmLimit(const statuses &current, const config6 &page6)
+{
+  return current.RPM > RPM_COARSE.toUser(page6.lnchSoftLim);
 }
 
 static bool aboveFlatShiftRpmLimit(const statuses &current, const config2 &page2, const config15 &page15)
@@ -74,9 +79,12 @@ void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const con
 {
   updateClutchState(current, page6);
 
-  current.launchStatus.launchingHard =   isLaunchArmed(current, page6, page10)
-                                      && withinLaunchSpeedLimit(current, page2, page10)
-                                      && aboveLaunchRpmLimit(current, page2, page6, page15);
+  bool isLaunching = isLaunchArmed(current, page6, page10)
+                  && withinLaunchSpeedLimit(current, page2, page10);
+  current.launchStatus.launchingHard =   isLaunching
+                                      && aboveHardLaunchRpmLimit(current, page2, page6, page15);
+  current.launchStatus.launchingSoft =   isLaunching
+                                      && aboveSoftLaunchRpmLimit(current, page6);
   current.launchStatus.flatShiftingHard =  isFlatShiftActive(current, page6)
                                         && aboveFlatShiftRpmLimit(current, page2, page15);
 }
