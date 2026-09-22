@@ -721,7 +721,9 @@ static void test_correctionSoftFlatShift(void) {
 }
 
 extern int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros);
+extern uint8_t _calculateKnockRecovery(uint8_t curKnockRetard, uint32_t currMicros);
 extern uint32_t knockStartTime;
+extern uint8_t knockLastRecoveryStep;
 
 static void setup_correctionKnockTiming(uint8_t mode) {
     initialiseCorrections();
@@ -823,6 +825,56 @@ static void test_correctionKnockTiming_analog_active_path_noop_below_threshold(v
     TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.knockRetard);
 }
 
+static void setup_correctionKnockRecovery(void) {
+    initialiseCorrections();
+
+    configPage10.knock_duration = 10U;
+    configPage10.knock_recoveryStepTime = 1U;
+    configPage10.knock_recoveryStep = 1U;
+    currentStatus.knockRetardActive = true;
+    currentStatus.knockRetard = 5U;
+    knockStartTime = 0U;
+    knockLastRecoveryStep = 0U;
+}
+
+static void test_correctionKnockRecovery_before_duration_no_reduction(void) {
+    setup_correctionKnockRecovery();
+
+    const uint32_t knockStart = 100000U;
+    const uint32_t currMicros = knockStart + (configPage10.knock_duration * 100000UL) - 1U;
+    knockStartTime = knockStart;
+
+    TEST_ASSERT_EQUAL_UINT8(5U, _calculateKnockRecovery(5U, currMicros));
+    TEST_ASSERT_TRUE(currentStatus.knockRetardActive);
+    TEST_ASSERT_EQUAL_UINT8(5U, currentStatus.knockRetard);
+}
+
+static void test_correctionKnockRecovery_partial_reduction(void) {
+    setup_correctionKnockRecovery();
+
+    const uint32_t knockStart = 100000U;
+    const uint32_t currMicros = knockStart + (configPage10.knock_duration * 100000UL) + (1U * 100000UL);
+    knockStartTime = knockStart;
+    currentStatus.knockRetard = 5U;
+
+    TEST_ASSERT_EQUAL_UINT8(4U, _calculateKnockRecovery(5U, currMicros));
+    TEST_ASSERT_TRUE(currentStatus.knockRetardActive);
+    TEST_ASSERT_EQUAL_UINT8(5U, currentStatus.knockRetard);
+}
+
+static void test_correctionKnockRecovery_complete_reset(void) {
+    setup_correctionKnockRecovery();
+
+    const uint32_t knockStart = 100000U;
+    const uint32_t currMicros = knockStart + (configPage10.knock_duration * 100000UL) + (3U * 100000UL);
+    knockStartTime = knockStart;
+    currentStatus.knockRetard = 3U;
+
+    TEST_ASSERT_EQUAL_UINT8(0U, _calculateKnockRecovery(3U, currMicros));
+    TEST_ASSERT_FALSE(currentStatus.knockRetardActive);
+    TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.knockCount);
+}
+
 static void test_correctionKnock(void) {
     RUN_TEST_P(test_correctionKnockTiming_digital_waits_for_threshold);
     RUN_TEST_P(test_correctionKnockTiming_digital_starts_retard);
@@ -830,6 +882,9 @@ static void test_correctionKnock(void) {
     RUN_TEST_P(test_correctionKnockTiming_digital_clamps_max_retard);
     RUN_TEST_P(test_correctionKnockTiming_analog_inactive_path_noop);
     RUN_TEST_P(test_correctionKnockTiming_analog_active_path_noop_below_threshold);
+    RUN_TEST_P(test_correctionKnockRecovery_before_duration_no_reduction);
+    RUN_TEST_P(test_correctionKnockRecovery_partial_reduction);
+    RUN_TEST_P(test_correctionKnockRecovery_complete_reset);
 }
 
 extern table2D_u8_u8_6 dwellVCorrectionTable; ///< 6 bin dwell voltage correction (2D)

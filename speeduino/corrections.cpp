@@ -46,9 +46,7 @@ static uint16_t aeActivatedReading; //The mapDOT/tpsDOT value seen when the MAE/
 
 TESTABLE_STATIC uint16_t AFRnextCycle;
 TESTABLE_STATIC uint32_t knockStartTime;
-static uint8_t knockLastRecoveryStep;
-//static int16_t knockWindowMin; //The current minimum crank angle for a knock pulse to be valid
-//static int16_t knockWindowMax;//The current maximum crank angle for a knock pulse to be valid
+TESTABLE_STATIC uint8_t knockLastRecoveryStep;
 static uint8_t dfcoTaper;
 
 TESTABLE_CONSTEXPR table2D_u8_u8_4 taeTable(&configPage4.taeBins, &configPage4.taeValues);
@@ -1110,7 +1108,7 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
   return advance;
 }
 
-static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard, uint32_t currMicros)
+TESTABLE_INLINE_STATIC uint8_t _calculateKnockRecovery(uint8_t curKnockRetard, uint32_t currMicros)
 {
   uint8_t tmpKnockRetard = curKnockRetard;
   //Check whether we are in knock recovery
