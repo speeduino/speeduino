@@ -36,6 +36,14 @@ static bool isLaunchArmed(const statuses &current, const config6 &page6, const c
       && (current.TPS >= page10.lnchCtrlTPS);
 }
 
+static bool isFlatShiftActive(const statuses &current, const config6 &page6)
+{
+  return page6.flatSEnable 
+      && current.launchStatus.clutchTrigger
+      && (current.launchStatus.clutchEngagedRPM >= RPM_COARSE.toUser(page6.flatSArm))
+      ;
+}
+
 static uint16_t getHardCutRpmLimit(uint16_t baseRpm, const config2 &page2, const config15 &page15)
 {
   if (page2.hardCutType == HARD_CUT_ROLLING)
@@ -56,30 +64,19 @@ static bool aboveLaunchRpmLimit(const statuses &current, const config2 &page2, c
   return current.RPM > launchRpmLimit;
 }
 
+static bool aboveFlatShiftRpmLimit(const statuses &current, const config2 &page2, const config15 &page15)
+{
+  const uint16_t flatRpmLimit = getHardCutRpmLimit(current.launchStatus.clutchEngagedRPM, page2, page15);
+  return (current.RPM > flatRpmLimit);
+}
+
 void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
 {
   updateClutchState(current, page6);
 
-  current.launchStatus.launchingHard = false;
-  current.launchStatus.flatShiftingHard = false;
-
-  if (isLaunchArmed(current, page6, page10))
-  {
-    // A configured vehicle speed limit applies only to launch control.
-    if (withinLaunchSpeedLimit(current, page2, page10)
-        && aboveLaunchRpmLimit(current, page2, page6, page15))
-    {
-      current.launchStatus.launchingHard = true;
-    }
-  }
-  else if (page6.flatSEnable && current.launchStatus.clutchTrigger
-        && (current.launchStatus.clutchEngagedRPM >= RPM_COARSE.toUser(page6.flatSArm)))
-  {
-    const uint16_t flatRpmLimit = getHardCutRpmLimit(current.launchStatus.clutchEngagedRPM, page2, page15);
-    current.launchStatus.flatShiftingHard = (current.RPM > flatRpmLimit);
-  }
-  else
-  {
-    // Neither function is armed; retain the cleared hard-cut flags.
-  }
+  current.launchStatus.launchingHard =   isLaunchArmed(current, page6, page10)
+                                      && withinLaunchSpeedLimit(current, page2, page10)
+                                      && aboveLaunchRpmLimit(current, page2, page6, page15);
+  current.launchStatus.flatShiftingHard =  isFlatShiftActive(current, page6)
+                                        && aboveFlatShiftRpmLimit(current, page2, page15);
 }
