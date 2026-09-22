@@ -1071,20 +1071,9 @@ TESTABLE_INLINE_STATIC int8_t correctionNitrous(int8_t advance)
 TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
 {
   //SoftCut rev limit for 2-step launch control.
-  if(  configPage6.launchEnabled 
-    && currentStatus.launchStatus.clutchTrigger 
-    && (currentStatus.launchStatus.clutchEngagedRPM < RPM_COARSE.toUser( configPage6.flatSArm))
-    && (currentStatus.RPM > RPM_COARSE.toUser( configPage6.lnchSoftLim))
-    && (currentStatus.TPS >= configPage10.lnchCtrlTPS) 
-    && ( (configPage2.vssMode == VSS_MODE_OFF) || (currentStatus.vss <= configPage10.lnchCtrlVss) )
-    )
+  if(currentStatus.launchStatus.launchingSoft)
   {
-    currentStatus.launchStatus.launchingSoft = true;
     advance = configPage6.lnchRetard;
-  }
-  else
-  {
-    currentStatus.launchStatus.launchingSoft = false;
   }
 
   return advance;

@@ -26,6 +26,7 @@ struct launch_fixture
         page6.launchHiLo = true;
         page6.flatSArm = 40;
         page6.lnchHardLim = 45;
+        page6.lnchSoftLim = page6.lnchHardLim;
         page10.lnchCtrlTPS = 50;
         page10.lnchCtrlVss = 50;
         page15.rollingProtRPMDelta[0] = -5;
@@ -51,9 +52,10 @@ struct launch_fixture
         updateLaunchAndFlatShift(current, page2, page6, page10, page15);
     }
 
-    void assertState(bool launch, bool flatShift)
+    void assertState(bool hardLaunch, bool softLaunch, bool flatShift)
     {
-        TEST_ASSERT_EQUAL(launch, current.launchStatus.launchingHard);
+        TEST_ASSERT_EQUAL(hardLaunch, current.launchStatus.launchingHard);
+        TEST_ASSERT_EQUAL(softLaunch, current.launchStatus.launchingSoft);
         TEST_ASSERT_EQUAL(flatShift, current.launchStatus.flatShiftingHard);
     }
 };
