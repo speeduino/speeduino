@@ -1112,11 +1112,11 @@ TESTABLE_INLINE_STATIC uint8_t _calculateKnockRecovery(uint8_t curKnockRetard, u
 {
   uint8_t tmpKnockRetard = curKnockRetard;
   //Check whether we are in knock recovery
-  if( hasIntervalElapsed(currMicros, knockStartTime, configPage10.knock_duration * 100000UL) ) //knock_duration is in seconds*10
+  if( hasIntervalElapsed(currMicros, knockStartTime, TIME_HUNDRED_MILLIS.toUser(configPage10.knock_duration)) )
   {
     //Calculate how many recovery steps have occurred since the 
-    uint32_t timeInRecovery = timeElapsed(currMicros, knockStartTime) - (configPage10.knock_duration * 100000UL);
-    uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
+    uint32_t timeInRecovery = timeElapsed(currMicros, knockStartTime) - TIME_HUNDRED_MILLIS.toUser(configPage10.knock_duration);
+    uint8_t recoverySteps = timeInRecovery / TIME_HUNDRED_MILLIS.toUser(configPage10.knock_recoveryStepTime);
     uint8_t recoveryTimingAdj = 0;
     if(recoverySteps > knockLastRecoveryStep) 
     { 

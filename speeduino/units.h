@@ -39,7 +39,7 @@
 template <typename TUser,
           typename TRaw>
 struct conversionFactor {
-    uint16_t scale;    ///< Scale factor, must be >0
+    TUser scale;       ///< Scale factor, must be >0
     int16_t translate; ///< Translation - can be negative
 
     /**
@@ -49,7 +49,7 @@ struct conversionFactor {
      * into the destination type after translation & scaling
      */
     constexpr TUser toUser(TRaw raw) const {
-        return ((TUser)raw + (TUser)translate) * (TUser)scale;
+        return ((TUser)raw + (TUser)translate) * scale;
     }
 
     /**
@@ -67,7 +67,7 @@ private:
     constexpr TRaw scaleUser(TUser user) const {
         // Since all conversionFactor instances are constexpr, compiler will heavily
         // optimize this. E.g. removing division or replacing with shift & multiply.
-        return user / (TUser)scale;
+        return user / scale;
     }
 };
 
@@ -121,6 +121,12 @@ static constexpr conversionFactor<uint16_t, uint8_t> TIME_TEN_MILLIS = { .scale=
  * We convert to/from secs/0.1
  */
 static constexpr conversionFactor<uint16_t, uint8_t> TIME_TWO_MILLIS = { .scale=50U, .translate=0U };
+
+/** @brief Time values stored in 100 milliseconds (tenth of a second)
+ * 
+ * We convert to/from µS
+ */
+static constexpr conversionFactor<uint32_t, uint8_t> TIME_HUNDRED_MILLIS = { .scale=100000UL, .translate=0U };
 
 /** @brief MAP values: kpa */
 static constexpr conversionFactor<uint16_t, uint8_t> MAP = { .scale=2U, .translate=0U };
