@@ -14,27 +14,27 @@ void __attribute__((optimize("Os"))) initialiseLaunchControl(config6 &page6, con
 
 static void updateClutchState(statuses &current, const config6 &page6)
 {
-  current.previousClutchTrigger = current.clutchTrigger;
+  current.launchStatus.previousClutchTrigger = current.launchStatus.clutchTrigger;
   // Only read the shared clutch input when a function using it is enabled.
   if (page6.flatSEnable || page6.launchEnabled)
   {
-    current.clutchTrigger = (page6.launchHiLo == launchPin.isPinHigh());
+    current.launchStatus.clutchTrigger = (page6.launchHiLo == launchPin.isPinHigh());
 
-    current.clutchTriggerActive = current.clutchTrigger; // TunerStudio indication
+    current.launchStatus.clutchTriggerActive = current.launchStatus.clutchTrigger; // TunerStudio indication
   }
 
   // Capture RPM on engagement, then retain it while the clutch is held or released.
-  if (current.clutchTrigger && !current.previousClutchTrigger)
+  if (current.launchStatus.clutchTrigger && !current.launchStatus.previousClutchTrigger)
   {
-    current.clutchEngagedRPM = current.RPM;
+    current.launchStatus.clutchEngagedRPM = current.RPM;
   }
 }
 
 static bool isLaunchArmed(const statuses &current, const config6 &page6, const config10 &page10)
 {
   return page6.launchEnabled
-      && current.clutchTrigger
-      && (current.clutchEngagedRPM < RPM_COARSE.toUser(page6.flatSArm))
+      && current.launchStatus.clutchTrigger
+      && (current.launchStatus.clutchEngagedRPM < RPM_COARSE.toUser(page6.flatSArm))
       && (current.TPS >= page10.lnchCtrlTPS);
 }
 
@@ -62,9 +62,9 @@ void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const con
 {
   updateClutchState(current, page6);
 
-  current.launchingHard = false;
-  current.hardLaunchActive = false;
-  current.flatShiftingHard = false;
+  current.launchStatus.launchingHard = false;
+  current.launchStatus.hardLaunchActive = false;
+  current.launchStatus.flatShiftingHard = false;
 
   if (isLaunchArmed(current, page6, page10))
   {
@@ -72,15 +72,15 @@ void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const con
     if (withinLaunchSpeedLimit(current, page2, page10)
         && aboveLaunchRpmLimit(current, page2, page6, page15))
     {
-      current.launchingHard = true;
-      current.hardLaunchActive = true;
+      current.launchStatus.launchingHard = true;
+      current.launchStatus.hardLaunchActive = true;
     }
   }
-  else if (page6.flatSEnable && current.clutchTrigger
-        && (current.clutchEngagedRPM >= RPM_COARSE.toUser(page6.flatSArm)))
+  else if (page6.flatSEnable && current.launchStatus.clutchTrigger
+        && (current.launchStatus.clutchEngagedRPM >= RPM_COARSE.toUser(page6.flatSArm)))
   {
-    const uint16_t flatRpmLimit = getHardCutRpmLimit(current.clutchEngagedRPM, page2, page15);
-    current.flatShiftingHard = (current.RPM > flatRpmLimit);
+    const uint16_t flatRpmLimit = getHardCutRpmLimit(current.launchStatus.clutchEngagedRPM, page2, page15);
+    current.launchStatus.flatShiftingHard = (current.RPM > flatRpmLimit);
   }
   else
   {

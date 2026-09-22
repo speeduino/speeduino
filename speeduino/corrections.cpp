@@ -570,7 +570,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionLaunch(void)
   // -40..+80) can reach 180, which overflows int8_t. The result is always within
   // [60, 180], so the final narrowing to uint8_t is safe.
   int16_t correction = (int16_t)NO_FUEL_CORRECTION;
-  if (currentStatus.launchingHard || currentStatus.launchingSoft) {
+  if (currentStatus.launchStatus.launchingHard || currentStatus.launchStatus.launchingSoft) {
     correction = correction + configPage6.lnchFuelAdd;
   }
   return (uint8_t)correction;
@@ -1072,21 +1072,21 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
 {
   //SoftCut rev limit for 2-step launch control.
   if(  configPage6.launchEnabled 
-    && currentStatus.clutchTrigger 
-    && (currentStatus.clutchEngagedRPM < RPM_COARSE.toUser( configPage6.flatSArm))
+    && currentStatus.launchStatus.clutchTrigger 
+    && (currentStatus.launchStatus.clutchEngagedRPM < RPM_COARSE.toUser( configPage6.flatSArm))
     && (currentStatus.RPM > RPM_COARSE.toUser( configPage6.lnchSoftLim))
     && (currentStatus.TPS >= configPage10.lnchCtrlTPS) 
     && ( (configPage2.vssMode == VSS_MODE_OFF) || (currentStatus.vss <= configPage10.lnchCtrlVss) )
     )
   {
-    currentStatus.launchingSoft = true;
-    currentStatus.softLaunchActive = true;
+    currentStatus.launchStatus.launchingSoft = true;
+    currentStatus.launchStatus.softLaunchActive = true;
     advance = configPage6.lnchRetard;
   }
   else
   {
-    currentStatus.launchingSoft = false;
-    currentStatus.softLaunchActive = false;
+    currentStatus.launchStatus.launchingSoft = false;
+    currentStatus.launchStatus.softLaunchActive = false;
   }
 
   return advance;
@@ -1096,9 +1096,9 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
 TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
 {
   if(configPage6.flatSEnable 
-  && currentStatus.clutchTrigger 
-  && (currentStatus.clutchEngagedRPM > RPM_COARSE.toUser( configPage6.flatSArm))
-  && (currentStatus.RPM > (currentStatus.clutchEngagedRPM - RPM_COARSE.toUser( configPage6.flatSSoftWin) ) ) )
+  && currentStatus.launchStatus.clutchTrigger 
+  && (currentStatus.launchStatus.clutchEngagedRPM > RPM_COARSE.toUser( configPage6.flatSArm))
+  && (currentStatus.RPM > (currentStatus.launchStatus.clutchEngagedRPM - RPM_COARSE.toUser( configPage6.flatSSoftWin) ) ) )
   {
     currentStatus.flatShiftSoftCut = true;
     advance = configPage6.flatSRetard;

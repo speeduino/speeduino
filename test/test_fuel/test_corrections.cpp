@@ -707,40 +707,40 @@ static void test_corrections_bat(void)
 uint8_t correctionLaunch(void);
 
 static void test_corrections_launch_inactive(void) {
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  currentStatus.launchStatus.launchingHard = false;
+  currentStatus.launchStatus.launchingSoft = false;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(100U, correctionLaunch() );
 }
 
 static void test_corrections_launch_hard(void) {
-  currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = false;
+  currentStatus.launchStatus.launchingHard = true;
+  currentStatus.launchStatus.launchingSoft = false;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
 static void test_corrections_launch_soft(void) {
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = true;
+  currentStatus.launchStatus.launchingHard = false;
+  currentStatus.launchStatus.launchingSoft = true;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
 static void test_corrections_launch_both(void) {
-  currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = true;
+  currentStatus.launchStatus.launchingHard = true;
+  currentStatus.launchStatus.launchingSoft = true;
   configPage6.lnchFuelAdd = 25;
 
   TEST_ASSERT_EQUAL(125U, correctionLaunch() );
 }
 
 static void test_corrections_launch_removeFuel(void) {
-  currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = true;
+  currentStatus.launchStatus.launchingHard = true;
+  currentStatus.launchStatus.launchingSoft = true;
   configPage6.lnchFuelAdd = -25;
 
   TEST_ASSERT_EQUAL(75U, correctionLaunch() );
@@ -750,8 +750,8 @@ static void test_corrections_launch_maxAdd(void) {
   //lnchFuelAdd max is +80 (see speeduino.ini). 100 + 80 = 180, which exceeds
   //int8_t range - the accumulator must be wide enough to hold it without relying
   //on implementation-defined narrowing.
-  currentStatus.launchingHard = true;
-  currentStatus.launchingSoft = false;
+  currentStatus.launchStatus.launchingHard = true;
+  currentStatus.launchStatus.launchingSoft = false;
   configPage6.lnchFuelAdd = 80;
 
   TEST_ASSERT_EQUAL(180U, correctionLaunch() );
@@ -759,8 +759,8 @@ static void test_corrections_launch_maxAdd(void) {
 
 static void test_corrections_launch_minAdd(void) {
   //lnchFuelAdd min is -40 (see speeduino.ini). 100 - 40 = 60.
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = true;
+  currentStatus.launchStatus.launchingHard = false;
+  currentStatus.launchStatus.launchingSoft = true;
   configPage6.lnchFuelAdd = -40;
 
   TEST_ASSERT_EQUAL(60U, correctionLaunch() );
@@ -1620,8 +1620,8 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.runSecs = 255; 
   currentStatus.battery10 = 90;  
   currentStatus.IAT = 100;
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  currentStatus.launchStatus.launchingHard = false;
+  currentStatus.launchStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
   currentStatus.rotationStatus = EngineRotationStatus::Running;
   currentStatus.ASEValue = 100U;
@@ -1708,8 +1708,8 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.IAT = temperatureRemoveOffset(100);
   currentStatus.baro = 100;
   currentStatus.ethanolPct = 100;
-  currentStatus.launchingHard = false;
-  currentStatus.launchingSoft = false;
+  currentStatus.launchStatus.launchingHard = false;
+  currentStatus.launchStatus.launchingSoft = false;
   currentStatus.AEamount = 100U;
   currentStatus.ASEValue = 100U;
   currentStatus.TPSlast = 0;
