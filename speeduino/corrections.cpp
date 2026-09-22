@@ -1080,13 +1080,11 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
     )
   {
     currentStatus.launchStatus.launchingSoft = true;
-    currentStatus.launchStatus.softLaunchActive = true;
     advance = configPage6.lnchRetard;
   }
   else
   {
     currentStatus.launchStatus.launchingSoft = false;
-    currentStatus.launchStatus.softLaunchActive = false;
   }
 
   return advance;

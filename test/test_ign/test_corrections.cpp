@@ -577,14 +577,11 @@ static void test_correctionSoftLaunch_on(void) {
     configPage6.lnchRetard = -3;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(-8));
     TEST_ASSERT_TRUE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_TRUE(currentStatus.launchStatus.softLaunchActive);
 
     configPage6.lnchRetard = 3;
     currentStatus.launchStatus.launchingSoft = false;
-    currentStatus.launchStatus.softLaunchActive = false;
     TEST_ASSERT_EQUAL(configPage6.lnchRetard, correctionSoftLaunch(8));
     TEST_ASSERT_TRUE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_TRUE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_disabled(void) {
@@ -594,7 +591,6 @@ static void test_correctionSoftLaunch_off_disabled(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
@@ -604,7 +600,6 @@ static void test_correctionSoftLaunch_off_noclutchtrigger(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
@@ -614,7 +609,6 @@ static void test_correctionSoftLaunch_off_clutchrpmlow(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_rpmlimit(void) {
@@ -624,7 +618,6 @@ static void test_correctionSoftLaunch_off_rpmlimit(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_tpslow(void) {
@@ -634,7 +627,6 @@ static void test_correctionSoftLaunch_off_tpslow(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch_off_vsslimit(void) {
@@ -643,7 +635,6 @@ static void test_correctionSoftLaunch_off_vsslimit(void) {
 
     TEST_ASSERT_EQUAL(-8, correctionSoftLaunch(-8));
     TEST_ASSERT_FALSE(currentStatus.launchStatus.launchingSoft);
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.softLaunchActive);
 }
 
 static void test_correctionSoftLaunch(void) {
