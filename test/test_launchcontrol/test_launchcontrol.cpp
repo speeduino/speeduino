@@ -1,5 +1,6 @@
 #include "../test_utils.h"
 #include "launch_fixture.h"
+#include "units.h"
 
 static void test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet(void)
 {
@@ -102,19 +103,19 @@ static void assert_rpm_boundary(launch_fixture &fixture, uint16_t limit, bool fl
 {
     fixture.current.RPM = limit - 1U;
     fixture.update();
-    fixture.assertState(false, false);
+    fixture.assertState(false, false, false);
 
     fixture.current.RPM = limit;
     fixture.update();
-    fixture.assertState(false, false);
+    fixture.assertState(false, false, false);
     
     fixture.current.RPM = limit + 1U;
     fixture.update();
-    fixture.assertState(!flatShift, flatShift);
+    fixture.assertState(!flatShift, !flatShift && fixture.current.RPM > RPM_COARSE.toUser(fixture.page6.lnchSoftLim), flatShift);
     
     fixture.current.RPM = limit;
     fixture.update();
-    fixture.assertState(false, false); // Clear an already active cut at equality
+    fixture.assertState(false, false, false); // Clear an already active cut at equality
 }
 
 static void test_launch_rpm_boundaries(void)
@@ -150,15 +151,15 @@ static void test_launch_tps_boundary(void)
 
     fixture.current.TPS = 49;
     fixture.update();
-    fixture.assertState(false, false);
+    fixture.assertState(false, false, false);
 
     fixture.current.TPS = 50;
     fixture.update();
-    fixture.assertState(true, false);
+    fixture.assertState(true, true, false);
 
     fixture.current.TPS = 51;
     fixture.update();
-    fixture.assertState(true, false);
+    fixture.assertState(true, true, false);
 }
 
 static void test_launch_speed_boundary(void)
@@ -172,19 +173,19 @@ static void test_launch_speed_boundary(void)
         fixture.page2.vssMode = mode;
         fixture.current.vss = 49;
         fixture.update();
-        fixture.assertState(true, false);
+        fixture.assertState(true, true, false);
 
         fixture.current.vss = 50;
         fixture.update();
-        fixture.assertState(false, false);
+        fixture.assertState(false, false, false);
 
         fixture.current.vss = 51;
         fixture.update();
-        fixture.assertState(false, false);
+        fixture.assertState(false, false, false);
     }
     fixture.page2.vssMode = 0;
     fixture.update();
-    fixture.assertState(true, false); // Ignore vehicle speed when VSS is disabled
+    fixture.assertState(true, true, false); // Ignore vehicle speed when VSS is disabled
 }
 
 static void test_clutch_arming_boundary(void)
@@ -195,15 +196,15 @@ static void test_clutch_arming_boundary(void)
 
     fixture.current.launchStatus.clutchEngagedRPM = 3999;
     fixture.update();
-    fixture.assertState(true, false);
+    fixture.assertState(true, true, false);
 
     fixture.current.launchStatus.clutchEngagedRPM = 4000;
     fixture.update();
-    fixture.assertState(false, true); // Equality belongs to flat shift
+    fixture.assertState(false, false, true); // Equality belongs to flat shift
 
     fixture.current.launchStatus.clutchEngagedRPM = 4001;
     fixture.update();
-    fixture.assertState(false, true);
+    fixture.assertState(false, false, true);
 }
 
 static void test_clutch_rpm_is_captured_on_engagement(void)
@@ -223,22 +224,22 @@ static void test_clutch_rpm_is_captured_on_engagement(void)
     fixture.update();
     TEST_ASSERT_TRUE(fixture.current.launchStatus.previousClutchTrigger);
     TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
-    fixture.assertState(true, false);
+    fixture.assertState(true, true, false);
 
     fixture.setClutch(false);
     fixture.update();
     TEST_ASSERT_FALSE(fixture.current.launchStatus.clutchTrigger);
     TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
-    fixture.assertState(false, false);
+    fixture.assertState(false, false, false);
 
     fixture.setClutch(true);
     fixture.current.RPM = 6000;
     fixture.update();
     TEST_ASSERT_EQUAL_UINT16(6000, fixture.current.launchStatus.clutchEngagedRPM);
-    fixture.assertState(false, false); // No full cut at the newly captured RPM
+    fixture.assertState(false, false, false); // No full cut at the newly captured RPM
     fixture.current.RPM = 6001;
     fixture.update();
-    fixture.assertState(false, true);
+    fixture.assertState(false, false, true);
 }
 
 void testLaunchControl(void)
