@@ -1110,14 +1110,14 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
   return advance;
 }
 
-static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
+static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard, uint32_t currMicros)
 {
   uint8_t tmpKnockRetard = curKnockRetard;
   //Check whether we are in knock recovery
-  if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_duration * 100000UL) ) //knock_duration is in seconds*10
+  if( hasIntervalElapsed(currMicros, knockStartTime, configPage10.knock_duration * 100000UL) ) //knock_duration is in seconds*10
   {
     //Calculate how many recovery steps have occurred since the 
-    uint32_t timeInRecovery = timeElapsed(micros(), knockStartTime) - (configPage10.knock_duration * 100000UL);
+    uint32_t timeInRecovery = timeElapsed(currMicros, knockStartTime) - (configPage10.knock_duration * 100000UL);
     uint8_t recoverySteps = timeInRecovery / (configPage10.knock_recoveryStepTime * 100000UL);
     uint8_t recoveryTimingAdj = 0;
     if(recoverySteps > knockLastRecoveryStep) 
@@ -1144,23 +1144,23 @@ static inline uint8_t _calculateKnockRecovery(uint8_t curKnockRetard)
   return tmpKnockRetard;
 }
 
-static inline uint8_t applyAdditionalDigitalKnockRetard(uint8_t knockRetard)
+static inline uint8_t applyAdditionalDigitalKnockRetard(uint8_t knockRetard, uint32_t currMicros)
 {
   if(!currentStatus.knockPulseDetected
-    || !hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL))
+    || !hasIntervalElapsed(currMicros, knockStartTime, configPage10.knock_stepTime * 1000UL))
   {
     return knockRetard;
   }
 
   currentStatus.knockCount++;
-  knockStartTime = micros();
+  knockStartTime = currMicros;
   knockLastRecoveryStep = 0;
   return configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
 }
 
 /** Ignition knock (retard) correction.
  */
-TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance)
+TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros)
 {
   byte tmpKnockRetard = 0;
 
@@ -1174,13 +1174,13 @@ TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance)
         //Knock retard is currently active already.
         tmpKnockRetard = currentStatus.knockRetard;
 
-        tmpKnockRetard = applyAdditionalDigitalKnockRetard(tmpKnockRetard);
-        tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
+        tmpKnockRetard = applyAdditionalDigitalKnockRetard(tmpKnockRetard, currMicros);
+        tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard, currMicros);
       }
       else
       {
         //Knock currently inactive but needs to be active now
-        knockStartTime = micros();
+        knockStartTime = currMicros;
         tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize); //
         currentStatus.knockRetardActive = true;
         knockLastRecoveryStep = 0;
@@ -1195,7 +1195,7 @@ TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance)
     {
       //Check if additional knock events occurred
       //Additional knock events are when the step time has passed and the voltage remains above the threshold
-      if( hasIntervalElapsed(micros(), knockStartTime, configPage10.knock_stepTime * 1000UL) )
+      if( hasIntervalElapsed(currMicros, knockStartTime, configPage10.knock_stepTime * 1000UL) )
       {
         //Sufficient time has passed, check the current knock value
         uint16_t tmpKnockReading = getAnalogKnock();
@@ -1204,11 +1204,11 @@ TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance)
         {
           currentStatus.knockCount++;
           tmpKnockRetard = configPage10.knock_firstStep + ((currentStatus.knockCount - configPage10.knock_count) * configPage10.knock_stepSize);
-          knockStartTime = micros();
+          knockStartTime = currMicros;
           knockLastRecoveryStep = 0;
         }   
       }
-      tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard);
+      tmpKnockRetard = _calculateKnockRecovery(tmpKnockRetard, currMicros);
     }
     else
     {
@@ -1220,7 +1220,7 @@ TESTABLE_STATIC int8_t correctionKnockTiming(int8_t advance)
         if(tmpKnockReading > configPage10.knock_threshold)
         {
           //Knock detected
-          knockStartTime = micros();
+          knockStartTime = currMicros;
           tmpKnockRetard = configPage10.knock_firstStep; //
           currentStatus.knockRetardActive = true;
           knockLastRecoveryStep = 0;
@@ -1347,7 +1347,7 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionNitrous(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-  advance = correctionKnockTiming(advance);
+  advance = correctionKnockTiming(advance, micros());
 
   advance = correctionDFCOignition(advance);
 
