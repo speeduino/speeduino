@@ -49,7 +49,8 @@ struct launch_fixture
 
     void update()
     {
-        updateLaunchAndFlatShift(current, page2, page6, page10, page15);
+        extern void updateLaunchFlagsCore(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15);
+        updateLaunchFlagsCore(current, page2, page6, page10, page15);
     }
 
     void assertState(bool hardLaunch, bool softLaunch, bool flatShift)
