@@ -226,6 +226,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     //-----------------------------------------------------------------------------------------------------
     readPolledSensors(currentStatus.LOOP_TIMER);
     boostControl(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10, configPage15);
+    fanControl(currentStatus, configPage2, configPage6, configPage15);
 
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
@@ -332,7 +333,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           if(syncSDLog()) { msSinceLastSDSync = 0; } //Run SD sync and reset  
         }
       #endif
-
     } //1Hz timer
 
     // Run idlecontrol every loop for stepper idle...
@@ -377,9 +377,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             currentStatus.rotationStatus = EngineRotationStatus::Cranking;
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); }
-
-            //Check whether the user has selected to disable to the fan during cranking
-            if(configPage2.fanWhenCranking == 0) { fanOff(); }
           }
         }
 

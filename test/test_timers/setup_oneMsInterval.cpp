@@ -10,7 +10,6 @@ void setup_oneMsInterval(void)
   // Default the global config state to "do nothing" branches inside oneMSInterval().
   configPage2.tachoDiv = 0U;
   configPage2.tachoDuration = 6U;
-  configPage2.fanEnable = 0U;
   configPage2.flexEnabled = false;
   configPage2.fpPrime = 0U;
   configPage2.primingDelay = 0U;
