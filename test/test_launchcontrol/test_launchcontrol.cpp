@@ -242,6 +242,66 @@ static void test_clutch_rpm_is_captured_on_engagement(void)
     fixture.assertState(false, false, true);
 }
 
+static launch_fixture setup_SoftFlatShift(void) {
+    launch_fixture fixture;
+    fixture.page6.flatSEnable = 1;
+    fixture.page6.flatSArm = 10;
+    fixture.page6.flatSSoftWin = 10;
+    
+    fixture.current.launchStatus.clutchTrigger = 1;
+    fixture.current.launchStatus.clutchEngagedRPM = ((fixture.page6.flatSArm) * 100) + 500;
+    fixture.current.setRpm(fixture.current.launchStatus.clutchEngagedRPM + 600);
+
+    return fixture;
+}
+
+
+static void test_correctionSoftFlatShift_on(void) {
+    auto fixture = setup_SoftFlatShift();
+    fixture.init();
+    fixture.setClutch(true);
+    fixture.update();
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftSoftCut);
+}
+
+static void test_correctionSoftFlatShift_off_disabled(void) {
+    auto fixture = setup_SoftFlatShift();
+    fixture.page6.flatSEnable = false;
+    fixture.init();
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+}
+
+static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
+    auto fixture = setup_SoftFlatShift();
+    fixture.init();
+    fixture.setClutch(false);
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+}
+
+static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
+    auto fixture = setup_SoftFlatShift();
+    fixture.current.launchStatus.clutchEngagedRPM = ((fixture.page6.flatSArm) * 100) - 500;
+    fixture.init();
+    fixture.setClutch(true);
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+}
+
+static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
+    auto fixture = setup_SoftFlatShift();
+    fixture.init();
+    fixture.current.setRpm( (fixture.current.launchStatus.clutchEngagedRPM - (fixture.page6.flatSSoftWin * 100) ) - 100);
+    fixture.setClutch(true);
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+}
+
 void testLaunchControl(void)
 {
     SET_UNITY_FILENAME() {
@@ -255,5 +315,10 @@ void testLaunchControl(void)
         RUN_TEST_P(test_checkLaunchAndFlatShift_enablesFlatShiftWhenLaunchIsDisabled);
         RUN_TEST_P(test_checkLaunchAndFlatShift_usesInvertedLaunchInput);
         RUN_TEST_P(test_checkLaunchAndFlatShift_appliesRollingCutDelta);
+        RUN_TEST_P(test_correctionSoftFlatShift_on);
+        RUN_TEST_P(test_correctionSoftFlatShift_off_disabled);
+        RUN_TEST_P(test_correctionSoftFlatShift_off_noclutchtrigger);
+        RUN_TEST_P(test_correctionSoftFlatShift_off_clutchrpmtoolow);
+        RUN_TEST_P(test_correctionSoftFlatShift_off_rpmnotinwindow);
     }
 }
