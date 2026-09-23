@@ -94,6 +94,6 @@ void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const con
                                       && aboveSoftLaunchRpmLimit(current, page6);
   current.launchStatus.flatShiftingHard =  isFlatShifting
                                         && aboveFlatShiftHardRpmLimit(current, page2, page15);
-  current.launchStatus.flatShiftSoftCut =  isFlatShifting
+  current.launchStatus.flatShiftingSoft =  isFlatShifting
                                         && aboveFlatShiftSoftRpmLimit(current, page6);
 }

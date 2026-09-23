@@ -586,14 +586,14 @@ static void test_correctionSoftLaunch(void) {
 extern int8_t correctionSoftFlatShift(int8_t advance);
 
 static void test_correctionSoftFlatShift_on(void) {
-    currentStatus.launchStatus.flatShiftSoftCut = true;
+    currentStatus.launchStatus.flatShiftingSoft = true;
     configPage6.flatSRetard = -3;
 
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(-8));
 }
 
 static void test_correctionSoftFlatShift_off(void) {
-    currentStatus.launchStatus.flatShiftSoftCut = false;
+    currentStatus.launchStatus.flatShiftingSoft = false;
     configPage6.flatSRetard = -3;
 
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
