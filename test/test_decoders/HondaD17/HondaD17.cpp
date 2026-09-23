@@ -5,12 +5,14 @@
 
 static void test_getCrankAngle(void)
 {
-  extern volatile unsigned long toothLastToothTime;
+  extern volatile uint32_t toothLastToothTime;
   extern volatile int toothCurrentCount;
-      
+  extern bool revolutionOne;      
   auto decoder = triggerSetup_HondaD17();
 
   // Use deterministic time->angle conversion
+  CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
+  revolutionOne = false;
   setAngleConverterRevolutionTime(2000);
 
   // Setup common deterministic state
