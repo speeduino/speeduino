@@ -105,6 +105,7 @@ struct launchStatus_t
   bool launchingSoft : 1;
   bool launchingHard : 1;
   bool flatShiftingHard : 1;
+  bool flatShiftSoftCut : 1;
   bool previousClutchTrigger : 1;
   bool clutchTrigger : 1;
   uint16_t clutchEngagedRPM = 0; ///< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift  
@@ -113,6 +114,7 @@ struct launchStatus_t
   : launchingSoft(false)
   , launchingHard(false)
   , flatShiftingHard(false)
+  , flatShiftSoftCut(false)
   , previousClutchTrigger(false)
   , clutchTrigger(false)
   {
@@ -227,9 +229,6 @@ struct statuses {
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool allowLegacyComms : 1; ///< 
 
-  // Status5 fields as defined in the INI. 
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool flatShiftSoftCut : 1; ///< Is the flat shift soft cut active (true) or not (false) 
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool secondSparkTableActive : 1; ///< Secondary spark table is use (true) or not (false)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.

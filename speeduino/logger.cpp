@@ -96,7 +96,7 @@ static byte buildStatus5(const statuses &current)
 {
   bool bits[] = {
     false, // Unused
-    current.flatShiftSoftCut,
+    current.launchStatus.flatShiftSoftCut,
     current.secondSparkTableActive,
     current.knockRetardActive,
     current.knockPulseDetected,
