@@ -2,6 +2,7 @@
 #include "units.h"
 #include "src/pins/inputPin.h"
 #include "unit_testing.h"
+#include "bit_manip.h"
 
 TESTABLE_STATIC inputPin_t launchPin;
 
@@ -14,17 +15,18 @@ void __attribute__((optimize("Os"))) initialiseLaunchControl(config6 &page6, con
 
 static void updateClutchState(statuses &current, const config6 &page6)
 {
-  current.launchStatus.previousClutchTrigger = current.launchStatus.clutchTrigger;
   // Only read the shared clutch input when a function using it is enabled.
   if (page6.flatSEnable || page6.launchEnabled)
   {
-    current.launchStatus.clutchTrigger = (page6.launchHiLo == launchPin.isPinHigh());
-  }
+    current.launchStatus.previousClutchTrigger = current.launchStatus.clutchTrigger;
 
-  // Capture RPM on engagement, then retain it while the clutch is held or released.
-  if (current.launchStatus.clutchTrigger && !current.launchStatus.previousClutchTrigger)
-  {
-    current.launchStatus.clutchEngagedRPM = current.RPM;
+    current.launchStatus.clutchTrigger = (page6.launchHiLo == launchPin.isPinHigh());
+
+    // Capture RPM on engagement, then retain it while the clutch is held or released.
+    if (current.launchStatus.clutchTrigger && !current.launchStatus.previousClutchTrigger)
+    {
+      current.launchStatus.clutchEngagedRPM = current.RPM;
+    }
   }
 }
 
@@ -80,20 +82,31 @@ static bool aboveFlatShiftSoftRpmLimit(const statuses &current, const config6 &p
   return current.RPM > (current.launchStatus.clutchEngagedRPM - RPM_COARSE.toUser(page6.flatSSoftWin));
 }
 
-void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
+TESTABLE_STATIC void updateLaunchFlagsCore(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
 {
   updateClutchState(current, page6);
 
   bool isLaunching = isLaunchArmed(current, page6, page10)
                   && withinLaunchSpeedLimit(current, page2, page10);
-  bool isFlatShifting =  !isLaunching 
-                      && isFlatShiftActive(current, page6);
   current.launchStatus.launchingHard =   isLaunching
                                       && aboveHardLaunchRpmLimit(current, page2, page6, page15);
   current.launchStatus.launchingSoft =   isLaunching
                                       && aboveSoftLaunchRpmLimit(current, page6);
+
+  bool isFlatShifting =  !isLaunching 
+                      && isFlatShiftActive(current, page6);
   current.launchStatus.flatShiftingHard =  isFlatShifting
                                         && aboveFlatShiftHardRpmLimit(current, page2, page15);
   current.launchStatus.flatShiftingSoft =  isFlatShifting
                                         && aboveFlatShiftSoftRpmLimit(current, page6);
 }
+
+// LCOV_EXCL_START
+void updateLaunchAndFlatShift(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const config15 &page15)
+{
+  if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_10HZ)) 
+  {
+    updateLaunchFlagsCore(current, page2, page6, page10, page15);
+  }
+}
+// LCOV_EXCL_STOP
