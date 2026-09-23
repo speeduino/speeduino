@@ -1082,7 +1082,7 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
  */
 TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
 {
-  if (currentStatus.launchStatus.flatShiftSoftCut)
+  if (currentStatus.launchStatus.flatShiftingSoft)
   {
     advance = configPage6.flatSRetard;
   }
