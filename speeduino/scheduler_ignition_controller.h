@@ -51,8 +51,8 @@ void calculateIgnitionAngles(const config2 &page2, const config4 &page4, const c
  * @brief Schedule all ignition channels
  * 
  * @param current Current system state
+ * @param page4 The Tune
  * @param crankAngle Crank angle
- * @param dwellTime Target dwell time
  */
 void setIgnitionChannels(const statuses &current, const config4 &page4, uint16_t crankAngle);
 
