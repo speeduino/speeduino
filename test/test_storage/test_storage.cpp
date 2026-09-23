@@ -43,6 +43,7 @@ static void test_loadAllPages(void)
     setStorageAPI(getOneByteStorageApi(8192, 8192, BUFFER_MARKER));
     loadAllPages();
     for (uint8_t page = MIN_PAGE_NUM; page<MAX_PAGE_NUM; ++page) {
+        if (page == scatterPage) { continue; } // scatter page is RAM-only, not loaded from EEPROM
         assert_page(page, BUFFER_MARKER);
     }
 }
