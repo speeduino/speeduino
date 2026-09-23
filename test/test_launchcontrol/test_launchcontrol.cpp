@@ -261,7 +261,7 @@ static void test_correctionSoftFlatShift_on(void) {
     fixture.init();
     fixture.setClutch(true);
     fixture.update();
-    TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftSoftCut);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftingSoft);
 }
 
 static void test_correctionSoftFlatShift_off_disabled(void) {
@@ -270,7 +270,7 @@ static void test_correctionSoftFlatShift_off_disabled(void) {
     fixture.init();
     fixture.update();
 
-    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
 }
 
 static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
@@ -279,7 +279,7 @@ static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
     fixture.setClutch(false);
     fixture.update();
 
-    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
 }
 
 static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
@@ -289,7 +289,7 @@ static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
     fixture.setClutch(true);
     fixture.update();
 
-    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
 }
 
 static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
@@ -299,7 +299,7 @@ static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
     fixture.setClutch(true);
     fixture.update();
 
-    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftSoftCut);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
 }
 
 void testLaunchControl(void)

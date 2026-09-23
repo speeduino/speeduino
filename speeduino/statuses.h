@@ -105,7 +105,7 @@ struct launchStatus_t
   bool launchingSoft : 1;
   bool launchingHard : 1;
   bool flatShiftingHard : 1;
-  bool flatShiftSoftCut : 1;
+  bool flatShiftingSoft : 1;
   bool previousClutchTrigger : 1;
   bool clutchTrigger : 1;
   uint16_t clutchEngagedRPM = 0; ///< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift  
@@ -114,7 +114,7 @@ struct launchStatus_t
   : launchingSoft(false)
   , launchingHard(false)
   , flatShiftingHard(false)
-  , flatShiftSoftCut(false)
+  , flatShiftingSoft(false)
   , previousClutchTrigger(false)
   , clutchTrigger(false)
   {
