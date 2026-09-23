@@ -1082,15 +1082,10 @@ TESTABLE_INLINE_STATIC int8_t correctionSoftLaunch(int8_t advance)
  */
 TESTABLE_INLINE_STATIC int8_t correctionSoftFlatShift(int8_t advance)
 {
-  if(configPage6.flatSEnable 
-  && currentStatus.launchStatus.clutchTrigger 
-  && (currentStatus.launchStatus.clutchEngagedRPM > RPM_COARSE.toUser( configPage6.flatSArm))
-  && (currentStatus.RPM > (currentStatus.launchStatus.clutchEngagedRPM - RPM_COARSE.toUser( configPage6.flatSSoftWin) ) ) )
+  if (currentStatus.launchStatus.flatShiftSoftCut)
   {
-    currentStatus.launchStatus.flatShiftSoftCut = true;
     advance = configPage6.flatSRetard;
   }
-  else { currentStatus.launchStatus.flatShiftSoftCut = false; }
 
   return advance;
 }

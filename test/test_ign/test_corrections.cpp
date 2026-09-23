@@ -585,76 +585,23 @@ static void test_correctionSoftLaunch(void) {
 
 extern int8_t correctionSoftFlatShift(int8_t advance);
 
-static void setup_correctionSoftFlatShift(void) {
-    configPage6.flatSEnable = 1;
-    configPage6.flatSArm = 10;
-    configPage6.flatSSoftWin = 10;
-    
-    currentStatus.launchStatus.clutchTrigger = 1;
-    currentStatus.launchStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) + 500;
-    currentStatus.setRpm( currentStatus.launchStatus.clutchEngagedRPM + 600);
-
-    currentStatus.launchStatus.flatShiftSoftCut = false;
-}
-
 static void test_correctionSoftFlatShift_on(void) {
-    setup_correctionSoftFlatShift();
+    currentStatus.launchStatus.flatShiftSoftCut = true;
     configPage6.flatSRetard = -3;
 
     TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(-8));
-    TEST_ASSERT_TRUE(currentStatus.launchStatus.flatShiftSoftCut);
+}
 
+static void test_correctionSoftFlatShift_off(void) {
     currentStatus.launchStatus.flatShiftSoftCut = false;
-    TEST_ASSERT_EQUAL(configPage6.flatSRetard, correctionSoftFlatShift(3));
-    TEST_ASSERT_TRUE(currentStatus.launchStatus.flatShiftSoftCut);
-}
-
-static void test_correctionSoftFlatShift_off_disabled(void) {
-    setup_correctionSoftFlatShift();
     configPage6.flatSRetard = -3;
-    configPage6.flatSEnable = 0;
 
-    currentStatus.launchStatus.flatShiftSoftCut = true;
     TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.flatShiftSoftCut);
-}
-
-static void test_correctionSoftFlatShift_off_noclutchtrigger(void) {
-    setup_correctionSoftFlatShift();
-    configPage6.flatSRetard = -3;
-    currentStatus.launchStatus.clutchTrigger = 0;
-
-    currentStatus.launchStatus.flatShiftSoftCut = true;
-    TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.flatShiftSoftCut);
-}
-
-static void test_correctionSoftFlatShift_off_clutchrpmtoolow(void) {
-    setup_correctionSoftFlatShift();
-    configPage6.flatSRetard = -3;
-    currentStatus.launchStatus.clutchEngagedRPM = ((configPage6.flatSArm) * 100) - 500;
-
-    currentStatus.launchStatus.flatShiftSoftCut = true;
-    TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.flatShiftSoftCut);
-}
-
-static void test_correctionSoftFlatShift_off_rpmnotinwindow(void) {
-    setup_correctionSoftFlatShift();
-    configPage6.flatSRetard = -3;
-    currentStatus.setRpm( (currentStatus.launchStatus.clutchEngagedRPM - (configPage6.flatSSoftWin * 100) ) - 100);
-
-    currentStatus.launchStatus.flatShiftSoftCut = true;
-    TEST_ASSERT_EQUAL(-8, correctionSoftFlatShift(-8));
-    TEST_ASSERT_FALSE(currentStatus.launchStatus.flatShiftSoftCut);
 }
 
 static void test_correctionSoftFlatShift(void) {
     RUN_TEST_P(test_correctionSoftFlatShift_on);
-    RUN_TEST_P(test_correctionSoftFlatShift_off_disabled);
-    RUN_TEST_P(test_correctionSoftFlatShift_off_noclutchtrigger);
-    RUN_TEST_P(test_correctionSoftFlatShift_off_clutchrpmtoolow);
-    RUN_TEST_P(test_correctionSoftFlatShift_off_rpmnotinwindow);
+    RUN_TEST_P(test_correctionSoftFlatShift_off);
 }
 
 extern int8_t correctionKnockTiming(int8_t advance, uint32_t currMicros, uint8_t (*fnGetAnalogKnock)(void));
