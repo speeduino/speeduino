@@ -125,7 +125,7 @@ void auxChannelControl(statuses &current, const config9 &page9)
     if(_auxEnabled
     && BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ))
     {
-        auxChannelControl(current, page9, sendCancommand, readAuxanalog, digitalRead);
+        auxChannelControl(current, page9, sendCancommand, readAnalogSensor, digitalRead);
     }
 }
 // LCOV_EXCL_STOP

@@ -97,7 +97,7 @@ static inline uint16_t readAnalogPin(uint8_t pin)
 
 #if defined(ANALOG_ISR)
 static volatile uint16_t AnChannel[16];
-static inline uint16_t readAnalogSensor(uint8_t pin) {
+uint16_t readAnalogSensor(uint8_t pin) {
   return AnChannel[pin-A0];
 }
 static inline uint16_t readMAPSensor(uint8_t pin) {
@@ -140,7 +140,7 @@ ISR(ADC_vect)
   AnChannel[nChannel-1] = (result_high << 8) | result_low;
 }
 #else
-static inline uint16_t readAnalogSensor(uint8_t pin) {
+uint16_t readAnalogSensor(uint8_t pin) {
   return readAnalogPin(pin);
 }
 static inline uint16_t readMAPSensor(uint8_t pin) {
@@ -958,9 +958,3 @@ void vssPulse(void)
 
   vssTimes[vssIndex] = micros();
 }
-
-// Read the Aux analog value for pin set by analogPin 
-uint16_t readAuxanalog(uint8_t analogPin)
-{
-  return readAnalogSensor(analogPin); // readAnalogSensor is inlined within this CPP file.
-} 
