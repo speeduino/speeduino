@@ -37,6 +37,7 @@
 #include "src/controllers/nitrous/nitrousController.h"
 #include "src/controllers/progammableIO/programmableIOControl.h"
 #include "src/controllers/tacho/tachoController.h"
+#include "src/controllers/auxChannels/auxChannelController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -175,6 +176,7 @@ void initialiseAll(void)
     initialiseCorrections();
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
     initialiseADC();
+    initAuxChannels(currentStatus, configPage9);
     initialiseMAPBaro();
     initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
