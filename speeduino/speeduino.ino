@@ -284,6 +284,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_10HZ) { writeSDLogEntry(); }
       #endif
     }
+    auxChannelControl(currentStatus, configPage9);
     if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ))
     {
       nitrousControl();
@@ -297,9 +298,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
       #ifdef SD_LOGGING
         if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_4HZ) { writeSDLogEntry(); }
-      #endif  
-           
-      auxChannelControl(currentStatus, configPage9);
+      #endif            
     } //4Hz timer
     if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
