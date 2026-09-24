@@ -964,11 +964,3 @@ uint16_t readAuxanalog(uint8_t analogPin)
 {
   return readAnalogSensor(analogPin); // readAnalogSensor is inlined within this CPP file.
 } 
-
-uint16_t readAuxdigital(uint8_t digitalPin)
-{
-  //read the Aux digital value for pin set by digitalPin 
-  unsigned int tempReading;
-  tempReading = digitalRead(digitalPin); 
-  return tempReading;
-} 
