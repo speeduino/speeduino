@@ -120,7 +120,8 @@ TESTABLE_STATIC void auxChannelControl(statuses &current, const config9 &page9, 
 // LCOV_EXCL_START
 void auxChannelControl(statuses &current, const config9 &page9)
 {
-    if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
+    if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL)
+    && BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ))
     {
         auxChannelControl(current, page9, sendCancommand, readAuxanalog, readAuxdigital);
     }
