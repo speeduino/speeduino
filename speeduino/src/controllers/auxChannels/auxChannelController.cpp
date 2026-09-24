@@ -5,17 +5,19 @@
 #include "comms_secondary.h"
 #include "globals.h"
 
+TESTABLE_STATIC bool _auxEnabled = false;
+
 void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const config9 &page9)
 {
     //The following checks the aux inputs and initialises pins if required
-    BIT_CLEAR(statusSensors, BIT_SENSORS_AUX_ENBL);
+    _auxEnabled = false;
     for (uint8_t AuxinChan = 0U; AuxinChan <16U ; AuxinChan++)
     {
         current.current_caninchannel = AuxinChan;                   
         if (((page9.caninput_sel[current.current_caninchannel]&12U) == 4U)
         && ((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))))
         { //if current input channel is enabled as external input in caninput_selxb(bits 2:3) and secondary serial or internal canbus is enabled(and is mcu supported)                 
-            BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
+            _auxEnabled = true;
         }
         else if ((((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))) && (page9.caninput_sel[current.current_caninchannel]&12U) == 8U)
                 || (((page9.enable_secondarySerial == 0U) && ( (page9.enable_intcan == 1U) && (page9.intcan_available == 0U) )) && (page9.caninput_sel[current.current_caninchannel]&3U) == 2U)  
@@ -31,7 +33,7 @@ void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const co
             {
                 //Channel is active and analog
                 pinMode( pinNumber, INPUT);
-                BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
+                _auxEnabled = true;
             }  
         }
         else if ((((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))) && (page9.caninput_sel[current.current_caninchannel]&12U) == 12U)
@@ -48,7 +50,7 @@ void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const co
             {
                 //Channel is active and digital
                 pinMode( pinNumber, INPUT);
-                BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
+                _auxEnabled = true;
             }  
         }
         else {
@@ -120,7 +122,7 @@ TESTABLE_STATIC void auxChannelControl(statuses &current, const config9 &page9, 
 // LCOV_EXCL_START
 void auxChannelControl(statuses &current, const config9 &page9)
 {
-    if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL)
+    if(_auxEnabled
     && BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ))
     {
         auxChannelControl(current, page9, sendCancommand, readAuxanalog, readAuxdigital);
