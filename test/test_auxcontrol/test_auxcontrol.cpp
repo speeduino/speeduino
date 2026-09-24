@@ -83,7 +83,6 @@ static void test_auxChannelControl_can_input(void)
   TEST_ASSERT_EQUAL_UINT16(0x445U, lastCanSourceAddress);
   TEST_ASSERT_EQUAL_UINT8(0U, analogReadCount);
   TEST_ASSERT_EQUAL_UINT8(0U, digitalReadCount);
-  TEST_ASSERT_EQUAL_UINT8(15U, current.current_caninchannel);
 }
 
 static void test_auxChannelControl_can_input_secondary_serial_variants(void)
@@ -304,7 +303,6 @@ static void test_auxChannelControl_disabled_input(void)
   TEST_ASSERT_EQUAL_UINT8(0U, analogReadCount);
   TEST_ASSERT_EQUAL_UINT8(0U, digitalReadCount);
   TEST_ASSERT_EQUAL_UINT16(77U, current.canin[2]);
-  TEST_ASSERT_EQUAL_UINT8(15U, current.current_caninchannel);
 }
 
 void testAuxControl(void)

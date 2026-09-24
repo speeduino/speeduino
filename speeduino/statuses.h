@@ -275,7 +275,6 @@ struct statuses {
   uint16_t boostDuty; ///< Boost Duty percentage value * 100 to give 2 points of precision
   byte idleLoad;      ///< Either the current steps or current duty cycle for the idle control
   uint16_t canin[16]; ///< 16bit raw value of selected canin data for channels 0-15
-  uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it every time it's used (Config page value is stored divided by 10) */
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
   byte nitrous_status;
