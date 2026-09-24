@@ -191,59 +191,6 @@ void initialiseADC(void)
   analogReadResolution(10); //use 10bits for analog reading on STM32 boards
 #endif
 
-  //The following checks the aux inputs and initialises pins if required
-  BIT_CLEAR(statusSensors, BIT_SENSORS_AUX_ENBL);
-  for (uint8_t AuxinChan = 0U; AuxinChan <16U ; AuxinChan++)
-  {
-    currentStatus.current_caninchannel = AuxinChan;                   
-    if (((configPage9.caninput_sel[currentStatus.current_caninchannel]&12U) == 4U)
-    && ((configPage9.enable_secondarySerial == 1U) || ((configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 1U))))
-    { //if current input channel is enabled as external input in caninput_selxb(bits 2:3) and secondary serial or internal canbus is enabled(and is mcu supported)                 
-      //currentStatus.canin[14] = 22;  Dev test use only!
-      BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
-    }
-    else if ((((configPage9.enable_secondarySerial == 1U) || ((configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 1U))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12U) == 8U)
-            || (((configPage9.enable_secondarySerial == 0U) && ( (configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 0U) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3U) == 2U)  
-            || (((configPage9.enable_secondarySerial == 0U) && (configPage9.enable_intcan == 0U)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3U) == 2U)))  
-    {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-      uint8_t pinNumber = pinTranslateAnalog(configPage9.Auxinpina[currentStatus.current_caninchannel]&63U);
-      if( pinIsUsed(pinNumber) )
-      {
-        //Do nothing here as the pin is already in use.
-        currentStatus.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
-      }
-      else
-      {
-        //Channel is active and analog
-        pinMode( pinNumber, INPUT);
-        //currentStatus.canin[14] = 33;  Dev test use only!
-        BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
-      }  
-    }
-    else if ((((configPage9.enable_secondarySerial == 1U) || ((configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 1U))) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&12U) == 12U)
-            || (((configPage9.enable_secondarySerial == 0U) && ( (configPage9.enable_intcan == 1U) && (configPage9.intcan_available == 0U) )) && (configPage9.caninput_sel[currentStatus.current_caninchannel]&3U) == 3U)
-            || (((configPage9.enable_secondarySerial == 0U) && (configPage9.enable_intcan == 0U)) && ((configPage9.caninput_sel[currentStatus.current_caninchannel]&3U) == 3U)))
-    {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-       uint8_t pinNumber = (configPage9.Auxinpinb[currentStatus.current_caninchannel]&63U) + 1U;
-       if( pinIsUsed(pinNumber) )
-       {
-          //Do nothing here as the pin is already in use.
-          currentStatus.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
-       }
-       else
-       {
-         //Channel is active and digital
-         pinMode( pinNumber, INPUT);
-         //currentStatus.canin[14] = 44;  Dev test use only!
-         BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
-       }  
-    }
-    else {
-      //  Do nothing. Keep MISRA checker happy
-    }
-  } //For loop iterating through aux in lines
-  
-
   //Sanity checks to ensure none of the filter values are set above 240 (Which would include the 255 value which is the default on a new arduino)
   //If an invalid value is detected, it's reset to the default the value and burned to EEPROM. 
   //Each sensor has it's own default value

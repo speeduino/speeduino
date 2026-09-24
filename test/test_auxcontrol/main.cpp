@@ -4,7 +4,9 @@
 void runAllTests(void)
 {
     extern void testAuxControl(void);
+    extern void testAuxChannelInit(void);
 
+    testAuxChannelInit();
     testAuxControl();
 }
 

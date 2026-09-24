@@ -3,6 +3,59 @@
 #include "unit_testing.h"
 #include "sensors.h"
 #include "comms_secondary.h"
+#include "globals.h"
+
+void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const config9 &page9)
+{
+    //The following checks the aux inputs and initialises pins if required
+    BIT_CLEAR(statusSensors, BIT_SENSORS_AUX_ENBL);
+    for (uint8_t AuxinChan = 0U; AuxinChan <16U ; AuxinChan++)
+    {
+        current.current_caninchannel = AuxinChan;                   
+        if (((page9.caninput_sel[current.current_caninchannel]&12U) == 4U)
+        && ((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))))
+        { //if current input channel is enabled as external input in caninput_selxb(bits 2:3) and secondary serial or internal canbus is enabled(and is mcu supported)                 
+            BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
+        }
+        else if ((((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))) && (page9.caninput_sel[current.current_caninchannel]&12U) == 8U)
+                || (((page9.enable_secondarySerial == 0U) && ( (page9.enable_intcan == 1U) && (page9.intcan_available == 0U) )) && (page9.caninput_sel[current.current_caninchannel]&3U) == 2U)  
+                || (((page9.enable_secondarySerial == 0U) && (page9.enable_intcan == 0U)) && ((page9.caninput_sel[current.current_caninchannel]&3U) == 2U)))  
+        {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
+            uint8_t pinNumber = pinTranslateAnalog(page9.Auxinpina[current.current_caninchannel]&63U);
+            if( pinIsUsed(pinNumber) )
+            {
+                //Do nothing here as the pin is already in use.
+                current.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
+            }
+            else
+            {
+                //Channel is active and analog
+                pinMode( pinNumber, INPUT);
+                BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
+            }  
+        }
+        else if ((((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))) && (page9.caninput_sel[current.current_caninchannel]&12U) == 12U)
+                || (((page9.enable_secondarySerial == 0U) && ( (page9.enable_intcan == 1U) && (page9.intcan_available == 0U) )) && (page9.caninput_sel[current.current_caninchannel]&3U) == 3U)
+                || (((page9.enable_secondarySerial == 0U) && (page9.enable_intcan == 0U)) && ((page9.caninput_sel[current.current_caninchannel]&3U) == 3U)))
+        {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
+            uint8_t pinNumber = (page9.Auxinpinb[current.current_caninchannel]&63U) + 1U;
+            if( pinIsUsed(pinNumber) )
+            {
+                //Do nothing here as the pin is already in use.
+                current.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
+            }
+            else
+            {
+                //Channel is active and digital
+                pinMode( pinNumber, INPUT);
+                BIT_SET(statusSensors, BIT_SENSORS_AUX_ENBL);
+            }  
+        }
+        else {
+            //  Do nothing. Keep MISRA checker happy
+        }
+    } //For loop iterating through aux in lines
+}
 
 using fnSendCanCommand_t = void (*)(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 using fnReadAuxanalog_t = uint16_t (*)(uint8_t analogPin);
