@@ -41,7 +41,7 @@ void initialiseFlexSensor(config2 &page2, statuses &current, uint8_t pin);
 void knockPulse(void);
 uint32_t vssGetPulseGap(byte toothHistoryIndex);
 void vssPulse(void);
-uint16_t readAuxanalog(uint8_t analogPin);
+uint16_t readAnalogSensor(uint8_t pin);
 
 /** @brief Initial reading of the TPS sensor, primarily to detect flood clear state */
 void initialiseTPS(void);
