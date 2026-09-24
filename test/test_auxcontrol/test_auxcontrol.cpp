@@ -4,7 +4,7 @@
 
 using fnSendCanCommand_t = void (*)(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 using fnReadAuxanalog_t = uint16_t (*)(uint8_t analogPin);
-using fnReadAuxdigital_t = uint16_t (*)(uint8_t digitalPin);
+using fnReadAuxdigital_t = decltype(&digitalRead);
 
 extern void auxChannelControl(statuses &current, const config9 &page9, fnSendCanCommand_t fnSendCanCommand, fnReadAuxanalog_t fnReadAuxanalog, fnReadAuxdigital_t fnReadAuxdigital);
 
@@ -28,7 +28,7 @@ static uint16_t stubReadAuxanalog(uint8_t analogPin)
   return analogReadValue;
 }
 
-static uint16_t stubReadAuxdigital(uint8_t digitalPin)
+static int stubReadAuxdigital(uint8_t digitalPin)
 {
   ++digitalReadCount;
   lastDigitalPin = digitalPin;

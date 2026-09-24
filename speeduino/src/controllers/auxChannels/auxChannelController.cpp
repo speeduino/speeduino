@@ -61,7 +61,7 @@ void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const co
 
 using fnSendCanCommand_t = void (*)(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 using fnReadAuxanalog_t = uint16_t (*)(uint8_t analogPin);
-using fnReadAuxdigital_t = uint16_t (*)(uint8_t digitalPin);
+using fnReadAuxdigital_t = decltype(&digitalRead);
 
 TESTABLE_STATIC void auxChannelControl(statuses &current, const config9 &page9, fnSendCanCommand_t fnSendCanCommand, fnReadAuxanalog_t fnReadAuxanalog, fnReadAuxdigital_t fnReadAuxdigital)
 {
@@ -125,7 +125,7 @@ void auxChannelControl(statuses &current, const config9 &page9)
     if(_auxEnabled
     && BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ))
     {
-        auxChannelControl(current, page9, sendCancommand, readAuxanalog, readAuxdigital);
+        auxChannelControl(current, page9, sendCancommand, readAuxanalog, digitalRead);
     }
 }
 // LCOV_EXCL_STOP

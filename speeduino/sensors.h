@@ -42,7 +42,6 @@ void knockPulse(void);
 uint32_t vssGetPulseGap(byte toothHistoryIndex);
 void vssPulse(void);
 uint16_t readAuxanalog(uint8_t analogPin);
-uint16_t readAuxdigital(uint8_t digitalPin);
 
 /** @brief Initial reading of the TPS sensor, primarily to detect flood clear state */
 void initialiseTPS(void);
