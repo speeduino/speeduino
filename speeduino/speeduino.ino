@@ -299,10 +299,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         if(configPage13.onboard_log_file_rate == SD_LOGGER_RATE_4HZ) { writeSDLogEntry(); }
       #endif  
            
-      if(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL))
-      {
-        auxChannelControl(currentStatus, configPage9);
-      } //aux channels are enabled
+      auxChannelControl(currentStatus, configPage9);
     } //4Hz timer
     if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {
