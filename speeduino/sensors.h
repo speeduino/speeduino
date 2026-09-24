@@ -26,7 +26,7 @@
 extern volatile uint8_t flexCounter;
 extern volatile uint32_t flexPulseWidth;
 
-#define BIT_SENSORS_AUX_ENBL        0
+#define BIT_SENSORS_UNUSED1         0
 #define BIT_SENSORS_BARO_SAVED      1
 #define BIT_SENSORS_UNUSED2         2
 #define BIT_SENSORS_UNUSED3         3
@@ -34,7 +34,6 @@ extern volatile uint32_t flexPulseWidth;
 #define BIT_SENSORS_UNUSED5         5
 #define BIT_SENSORS_UNUSED6         6
 #define BIT_SENSORS_UNUSED7         7
-extern uint8_t statusSensors; //Uses the above status bits
 
 void initialiseADC(void);
 void flexPulse(void);

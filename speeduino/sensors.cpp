@@ -29,7 +29,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/pins/boardInputPin.h"
 #include "src/pins/pinMapping.h"
 
-uint8_t statusSensors = 0;
+static uint8_t statusSensors = 0;
 
 static volatile uint32_t vssTimes[VSS_SAMPLES] = {0};
 static volatile uint8_t vssIndex = 0U;

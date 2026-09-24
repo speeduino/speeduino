@@ -1,8 +1,9 @@
 #include "../test_utils.h"
 #include "src/controllers/auxChannels/auxChannelController.h"
-#include "sensors.h"
 #include "src/pins/pinMapping.h"
 #include "globals.h"
+
+extern bool _auxEnabled;
 
 static uint8_t getPinModeForTest(uint8_t pin)
 {
@@ -25,7 +26,7 @@ static void test_initAuxChannels_external_can_enables_aux(void)
 {
   statuses current{};
   config9 page9{};
-  statusSensors = 0U;
+  _auxEnabled = false;
   current.ioError = false;
 
   page9.enable_secondarySerial = 1U;
@@ -35,7 +36,7 @@ static void test_initAuxChannels_external_can_enables_aux(void)
 
   initAuxChannels(current, page9);
 
-  TEST_ASSERT_TRUE(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL));
+  TEST_ASSERT_TRUE(_auxEnabled);
   TEST_ASSERT_FALSE(current.ioError);
 }
 
@@ -44,7 +45,7 @@ static void test_initAuxChannels_analog_local_pin_sets_input_and_flag(void)
   statuses current{};
   config9 page9{};
   const uint8_t analogPin = pinTranslateAnalog(7U);
-  statusSensors = 0U;
+  _auxEnabled = false;
   current.ioError = false;
 
   page9.enable_secondarySerial = 0U;
@@ -55,7 +56,7 @@ static void test_initAuxChannels_analog_local_pin_sets_input_and_flag(void)
 
   initAuxChannels(current, page9);
 
-  TEST_ASSERT_TRUE(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL));
+  TEST_ASSERT_TRUE(_auxEnabled);
   TEST_ASSERT_FALSE(current.ioError);
   TEST_ASSERT_EQUAL_UINT8(INPUT, getPinModeForTest(analogPin));
 }
@@ -66,7 +67,7 @@ static void test_initAuxChannels_analog_local_pin_conflict_sets_io_error(void)
   config9 page9{};
   const uint8_t analogPin = pinTranslateAnalog(7U);
   const uint8_t savedCltPin = pinNumbers.pinCLT;
-  statusSensors = 0U;
+  _auxEnabled = false;
   current.ioError = false;
 
   pinNumbers.pinCLT = analogPin;
@@ -78,7 +79,7 @@ static void test_initAuxChannels_analog_local_pin_conflict_sets_io_error(void)
 
   initAuxChannels(current, page9);
 
-  TEST_ASSERT_FALSE(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL));
+  TEST_ASSERT_FALSE(_auxEnabled);
   TEST_ASSERT_TRUE(current.ioError);
 
   pinNumbers.pinCLT = savedCltPin;
@@ -89,7 +90,7 @@ static void test_initAuxChannels_digital_local_pin_sets_input_and_flag(void)
   statuses current{};
   config9 page9{};
   const uint8_t digitalPin = 26U;
-  statusSensors = 0U;
+  _auxEnabled = false;
   current.ioError = false;
 
   page9.enable_secondarySerial = 0U;
@@ -100,7 +101,7 @@ static void test_initAuxChannels_digital_local_pin_sets_input_and_flag(void)
 
   initAuxChannels(current, page9);
 
-  TEST_ASSERT_TRUE(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL));
+  TEST_ASSERT_TRUE(_auxEnabled);
   TEST_ASSERT_FALSE(current.ioError);
   TEST_ASSERT_EQUAL_UINT8(INPUT, getPinModeForTest(digitalPin));
 }
@@ -112,7 +113,7 @@ static void test_initAuxChannels_digital_local_pin_conflict_sets_io_error(void)
   const uint8_t digitalPin = 27U;
   const uint8_t savedFanPin = pinNumbers.pinFan;
   const uint8_t savedFanEnable = configPage2.fanEnable;
-  statusSensors = 0U;
+  _auxEnabled = false;
   current.ioError = false;
 
   pinNumbers.pinFan = digitalPin;
@@ -125,7 +126,7 @@ static void test_initAuxChannels_digital_local_pin_conflict_sets_io_error(void)
 
   initAuxChannels(current, page9);
 
-  TEST_ASSERT_FALSE(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL));
+  TEST_ASSERT_FALSE(_auxEnabled);
   TEST_ASSERT_TRUE(current.ioError);
 
   pinNumbers.pinFan = savedFanPin;
@@ -136,12 +137,12 @@ static void test_initAuxChannels_disabled_channel_keeps_aux_clear(void)
 {
   statuses current{};
   config9 page9{};
-  statusSensors = 0U;
+  _auxEnabled = false;
   current.ioError = false;
 
   initAuxChannels(current, page9);
 
-  TEST_ASSERT_FALSE(BIT_CHECK(statusSensors, BIT_SENSORS_AUX_ENBL));
+  TEST_ASSERT_FALSE(_auxEnabled);
   TEST_ASSERT_FALSE(current.ioError);
 }
 
