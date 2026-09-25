@@ -44,7 +44,7 @@ struct launch_fixture
 
     void init(void)
     {
-        initialiseLaunchControl(page6, pins);
+        initialiseLaunchControl(current, page6, pins);
     }
 
     void update()
