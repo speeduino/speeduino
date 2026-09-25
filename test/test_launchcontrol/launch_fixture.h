@@ -3,6 +3,7 @@
 #include <unity.h>
 #include "src/controllers/launch/launchController.h"
 #include "src/pins/inputPin.h"
+#include "units.h"
 
 extern inputPin_t launchPin;
 
@@ -17,16 +18,15 @@ struct launch_fixture
 
     launch_fixture()
     {
-        current.launchStatus.clutchTrigger = true;
-        current.launchStatus.clutchEngagedRPM = 3000;
-        current.setRpm(5000);
-        current.TPS = 50;
+        page2.vssMode = VSS_MODE_OFF;
+        page2.hardCutType == HARD_CUT_FULL;
         page6.launchEnabled = true;
         page6.flatSEnable = true;
         page6.launchHiLo = true;
-        page6.flatSArm = 40;
-        page6.lnchHardLim = 45;
+        page6.lnchHardLim = 35;
         page6.lnchSoftLim = page6.lnchHardLim;
+        page6.flatSArm = page6.lnchHardLim + 5;
+        page6.flatSSoftWin = 5;
         page10.lnchCtrlTPS = 50;
         page10.lnchCtrlVss = 50;
         page15.rollingProtRPMDelta[0] = -5;
@@ -44,7 +44,7 @@ struct launch_fixture
 
     void init(void)
     {
-        initialiseLaunchControl(page6, pins);        
+        initialiseLaunchControl(page6, pins);
     }
 
     void update()
@@ -53,10 +53,39 @@ struct launch_fixture
         updateLaunchFlagsCore(current, page2, page6, page10, page15);
     }
 
-    void assertState(bool hardLaunch, bool softLaunch, bool flatShift)
+    void armLaunch(void)
     {
-        TEST_ASSERT_EQUAL(hardLaunch, current.launchStatus.launchingHard);
-        TEST_ASSERT_EQUAL(softLaunch, current.launchStatus.launchingSoft);
-        TEST_ASSERT_EQUAL(flatShift, current.launchStatus.flatShiftingHard);
+        setClutch(true);
+        page6.launchEnabled = true;
+        current.setRpm(RPM_COARSE.toUser(page6.flatSArm)-3);
+        current.TPS = page10.lnchCtrlTPS+3;
+        current.vss = page10.lnchCtrlVss/3;
+    }
+
+    void armSoftLaunch(void)
+    {
+        armLaunch();
+        current.setRpm(RPM_COARSE.toUser(page6.lnchSoftLim)+1);
+    }
+
+    void armHardLaunch(void)
+    {
+        armLaunch();
+        current.setRpm(RPM_COARSE.toUser(page6.lnchHardLim)+1);
+    }
+
+    void armFlatShift(void)
+    {
+        setClutch(true);
+        page6.flatSEnable = true;
+        current.setRpm(RPM_COARSE.toUser(page6.flatSArm)+3);
+    }
+
+    void armSoftFlatShift(void)
+    {
+        armFlatShift();
+        current.launchStatus.clutchTrigger = true;
+        current.launchStatus.clutchEngagedRPM = ((page6.flatSArm) * 100) + 500;
+        current.setRpm(current.launchStatus.clutchEngagedRPM + 600);
     }
 };
