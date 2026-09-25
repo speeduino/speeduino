@@ -488,6 +488,25 @@ static void processTemperatureCalibrationTableUpdate(uint16_t calibrationLength,
 // ====================================== End Internal Functions =============================
 
 
+static void processReceivedFrame(uint32_t incomingCrc)
+{
+  if ((serialPayloadLength == 0U) || (serialPayloadLength > _countof(serialPayload)))
+  {
+    sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+  }
+  else if (incomingCrc == CRC32_serial.crc32(serialPayload, serialPayloadLength))
+  {
+    //CRC is correct. Process the command
+    processSerialCommand();
+    currentStatus.allowLegacyComms = false; //Lock out legacy commands until next power cycle
+  }
+  else {
+    //CRC Error. Need to send an error message
+    sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
+    flushRXbuffer();
+  }
+}
+
 /** Processes the incoming data on the serial buffer based on the command sent.
 Can be either data for a new command or a continuation of data for command that is already in progress:
 
@@ -541,7 +560,10 @@ void serialReceive(void)
   {
     if (serialBytesRxTx < serialPayloadLength )
     {
-      serialPayload[serialBytesRxTx] = (byte)primarySerial.read();
+      const byte received = (byte)primarySerial.read();
+      // Drain an oversized frame without writing outside the payload buffer.
+      // Keeping its declared length preserves framing across receive calls.
+      if (serialPayloadLength <= _countof(serialPayload)) { serialPayload[serialBytesRxTx] = received; }
       ++serialBytesRxTx;
     }
     else
@@ -551,17 +573,7 @@ void serialReceive(void)
 
       if (!isRxTimeout()) // CRC read can timeout also!
       {
-        if (incomingCrc == CRC32_serial.crc32(serialPayload, serialPayloadLength))
-        {
-          //CRC is correct. Process the command
-          processSerialCommand();
-          currentStatus.allowLegacyComms = false; //Lock out legacy commands until next power cycle
-        }
-        else {
-          //CRC Error. Need to send an error message
-          sendReturnCodeMsg(SERIAL_RC_CRC_ERR);
-          flushRXbuffer();
-        }
+        processReceivedFrame(incomingCrc);
       }
       // else timeout - code below will kick in.
     }
@@ -616,8 +628,41 @@ static void burnSinglePage(uint8_t page)
   }
 }
 
+// Minimum header size, including the command byte. Check before reading fields.
+static uint8_t minimumCommandLength(byte command)
+{
+  switch (command)
+  {
+    case 'b': case 'B': case 'd': case 'E': case 'k': return 3U;
+    case 'M': case 'p': case 'r': case 't': case 'w': return 7U;
+    default: return 1U;
+  }
+}
+
+#ifdef COMMS_SD
+static uint8_t minimumSdWriteLength(uint8_t command, uint16_t arg1, uint16_t arg2)
+{
+  if (command == SD_RTC_PAGE)
+  {
+    return ((arg1 == SD_RTC_WRITE_ARG1) && (arg2 == SD_RTC_WRITE_ARG2)) ? 15U : 7U;
+  }
+  if (command != SD_READWRITE_PAGE) { return 7U; }
+  if ((arg1 == SD_WRITE_DO_ARG1) && (arg2 == SD_WRITE_DO_ARG2)) { return 8U; }
+  if ((arg1 == SD_WRITE_DIR_ARG1) && (arg2 == SD_WRITE_DIR_ARG2)) { return 9U; }
+  if ((arg1 == SD_WRITE_READ_SEC_ARG1) && (arg2 == SD_WRITE_READ_SEC_ARG2)) { return 11U; }
+  if ((arg1 == SD_ERASEFILE_ARG1) && (arg2 == SD_ERASEFILE_ARG2)) { return 11U; }
+  if ((arg1 == SD_WRITE_COMP_ARG1) && (arg2 == SD_WRITE_COMP_ARG2)) { return 15U; }
+  return 7U;
+}
+#endif
+
 void processSerialCommand(void)
 {
+  if ((serialPayloadLength == 0U) || (serialPayloadLength < minimumCommandLength(serialPayload[0])))
+  {
+    sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+    return;
+  }
   switch (serialPayload[0])
   {
 
@@ -716,7 +761,9 @@ void processSerialCommand(void)
       //2 - offset
       //2 - Length
       //1 - 1st New value
-      if (updatePageValues(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[7], word(serialPayload[6], serialPayload[5])))
+      const uint16_t length = word(serialPayload[6], serialPayload[5]);
+      if ((length <= (serialPayloadLength - 7U)) &&
+          updatePageValues(serialPayload[2], word(serialPayload[4], serialPayload[3]), &serialPayload[7], length))
       {
         sendReturnCodeMsg(SERIAL_RC_OK);    
       }
@@ -939,8 +986,21 @@ void processSerialCommand(void)
       uint16_t offset = word(serialPayload[3], serialPayload[4]);
       uint16_t calibrationLength = word(serialPayload[5], serialPayload[6]); // Should be 256
 
+      // Validate source bytes before either calibration path can alter tables/storage.
+      if (calibrationLength > (serialPayloadLength - 7U))
+      {
+        sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+        break;
+      }
       if(cmd == SensorCalibrationTable::O2Sensor)
       {
+        // TS sends a 1024-byte calibration domain in chunks. Widen before adding
+        // because uint16_t arithmetic wraps on AVR.
+        if ((calibrationLength == 0U) || (addWithoutOverflow(offset, calibrationLength) > 1024U))
+        {
+          sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+          break;
+        }
         loadO2CalibrationChunk(offset, calibrationLength);
         sendReturnCodeMsg(SERIAL_RC_OK);
         primarySerial.flush(); //This is safe because engine is assumed to not be running during calibration
@@ -984,6 +1044,11 @@ void processSerialCommand(void)
       uint8_t cmd = serialPayload[2];
       uint16_t SD_arg1 = word(serialPayload[3], serialPayload[4]);
       uint16_t SD_arg2 = word(serialPayload[5], serialPayload[6]);
+      if (serialPayloadLength < minimumSdWriteLength(cmd, SD_arg1, SD_arg2))
+      {
+        sendReturnCodeMsg(SERIAL_RC_RANGE_ERR);
+        break;
+      }
       if(cmd == SD_READWRITE_PAGE)
         { 
           if((SD_arg1 == SD_WRITE_DO_ARG1) && (SD_arg2 == SD_WRITE_DO_ARG2))
