@@ -39,55 +39,76 @@ constexpr uint8_t MASK_DIGITAL_PIN =         0b00111111;
 
 constexpr uint16_t MASK_SOURCE_ADDRESS =     0b0000'0111'1111'1111;
 
+static inline bool isExternalInput(uint8_t channel, const config9 &page9)
+{
+    return (page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_EXTERNAL;
+}
+
+static inline bool isAnalogInput(uint8_t channel, const config9 &page9)
+{
+    auto selector = page9.caninput_sel[channel];
+    return ((selector & MASK_SELECTORA) == SELECTORA_ANALOG)
+        || ((selector & MASK_SELECTORB) == SELECTORB_ANALOG)
+        ;
+}
+
+static inline uint8_t getAnalogPin(uint8_t channel, const config9 &page9)
+{
+    return pinTranslateAnalog(page9.Auxinpina[channel] & MASK_ANALOG_PIN);
+}
+
+static inline bool isDigitalInput(uint8_t channel, const config9 &page9)
+{
+    auto selector = page9.caninput_sel[channel];
+    return ((selector & MASK_SELECTORA) == SELECTORA_DIGITAL)
+        || ((selector & MASK_SELECTORB) == SELECTORB_DIGITAL)
+        ;
+}
+
+static inline uint8_t getDigitalPin(uint8_t channel, const config9 &page9)
+{
+    return (page9.Auxinpinb[channel] & MASK_DIGITAL_PIN) + 1U;
+}
+
 void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const config9 &page9)
 {
-    //The following checks the aux inputs and initialises pins if required
     _auxState = state();
-    for (uint8_t channel = 0U; channel < _countof(page9.caninput_sel) ; channel++)
-    {            
-        if (((page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_EXTERNAL)
-        && ((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))))
-        { //if current input channel is enabled as external input in caninput_selxb(bits 2:3) and secondary serial or internal canbus is enabled(and is mcu supported)                 
-            _auxState.enabled = true;
+
+    const bool is_sec_serial = page9.enable_secondarySerial;
+    const bool is_intcan     = page9.enable_intcan;
+    const bool intcan_avail  = page9.intcan_available;
+    const bool bus_enabled   = is_sec_serial || (is_intcan && intcan_avail);
+
+    // Helper lambda to consolidate pin initialization and error tracking
+    auto tryInitPin = [](statuses &current, uint8_t pinNumber) {
+        if (pinIsUsed(pinNumber)) {
+            current.ioError = true;
+            return false;
+        } else {
+            pinMode(pinNumber, INPUT);
+            return true;
         }
-        else if ((((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))) && (page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_ANALOG)
-                || (((page9.enable_secondarySerial == 0U) && ( (page9.enable_intcan == 1U) && (page9.intcan_available == 0U) )) && (page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_ANALOG)  
-                || (((page9.enable_secondarySerial == 0U) && (page9.enable_intcan == 0U)) && ((page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_ANALOG)))  
-        {  //if current input channel is enabled as analog local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-            uint8_t pinNumber = pinTranslateAnalog(page9.Auxinpina[channel] & MASK_ANALOG_PIN);
-            if( pinIsUsed(pinNumber) )
-            {
-                //Do nothing here as the pin is already in use.
-                current.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
-            }
-            else
-            {
-                //Channel is active and analog
-                pinMode( pinNumber, INPUT);
-                _auxState.enabled = true;
-            }  
+    };
+
+    for (uint8_t channel = 0U; channel < _countof(page9.caninput_sel); channel++)
+    {
+        if (isExternalInput(channel, page9))
+        {                
+            _auxState.enabled |= bus_enabled;
         }
-        else if ((((page9.enable_secondarySerial == 1U) || ((page9.enable_intcan == 1U) && (page9.intcan_available == 1U))) && (page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_DIGITAL)
-                || (((page9.enable_secondarySerial == 0U) && ( (page9.enable_intcan == 1U) && (page9.intcan_available == 0U) )) && (page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_DIGITAL)
-                || (((page9.enable_secondarySerial == 0U) && (page9.enable_intcan == 0U)) && ((page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_DIGITAL)))
-        {  //if current input channel is enabled as digital local pin check caninput_selxb(bits 2:3) with &12 and caninput_selxa(bits 0:1) with &3
-            uint8_t pinNumber = (page9.Auxinpinb[channel] & MASK_DIGITAL_PIN) + 1U;
-            if( pinIsUsed(pinNumber) )
-            {
-                //Do nothing here as the pin is already in use.
-                current.ioError = true; //Tell user that there is problem by lighting up the I/O error indicator
-            }
-            else
-            {
-                //Channel is active and digital
-                pinMode( pinNumber, INPUT);
-                _auxState.enabled = true;
-            }  
+        else if (isAnalogInput(channel, page9))
+        {  
+            _auxState.enabled |= tryInitPin(current, getAnalogPin(channel, page9));
         }
-        else {
-            //  Do nothing. Keep MISRA checker happy
+        else if (isDigitalInput(channel, page9))
+        {  
+            _auxState.enabled |= tryInitPin(current, getDigitalPin(channel, page9));
         }
-    } //For loop iterating through aux in lines
+        else 
+        {
+            // Do nothing. Keep MISRA checker happy
+        }
+    } 
 }
 
 using fnSendCanCommand_t = void (*)(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
@@ -96,50 +117,56 @@ using fnReadAuxdigital_t = decltype(&digitalRead);
 
 TESTABLE_STATIC void auxChannelControl(statuses &current, const config9 &page9, fnSendCanCommand_t fnSendCanCommand, fnReadAuxanalog_t fnReadAuxanalog, fnReadAuxdigital_t fnReadAuxdigital)
 {
+    bool is_sec_serial = page9.enable_secondarySerial;
+    bool is_intcan     = page9.enable_intcan;
+    bool intcan_avail  = page9.intcan_available;
+
     //check through the Aux input channels if enabled for Can or local use
     for (uint8_t channel = 0; channel < _countof(page9.caninput_sel); channel++)
     {
-        if (((page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_EXTERNAL) 
-            && (((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 0)&&(page9.intcan_available == 1)))
-            || ((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 1))&& 
-            ((page9.caninput_sel[channel] & MASK_SOURCEB) == SOURCEB_SECONDARY_SERIAL))
-            || ((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 0)))))              
+        auto selector = page9.caninput_sel[channel];
+
+        if ((isExternalInput(channel, page9)) 
+            && ((is_sec_serial && (!is_intcan && intcan_avail))
+            || (is_sec_serial && (is_intcan && intcan_avail)&& 
+            ((selector & MASK_SOURCEB) == SOURCEB_SECONDARY_SERIAL))
+            || (is_sec_serial && (is_intcan && !intcan_avail))))              
         { //if current input channel is enabled as external & secondary serial enabled & internal can disabled(but internal can is available)
         // or current input channel is enabled as external & secondary serial enabled & internal can enabled(and internal can is available)
-        if (page9.enable_secondarySerial == 1)  // megas only support can via secondary serial
-        {
-            fnSendCanCommand(2,0,channel,0,((page9.caninput_source_can_address[channel] & MASK_SOURCE_ADDRESS)+0x100));
-            //send an R command for data from caninput_source_address[AuxinChan] from secondarySerial
-        }
+            if (is_sec_serial)  // megas only support can via secondary serial
+            {
+                fnSendCanCommand(2,0,channel,0,((page9.caninput_source_can_address[channel] & MASK_SOURCE_ADDRESS)+0x100));
+                //send an R command for data from caninput_source_address[AuxinChan] from secondarySerial
+            }
         }  
-        else if (((page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_EXTERNAL) 
-            && (((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 1))&& 
-            ((page9.caninput_sel[channel] & MASK_SOURCEB) == SOURCEB_INTERNAL_CAN))
-            || ((page9.enable_secondarySerial == 0) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 1))&& 
-            ((page9.caninput_sel[channel] & MASK_SOURCEC) == SOURCEC_INTERNAL_CAN))))                             
+        else if ((isExternalInput(channel, page9)) 
+            && ((is_sec_serial && (is_intcan && intcan_avail)&& 
+            ((selector & MASK_SOURCEB) == SOURCEB_INTERNAL_CAN))
+            || (!is_sec_serial && (is_intcan && intcan_avail)&& 
+            ((selector & MASK_SOURCEC) == SOURCEC_INTERNAL_CAN))))                             
         { //if current input channel is enabled as external for canbus & secondary serial enabled & internal can enabled(and internal can is available)
         // or current input channel is enabled as external for canbus & secondary serial disabled & internal can enabled(and internal can is available)
-        #if defined(CORE_STM32) || defined(CORE_TEENSY)
-        if (page9.enable_intcan == 1) //  if internal can is enabled 
-        {
-            fnSendCanCommand(3,page9.speeduino_tsCanId,AuxinChan,0,((page9.caninput_source_can_address[AuxinChan] & MASK_SOURCE_ADDRESS)+0x100));  
-            //send an R command for data from caninput_source_address[AuxinChan] from internal canbus
-        }
-        #endif
+#if defined(CORE_STM32) || defined(CORE_TEENSY)
+            if is_intcan //  if internal can is enabled 
+            {
+                fnSendCanCommand(3,page9.speeduino_tsCanId,AuxinChan,0,((page9.caninput_source_can_address[AuxinChan] & MASK_SOURCE_ADDRESS)+0x100));  
+                //send an R command for data from caninput_source_address[AuxinChan] from internal canbus
+            }
+#endif
         }   
-        else if ((((page9.enable_secondarySerial == 1) || ((page9.enable_intcan == 1) && (page9.intcan_available == 1))) && (page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_ANALOG)
-                || (((page9.enable_secondarySerial == 0) && ( (page9.enable_intcan == 1) && (page9.intcan_available == 0) )) && (page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_ANALOG)  
-                || (((page9.enable_secondarySerial == 0) && (page9.enable_intcan == 0)) && ((page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_ANALOG)))  
+        else if (((is_sec_serial || (is_intcan && intcan_avail)) && isAnalogInput(channel, page9))
+                || ((!is_sec_serial && ( is_intcan && !intcan_avail )) && isAnalogInput(channel, page9))  
+                || ((!is_sec_serial && !is_intcan) && (isAnalogInput(channel, page9))))  
         { //if current input channel is enabled as analog local pin
-        //read analog channel specified
-        current.canin[channel] = fnReadAuxanalog(pinTranslateAnalog(page9.Auxinpina[channel] & MASK_ANALOG_PIN));
+            //read analog channel specified
+            current.canin[channel] = fnReadAuxanalog(getAnalogPin(channel, page9));
         }
-        else if ((((page9.enable_secondarySerial == 1) || ((page9.enable_intcan == 1) && (page9.intcan_available == 1))) && (page9.caninput_sel[channel] & MASK_SELECTORB) == SELECTORB_DIGITAL)
-                || (((page9.enable_secondarySerial == 0) && ( (page9.enable_intcan == 1) && (page9.intcan_available == 0) )) && (page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_DIGITAL)
-                || (((page9.enable_secondarySerial == 0) && (page9.enable_intcan == 0)) && ((page9.caninput_sel[channel] & MASK_SELECTORA) == SELECTORA_DIGITAL)))
+        else if (((is_sec_serial || (is_intcan && intcan_avail)) && isDigitalInput(channel, page9))
+                || ((!is_sec_serial && ( is_intcan && !intcan_avail )) && isDigitalInput(channel, page9))
+                || ((!is_sec_serial && !is_intcan) && isDigitalInput(channel, page9)))
         { //if current input channel is enabled as digital local pin
-        //read digital channel specified
-        current.canin[channel] = fnReadAuxdigital((page9.Auxinpinb[channel] & MASK_DIGITAL_PIN)+1);
+            //read digital channel specified
+            current.canin[channel] = fnReadAuxdigital((page9.Auxinpinb[channel] & MASK_DIGITAL_PIN)+1);
         } //Channel type
     } //For loop going through each channel
 }
