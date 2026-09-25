@@ -6,11 +6,12 @@
 
 TESTABLE_STATIC inputPin_t launchPin;
 
-void __attribute__((optimize("Os"))) initialiseLaunchControl(config6 &page6, const pinNumbers_t &pins)
+void __attribute__((optimize("Os"))) initialiseLaunchControl(statuses &current, config6 &page6, const pinNumbers_t &pins)
 {
   launchPin.setPin(pins.pinLaunch);
   page6.flatSEnable = page6.flatSEnable && launchPin.isValid();
   page6.launchEnabled = page6.launchEnabled && launchPin.isValid();
+  current.launchStatus = launchStatus_t();
 }
 
 static void updateClutchState(statuses &current, const config6 &page6)
