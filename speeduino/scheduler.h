@@ -111,8 +111,8 @@ struct Schedule {
   /** @brief The start *and* end callbacks */
   struct callback_pair_t
   {
-    callback_t start = &nullCallback;
-    callback_t end = &nullCallback;
+    callback_t start = &nullCallback; ///< The start callback, called when the schedule switches to RUNNING status
+    callback_t end = &nullCallback; ///< The end callback, called when the schedule switches from RUNNING to OFF status
   }; 
 
   /**
@@ -133,12 +133,7 @@ struct Schedule {
   /**
    * @brief Set the schedule callbacks. I.e the functions called when the action
    * needs to start & stop
-   * 
-   * @param pStartCallback The new start callback - called when the schedule switches to RUNNING status
-   * @param pEndCallback The new end callback - called when the schedule switches from RUNNING to OFF status
    */
-  void setCallbacks(callback_t pStartCallback, callback_t pEndCallback) noexcept;
-
   void setCallbacks(const callback_pair_t &callbacks) noexcept;
 
 protected:
