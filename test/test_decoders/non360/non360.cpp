@@ -51,7 +51,7 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL(97, decoder.pGetCrankAngle(toothLastToothTime + 10));
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   // Configure wheel and build decoder
   configPage4.triggerTeeth = 8;
@@ -60,38 +60,35 @@ static void test_getRPM(void)
   // Ensure staging allows cranking calculation
   configPage4.StgCycles = 0;
 
-  // --- Cranking path: currentStatus.RPM < crankRPM -> crankingGetRPM
+  // --- Cranking path: currentStatus.RPM < crankRPM -> crankingGetRevolutionTime
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 400;
   currentStatus.startRevolutions = 0; // cranking
-  currentStatus.revolutionTime = UINT32_MAX; // Ensure this changes
+  currentStatus.revolutionTime = UINT32_MAX;
   decoderStatus.syncStatus = SyncStatus::Full;
   toothCurrentCount = 1;
   toothLastMinusOneToothTime = 1000UL;
-  // Choose gap so (gap * triggerTeeth) == 60000us -> 1000 RPM
+  // Choose gap so (gap * triggerTeeth) == 60000us
   toothLastToothTime = toothLastMinusOneToothTime + (60000UL / configPage4.triggerTeeth); // 60000/8 = 7500
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // --- Running path: use stdGetRPM(CRANK_SPEED) via toothOne pair
+  // --- Running path: use stdGetRevolutionTime(CRANK_SPEED) via toothOne pair
   currentStatus.setRpm(2000);
   currentStatus.startRevolutions = 1; // not cranking
-  currentStatus.revolutionTime = UINT32_MAX; // Ensure this changes
   decoderStatus.syncStatus = SyncStatus::Full;
   toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // --- Fallback: when sync lost, expect 0
+  // --- Fallback: when sync lost, keep the published period
   decoderStatus.syncStatus = SyncStatus::None;
-  currentStatus.revolutionTime = UINT32_MAX; // Ensure this changes
-  TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
-
+  TEST_ASSERT_EQUAL_UINT32(UINT32_MAX, decoder.getRevolutionTime());
 }
 
 void testNon360(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

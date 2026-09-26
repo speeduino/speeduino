@@ -55,10 +55,26 @@ static inline int16_t ignitionLimits(int16_t angle) {
     return nudge((int16_t)0, (int16_t)CRANK_ANGLE_MAX_IGN, angle);
 }
 
+/** @brief Crank angle/time factors derived from one revolution period. */
+struct angle_converter_factors_t {
+  uint32_t microsPerDegree; ///< µS per degree in UQ24.8
+  uint16_t degreesPerMicro; ///< Degrees per µS in UQ1.15
+};
+
+/**
+ * @brief Calculate angle/time factors for a crank revolution period.
+ * 
+ * @param revolutionTime Period of one crank revolution, in µS. Must be non-zero.
+ */
+angle_converter_factors_t calculateAngleConverterFactors(uint32_t revolutionTime) noexcept;
+
+/** @brief Publish angle/time factors. Call from inside an ATOMIC section when an ISR may be reading them. */
+void applyAngleConverterFactors(const angle_converter_factors_t &factors) noexcept;
+
 /**
  * @brief Set the revolution time, from which some of the degree<-->angle conversions are derived
  * 
- * @param revolutionTime The crank revolution time.
+ * @param revolutionTime The crank revolution time. Zero clears the factors.
  */
 void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept;
 

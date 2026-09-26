@@ -183,7 +183,7 @@ static void test_getCrankAngle(void)
     run_case(1, true, 100, 0, 360 + 0 + dt);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
     auto decoder = triggerSetup_missingTooth();
 
@@ -199,28 +199,26 @@ static void test_getRPM(void)
     toothLastMinusOneToothTime = 1000UL;
     toothLastToothTime = toothLastMinusOneToothTime + 1667UL;
     toothCurrentCount = 2;
-    currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
-    TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+    currentStatus.revolutionTime = 99999UL;
+    TEST_ASSERT_EQUAL_UINT32(1667UL*36UL, decoder.getRevolutionTime());
 
-    // --- If at tooth #1, cranking path should return currentStatus.RPM
-    // currentStatus.setRpm(555);
+    // --- If at tooth #1, cranking path should return currentStatus.revolutionTime
     toothCurrentCount = 1;
     decoderStatus.syncStatus = SyncStatus::Full;
-    TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+    TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 
-    // --- Running path: stdGetRPM should be used when not cranking
+    // --- Running path: stdGetRevolutionTime should be used when not cranking
     currentStatus.setRpm(currentStatus.crankRPM*2U);
     currentStatus.startRevolutions = 1; // not cranking
     decoderStatus.syncStatus = SyncStatus::Full;
-    currentStatus.revolutionTime = 12345UL; // ensure update
+    currentStatus.revolutionTime = 12345UL;
     toothOneMinusOneTime = 1000UL;
-    toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
-    TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+    toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+    TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-    // --- Fallback: when sync lost, return currentStatus.RPM
+    // --- Fallback: when sync lost, return currentStatus.revolutionTime
     decoderStatus.syncStatus = SyncStatus::None;
-    currentStatus.setRpm(777);
-    TEST_ASSERT_EQUAL_UINT16(777U, decoder.getRPM());
+    TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
 void testMissingTooth()
@@ -229,6 +227,6 @@ void testMissingTooth()
         RUN_TEST_P(test_missingtooth_newIgn_36_1);
         RUN_TEST_P(test_missingtooth_newIgn_60_2);
         RUN_TEST_P(test_getCrankAngle);
-        RUN_TEST_P(test_getRPM);
+        RUN_TEST_P(test_getRevolutionTime);
     }
 }

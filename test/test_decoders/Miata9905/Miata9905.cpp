@@ -42,7 +42,7 @@ static void test_getCrankAngle(void)
   run_case(2, 100 + dt + 10, 10);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   auto decoder = triggerSetup_Miata9905();
 
@@ -50,30 +50,33 @@ static void test_getRPM(void)
   decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 400;
-  currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
-  // gap such that tempRPM = 1000: triggerToothAngle=90, gap=15000 -> toothTime=15000*36
+  currentStatus.revolutionTime = 99999UL;
+  // triggerToothAngle=90 (from decoder setup), gap=15000 -> revTime = 15000 * 360 / 90 = 60000
   toothLastMinusOneToothTime = 1000UL;
   toothLastToothTime = toothLastMinusOneToothTime + 15000UL;
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // --- Running path: should call stdGetRPM(CAM_SPEED)
+  // Missing tooth history while cranking: keep the published period
+  toothLastToothTime = 0;
+  toothLastMinusOneToothTime = 0;
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
+
+  // --- Running path: should call stdGetRevolutionTime(CAM_SPEED)
   currentStatus.setRpm(2000);
   decoderStatus.syncStatus = SyncStatus::Full;
-  currentStatus.revolutionTime = 12345UL; // ensure SetRevolutionTime will update
   toothOneMinusOneTime = 2000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 -> 60000 -> 1000 RPM
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 -> 60000
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // --- Fallback: when UpdateRevolutionTimeFromTeeth can't run, stdGetRPM returns currentStatus.RPM
+  // --- Fallback: when the revolution time can't be calculated, stdGetRevolutionTime returns currentStatus.revolutionTime
   decoderStatus.syncStatus = SyncStatus::None;
-  currentStatus.setRpm(555);
-  TEST_ASSERT_EQUAL_UINT16(555U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 }
 
 void testMiata9905(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

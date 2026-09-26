@@ -41,49 +41,49 @@ static void test_getCrankAngle(void)
   run_case(3, 100, 10, 110 + dt + 10);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   auto decoder = triggerSetup_Vmax();
 
-  // --- Cranking-style calculation when RPM below threshold: computes using last-tooth gap * 36
+  // --- Cranking-style calculation when RPM below threshold: computes using last-tooth gap & angle
   currentStatus.setRpm(0);
   configPage4.crankRPM = 40; // 400 RPM
   currentStatus.crankRPM = RPM_MEDIUM.toUser(configPage4.crankRPM);
   currentStatus.startRevolutions = 0; // cranking
   decoderStatus.syncStatus = SyncStatus::Full;
-  currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
+  currentStatus.revolutionTime = 12345UL;
   // Set a non-zero triggerToothAngle so calculation yields non-zero result
   triggerToothAngle = 10;
   toothLastMinusOneToothTime = 1000UL;
   toothLastToothTime = toothLastMinusOneToothTime + 1667UL; // gap
-  unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime) * 36UL;
-  uint16_t expected = (uint16_t)(((unsigned long)triggerToothAngle * (MICROS_PER_MIN/10U)) / toothTime);
-  TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(1667UL*36UL, decoder.getRevolutionTime()); // 1667 * 360 / 10
 
-  // --- If tooth times missing, expect 0
+  // --- No tooth angle yet (E.g. first tooth after sync): keep the published period
+  triggerToothAngle = 0;
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
+  triggerToothAngle = 10;
+
+  // --- If tooth times missing, keep the published period
   toothLastMinusOneToothTime = 0;
   toothLastToothTime = 0;
-  currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 
-  // --- Running path: use stdGetRPM via toothOne pair -> RpmFromRevolutionTimeUs
+  // --- Running path: use stdGetRevolutionTime via toothOne pair
   currentStatus.setRpm(2000);
   configPage4.crankRPM = 10; // 100 RPM
   currentStatus.crankRPM = RPM_MEDIUM.toUser(configPage4.crankRPM);
   currentStatus.startRevolutions = 1; // not cranking
   decoderStatus.syncStatus = SyncStatus::Full;
   toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
-  currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // --- Sync lost -> expect 0
+  // --- Sync lost: keep the published period
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
-
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
-static void assert_getRPM_at_cranking_boundary(uint16_t rpm, uint16_t expected)
+static void assert_getRevolutionTime_at_cranking_boundary(uint16_t rpm, uint32_t expected)
 {
   extern decoder_status_t decoderStatus;
   extern volatile unsigned long toothOneTime;
@@ -101,37 +101,37 @@ static void assert_getRPM_at_cranking_boundary(uint16_t rpm, uint16_t expected)
   decoderStatus.syncStatus = SyncStatus::Full;
 
   // Deliberately different results distinguish which calculation was selected:
-  // last-tooth angle/gap -> 1000 RPM; complete revolution -> 1500 RPM.
+  // last-tooth angle/gap -> 60000uS (1000 RPM); complete revolution -> 40000uS (1500 RPM).
   triggerToothAngle = 120;
   toothLastMinusOneToothTime = 1000UL;
   toothLastToothTime = 21000UL;
   toothOneMinusOneTime = 1000UL;
   toothOneTime = 41000UL;
-  TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(expected, decoder.getRevolutionTime());
 }
 
-static void test_getRPM_below_cranking_boundary(void)
+static void test_getRevolutionTime_below_cranking_boundary(void)
 {
-  assert_getRPM_at_cranking_boundary(399, 1000);
+  assert_getRevolutionTime_at_cranking_boundary(399, 60000UL);
 }
 
-static void test_getRPM_at_cranking_boundary(void)
+static void test_getRevolutionTime_at_cranking_boundary(void)
 {
-  assert_getRPM_at_cranking_boundary(400, 1500);
+  assert_getRevolutionTime_at_cranking_boundary(400, 40000UL);
 }
 
-static void test_getRPM_above_cranking_boundary(void)
+static void test_getRevolutionTime_above_cranking_boundary(void)
 {
-  assert_getRPM_at_cranking_boundary(401, 1500);
+  assert_getRevolutionTime_at_cranking_boundary(401, 40000UL);
 }
 
 void testVMax(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
-    RUN_TEST_P(test_getRPM_below_cranking_boundary);
-    RUN_TEST_P(test_getRPM_at_cranking_boundary);
-    RUN_TEST_P(test_getRPM_above_cranking_boundary);
+    RUN_TEST_P(test_getRevolutionTime);
+    RUN_TEST_P(test_getRevolutionTime_below_cranking_boundary);
+    RUN_TEST_P(test_getRevolutionTime_at_cranking_boundary);
+    RUN_TEST_P(test_getRevolutionTime_above_cranking_boundary);
   }
 }

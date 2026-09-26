@@ -22,7 +22,7 @@ struct decoder_builder_t {
   decoder_builder_t& setTertiaryTrigger(interrupt_t trigger);
   decoder_builder_t& setTertiaryTrigger(interrupt_t::callback_t handler, uint8_t edge);
 
-  decoder_builder_t& setGetRPM(decoder_t::getRPM_t getRPM);
+  decoder_builder_t& setGetRevolutionTime(decoder_t::getRevolutionTime_t getRevolutionTime);
   decoder_builder_t& setGetCrankAngle(decoder_t::getCrankAngle_t getCrankAngle);
   decoder_builder_t& setSetEndTeeth(decoder_t::setEndTeeth_t setEndTeeth);
   decoder_builder_t& setReset(decoder_t::reset_t reset);

@@ -31,17 +31,31 @@ static constexpr uint8_t UQ1X15_Shift = 15U;
 static UQ1X15_t degreesPerMicro;
 static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
-void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept {
+angle_converter_factors_t calculateAngleConverterFactors(uint32_t revolutionTime) noexcept
+{
+  angle_converter_factors_t factors;
+  constexpr uint32_t UQ1X15_360 = UINT32_C(360) << degreesPerMicro_Shift;
+
+  factors.microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
+  factors.degreesPerMicro = (uint16_t)fast_div_closest(UQ1X15_360, revolutionTime);
+  return factors;
+}
+
+void applyAngleConverterFactors(const angle_converter_factors_t &factors) noexcept
+{
+  microsPerDegree = factors.microsPerDegree;
+  degreesPerMicro = factors.degreesPerMicro;
+}
+
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept
+{
   if (revolutionTime!=0U)
   {
-    microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
-    constexpr uint32_t UQ1X15_360 = UINT32_C(360) << degreesPerMicro_Shift;
-    degreesPerMicro = (uint16_t)fast_div_closest(UQ1X15_360, revolutionTime);
+    applyAngleConverterFactors(calculateAngleConverterFactors(revolutionTime));
   }
   else
   {
-    microsPerDegree = 0;
-    degreesPerMicro = 0;
+    applyAngleConverterFactors(angle_converter_factors_t{0U, 0U});
   }
 }
 

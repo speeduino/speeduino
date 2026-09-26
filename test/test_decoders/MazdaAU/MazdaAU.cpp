@@ -51,42 +51,45 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
+  extern volatile uint16_t triggerToothAngle;
+
   auto decoder = triggerSetup_MazdaAU();
 
   // Ensure sync present
   decoderStatus.syncStatus = SyncStatus::Full;
 
   // --- Cranking branch: currentStatus.RPM < currentStatus.crankRPM
+  // Revolution time is calculated from the last tooth gap, whichever of the uneven gaps that is.
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 200;
-  // ensure SetRevolutionTime will update
   currentStatus.revolutionTime = 12345UL;
-  // gap such that revTime = 36 * gap = 6,480,000 -> RPM = (108 * MICROS_PER_MIN)/6,480,000 = 1000
+  // 108 degree gap of 180000uS -> revTime = 180000 * 360 / 108 = 600000 (100 RPM)
+  triggerToothAngle = 108;
   toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = toothLastMinusOneToothTime + 180000UL; // gap = 180000
-  // triggerToothAngle set by decoder setup to 108; assert expected RPM
-  TEST_ASSERT_EQUAL_UINT16(337, decoder.getRPM());
+  toothLastToothTime = toothLastMinusOneToothTime + 180000UL;
+  TEST_ASSERT_EQUAL_UINT32(600000UL, decoder.getRevolutionTime());
+  // 72 degree gap of 120000uS -> revTime = 120000 * 360 / 72 = 600000 (100 RPM)
+  triggerToothAngle = 72;
+  toothLastToothTime = toothLastMinusOneToothTime + 120000UL;
+  TEST_ASSERT_EQUAL_UINT32(600000UL, decoder.getRevolutionTime());
 
-  // --- Running path: uses stdGetRPM(CRANK_SPEED)
+  // --- Running path: uses stdGetRevolutionTime(CRANK_SPEED)
   currentStatus.setRpm(2000);
-  // ensure SetRevolutionTime will update in stdGetRPM
-  currentStatus.revolutionTime = 12345UL;
   toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // --- Fallback: when not full sync, should return 0
+  // --- Fallback: when not full sync, keep the published period
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
-
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
 void testMazdaAU(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

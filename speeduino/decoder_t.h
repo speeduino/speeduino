@@ -101,9 +101,19 @@ struct decoder_t
   interrupt_t tertiary;
 
   /// @{
-  /** @brief The function to get the RPM */
-  using getRPM_t = uint16_t(*)(void);
-  getRPM_t getRPM;
+  /**
+   * @brief The function to get the current crank revolution time
+   * 
+   * This is the time in µS that one crank revolution would take at the current speed,
+   * as measured by the decoder. RPM is derived from this (see statuses::setRevolutionTime).
+   * 
+   * @return The revolution time in µS.
+   * When a new period cannot be measured (no sync, missing tooth history, zero tooth angle), return the
+   * last published period so the caller does not treat unknown speed as a stall. 0 means a period has
+   * never been published. The engine-stopped path clears speed by calling setRevolutionTime(0) directly.
+   */
+  using getRevolutionTime_t = uint32_t(*)(void);
+  getRevolutionTime_t getRevolutionTime;
   /// @}
 
   /// @{

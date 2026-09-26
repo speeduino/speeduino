@@ -72,7 +72,7 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL_INT16(0, decoder4b.pGetCrankAngle(toothLastToothTime + dt));
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   auto decoder = triggerSetup_4G63();
 
@@ -87,25 +87,30 @@ static void test_getRPM(void)
 
   // For a 70 degree tooth gap (one of the 4G63 cranking gaps)
   triggerToothAngle = 70;
-  TEST_ASSERT_EQUAL_UINT16(23333, decoder.getRPM()); // 70 * 6e6 / (500*36) = 23333
+  TEST_ASSERT_EQUAL_UINT32(2571UL, decoder.getRevolutionTime()); // 500 * 360 / 70 = 2571
 
   // For a 110 degree tooth gap
   triggerToothAngle = 110;
-  TEST_ASSERT_EQUAL_UINT16(36666, decoder.getRPM()); // 110 * 6e6 / (500*36) = 36666
+  TEST_ASSERT_EQUAL_UINT32(1636UL, decoder.getRevolutionTime()); // 500 * 360 / 110 = 1636
 
-  // Running path: should return stdGetRPM(CAM_SPEED) -> defaults to currentStatus.RPM when no revolution update
+  // Running path: should return stdGetRevolutionTime(CAM_SPEED) -> defaults to currentStatus.revolutionTime when no revolution update
   currentStatus.setRpm(1000);
-  // Clear toothOne* to avoid UpdateRevolutionTimeFromTeeth changing revolutionTime
+  currentStatus.revolutionTime = 60000UL;
+  // Clear toothOne* so stdGetRevolutionTime can't calculate the revolution time
   toothOneTime = 0;
   toothOneMinusOneTime = 0;
   decoderStatus.syncStatus = SyncStatus::Full;
-  TEST_ASSERT_EQUAL_UINT16(1000, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+
+  // No sync: keep the last published period
+  decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 }
 
 void test4G63(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

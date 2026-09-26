@@ -187,7 +187,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           
     if ( currentStatus.decoder.isEngineRunning(micros()) )
     {
-      currentStatus.setRpm(currentStatus.decoder.getRPM());
+      currentStatus.setRevolutionTime(currentStatus.decoder.getRevolutionTime());
       if (currentStatus.RPM > 0)
       {
         fuelPumpOn();
@@ -196,7 +196,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     else
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
-      currentStatus.setRpm(0);
+      currentStatus.setRevolutionTime(0);
       fuelSchedule1.pw = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;

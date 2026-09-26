@@ -60,10 +60,20 @@ static void test_k6a_getCrankAngle_tooth8(void) {
     test_k6a_getCrankAngle_tooth(8, 0, 70);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
+  extern decoder_status_t decoderStatus;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+
   auto decoder = triggerSetup_SuzukiK6A();
-  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+
+  // Standard calculation at cam speed: half the time between the last 2 tooth #1
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.startRevolutions = 1; // not cranking
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 120000UL;
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 }
 
 void testSuzukiK6A_getCrankAngle()
@@ -79,6 +89,6 @@ void testSuzukiK6A_getCrankAngle()
         RUN_TEST_P(test_k6a_getCrankAngle_tooth6);
         RUN_TEST_P(test_k6a_getCrankAngle_tooth7);
         RUN_TEST_P(test_k6a_getCrankAngle_tooth8);
-        RUN_TEST_P(test_getRPM);
+        RUN_TEST_P(test_getRevolutionTime);
     }
 }

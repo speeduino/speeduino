@@ -129,25 +129,38 @@ static void test_getCrankAngle(void)
     run_case(1, true, 100, 0, 360 + 0 + dt);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
-  auto decoder = triggerSetup_DualWheel();
+  extern volatile uint32_t toothLastToothTime;
+  extern volatile uint32_t toothLastMinusOneToothTime;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
 
-  decoderStatus.syncStatus = SyncStatus::Full;
+  auto decoder = test_setup_dualwheel_12_1();
+
+  configPage4.StgCycles = 0;
+  currentStatus.startRevolutions = 1;
   currentStatus.crankRPM = 400;
-  currentStatus.setRpm(currentStatus.crankRPM*2);
-  auto rpm1 = decoder.getRPM();
-  TEST_ASSERT_NOT_EQUAL(0, rpm1);
+  currentStatus.revolutionTime = 12345UL;
+  decoderStatus.syncStatus = SyncStatus::Full;
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 60000UL; // Full revolution: 60000uS
+  toothLastMinusOneToothTime = 1000UL;
+  toothLastToothTime = toothLastMinusOneToothTime + 3000UL; // Tooth gap of 3000uS * 12 teeth: 36000uS
 
+  // Running: full revolution
+  currentStatus.setRpm(currentStatus.crankRPM*2);
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+
+  // Cranking: per tooth
   currentStatus.setRpm(currentStatus.crankRPM/2);
-  TEST_ASSERT_NOT_EQUAL(rpm1, decoder.getRPM());
-  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(36000UL, decoder.getRevolutionTime());
 
   decoderStatus.syncStatus = SyncStatus::Partial;
-  TEST_ASSERT_EQUAL(0, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 
   decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL(0, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
 void testDualWheel()
@@ -155,6 +168,6 @@ void testDualWheel()
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_dualwheel_newIgn_12_1);
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

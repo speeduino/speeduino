@@ -36,7 +36,7 @@ static void assert_decoder(const decoder_t &decoder)
     }
     
     // Mandatory
-    TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.getRPM, defaultDecoder.getRPM, "getRPM");
+    TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.getRevolutionTime, defaultDecoder.getRevolutionTime, "getRevolutionTime");
     
     // Mandatory
     TEST_ASSERT_NOT_EQUAL_MESSAGE(decoder.pGetCrankAngle, defaultDecoder.pGetCrankAngle, "getCrankAngle");

@@ -78,7 +78,7 @@ static void test_tertiary_trigger_coverage(uint8_t decoderNum)
     TEST_PASS(); // Coverage only
 }
 
-static void test_getRpm_coverage(uint8_t decoderNum)
+static void test_getRevolutionTime_coverage(uint8_t decoderNum)
 {
     setup_prebuild_state();
     auto decoder = buildDecoder(decoderNum);
@@ -91,7 +91,7 @@ static void test_getRpm_coverage(uint8_t decoderNum)
     toothOneMinusOneTime = toothLastMinusOneToothTime*5U;
     toothLastToothTime = 5555;
     toothOneTime = toothLastToothTime * 3U;
-    TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+    TEST_ASSERT_NOT_EQUAL(0, decoder.getRevolutionTime());
 }
 
 static void test_getCrankAngle_coverage(uint8_t decoderNum)
@@ -156,9 +156,9 @@ static void test_tertiary_trigger_coverage(void)
 {
     test_tertiary_trigger_coverage(decoderToTest);
 }
-static void test_getRpm_coverage(void)
+static void test_getRevolutionTime_coverage(void)
 {
-    test_getRpm_coverage(decoderToTest);
+    test_getRevolutionTime_coverage(decoderToTest);
 }
 static void test_getCrankAngle_coverage(void)
 {
@@ -189,7 +189,7 @@ void testDecoderApiCoverage(void)
         RUN_TEST_POSTFIX_P(test_primary_trigger, decoderName);
         RUN_TEST_POSTFIX_P(test_secondary_trigger_coverage, decoderName);
         RUN_TEST_POSTFIX_P(test_tertiary_trigger_coverage, decoderName);
-        RUN_TEST_POSTFIX_P(test_getRpm_coverage, decoderName);
+        RUN_TEST_POSTFIX_P(test_getRevolutionTime_coverage, decoderName);
         RUN_TEST_POSTFIX_P(test_getCrankAngle_coverage, decoderName);
         RUN_TEST_POSTFIX_P(test_setEndTeeth_coverage, decoderName);
         RUN_TEST_POSTFIX_P(test_reset_coverage, decoderName);

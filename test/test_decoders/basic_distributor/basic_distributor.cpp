@@ -42,7 +42,7 @@ static void test_getCrankAngle(void)
   run_case(1, 100, 30, 30 + dt);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   // Configure a 4-tooth distributor (4-cylinder cam-spaced)
   configPage2.nCylinders = 4;
@@ -55,32 +55,31 @@ static void test_getRPM(void)
   decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 400;
-  // Ensure SetRevolutionTime will update
   currentStatus.revolutionTime = 99999UL;
   toothLastMinusOneToothTime = 1000UL;
   toothLastToothTime = toothLastMinusOneToothTime + 30000UL; // gap=30000 -> revTime = gap*totalTeeth/2 = 30000*4/2 = 60000
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // Running path: should return stdGetRPM(CAM_SPEED) -> currentStatus.RPM when no toothOne* update
+  // Running path: should return stdGetRevolutionTime(CAM_SPEED) -> currentStatus.revolutionTime when no toothOne* update
   currentStatus.setRpm(2000);
   toothOneMinusOneTime = 0;
   toothOneTime = 0;
   decoderStatus.syncStatus = SyncStatus::Full;
-  TEST_ASSERT_EQUAL_UINT16(2000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 
   configPage2.strokes = TWO_STROKE;
-  TEST_ASSERT_EQUAL_UINT16(2000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 
-  // If not synced, should return currentStatus.RPM
+  // If not synced, should return currentStatus.revolutionTime
   decoderStatus.syncStatus = SyncStatus::None;
   currentStatus.setRpm(555);
-  TEST_ASSERT_EQUAL_UINT16(555U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 }
 
 void testBasicDistributor(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }
