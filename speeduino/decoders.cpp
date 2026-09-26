@@ -827,7 +827,7 @@ static uint32_t getRevolutionTime_missingTooth(void)
     {
       revolutionTime = crankingGetRevolutionTime(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
     }
-    else { revolutionTime = currentStatus.revolutionTime; } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
@@ -3428,8 +3428,8 @@ static uint32_t getRevolutionTime_Daihatsu(void)
     //Can't use standard cranking revolution time function due to extra tooth
     if( decoderStatus.syncStatus==SyncStatus::Full )
     {
-      if(toothCurrentCount == 2) { revolutionTime = currentStatus.revolutionTime; }
-      else if (toothCurrentCount == 3) { revolutionTime = currentStatus.revolutionTime; }
+      if(toothCurrentCount == 2) { revolutionTime = publishedRevolutionTime(); }
+      else if (toothCurrentCount == 3) { revolutionTime = publishedRevolutionTime(); }
       else
       {
         tooth_speed_sample_t sample = atomicToothSpeedSample();
@@ -3713,7 +3713,7 @@ static uint32_t getRevolutionTime_ThirtySixMinus222(void)
     {
       revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
-    else { revolutionTime = currentStatus.revolutionTime; } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
   }
   else
   {
@@ -3865,7 +3865,7 @@ static uint32_t getRevolutionTime_ThirtySixMinus21(void)
     {
       revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
-    else { revolutionTime = currentStatus.revolutionTime; } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
@@ -4248,7 +4248,7 @@ static uint32_t getRevolutionTime_FordST170(void)
     {
       revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
-    else { revolutionTime = currentStatus.revolutionTime; } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
@@ -4619,7 +4619,7 @@ static uint32_t getRevolutionTime_NGC(void)
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
     if (decoderStatus.toothAngleIsCorrect) { revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED); }
-    else { revolutionTime = currentStatus.revolutionTime; } //Can't do per tooth calculation if we're at any of the missing teeth as it messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at any of the missing teeth as it messes the calculation
   }
   else
   {
@@ -5345,7 +5345,7 @@ static uint32_t getRevolutionTime_RoverMEMS(void)
         (toothCurrentCount != (unsigned int) toothAngles[SKIP_TOOTH4]) )
     { revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED); }
     else
-    { revolutionTime = currentStatus.revolutionTime; } //Can't do per tooth calculation as the missing tooth messes the calculation
+    { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation as the missing tooth messes the calculation
   }
   else
   { revolutionTime = stdGetRevolutionTime(CRANK_SPEED); }
