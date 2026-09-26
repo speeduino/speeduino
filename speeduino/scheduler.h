@@ -105,8 +105,16 @@ struct Schedule {
   {
   }
 
-  using callback = void(*)(void);
- 
+  /** @brief A start *or* end callback */
+  using callback_t = void(*)(void);
+
+  /** @brief The start *and* end callbacks */
+  struct callback_pair_t
+  {
+    callback_t start = &nullCallback;
+    callback_t end = &nullCallback;
+  }; 
+
   /**
    * @brief Scheduled duration (timer ticks) 
    *
@@ -116,12 +124,22 @@ struct Schedule {
    */
   volatile COMPARE_TYPE _duration = 0U;
   volatile ScheduleStatus _status = OFF;  ///< Schedule status: OFF, PENDING, STAGED, RUNNING
-  callback _pStartCallback = &nullCallback; ///< Start Callback function for schedule
-  callback _pEndCallback = &nullCallback;   ///< End Callback function for schedule
+  callback_pair_t _callbacks;
   COMPARE_TYPE _nextStartCompare = 0U;   ///< Planned start of next schedule (when current schedule is RUNNING)
   
   counter_t &_counter;       ///< **Reference** to the counter register. E.g. TCNT3
   compare_t &_compare;       ///< **Reference**to the compare register. E.g. OCR3A
+
+  /**
+   * @brief Set the schedule callbacks. I.e the functions called when the action
+   * needs to start & stop
+   * 
+   * @param pStartCallback The new start callback - called when the schedule switches to RUNNING status
+   * @param pEndCallback The new end callback - called when the schedule switches from RUNNING to OFF status
+   */
+  void setCallbacks(callback_t pStartCallback, callback_t pEndCallback) noexcept;
+
+  void setCallbacks(const callback_pair_t &callbacks) noexcept;
 
 protected:
   virtual void reset(void);
@@ -137,16 +155,6 @@ static inline bool isRunning(const Schedule &schedule) noexcept {
   static constexpr uint8_t flags = RUNNING | RUNNING_WITHNEXT;
   return ((uint8_t)schedule._status & flags)!=0U;
 }
-
-/**
- * @brief Set the schedule callbacks. I.e the functions called when the action
- * needs to start & stop
- * 
- * @param schedule Schedule to modify
- * @param pStartCallback The new start callback - called when the schedule switches to RUNNING status
- * @param pEndCallback The new end callback - called when the schedule switches from RUNNING to OFF status
- */
-void setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept;
 
 /**
  * @brief Set the schedule action to run for a certain duration in the future

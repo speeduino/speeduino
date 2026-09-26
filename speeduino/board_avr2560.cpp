@@ -31,7 +31,7 @@
 
 #define FUEL_INTERRUPT(index, avr_vector) \
   ISR((avr_vector)) { \
-    moveToNextState(fuelSchedule ## index); \
+    moveToNextState(fuelSchedules[index-1]); \
   }
 
 /** @brief ISR for fuel channel 1 */
@@ -75,7 +75,7 @@ FUEL_INTERRUPT(8, TIMER5_COMPB_vect)
 
 #define IGNITION_INTERRUPT(index, avr_vector) \
   ISR((avr_vector)) { \
-    moveToNextState(ignitionSchedule ## index); \
+    moveToNextState(ignitionSchedules[(index)-1]); \
   }
 
 /** @brief ISR for ignition channel 1 */

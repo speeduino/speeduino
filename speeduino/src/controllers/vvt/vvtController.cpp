@@ -293,7 +293,7 @@ static uint8_t calculateWmiPw(const statuses &current, const config10 &page10)
         // Mapped closed loop - Output PWM follows injector duty cycle with 2D correction map applied (RPM vs MAP). 
         // Cell value contains correction value% [nom 100%]
         {
-          uint16_t basePw = clamp((int32_t)fuelSchedule1.pw + page10.wmiOffset, (int32_t)0, (int32_t)UINT16_MAX);
+          uint16_t basePw = clamp((int32_t)fuelSchedules[0].pw + page10.wmiOffset, (int32_t)0, (int32_t)UINT16_MAX);
           wmiPw = halfPercentage(get3DTableValue(&wmiTable, current.MAP, current.RPM), basePw);
         }
         break;

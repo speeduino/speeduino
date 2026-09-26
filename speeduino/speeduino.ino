@@ -197,7 +197,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
       currentStatus.setRpm(0);
-      fuelSchedule1.pw = 0;
+      fuelSchedules[0].pw = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
       currentStatus.decoder.reset();
@@ -427,7 +427,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.injAngle = setFuelChannelSchedules(currentStatus);
     
       setIgnitionChannels(currentStatus, configPage4, currentStatus.decoder.getCrankAngle());
-
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
     pulsedCommandController(currentStatus, configPage13);

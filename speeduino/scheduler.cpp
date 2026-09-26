@@ -37,7 +37,7 @@ void nullCallback(void) { return; }
 void Schedule::reset(void)
 {
     _status = OFF;
-    setCallbacks(*this, nullCallback, nullCallback);
+    setCallbacks(nullCallback, nullCallback);
 }
 
 void IgnitionSchedule::reset(void) 
@@ -54,10 +54,13 @@ void FuelSchedule::reset(void)
     channelDegrees = 0;
 }
 
-void __attribute__((optimize("Os"))) setCallbacks(Schedule &schedule, Schedule::callback pStartCallback, Schedule::callback pEndCallback) noexcept
+void __attribute__((optimize("Os"))) Schedule::setCallbacks(callback_t pStartCallback, callback_t pEndCallback) noexcept
 {
-  schedule._pStartCallback = pStartCallback;
-  schedule._pEndCallback = pEndCallback;
+  setCallbacks({ pStartCallback, pEndCallback });
+}
+void __attribute__((optimize("Os"))) Schedule::setCallbacks(const callback_pair_t &callbacks) noexcept
+{
+  _callbacks = callbacks;
 }
 
 // Event duration cannot be longer than the maximum timer period

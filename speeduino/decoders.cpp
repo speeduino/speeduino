@@ -32,7 +32,7 @@ A full copy of the license may be found in the projects root directory
  * - To group all decoders together add 1) @defgroup dec Decoders (on top) and 2) "@ingroup dec" to each decoder (under @defgroup)
  * - To compare Speeduino Doxyfile to default config, do: `doxygen -g Doxyfile.default ; diff Doxyfile.default Doxyfile`
  */
-#include <limits.h>
+#include <iterator>
 #include "globals.h"
 #include "decoders.h"
 #include "elapsed_time.h"
@@ -489,52 +489,12 @@ static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth
 {
   if ( !currentStatus.isFixedCrankingIgnitionTimingActive(configPage4) && (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) )
   {
-    if ( (currentTooth == ignitionEndTeeth[0]) )
+    auto it = std::find(std::begin(ignitionEndTeeth), std::end(ignitionEndTeeth), currentTooth);
+    if (it!=std::end(ignitionEndTeeth))
     {
-      adjustCrankAngle(currentStatus, ignitionSchedule1, crankAngle);
+      uint8_t index = std::distance(std::begin(ignitionEndTeeth), it);
+      adjustCrankAngle(currentStatus, ignitionSchedules[index], crankAngle);
     }
-#if IGN_CHANNELS >= 2
-    else if ( (currentTooth == ignitionEndTeeth[1]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule2, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 3
-    else if ( (currentTooth == ignitionEndTeeth[2]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule3, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 4
-    else if ( (currentTooth == ignitionEndTeeth[3]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule4, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 5
-    else if ( (currentTooth == ignitionEndTeeth[4]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule5, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 6
-    else if ( (currentTooth == ignitionEndTeeth[5]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule6, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 7
-    else if ( (currentTooth == ignitionEndTeeth[6]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule7, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 8
-    else if ( (currentTooth == ignitionEndTeeth[7]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule8, crankAngle);
-    }
-#endif
   }
 }
 
@@ -814,48 +774,42 @@ static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder)
   return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
 }
 
-static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  //Temp variable used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempEndTooth;
 #ifdef USE_LIBDIVIDE  
-  tempEndTooth = libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &divTriggerToothAngle);
+static __attribute__((noinline)) int16_t estimateToothFromSchedule(const IgnitionSchedule &schedule) {
+  return libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &divTriggerToothAngle);
+}
 #else
-  tempEndTooth = (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)triggerToothAngle;
+static inline int16_t estimateToothFromSchedule(const IgnitionSchedule &schedule) {
+  return (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)triggerToothAngle;
+}
 #endif
-  //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
-  if(configPage4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
-  
-  // Clamp to tooth count
-  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
+
+static inline uint8_t calcToothAdder_missingTooth(const config2 &page2, const config4 &page4) 
+{
+  uint8_t toothAdder = 0;
+  if( ((page4.sparkMode == IGN_MODE_SEQUENTIAL) || (page4.sparkMode == IGN_MODE_SINGLE)) 
+    && (page4.TrigSpeed == CRANK_SPEED) && (page2.strokes == FOUR_STROKE) )
+  {
+    toothAdder = page4.triggerTeeth; 
+  }
+  return toothAdder;
 }
 
 static void triggerSetEndTeeth_missingTooth(void)
 {
-  uint8_t toothAdder = 0;
-  if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
+  uint8_t toothAdder = calcToothAdder_missingTooth(configPage2, configPage4);
 
-  ignitionEndTeeth[0] = calcEndTeeth_missingTooth(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcEndTeeth_missingTooth(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcEndTeeth_missingTooth(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  ignitionEndTeeth[3] = calcEndTeeth_missingTooth(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  ignitionEndTeeth[4] = calcEndTeeth_missingTooth(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  ignitionEndTeeth[5] = calcEndTeeth_missingTooth(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  ignitionEndTeeth[6] = calcEndTeeth_missingTooth(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  ignitionEndTeeth[7] = calcEndTeeth_missingTooth(ignitionSchedule8, toothAdder);
-#endif
+  auto calculator = [toothAdder](const IgnitionSchedule & schedule) __attribute__((noinline)) { 
+    int16_t tooth = estimateToothFromSchedule(schedule);
+    //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
+    if(configPage4.triggerTeeth > 12U) { tooth = tooth - 1; }
+    
+    // Clamp to tooth count
+    return clampToActualTeeth(clampToToothCount(tooth, toothAdder), toothAdder);
+  };
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calculator);    
 }
 
 decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
@@ -1028,14 +982,14 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
   return clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
 }
 
-static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth =
-#ifdef USE_LIBDIVIDE
-      libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &divTriggerToothAngle);
-#else
-      (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)triggerToothAngle;
-#endif
-  return clampToToothCount(tempEndTooth, toothAdder);
+static inline uint8_t calcToothAdder_DualWheel(const config4 &page4) 
+{
+  uint8_t toothAdder = 0;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) 
+  {
+    toothAdder = page4.triggerTeeth; 
+  }
+  return toothAdder;
 }
 
 /** Dual Wheel - Set End Teeth.
@@ -1044,31 +998,14 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionS
 static void triggerSetEndTeeth_DualWheel(void)
 {
   //The toothAdder variable is used for when a setup is running sequentially, but the primary wheel is running at crank speed. This way the count of teeth will go up to 2* the number of primary teeth to allow for a sequential count. 
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  ignitionEndTeeth[0] = calcEndTeeth_DualWheel(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcEndTeeth_DualWheel(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcEndTeeth_DualWheel(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  ignitionEndTeeth[3] = calcEndTeeth_DualWheel(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  ignitionEndTeeth[4] = calcEndTeeth_DualWheel(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  ignitionEndTeeth[5] = calcEndTeeth_DualWheel(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  ignitionEndTeeth[6] = calcEndTeeth_DualWheel(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  ignitionEndTeeth[7] = calcEndTeeth_DualWheel(ignitionSchedule8, toothAdder);
-#endif
+  byte toothAdder = calcToothAdder_DualWheel(configPage4);
+  
+  auto calculator = [toothAdder](const IgnitionSchedule & schedule) __attribute__((noinline)) { 
+    return clampToToothCount(estimateToothFromSchedule(schedule), toothAdder);
+  };
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calculator);    
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
@@ -1191,7 +1128,7 @@ static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 static void triggerSetEndTeeth_BasicDistributor(void)
 {
 
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - configPage4.triggerAngle);
+  int tempEndAngle = (ignitionSchedules[0].dischargeAngle - configPage4.triggerAngle);
   tempEndAngle = ignitionLimits((tempEndAngle));
 
   switch(configPage2.nCylinders)
@@ -3007,7 +2944,7 @@ static int16_t getCrankAngle_Nissan360(uint32_t currMicros)
   return clampCrankAngle(crankAngle);
 }
 
-static uint16_t __attribute__((noinline)) calcEndTooth_Nissan360(const IgnitionSchedule &schedule) {
+static __attribute__((noinline)) uint16_t calcEndTooth_Nissan360(const IgnitionSchedule &schedule) {
   //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
   static constexpr uint8_t offset_teeth = 4;
   if(((int16_t)schedule.dischargeAngle - offset_teeth) > configPage4.triggerAngle) {
@@ -3020,16 +2957,9 @@ static uint16_t __attribute__((noinline)) calcEndTooth_Nissan360(const IgnitionS
 
 void triggerSetEndTeeth_Nissan360(void)
 {
-  ignitionEndTeeth[0] = calcEndTooth_Nissan360(ignitionSchedule1);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcEndTooth_Nissan360(ignitionSchedule2);
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcEndTooth_Nissan360(ignitionSchedule3);
-#endif
-#if (IGN_CHANNELS >= 4)
-  ignitionEndTeeth[3] = calcEndTooth_Nissan360(ignitionSchedule4);
-#endif
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calcEndTooth_Nissan360);    
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
@@ -4254,34 +4184,28 @@ static int16_t getCrankAngle_FordST170(uint32_t currMicros)
   return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
 }
 
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
-#endif  
-  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
-  return clampToActualTeeth((uint16_t)tempEndTooth, toothAdder);
+static inline uint8_t calcToothAdder_FordST170(const config4 &page4) 
+{
+  uint8_t toothAdder = 0;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) )
+  {
+    toothAdder = 36; 
+  }
+  return toothAdder;
 }
 
 static void triggerSetEndTeeth_FordST170(void)
 {
-  byte toothAdder = 0;
-   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
+  uint8_t toothAdder = calcToothAdder_FordST170(configPage4);
 
-  ignitionEndTeeth[0] = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  ignitionEndTeeth[3] = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder);
-#endif
-
-  // Removed ign channels >4 as an ST170 engine is a 4 cylinder
+  auto calculator = [toothAdder](const IgnitionSchedule & schedule) __attribute__((noinline)) { 
+    int16_t tooth = estimateToothFromSchedule(schedule);
+    tooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tooth - 1));
+    return clampToActualTeeth((uint16_t)tooth, toothAdder);
+  };
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calculator);  
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
@@ -4620,7 +4544,7 @@ static uint16_t getRPM_NGC(void)
   return tempRPM;
 }
 
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
+static uint16_t calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
   if(toothNum == 17U || toothNum == 18U) { return 16U; } // These are missing teeth, so set the next one before instead
   if(toothNum == 35U || toothNum == 36U) { return 34U; } // These are missing teeth, so set the next one before instead
   if(toothNum == 53U || toothNum == 54U) { return 52U; } // These are missing teeth, so set the next one before instead
@@ -4628,40 +4552,27 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16
   return toothNum;
 }
 
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
-#endif  
-  return calcSetEndTeeth_NGC_SkipMissing(clampToToothCount(tempEndTooth - 1, toothAdder));
+static inline uint8_t calcToothAdder_NGC(const config4 &page4) 
+{
+  uint8_t toothAdder = 0;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) )
+  {
+    toothAdder = page4.triggerTeeth; 
+  }
+  return toothAdder;
 }
 
 static void triggerSetEndTeeth_NGC(void)
 {
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
+  byte toothAdder = calcToothAdder_NGC(configPage4);
   
-  ignitionEndTeeth[0] = calcSetEndTeeth_NGC(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcSetEndTeeth_NGC(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcSetEndTeeth_NGC(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  ignitionEndTeeth[3] = calcSetEndTeeth_NGC(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  ignitionEndTeeth[4] = calcSetEndTeeth_NGC(ignitionSchedule5, toothAdder);
-  ignitionEndTeeth[5] = calcSetEndTeeth_NGC(ignitionSchedule6, toothAdder);
-  #endif
-
-  #if IGN_CHANNELS >= 8
-  ignitionEndTeeth[6] = calcSetEndTeeth_NGC(ignitionSchedule7, toothAdder);
-  ignitionEndTeeth[7] = calcSetEndTeeth_NGC(ignitionSchedule8, toothAdder);
-  #endif
+  auto calculator = [toothAdder](const IgnitionSchedule & schedule) __attribute__((noinline)) { 
+    int16_t tooth = estimateToothFromSchedule(schedule);
+    return calcSetEndTeeth_NGC_SkipMissing(clampToToothCount(tooth - 1, toothAdder));
+  };
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calculator);  
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
@@ -4996,48 +4907,28 @@ static void triggerPri_Renix(void)
   } 
 }
 
-static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)triggerToothAngle;
-#endif  
-  tempEndTooth = tempEndTooth - 1;
-  // Clamp to tooth count
-  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
+static inline uint8_t calcToothAdder_Renix(const config4 &page4) 
+{
+  uint8_t toothAdder = 0;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) )
+  {
+    toothAdder = page4.triggerTeeth; 
+  }
+  return toothAdder;
 }
 
 static void triggerSetEndTeeth_Renix(void)
 {
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
+  byte toothAdder = calcToothAdder_Renix(configPage4);
 
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-
-  ignitionEndTeeth[0] = calcEndTeeth_Renix(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcEndTeeth_Renix(ignitionSchedule2, toothAdder);
-  currentStatus.canin[1] = ignitionEndTeeth[1];
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcEndTeeth_Renix(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  ignitionEndTeeth[3] = calcEndTeeth_Renix(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  ignitionEndTeeth[4] = calcEndTeeth_Renix(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  ignitionEndTeeth[5] = calcEndTeeth_Renix(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  ignitionEndTeeth[6] = calcEndTeeth_Renix(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  ignitionEndTeeth[7] = calcEndTeeth_Renix(ignitionSchedule8, toothAdder);
-#endif
+  auto calculator = [toothAdder](const IgnitionSchedule & schedule) __attribute__((noinline)) { 
+    int16_t tooth = estimateToothFromSchedule(schedule) - 1;
+    // Clamp to tooth count
+    return clampToActualTeeth(clampToToothCount(tooth, toothAdder), toothAdder);
+  };
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calculator);
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
@@ -5357,65 +5248,61 @@ static uint16_t getRPM_RoverMEMS(void)
   return tempRPM;
 }
 
-static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t channelToothAdder = 36 + (int16_t)toothAdder;
-  int16_t tempIgnitionEndTooth = ( (schedule.dischargeAngle - configPage4.triggerAngle) / (int16_t)(10) ) - 1;
-  if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth -= channelToothAdder; }
-  if(tempIgnitionEndTooth <= 0) { tempIgnitionEndTooth += channelToothAdder; }
-  if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth = channelToothAdder; }
- return tempIgnitionEndTooth;
+static inline uint8_t calcToothAdder_RoverMEMS(const config4 &page4) 
+{
+  uint8_t toothAdder = 36;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) )
+  {
+    toothAdder = toothAdder + 36; 
+  }
+  return toothAdder;
+}
+
+// Take into account the missing teeth on the Rover flywheels
+// Check the calculated trigger tooth exists, if it doesn't use the previous tooth
+static inline uint16_t adjustToothIfMissing(const config4 &page4, int16_t toothNum)
+{
+  // nb the toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
+  if (toothNum>0)
+  {
+    if (page4.sparkMode == IGN_MODE_SEQUENTIAL)
+    {
+      if(  (toothNum == toothAngles[1]) 
+        || (toothNum == toothAngles[2]) 
+        || (toothNum == toothAngles[3])
+        || (toothNum == toothAngles[4]) 
+        || (toothNum == 36 + toothAngles[1])
+        || (toothNum == 36 + toothAngles[2]) 
+        || (toothNum == 36 + toothAngles[3])
+        || (toothNum == 36 + toothAngles[4])  )
+      {
+        --toothNum;
+      }
+    }
+    else
+    {
+      if ( (toothNum == toothAngles[1]) 
+        || (toothNum == toothAngles[2]) )
+      { 
+        --toothNum;
+      }  
+    }
+  }
+  return toothNum;
 }
 
 static void triggerSetEndTeeth_RoverMEMS(void)
 {
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempIgnitionEndTooth[5]; // cheating with the array - location 1 is spark 1, location 0 not used.   
-  int16_t toothAdder = 0;
+  uint8_t toothAdder = calcToothAdder_RoverMEMS(configPage4);
 
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
-
-  tempIgnitionEndTooth[1] = calcEndTooth_RoverMEMS(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  tempIgnitionEndTooth[2] = calcEndTooth_RoverMEMS(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  tempIgnitionEndTooth[3] = calcEndTooth_RoverMEMS(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  tempIgnitionEndTooth[4] = calcEndTooth_RoverMEMS(ignitionSchedule4, toothAdder);
-#endif
-
-  // take into account the missing teeth on the Rover flywheels
-  int tempCount=0;
- 
-  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
-  {
-    // check the calculated trigger tooth exists, if it doesn't use the previous tooth
-    // nb the toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
- 
-    for(tempCount=1;tempCount <5;tempCount++)
-    {
-      if(tempIgnitionEndTooth[tempCount] == (toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (toothAngles[2]) ||
-         tempIgnitionEndTooth[tempCount] == (toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (toothAngles[4]) ||
-         tempIgnitionEndTooth[tempCount] == (36 + toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (36 + toothAngles[2]) ||
-         tempIgnitionEndTooth[tempCount] == (36 + toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (36 + toothAngles[4])  )
-      { tempIgnitionEndTooth[tempCount]--; }
-    }
-  }
-  else
-  {
-    for(tempCount=1;tempCount<5;tempCount++)
-    {
-      if(tempIgnitionEndTooth[tempCount] == (toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (toothAngles[2]) )
-      { tempIgnitionEndTooth[tempCount]--; }  
-    }
-  }
-  
-  
-  ignitionEndTeeth[0] = tempIgnitionEndTooth[1];  
-  ignitionEndTeeth[1] = tempIgnitionEndTooth[2];
-  ignitionEndTeeth[2] = tempIgnitionEndTooth[3];
-  ignitionEndTeeth[3] = tempIgnitionEndTooth[4];
+  auto calculator = [toothAdder](const IgnitionSchedule & schedule) __attribute__((noinline)) { 
+    int16_t tooth = ( (schedule.dischargeAngle - configPage4.triggerAngle) / (int16_t)(10) ) - 1;
+    tooth = normalize((int16_t)0, (int16_t)toothAdder, tooth);
+    return adjustToothIfMissing(configPage4, tooth);
+  };
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calculator);    
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
@@ -5691,7 +5578,7 @@ static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
 }
 
 // Assumes no advance greater than 48 degrees. Triggers on the tooth before the ignition event
-static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionSchedule &schedule) {
+static __attribute__((noinline)) uint16_t calcEndTeeth_SuzukiK6A(const IgnitionSchedule &schedule) {
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
   const int16_t tempIgnitionEndTooth = ignitionLimits(schedule.dischargeAngle - configPage4.triggerAngle);
 
@@ -5710,13 +5597,9 @@ static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionS
 
 static void triggerSetEndTeeth_SuzukiK6A(void)
 {
-  ignitionEndTeeth[0] = calcEndTeeth_SuzukiK6A(ignitionSchedule1);
-#if (IGN_CHANNELS >= 2)
-  ignitionEndTeeth[1] = calcEndTeeth_SuzukiK6A(ignitionSchedule2);
-#endif
-#if (IGN_CHANNELS >= 3)
-  ignitionEndTeeth[2] = calcEndTeeth_SuzukiK6A(ignitionSchedule3);
-#endif
+  std::transform( std::begin(ignitionSchedules), std::end(ignitionSchedules),
+                  std::begin(ignitionEndTeeth),
+                  calcEndTeeth_SuzukiK6A);  
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
@@ -5935,7 +5818,7 @@ static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
  * */
 static void triggerSetEndTeeth_FordTFI(void)
 {
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - configPage4.triggerAngle);
+  int tempEndAngle = (ignitionSchedules[0].dischargeAngle - configPage4.triggerAngle);
   tempEndAngle = ignitionLimits((tempEndAngle));
 
   switch(configPage2.nCylinders)

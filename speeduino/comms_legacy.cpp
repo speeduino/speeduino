@@ -768,10 +768,10 @@ void sendValuesLegacy(void)
 
   bytestosend -= primarySerial.write(currentStatus.secl>>8);
   bytestosend -= primarySerial.write(currentStatus.secl);
-  bytestosend -= primarySerial.write(fuelSchedule1.pw>>8);
-  bytestosend -= primarySerial.write(fuelSchedule1.pw);
-  bytestosend -= primarySerial.write(fuelSchedule2.pw>>8);
-  bytestosend -= primarySerial.write(fuelSchedule2.pw);
+  bytestosend -= primarySerial.write(fuelSchedules[0].pw>>8);
+  bytestosend -= primarySerial.write(fuelSchedules[0].pw);
+  bytestosend -= primarySerial.write(fuelSchedules[1].pw>>8);
+  bytestosend -= primarySerial.write(fuelSchedules[1].pw);
   bytestosend -= primarySerial.write(currentStatus.RPM>>8);
   bytestosend -= primarySerial.write(currentStatus.RPM);
 

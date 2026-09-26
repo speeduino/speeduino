@@ -4,29 +4,33 @@
 #include "scheduledIO_ign.h"
 #include "globals.h"
 #include "unit_testing.h"
+#include "prog_mem_support.h"
+#include "src/utils/static_for.hpp"
 
-IgnitionSchedule ignitionSchedule1(IGN1_COUNTER, IGN1_COMPARE); //cppcheck-suppress misra-c2012-8.4
+IgnitionSchedule ignitionSchedules[IGN_CHANNELS] = {
+  IgnitionSchedule(IGN1_COUNTER, IGN1_COMPARE),
 #if IGN_CHANNELS >= 2
-IgnitionSchedule ignitionSchedule2(IGN2_COUNTER, IGN2_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN2_COUNTER, IGN2_COMPARE),
 #endif
 #if IGN_CHANNELS >= 3
-IgnitionSchedule ignitionSchedule3(IGN3_COUNTER, IGN3_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN3_COUNTER, IGN3_COMPARE),
 #endif
 #if IGN_CHANNELS >= 4
-IgnitionSchedule ignitionSchedule4(IGN4_COUNTER, IGN4_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN4_COUNTER, IGN4_COMPARE),
 #endif
 #if IGN_CHANNELS >= 5
-IgnitionSchedule ignitionSchedule5(IGN5_COUNTER, IGN5_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN5_COUNTER, IGN5_COMPARE),
 #endif
 #if IGN_CHANNELS >= 6
-IgnitionSchedule ignitionSchedule6(IGN6_COUNTER, IGN6_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN6_COUNTER, IGN6_COMPARE),
 #endif
 #if IGN_CHANNELS >= 7
-IgnitionSchedule ignitionSchedule7(IGN7_COUNTER, IGN7_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN7_COUNTER, IGN7_COMPARE),
 #endif
 #if IGN_CHANNELS >= 8
-IgnitionSchedule ignitionSchedule8(IGN8_COUNTER, IGN8_COMPARE); //cppcheck-suppress misra-c2012-8.4
+  IgnitionSchedule(IGN8_COUNTER, IGN8_COMPARE),
 #endif
+};
 
 constexpr table2D_u8_u8_8 rotarySplitTable(&configPage10.rotarySplitBins, &configPage10.rotarySplitValues);
 
@@ -40,119 +44,76 @@ static inline int8_t getIgnitionTrimmedAdvance(const config13 &page13, int8_t ba
   return constrainAdvanceTrim((int16_t)baseAdvance + (int16_t)page13.ignTrim[channelIndex]);
 }
 
+static __attribute__((optimize("Os"))) void setCallbacksP(const Schedule::callback_pair_t *begin, const Schedule::callback_pair_t *end)
+{
+  for (auto& schedule: ignitionSchedules) {
+    if (begin!=end) {
+      schedule.setCallbacks(copyObject_P(begin));
+      ++begin;
+    }
+  }
+}
+
 static void __attribute__((optimize("Os"))) setSequentialCallbacks(uint8_t numChannels)
 {
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 2
-  if (numChannels>=2)
-  {
-    setCallbacks(ignitionSchedule2, beginCoil2Charge, endCoil2Charge);
-  }
-#endif
-#if IGN_CHANNELS >= 3
-  if (numChannels>=3)
-  {
-    setCallbacks(ignitionSchedule3, beginCoil3Charge, endCoil3Charge);
-  }
-#endif
-#if IGN_CHANNELS >= 4
-  if (numChannels>=4)
-  {
-    setCallbacks(ignitionSchedule4, beginCoil4Charge, endCoil4Charge);
-  }
-#endif
-#if IGN_CHANNELS >= 5
-  if (numChannels>=5)
-  {
-    setCallbacks(ignitionSchedule5, beginCoil5Charge, endCoil5Charge);
-  }
-#endif
-#if IGN_CHANNELS >= 6
-  if (numChannels>=6)
-  {
-    setCallbacks(ignitionSchedule6, beginCoil6Charge, endCoil6Charge);
-  }
-#endif
-#if IGN_CHANNELS >= 7
-  if (numChannels>=7)
-  {
-    setCallbacks(ignitionSchedule7, beginCoil7Charge, endCoil7Charge);
-  }
-#endif
-#if IGN_CHANNELS >= 8
-  if (numChannels>=8)
-  {
-    setCallbacks(ignitionSchedule8, beginCoil8Charge, endCoil8Charge);
-  }
-#endif
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { beginCoil1Charge, endCoil1Charge },
+    { beginCoil2Charge, endCoil2Charge },
+    { beginCoil3Charge, endCoil3Charge },
+    { beginCoil4Charge, endCoil4Charge },
+    { beginCoil5Charge, endCoil5Charge },
+    { beginCoil6Charge, endCoil6Charge },
+    { beginCoil7Charge, endCoil7Charge },
+    { beginCoil8Charge, endCoil8Charge },
+  };
+  numChannels = (std::min)(numChannels, (uint8_t)_countof(ignitionSchedules));
+  setCallbacksP(callbacks, callbacks+numChannels);
 }
 
 static void __attribute__((optimize("Os"))) setWastedSparkCallbacks(void)
 {
-  setSequentialCallbacks((std::min)((uint8_t)5U, (uint8_t)IGN_CHANNELS));
+  setSequentialCallbacks(5U);
 }
 
 static void __attribute__((optimize("Os"))) setSingleChannelCallbacks(void)
 {
   //Single channel mode. All ignition pulses are on channel 1
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 5
-  setCallbacks(ignitionSchedule5, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 6
-  setCallbacks(ignitionSchedule6, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 7
-  setCallbacks(ignitionSchedule7, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 8
-  setCallbacks(ignitionSchedule8, beginCoil1Charge, endCoil1Charge);
-#endif
+  constexpr Schedule::callback_pair_t callbacks = { beginCoil1Charge, endCoil1Charge };
+  for (auto& schedule: ignitionSchedules) {
+    schedule.setCallbacks(callbacks);
+  }
 }
 
 static void __attribute__((optimize("Os"))) set4CylinderWastedCOPCallbacks(void)
 {
-  //Wasted COP mode for 4 cylinders. Ignition channels 1&3 and 2&4 are paired together
-  setCallbacks(ignitionSchedule1, beginCoil1and3Charge, endCoil1and3Charge);
-#if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil2and4Charge, endCoil2and4Charge);
-#endif
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { beginCoil1and3Charge, endCoil1and3Charge },
+    { beginCoil2and4Charge, endCoil2and4Charge },
+  };
+  setCallbacksP(std::begin(callbacks), std::end(callbacks));
 }
 
 static void __attribute__((optimize("Os"))) set6CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 6 cylinders. Ignition channels 1&4, 2&5 and 3&6 are paired together
-  setCallbacks(ignitionSchedule1, beginCoil1and4Charge, endCoil1and4Charge);
-#if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil2and5Charge, endCoil2and5Charge);
-#endif
-#if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil3and6Charge, endCoil3and6Charge);
-#endif
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { beginCoil1and4Charge, endCoil1and4Charge },
+    { beginCoil2and5Charge, endCoil2and5Charge },
+    { beginCoil3and6Charge, endCoil3and6Charge },
+  };
+  setCallbacksP(std::begin(callbacks), std::end(callbacks));
 }
 
 static void __attribute__((optimize("Os"))) set8CylinderWastedCOPCallbacks(void)
 {
   //Wasted COP mode for 8 cylinders. Ignition channels 1&5, 2&6, 3&7 and 4&8 are paired together
-  setCallbacks(ignitionSchedule1, beginCoil1and5Charge, endCoil1and5Charge);
-#if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil2and6Charge, endCoil2and6Charge);
-#endif
-#if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil3and7Charge, endCoil3and7Charge);
-#endif
-#if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginCoil4and8Charge, endCoil4and8Charge);
-#endif
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { beginCoil1and5Charge, endCoil1and5Charge },
+    { beginCoil2and6Charge, endCoil2and6Charge },
+    { beginCoil3and7Charge, endCoil3and7Charge },
+    { beginCoil4and8Charge, endCoil4and8Charge },
+  };
+  setCallbacksP(std::begin(callbacks), std::end(callbacks));
 }
 
 static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCylinders)
@@ -170,35 +131,27 @@ static void __attribute__((optimize("Os"))) setWastedCOPCallbacks(uint8_t numCyl
 static void __attribute__((optimize("Os"))) setRotaryFcCallbacks(void)
 {
   //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-#endif
-#if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginTrailingCoilCharge, endTrailingCoilCharge1);
-#endif
-#if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginTrailingCoilCharge, endTrailingCoilCharge2);
-#endif  
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { beginCoil1Charge, endCoil1Charge },
+    { beginCoil1Charge, endCoil1Charge },
+    { beginTrailingCoilCharge, endTrailingCoilCharge1 },
+    { beginTrailingCoilCharge, endTrailingCoilCharge2 },
+  };
+  setCallbacksP(std::begin(callbacks), std::end(callbacks));
 }
 
 static void __attribute__((optimize("Os"))) setRotaryFdCallbacks(void)
 {
-  //Ignition channel 1 is a wasted spark signal for leading signal on both rotors
-  setCallbacks(ignitionSchedule1, beginCoil1Charge, endCoil1Charge);
-#if IGN_CHANNELS >= 2
-  setCallbacks(ignitionSchedule2, beginCoil1Charge, endCoil1Charge);
-#endif
-
-  //Trailing coils have their own channel each
-  //IGN2 = front rotor trailing spark
-#if IGN_CHANNELS >= 3
-  setCallbacks(ignitionSchedule3, beginCoil2Charge, endCoil2Charge);
-  //IGN3 = rear rotor trailing spark
-#endif
-#if IGN_CHANNELS >= 4
-  setCallbacks(ignitionSchedule4, beginCoil3Charge, endCoil3Charge);
-#endif
+  static const Schedule::callback_pair_t callbacks[] PROGMEM = {
+    { beginCoil1Charge, endCoil1Charge },
+    { beginCoil1Charge, endCoil1Charge },
+    //Trailing coils have their own channel each
+    //IGN2 = front rotor trailing spark
+    { beginCoil2Charge, endCoil2Charge },
+    //IGN3 = rear rotor trailing spark
+    { beginCoil3Charge, endCoil3Charge },
+  };
+  setCallbacksP(std::begin(callbacks), std::end(callbacks));
 }
 
 static void __attribute__((optimize("Os"))) setRotaryCallbacks(uint8_t rotaryType)
@@ -234,33 +187,14 @@ TESTABLE_STATIC void __attribute__((optimize("Os"))) setCallbacks(uint8_t sparkM
 
 TESTABLE_STATIC void __attribute__((optimize("Os"))) resetIgnitionSchedulers(void)
 {
-  ignitionSchedule1.reset();
-#if IGN_CHANNELS >= 2
-  ignitionSchedule2.reset();
-#endif
-#if IGN_CHANNELS >= 3
-  ignitionSchedule3.reset();
-#endif
-#if IGN_CHANNELS >= 4
-  ignitionSchedule4.reset();
-#endif
-#if (IGN_CHANNELS >= 5)
-  ignitionSchedule5.reset();
-#endif
-#if IGN_CHANNELS >= 6
-  ignitionSchedule6.reset();
-#endif
-#if IGN_CHANNELS >= 7
-  ignitionSchedule7.reset();
-#endif
-#if IGN_CHANNELS >= 8
-  ignitionSchedule8.reset();
-#endif
+  for (auto& schedule: ignitionSchedules) {
+    schedule.reset();
+  }  
 }
 
 void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
 {
-  for (uint8_t index=1; index<=IGN_CHANNELS; ++index)
+  for (uint8_t index=1; index<=_countof(ignitionSchedules); ++index)
   {
     endCoilCharge(index);
   }
@@ -268,30 +202,21 @@ void __attribute__((optimize("Os"))) stopAllCoilsCharging(void)
 
 static void __attribute__((optimize("Os"))) setOddfireScheduleAngles(const config2 &page2)
 {
-  ignitionSchedule1.channelDegrees = 0;
-#if IGN_CHANNELS >= 2
-  ignitionSchedule2.channelDegrees = page2.oddfire[0];
-#endif
-#if IGN_CHANNELS >= 3
-  ignitionSchedule3.channelDegrees = page2.oddfire[1];
-#endif
-#if IGN_CHANNELS >= 4
-  ignitionSchedule4.channelDegrees = page2.oddfire[2];
-#endif
+  ignitionSchedules[0].channelDegrees = 0;
+  for (uint8_t i = 0; i < (std::min)(_countof(ignitionSchedules)-1U, _countof(page2.oddfire)); i++)
+  {
+    ignitionSchedules[i+1U].channelDegrees = page2.oddfire[i];
+  }
 }
 
 static void __attribute__((optimize("Os"))) setRotaryScheduleAngles(void)
 {
-  ignitionSchedule1.channelDegrees = 0;
-#if IGN_CHANNELS >= 2
-  ignitionSchedule2.channelDegrees = 180;
-#endif
-//Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
-#if IGN_CHANNELS >= 3
-  ignitionSchedule3.channelDegrees = ignitionSchedule1.channelDegrees;
-#endif
 #if IGN_CHANNELS >= 4
-  ignitionSchedule4.channelDegrees = ignitionSchedule2.channelDegrees;
+  ignitionSchedules[0].channelDegrees = 0;
+  ignitionSchedules[1].channelDegrees = 180;
+//Rotary uses the ign 3 and 4 schedules for the trailing spark. They are offset from the ign 1 and 2 channels respectively and so use the same degrees as them
+  ignitionSchedules[2].channelDegrees = ignitionSchedules[0].channelDegrees;
+  ignitionSchedules[3].channelDegrees = ignitionSchedules[1].channelDegrees;
 #endif
 }
 
@@ -302,33 +227,10 @@ static void __attribute__((optimize("Os"))) setEvenfireScheduleAngles(const stat
   // LCOV_EXCL_STOP
 
   uint16_t interCylinderAngle = CRANK_ANGLE_MAX_IGN/current.maxIgnOutputs;
-
-#define SET_CHANNEL_ANGLE(channel) ignitionSchedule ##channel .channelDegrees = ((channel)-1)*interCylinderAngle;
-
-  SET_CHANNEL_ANGLE(1);
-#if IGN_CHANNELS >= 2
-  SET_CHANNEL_ANGLE(2);
-#endif
-#if IGN_CHANNELS >= 3
-  SET_CHANNEL_ANGLE(3);
-#endif
-#if IGN_CHANNELS >= 4
-  SET_CHANNEL_ANGLE(4);
-#endif
-#if IGN_CHANNELS >= 5
-  SET_CHANNEL_ANGLE(5);
-#endif
-#if IGN_CHANNELS >= 6
-  SET_CHANNEL_ANGLE(6);
-#endif
-#if IGN_CHANNELS >= 7
-  SET_CHANNEL_ANGLE(7);
-#endif
-#if IGN_CHANNELS >= 8
-  SET_CHANNEL_ANGLE(8);
-#endif
-
-#undef SET_CHANNEL_ANGLE
+  for (uint8_t i = 0; i < _countof(ignitionSchedules); i++)
+  {
+    ignitionSchedules[i].channelDegrees = i*interCylinderAngle;
+  }
 }
 
 static void __attribute__((optimize("Os"))) initScheduleAngles(const statuses &current, const config2 &page2, const config4 &page4)
@@ -465,29 +367,7 @@ void __attribute__((optimize("Os"))) initialiseIgnitionSchedules(statuses &curre
 }
 
 TESTABLE_INLINE_STATIC bool isAnyIgnScheduleRunning(void) {
-  return isRunning(ignitionSchedule1)      
-#if IGN_CHANNELS >= 2 
-      || isRunning(ignitionSchedule2)
-#endif      
-#if IGN_CHANNELS >= 3 
-      || isRunning(ignitionSchedule3)
-#endif      
-#if IGN_CHANNELS >= 4       
-      || isRunning(ignitionSchedule4)
-#endif      
-#if IGN_CHANNELS >= 5      
-      || isRunning(ignitionSchedule5)
-#endif
-#if IGN_CHANNELS >= 6
-      || isRunning(ignitionSchedule6)
-#endif
-#if IGN_CHANNELS >= 7
-      || isRunning(ignitionSchedule7)
-#endif
-#if IGN_CHANNELS >= 8
-      || isRunning(ignitionSchedule8)
-#endif
-      ;
+  return std::any_of(std::begin(ignitionSchedules), std::end(ignitionSchedules), isRunning);
 }
 
 static inline bool isSwitchableCylinderCount(const config2 &page2)
@@ -574,68 +454,23 @@ TESTABLE_STATIC void calculateIgnitionTrailingRotary(IgnitionSchedule &leading, 
 static inline void calculateRotaryIgnitionAngles(uint16_t dwellAngle, const statuses &current)
 {
 #if IGN_CHANNELS>=4
-  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, current.advance);
-  calculateIgnitionAngles(ignitionSchedule2, dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedules[0], dwellAngle, current.advance);
+  calculateIgnitionAngles(ignitionSchedules[1], dwellAngle, current.advance);
   uint8_t splitDegrees = table2D_getValue(&rotarySplitTable, (uint8_t)current.ignLoad);
 
   //The trailing angles are set relative to the leading ones
-  calculateIgnitionTrailingRotary(ignitionSchedule1, dwellAngle, splitDegrees, ignitionSchedule3);
-  calculateIgnitionTrailingRotary(ignitionSchedule2, dwellAngle, splitDegrees, ignitionSchedule4);
+  calculateIgnitionTrailingRotary(ignitionSchedules[0], dwellAngle, splitDegrees, ignitionSchedules[2]);
+  calculateIgnitionTrailingRotary(ignitionSchedules[1], dwellAngle, splitDegrees, ignitionSchedules[3]);
 #endif
 }
 
 static inline void calculateNonRotaryIgnitionAngles(const config4 &page4, const config13 &page13, uint16_t dwellAngle, const statuses &current)
 {
   const bool useIndividualTrim = isFullSequentialIgnition(page4, current.decoder.getStatus());
-
-  switch (current.maxIgnOutputs)
+  for (uint8_t i = 0; i < current.maxIgnOutputs; i++)
   {
-  case 8:
-#if IGN_CHANNELS >= 8
-    calculateIgnitionAngles(ignitionSchedule8, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 7U) : current.advance);
-#endif
-    [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 7:
-#if IGN_CHANNELS >= 7
-    calculateIgnitionAngles(ignitionSchedule7, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 6U) : current.advance);
-#endif
-    [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 6:
-#if IGN_CHANNELS >= 6
-    calculateIgnitionAngles(ignitionSchedule6, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 5U) : current.advance);
-#endif
-    [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 5:
-#if IGN_CHANNELS >= 5
-    calculateIgnitionAngles(ignitionSchedule5, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 4U) : current.advance);
-#endif
-    [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 4:
-#if IGN_CHANNELS >= 4
-    calculateIgnitionAngles(ignitionSchedule4, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 3U) : current.advance);
-#endif
-    [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 3:
-#if IGN_CHANNELS >= 3
-    calculateIgnitionAngles(ignitionSchedule3, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 2U) : current.advance);
-#endif
-    [[gnu::fallthrough]];
-  //cppcheck-suppress misra-c2012-16.3
-  case 2:
-#if IGN_CHANNELS >= 2
-    calculateIgnitionAngles(ignitionSchedule2, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 1U) : current.advance);
-#endif
-    break;
-  default:
-    // Do nothing
-    break;
+    calculateIgnitionAngles(ignitionSchedules[i], dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, i) : current.advance);
   }
-  calculateIgnitionAngles(ignitionSchedule1, dwellAngle, useIndividualTrim ? getIgnitionTrimmedAdvance(page13, current.advance, 0U) : current.advance);
 }
 
 /** Calculate the Ignition angles for all cylinders (based on @ref config2.nCylinders).
@@ -673,13 +508,6 @@ TESTABLE_INLINE_STATIC uint32_t _calculateIgnitionTimeout(const IgnitionSchedule
   return _calculateAngularTime(schedule, schedule.channelDegrees, schedule.chargeAngle, crankAngle, CRANK_ANGLE_MAX_IGN);
 }
 
-static inline void setIgnitionChannel(IgnitionSchedule &schedule, uint16_t crankAngle, uint16_t dwellDuration, byte channelMask, uint8_t channelIdx)
-{
-  if (BIT_CHECK(channelMask, (channelIdx)-1U)) {
-    setIgnitionScheduleDuration(schedule, _calculateIgnitionTimeout(schedule, crankAngle), dwellDuration);
-  }
-}
-
 // Fixed cranking override is used to extend the dwell during cranking so that the decoder 
 // can trigger the spark upon seeing a certain tooth. 
 static uint16_t applyFixedCrankingOverride(const statuses &current, const config4 &page4)
@@ -693,28 +521,9 @@ static uint16_t applyFixedCrankingOverride(const statuses &current, const config
     // It simply moves the start time forward a little, which is compensated for by the increase in the dwell time
     if(current.RPM < 250) // Why 250?
     {
-      ignitionSchedule1.chargeAngle -= 5;
-#if IGN_CHANNELS >= 2
-      ignitionSchedule2.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 3          
-      ignitionSchedule3.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 4          
-      ignitionSchedule4.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 5
-      ignitionSchedule5.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 6          
-      ignitionSchedule6.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 7
-      ignitionSchedule7.chargeAngle -= 5;
-#endif
-#if IGN_CHANNELS >= 8
-      ignitionSchedule8.chargeAngle -= 5;
-#endif
+      for (auto& schedule: ignitionSchedules) {
+        schedule.chargeAngle -= 5;
+      }
     }
   }
 
@@ -723,35 +532,15 @@ static uint16_t applyFixedCrankingOverride(const statuses &current, const config
 
 BEGIN_LTO_ALWAYS_INLINE(void) __attribute__((flatten)) setIgnitionChannels(const statuses &current, const config4 &page4, uint16_t crankAngle) {
   crankAngle = ignitionLimits(crankAngle);
-  
   uint16_t dwellTime = current.dwell + applyFixedCrankingOverride(current, page4);
+  auto channelMask = current.schedulerCutState.ignitionChannels;
 
-  #define SET_IGNITION_CHANNEL(channelIdx) setIgnitionChannel(ignitionSchedule ##channelIdx, crankAngle, dwellTime, current.schedulerCutState.ignitionChannels, channelIdx);
-
-  SET_IGNITION_CHANNEL(1)
-#if IGN_CHANNELS >= 2
-  SET_IGNITION_CHANNEL(2)
-#endif
-#if IGN_CHANNELS >= 3
-  SET_IGNITION_CHANNEL(3)
-#endif
-#if IGN_CHANNELS >= 4
-  SET_IGNITION_CHANNEL(4)
-#endif
-#if IGN_CHANNELS >= 5
-  SET_IGNITION_CHANNEL(5)
-#endif
-#if IGN_CHANNELS >= 6
-  SET_IGNITION_CHANNEL(6)
-#endif
-#if IGN_CHANNELS >= 7
-  SET_IGNITION_CHANNEL(7)
-#endif
-#if IGN_CHANNELS >= 8
-  SET_IGNITION_CHANNEL(8)
-#endif
-
-#undef SET_IGNITION_CHANNEL
+  auto setDuration = [crankAngle, dwellTime, channelMask](uint8_t i) __attribute__((always_inline)) {
+    if (BIT_CHECK(channelMask, i)) {
+      setIgnitionScheduleDuration(ignitionSchedules[i], _calculateIgnitionTimeout(ignitionSchedules[i], crankAngle), dwellTime);
+    }
+  };
+  static_for<_countof(ignitionSchedules)>(setDuration);
 }
 END_LTO_INLINE()
 
@@ -784,28 +573,9 @@ void applyOverDwellProtection(const config4 &page4, const statuses &current)
   if (isOverDwellActive(page4, current)) {
     uint32_t dwellLimit_uS = page4.dwellLimit * 1000U; //Convert to uS
 
-    applyChannelOverDwellProtection(ignitionSchedule1, dwellLimit_uS);
-#if IGN_CHANNELS >= 2
-    applyChannelOverDwellProtection(ignitionSchedule2, dwellLimit_uS);
-#endif
-#if IGN_CHANNELS >= 3
-    applyChannelOverDwellProtection(ignitionSchedule3, dwellLimit_uS);
-#endif
-#if IGN_CHANNELS >= 4
-    applyChannelOverDwellProtection(ignitionSchedule4, dwellLimit_uS);
-#endif
-#if IGN_CHANNELS >= 5
-    applyChannelOverDwellProtection(ignitionSchedule5, dwellLimit_uS);
-#endif
-#if IGN_CHANNELS >= 6
-    applyChannelOverDwellProtection(ignitionSchedule6, dwellLimit_uS);
-#endif
-#if IGN_CHANNELS >= 7
-    applyChannelOverDwellProtection(ignitionSchedule7, dwellLimit_uS);
-#endif
-#if IGN_CHANNELS >= 8
-    applyChannelOverDwellProtection(ignitionSchedule8, dwellLimit_uS);
-#endif
+    for (auto& schedule: ignitionSchedules) {
+      applyChannelOverDwellProtection(schedule, dwellLimit_uS);
+    }
   }
 }
 // LCOV_EXCL_STOP

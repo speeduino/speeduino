@@ -447,14 +447,9 @@ static void test_calcScheduleAngle(void)
 
 static void set_all_schedules_off(void)
 {
-    RUNIF_INJCHANNEL1( { fuelSchedule1._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL2( { fuelSchedule2._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL3( { fuelSchedule3._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL4( { fuelSchedule4._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL5( { fuelSchedule5._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL6( { fuelSchedule6._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL7( { fuelSchedule7._status = ScheduleStatus::OFF; }, {});
-    RUNIF_INJCHANNEL8( { fuelSchedule8._status = ScheduleStatus::OFF; }, {});
+  for (auto& schedule: fuelSchedules) {
+    schedule._status = ScheduleStatus::OFF;
+  }
 }
 
 static void test_isAnyFuelScheduleRunning(void)
@@ -462,37 +457,11 @@ static void test_isAnyFuelScheduleRunning(void)
   set_all_schedules_off();
   TEST_ASSERT_FALSE(isAnyFuelScheduleRunning());
 
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL1( { fuelSchedule1._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL1( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, {});
-  
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL2( { fuelSchedule2._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL2( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
-
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL3( { fuelSchedule3._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL3( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
-
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL4( { fuelSchedule4._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL4( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
-
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL5( { fuelSchedule5._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL5( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
-
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL6( { fuelSchedule6._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL6( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
-
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL7( { fuelSchedule7._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL7( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
-
-  set_all_schedules_off();
-  RUNIF_INJCHANNEL8( { fuelSchedule8._status = ScheduleStatus::RUNNING; }, {});
-  RUNIF_INJCHANNEL8( { TEST_ASSERT_TRUE(isAnyFuelScheduleRunning()); }, { TEST_ASSERT_FALSE(isAnyFuelScheduleRunning()); });
+  for (uint8_t index=0; index<_countof(fuelSchedules); ++index) {
+    set_all_schedules_off();
+    fuelSchedules[index]._status = ScheduleStatus::RUNNING;
+    TEST_ASSERT_TRUE(isAnyFuelScheduleRunning());
+  }
 }
 
 using raw_counter_t = std::remove_reference<FuelSchedule::counter_t>::type;
@@ -600,7 +569,7 @@ static void test_beginInjectorPriming_floodclear(void)
 {
   stopFuelSchedulers();
 
-  for (uint8_t channel = 0; channel<INJ_CHANNELS; ++channel)
+  for (uint8_t channel = 1; channel<=INJ_CHANNELS; ++channel)
   {
     statuses current = {};
     config4 page4 = {};
@@ -611,14 +580,9 @@ static void test_beginInjectorPriming_floodclear(void)
     current.injOutputs.primary = channel;
     beginInjectorPriming(current, page4);
 
-    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, false); }, {});
-    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedule2, false); }, {});
-    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedule3, false); }, {});
-    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedule4, false); }, {});
-    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedule5, false); }, {});
-    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedule6, false); }, {});
-    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, false); }, {});
-    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, false); }, {});
+    for (uint8_t index=0; index<_countof(fuelSchedules); ++index) {
+      assert_isPriming(fuelSchedules[index], false);
+    }
   }
 }
 
@@ -628,7 +592,7 @@ static void test_beginInjectorPriming(void)
   stopFuelSchedulers();
   populate_2dtable(&PrimingPulseTable, PRIMING_PULSE_WIDTH, temperatureAddOffset(COOLANT_TEMP));
 
-  for (uint8_t channel = 0; channel<INJ_CHANNELS; ++channel)
+  for (uint8_t channel = 1; channel<=INJ_CHANNELS; ++channel)
   {
     statuses current = {};
     config4 page4 = {};
@@ -640,14 +604,9 @@ static void test_beginInjectorPriming(void)
     current.injOutputs.primary = channel;
     beginInjectorPriming(current, page4);
 
-    RUNIF_INJCHANNEL1( { assert_isPriming(fuelSchedule1, channel>=1); }, {});
-    RUNIF_INJCHANNEL2( { assert_isPriming(fuelSchedule2, channel>=2); }, {});
-    RUNIF_INJCHANNEL3( { assert_isPriming(fuelSchedule3, channel>=3); }, {});
-    RUNIF_INJCHANNEL4( { assert_isPriming(fuelSchedule4, channel>=4); }, {});
-    RUNIF_INJCHANNEL5( { assert_isPriming(fuelSchedule5, channel>=5); }, {});
-    RUNIF_INJCHANNEL6( { assert_isPriming(fuelSchedule6, channel>=6); }, {});
-    RUNIF_INJCHANNEL7( { assert_isPriming(fuelSchedule7, channel>=7); }, {});
-    RUNIF_INJCHANNEL8( { assert_isPriming(fuelSchedule8, channel>=8); }, {});
+    for (uint8_t index=0; index<_countof(fuelSchedules); ++index) {
+      assert_isPriming(fuelSchedules[index], channel>index);
+    }
   }
 }
 

@@ -107,16 +107,12 @@ static void test_validateIgnitionSetup_rotary(void)
 
 static void setup_ignition_channel_angles(void)
 {
-    RUNIF_IGNCHANNEL1( { ignitionSchedule1.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 0U; }, {});
-    RUNIF_IGNCHANNEL2( { ignitionSchedule2.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 1U; }, {});
-    RUNIF_IGNCHANNEL3( { ignitionSchedule3.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 2U; }, {});
-    RUNIF_IGNCHANNEL4( { ignitionSchedule4.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 3U; }, {});
-    RUNIF_IGNCHANNEL5( { ignitionSchedule5.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 4U; }, {});
-    RUNIF_IGNCHANNEL6( { ignitionSchedule6.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 5U; }, {});
-    RUNIF_IGNCHANNEL7( { ignitionSchedule7.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 6U; }, {});
-    RUNIF_IGNCHANNEL8( { ignitionSchedule8.channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * 7U; }, {});
-}
-
+    for (uint8_t i = 0; i < _countof(ignitionSchedules); i++)
+    {
+        ignitionSchedules[i].channelDegrees = (CRANK_ANGLE_MAX_IGN/8U) * i;
+    }
+}    
+ 
 static void test_setIgnitionChannels_mask_enables_and_disables_channels(void)
 {
     test_context_t context;
@@ -134,14 +130,10 @@ static void test_setIgnitionChannels_mask_enables_and_disables_channels(void)
         setIgnitionChannels(context.current, context.page4, 0U);
 
         // Enabled channels should be pending, disabled should remain OFF
-        RUNIF_IGNCHANNEL1( { if (context.current.maxIgnOutputs>=1) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule1._status); } }, {});
-        RUNIF_IGNCHANNEL2( { if (context.current.maxIgnOutputs>=2) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule2._status); } }, {});
-        RUNIF_IGNCHANNEL3( { if (context.current.maxIgnOutputs>=3) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule3._status); } }, {});
-        RUNIF_IGNCHANNEL4( { if (context.current.maxIgnOutputs>=4) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule4._status); } }, {});
-        RUNIF_IGNCHANNEL5( { if (context.current.maxIgnOutputs>=5) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule5._status); } }, {});
-        RUNIF_IGNCHANNEL6( { if (context.current.maxIgnOutputs>=6) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule6._status); } }, {});
-        RUNIF_IGNCHANNEL7( { if (context.current.maxIgnOutputs>=7) { TEST_ASSERT_EQUAL_UINT8(PENDING, (uint8_t)ignitionSchedule7._status); } }, {});
-        RUNIF_IGNCHANNEL8( { if (context.current.maxIgnOutputs>=8) { TEST_ASSERT_EQUAL_UINT8(OFF, (uint8_t)ignitionSchedule8._status); } }, {});
+        for (uint8_t i = 0; i < context.current.maxIgnOutputs; i++)
+        {
+            TEST_ASSERT_EQUAL_UINT8((i%2)==0 ? PENDING : OFF, (uint8_t)ignitionSchedules[i]._status);
+        }
     }
 }
 
@@ -174,14 +166,11 @@ static void test_changeIgnitionToFullSequential_notapplied(uint8_t numCylinders)
 static void test_changeIgnitionToFullSequential_running_schedule(void)
 {
     resetIgnitionSchedulers();
-    ignitionSchedule1._status = ScheduleStatus::RUNNING;
-    test_changeIgnitionToFullSequential_notapplied(1U);
-    test_changeIgnitionToFullSequential_notapplied(2U);
-    test_changeIgnitionToFullSequential_notapplied(3U);
-    test_changeIgnitionToFullSequential_notapplied(4U);
-    test_changeIgnitionToFullSequential_notapplied(5U);
-    test_changeIgnitionToFullSequential_notapplied(6U);
-    test_changeIgnitionToFullSequential_notapplied(8U);
+    ignitionSchedules[0]._status = ScheduleStatus::RUNNING;
+    for (uint8_t numCylinders=1; numCylinders<=8; ++numCylinders)
+    {
+        test_changeIgnitionToFullSequential_notapplied(numCylinders);
+    }
 }
 
 static void test_changeIgnitionToHalfSync_isapplied(uint8_t numCylinders)
@@ -226,15 +215,11 @@ static void test_changeIgnitionToHalfSync(void)
 static void test_changeIgnitionToHalfSync_runningschedule(void)
 {
     resetIgnitionSchedulers();
-    ignitionSchedule1._status = ScheduleStatus::RUNNING;
-    test_changeIgnitionToHalfSync_notapplied(1U);
-    test_changeIgnitionToHalfSync_notapplied(2U);
-    test_changeIgnitionToHalfSync_notapplied(3U);
-    test_changeIgnitionToHalfSync_notapplied(4U);
-    test_changeIgnitionToHalfSync_notapplied(5U);
-    test_changeIgnitionToHalfSync_notapplied(6U);
-    test_changeIgnitionToHalfSync_notapplied(7U);
-    test_changeIgnitionToHalfSync_notapplied(8U);
+    ignitionSchedules[0]._status = ScheduleStatus::RUNNING;
+    for (uint8_t numCylinders=1; numCylinders<=8; ++numCylinders)
+    {
+        test_changeIgnitionToHalfSync_notapplied(numCylinders);
+    }    
 }
 
 static void test_changeIgnitionToFullSequential(void)
@@ -261,14 +246,10 @@ static void test_isAnyIgnScheduleRunning(void)
 {
     stopIgnitionSchedulers();
     resetIgnitionSchedulers();
-    RUNIF_IGNCHANNEL1( { assert_isAnyIgnScheduleRunning(ignitionSchedule1); }, {});
-    RUNIF_IGNCHANNEL2( { assert_isAnyIgnScheduleRunning(ignitionSchedule2); }, {});
-    RUNIF_IGNCHANNEL3( { assert_isAnyIgnScheduleRunning(ignitionSchedule3); }, {});
-    RUNIF_IGNCHANNEL4( { assert_isAnyIgnScheduleRunning(ignitionSchedule4); }, {});
-    RUNIF_IGNCHANNEL5( { assert_isAnyIgnScheduleRunning(ignitionSchedule5); }, {});
-    RUNIF_IGNCHANNEL6( { assert_isAnyIgnScheduleRunning(ignitionSchedule6); }, {});
-    RUNIF_IGNCHANNEL7( { assert_isAnyIgnScheduleRunning(ignitionSchedule7); }, {});
-    RUNIF_IGNCHANNEL8( { assert_isAnyIgnScheduleRunning(ignitionSchedule8); }, {});
+    for (auto& schedule: ignitionSchedules)
+    {
+        assert_isAnyIgnScheduleRunning(schedule);
+    }    
 }
 
 
@@ -293,14 +274,11 @@ static void test_setIgnitionChannels_fixed_cranking_override(void)
 
     int16_t originalAngles[IGN_CHANNELS];
     uint32_t originalDurations[IGN_CHANNELS];
-    RUNIF_IGNCHANNEL1( { originalAngles[0] = ignitionSchedule1.chargeAngle; originalDurations[0] = ignitionSchedule1._duration; }, {});
-    RUNIF_IGNCHANNEL2( { originalAngles[1] = ignitionSchedule1.chargeAngle; originalDurations[1] = ignitionSchedule2._duration; }, {});
-    RUNIF_IGNCHANNEL3( { originalAngles[2] = ignitionSchedule3.chargeAngle; originalDurations[2] = ignitionSchedule3._duration; }, {});
-    RUNIF_IGNCHANNEL4( { originalAngles[3] = ignitionSchedule4.chargeAngle; originalDurations[3] = ignitionSchedule4._duration; }, {});
-    RUNIF_IGNCHANNEL5( { originalAngles[4] = ignitionSchedule5.chargeAngle; originalDurations[4] = ignitionSchedule4._duration; }, {});
-    RUNIF_IGNCHANNEL6( { originalAngles[5] = ignitionSchedule6.chargeAngle; originalDurations[5] = ignitionSchedule6._duration; }, {});
-    RUNIF_IGNCHANNEL7( { originalAngles[6] = ignitionSchedule7.chargeAngle; originalDurations[6] = ignitionSchedule7._duration; }, {});
-    RUNIF_IGNCHANNEL8( { originalAngles[7] = ignitionSchedule8.chargeAngle; originalDurations[7] = ignitionSchedule8._duration; }, {});
+    for (uint8_t i=0; i<_countof(ignitionSchedules); ++i)
+    {
+        originalAngles[i] = ignitionSchedules[i].chargeAngle;
+        originalDurations[i] = ignitionSchedules[i]._duration;
+    }
 
     context.current.setRpm(context.current.crankRPM-10);
     fakeDecoderFeatures.hasFixedCrankingTiming = true;
@@ -309,38 +287,23 @@ static void test_setIgnitionChannels_fixed_cranking_override(void)
     context.calculateIgnitionAngles();
     setIgnitionChannels(context.current, context.page4, 0U);
 
-    #define ASSERT_DURATION_CHANGE_ANGLE_SAME(channel) \
-        CONCAT(RUNIF_IGNCHANNEL, channel) ( { \
-            TEST_ASSERT_EQUAL(originalAngles[channel-1], ignitionSchedule ## channel.chargeAngle); \
-            TEST_ASSERT_NOT_EQUAL(originalDurations[channel-1], ignitionSchedule ## channel._duration); \
-        }, {} )
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(1);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(2);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(3);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(4);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(5);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(6);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(7);
-    ASSERT_DURATION_CHANGE_ANGLE_SAME(8);
+    for (uint8_t i=0; i<_countof(ignitionSchedules); ++i)
+    {
+        TEST_ASSERT_EQUAL(originalAngles[i], ignitionSchedules[i].chargeAngle);
+        TEST_ASSERT_NOT_EQUAL(originalDurations[i], ignitionSchedules[i]._duration);
+    }
 
     context.current.setRpm(200);
     TEST_ASSERT_TRUE(context.current.isFixedCrankingIgnitionTimingActive(context.page4));
     resetIgnitionSchedulers();
     context.calculateIgnitionAngles();
     setIgnitionChannels(context.current, context.page4, 0U);
-    #define ASSERT_DURATION_CHANGE_ANGLE_CHANGE(channel) \
-        CONCAT(RUNIF_IGNCHANNEL, channel) ( { \
-            TEST_ASSERT_NOT_EQUAL(originalAngles[channel-1], ignitionSchedule ## channel.chargeAngle); \
-            TEST_ASSERT_NOT_EQUAL(originalDurations[channel-1], ignitionSchedule ## channel._duration); \
-        }, {} )
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(1);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(2);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(3);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(4);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(5);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(6);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(7);
-    ASSERT_DURATION_CHANGE_ANGLE_CHANGE(8);
+
+    for (uint8_t i=0; i<_countof(ignitionSchedules); ++i)
+    {
+            TEST_ASSERT_NOT_EQUAL(originalAngles[i], ignitionSchedules[i].chargeAngle);
+            TEST_ASSERT_NOT_EQUAL(originalDurations[i], ignitionSchedules[i]._duration);\
+    }
 }
 
 void testIgnitionController(void)
