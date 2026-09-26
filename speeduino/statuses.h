@@ -114,9 +114,27 @@ struct statuses {
   /**
    * @brief Set the RPM field, keeping RPMDiv100 in sync.
    * 
+   * @note Firmware code should use setRevolutionTime() instead, so that RPM & revolutionTime remain consistent. 
+   * 
    * @param rpm 
    */
   void setRpm(uint16_t rpm);
+
+  /**
+   * @brief Set the crank revolution time & all values derived from it.
+   * 
+   * This is the single point at which the engine speed is updated. It keeps the following in sync:
+   * - revolutionTime
+   * - RPM & RPMdiv100
+   * - The crank angle<->time conversion factors (see setAngleConverterRevolutionTime())
+   * 
+   * @param revTime The time in µS that one crank revolution takes at the current speed.
+   * Zero means the engine speed is unknown (the engine-stopped path): RPM will be zero and the
+   * angle<->time conversion factors are left unchanged.
+   * Decoders pass the last published period when they cannot take a new sample. They do not pass 0
+   * to mean "unknown", because that would clear a speed that is still in use.
+   */
+  void setRevolutionTime(uint32_t revTime);
 
   bool isFixedCrankingIgnitionTimingActive(const config4 &page4) const;
 

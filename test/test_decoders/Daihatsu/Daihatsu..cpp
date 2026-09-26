@@ -44,7 +44,7 @@ static void test_getCrankAngle(void)
   run_case(dec3, 4, 0, 100, 480 + dt);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   extern volatile unsigned long toothOneTime;
   extern volatile unsigned long toothOneMinusOneTime;
@@ -52,28 +52,26 @@ static void test_getRPM(void)
 
   auto decoder = triggerSetup_Daihatsu();
 
-  // Prepare state so UpdateRevolutionTimeFromTeeth will succeed
+  // Prepare state so the revolution time can be calculated
   decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.startRevolutions = 1; // not cranking
   currentStatus.setRpm(2000);
-  currentStatus.revolutionTime = 12345UL; // ensure SetRevolutionTime will change
+  currentStatus.revolutionTime = 12345UL;
 
-  // Cam-speed: set times such that (toothOneTime - toothOneMinusOneTime) >> 1 == 60000us => 1000 RPM
+  // Cam-speed: set times such that (toothOneTime - toothOneMinusOneTime) >> 1 == 60000us
   toothOneMinusOneTime = 2000UL;
   toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 -> 60000
-  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // Fallback: when not synced, should return currentStatus.RPM
-  currentStatus.revolutionTime = 12345UL;
+  // Fallback: when not synced, should return currentStatus.revolutionTime
   decoderStatus.syncStatus = SyncStatus::None;
-  currentStatus.setRpm(777);
-  TEST_ASSERT_EQUAL_UINT16(777U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
 void testDaihatsu(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

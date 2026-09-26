@@ -201,26 +201,36 @@ static void test_getCrankAngle(void)
     }
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
+  extern volatile uint32_t toothLastMinusOneToothTime;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+
   auto decoder = triggerSetup_FordST170();
 
+  configPage4.StgCycles = 0;
   currentStatus.crankRPM = 400;
+  currentStatus.startRevolutions = 1;
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.revolutionTime = 12345UL;
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 60000UL; // Full revolution: 60000uS
+  toothLastMinusOneToothTime = 1000UL;
+  toothLastToothTime = toothLastMinusOneToothTime + 1000UL; // Tooth gap of 1000uS * 36 teeth: 36000uS
 
-  // Running
+  // Running: full revolution
   currentStatus.setRpm(currentStatus.crankRPM*2);
-  auto rpm1 = decoder.getRPM();
-  TEST_ASSERT_NOT_EQUAL(0, rpm1);
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
-  // Cranking
+  // Cranking: per tooth
   toothCurrentCount = 2;
   currentStatus.setRpm(currentStatus.crankRPM/2);
-  TEST_ASSERT_NOT_EQUAL(rpm1, decoder.getRPM());
-  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(36000UL, decoder.getRevolutionTime());
 
+  // Can't do a per tooth calculation at tooth #1, so no change
   toothCurrentCount = 1;
-  currentStatus.setRpm(currentStatus.crankRPM/2);
-  TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
 void testFordST170()
@@ -236,6 +246,6 @@ void testFordST170()
         RUN_TEST_P(test_fordst170_newIgn_12_trigNeg270_1);
         RUN_TEST_P(test_fordst170_newIgn_12_trigNeg360_1);
         RUN_TEST_P(test_getCrankAngle);   
-        RUN_TEST_P(test_getRPM);         
+        RUN_TEST_P(test_getRevolutionTime);         
     }
 }

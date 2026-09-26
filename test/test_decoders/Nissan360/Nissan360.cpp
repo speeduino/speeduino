@@ -85,36 +85,35 @@ static void test_getCrankAngle(void)
     run_case(1, 100, -90, 270);   // -90 -> +360 => 270
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
+        extern unsigned long MAX_STALL_TIME;
+
         auto decoder = triggerSetup_Nissan360();
 
         // --- Cranking path: startRevolutions < 2 -> revTime = gap * 180
         currentStatus.setRpm(0);
         currentStatus.crankRPM = 400;
+        currentStatus.revolutionTime = 12345UL;
         currentStatus.startRevolutions = 0; // cranking
         decoderStatus.syncStatus = SyncStatus::Full;
-        currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
         toothLastMinusOneToothTime = 1000UL;
         toothLastToothTime = toothLastMinusOneToothTime + 333UL; // gap = 333 -> revTime = 333*180
-        uint32_t revTime = (toothLastToothTime - toothLastMinusOneToothTime) * 180UL;
-        uint16_t expected = (uint16_t)((MICROS_PER_MIN + (revTime / 2U)) / revTime);
-        TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+        TEST_ASSERT_EQUAL_UINT32(333UL*180UL, decoder.getRevolutionTime());
 
         // --- Running path: use the toothOne pair and >>1 scaling
         currentStatus.setRpm(2000);
         currentStatus.startRevolutions = 2; // not cranking
         decoderStatus.syncStatus = SyncStatus::Full;
         toothOneMinusOneTime = 1000UL;
-        toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 => 60000 uS revTime -> 1000 RPM
-        revTime = ((toothOneTime - toothOneMinusOneTime) >> 1);
-        expected = (uint16_t)((MICROS_PER_MIN + (revTime / 2U)) / revTime);
-        TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+        toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 => 60000 uS revTime
+        TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+        TEST_ASSERT_EQUAL_UINT32(120000UL, MAX_STALL_TIME);
 
-        // --- Fallback: when sync lost or tooth times not present, expect 0
+        // --- Fallback: when sync is lost, keep the published period and the stall time
         decoderStatus.syncStatus = SyncStatus::None;
-        TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
-
+        TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
+        TEST_ASSERT_EQUAL_UINT32(120000UL, MAX_STALL_TIME);
 }
 
 void testNissan360()
@@ -122,6 +121,6 @@ void testNissan360()
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_setEndTeeth_channel1);
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }

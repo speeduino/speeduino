@@ -1319,7 +1319,8 @@ uint16_t correctionsDwell(uint16_t dwell)
   uint16_t sparkDur_uS = TIME_TEN_MILLIS.toUser( configPage4.sparkDur);
   uint8_t pulsesPerRevolution = getPulsesPerRev();
   uint16_t dwellPerRevolution = (dwell + sparkDur_uS) * pulsesPerRevolution;
-  if(dwellPerRevolution > currentStatus.revolutionTime)
+  /* A zero revolution time means speed is unknown (engine stopped). Skipping the limiter avoids subtracting from that 0 and wrapping dwell. */
+  if ((currentStatus.revolutionTime != 0U) && (dwellPerRevolution > currentStatus.revolutionTime))
   {
     //Possibly need some method of reducing spark duration here as well, but this is a start
     uint16_t adjustedSparkDur = fast_div32_16(sparkDur_uS * currentStatus.revolutionTime, dwellPerRevolution);
