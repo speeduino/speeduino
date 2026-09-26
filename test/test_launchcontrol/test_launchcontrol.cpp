@@ -1,308 +1,374 @@
 #include "../test_utils.h"
-#include "src/controllers/launch/launchController.h"
+#include "launch_fixture.h"
+#include "units.h"
 
-static void test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet(void)
-{
-    statuses current = {};
-    config2 page2 = {};
-    config6 page6 = {};
-    config10 page10 = {};
-    config15 page15 = {};
-
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
-    digitalWrite(launchPin, HIGH);
-
-    current.RPM = 11000;
-    current.TPS = 90;
-    page2.vssMode = 0;
-    page6.launchEnabled = 1;
-    page6.flatSEnable = 0;
-    page6.launchHiLo = 1;
-    page6.lnchHardLim = 90;
-    page6.flatSArm = 200;
-    page10.lnchCtrlTPS = 0;
-
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
-
-    TEST_ASSERT_TRUE(current.clutchTrigger);
-    TEST_ASSERT_TRUE(current.clutchTriggerActive);
-    TEST_ASSERT_EQUAL_UINT16(current.RPM, current.clutchEngagedRPM);
-    TEST_ASSERT_TRUE(current.launchingHard);
-    TEST_ASSERT_TRUE(current.hardLaunchActive);
-    TEST_ASSERT_FALSE(current.flatShiftingHard);
-}
-
-static void test_checkLaunchAndFlatShift_enablesFlatShiftWhenLaunchIsDisabled(void)
-{
-    statuses current = {};
-    config2 page2 = {};
-    config6 page6 = {};
-    config10 page10 = {};
-    config15 page15 = {};
-
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
-    digitalWrite(launchPin, HIGH);
-
-    current.clutchTrigger = true;
-    current.previousClutchTrigger = true;
-    current.RPM = 11000;
-    current.TPS = 50;
-    current.clutchEngagedRPM = 10000;
-
-    page2.vssMode = 0;
-    page6.launchEnabled = 0;
-    page6.flatSEnable = 1;
-    page6.launchHiLo = 1;
-    page6.flatSArm = 100;
-    page10.lnchCtrlTPS = 0;
-
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
-
-    TEST_ASSERT_TRUE(current.clutchTrigger);
-    TEST_ASSERT_TRUE(current.clutchTriggerActive);
-    TEST_ASSERT_TRUE(current.flatShiftingHard);
-    TEST_ASSERT_FALSE(current.launchingHard);
-    TEST_ASSERT_FALSE(current.hardLaunchActive);
-}
-
-static void test_checkLaunchAndFlatShift_usesInvertedLaunchInput(void)
-{
-    statuses current = {};
-    config2 page2 = {};
-    config6 page6 = {};
-    config10 page10 = {};
-    config15 page15 = {};
-
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, OUTPUT);
-    digitalWrite(launchPin, LOW);
-    pinMode(launchPin, INPUT);
-
-    current.RPM = 9500;
-    current.TPS = 50;
-    page2.vssMode = 0;
-    page6.launchEnabled = 1;
-    page6.flatSEnable = 0;
-    page6.launchHiLo = 0;
-    page6.lnchHardLim = 90;
-    page6.flatSArm = 200;
-    page10.lnchCtrlTPS = 0;
-
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
-
-    TEST_ASSERT_TRUE(current.clutchTrigger);
-    TEST_ASSERT_TRUE(current.clutchTriggerActive);
-    TEST_ASSERT_TRUE(current.launchingHard);
-    TEST_ASSERT_TRUE(current.hardLaunchActive);
-}
-
-static void test_checkLaunchAndFlatShift_appliesRollingCutDelta(void)
-{
-    statuses current = {};
-    config2 page2 = {};
-    config6 page6 = {};
-    config10 page10 = {};
-    config15 page15 = {};
-
-    constexpr uint8_t launchPin = 13;
-    pinMode(launchPin, INPUT);
-    digitalWrite(launchPin, HIGH);
-
-    current.RPM = 9000;
-    current.TPS = 50;
-    page2.vssMode = 0;
-    page2.hardCutType = HARD_CUT_ROLLING;
-    page6.launchEnabled = 1;
-    page6.flatSEnable = 0;
-    page6.launchHiLo = 1;
-    page6.lnchHardLim = 90;
-    page6.flatSArm = 200;
-    page10.lnchCtrlTPS = 0;
-    page15.rollingProtRPMDelta[0] = -5;
-
-    checkLaunchAndFlatShift(current, launchPin, page2, page6, page10, page15);
-
-    TEST_ASSERT_TRUE(current.launchingHard);
-    TEST_ASSERT_TRUE(current.hardLaunchActive);
-}
-
-
-struct launch_fixture
-{
-    statuses current = {};
-    config2 page2 = {};
-    config6 page6 = {};
-    config10 page10 = {};
-    config15 page15 = {};
-    static constexpr uint8_t pin = 13;
-
-    launch_fixture()
-    {
-        setClutch(true);
-        current.clutchTrigger = true;
-        current.clutchEngagedRPM = 3000;
-        current.RPM = 5000;
-        current.TPS = 50;
-        page6.launchEnabled = 1;
-        page6.flatSEnable = 1;
-        page6.launchHiLo = 1;
-        page6.flatSArm = 40;
-        page6.lnchHardLim = 45;
-        page10.lnchCtrlTPS = 50;
-        page10.lnchCtrlVss = 50;
-        page15.rollingProtRPMDelta[0] = -5;
-    }
-
-    void setClutch(bool engaged)
-    {
-        pinMode(pin, OUTPUT);
-        digitalWrite(pin, engaged ? HIGH : LOW);
-        pinMode(pin, INPUT);
-    }
-
-    void update()
-    {
-        checkLaunchAndFlatShift(current, pin, page2, page6, page10, page15);
-    }
-
-    void assertState(bool launch, bool flatShift)
-    {
-        TEST_ASSERT_EQUAL(launch, current.launchingHard);
-        TEST_ASSERT_EQUAL(launch, current.hardLaunchActive);
-        TEST_ASSERT_EQUAL(flatShift, current.flatShiftingHard);
-    }
-};
-
-static void assert_rpm_boundary(launch_fixture &fixture, uint16_t limit, bool flatShift)
-{
-    fixture.current.RPM = limit - 1U;
-    fixture.update();
-    fixture.assertState(false, false);
-    fixture.current.RPM = limit;
-    fixture.update();
-    fixture.assertState(false, false);
-    fixture.current.RPM = limit + 1U;
-    fixture.update();
-    fixture.assertState(!flatShift, flatShift);
-    fixture.current.RPM = limit;
-    fixture.update();
-    fixture.assertState(false, false); // Clear an already active cut at equality
-}
-
-static void test_launch_rpm_boundaries(void)
+static void test_enablesHardLaunchWhenConditionsAreMet(void)
 {
     launch_fixture fixture;
-    fixture.page2.hardCutType = HARD_CUT_FULL;
-    assert_rpm_boundary(fixture, 4500, false); // Full cut ignores the configured delta
-    fixture.page2.hardCutType = HARD_CUT_ROLLING;
-    assert_rpm_boundary(fixture, 4450, false);
+    fixture.init();
+    fixture.setClutch(true);
+
+    fixture.current.launchStatus.previousClutchTrigger = false;
+    fixture.current.launchStatus.clutchTrigger = false;
+    fixture.current.RPM = 11000;
+    fixture.current.TPS = 90;
+    fixture.page2.vssMode = 0;
+    fixture.page6.launchEnabled = 1;
+    fixture.page6.flatSEnable = 0;
+    fixture.page6.launchHiLo = 1;
+    fixture.page6.lnchHardLim = 90;
+    fixture.page6.flatSArm = 200;
+    fixture.page10.lnchCtrlTPS = 0;
+
+    fixture.update();
+
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
+    TEST_ASSERT_EQUAL_UINT16(fixture.current.RPM, fixture.current.launchStatus.clutchEngagedRPM);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingHard);
 }
 
-static void test_flat_shift_rpm_boundaries(void)
+static void test_enablesFlatShiftWhenLaunchIsDisabled(void)
 {
     launch_fixture fixture;
-    fixture.current.clutchEngagedRPM = 6000;
-    fixture.page2.hardCutType = HARD_CUT_FULL;
-    assert_rpm_boundary(fixture, 6000, true);
+    fixture.init();
+    fixture.setClutch(true);
+
+    fixture.current.launchStatus.clutchTrigger = true;
+    fixture.current.launchStatus.previousClutchTrigger = true;
+    fixture.current.RPM = 11000;
+    fixture.current.TPS = 50;
+    fixture.current.launchStatus.clutchEngagedRPM = 10000;
+
+    fixture.page2.vssMode = 0;
+    fixture.page6.launchEnabled = 0;
+    fixture.page6.flatSEnable = 1;
+    fixture.page6.launchHiLo = 1;
+    fixture.page6.flatSArm = 100;
+    fixture.page10.lnchCtrlTPS = 0;
+
+    fixture.update();
+
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftingHard);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+}
+
+static void test_usesInvertedLaunchInput(void)
+{
+    launch_fixture fixture;
+    fixture.init();
+    fixture.setClutch(false);
+
+    fixture.current.RPM = 9500;
+    fixture.current.TPS = 50;
+    fixture.page2.vssMode = 0;
+    fixture.page6.launchEnabled = 1;
+    fixture.page6.flatSEnable = 0;
+    fixture.page6.launchHiLo = 0;
+    fixture.page6.lnchHardLim = 90;
+    fixture.page6.flatSArm = 200;
+    fixture.page10.lnchCtrlTPS = 0;
+
+    fixture.update();
+
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+}
+
+static void test_appliesRollingCutDelta(void)
+{
+    launch_fixture fixture;
+    fixture.init();
+    fixture.setClutch(true);
+
+    fixture.current.RPM = 9000;
+    fixture.current.TPS = 50;
+    fixture.page2.vssMode = 0;
     fixture.page2.hardCutType = HARD_CUT_ROLLING;
-    assert_rpm_boundary(fixture, 5950, true);
+    fixture.page6.launchEnabled = 1;
+    fixture.page6.flatSEnable = 0;
+    fixture.page6.launchHiLo = 1;
+    fixture.page6.lnchHardLim = 90;
+    fixture.page6.flatSArm = 200;
+    fixture.page10.lnchCtrlTPS = 0;
+    fixture.page15.rollingProtRPMDelta[0] = -5;
+
+    fixture.update();
+
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+}
+
+static void assert_hard_launch_rpm_boundary(launch_fixture &fixture, uint16_t thresholdRpm)
+{
+    fixture.current.setRpm(thresholdRpm-1);
+    fixture.current.launchStatus.previousClutchTrigger = false;
+    fixture.update();
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+
+    fixture.current.setRpm(thresholdRpm);
+    fixture.current.launchStatus.previousClutchTrigger = false;
+    fixture.update();
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+
+    fixture.current.setRpm(thresholdRpm+1);
+    fixture.current.launchStatus.previousClutchTrigger = false;
+    fixture.update();
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+}
+
+static void test_hard_launch_rpm_boundary_fullcut(void)
+{
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.page2.hardCutType = HARD_CUT_FULL;
+    fixture.armHardLaunch();
+
+    assert_hard_launch_rpm_boundary(fixture, RPM_COARSE.toUser(fixture.page6.lnchHardLim));
+}
+
+static void test_hard_launch_rpm_boundary_rollingcut(void)
+{
+    launch_fixture fixture;
+    fixture.init();
+    fixture.page2.hardCutType = HARD_CUT_ROLLING;
+    int16_t adjust = SIGNED_RPM_MEDIUM.toUser(fixture.page15.rollingProtRPMDelta[0]);
+    fixture.armHardLaunch();
+
+    assert_hard_launch_rpm_boundary(fixture, RPM_COARSE.toUser(fixture.page6.lnchHardLim)+adjust);
+}
+
+static void assert_hard_shift_rpm_boundary(launch_fixture &fixture, uint16_t thresholdRpm, int16_t rpmOffset)
+{
+    fixture.current.setRpm(thresholdRpm+rpmOffset-1);
+    fixture.current.launchStatus.clutchEngagedRPM = thresholdRpm;
+    fixture.update();
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingHard);
+
+    fixture.current.setRpm(thresholdRpm+rpmOffset);
+    fixture.current.launchStatus.clutchEngagedRPM = thresholdRpm;
+    fixture.update();
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingHard);
+
+    fixture.current.setRpm(thresholdRpm+rpmOffset+1);
+    fixture.current.launchStatus.clutchEngagedRPM = thresholdRpm;
+    fixture.update();
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftingHard);
+}
+
+static void test_flat_shift_rpm_boundary_fullcut(void)
+{
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.page2.hardCutType = HARD_CUT_FULL;
+    fixture.armFlatShift();
+
+    assert_hard_shift_rpm_boundary(fixture, RPM_COARSE.toUser(fixture.page6.flatSArm), 0);
+}
+
+static void test_flat_shift_rpm_boundary_rollingcut(void)
+{
+    launch_fixture fixture;
+    fixture.init();
+    int16_t adjust = SIGNED_RPM_MEDIUM.toUser(fixture.page15.rollingProtRPMDelta[0]);
+
+    fixture.page2.hardCutType = HARD_CUT_ROLLING;
+    fixture.armFlatShift();
+
+    assert_hard_shift_rpm_boundary(fixture, RPM_COARSE.toUser(fixture.page6.flatSArm), adjust);
 }
 
 static void test_launch_tps_boundary(void)
 {
     launch_fixture fixture;
-    fixture.current.TPS = 49;
+    fixture.init();
+    fixture.armHardLaunch();
+
     fixture.update();
-    fixture.assertState(false, false);
-    fixture.current.TPS = 50;
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingSoft);
+
+    fixture.current.TPS = fixture.page10.lnchCtrlTPS - 1;
     fixture.update();
-    fixture.assertState(true, false);
-    fixture.current.TPS = 51;
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingSoft);
+
+    fixture.current.TPS = fixture.page10.lnchCtrlTPS;
     fixture.update();
-    fixture.assertState(true, false);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingSoft);
+
+    fixture.current.TPS = fixture.page10.lnchCtrlTPS + 1;
+    fixture.update();
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingSoft);
 }
 
 static void test_launch_speed_boundary(void)
 {
     launch_fixture fixture;
-    for (uint8_t mode = 1; mode <= 3; ++mode)
+    fixture.init();
+
+    for (auto mode: { VSS_MODE_INTERNAL_PIN, VSS_MODE_EXTERNAL_KM, VSS_MODE_EXTERNAL_MI})
     {
         fixture.page2.vssMode = mode;
-        fixture.current.vss = 49;
+
+        fixture.armHardLaunch();
+        fixture.current.vss = fixture.page10.lnchCtrlVss - 1;
         fixture.update();
-        fixture.assertState(true, false);
-        fixture.current.vss = 50;
+        TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+        TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingSoft);
+
+        fixture.armHardLaunch();
+        fixture.current.vss = fixture.page10.lnchCtrlVss;
         fixture.update();
-        fixture.assertState(false, false);
-        fixture.current.vss = 51;
+        TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+        TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingSoft);
+
+        fixture.armHardLaunch();
+        fixture.current.vss = fixture.page10.lnchCtrlVss+1;
         fixture.update();
-        fixture.assertState(false, false);
+        TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+        TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingSoft);
     }
-    fixture.page2.vssMode = 0;
+
+    fixture.page2.vssMode = VSS_MODE_OFF;
+    fixture.armHardLaunch();
+    fixture.current.vss = fixture.page10.lnchCtrlVss+1;
     fixture.update();
-    fixture.assertState(true, false); // Ignore vehicle speed when VSS is disabled
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingSoft);
 }
 
 static void test_clutch_arming_boundary(void)
 {
     launch_fixture fixture;
-    fixture.current.clutchEngagedRPM = 3999;
+    fixture.init();
+    fixture.armHardLaunch();
+
+    fixture.current.launchStatus.clutchEngagedRPM = RPM_COARSE.toUser(fixture.page6.flatSArm)-1;
+    fixture.current.setRpm(fixture.current.launchStatus.clutchEngagedRPM);
     fixture.update();
-    fixture.assertState(true, false);
-    fixture.current.clutchEngagedRPM = 4000;
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.launchingSoft);
+
+    fixture.current.launchStatus.clutchEngagedRPM = RPM_COARSE.toUser(fixture.page6.flatSArm);
+    fixture.current.setRpm(fixture.current.launchStatus.clutchEngagedRPM);
     fixture.update();
-    fixture.assertState(false, true); // Equality belongs to flat shift
-    fixture.current.clutchEngagedRPM = 4001;
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingSoft);
+
+    fixture.current.launchStatus.clutchEngagedRPM = RPM_COARSE.toUser(fixture.page6.flatSArm)+1;
+    fixture.current.setRpm(fixture.current.launchStatus.clutchEngagedRPM);
     fixture.update();
-    fixture.assertState(false, true);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingHard);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.launchingSoft);
 }
 
 static void test_clutch_rpm_is_captured_on_engagement(void)
 {
     launch_fixture fixture;
-    fixture.current.clutchTrigger = false;
+    fixture.init();
+    fixture.setClutch(true);
+
+    fixture.current.launchStatus.clutchTrigger = false;
     fixture.current.RPM = 3000;
     fixture.update();
-    TEST_ASSERT_FALSE(fixture.current.previousClutchTrigger);
-    TEST_ASSERT_TRUE(fixture.current.clutchTriggerActive);
-    TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.clutchEngagedRPM);
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.previousClutchTrigger);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.clutchTrigger);
+    TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
 
     fixture.current.RPM = 5000;
     fixture.update();
-    TEST_ASSERT_TRUE(fixture.current.previousClutchTrigger);
-    TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.clutchEngagedRPM);
-    fixture.assertState(true, false);
-
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.previousClutchTrigger);
+    TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
+  
     fixture.setClutch(false);
     fixture.update();
-    TEST_ASSERT_FALSE(fixture.current.clutchTriggerActive);
-    TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.clutchEngagedRPM);
-    fixture.assertState(false, false);
-
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.clutchTrigger);
+    TEST_ASSERT_EQUAL_UINT16(3000, fixture.current.launchStatus.clutchEngagedRPM);
+  
     fixture.setClutch(true);
     fixture.current.RPM = 6000;
     fixture.update();
-    TEST_ASSERT_EQUAL_UINT16(6000, fixture.current.clutchEngagedRPM);
-    fixture.assertState(false, false); // No full cut at the newly captured RPM
-    fixture.current.RPM = 6001;
+    TEST_ASSERT_EQUAL_UINT16(6000, fixture.current.launchStatus.clutchEngagedRPM);
+}
+
+static void test_SoftFlatShift_on(void) {
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.armSoftFlatShift();
     fixture.update();
-    fixture.assertState(false, true);
+    TEST_ASSERT_TRUE(fixture.current.launchStatus.flatShiftingSoft);
+}
+
+static void test_SoftFlatShift_off_disabled(void) {
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.armSoftFlatShift();
+    fixture.page6.flatSEnable = false;
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
+}
+
+static void test_SoftFlatShift_off_noclutchtrigger(void) {
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.armSoftFlatShift();
+    fixture.setClutch(false);
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
+}
+
+static void test_SoftFlatShift_off_clutchrpmtoolow(void) {
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.armSoftFlatShift();
+    fixture.current.launchStatus.clutchEngagedRPM = ((fixture.page6.flatSArm) * 100) - 500;
+    fixture.current.setRpm(fixture.current.launchStatus.clutchEngagedRPM);
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
+}
+
+static void test_SoftFlatShift_off_rpmnotinwindow(void) {
+    launch_fixture fixture;
+    fixture.init();
+
+    fixture.armSoftFlatShift();
+    fixture.current.setRpm( (fixture.current.launchStatus.clutchEngagedRPM - (fixture.page6.flatSSoftWin * 100) ) - 100);
+    fixture.update();
+
+    TEST_ASSERT_FALSE(fixture.current.launchStatus.flatShiftingSoft);
 }
 
 void testLaunchControl(void)
 {
     SET_UNITY_FILENAME() {
-        RUN_TEST_P(test_launch_rpm_boundaries);
-        RUN_TEST_P(test_flat_shift_rpm_boundaries);
+        RUN_TEST_P(test_hard_launch_rpm_boundary_fullcut);
+        RUN_TEST_P(test_hard_launch_rpm_boundary_rollingcut);
+        RUN_TEST_P(test_flat_shift_rpm_boundary_fullcut);
+        RUN_TEST_P(test_flat_shift_rpm_boundary_rollingcut);
         RUN_TEST_P(test_launch_tps_boundary);
         RUN_TEST_P(test_launch_speed_boundary);
         RUN_TEST_P(test_clutch_arming_boundary);
         RUN_TEST_P(test_clutch_rpm_is_captured_on_engagement);
-        RUN_TEST_P(test_checkLaunchAndFlatShift_enablesHardLaunchWhenConditionsAreMet);
-        RUN_TEST_P(test_checkLaunchAndFlatShift_enablesFlatShiftWhenLaunchIsDisabled);
-        RUN_TEST_P(test_checkLaunchAndFlatShift_usesInvertedLaunchInput);
-        RUN_TEST_P(test_checkLaunchAndFlatShift_appliesRollingCutDelta);
+        RUN_TEST_P(test_enablesHardLaunchWhenConditionsAreMet);
+        RUN_TEST_P(test_enablesFlatShiftWhenLaunchIsDisabled);
+        RUN_TEST_P(test_usesInvertedLaunchInput);
+        RUN_TEST_P(test_appliesRollingCutDelta);
+        RUN_TEST_P(test_SoftFlatShift_on);
+        RUN_TEST_P(test_SoftFlatShift_off_disabled);
+        RUN_TEST_P(test_SoftFlatShift_off_noclutchtrigger);
+        RUN_TEST_P(test_SoftFlatShift_off_clutchrpmtoolow);
+        RUN_TEST_P(test_SoftFlatShift_off_rpmnotinwindow);
     }
 }

@@ -37,6 +37,7 @@
 #include "src/controllers/nitrous/nitrousController.h"
 #include "src/controllers/progammableIO/programmableIOControl.h"
 #include "src/controllers/tacho/tachoController.h"
+#include "src/controllers/launch/launchController.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -180,6 +181,7 @@ void initialiseAll(void)
     initialiseMAPBaro();
     initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
+    initialiseLaunchControl(currentStatus, configPage6, pinNumbers);
 
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
@@ -215,8 +217,6 @@ void initialiseAll(void)
     //currentStatus.seclx10 = 0;
     currentStatus.startRevolutions = 0;
     currentStatus.syncLossCounter = 0;
-    currentStatus.flatShiftingHard = false;
-    currentStatus.launchingHard = false;
     currentStatus.crankRPM = ((unsigned int)configPage4.crankRPM * 10); //Crank RPM limit (Saves us calculating this over and over again. It's updated once per second in timers.ino)
     currentStatus.engineProtect.reset();
     toothHistoryIndex = 0;
