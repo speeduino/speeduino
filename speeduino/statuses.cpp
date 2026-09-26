@@ -27,11 +27,6 @@ static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime)
 
 void statuses::setRevolutionTime(uint32_t revTime)
 {
-  uint16_t rpm;
-  uint8_t rpmDiv100;
-  angle_converter_factors_t factors = {0U, 0U};
-  bool updateFactors;
-
   /*
   The divisions below are relatively expensive, so only recalculate when the revolution time changes.
   Compute first, then publish revolution time, RPM and the angle factors together. An ISR must not
@@ -39,11 +34,11 @@ void statuses::setRevolutionTime(uint32_t revTime)
   */
   if (revTime!=this->revolutionTime)
   {
-    rpm = RpmFromRevolutionTimeUs(revTime);
-    rpmDiv100 = (uint8_t)div100(rpm);
+    const uint16_t rpm = RpmFromRevolutionTimeUs(revTime);
+    const uint8_t rpmDiv100 = (uint8_t)div100(rpm);
     /* Keep the last known conversion factors if the speed is unknown: they may still be in use (E.g. per tooth ignition timing adjustments) */
-    updateFactors = (revTime!=0U);
-    if (updateFactors == true) { factors = calculateAngleConverterFactors(revTime); }
+    const bool updateFactors = (revTime!=0U);
+    const angle_converter_factors_t factors = updateFactors ? calculateAngleConverterFactors(revTime) : angle_converter_factors_t{0U, 0U};
 
     ATOMIC()
     {

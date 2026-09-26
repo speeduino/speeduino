@@ -336,8 +336,8 @@ static inline uint8_t calcToothCalcShift(bool isCamTeeth)
 struct tooth_speed_sample_t {
   uint32_t lastToothTime;
   uint32_t prevToothTime;
-  uint32_t toothOneTime;
-  uint32_t toothOneMinusOneTime;
+  uint32_t lastToothOneTime;
+  uint32_t prevToothOneTime;
   uint32_t startRevolutions;
   uint16_t toothAngle;
   SyncStatus syncStatus;
@@ -350,8 +350,8 @@ static inline tooth_speed_sample_t atomicToothSpeedSample(void)
   {
     sample.lastToothTime = toothLastToothTime;
     sample.prevToothTime = toothLastMinusOneToothTime;
-    sample.toothOneTime = toothOneTime;
-    sample.toothOneMinusOneTime = toothOneMinusOneTime;
+    sample.lastToothOneTime = toothOneTime;
+    sample.prevToothOneTime = toothOneMinusOneTime;
     sample.startRevolutions = currentStatus.startRevolutions;
     sample.toothAngle = triggerToothAngle;
     sample.syncStatus = decoderStatus.syncStatus;
@@ -373,8 +373,8 @@ static inline bool lastToothInterval(const tooth_speed_sample_t &sample, uint32_
 
 static inline bool toothOneInterval(const tooth_speed_sample_t &sample, uint32_t &intervalUs)
 {
-  if ((sample.toothOneMinusOneTime==0U) || (sample.toothOneTime<=sample.toothOneMinusOneTime)) { return false; }
-  intervalUs = timeElapsed(sample.toothOneTime, sample.toothOneMinusOneTime);
+  if ((sample.prevToothOneTime==0U) || (sample.lastToothOneTime<=sample.prevToothOneTime)) { return false; }
+  intervalUs = timeElapsed(sample.lastToothOneTime, sample.prevToothOneTime);
   return true;
 }
 
@@ -1202,15 +1202,12 @@ static void triggerPri_BasicDistributor(void)
 
 static uint32_t getRevolutionTime_BasicDistributor(void)
 {
-  uint32_t revolutionTime;
   uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
   if(configPage2.strokes == TWO_STROKE) { distributorSpeed = CRANK_SPEED; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
 
-  if( currentStatus.RPM < currentStatus.crankRPM || currentStatus.RPM < 1500)
-  { 
-    revolutionTime = crankingGetRevolutionTime(triggerActualTeeth, distributorSpeed);
-  } 
-  else { revolutionTime = stdGetRevolutionTime(distributorSpeed); }
+  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(distributorSpeed);
 
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(triggerActualTeeth == 1) { MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
@@ -3246,8 +3243,6 @@ static void triggerSec_Subaru67(void)
 
 static uint32_t getRevolutionTime_Subaru67(void)
 {
-  //if(currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRevolutionTime(configPage4.triggerTeeth); }
-
   tooth_speed_sample_t sample = atomicToothSpeedSample();
   if (sample.startRevolutions==0U) { return publishedRevolutionTime(); }
   //As the tooth count is over 720 degrees
@@ -3422,29 +3417,19 @@ static void triggerPri_Daihatsu(void)
 
 static uint32_t getRevolutionTime_Daihatsu(void)
 {
-  uint32_t revolutionTime = 0;
-  if( (currentStatus.RPM < currentStatus.crankRPM) && false) //Disable special cranking processing for now
+  static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
+  if( (crankingCalcEnabled==false) || (currentStatus.RPM >= currentStatus.crankRPM) )
   {
-    //Can't use standard cranking revolution time function due to extra tooth
-    if( decoderStatus.syncStatus==SyncStatus::Full )
-    {
-      if(toothCurrentCount == 2) { revolutionTime = publishedRevolutionTime(); }
-      else if (toothCurrentCount == 3) { revolutionTime = publishedRevolutionTime(); }
-      else
-      {
-        tooth_speed_sample_t sample = atomicToothSpeedSample();
-        uint32_t interval;
-        if (lastToothInterval(sample, interval)==false) { revolutionTime = publishedRevolutionTime(); }
-        else { revolutionTime = interval * (uint32_t)(triggerActualTeeth - 1U); }
-      } //is tooth #2
-    }
-    else { revolutionTime = publishedRevolutionTime(); } //No sync
+    return stdGetRevolutionTime(CAM_SPEED); //Tracking over 2 crank revolutions
   }
-  else
-  { revolutionTime = stdGetRevolutionTime(CAM_SPEED); } //Tracking over 2 crank revolutions
 
-  return revolutionTime;
-
+  //Can't use standard cranking revolution time function due to extra tooth
+  if (decoderStatus.syncStatus!=SyncStatus::Full) { return publishedRevolutionTime(); } //No sync
+  if ((toothCurrentCount == 2U) || (toothCurrentCount == 3U)) { return publishedRevolutionTime(); } //Extra tooth
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t interval = 0U;
+  if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+  return interval * (uint32_t)(triggerActualTeeth - 1U);
 }
 static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 {
@@ -5896,14 +5881,11 @@ static void triggerSec_FordTFI(void)
  * */
 static uint32_t getRevolutionTime_FordTFI(void)
 {
-  uint32_t revolutionTime;
-  uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
-  
-  if( currentStatus.RPM < currentStatus.crankRPM || currentStatus.RPM < 1500)
-  { 
-    revolutionTime = crankingGetRevolutionTime(triggerActualTeeth, distributorSpeed);
-  } 
-  else { revolutionTime = stdGetRevolutionTime(distributorSpeed); }
+  const uint8_t distributorSpeed = CAM_SPEED;
+
+  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(distributorSpeed);
 
   MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
