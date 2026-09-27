@@ -701,6 +701,7 @@ static pinNumbers_t getLevinMapping(void)
   pins.pinTrigger2 = PD4;       // The Cam Sensor pin
   pins.pinTPS = PA2;            // TPS input pin
   pins.pinMAP = PA3;            // MAP sensor pin
+  pins.pinEMAP = PC5;           // EMAP sensor pin (placeholder)
   pins.pinIAT = PA0;            // IAT sensor pin
   pins.pinCLT = PA1;            // CLS sensor pin
   pins.pinO2 = PB0;             // O2 Sensor pin
@@ -709,14 +710,22 @@ static pinNumbers_t getLevinMapping(void)
   pins.pinTachOut = PE8;        // Tacho output pin  (Goes to UNL2803)
   pins.pinIdle1 = PD10;         // ICV pin1  (Goes to UNL2803)
   pins.pinIdle2 = PD9;          // ICV pin3  (Goes to UNL2803)
+  pins.pinBoost = PD8;          // Boost control
+  pins.pinVVT_1 = PD11;         // VVT1 output (intake vanos)
+  pins.pinVVT_2 = PC6;          // VVT2 output (exhaust vanos)
   pins.pinFuelPump = PE11;      // Fuel pump output  (Goes to UNL2803)
   pins.pinStepperDir = PB10;    // Stepper valve isn't used with these
   pins.pinStepperStep = PB11;   // Stepper valve isn't used with these
   pins.pinStepperEnable = PA15; // Stepper valve isn't used with these
   pins.pinFan = PE9;            // Pin for the fan output (Goes to UNL2803)
+  pins.pinLaunch = PB8;         // Launch control pin
   pins.pinFlex = PD7;           // Flex sensor
   pins.pinResetControl = PB7;   // Reset control output
   pins.pinVSS = PB6;            // VSS input pin
+  pins.pinWMIEmpty = PA6;       //(placeholder)
+  pins.pinWMIIndicator = PC3;   //(placeholder)
+  pins.pinWMIEnabled = PE15;    //(placeholder)
+  pins.pinIdleUp = PC7;         //(placeholder)
   return pins;
 }
 #endif
