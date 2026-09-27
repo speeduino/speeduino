@@ -25,6 +25,7 @@ A full copy of the license may be found in the projects root directory
  * - ign*EndFunction() - Execute **end** of ignition (Interrupt handler)
  */
 #include "globals.h"
+#include "injector_bench.h"
 #include "scheduler.h"
 #include "timers.h"
 #include "preprocessor.h"
@@ -120,6 +121,7 @@ void setSchedule(Schedule &schedule, uint32_t delay, uint16_t duration, bool all
 
 void moveToNextState(FuelSchedule &schedule) noexcept
 {
+  if(injectorBenchHandleTimer(schedule)) return;
   movetoNextState(schedule, defaultPendingToRunning, defaultRunningToOff, defaultRunningToPending);
 } 
 

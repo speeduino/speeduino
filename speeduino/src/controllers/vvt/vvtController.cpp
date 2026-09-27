@@ -1,3 +1,4 @@
+#include "../../../bench_output_pin.h"
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
@@ -46,7 +47,7 @@ inline NextInterruptEvent operator&(NextInterruptEvent lhs, NextInterruptEvent r
     );
 }
 
-using vvtPwmChannel = PwmOutputChannel<boardOutputPin_t>;
+using vvtPwmChannel = PwmOutputChannel<BenchOutputPin<boardOutputPin_t>>;
 
 TESTABLE_STATIC vvtPwmChannel vvtChannel1;
 TESTABLE_STATIC vvtPwmChannel vvtChannel2;

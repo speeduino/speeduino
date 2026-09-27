@@ -1,3 +1,4 @@
+#include "../../../injector_bench.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../globals.h"
 #include "../../../unit_testing.h"
@@ -255,6 +256,7 @@ void boostControl(statuses &current, const config2 &page2, const config4 &page4,
 //The interrupt to control the Boost PWM
 void boostInterrupt(void)
 {
+  if(injectorBenchOwnsPin(pinNumbers.pinBoost)) return;
   auto setTimerCallback =[](uint16_t tickDelta) {
     SET_COMPARE(BOOST_TIMER_COMPARE, BOOST_TIMER_COUNTER + tickDelta );
   };

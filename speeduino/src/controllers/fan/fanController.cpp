@@ -1,3 +1,4 @@
+#include "../../../injector_bench.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../units.h"
 #include "../../../unit_testing.h"
@@ -148,6 +149,7 @@ void fanControl(void)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
 void fanInterrupt(void)
 {
+  if(injectorBenchOwnsPin(pinNumbers.pinFan)) return;
 #if defined(PWM_FAN_AVAILABLE)
   if (fan_pwm_state == true)
   {

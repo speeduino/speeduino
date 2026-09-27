@@ -1,3 +1,4 @@
+#include "injector_bench.h"
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
@@ -73,6 +74,11 @@ void oneMSInterval(void)
   loop250ms++;
   loopSec++;
 
+  injectorBenchTick();
+  if(injectorBenchOwnsOutputs()) {
+    if(loop250ms>=250) {loop250ms=0;digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));}
+    return;
+  }
   applyOverDwellProtection(configPage4, currentStatus);
   tachoControl(currentStatus);
 
