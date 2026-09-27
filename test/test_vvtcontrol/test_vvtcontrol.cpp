@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "../test_utils.h"
 #include "src/controllers/vvt/vvtController.h"
 #include "units.h"
@@ -6,8 +7,8 @@
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
 
-extern PwmOutputChannel<boardOutputPin_t> vvtChannel1;
-extern PwmOutputChannel<boardOutputPin_t> vvtChannel2;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> vvtChannel1;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> vvtChannel2;
 extern uint32_t vvtWarmStartTime;
 extern volatile uint32_t runSecsX10;
 
