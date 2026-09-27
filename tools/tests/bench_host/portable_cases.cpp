@@ -56,7 +56,10 @@ int main() {
   injectorBenchHandleTimer(fuelSchedule1);assert(levels[0]);assert(command(0)==0);
 #ifdef MC33810_SUPPORT
   pinNumbers.pinMC33810_1_CS=110;pinNumbers.pinMC33810_2_CS=111;
-  assert(arm(2)==0);settings(true,0);assert(command(7)==0);
+  assert(arm(2)==0);
+  assert(injectorBenchOwnsPin(110) && injectorBenchOwnsPin(111));
+  assert(injectorBenchOwnsPin(pinNumbers.injectorPins[0]));
+  settings(true,0);assert(command(7)==0);
   timer.CNT=timer.compare;injectorBenchHandleTimer(fuelSchedule1);
   for(unsigned i=0;i<IGN_CHANNELS;++i) assert(coilLevels[i]);
   assert(command(0)==0);

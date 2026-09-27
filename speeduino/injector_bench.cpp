@@ -628,6 +628,11 @@ bool injectorBenchHandleTimer(FuelSchedule &schedule) {
 bool injectorBenchOwnsOutputs() { return owned; }
 bool injectorBenchOwnsPin(uint8_t pin) {
   if(!owned) return false;
+#ifdef MC33810_SUPPORT
+  // SPI bus/CS pins are physical pins even though the driver outputs are not.
+  if(usesSpiDrivers() && (pinNumbers.injectorPins.isPinUsed(pin) || pinNumbers.coilPins.isPinUsed(pin)
+      || pin==pinNumbers.pinMC33810_1_CS || pin==pinNumbers.pinMC33810_2_CS)) return true;
+#endif
   for(uint8_t i=0;i<(coilSession ? IGN_CHANNELS : INJ_CHANNELS);++i) if(!usesSpiDrivers() && (pulseMask & (1U<<i))
       && (coilSession ? pinNumbers.coilPins[i] : pinNumbers.injectorPins[i])==pin) return true;
   if(idleSession && (pin==pinNumbers.pinIdle1 || (idleTwoPins && pin==pinNumbers.pinIdle2)

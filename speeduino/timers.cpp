@@ -76,7 +76,10 @@ void oneMSInterval(void)
 
   injectorBenchTick();
   if(injectorBenchOwnsOutputs()) {
-    if(loop250ms>=250) {loop250ms=0;digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));}
+    if(loop250ms>=250) {
+      loop250ms=0;
+      if(!injectorBenchOwnsPin(LED_BUILTIN)) digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));
+    }
     return;
   }
   applyOverDwellProtection(configPage4, currentStatus);
