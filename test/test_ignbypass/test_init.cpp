@@ -30,6 +30,7 @@ static void test_initialiseIgnBypass_invalid_pin(void)
     context.pins.setCoilPin(0, context.pins.pinIgnBypass); //...that conflicts with a coil pin to simulate an invalid output pin
     context.initialise();
     TEST_ASSERT_FALSE(_state.ignBypassPin.isValid());
+    TEST_ASSERT_FALSE(context.p4.ignBypassEnabled);
 
     // Should have no effect if the pin is not set as an output
     context.cur.rotationStatus = EngineRotationStatus::Cranking;
