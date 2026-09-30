@@ -162,9 +162,7 @@ void initialiseAll(void)
 
     //Must come after setPinMapping() as secondary serial can be changed on a per board basis
     if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-  
-    //Set the tacho output default state
-    digitalWrite(pinNumbers.pinTachOut, HIGH);
+
     //Perform all initialisations
     initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, configPage13, pinNumbers);
     initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage6, configPage10, pinNumbers);
