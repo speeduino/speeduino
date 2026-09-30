@@ -3,14 +3,9 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "units.h"
+#include "src/decoders/decoder_state.h"
 
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
-extern volatile uint32_t toothLastToothTime;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern decoder_status_t decoderStatus;
-extern volatile uint16_t triggerToothAngle;
-extern volatile int toothCurrentCount;
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
@@ -22,44 +17,44 @@ static void test_getCrankAngle(void)
     
   // Base case: tooth 1 should map to 0 + triggerAngle
   configPage4.triggerAngle = 0;
-  toothLastToothTime = 10000;
-  toothCurrentCount = 1;
+  _decoderState.toothLastToothTime = 10000;
+  _decoderState.toothCurrentCount = 1;
   {
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
+    int16_t angle = decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100);
     int16_t expected = 0 + timeToAngle(100);
     TEST_ASSERT_EQUAL(expected, angle);
   }
 
   // Tooth 2 should map to 157 + triggerAngle
-  toothCurrentCount = 2;
+  _decoderState.toothCurrentCount = 2;
   {
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
+    int16_t angle = decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100);
     int16_t expected = 157 + timeToAngle(100);
     TEST_ASSERT_EQUAL(expected, angle);
   }
 
   // Tooth 3 behaves like tooth 1 (reference tooth)
-  toothCurrentCount = 3;
+  _decoderState.toothCurrentCount = 3;
   {
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 100);
+    int16_t angle = decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100);
     int16_t expected = 0 + timeToAngle(100);
     TEST_ASSERT_EQUAL(expected, angle);
   }
 
   // Tooth 4 with a triggerAngle offset
   configPage4.triggerAngle = 10;
-  toothCurrentCount = 4;
+  _decoderState.toothCurrentCount = 4;
   {
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 50);
+    int16_t angle = decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 50);
     int16_t expected = 157 + 10 + timeToAngle(50);
     TEST_ASSERT_EQUAL(expected, angle);
   }
 
   // Wrap-around behaviour: large triggerAngle should reduce result by 720 when >=720
   configPage4.triggerAngle = 600;
-  toothCurrentCount = 2;
+  _decoderState.toothCurrentCount = 2;
   {
-    int16_t angle = decoder.pGetCrankAngle(toothLastToothTime + 10);
+    int16_t angle = decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 10);
     int16_t expected = 157 + 600 + timeToAngle(10);
     if (expected >= 720) expected -= 720;
     TEST_ASSERT_EQUAL(expected, angle);
@@ -71,7 +66,7 @@ static void test_getRevolutionTime(void)
   auto decoder = triggerSetup_Harley();
 
   // Ensure sync present
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
 
   // --- Cranking calculation below the configured RPM/10 threshold
   currentStatus.setRpm(0);
@@ -79,57 +74,50 @@ static void test_getRevolutionTime(void)
   currentStatus.crankRPM = RPM_MEDIUM.toUser(configPage4.crankRPM);
   currentStatus.revolutionTime = 12345UL;
   // Choose tempToothAngle = 120 and gap such that revTime = 20000 * 360 / 120 = 60000
-  triggerToothAngle = 120;
-  toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = toothLastMinusOneToothTime + 20000UL;
-  toothOneMinusOneTime = 0UL;
-  toothOneTime = 0UL;
+  _decoderState.triggerToothAngle = 120;
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 20000UL;
+  _decoderState.toothOneMinusOneTime = 0UL;
+  _decoderState.toothOneTime = 0UL;
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // --- Tooth #1 has a zero tooth angle: keep the published period.
   // The tooth #1 times aren't used: they can span a stall (E.g. the first tooth after a restart)
-  triggerToothAngle = 0;
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 5000000UL;
+  _decoderState.triggerToothAngle = 0;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 5000000UL;
   TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 
   // --- Running path: should call stdGetRevolutionTime(CRANK_SPEED)
   currentStatus.setRpm(2000);
   configPage4.crankRPM = 10; // 100 RPM
   currentStatus.crankRPM = RPM_MEDIUM.toUser(configPage4.crankRPM);
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime=60000
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // revTime=60000
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // --- Fallback: when not synced, the speed is unknown
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
 }
 
 static void assert_getRevolutionTime_at_cranking_boundary(uint16_t rpm, uint32_t expected)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile uint32_t toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile uint16_t triggerToothAngle;
-
   auto decoder = triggerSetup_Harley();
   configPage4.crankRPM = 40; // Stored in RPM/10, so the boundary is 400 RPM
   currentStatus.crankRPM = RPM_MEDIUM.toUser(configPage4.crankRPM);
   currentStatus.setRpm(rpm);
   currentStatus.startRevolutions = 1;
   currentStatus.revolutionTime = UINT32_MAX;
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
 
   // Deliberately different results distinguish which calculation was selected:
   // last-tooth angle/gap -> 60000uS (1000 RPM); complete revolution -> 40000uS (1500 RPM).
-  triggerToothAngle = 120;
-  toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = 21000UL;
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = 41000UL;
+  _decoderState.triggerToothAngle = 120;
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  _decoderState.toothLastToothTime = 21000UL;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = 41000UL;
   TEST_ASSERT_EQUAL_UINT32(expected, decoder.getRevolutionTime());
 }
 

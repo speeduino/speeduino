@@ -4,14 +4,9 @@
 #include "scheduler.h"
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
+#include "src/decoders/decoder_state.h"
 
-extern decoder_status_t decoderStatus;
-extern volatile uint32_t toothLastToothTime;
-extern volatile int toothCurrentCount;
-extern volatile bool revolutionOne;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
+extern decoders::detail::state_t _decoderState;
 
 static decoder_t test_setup_36_1()
 {
@@ -35,15 +30,13 @@ static decoder_t test_setup_60_2()
     return triggerSetup_missingTooth();
 }
 
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
-
 //************************************** Begin the new ignition setEndTooth tests **************************************
 
 static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, IgnitionSchedule &schedule, uint8_t index, int8_t advance)
 {
     schedule.dischargeAngle = 360 + advance; 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(expected, ignitionEndTeeth[index]);
+    TEST_ASSERT_EQUAL(expected, _decoderState.ignitionEndTeeth[index]);
 }
 
 static void test_missingtooth_newIgn_36_1()
@@ -153,15 +146,15 @@ static void test_getCrankAngle(void)
     decoder_t decoder = test_setup_36_1();
 
     auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
-        toothLastToothTime = 2000;
-        toothCurrentCount = toothCount;
-        revolutionOne = revOne;
-        decoderStatus.syncStatus = SyncStatus::Full;
-        decoderStatus.toothAngleIsCorrect = true;
+        _decoderState.toothLastToothTime = 2000;
+        _decoderState.toothCurrentCount = toothCount;
+        _decoderState.revolutionOne = revOne;
+        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        _decoderState.decoderStatus.toothAngleIsCorrect = true;
         configPage4.triggerAngle = trigAngle;
         CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
         setAngleConverterRevolutionTime(2000);
-        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
+        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
     };
 
     // For 36-1 wheel: triggerToothAngle = 10 degrees. timeToAngle(100) ~= 18 deg
@@ -198,30 +191,30 @@ static void test_getRevolutionTime(void)
     currentStatus.crankRPM = 400;
     currentStatus.setRpm(currentStatus.crankRPM/2U);
     currentStatus.startRevolutions = 0; // cranking
-    decoderStatus.syncStatus = SyncStatus::Full;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
     // Choose gap so that revTime = gap * 36 =~ 60000 -> gap ~= 1667
-    toothLastMinusOneToothTime = 1000UL;
-    toothLastToothTime = toothLastMinusOneToothTime + 1667UL;
-    toothCurrentCount = 2;
+    _decoderState.toothLastMinusOneToothTime = 1000UL;
+    _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 1667UL;
+    _decoderState.toothCurrentCount = 2;
     currentStatus.revolutionTime = 99999UL;
     TEST_ASSERT_EQUAL_UINT32(1667UL*36UL, decoder.getRevolutionTime());
 
     // --- If at tooth #1, cranking path should return currentStatus.revolutionTime
-    toothCurrentCount = 1;
-    decoderStatus.syncStatus = SyncStatus::Full;
+    _decoderState.toothCurrentCount = 1;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
     TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 
     // --- Running path: stdGetRevolutionTime should be used when not cranking
     currentStatus.setRpm(currentStatus.crankRPM*2U);
     currentStatus.startRevolutions = 1; // not cranking
-    decoderStatus.syncStatus = SyncStatus::Full;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
     currentStatus.revolutionTime = 12345UL;
-    toothOneMinusOneTime = 1000UL;
-    toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+    _decoderState.toothOneMinusOneTime = 1000UL;
+    _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // revTime = 60000
     TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
     // --- Fallback: when sync lost, return currentStatus.revolutionTime
-    decoderStatus.syncStatus = SyncStatus::None;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::None;
     TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 

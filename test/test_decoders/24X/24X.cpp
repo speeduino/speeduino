@@ -2,26 +2,24 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "src/decoders/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
-{
-  extern decoder_status_t decoderStatus;
-  extern volatile uint32_t toothLastToothTime;
-  extern volatile uint16_t toothCurrentCount;
-  extern volatile bool revolutionOne;
-
+{  
   auto decoder = triggerSetup_24X();
 
   // helper to setup and call pGetCrankAngle
   auto run_case = [&](uint8_t toothNum, int16_t expected, bool revOne=false, int trigAngle=0) {
-    toothLastToothTime = 2000;
-    toothCurrentCount = toothNum;
-    decoderStatus.toothAngleIsCorrect = true;
-    revolutionOne = revOne ? 1 : 0;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.toothCurrentCount = toothNum;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.revolutionOne = revOne ? 1 : 0;
     configPage4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg with revolutionTime 2000
@@ -37,7 +35,7 @@ static void test_getCrankAngle(void)
   // Cam tooth (0): should yield triggerAngle + dt_add
   run_case(0, 0 + dt_add);
 
-  // When revolutionOne is set, result should be += 360
+  // When _decoderState.revolutionOne is set, result should be += 360
   configPage4.TrigSpeed = CAM_SPEED;
   run_case(0, 0 + dt_add, true);
   configPage4.TrigSpeed = CRANK_SPEED;
@@ -49,17 +47,13 @@ static void test_getCrankAngle(void)
 
 static void test_getRevolutionTime(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   auto decoder = triggerSetup_24X();
 
   // Standard calculation: the time between the last 2 tooth #1
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.startRevolutions = 1; // not cranking
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL;
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 }
 

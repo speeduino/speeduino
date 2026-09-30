@@ -3,35 +3,29 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "crankMaths.h"
+#include "src/decoders/decoder_state.h"
 
-extern volatile uint32_t toothLastToothTime;
-extern decoder_status_t decoderStatus;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern volatile uint16_t toothCurrentCount;
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
-extern volatile uint16_t triggerToothAngle;
-extern bool revolutionOne;
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
   // helper to setup times and call
   auto call_angle = [&](auto &decoder, uint8_t toothNum, uint32_t deltaSinceLast, int trigAngle = 0){
-    toothLastToothTime = 2000;
-    toothLastMinusOneToothTime = toothLastToothTime - 500; // tooth interval = 500
-    toothCurrentCount = toothNum;
-    revolutionOne = false;
-    decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime - 500; // tooth interval = 500
+    _decoderState.toothCurrentCount = toothNum;
+    _decoderState.revolutionOne = false;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    return decoder.pGetCrankAngle(toothLastToothTime + deltaSinceLast);
+    return decoder.pGetCrankAngle(_decoderState.toothLastToothTime + deltaSinceLast);
   };
 
   // Test 4-cylinder configuration
   configPage2.nCylinders = 4;
   auto decoder4 = triggerSetup_4G63();
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
 
   // timeToAngleIntervalTooth: delta=100 -> toothAngle*100 / toothTime = 180*100/500 = 36
   const int dt = 100;
@@ -47,7 +41,7 @@ static void test_getCrankAngle(void)
   // 6-cylinder configuration
   configPage2.nCylinders = 6;
   auto decoder6 = triggerSetup_4G63();
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   TEST_ASSERT_EQUAL_INT16(31, call_angle(decoder6, 1, dt));
   TEST_ASSERT_EQUAL_INT16(81, call_angle(decoder6, 2, dt));
   TEST_ASSERT_EQUAL_INT16(151, call_angle(decoder6, 3, dt));
@@ -64,12 +58,12 @@ static void test_getCrankAngle(void)
   // trigger angle offset modifies result
   configPage2.nCylinders = 4;
   auto decoder4b = triggerSetup_4G63();
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   TEST_ASSERT_EQUAL_INT16(41, call_angle(decoder4b, 1, dt, 10)); // 31 + 10
 
   // If not synced, should return 0
-  decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL_INT16(0, decoder4b.pGetCrankAngle(toothLastToothTime + dt));
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL_INT16(0, decoder4b.pGetCrankAngle(_decoderState.toothLastToothTime + dt));
 }
 
 static void test_getRevolutionTime(void)
@@ -79,31 +73,31 @@ static void test_getRevolutionTime(void)
   // Cranking path: currentStatus.RPM < currentStatus.crankRPM
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 400;
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
 
   // Simulate two tooth times 500us apart -> delta = 500
-  toothLastToothTime = 2000;
-  toothLastMinusOneToothTime = 1500;
+  _decoderState.toothLastToothTime = 2000;
+  _decoderState.toothLastMinusOneToothTime = 1500;
 
   // For a 70 degree tooth gap (one of the 4G63 cranking gaps)
-  triggerToothAngle = 70;
+  _decoderState.triggerToothAngle = 70;
   TEST_ASSERT_EQUAL_UINT32(2571UL, decoder.getRevolutionTime()); // 500 * 360 / 70 = 2571
 
   // For a 110 degree tooth gap
-  triggerToothAngle = 110;
+  _decoderState.triggerToothAngle = 110;
   TEST_ASSERT_EQUAL_UINT32(1636UL, decoder.getRevolutionTime()); // 500 * 360 / 110 = 1636
 
   // Running path: should return stdGetRevolutionTime(CAM_SPEED) -> defaults to currentStatus.revolutionTime when no revolution update
   currentStatus.setRpm(1000);
   currentStatus.revolutionTime = 60000UL;
   // Clear toothOne* so stdGetRevolutionTime can't calculate the revolution time
-  toothOneTime = 0;
-  toothOneMinusOneTime = 0;
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.toothOneTime = 0;
+  _decoderState.toothOneMinusOneTime = 0;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // No sync: the speed is unknown
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
 }
 

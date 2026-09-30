@@ -3,22 +3,21 @@
 #include "decoders.h"
 #include "globals.h"
 #include "crankMaths.h"
+#include "src/decoders/decoder_state.h"
 
-extern volatile uint16_t triggerToothAngle;
-extern volatile uint16_t toothCurrentCount;
+extern decoders::detail::state_t _decoderState;
 
 static void test_k6a_getCrankAngle_tooth(uint8_t toothNum, uint16_t expectedCrankAngle, uint16_t expectedToothAngle) {
     decoder_t decoder = triggerSetup_SuzukiK6A();
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     configPage4.triggerAngle = 0U;
 
-    extern volatile uint32_t toothLastToothTime;
     uint32_t currMicros = 5000;
-    toothLastToothTime = currMicros - 150U;
-    toothCurrentCount = toothNum;
+    _decoderState.toothLastToothTime = currMicros - 150U;
+    _decoderState.toothCurrentCount = toothNum;
     setAngleConverterRevolutionTime(1);
     TEST_ASSERT_INT16_WITHIN(1, expectedCrankAngle, decoder.pGetCrankAngle(currMicros));
-    TEST_ASSERT_EQUAL(expectedToothAngle, triggerToothAngle);
+    TEST_ASSERT_EQUAL(expectedToothAngle, _decoderState.triggerToothAngle);
 }
 
 static void test_k6a_getCrankAngle_tooth0(void) {
@@ -62,17 +61,13 @@ static void test_k6a_getCrankAngle_tooth8(void) {
 
 static void test_getRevolutionTime(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   auto decoder = triggerSetup_SuzukiK6A();
 
   // Standard calculation at cam speed: half the time between the last 2 tooth #1
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.startRevolutions = 1; // not cranking
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL;
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 }
 
