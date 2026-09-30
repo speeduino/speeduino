@@ -37,6 +37,7 @@
 #include "src/controllers/nitrous/nitrousController.h"
 #include "src/controllers/progammableIO/programmableIOControl.h"
 #include "src/controllers/tacho/tachoController.h"
+#include "src/controllers/ignBypass/ignBypassControl.h"
 
 #if defined(CORE_AVR)
 #pragma GCC push_options
@@ -178,6 +179,7 @@ void initialiseAll(void)
     initialiseMAPBaro();
     initialiseProgrammableIO(configPage13);
     initialiseFlexSensor(configPage2, currentStatus, pinNumbers.pinFlex);
+    initialiseIgnBypass(currentStatus, configPage4, pinNumbers);
 
     //Same as above, but for the VSS input
     if (isExternalVssMode(configPage2)) // VSS modes 2 and 3 are interrupt drive (Mode 1 is CAN)
@@ -315,7 +317,6 @@ void setPinMapping(byte boardID)
   pinMode(pinNumbers.pinStepperDir, OUTPUT);
   pinMode(pinNumbers.pinStepperStep, OUTPUT);
   pinMode(pinNumbers.pinStepperEnable, OUTPUT);
-  if(configPage4.ignBypassEnabled > 0) { pinMode(pinNumbers.pinIgnBypass, OUTPUT); }
 
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
