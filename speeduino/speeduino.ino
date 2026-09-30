@@ -62,6 +62,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "src/controllers/aircon/airconController.h"
 #include "src/controllers/nitrous/nitrousController.h"
 #include "src/controllers/auxChannels/auxChannelController.h"
+#include "src/controllers/ignBypass/ignBypassControl.h"
 
 #define CRANK_RUN_HYSTER    15
 
@@ -215,7 +216,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       if( (currentStatus.toothLogEnabled == false) && (currentStatus.compositeTriggerUsed == 0) ) { 
         currentStatus.decoder = buildDecoder(configPage4.TrigPattern);
       }
-      if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
 
     fuelPumpControl(currentStatus, configPage2);
@@ -358,14 +358,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         //Check whether running or cranking
         if(currentStatus.RPM > currentStatus.crankRPM) //Crank RPM in the config is stored as a x10. currentStatus.crankRPM is set in timers.ino and represents the true value
         {
-          bool crankToRun = currentStatus.rotationStatus==EngineRotationStatus::Cranking;
           currentStatus.rotationStatus = EngineRotationStatus::Running;
-
-         //Only need to do anything if we're transitioning from cranking to running
-          if( crankToRun )
-          {
-            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, HIGH); }
-          }
         }
         else
         {  
@@ -374,13 +367,11 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             //Sets the engine cranking bit, clears the engine running bit
             currentStatus.rotationStatus = EngineRotationStatus::Cranking;
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
-            if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); }
-
             //Check whether the user has selected to disable to the fan during cranking
             if(configPage2.fanWhenCranking == 0) { fanOff(); }
           }
         }
-
+      ignBypassControl(currentStatus);
       currentStatus.engineProtect = checkEngineProtection(currentStatus, configPage4, configPage6, configPage9, configPage10);
       //END SETTING ENGINE STATUSES
       //-----------------------------------------------------------------------------------------------------
