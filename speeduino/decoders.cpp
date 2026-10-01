@@ -372,11 +372,6 @@ TESTABLE_STATIC __attribute__((noinline)) uint32_t stdGetRevolutionTime(bool isC
   return publishedRevolutionTime();
 }
 
-#define TRIGGER_FILTER_OFF              0
-#define TRIGGER_FILTER_LITE             1
-#define TRIGGER_FILTER_MEDIUM           2
-#define TRIGGER_FILTER_AGGRESSIVE       3
-
 /**
  * Sets the new filter time based on the current settings.
  * This ONLY works for even spaced decoders.
