@@ -12,7 +12,6 @@ void tearDown(void)
 
 void runAllTests(void)
 {
-    extern void testDecoder_General(void);
     extern void testToothLoggers(void);
     extern void testDecoderBuilder(void);
     extern void testDecoderInit(void);
@@ -21,8 +20,8 @@ void runAllTests(void)
     extern void testCrankAngleCalculators(void);
     extern void testDecoderState(void);
     extern void testPerToothIgnition(void);
+    extern void testRevTimeCalcs(void);
 
-    testDecoder_General();
     testToothLoggers();
     testDecoderBuilder();
     testDecoderInit();
@@ -31,6 +30,7 @@ void runAllTests(void)
     testCrankAngleCalculators();
     testDecoderState();
     testPerToothIgnition();
+    testRevTimeCalcs();
 }
 
 TEST_HARNESS(runAllTests)
