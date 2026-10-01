@@ -50,12 +50,11 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/decoder_state.h"
 #include "src/decoders/perToothIgnition.h"
 #include "src/decoders/rev_time_calcs.h"
+#include "src/decoders/missingTooth.h"
 
 using namespace decoders::detail;
 
 TESTABLE_STATIC state_t _decoderState;
-
-static inline void triggerRecordVVT1Angle (void);
 
 #define TOOTH_CRANK 0
 #define TOOTH_CAM_SECONDARY 1
@@ -352,226 +351,21 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
 * @defgroup dec_miss Missing tooth wheel
 * @{
 */
+// LCOV_EXCL_START
+// Exclude one line wrappers from coverage
 static void triggerPri_missingTooth(void)
 {
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-   if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-   {
-     _decoderState.toothCurrentCount++; //Increment the tooth counter
-     _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-      if( (_decoderState.toothLastToothTime > 0) && (_decoderState.toothLastMinusOneToothTime > 0) )
-      {
-        bool isMissingTooth = false;
-
-        /*
-        Performance Optimisation:
-        Only need to try and detect the missing tooth if:
-        1. WE don't have sync yet
-        2. We have sync and are in the final 1/4 of the wheel (Missing tooth will/should never occur in the first 3/4)
-        3. RPM is under 2000. This is to ensure that we don't interfere with strange timing when cranking or idling. Optimisation not really required at these speeds anyway
-        */
-        if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (currentStatus.RPM < 2000) || (_decoderState.toothCurrentCount >= (3 * _decoderState.triggerActualTeeth >> 2)) )
-        {
-          //Begin the missing tooth detection
-          //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-          if(configPage4.triggerMissingTeeth == 1) { _decoderState.targetGap = (3 * (_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-          else { _decoderState.targetGap = ((_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime)) * configPage4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
-
-          if( (_decoderState.toothLastToothTime == 0) || (_decoderState.toothLastMinusOneToothTime == 0) ) { _decoderState.curGap = 0; }
-
-          if ( (_decoderState.curGap > _decoderState.targetGap) || (_decoderState.toothCurrentCount > _decoderState.triggerActualTeeth) )
-          {
-            //Missing tooth detected
-            isMissingTooth = true;
-            if( (_decoderState.toothCurrentCount < _decoderState.triggerActualTeeth) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) ) 
-            { 
-                //This occurs when we're at tooth #1, but haven't seen all the other teeth. This indicates a signal issue so we flag lost sync so this will attempt to resync on the next revolution.
-                _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-                currentStatus.syncLossCounter++;
-            }
-            //This is to handle a special case on startup where sync can be obtained and the system immediately thinks the revs have jumped:
-            else
-            {
-                if(_decoderState.decoderStatus.syncStatus!=SyncStatus::None)
-                {
-                  currentStatus.startRevolutions++; //Counter
-                  if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
-                }
-                else { currentStatus.startRevolutions = 0; }
-                
-                _decoderState.toothCurrentCount = 1;
-                if (configPage4.trigPatternSec == SEC_TRIGGER_POLL) // at tooth one check if the cam sensor is high or low in poll level mode
-                {
-                  if (configPage4.PollLevelPolarity == currentStatus.decoder.secondary.isPinHigh()) { _decoderState.revolutionOne = 1; }
-                  else { _decoderState.revolutionOne = 0; }
-                }
-                else {_decoderState.revolutionOne = !_decoderState.revolutionOne;} //Flip sequential revolution tracker if poll level is not used
-                _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-                _decoderState.toothOneTime = curTime;
-
-                //if Sequential fuel or ignition is in use, further checks are needed before determining sync
-                if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
-                {
-                  //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
-                  if( (_decoderState.secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) || (configPage4.trigPatternSec == SEC_TRIGGER_POLL) || (configPage2.strokes == TWO_STROKE) )
-                  {
-                    _decoderState.decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit                    
-                  }
-                  else if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { _decoderState.decoderStatus.syncStatus = SyncStatus::Partial; } //If there is primary trigger but no secondary we only have half sync.
-                }
-                else { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //If nothing is using sequential, we have sync and also clear half sync bit
-                if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE || configPage4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) //Reset the secondary tooth counter to prevent it overflowing, done outside of sequental as v6 & v8 engines could be batch firing with VVT that needs the cam resetting
-                { 
-                  _decoderState.secondaryToothCount = 0; 
-                } 
-
-                _decoderState.triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-                _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-                _decoderState.toothLastToothTime = curTime;
-                _decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
-            }
-          }
-        }
-        
-        if(isMissingTooth == false)
-        {
-          //Regular (non-missing) tooth
-          _decoderState.setFilter(_decoderState.curGap, configPage4);
-          _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-          _decoderState.toothLastToothTime = curTime;
-          _decoderState.decoderStatus.toothAngleIsCorrect = true;
-        }
-      }
-      else
-      {
-        //We fall here on initial startup when enough teeth have not yet been seen
-        _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-        _decoderState.toothLastToothTime = curTime;
-      }
-     
-
-      //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-      {
-        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) )
-        {
-          crankAngle += 360;
-          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
-        }
-        else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-      }
-   }
+  decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
 }
 
 static void triggerSec_missingTooth(void)
 {
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  //Safety check for initial startup
-  if( (_decoderState.toothLastSecToothTime == 0) )
-  { 
-    _decoderState.curGap2 = 0; 
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    switch (configPage4.trigPatternSec)
-    {
-      case SEC_TRIGGER_4_1:
-        _decoderState.targetGap2 = (3 * (_decoderState.toothLastSecToothTime - _decoderState.toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-        _decoderState.toothLastMinusOneSecToothTime = _decoderState.toothLastSecToothTime;
-        if ( (_decoderState.curGap2 >= _decoderState.targetGap2) || (_decoderState.secondaryToothCount > 3) )
-        {
-          _decoderState.secondaryToothCount = 1;
-          _decoderState.revolutionOne = 1; //Sequential revolution reset
-          _decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-          triggerRecordVVT1Angle();
-        }
-        else
-        {
-          _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
-          _decoderState.secondaryToothCount++;
-        }
-        break;
-
-      case SEC_TRIGGER_POLL:
-        //Poll is effectively the same as SEC_TRIGGER_SINGLE, however we do not reset _decoderState.revolutionOne
-        //We do still need to record the angle for VVT though
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 1; //Next secondary filter is half the current gap
-        triggerRecordVVT1Angle();
-        break;
-
-      case SEC_TRIGGER_SINGLE:
-        //Standard single tooth cam trigger
-        _decoderState.revolutionOne = 1; //Sequential revolution reset
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 1; //Next secondary filter is half the current gap
-        _decoderState.secondaryToothCount++;
-        triggerRecordVVT1Angle();
-        break;
-
-      case SEC_TRIGGER_TOYOTA_3:
-        // designed for Toyota VVTI (2JZ) engine - 3 triggers on the cam. 
-        // the 2 teeth for this are within 1 rotation (1 tooth first 360, 2 teeth second 360)
-        _decoderState.secondaryToothCount++;
-        if(_decoderState.secondaryToothCount == 2)
-        { 
-          _decoderState.revolutionOne = 1; // sequential revolution reset
-          triggerRecordVVT1Angle();         
-        }        
-        //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; 
-        break;
-    }
-    _decoderState.toothLastSecToothTime = curTime2;
-  } //Trigger filter
-}
-
-static inline void triggerRecordVVT1Angle (void)
-{
-  //Record the VVT Angle
-  if( (configPage6.vvtEnabled > 0) && (_decoderState.revolutionOne == 1) )
-  {
-    int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
-
-    curAngle -= configPage4.triggerAngle; //Value at TDC
-    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCL0DutyAng; }
-
-    currentStatus.vvt1.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1.angle);
-  }
+  decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
 }
 
 static void triggerThird_missingTooth(void)
 {
-//Record the VVT2 Angle (the only purpose of the third trigger)
-//NB no filtering of this signal with current implementation unlike Cam (VVT1)
-
-  uint32_t curTime3 = micros();
-  _decoderState.curGap3 = curTime3 - _decoderState.toothLastThirdToothTime;
-
-  //Safety check for initial startup
-  if( (_decoderState.toothLastThirdToothTime == 0) )
-  { 
-    _decoderState.curGap3 = 0; 
-    _decoderState.toothLastThirdToothTime = curTime3;
-  }
-
-  if ( _decoderState.curGap3 >= _decoderState.triggerThirdFilterTime )
-  {
-    _decoderState.triggerThirdFilterTime = _decoderState.curGap3 >> 2; //Next third filter is 25% the current gap
-    
-    int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
-
-    curAngle -= configPage4.triggerAngle; //Value at TDC
-    if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage4.vvt2CL0DutyAng; }
-    currentStatus.vvt2.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt2.angle);    
-
-    _decoderState.toothLastThirdToothTime = curTime3;
-  } //Trigger filter
+  decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
 }
 
 static uint32_t getRevolutionTime_missingTooth(void)
@@ -596,6 +390,7 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
   return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
 }
+// LCOV_EXCL_STOP
 
 static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
   int16_t toothRange = (int16_t)configPage4.triggerTeeth + (int16_t)toothAdder;
