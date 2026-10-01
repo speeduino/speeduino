@@ -322,31 +322,7 @@ static void triggerSetEndTeeth_missingTooth(void)
 
 decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.decoderFeatures.supportsSequential = configPage4.TrigSpeed == CAM_SPEED;
-
-  // The number of degrees that passes from tooth to tooth
-  uint16_t degreeTracking = (configPage4.TrigSpeed == CAM_SPEED) ? 720 : 360;
-  _decoderState.setTriggerToothAngle(degreeTracking / configPage4.triggerTeeth);
-
-  _decoderState.triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  if (configPage4.trigPatternSec == SEC_TRIGGER_4_1)
-  {
-    _decoderState.triggerSecFilterTime = MICROS_PER_MIN / MAX_RPM / 4U / 2U;
-  }
-  else 
-  {
-    _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U));
-  }
-  _decoderState.checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
-  _decoderState.toothLastMinusOneToothTime = 0;
-  _decoderState.toothCurrentCount = 0; 
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * (configPage4.triggerMissingTeeth + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::missing_tooth::initialise(configPage4);
 
   bool hasSecondary =  (configPage4.TrigSpeed == CRANK_SPEED) 
                     && ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
