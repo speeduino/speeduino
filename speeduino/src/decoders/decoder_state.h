@@ -4,6 +4,8 @@
 #ifdef USE_LIBDIVIDE
 #include <libdivide.h>
 #endif
+#include "config_pages.h"
+
 namespace decoders {
 
 namespace detail {
@@ -47,6 +49,12 @@ namespace detail {
 #ifdef USE_LIBDIVIDE
         libdivide::libdivide_s16_t divTriggerToothAngle{};
 #endif
+
+        /**
+         * Sets the new filter time based on the current settings.
+         * This ONLY works for even spaced decoders.
+         */
+        void setFilter(unsigned long curGap, const config4 &page4);
     };
 }
 }

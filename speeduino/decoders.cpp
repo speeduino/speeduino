@@ -373,30 +373,6 @@ TESTABLE_STATIC __attribute__((noinline)) uint32_t stdGetRevolutionTime(bool isC
 }
 
 /**
- * Sets the new filter time based on the current settings.
- * This ONLY works for even spaced decoders.
- */
-static void setFilter(unsigned long curGap)
-{
-  switch(configPage4.triggerFilter)
-  {
-    case TRIGGER_FILTER_LITE: 
-      _decoderState.triggerFilterTime = curGap >> 2;
-      break;
-    case TRIGGER_FILTER_MEDIUM: 
-      _decoderState.triggerFilterTime = curGap >> 1;
-      break;
-    case TRIGGER_FILTER_AGGRESSIVE: 
-      _decoderState.triggerFilterTime = (curGap * 3) >> 2;
-      break;
-    case TRIGGER_FILTER_OFF: 
-    default:
-      _decoderState.triggerFilterTime = 0;
-      break;
-  }
-}
-
-/**
 This is a special case of revolution time measure that is based on the time between the last 2 teeth rather than the time of the last full revolution.
 This gives much more volatile reading, but is quite useful during cranking, particularly on low resolution patterns.
 It can only be used on patterns where the teeth are evenly spaced.
@@ -625,7 +601,7 @@ static void triggerPri_missingTooth(void)
         if(isMissingTooth == false)
         {
           //Regular (non-missing) tooth
-          setFilter(_decoderState.curGap);
+          _decoderState.setFilter(_decoderState.curGap, configPage4);
           _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
           _decoderState.toothLastToothTime = curTime;
           _decoderState.decoderStatus.toothAngleIsCorrect = true;
@@ -923,7 +899,7 @@ static void triggerPri_DualWheel(void)
           if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
         }
 
-        setFilter(_decoderState.curGap); //Recalc the new filter value
+        _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
       }
 
       //NEW IGNITION MODE
@@ -1096,7 +1072,7 @@ static void triggerPri_BasicDistributor(void)
   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
   if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) )
   {
-    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { setFilter(_decoderState.curGap); } //Recalc the new filter value
+    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { _decoderState.setFilter(_decoderState.curGap, configPage4); } //Recalc the new filter value
     else { _decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored. 
     
     if( (_decoderState.toothCurrentCount == _decoderState.triggerActualTeeth) || (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) ) //Check if we're back to the beginning of a revolution
@@ -1949,7 +1925,7 @@ static void triggerPri_Jeep2000(void)
         _decoderState.triggerToothAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] - _decoderState.toothAngles[(_decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
       }
 
-      setFilter(_decoderState.curGap); //Recalc the new filter value
+      _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
 
       _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
@@ -2061,7 +2037,7 @@ static void triggerPri_Audi135(void)
            currentStatus.startRevolutions++; //Counter
          }
 
-         setFilter(_decoderState.curGap); //Recalc the new filter value
+         _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
 
          _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
          _decoderState.toothLastToothTime = curTime;
@@ -2822,7 +2798,7 @@ static void triggerPri_Nissan360(void)
        currentStatus.startRevolutions++; //Counter
      }
      //Recalc the new filter value
-     setFilter(_decoderState.curGap);
+     _decoderState.setFilter(_decoderState.curGap, configPage4);
 
      //EXPERIMENTAL!
      if(configPage2.perToothIgn == true)
@@ -3142,8 +3118,6 @@ static void triggerPri_Subaru67(void)
       }
       else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
     }
-  //Recalc the new filter value
-  //setFilter(_decoderState.curGap);
   }
  }
 
@@ -3316,7 +3290,7 @@ static void triggerPri_Daihatsu(void)
       else
       {
         _decoderState.toothCurrentCount++; //Increment the tooth counter
-        setFilter(_decoderState.curGap); //Recalc the new filter value
+        _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
       }
 
       if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
@@ -3433,7 +3407,7 @@ static void triggerPri_Harley(void)
   _decoderState.lastGap = _decoderState.curGap;
   uint32_t curTime = micros();
   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  setFilter(_decoderState.curGap); // Filtering adjusted according to setting
+  _decoderState.setFilter(_decoderState.curGap, configPage4); // Filtering adjusted according to setting
   if (_decoderState.curGap > _decoderState.triggerFilterTime)
   {
     if (currentStatus.decoder.primary.isPinHigh()) // Has to be the same as in main() trigger-attach, for readability we do it this way.
@@ -3603,7 +3577,7 @@ static void triggerPri_ThirtySixMinus222(void)
        }
 
        //Filter can only be recalculated for the regular teeth, not the missing one.
-       setFilter(_decoderState.curGap);
+       _decoderState.setFilter(_decoderState.curGap, configPage4);
 
        _decoderState.decoderStatus.toothAngleIsCorrect = true;
        _decoderState.toothSystemCount = 0;
@@ -3760,7 +3734,7 @@ static void triggerPri_ThirtySixMinus21(void)
        }
 
        //Filter can only be recalculated for the regular teeth, not the missing one.
-       setFilter(_decoderState.curGap);
+       _decoderState.setFilter(_decoderState.curGap, configPage4);
 
        _decoderState.decoderStatus.toothAngleIsCorrect = true;
 
@@ -3863,7 +3837,6 @@ static void triggerPri_420a(void)
     }
 
     //Filter can only be recalculated for the regular teeth, not the missing one.
-    //setFilter(_decoderState.curGap);
     _decoderState.triggerFilterTime = 0;
 
     _decoderState.decoderStatus.toothAngleIsCorrect = false;
@@ -4037,7 +4010,7 @@ static void triggerPri_Webber(void)
         currentStatus.startRevolutions++; //Counter
       }
 
-      setFilter(_decoderState.curGap); //Recalc the new filter value
+      _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
     }
     else
     {
@@ -4402,7 +4375,7 @@ static void triggerPri_NGC(void)
       if(isMissingTooth == false)
       {
         //Regular (non-missing) tooth
-        setFilter(_decoderState.curGap);
+        _decoderState.setFilter(_decoderState.curGap, configPage4);
         _decoderState.decoderStatus.toothAngleIsCorrect = true;
       }
     }
@@ -4693,7 +4666,7 @@ static void triggerPri_Vmax(void)
             _decoderState.toothOneTime = curTime;
             _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
             //setFilter((_decoderState.curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
-            setFilter( ((_decoderState.curGap*4)/7) );//Angle to this tooth is 70, next is in 40, compensating.
+            _decoderState.setFilter( ((_decoderState.curGap*4)/7), configPage4 );//Angle to this tooth is 70, next is in 40, compensating.
             currentStatus.startRevolutions++; //Counter
           }
           else if (_decoderState.toothCurrentCount==2)
@@ -4701,33 +4674,33 @@ static void triggerPri_Vmax(void)
             _decoderState.secondaryToothCount = 2;
             _decoderState.triggerToothAngle = 40;
             //setFilter((_decoderState.curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
-            setFilter( ((_decoderState.curGap*7)/4) );//Angle to this tooth is 40, next is in 70, compensating.
+            _decoderState.setFilter( ((_decoderState.curGap*7)/4), configPage4 );//Angle to this tooth is 40, next is in 70, compensating.
           }
           else if (_decoderState.toothCurrentCount==3)
           {
             _decoderState.secondaryToothCount = 3;
             _decoderState.triggerToothAngle = 70;
-            setFilter(_decoderState.curGap);//Angle to this tooth is 70, next is in 70. No need to compensate.
+            _decoderState.setFilter(_decoderState.curGap, configPage4);//Angle to this tooth is 70, next is in 70. No need to compensate.
           }
           else if (_decoderState.toothCurrentCount==4)
           {
             _decoderState.secondaryToothCount = 4;
             _decoderState.triggerToothAngle = 70;
             //setFilter((_decoderState.curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
-            setFilter( ((_decoderState.curGap*4)/7) );//Angle to this tooth is 70, next is in 40, compensating.
+            _decoderState.setFilter( ((_decoderState.curGap*4)/7), configPage4 );//Angle to this tooth is 70, next is in 40, compensating.
           }
           else if (_decoderState.toothCurrentCount==5)
           {
             _decoderState.secondaryToothCount = 5;
             _decoderState.triggerToothAngle = 40;
             //setFilter((_decoderState.curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
-            setFilter( ((_decoderState.curGap*7)/4) );//Angle to this tooth is 40, next is in 70, compensating.
+            _decoderState.setFilter( ((_decoderState.curGap*7)/4), configPage4 );//Angle to this tooth is 40, next is in 70, compensating.
           }
           else if (_decoderState.toothCurrentCount==6)
           {
             _decoderState.secondaryToothCount = 6;
             _decoderState.triggerToothAngle = 70;
-            setFilter(_decoderState.curGap);//Angle to this tooth is 70, next is in 70. No need to compensate.
+            _decoderState.setFilter(_decoderState.curGap, configPage4);//Angle to this tooth is 70, next is in 70. No need to compensate.
           }
           _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
           _decoderState.toothLastToothTime = curTime;
@@ -4874,7 +4847,7 @@ static void triggerPri_Renix(void)
     else
     { 
       //Recalc the new filter value, only do this on the single gap tooth 
-      setFilter(_decoderState.curGap);  
+      _decoderState.setFilter(_decoderState.curGap, configPage4);  
     }
     renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
     renixSystemLastToothTime = curTime;
@@ -5072,7 +5045,7 @@ static void triggerPri_RoverMEMS(void)
         roverMEMSTeethSeen = roverMEMSTeethSeen << 1; // make a space, shift the bits 1 place to the left
         roverMEMSTeethSeen++; // add the tooth seen
         _decoderState.toothCurrentCount++; //Increment the tooth counter on the wheel (used to spot a revolution)
-        setFilter(_decoderState.curGap);
+        _decoderState.setFilter(_decoderState.curGap, configPage4);
       }
 
       // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
@@ -5715,7 +5688,7 @@ static void triggerPri_FordTFI(void)
  
   if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
   {
-    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { setFilter(_decoderState.curGap); } //Recalc the new filter value
+    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { _decoderState.setFilter(_decoderState.curGap, configPage4); } //Recalc the new filter value
     else { _decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored
     
     _decoderState.toothCurrentCount++; //Increment the tooth counter
