@@ -48,6 +48,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler_ignition_controller.h"
 #include "src/decoders/crank_angle_calculator.h"
 #include "src/decoders/decoder_state.h"
+#include "src/decoders/perToothIgnition.h"
 
 TESTABLE_STATIC decoders::detail::state_t _decoderState;
 
@@ -435,65 +436,6 @@ static inline uint16_t clampCrankAngle(int16_t crankAngle)
   return nudge((int16_t)0, (int16_t)crankMax, (int16_t)crankAngle);
 }
 
-/**
-On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
-For each ignition channel, a check is made whether we're at the relevant tooth and whether that ignition schedule is currently running
-Only if both these conditions are met will the schedule be updated with the latest timing information.
-If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
-*/
-static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth)
-{
-  if ( !currentStatus.isFixedCrankingIgnitionTimingActive(configPage4) && (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) )
-  {
-    if ( (currentTooth == _decoderState.ignitionEndTeeth[0]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule1, crankAngle);
-    }
-#if IGN_CHANNELS >= 2
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[1]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule2, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 3
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[2]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule3, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 4
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[3]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule4, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 5
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[4]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule5, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 6
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[5]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule6, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 7
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[6]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule7, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 8
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[7]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule8, crankAngle);
-    }
-#endif
-  }
-}
-
 static uint8_t getConfigPriTriggerEdge(const config4 &page4)
 {
   return page4.TrigEdge == 0U ? RISING : FALLING;
@@ -622,9 +564,9 @@ static void triggerPri_missingTooth(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) )
         {
           crankAngle += 360;
-          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+          decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
         }
-        else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        else{ decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
    }
 }
@@ -913,7 +855,7 @@ static void triggerPri_DualWheel(void)
           currentTooth = (configPage4.triggerTeeth + _decoderState.toothCurrentCount); 
         }
         else{ currentTooth = _decoderState.toothCurrentCount; }
-        checkPerToothTiming(crankAngle, currentTooth);
+        decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
       }
    } //Trigger filter
 }
@@ -1111,7 +1053,7 @@ static void triggerPri_BasicDistributor(void)
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       uint16_t currentTooth = _decoderState.toothCurrentCount;
       if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(crankAngle, currentTooth);
+      decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
     }
 
     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
@@ -1302,7 +1244,7 @@ static void triggerPri_GM7X(void)
         {
           crankAngle = ((_decoderState.toothCurrentCount - 2) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
         }
-        checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+        decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
       } 
     }
 
@@ -1541,8 +1483,8 @@ static void triggerPri_4G63(void)
           int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
           //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-          else { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
+          else { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
         }
       }
     } //Has sync
@@ -2396,8 +2338,8 @@ static void triggerPri_Miata9905(void)
         int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-        else { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
+        else { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
     } //Has sync
 
@@ -2807,11 +2749,11 @@ static void triggerPri_Nissan360(void)
         if(crankAngle > CRANK_ANGLE_MAX_IGN) 
         { 
           crankAngle -= CRANK_ANGLE_MAX_IGN;
-          checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount/2) );
+          decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount/2) );
         }
         else
         {
-          checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+          decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
         }
        
      }
@@ -3113,10 +3055,10 @@ static void triggerPri_Subaru67(void)
         crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount-6) ); }
-        else { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-6) ); }
+        else { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
-      else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+      else{ decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }
   }
  }
@@ -3590,7 +3532,7 @@ static void triggerPri_ThirtySixMinus222(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+       decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
      }
 
    }
@@ -3747,7 +3689,7 @@ static void triggerPri_ThirtySixMinus21(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+       decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
      }
 
    
@@ -3848,7 +3790,7 @@ static void triggerPri_420a(void)
     if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] ) + configPage4.triggerAngle;
-      checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+      decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
     }
   }
 }
@@ -4395,9 +4337,9 @@ static void triggerPri_NGC(void)
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
       {
         crankAngle += 360;
-        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+        decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
       }
-    else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+    else{ decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }
   }
 }
@@ -4879,9 +4821,9 @@ static void triggerPri_Renix(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
         {
           crankAngle += 360;
-          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+          decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
         }
-        else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        else{ decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
     }
   } 
@@ -5140,9 +5082,9 @@ static void triggerPri_RoverMEMS(void)
     {  
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true))
-      { crankAngle += 360; checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
+      { crankAngle += 360; decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
       else
-      { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+      { decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }     
   }
 
@@ -5548,7 +5490,7 @@ static void triggerPri_SuzukiK6A(void)
       if( (configPage2.perToothIgn == true) ) 
       {  
         int16_t crankAngle = _decoderState.toothAngles[_decoderState.toothCurrentCount] + configPage4.triggerAngle;
-        checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+        decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
       }     
 
     } // has sync
@@ -5713,7 +5655,7 @@ static void triggerPri_FordTFI(void)
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       uint16_t currentTooth = _decoderState.toothCurrentCount;
       if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(crankAngle, currentTooth);
+      decoders::detail::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
     }
         
     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
