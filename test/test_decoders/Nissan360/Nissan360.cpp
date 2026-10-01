@@ -81,8 +81,6 @@ static void test_getCrankAngle(void)
 
 static void test_getRevolutionTime(void)
 {
-        extern unsigned long MAX_STALL_TIME;
-
         auto decoder = triggerSetup_Nissan360();
 
         // --- Cranking path: startRevolutions < 2 -> revTime = gap * 180
