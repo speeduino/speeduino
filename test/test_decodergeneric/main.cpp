@@ -20,6 +20,7 @@ void runAllTests(void)
     extern void testinterrupt_t(void);
     extern void testCrankAngleCalculators(void);
     extern void testDecoderState(void);
+    extern void testPerToothIgnition(void);
 
     testDecoder_General();
     testToothLoggers();
@@ -29,6 +30,7 @@ void runAllTests(void)
     testinterrupt_t();
     testCrankAngleCalculators();
     testDecoderState();
+    testPerToothIgnition();
 }
 
 TEST_HARNESS(runAllTests)
