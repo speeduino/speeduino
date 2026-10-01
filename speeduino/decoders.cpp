@@ -286,6 +286,7 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
 * @defgroup dec_miss Missing tooth wheel
 * @{
 */
+
 // LCOV_EXCL_START
 // Exclude one line wrappers from coverage
 static void triggerPri_missingTooth(void)
@@ -312,45 +313,12 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
   return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
 }
-// LCOV_EXCL_STOP
-
-static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
-  //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
-  if(configPage4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
-  
-  // Clamp to tooth count
-  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
-}
 
 static void triggerSetEndTeeth_missingTooth(void)
 {
-  uint8_t toothAdder = 0;
-  if( ((configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage4.sparkMode == IGN_MODE_SINGLE)) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) ) { toothAdder = configPage4.triggerTeeth; }
-
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_missingTooth(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_missingTooth(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_missingTooth(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcEndTeeth_missingTooth(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  _decoderState.ignitionEndTeeth[4] = calcEndTeeth_missingTooth(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  _decoderState.ignitionEndTeeth[5] = calcEndTeeth_missingTooth(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  _decoderState.ignitionEndTeeth[6] = calcEndTeeth_missingTooth(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  _decoderState.ignitionEndTeeth[7] = calcEndTeeth_missingTooth(ignitionSchedule8, toothAdder);
-#endif
+  decoders::missing_tooth::setEndTeeth(_decoderState, configPage4);
 }
+// LCOV_EXCL_STOP
 
 decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
 {
