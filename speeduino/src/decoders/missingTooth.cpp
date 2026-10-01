@@ -222,5 +222,23 @@ void triggerTertiary(uint32_t curTime, statuses &current, detail::state_t &decod
   }
 }
 
+uint32_t getRevolutionTime(const statuses &current, detail::state_t &decoderState, const config4 &page4)
+{
+  uint32_t revolutionTime = 0;
+  if( current.RPM < current.crankRPM )
+  {
+    if(decoderState.toothCurrentCount != 1)
+    {
+      revolutionTime = detail::crankingGetRevolutionTime(current, decoderState, page4, page4.triggerTeeth, page4.TrigSpeed==CAM_SPEED); //Account for cam speed
+    }
+    else { revolutionTime = detail::publishedRevolutionTime(current); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+  }
+  else
+  {
+    revolutionTime = detail::stdGetRevolutionTime(current, decoderState, page4.TrigSpeed==CAM_SPEED); //Account for cam speed
+  }
+  return revolutionTime;
+}
+
 }
 }

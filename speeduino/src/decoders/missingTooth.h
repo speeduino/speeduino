@@ -14,6 +14,7 @@ namespace missing_tooth {
 
     void triggerTertiary(uint32_t curTime, statuses &current, detail::state_t &decoderState, const config4 &page4, const config6 &page6);
 
+    uint32_t getRevolutionTime(const statuses &current, detail::state_t &decoderState, const config4 &page4);
 }
 
 }

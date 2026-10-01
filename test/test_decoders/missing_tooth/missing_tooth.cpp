@@ -176,58 +176,18 @@ static void test_getCrankAngle(void)
     run_case(1, true, 100, 0, 360 + 0 + dt);
 }
 
-static void test_getRevolutionTime(void)
-{
-    // 36-1 crank wheel
-    configPage4.triggerTeeth = 36;
-    configPage4.triggerMissingTeeth = 1;
-    configPage4.TrigSpeed = CRANK_SPEED;
-    auto decoder = triggerSetup_missingTooth();
-
-    // Ensure staging allows cranking calculation
-    configPage4.StgCycles = 0;
-
-    // --- Cranking path: currentStatus.RPM < crankRPM and not at tooth #1
-    currentStatus.crankRPM = 400;
-    currentStatus.setRpm(currentStatus.crankRPM/2U);
-    currentStatus.startRevolutions = 0; // cranking
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    // Choose gap so that revTime = gap * 36 =~ 60000 -> gap ~= 1667
-    _decoderState.toothLastMinusOneToothTime = 1000UL;
-    _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 1667UL;
-    _decoderState.toothCurrentCount = 2;
-    currentStatus.revolutionTime = 99999UL;
-    TEST_ASSERT_EQUAL_UINT32(1667UL*36UL, decoder.getRevolutionTime());
-
-    // --- If at tooth #1, cranking path should return currentStatus.revolutionTime
-    _decoderState.toothCurrentCount = 1;
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-
-    // --- Running path: stdGetRevolutionTime should be used when not cranking
-    currentStatus.setRpm(currentStatus.crankRPM*2U);
-    currentStatus.startRevolutions = 1; // not cranking
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    currentStatus.revolutionTime = 12345UL;
-    _decoderState.toothOneMinusOneTime = 1000UL;
-    _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // revTime = 60000
-    TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
-
-    // --- Fallback: when sync lost, return currentStatus.revolutionTime
-    _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-    TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
-}
 
 void testMissingTooth()
 {
+    extern void testMissingToothRevTime(void);
     extern void testMissingToothTriggers(void);
 
+    testMissingToothRevTime();
     testMissingToothTriggers();
 
     SET_UNITY_FILENAME() {
         RUN_TEST_P(test_missingtooth_newIgn_36_1);
         RUN_TEST_P(test_missingtooth_newIgn_60_2);
         RUN_TEST_P(test_getCrankAngle);
-        RUN_TEST_P(test_getRevolutionTime);
     }
 }

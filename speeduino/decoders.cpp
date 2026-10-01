@@ -370,20 +370,7 @@ static void triggerThird_missingTooth(void)
 
 static uint32_t getRevolutionTime_missingTooth(void)
 {
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM )
-  {
-    if(_decoderState.toothCurrentCount != 1)
-    {
-      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
-    }
-    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
-  }
-  return revolutionTime;
+  return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
 }
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
