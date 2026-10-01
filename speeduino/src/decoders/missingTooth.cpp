@@ -1,6 +1,7 @@
 #include "missingTooth.h"
 #include "perToothIgnition.h"
 #include "rev_time_calcs.h"
+#include "scheduler_ignition_controller.h"
 
 namespace decoders {
 
@@ -238,6 +239,48 @@ uint32_t getRevolutionTime(const statuses &current, detail::state_t &decoderStat
     revolutionTime = detail::stdGetRevolutionTime(current, decoderState, page4.TrigSpeed==CAM_SPEED); //Account for cam speed
   }
   return revolutionTime;
+}
+
+static uint16_t __attribute__((noinline)) calcEndTooth(detail::state_t &decoderState, const config4 &page4, const IgnitionSchedule &schedule, uint8_t toothAdder) {
+#ifdef USE_LIBDIVIDE  
+  int16_t tempEndTooth = libdivide::libdivide_s16_do(schedule.dischargeAngle - page4.triggerAngle, &decoderState.divTriggerToothAngle);
+#else
+  int16_t tempEndTooth = (schedule.dischargeAngle - (int16_t)page4.triggerAngle) / (int16_t)decoderState.triggerToothAngle;
+#endif
+  //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
+  if(page4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
+  
+  // Clamp to tooth count
+  return decoderState.clampToActualTeeth(page4, detail::clampToToothCount(page4, tempEndTooth, toothAdder), toothAdder);
+}
+
+void setEndTeeth(detail::state_t &decoderState, const config4 &page4)
+{
+  uint8_t toothAdder = 0;
+  if( ((page4.sparkMode == IGN_MODE_SEQUENTIAL) || (page4.sparkMode == IGN_MODE_SINGLE)) && (page4.TrigSpeed == CRANK_SPEED)) { toothAdder = page4.triggerTeeth; }
+
+  decoderState.ignitionEndTeeth[0] = calcEndTooth(decoderState, page4, ignitionSchedule1, toothAdder);
+#if (IGN_CHANNELS >= 2)
+  decoderState.ignitionEndTeeth[1] = calcEndTooth(decoderState, page4, ignitionSchedule2, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 3)
+  decoderState.ignitionEndTeeth[2] = calcEndTooth(decoderState, page4, ignitionSchedule3, toothAdder);
+#endif
+#if (IGN_CHANNELS >= 4)
+  decoderState.ignitionEndTeeth[3] = calcEndTooth(decoderState, page4, ignitionSchedule4, toothAdder);
+#endif
+#if IGN_CHANNELS >= 5
+  decoderState.ignitionEndTeeth[4] = calcEndTooth(decoderState, page4, ignitionSchedule5, toothAdder);
+#endif
+#if IGN_CHANNELS >= 6
+  decoderState.ignitionEndTeeth[5] = calcEndTooth(decoderState, page4, ignitionSchedule6, toothAdder);
+#endif
+#if IGN_CHANNELS >= 7
+  decoderState.ignitionEndTeeth[6] = calcEndTooth(decoderState, page4, ignitionSchedule7, toothAdder);
+#endif
+#if IGN_CHANNELS >= 8
+  decoderState.ignitionEndTeeth[7] = calcEndTooth(decoderState, page4, ignitionSchedule8, toothAdder);
+#endif 
 }
 
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "src/utils/nominmax.h"
+#include <algorithm>
 #include <stdint.h>
 #ifdef USE_LIBDIVIDE
 #include <libdivide.h>
@@ -55,6 +57,11 @@ namespace detail {
          * This ONLY works for even spaced decoders.
          */
         void setFilter(unsigned long curGap, const config4 &page4);
+
+        inline uint16_t clampToActualTeeth(const config4 &page4, uint16_t toothNum, uint8_t toothAdder) {
+            if(toothNum > triggerActualTeeth && toothNum <= page4.triggerTeeth) { toothNum = triggerActualTeeth; }
+            return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
+        }        
     };
 }
 }
