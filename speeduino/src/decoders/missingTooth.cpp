@@ -277,12 +277,8 @@ uint32_t getRevolutionTime(const statuses &current, detail::state_t &decoderStat
   return revolutionTime;
 }
 
-static uint16_t __attribute__((noinline)) calcEndTooth(detail::state_t &decoderState, const config4 &page4, const IgnitionSchedule &schedule, uint8_t toothAdder) {
-#ifdef USE_LIBDIVIDE  
-  int16_t tempEndTooth = libdivide::libdivide_s16_do(schedule.dischargeAngle - page4.triggerAngle, &decoderState.divTriggerToothAngle);
-#else
-  int16_t tempEndTooth = (schedule.dischargeAngle - (int16_t)page4.triggerAngle) / (int16_t)decoderState.triggerToothAngle;
-#endif
+static uint16_t __attribute__((noinline)) calcEndTooth(const detail::state_t &decoderState, const config4 &page4, const IgnitionSchedule &schedule, uint8_t toothAdder) {
+  int16_t tempEndTooth = decoderState.toothNumFromScheduleAngles(page4, schedule);
   //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
   if(page4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
   

@@ -7,6 +7,7 @@
 #include <libdivide.h>
 #endif
 #include "config_pages.h"
+#include "scheduler.h"
 
 namespace decoders {
 
@@ -58,10 +59,19 @@ namespace detail {
          */
         void setFilter(unsigned long curGap, const config4 &page4);
 
-        inline uint16_t clampToActualTeeth(const config4 &page4, uint16_t toothNum, uint8_t toothAdder) {
+        inline uint16_t clampToActualTeeth(const config4 &page4, uint16_t toothNum, uint8_t toothAdder) const {
             if(toothNum > triggerActualTeeth && toothNum <= page4.triggerTeeth) { toothNum = triggerActualTeeth; }
             return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
-        }        
+        }
+
+        int16_t toothNumFromScheduleAngles(const config4 &page4, const IgnitionSchedule &schedule) const {
+            int16_t angle = schedule.dischargeAngle - page4.triggerAngle;
+#ifdef USE_LIBDIVIDE  
+            return libdivide::libdivide_s16_do(angle, &divTriggerToothAngle);
+#else
+            return angle / (int16_t)triggerToothAngle;
+#endif
+        }
     };
 }
 }
