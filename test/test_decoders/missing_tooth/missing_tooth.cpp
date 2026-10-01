@@ -220,6 +220,10 @@ static void test_getRevolutionTime(void)
 
 void testMissingTooth()
 {
+    extern void testMissingToothTriggers(void);
+
+    testMissingToothTriggers();
+
     SET_UNITY_FILENAME() {
         RUN_TEST_P(test_missingtooth_newIgn_36_1);
         RUN_TEST_P(test_missingtooth_newIgn_60_2);
