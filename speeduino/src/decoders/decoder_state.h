@@ -59,6 +59,12 @@ namespace detail {
          */
         void setFilter(unsigned long curGap, const config4 &page4);
 
+        /** @brief Set the angle between teeth
+         * 
+         * This ONLY works for even spaced decoders.
+         */
+        void setTriggerToothAngle(int16_t angle);
+
         inline uint16_t clampToActualTeeth(const config4 &page4, uint16_t toothNum, uint8_t toothAdder) const {
             if(toothNum > triggerActualTeeth && toothNum <= page4.triggerTeeth) { toothNum = triggerActualTeeth; }
             return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));

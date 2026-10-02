@@ -12,13 +12,12 @@ detail::state_t __attribute__((optimize("Os"))) intialise(const config4 &page4)
   detail::state_t state = {};
 
   state.decoderFeatures.supportsPerToothIgnition = true;
-  state.triggerToothAngle = 360 / page4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(page4.TrigSpeed == CAM_SPEED) 
-  { 
-    //Account for cam speed missing tooth
-    state.triggerToothAngle = 720 / page4.triggerTeeth; 
-    state.decoderFeatures.supportsSequential = true;
-  } 
+  state.decoderFeatures.supportsSequential = page4.TrigSpeed == CAM_SPEED;
+
+  // The number of degrees that passes from tooth to tooth
+  uint16_t degreeTracking = (page4.TrigSpeed == CAM_SPEED) ? 720 : 360;
+  state.setTriggerToothAngle(degreeTracking / page4.triggerTeeth);
+
   state.triggerActualTeeth = page4.triggerTeeth - page4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   state.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * page4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   if (page4.trigPatternSec == SEC_TRIGGER_4_1)
@@ -35,10 +34,6 @@ detail::state_t __attribute__((optimize("Os"))) intialise(const config4 &page4)
   state.toothOneTime = 0;
   state.toothOneMinusOneTime = 0;
   state.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * state.triggerToothAngle * (page4.triggerMissingTeeth + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-
-#ifdef USE_LIBDIVIDE
-  state.divTriggerToothAngle = libdivide::libdivide_s16_gen(state.triggerToothAngle);
-#endif
 
   return state;
 }

@@ -568,8 +568,8 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 {
   _decoderState.decoderFeatures = decoder_features_t();
 	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage4.TrigSpeed == CAM_SPEED) { _decoderState.triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
+  uint16_t degreeTracking = (configPage4.TrigSpeed == CAM_SPEED) ? 720 : 360;
+  _decoderState.setTriggerToothAngle(degreeTracking / configPage4.triggerTeeth);
   _decoderState.toothCurrentCount = UINT8_MAX; //Default value
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -577,9 +577,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
   _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
   _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
@@ -3728,8 +3725,8 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   configPage4.triggerTeeth = 36;  
   configPage4.triggerMissingTeeth = 1;
   configPage4.TrigSpeed = CRANK_SPEED;
-
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  
+  _decoderState.setTriggerToothAngle(360 / configPage4.triggerTeeth);
   _decoderState.triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   
@@ -3743,9 +3740,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   _decoderState.toothOneTime = 0;
   _decoderState.toothOneMinusOneTime = 0;
   _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * (1U + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif  
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
@@ -4104,7 +4098,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 
   //Primary trigger
   configPage4.triggerTeeth = 36; //The number of teeth on the wheel incl missing teeth.
-  _decoderState.triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
+  _decoderState.setTriggerToothAngle(10);  //The number of degrees that passes from tooth to tooth
   _decoderState.triggerFilterTime = MICROS_PER_SEC / (MAX_RPM/60U) / (360U/_decoderState.triggerToothAngle); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   _decoderState.toothCurrentCount = 0;
   _decoderState.toothOneTime = 0;
@@ -4145,9 +4139,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
     _decoderState.toothAngles[8] = 3;
     _decoderState.toothAngles[9] = 1; // Pos 9 is required to be the same as group 1 for easier math
   }
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif  
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_NGC, CHANGE)
@@ -4458,7 +4449,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
 	sharedDecoderReset();
   if( configPage2.nCylinders == 4)
   {
-    _decoderState.triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
+    _decoderState.setTriggerToothAngle(90); //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
     configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
     configPage4.triggerMissingTeeth = 0;
     _decoderState.triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
@@ -4466,21 +4457,17 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
   }
   else if (configPage2.nCylinders == 6)
   {
-    _decoderState.triggerToothAngle = 60;
+    _decoderState.setTriggerToothAngle(60);
     configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 6 teeth.
     configPage4.triggerMissingTeeth = 0;
     _decoderState.triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
     _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 66U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   }
-
   _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
 
   _decoderState.toothSystemCount = 1;
   _decoderState.toothCurrentCount = 1;
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif  
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Renix, getConfigPriTriggerEdge(configPage4))
@@ -5424,7 +5411,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   _decoderState.triggerActualTeeth = configPage2.nCylinders;
   if(_decoderState.triggerActualTeeth == 0) { _decoderState.triggerActualTeeth = 1; }
 
-  _decoderState.triggerToothAngle = 720U / _decoderState.triggerActualTeeth; //The number of degrees that passes from tooth to tooth, half cylinder count
+  _decoderState.setTriggerToothAngle(720U / _decoderState.triggerActualTeeth); //The number of degrees that passes from tooth to tooth, half cylinder count
   _decoderState.toothCurrentCount = 0; //Default value
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 30U * configPage2.nCylinders)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   _decoderState.triggerSecFilterTime = _decoderState.triggerFilterTime * 4U /5u; //Same as above, but slightly about lower due to signature trigger (about 80%)
@@ -5434,9 +5421,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
   if(configPage2.nCylinders <= 4U) { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))

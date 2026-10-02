@@ -24,5 +24,13 @@ void state_t::setFilter(unsigned long curGap, const config4 &page4)
     }
 }
 
+void __attribute__((optimize("Os"))) state_t::setTriggerToothAngle(int16_t angle)
+{
+    triggerToothAngle = angle;
+#ifdef USE_LIBDIVIDE
+    divTriggerToothAngle = libdivide::libdivide_s16_gen(angle);
+#endif
+}
+
 }
 }
