@@ -42,10 +42,11 @@ constexpr uint8_t DECODER_ROVERMEMS         = 25;
 constexpr uint8_t DECODER_SUZUKI_K6A        = 26;
 constexpr uint8_t DECODER_HONDA_J32         = 27;
 constexpr uint8_t DECODER_FORD_TFI          = 28;
+constexpr uint8_t DECODER_OPTISPARK_8       = 29;
 /// @}
 
 /// @cond
-constexpr uint8_t DECODER_MAX = (DECODER_FORD_TFI+1U);
+constexpr uint8_t DECODER_MAX = (DECODER_OPTISPARK_8+1U);
 /// @endcond
 
 /** @brief Create a decoder from a configuration */

@@ -40,6 +40,7 @@ const char *getDecoderName(uint8_t decoderNum) {
     { DECODER_SUZUKI_K6A, GET_VARIABLE_NAME(DECODER_SUZUKI_K6A) },
     { DECODER_HONDA_J32, GET_VARIABLE_NAME(DECODER_HONDA_J32) },
     { DECODER_FORD_TFI, GET_VARIABLE_NAME(DECODER_FORD_TFI) },
+    { DECODER_OPTISPARK_8, GET_VARIABLE_NAME(DECODER_OPTISPARK_8) },
   };
   static const constexpr entity_name_map_t* entityMapEnd = entityMap + _countof(entityMap);  
 

@@ -40,6 +40,7 @@ decoder_t triggerSetup_RoverMEMS(void);
 decoder_t triggerSetup_Vmax(void);
 decoder_t triggerSetup_SuzukiK6A(void);
 decoder_t triggerSetup_FordTFI(void);
+decoder_t triggerSetup_Optispark8(void);
 /// @}
 
 // TODO: use same VVT scheme as other decoders

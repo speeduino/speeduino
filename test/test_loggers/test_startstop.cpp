@@ -31,6 +31,12 @@ static void test_start_stop(void)
     TEST_ASSERT_FALSE(currentStatus.isToothLog1Full);
     TEST_ASSERT_EQUAL(0, toothHistoryIndex);
 
+    if (decoderToTest == DECODER_OPTISPARK_8)
+    {
+        extern void processOptispark8Edge(uint32_t now, bool pinHigh);
+        // Prime the first edge; only the second has an interval for the tooth log.
+        processOptispark8Edge(micros() - 9000U, !currentStatus.decoder.primary.isPinHigh());
+    }
     loggerPrimaryISR();
     TEST_ASSERT_EQUAL(1, toothHistoryIndex);
 
