@@ -305,8 +305,12 @@ void DashMessage(uint16_t DashMessageID)
 
     case CAN_HALTECH_DATA3:
       temp_Advance = currentStatus.advance * 10U; //Note: Signed value
-      //Convert PW into duty cycle
-      temp_DutyCycle = (fuelSchedule1.pw * 100UL * currentStatus.nSquirts) / currentStatus.revolutionTime; 
+      //Convert PW into duty cycle. The revolution time is zero until the engine speed has been measured, so report 0% duty cycle until then
+      temp_DutyCycle = 0U;
+      if (currentStatus.revolutionTime != 0U)
+      {
+        temp_DutyCycle = (fuelSchedule1.pw * 100UL * currentStatus.nSquirts) / currentStatus.revolutionTime;
+      }
       if (configPage2.strokes == FOUR_STROKE) { temp_DutyCycle = temp_DutyCycle / 2U; }
 
       outMsg.len = 8;
