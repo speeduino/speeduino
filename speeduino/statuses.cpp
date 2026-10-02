@@ -24,8 +24,10 @@ void statuses::setRevolutionTime(uint32_t revTime)
   // The divisions are relatively expensive, so only recalculate when the revolution time changes
   if (revTime!=this->revolutionTime)
   {
+    // Do the divisions before entering the critical section, to keep the time with interrupts disabled short
     const uint16_t rpm = RpmFromRevolutionTimeUs(revTime);
     const uint8_t rpmDiv100 = (uint8_t)div100(rpm);
+    const angle_converter_factors_t factors = calculateAngleConverterFactors(revTime);
 
     // An ISR must never see the new revolution time alongside the old RPM or conversion factors
     ATOMIC()
@@ -34,7 +36,7 @@ void statuses::setRevolutionTime(uint32_t revTime)
       this->RPM = rpm;
       this->RPMdiv100 = rpmDiv100;
       // Zero conversion factors would turn every angle into 0uS, so keep the last known factors while the speed is unknown
-      if (revTime!=0U) { setAngleConverterRevolutionTime(revTime); }
+      if (revTime!=0U) { applyAngleConverterFactors(factors); }
     }
   }
 }
