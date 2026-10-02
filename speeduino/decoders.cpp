@@ -251,19 +251,8 @@ static decoder_status_t sharedGetStatus(void) noexcept
   __builtin_unreachable(); 
 }
 
-TESTABLE_STATIC bool sharedEngineIsRunning(uint32_t curTime) {
-  // Check how long ago the last tooth was seen compared to now. 
-  // If it was more than _decoderState.MAX_STALL_TIME then the engine is probably stopped. 
-  uint32_t lastToothTime = 0U;
-  ATOMIC() {
-    lastToothTime = _decoderState.toothLastToothTime;
-  }
-
-  // lastToothTime can be slightly ahead of curTime if a pulse occurred after
-  // curTime was sampled. Accept that race only within the stall interval; an
-  // unconditional ordering check would mistake a real counter rollover for it.
-  return (timeElapsed(curTime, lastToothTime) < _decoderState.MAX_STALL_TIME)
-      || (timeElapsed(lastToothTime, curTime) < _decoderState.MAX_STALL_TIME);
+static bool sharedEngineIsRunning(uint32_t curTime) {
+  return _decoderState.toothWithinMaxStallTime(curTime);
 }
 
 static decoder_features_t sharedGetDecoderFeatures(void)

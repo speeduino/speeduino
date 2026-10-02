@@ -81,6 +81,15 @@ namespace detail {
             return angle / (int16_t)triggerToothAngle;
 #endif
         }
+
+        /**
+         * @brief Check how long ago the last tooth was seen compared to now. 
+         * If it was more than MAX_STALL_TIME then the engine is probably stopped. 
+         * 
+         * @param curTime "now" time in microseconds
+         * @return true if curTime less than MAX_STALL_TIME, false otherwise
+         */
+        bool toothWithinMaxStallTime(uint32_t curTime);
     };
 }
 }
