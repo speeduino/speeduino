@@ -149,9 +149,12 @@ static void test_getRPM(void)
     toothLastToothTime = toothLastMinusOneToothTime + 1667UL; // gap ~=1667 -> revTime ~=60012 -> ~1000 RPM
     TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
 
-    // --- If tooth angle not correct, return currentStatus.RPM
+    // --- If tooth angle not correct, keep the last revolution time
+    currentStatus.setRpm(currentStatus.crankRPM/2U); // Stay on the cranking path
+    toothLastToothTime = toothLastMinusOneToothTime + 3000UL; // Would change the revolution time if used
     decoderStatus.toothAngleIsCorrect = false;
-    TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+    (void)decoder.getRPM();
+    TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
 
     // --- Running path: use stdGetRPM(CRANK_SPEED)
     currentStatus.setRpm(currentStatus.crankRPM*2U);

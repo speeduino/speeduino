@@ -81,17 +81,17 @@ static void test_getRPM(void)
   currentStatus.crankRPM = 400;
   decoderStatus.syncStatus = SyncStatus::Full;
 
-  // Simulate two tooth times 500us apart -> delta = 500
-  toothLastToothTime = 2000;
+  // Simulate two tooth times 50000us apart -> delta = 50000
+  toothLastToothTime = 51500;
   toothLastMinusOneToothTime = 1500;
 
   // For a 70 degree tooth gap (one of the 4G63 cranking gaps)
   triggerToothAngle = 70;
-  TEST_ASSERT_EQUAL_UINT16(23333, decoder.getRPM()); // 70 * 6e6 / (500*36) = 23333
+  TEST_ASSERT_EQUAL_UINT16(233, decoder.getRPM()); // revTime = 50000 * 360 / 70 = 257142 -> 233 RPM
 
   // For a 110 degree tooth gap
   triggerToothAngle = 110;
-  TEST_ASSERT_EQUAL_UINT16(36666, decoder.getRPM()); // 110 * 6e6 / (500*36) = 36666
+  TEST_ASSERT_EQUAL_UINT16(367, decoder.getRPM()); // revTime = 50000 * 360 / 110 = 163636 -> 367 RPM
 
   // Running path: should return stdGetRPM(CAM_SPEED) -> defaults to currentStatus.RPM when no revolution update
   currentStatus.setRpm(1000);
