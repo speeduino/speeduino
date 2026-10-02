@@ -15,6 +15,8 @@
 #include "src/utils/nominmax.h"
 #include <tuple>
 #include "config_pages.h"
+#include "atomic.h"
+#include "decoder_state.h"
 
 namespace decoders {
 
@@ -185,6 +187,25 @@ struct compute_crank_angle_calculator_tooth_interval_t : public tooth_interval_c
 };
 
 /// @}
+
+static inline auto atomic_make_lookup_caa(const state_t &decoderState)
+{
+  return lookup_crank_angle_calculator_t(atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount));
+}
+static inline auto atomic_make_lookup_caa_secondary(const state_t &decoderState)
+{
+  return lookup_crank_angle_calculator_t(atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.secondaryToothCount));
+}
+static inline auto atomic_make_angle_caa(const state_t &decoderState)
+{
+  return trigger_angle_crank_angle_calculator_t(atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount, decoderState.triggerToothAngle));
+}
+
+static inline uint16_t clampCrankAngle(int16_t crankAngle)
+{
+  auto crankMax = std::max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ);
+  return nudge((int16_t)0, (int16_t)crankMax, (int16_t)crankAngle);
+}
 
 }
 }
