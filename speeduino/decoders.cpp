@@ -282,17 +282,17 @@ static void sharedDecoderReset(void) {
   _decoderState.decoderStatus.validTrigger = false;
 }
 
-static auto atomic_make_lookup_caa(void)
+static auto atomic_make_lookup_caa(const decoders::detail::state_t &decoderState)
 {
-  return decoders::detail::lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount));
+  return decoders::detail::lookup_crank_angle_calculator_t(atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount));
 }
-static auto atomic_make_lookup_caa_secondary(void)
+static auto atomic_make_lookup_caa_secondary(const decoders::detail::state_t &decoderState)
 {
-  return decoders::detail::lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.secondaryToothCount));
+  return decoders::detail::lookup_crank_angle_calculator_t(atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.secondaryToothCount));
 }
-static auto atomic_make_angle_caa(void)
+static auto atomic_make_angle_caa(const decoders::detail::state_t &decoderState)
 {
-  return decoders::detail::trigger_angle_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle));
+  return decoders::detail::trigger_angle_crank_angle_calculator_t(atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount, decoderState.triggerToothAngle));
 }
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
@@ -347,7 +347,7 @@ static uint32_t getRevolutionTime_missingTooth(void)
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
 }
 
 static void triggerSetEndTeeth_missingTooth(void)
@@ -490,7 +490,7 @@ static uint32_t getRevolutionTime_DualWheel(void)
  * */
 static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();
+  auto calculator = atomic_make_angle_caa(_decoderState);
 
   //Handle case where the secondary tooth was the last one seen
   if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = configPage4.triggerTeeth; }
@@ -1346,7 +1346,7 @@ static uint32_t getRevolutionTime_24X(void)
 
 static int16_t getCrankAngle_24X(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
@@ -1578,7 +1578,7 @@ static uint32_t getRevolutionTime_Audi135(void)
 
 static int16_t getCrankAngle_Audi135(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();
+  auto calculator = atomic_make_angle_caa(_decoderState);
 
   //Handle case where the secondary tooth was the last one seen
   if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 45; }
@@ -1665,7 +1665,7 @@ static uint32_t getRevolutionTime_HondaD17(void)
 
 static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();
+  auto calculator = atomic_make_angle_caa(_decoderState);
 
   // if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference.
   if(calculator._toothCurrentCount == 0 )
@@ -1782,7 +1782,7 @@ static uint32_t getRevolutionTime_HondaJ32(void)
 
 static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();  
+  auto calculator = atomic_make_angle_caa(_decoderState);  
 
   // Tooth 1 time occurs 360/24 degrees after TDC.
   ++calculator._toothCurrentCount;
@@ -1973,7 +1973,7 @@ static uint32_t getRevolutionTime_Miata9905(void)
 
 static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
 }
 
 int getCamAngle_Miata9905(void)
@@ -2178,7 +2178,7 @@ static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
   int16_t crankAngle = 0;
   if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
   {
-    crankAngle = atomic_make_lookup_caa().calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
+    crankAngle = atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
   }
 
   return clampCrankAngle(crankAngle);
@@ -2856,7 +2856,7 @@ static uint32_t getRevolutionTime_Daihatsu(void)
 }
 static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
@@ -3420,7 +3420,7 @@ static uint32_t getRevolutionTime_420a(void)
 
 static int16_t getCrankAngle_420a(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_lookup_caa().calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  return clampCrankAngle(atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
 }
 
 static void triggerSetEndTeeth_420a(void)
@@ -3660,7 +3660,7 @@ static uint32_t getRevolutionTime_FordST170(void)
 
 static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 {
-  return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
+  return clampCrankAngle(atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -4252,7 +4252,7 @@ static uint32_t getRevolutionTime_Vmax(void)
 
 static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 {
-  auto calculator = atomic_make_lookup_caa_secondary();
+  auto calculator = atomic_make_lookup_caa_secondary(_decoderState);
   ++calculator._toothCurrentCount; // Since calculate() uses 0-based indices
   return clampCrankAngle(calculator.calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
 }
@@ -5049,7 +5049,7 @@ static uint32_t getRevolutionTime_SuzukiK6A(void)
 
 static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
 {
-  auto calculator = atomic_make_lookup_caa();
+  auto calculator = atomic_make_lookup_caa(_decoderState);
 
   // TODO: check if this can be removed.
   if (calculator._toothCurrentCount!=0U) {
@@ -5289,7 +5289,7 @@ static uint32_t getRevolutionTime_FordTFI(void)
  * */
 static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
 {
-  auto calculator = atomic_make_angle_caa();
+  auto calculator = atomic_make_angle_caa(_decoderState);
 
   //Handle case where the secondary tooth was the last one seen
   if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 2; } 
