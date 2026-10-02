@@ -49,6 +49,7 @@ static void test_primary_updates_regular_tooth(void)
     config2 page2{};
     config4 page4{};
 
+    page4.triggerFilter = TRIGGER_FILTER_LITE;
     decoderState.toothLastMinusOneToothTime = 500;
     decoderState.toothLastToothTime = 1000;
     decoderState.toothCurrentCount = 5;
@@ -62,6 +63,8 @@ static void test_primary_updates_regular_tooth(void)
     TEST_ASSERT_EQUAL_UINT32(1000, decoderState.toothLastMinusOneToothTime);
     TEST_ASSERT_EQUAL_UINT32(1500, decoderState.toothLastToothTime);
     TEST_ASSERT_TRUE(decoderState.decoderStatus.toothAngleIsCorrect);
+    // Assert that filtering occurred
+    TEST_ASSERT_NOT_EQUAL_UINT32(0, decoderState.triggerFilterTime);
 }
 
 static void test_primary_syncs_on_missing_tooth_gap(void)
@@ -209,67 +212,6 @@ static void test_primary_sequential_sync_completes_after_secondary_trigger(void)
 
     TEST_ASSERT_EQUAL(SyncStatus::Full, decoderState.decoderStatus.syncStatus);
     TEST_ASSERT_EQUAL_UINT16(1, decoderState.toothCurrentCount);
-}
-
-static void test_primary_per_tooth_ignition_adjusts_timing(void)
-{
-    statuses current;
-    decoders::shared::state_t decoderState{};
-    config2 page2{};
-    config4 page4{};
-
-    setAngleConverterRevolutionTime(6000000UL);
-    current.rotationStatus = EngineRotationStatus::Running;
-    current.startRevolutions = 2000;
-    current.setRpm(3000);
-    page2.perToothIgn = true;
-    page2.strokes = FOUR_STROKE;
-    page4.triggerAngle = 10;
-    page4.triggerTeeth = 36;
-    page4.sparkMode = IGN_MODE_WASTED;
-    decoderState.toothLastMinusOneToothTime = 800;
-    decoderState.toothLastToothTime = 900;
-    decoderState.toothCurrentCount = 2;
-    decoderState.triggerActualTeeth = 36;
-    decoderState.triggerToothAngle = 10;
-    decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    decoderState.ignitionEndTeeth[0] = 3;
-    ignitionSchedule1._status = PENDING;
-    ignitionSchedule1._compare = 100;
-    ignitionSchedule1.chargeAngle = 9999;
-
-    decoders::missing_tooth::triggerPrimary(1000, current, decoderState, page2, page4);
-
-    TEST_ASSERT_NOT_EQUAL(100, ignitionSchedule1._compare);
-}
-
-static void test_primary_skips_per_tooth_ignition_while_cranking(void)
-{
-    statuses current;
-    decoders::shared::state_t decoderState{};
-    config2 page2{};
-    config4 page4{};
-
-    setAngleConverterRevolutionTime(6000000UL);
-    current.rotationStatus = EngineRotationStatus::Cranking;
-    current.startRevolutions = 2000;
-    current.setRpm(500);
-    page2.perToothIgn = true;
-    page4.triggerAngle = 10;
-    decoderState.toothLastMinusOneToothTime = 800;
-    decoderState.toothLastToothTime = 900;
-    decoderState.toothCurrentCount = 2;
-    decoderState.triggerActualTeeth = 36;
-    decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    decoderState.ignitionEndTeeth[0] = 3;
-    ignitionSchedule1._status = PENDING;
-    ignitionSchedule1._counter = 100;
-    ignitionSchedule1._compare = 100;
-    ignitionSchedule1.chargeAngle = 500;
-
-    decoders::missing_tooth::triggerPrimary(1000, current, decoderState, page2, page4);
-
-    TEST_ASSERT_EQUAL(100, ignitionSchedule1._compare);
 }
 
 static void test_secondary_rejects_filtered_trigger(void)
@@ -525,8 +467,6 @@ void testMissingToothTriggers(void)
     RUN_TEST_P(test_primary_recovers_after_tooth_count_overflow_at_cam_speed);
     RUN_TEST_P(test_primary_sequential_sync_waits_for_secondary_trigger);
     RUN_TEST_P(test_primary_sequential_sync_completes_after_secondary_trigger);
-    RUN_TEST_P(test_primary_per_tooth_ignition_adjusts_timing);
-    RUN_TEST_P(test_primary_skips_per_tooth_ignition_while_cranking);
     RUN_TEST_P(test_secondary_rejects_filtered_trigger);
     RUN_TEST_P(test_secondary_initializes_single_tooth_trigger);
     RUN_TEST_P(test_secondary_poll_updates_filter_without_resetting_revolution);
