@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "src/decoders/decoder_state.h"
+#include "src/decoders/shared/decoder_state.h"
 
 static void test_toothWithinMaxStallTime(void)
 {

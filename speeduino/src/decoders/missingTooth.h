@@ -1,6 +1,6 @@
 #pragma once
 
-#include "decoder_state.h"
+#include "shared/decoder_state.h"
 #include "config_pages.h"
 #include "statuses.h"
 
