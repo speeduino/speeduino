@@ -268,15 +268,15 @@ static void sharedDecoderReset(void) {
 
 static auto atomic_make_lookup_caa(void)
 {
-  return lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount));
+  return decoders::shared::lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount));
 }
 static auto atomic_make_lookup_caa_secondary(void)
 {
-  return lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.secondaryToothCount));
+  return decoders::shared::lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.secondaryToothCount));
 }
 static auto atomic_make_angle_caa(void)
 {
-  return trigger_angle_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle));
+  return decoders::shared::trigger_angle_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle));
 }
 
 static inline uint16_t clampCrankAngle(int16_t crankAngle)
@@ -900,7 +900,7 @@ static uint32_t getRevolutionTime_BasicDistributor(void)
 static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 {
   auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-  return clampCrankAngle(compute_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, configPage4));
+  return clampCrankAngle(decoders::shared::compute_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, configPage4));
 }
 
 static void triggerSetEndTeeth_BasicDistributor(void)
@@ -1086,13 +1086,13 @@ static int16_t getCrankAngle_GM7X(uint32_t currMicros)
   int16_t crankAngle = 0;
   if( std::get<2>(data) == 3 )
   {
-    simple_crank_angle_calculator_t calculator;
+    decoders::shared::simple_crank_angle_calculator_t calculator;
     std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
     crankAngle = calculator.calculateCrankAngle(112, currMicros, configPage4);
   }
   else
   {
-    trigger_angle_crank_angle_calculator_t calculator(data);
+    decoders::shared::trigger_angle_crank_angle_calculator_t calculator(data);
     if (calculator._toothCurrentCount > 3 )
     {
       --calculator._toothCurrentCount;
@@ -1441,7 +1441,7 @@ static int16_t getCrankAngle_4G63(uint32_t currMicros)
   if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
   {
     auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
+    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
   }
   return clampCrankAngle(crankAngle);
 }
@@ -1716,13 +1716,13 @@ static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
   // the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
   if (std::get<2>(data) == 0)
   {
-    simple_crank_angle_calculator_t calculator;
+    decoders::shared::simple_crank_angle_calculator_t calculator;
     std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
     crankAngle = calculator.calculateCrankAngle(114, currMicros, configPage4);
   } 
   else
   { 
-    crankAngle = lookup_crank_angle_calculator_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
+    crankAngle = decoders::shared::lookup_crank_angle_calculator_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
   }
 
   //Estimate the number of degrees travelled since the last tooth}
@@ -2503,7 +2503,7 @@ static int16_t getCrankAngle_non360(uint32_t currMicros)
   //Have to divide by the multiplier to get back to actual crank angle.
   int16_t crankAngle = ((toothCount - 1) * std::get<3>(data)) / configPage4.TrigAngMul;
 
-  simple_crank_angle_calculator_t calculator;
+  decoders::shared::simple_crank_angle_calculator_t calculator;
   std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
   return clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
 }
@@ -2935,7 +2935,7 @@ static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
   if( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
   {
     auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-    crankAngle = lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
+    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
   }
   return clampCrankAngle(crankAngle);
 }
@@ -3231,7 +3231,7 @@ static int16_t getCrankAngle_Harley(uint32_t currMicros)
     crankAngle = 0;
   }
 
-  simple_crank_angle_calculator_t calculator;
+  decoders::shared::simple_crank_angle_calculator_t calculator;
   std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
   return clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
 }
