@@ -71,6 +71,31 @@ static void test_RpmFromRevolutionTimeUs(void)
     TEST_ASSERT_EQUAL_UINT16(0U, RpmFromRevolutionTimeUs(0UL));
 }
 
+static void test_calculateAngleConverterFactors_does_not_change_conversion(void)
+{
+    setAngleConverterRevolutionTime(24000UL);
+    (void)calculateAngleConverterFactors(20000UL);
+
+    TEST_ASSERT_UINT32_WITHIN(1U, 24000UL, angleToTime(360));
+}
+
+static void test_calculateAngleConverterFactors_zero(void)
+{
+    const angle_converter_factors_t factors = calculateAngleConverterFactors(0UL);
+
+    TEST_ASSERT_EQUAL_UINT32(0UL, factors.microsPerDegree);
+    TEST_ASSERT_EQUAL_UINT16(0U, factors.degreesPerMicro);
+}
+
+static void test_applyAngleConverterFactors(void)
+{
+    setAngleConverterRevolutionTime(24000UL);
+    applyAngleConverterFactors(calculateAngleConverterFactors(20000UL));
+
+    TEST_ASSERT_UINT32_WITHIN(1U, 20000UL, angleToTime(360));
+    TEST_ASSERT_UINT16_WITHIN(1U, 360U, timeToAngle(20000UL));
+}
+
 void testCrankMath()
 {
   SET_UNITY_FILENAME() {
@@ -80,5 +105,8 @@ void testCrankMath()
       RUN_TEST_P(test_timeToAngle_inverse_roundtrip);
       RUN_TEST_P(test_setAngleConverterRevolutionTime_revolution_values);
       RUN_TEST_P(test_RpmFromRevolutionTimeUs);
+      RUN_TEST_P(test_calculateAngleConverterFactors_does_not_change_conversion);
+      RUN_TEST_P(test_calculateAngleConverterFactors_zero);
+      RUN_TEST_P(test_applyAngleConverterFactors);
   }
 }
