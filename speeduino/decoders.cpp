@@ -361,6 +361,7 @@ static bool UpdateRevolutionTimeFromTeeth(bool isCamTeeth) {
 }
 
 static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
+  if (revTime==0U) { return 0U; } // The revolution time is zero when the engine has stopped
   return clamp(fast_div_closest(MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
 }
 
