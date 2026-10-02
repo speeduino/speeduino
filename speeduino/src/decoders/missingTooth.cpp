@@ -1,9 +1,9 @@
 #include "missingTooth.h"
-#include "perToothIgnition.h"
-#include "rev_time_calcs.h"
+#include "shared/perToothIgnition.h"
+#include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
 #include "unit_testing.h"
-#include "crank_angle_calculator.h"
 
 namespace decoders {
 
