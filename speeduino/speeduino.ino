@@ -187,7 +187,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           
     if ( currentStatus.decoder.isEngineRunning(micros()) )
     {
-      currentStatus.setRpm(currentStatus.decoder.getRPM());
+      currentStatus.setRevolutionTime(currentStatus.decoder.getRevolutionTime());
     }
     else
     {

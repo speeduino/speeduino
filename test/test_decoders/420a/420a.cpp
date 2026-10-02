@@ -46,24 +46,32 @@ static void test_getCrankAngle(void)
   run_case(2, 111 + dt + 10, 10);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
+  extern decoder_status_t decoderStatus;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+
   auto decoder = triggerSetup_420a();
 
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.startRevolutions = 1; // not cranking
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
+
+  // Running & cranking both use the standard calculation
   currentStatus.crankRPM = 400;
   currentStatus.setRpm(currentStatus.crankRPM*2);
-  auto rpm1 = decoder.getRPM();
-  TEST_ASSERT_NOT_EQUAL(0, rpm1);
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   currentStatus.setRpm(currentStatus.crankRPM/2);
-  TEST_ASSERT_NOT_EQUAL(rpm1, decoder.getRPM());
-  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 }
 
 void test420a(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);    
+    RUN_TEST_P(test_getRevolutionTime);    
   }
 }

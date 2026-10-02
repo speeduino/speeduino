@@ -59,7 +59,7 @@ static void test_getCrankAngle(void)
   TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
   extern decoder_status_t decoderStatus;
   extern volatile unsigned long toothOneTime;
@@ -68,23 +68,22 @@ static void test_getRPM(void)
   auto decoder = triggerSetup_Subaru67();
 
   decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.revolutionTime = 12345UL;
   toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000uS -> 1000 RPM
+  toothOneTime = toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
 
-  // Engine starting: no speed until the first revolution has completed
-  currentStatus.setRpm(0);
-  currentStatus.revolutionTime = 0;
+  // No speed until the first revolution has completed
   currentStatus.startRevolutions = 0;
-  TEST_ASSERT_EQUAL(0, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
 
   currentStatus.startRevolutions = 1;
-  TEST_ASSERT_EQUAL(1000, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 }
 
 void testSubaru67(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }
