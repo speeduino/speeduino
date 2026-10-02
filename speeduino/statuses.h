@@ -114,6 +114,8 @@ struct statuses {
   /**
    * @brief Set the RPM field, keeping RPMDiv100 in sync.
    * 
+   * @note Firmware code should use setRevolutionTime() instead, so that RPM & revolutionTime remain consistent.
+   * 
    * @param rpm 
    */
   void setRpm(uint16_t rpm);
@@ -121,7 +123,7 @@ struct statuses {
   /**
    * @brief Set the crank revolution time & the values derived from it.
    *
-   * Keeps the following in sync:
+   * This is the single point at which the engine speed is updated. It keeps the following in sync:
    * - revolutionTime
    * - RPM & RPMdiv100
    * - The crank angle<->time conversion factors (see setAngleConverterRevolutionTime())
