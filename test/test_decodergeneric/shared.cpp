@@ -1,5 +1,8 @@
 #include "decoder_init.h"
 #include "shared.h"
+#include "globals.h"
+
+extern void processOptispark8Edge(uint32_t now, bool pinHigh);
 
 void configureStateForPrimaryTrigger(uint8_t decoder, decoder_status_t &status)
 {
@@ -11,7 +14,10 @@ void configureStateForPrimaryTrigger(uint8_t decoder, decoder_status_t &status)
     extern volatile uint16_t toothCurrentCount;
     extern volatile unsigned long triggerFilterTime;
     
-    if (decoder==DECODER_24X) {
+    if (decoder==DECODER_OPTISPARK_8) {
+        // The first edge primes interval history; the callback under test supplies the second.
+        processOptispark8Edge(micros() - 9000U, !currentStatus.decoder.primary.isPinHigh());
+    } else if (decoder==DECODER_24X) {
         toothCurrentCount = 0U;
     } else if (decoder==DECODER_JEEP2000) {
         toothCurrentCount = 0U;

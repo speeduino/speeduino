@@ -78,10 +78,32 @@ static void test_tertiary_trigger_coverage(uint8_t decoderNum)
     TEST_PASS(); // Coverage only
 }
 
+// Unlike older decoders, Optispark also requires private interval history.
+// Establish it through real edges instead of fabricating a synchronized status.
+static uint32_t primeOptispark8(void)
+{
+    extern void processOptispark8Edge(uint32_t now, bool pinHigh);
+    const uint16_t edges[] = {86,100,176,180,266,290,356,360,446,480,536,540,626,670,716,720};
+    uint32_t now = 1000;
+    for (uint8_t n = 0; n < 32U; ++n)
+    {
+        const uint8_t i = n % 16U;
+        now += (uint32_t)(i == 0U ? 86U : edges[i] - edges[i - 1U]) * 100U;
+        processOptispark8Edge(now, ((i & 1U) == 0U) != (configPage4.TrigEdge != 0U));
+    }
+    return now;
+}
+
 static void test_getRpm_coverage(uint8_t decoderNum)
 {
     setup_prebuild_state();
     auto decoder = buildDecoder(decoderNum);
+    if (decoderNum == DECODER_OPTISPARK_8)
+    {
+        primeOptispark8();
+        TEST_ASSERT_UINT16_WITHIN(1, 1667, decoder.getRPM());
+        return;
+    }
 
     currentStatus.revolutionTime = 3333;
     currentStatus.crankRPM = 400;
@@ -98,6 +120,12 @@ static void test_getCrankAngle_coverage(uint8_t decoderNum)
 {
     setup_prebuild_state();
     auto decoder = buildDecoder(decoderNum);
+    if (decoderNum == DECODER_OPTISPARK_8)
+    {
+        const uint32_t now = primeOptispark8();
+        TEST_ASSERT_EQUAL_INT16(configPage4.triggerAngle + 5, decoder.pGetCrankAngle(now + 500U));
+        return;
+    }
 
     currentStatus.revolutionTime = 3333;
     currentStatus.crankRPM = 400;

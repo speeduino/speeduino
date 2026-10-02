@@ -16,6 +16,7 @@ void runAllTests(void)
     extern void testDualWheel(void);
     extern void testRenix(void);
     extern void testNissan360(void);
+    extern void testOptispark8(void);
     extern void testFordST170(void);
     extern void testNGC(void);
     extern void testSuzukiK6A_setEndTeeth(void);
@@ -69,6 +70,7 @@ void runAllTests(void)
     testRoverMems();
     testThirtySixMinus21();
     testThirtySixMinus22();
+    testOptispark8();
 }
 
 TEST_HARNESS(runAllTests)
