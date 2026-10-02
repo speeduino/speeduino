@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "src/decoders/perToothIgnition.h"
+#include "src/decoders/details/perToothIgnition.h"
 #include "scheduler_ignition_controller.h"
 
 using namespace decoders::detail;

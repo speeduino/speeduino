@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "src/decoders/rev_time_calcs.h"
+#include "src/decoders/details/rev_time_calcs.h"
 
 using namespace decoders::detail;
 

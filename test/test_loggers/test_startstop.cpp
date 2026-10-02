@@ -3,7 +3,7 @@
 #include "decoder_init.h"
 #include "decoders.h"
 #include "globals.h"
-#include "src/decoders/decoder_state.h"
+#include "src/decoders/details/decoder_state.h"
 
 extern decoders::detail::state_t _decoderState;
 

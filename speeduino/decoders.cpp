@@ -46,10 +46,10 @@ A full copy of the license may be found in the projects root directory
 #include "scheduledIO_ign.h"
 #include "src/pins/boardInputPin.h"
 #include "scheduler_ignition_controller.h"
-#include "src/decoders/crank_angle_calculator.h"
-#include "src/decoders/decoder_state.h"
-#include "src/decoders/perToothIgnition.h"
-#include "src/decoders/rev_time_calcs.h"
+#include "src/decoders/details/crank_angle_calculator.h"
+#include "src/decoders/details/decoder_state.h"
+#include "src/decoders/details/perToothIgnition.h"
+#include "src/decoders/details/rev_time_calcs.h"
 #include "src/decoders/missingTooth.h"
 
 using namespace decoders::detail;
