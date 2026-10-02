@@ -1029,6 +1029,14 @@ static void test_correctionsDwell_wasted_nopertooth_largerevolutiontime(void) {
     TEST_ASSERT_EQUAL(800, correctionsDwell(800));
 }
 
+static void test_correctionsDwell_zero_revolutiontime(void) {
+    setup_correctionsDwell();
+
+    currentStatus.battery10 = 105;
+    currentStatus.revolutionTime = 0;
+    TEST_ASSERT_EQUAL(800, correctionsDwell(800));
+}
+
 static void test_correctionsDwell_initialises_current_actualDwell(void) {
     setup_correctionsDwell();
 
@@ -1054,6 +1062,7 @@ static void test_correctionsDwell(void) {
     RUN_TEST_P(test_correctionsDwell_nopertooth);
     RUN_TEST_P(test_correctionsDwell_pertooth);
     RUN_TEST_P(test_correctionsDwell_wasted_nopertooth_largerevolutiontime);
+    RUN_TEST_P(test_correctionsDwell_zero_revolutiontime);
     RUN_TEST_P(test_correctionsDwell_initialises_current_actualDwell);
     RUN_TEST_P(test_correctionsDwell_uses_batvcorrection);
     RUN_TEST_P(test_correctDwellClosedLoop_nochange);
