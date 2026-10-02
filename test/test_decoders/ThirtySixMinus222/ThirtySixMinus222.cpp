@@ -6,14 +6,16 @@ static void assert_crank_not_current_rpm(decoder_t &decoder)
 {
     currentStatus.setRpm(currentStatus.crankRPM/2U);
     currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-    TEST_ASSERT_NOT_EQUAL(currentStatus.RPM, decoder.getRPM());
+    const uint16_t rpm = currentStatus.RPM;
+    TEST_ASSERT_NOT_EQUAL(rpm, decoder.getRPM());
 }
 
 static void assert_crank_uses_current_rpm(decoder_t &decoder)
 {
     currentStatus.setRpm(currentStatus.crankRPM/2U);
     currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-    TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+    const uint16_t rpm = currentStatus.RPM;
+    TEST_ASSERT_EQUAL(rpm, decoder.getRPM());
 }
 
 static void test_getRPM(void)
@@ -33,7 +35,8 @@ static void test_getRPM(void)
   // Not cranking
   currentStatus.setRpm((currentStatus.crankRPM*2U)+111);
   currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+  const uint16_t rpm = currentStatus.RPM;
+  TEST_ASSERT_EQUAL(rpm, decoder.getRPM());
 
   // Cranking
   configPage2.nCylinders = 4;

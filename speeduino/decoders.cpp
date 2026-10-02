@@ -14,7 +14,7 @@ A full copy of the license may be found in the projects root directory
  * - **triggerSetup_xxxx** - Called once from within setup() and configures any required variables
  * - **triggerPri_xxxx** - Called each time the primary (No. 1) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
  * - **triggerSec_xxxx** - Called each time the secondary (No. 2) crank/cam signal is triggered (Called as an interrupt, so variables must be declared volatile)
- * - **getRPM_xxxx** - Returns the current RPM, as calculated by the decoder
+ * - **getRevolutionTime_xxxx** - Returns the current crank revolution time, as calculated by the decoder (RPM is derived from this), or 0 if the engine speed is unknown. If a new measurement can't be taken (E.g. no tooth history yet), the current revolution time can be returned to keep the last known speed.
  * - **getCrankAngle_xxxx** - Returns the current crank angle, as calculated by the decoder
  * - **getCamAngle_xxxx** - Returns the current CAM angle, as calculated by the decoder
  *
@@ -291,10 +291,6 @@ static decoder_status_t sharedGetStatus(void) noexcept
   return decoderStatus; // Never reached, just to avoid compiler warning
 }
 
-static inline bool IsCranking(const statuses &status) {
-  return (status.RPM < status.crankRPM) && (status.startRevolutions == 0U);
-}
-
 TESTABLE_STATIC bool sharedEngineIsRunning(uint32_t curTime) {
   // Check how long ago the last tooth was seen compared to now. 
   // If it was more than MAX_STALL_TIME then the engine is probably stopped. 
@@ -329,16 +325,6 @@ static void sharedDecoderReset(void) {
   decoderStatus.validTrigger = false;
 }
 
-TESTABLE_STATIC __attribute__((noinline)) bool SetRevolutionTime(uint32_t revTime)
-{
-  if (revTime!=currentStatus.revolutionTime) {
-    currentStatus.revolutionTime = revTime;
-    setAngleConverterRevolutionTime(revTime);
-    return true;
-  } 
-  return false;
-}
-
 // If tooth angle calculations are based on cam teeth (not crank teeth), then results must be
 // divided by 2 (shifted by 1) 
 static inline uint8_t calcToothCalcShift(bool isCamTeeth)
@@ -346,28 +332,90 @@ static inline uint8_t calcToothCalcShift(bool isCamTeeth)
   return isCamTeeth ? 1U : 0U;
 }
 
-static bool UpdateRevolutionTimeFromTeeth(bool isCamTeeth) {
-  ATOMIC() {
-    bool updatedRevTime = decoderStatus.syncStatus!=SyncStatus::None 
-      && !IsCranking(currentStatus)
-      && (toothOneMinusOneTime!=UINT32_C(0))
-      && (toothOneTime>toothOneMinusOneTime) 
-      //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-      && SetRevolutionTime(timeElapsed(toothOneTime, toothOneMinusOneTime) >> calcToothCalcShift(isCamTeeth)); 
+/** Tooth timestamps copied in one critical section, so a 32-bit read cannot tear and the pair cannot split. */
+struct tooth_speed_sample_t {
+  uint32_t lastToothTime;
+  uint32_t prevToothTime;
+  uint32_t lastToothOneTime;
+  uint32_t prevToothOneTime;
+  uint32_t startRevolutions;
+  uint16_t toothAngle;
+  SyncStatus syncStatus;
+};
 
-    return updatedRevTime;
+static inline tooth_speed_sample_t atomicToothSpeedSample(void)
+{
+  tooth_speed_sample_t sample = {};
+  ATOMIC()
+  {
+    sample.lastToothTime = toothLastToothTime;
+    sample.prevToothTime = toothLastMinusOneToothTime;
+    sample.lastToothOneTime = toothOneTime;
+    sample.prevToothOneTime = toothOneMinusOneTime;
+    sample.startRevolutions = currentStatus.startRevolutions;
+    sample.toothAngle = triggerToothAngle;
+    sample.syncStatus = decoderStatus.syncStatus;
   }
-  return false; // Silence incorrect compiler warning
+  return sample;
 }
 
-// As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
-TESTABLE_STATIC __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
+static inline uint32_t publishedRevolutionTime(void)
 {
-  if (UpdateRevolutionTimeFromTeeth(isCamTeeth)) {
-    return RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
+  return currentStatus.revolutionTime;
+}
+
+// The tooth times are micros() values, which wrap around: timeElapsed() handles that, so the times are only checked for being set & distinct
+static __attribute__((noinline)) bool toothInterval(uint32_t lastTime, uint32_t prevTime, uint32_t &intervalUs)
+{
+  if ((prevTime==0U) || (lastTime==0U) || (lastTime==prevTime)) { return false; }
+  intervalUs = timeElapsed(lastTime, prevTime);
+  return true;
+}
+
+static inline bool lastToothInterval(const tooth_speed_sample_t &sample, uint32_t &intervalUs)
+{
+  return toothInterval(sample.lastToothTime, sample.prevToothTime, intervalUs);
+}
+
+static inline bool toothOneInterval(const tooth_speed_sample_t &sample, uint32_t &intervalUs)
+{
+  return toothInterval(sample.lastToothOneTime, sample.prevToothOneTime, intervalUs);
+}
+
+/**
+ * Crank period implied by one tooth interval that covers toothAngleDeg degrees.
+ * Split so interval * 360 cannot wrap a uint32_t: (interval / angle) * 360 + (interval % angle) * 360 / angle.
+ */
+static inline uint32_t revolutionTimeFromInterval(uint32_t intervalUs, uint16_t toothAngleDeg)
+{
+  uint32_t whole = intervalUs / toothAngleDeg;
+  uint32_t remainder = intervalUs % toothAngleDeg;
+  return (whole * 360UL) + ((remainder * 360UL) / toothAngleDeg);
+}
+
+/** @return false when the angle or the interval cannot be used. Caller keeps the published period. */
+static inline bool revolutionTimeFromLastTooth(const tooth_speed_sample_t &sample, uint32_t &revolutionTime)
+{
+  uint32_t interval = 0U;
+  if ((sample.toothAngle==0U) || (lastToothInterval(sample, interval)==false)) { return false; }
+  revolutionTime = revolutionTimeFromInterval(interval, sample.toothAngle);
+  return true;
+}
+
+// As nearly all the decoders use a common method of determining revolution time (The time the last full revolution took) A common function is simpler.
+// If the revolution time cannot be calculated, the current value is returned unchanged.
+TESTABLE_STATIC __attribute__((noinline)) uint32_t stdGetRevolutionTime(bool isCamTeeth)
+{
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  bool cranking = (currentStatus.RPM < currentStatus.crankRPM) && (sample.startRevolutions==0U);
+  uint32_t interval = 0U;
+  if ((sample.syncStatus!=SyncStatus::None) && (cranking==false) && (toothOneInterval(sample, interval)==true))
+  {
+    //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    return interval >> calcToothCalcShift(isCamTeeth);
   }
 
-  return currentStatus.RPM;
+  return publishedRevolutionTime();
 }
 
 #define TRIGGER_FILTER_OFF              0
@@ -410,28 +458,49 @@ static void setFilter(unsigned long curGap)
 }
 
 /**
-This is a special case of RPM measure that is based on the time between the last 2 teeth rather than the time of the last full revolution.
+This is a special case of revolution time measure that is based on the time between the last 2 teeth rather than the time of the last full revolution.
 This gives much more volatile reading, but is quite useful during cranking, particularly on low resolution patterns.
 It can only be used on patterns where the teeth are evenly spaced.
 It takes an argument of the full (COMPLETE) number of teeth per revolution.
 For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
+If the revolution time cannot be calculated, the current value is returned unchanged.
 */
-TESTABLE_STATIC __attribute__((noinline)) int crankingGetRPM(byte totalTeeth, bool isCamTeeth)
+TESTABLE_STATIC __attribute__((noinline)) uint32_t crankingGetRevolutionTime(byte totalTeeth, bool isCamTeeth)
 {
-  if( (currentStatus.startRevolutions >= configPage4.StgCycles) && (decoderStatus.syncStatus!=SyncStatus::None) )
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t interval = 0U;
+  if ( (sample.startRevolutions >= configPage4.StgCycles)
+    && (sample.syncStatus!=SyncStatus::None)
+    && (lastToothInterval(sample, interval)==true) )
   {
-    if((toothLastMinusOneToothTime > 0) && (toothLastToothTime > toothLastMinusOneToothTime) )
-    {
-      ATOMIC()
-      {      
-        if (SetRevolutionTime((timeElapsed(toothLastToothTime, toothLastMinusOneToothTime) * totalTeeth) >> calcToothCalcShift(isCamTeeth))) {
-          return RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
-        }
-      }
-    }
+    return (interval * totalTeeth) >> calcToothCalcShift(isCamTeeth);
   }
 
+  return publishedRevolutionTime();
+}
+
+/**
+ * @brief Publish a revolution time & return the resulting RPM. See getRPMFromRevolutionTime()
+ * 
+ * Kept out of line, so that there is only one copy of statuses::setRevolutionTime()
+ */
+static __attribute__((noinline)) uint16_t publishRevolutionTime(uint32_t revolutionTime)
+{
+  currentStatus.setRevolutionTime(revolutionTime);
   return currentStatus.RPM;
+}
+
+/**
+ * @brief Adapts a decoder's revolution time function to the decoder_t::getRPM interface.
+ * 
+ * Publishes the revolution time (which also sets the RPM) and returns the RPM.
+ * 
+ * @note This is temporary: decoder_t::getRPM is to be replaced by a function that returns the revolution time.
+ */
+template <uint32_t (*getRevolutionTime)(void)>
+static uint16_t getRPMFromRevolutionTime(void)
+{
+  return publishRevolutionTime(getRevolutionTime());
 }
 
 /**
@@ -777,22 +846,22 @@ static void triggerThird_missingTooth(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_missingTooth(void)
+static uint32_t getRevolutionTime_missingTooth(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM )
   {
     if(toothCurrentCount != 1)
     {
-      tempRPM = crankingGetRPM(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
+      revolutionTime = crankingGetRevolutionTime(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
     }
-    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    tempRPM = stdGetRPM(configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
+    revolutionTime = stdGetRevolutionTime(configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
   }
-  return tempRPM;
+  return revolutionTime;
 }
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
@@ -895,7 +964,7 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_missingTooth, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
                   .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
-                  .setGetRPM(getRPM_missingTooth)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_missingTooth>)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
                   .setReset(sharedDecoderReset)
@@ -991,24 +1060,24 @@ static void triggerSec_DualWheel(void)
     triggerSecFilterTime = currentStatus.revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and triggerSecFilterTime get out of alignment and curGap2 never exceeds the filter value
   } //Trigger filter
 }
-/** Dual Wheel - Get RPM.
+/** Dual Wheel - Get revolution time.
  * 
  * */
-static uint16_t getRPM_DualWheel(void)
+static uint32_t getRevolutionTime_DualWheel(void)
 {
   if( decoderStatus.syncStatus==SyncStatus::Full )
   {
     //Account for cam speed
     if( currentStatus.RPM < currentStatus.crankRPM )
     {
-      return crankingGetRPM(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED);
+      return crankingGetRevolutionTime(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED);
     }
     else
     {
-      return stdGetRPM(configPage4.TrigSpeed==CAM_SPEED);
+      return stdGetRevolutionTime(configPage4.TrigSpeed==CAM_SPEED);
     }
   }
-  return 0U;
+  return 0U; //Speed is unknown without sync
 }
 
 /** Dual Wheel - Get Crank angle.
@@ -1087,7 +1156,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_DualWheel, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_DualWheel)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_DualWheel>)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
@@ -1159,23 +1228,20 @@ static void triggerPri_BasicDistributor(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_BasicDistributor(void)
+static uint32_t getRevolutionTime_BasicDistributor(void)
 {
-  uint16_t tempRPM;
   uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
   if(configPage2.strokes == TWO_STROKE) { distributorSpeed = CRANK_SPEED; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
 
-  if( currentStatus.RPM < currentStatus.crankRPM || currentStatus.RPM < 1500)
-  { 
-    tempRPM = crankingGetRPM(triggerActualTeeth, distributorSpeed);
-  } 
-  else { tempRPM = stdGetRPM(distributorSpeed); }
+  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(distributorSpeed);
 
-  MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(triggerActualTeeth == 1) { MAX_STALL_TIME = currentStatus.revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(triggerActualTeeth == 1) { MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
-  return tempRPM;
+  return revolutionTime;
 
 }
 static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
@@ -1278,7 +1344,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 
   return decoder_builder_t()
                 .setPrimaryTrigger(triggerPri_BasicDistributor, getConfigPriTriggerEdge(configPage4))
-                .setGetRPM(getRPM_BasicDistributor)
+                .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_BasicDistributor>)
                 .setGetCrankAngle(getCrankAngle_BasicDistributor)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
                 .setReset(sharedDecoderReset)
@@ -1355,9 +1421,9 @@ static void triggerPri_GM7X(void)
 
 }
 
-static uint16_t getRPM_GM7X(void)
+static uint32_t getRevolutionTime_GM7X(void)
 {
-   return stdGetRPM(CRANK_SPEED);
+   return stdGetRevolutionTime(CRANK_SPEED);
 }
 static int16_t getCrankAngle_GM7X(uint32_t currMicros)
 {
@@ -1411,7 +1477,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_GM7X, getConfigPriTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_GM7X)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_GM7X>)
                   .setGetCrankAngle(getCrankAngle_GM7X)
                   .setSetEndTeeth(triggerSetEndTeeth_GM7X)
                   .setReset(sharedDecoderReset)
@@ -1683,41 +1749,37 @@ static void triggerSec_4G63(void)
 }
 
 
-static uint16_t getRPM_4G63(void)
+static uint32_t getRevolutionTime_4G63(void)
 {
-  uint16_t tempRPM = 0;
-  //During cranking, RPM is calculated 4 times per revolution, once for each rising/falling of the crank signal.
-  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
-  if(decoderStatus.syncStatus==SyncStatus::Full)
+  tooth_speed_sample_t sample;
+  uint32_t revolutionTime = 0U;
+
+  /*
+  During cranking, revolution time is calculated 4 times per revolution, once for each rising/falling of the crank signal.
+  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  */
+  sample = atomicToothSpeedSample();
+  if (sample.syncStatus==SyncStatus::Full)
   {
-    if( (currentStatus.RPM < currentStatus.crankRPM)  )
+    if (currentStatus.RPM < currentStatus.crankRPM)
     {
-      int tempToothAngle;
-      unsigned long toothTime;
-      if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
-      else
+      if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
       {
-        noInterrupts();
-        tempToothAngle = triggerToothAngle;
-        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen (or 70/50 for 6 cylinders)
-        interrupts();
-        toothTime = toothTime * 36;
-        tempRPM = ((unsigned long)tempToothAngle * (MICROS_PER_MIN/10U)) / toothTime;
-        SetRevolutionTime((10UL * toothTime) / tempToothAngle);
         MAX_STALL_TIME = 366667UL; // 50RPM
+        return revolutionTime;
       }
+      return publishedRevolutionTime();
     }
-    else
-    {
-      tempRPM = stdGetRPM(CAM_SPEED);
-      //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
-      //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
-      MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-      if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-    }
+
+    revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+    //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
+    //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
+    MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+    if (MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+    return revolutionTime;
   }
 
-  return tempRPM;
+  return 0U; //Speed is unknown without sync
 }
 
 static int16_t getCrankAngle_4G63(uint32_t currMicros)
@@ -1825,7 +1887,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_4G63, CHANGE)
                   .setSecondaryTrigger(triggerSec_4G63, FALLING)
-                  .setGetRPM(getRPM_4G63)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_4G63>)
                   .setGetCrankAngle(getCrankAngle_4G63)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
                   .setReset(sharedDecoderReset)
@@ -1881,9 +1943,9 @@ static void triggerSec_24X(void)
   revolutionOne = 1; //Sequential revolution reset
 }
 
-static uint16_t getRPM_24X(void)
+static uint32_t getRevolutionTime_24X(void)
 {
-   return stdGetRPM(CRANK_SPEED);
+   return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_24X(uint32_t currMicros)
@@ -1929,7 +1991,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_24X, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_24X, CHANGE)
-                  .setGetRPM(getRPM_24X)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_24X>)
                   .setGetCrankAngle(getCrankAngle_24X)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -1987,9 +2049,9 @@ static void triggerSec_Jeep2000(void)
   return;
 }
 
-static uint16_t getRPM_Jeep2000(void)
+static uint32_t getRevolutionTime_Jeep2000(void)
 {
-   return stdGetRPM(CRANK_SPEED);
+   return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
@@ -2039,7 +2101,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Jeep2000, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Jeep2000, CHANGE)
-                  .setGetRPM(getRPM_Jeep2000)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Jeep2000>)
                   .setGetCrankAngle(getCrankAngle_Jeep2000)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -2113,9 +2175,9 @@ static void triggerSec_Audi135(void)
   revolutionOne = 1; //Sequential revolution reset
 }
 
-static uint16_t getRPM_Audi135(void)
+static uint32_t getRevolutionTime_Audi135(void)
 {
-   return stdGetRPM(CRANK_SPEED);
+   return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_Audi135(uint32_t currMicros)
@@ -2143,7 +2205,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Audi135, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Audi135, RISING)
-                  .setGetRPM(getRPM_Audi135)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Audi135>)
                   .setGetCrankAngle(getCrankAngle_Audi135)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -2200,9 +2262,9 @@ static void triggerPri_HondaD17(void)
 
 }
 
-static uint16_t getRPM_HondaD17(void)
+static uint32_t getRevolutionTime_HondaD17(void)
 {
-   return stdGetRPM(CRANK_SPEED);
+   return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
@@ -2227,7 +2289,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
   
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_HondaD17, getConfigPriTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_HondaD17)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_HondaD17>)
                   .setGetCrankAngle(getCrankAngle_HondaD17)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -2275,7 +2337,6 @@ static void triggerPri_HondaJ32(void)
       toothOneMinusOneTime = toothOneTime;
       toothOneTime = curTime;
       currentStatus.startRevolutions++;
-      SetRevolutionTime(toothOneTime - toothOneMinusOneTime);
     }
     else if (toothCurrentCount == 23 || toothCurrentCount == 15) // This is the first tooth after a missing tooth
     {
@@ -2313,9 +2374,14 @@ static void triggerPri_HondaJ32(void)
   }
 }
 
-static uint16_t getRPM_HondaJ32(void)
+static uint32_t getRevolutionTime_HondaJ32(void)
 {
-  return RpmFromRevolutionTimeUs(currentStatus.revolutionTime); // currentStatus.revolutionTime set by SetRevolutionTime()
+  // The tooth #1 times are only updated while we have sync. They are estimated from the tooth gap when sync is first gained,
+  // so this doesn't have to wait for a full revolution (as stdGetRevolutionTime() would)
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t interval = 0U;
+  if ((sample.syncStatus==SyncStatus::None) || (toothOneInterval(sample, interval)==false)) { return publishedRevolutionTime(); }
+  return interval;
 }
 
 static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
@@ -2353,7 +2419,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_HondaJ32, RISING) // Don't honor the config, always use rising edge
-                  .setGetRPM(getRPM_HondaJ32)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_HondaJ32>)
                   .setGetCrankAngle(getCrankAngle_HondaJ32)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -2483,36 +2549,30 @@ static void triggerSec_Miata9905(void)
   }
 }
 
-static uint16_t getRPM_Miata9905(void)
+static uint32_t getRevolutionTime_Miata9905(void)
 {
-  //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal.
-  //Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
-  uint16_t tempRPM = 0;
-  if( (currentStatus.RPM < currentStatus.crankRPM) && (decoderStatus.syncStatus==SyncStatus::Full) )
+  tooth_speed_sample_t sample;
+  uint32_t revolutionTime = 0U;
+
+  /*
+  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
+  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  */
+  sample = atomicToothSpeedSample();
+  if ( (currentStatus.RPM < currentStatus.crankRPM) && (sample.syncStatus==SyncStatus::Full) )
   {
-    if( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
-    else
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
     {
-      int tempToothAngle;
-      unsigned long toothTime;
-      noInterrupts();
-      tempToothAngle = triggerToothAngle;
-      toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 70 and 110 depending on the last tooth that was seen
-      interrupts();
-      toothTime = toothTime * 36;
-      tempRPM = ((unsigned long)tempToothAngle * (MICROS_PER_MIN/10U)) / toothTime;
-      SetRevolutionTime((10UL * toothTime) / tempToothAngle);
       MAX_STALL_TIME = 366667UL; // 50RPM
+      return revolutionTime;
     }
-  }
-  else
-  {
-    tempRPM = stdGetRPM(CAM_SPEED);
-    MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-    if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+    return publishedRevolutionTime();
   }
 
-  return tempRPM;
+  revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if (MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+  return revolutionTime;
 }
 
 static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
@@ -2612,7 +2672,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Miata9905, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Miata9905, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_Miata9905)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Miata9905>)
                   .setGetCrankAngle(getCrankAngle_Miata9905)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
                   .setReset(sharedDecoderReset)
@@ -2698,26 +2758,23 @@ static void triggerSec_MazdaAU(void)
 }
 
 
-static uint16_t getRPM_MazdaAU(void)
+static uint32_t getRevolutionTime_MazdaAU(void)
 {
-  uint16_t tempRPM = 0;
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t revolutionTime = 0U;
 
-  if (decoderStatus.syncStatus==SyncStatus::Full)
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
+
+  /*
+  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
+  Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
+  */
+  if (currentStatus.RPM < currentStatus.crankRPM)
   {
-    //During cranking, RPM is calculated 4 times per revolution, once for each tooth on the crank signal.
-    //Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
-    if(currentStatus.RPM < currentStatus.crankRPM)
-    {
-      int tempToothAngle;
-      noInterrupts();
-      tempToothAngle = triggerToothAngle;
-      SetRevolutionTime(36*(toothLastToothTime - toothLastMinusOneToothTime)); //Note that trigger tooth angle changes between 72 and 108 depending on the last tooth that was seen
-      interrupts();
-      tempRPM = (tempToothAngle * MICROS_PER_MIN) / currentStatus.revolutionTime;
-    }
-    else { tempRPM = stdGetRPM(CRANK_SPEED); }
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
+    return publishedRevolutionTime();
   }
-  return tempRPM;
+  return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
@@ -2752,7 +2809,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_MazdaAU, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_MazdaAU, FALLING)
-                  .setGetRPM(getRPM_MazdaAU)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_MazdaAU>)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -2768,15 +2825,14 @@ There can be no missing teeth on the primary wheel.
 * @defgroup dec_non360 Non-360 Dual wheel
 * @{
 */
-static uint16_t getRPM_non360(void)
+static uint32_t getRevolutionTime_non360(void)
 {
-  uint16_t tempRPM = 0;
-  if( (decoderStatus.syncStatus==SyncStatus::Full) && (toothCurrentCount != 0) )
+  if ( (decoderStatus.syncStatus==SyncStatus::Full) && (toothCurrentCount != 0) )
   {
-    if(currentStatus.RPM < currentStatus.crankRPM) { tempRPM = crankingGetRPM(configPage4.triggerTeeth, CRANK_SPEED); }
-    else { tempRPM = stdGetRPM(CRANK_SPEED); }
+    if (currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRevolutionTime(configPage4.triggerTeeth, CRANK_SPEED); }
+    return stdGetRevolutionTime(CRANK_SPEED);
   }
-  return tempRPM;
+  return 0U; //Speed is unknown without sync
 }
 
 static int16_t getCrankAngle_non360(uint32_t currMicros)
@@ -2813,7 +2869,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4)) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
                   .setSecondaryTrigger(triggerSec_DualWheel, FALLING) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
-                  .setGetRPM(getRPM_non360)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_non360>)
                   .setGetCrankAngle(getCrankAngle_non360)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -2961,30 +3017,26 @@ static void triggerSec_Nissan360(void)
   } //First getting sync or not
 }
 
-static uint16_t getRPM_Nissan360(void)
+static uint32_t getRevolutionTime_Nissan360(void)
 {
-  //Can't use stdGetRPM as there is no separate cranking RPM calc (stdGetRPM returns 0 if cranking)
-  uint16_t tempRPM;
-  if( (decoderStatus.syncStatus==SyncStatus::Full) && (toothLastToothTime != 0) && (toothLastMinusOneToothTime != 0) )
-  {
-    if(currentStatus.startRevolutions < 2)
-    {
-      noInterrupts();
-      SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * 180); //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time. 
-      interrupts();
-    }
-    else
-    {
-      noInterrupts();
-      SetRevolutionTime((toothOneTime - toothOneMinusOneTime) >> 1); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-      interrupts();
-    }
-    tempRPM = RpmFromRevolutionTimeUs(currentStatus.revolutionTime); //Calc RPM based on last full revolution time (Faster as /)
-    MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  }
-  else { tempRPM = 0; }
+  //Can't use stdGetRevolutionTime as there is no separate cranking calc (stdGetRevolutionTime doesn't update if cranking)
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
 
-  return tempRPM;
+  uint32_t interval = 0U;
+  uint32_t revolutionTime = 0U;
+  if (sample.startRevolutions < 2U)
+  {
+    if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+    revolutionTime = interval * 180UL; //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time.
+  }
+  else
+  {
+    if (toothOneInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+    revolutionTime = interval >> 1; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+  }
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  return revolutionTime;
 }
 
 static int16_t getCrankAngle_Nissan360(uint32_t currMicros)
@@ -3044,7 +3096,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Nissan360, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Nissan360, CHANGE)
-                  .setGetRPM(getRPM_Nissan360)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Nissan360>)
                   .setGetCrankAngle(getCrankAngle_Nissan360)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
                   .setReset(sharedDecoderReset)
@@ -3218,17 +3270,12 @@ static void triggerSec_Subaru67(void)
 
 }
 
-static uint16_t getRPM_Subaru67(void)
+static uint32_t getRevolutionTime_Subaru67(void)
 {
-  //if(currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRPM(configPage4.triggerTeeth); }
-
-  uint16_t tempRPM = 0;
-  if(currentStatus.startRevolutions > 0)
-  {
-    //As the tooth count is over 720 degrees
-    tempRPM = stdGetRPM(CAM_SPEED);
-  }
-  return tempRPM;
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  if (sample.startRevolutions==0U) { return 0U; } //No speed until the first revolution has completed
+  //As the tooth count is over 720 degrees
+  return stdGetRevolutionTime(CAM_SPEED);
 }
 
 static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
@@ -3309,7 +3356,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Subaru67, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Subaru67, FALLING)
-                  .setGetRPM(getRPM_Subaru67)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Subaru67>)
                   .setGetCrankAngle(getCrankAngle_Subaru67)
                   .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
                   .setReset(sharedDecoderReset)
@@ -3397,31 +3444,21 @@ static void triggerPri_Daihatsu(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_Daihatsu(void)
+static uint32_t getRevolutionTime_Daihatsu(void)
 {
-  uint16_t tempRPM = 0;
-  if( (currentStatus.RPM < currentStatus.crankRPM) && false) //Disable special cranking processing for now
+  static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
+  if( (crankingCalcEnabled==false) || (currentStatus.RPM >= currentStatus.crankRPM) )
   {
-    //Can't use standard cranking RPM function due to extra tooth
-    if( decoderStatus.syncStatus==SyncStatus::Full )
-    {
-      if(toothCurrentCount == 2) { tempRPM = currentStatus.RPM; }
-      else if (toothCurrentCount == 3) { tempRPM = currentStatus.RPM; }
-      else
-      {
-        noInterrupts();
-        SetRevolutionTime((toothLastToothTime - toothLastMinusOneToothTime) * (triggerActualTeeth-1));
-        interrupts();
-        tempRPM = RpmFromRevolutionTimeUs(currentStatus.revolutionTime);
-      } //is tooth #2
-    }
-    else { tempRPM = 0; } //No sync
+    return stdGetRevolutionTime(CAM_SPEED); //Tracking over 2 crank revolutions
   }
-  else
-  { tempRPM = stdGetRPM(CAM_SPEED); } //Tracking over 2 crank revolutions
 
-  return tempRPM;
-
+  //Can't use standard cranking revolution time function due to extra tooth
+  if (decoderStatus.syncStatus!=SyncStatus::Full) { return publishedRevolutionTime(); } //No sync
+  if ((toothCurrentCount == 2U) || (toothCurrentCount == 3U)) { return publishedRevolutionTime(); } //Extra tooth
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t interval = 0U;
+  if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+  return interval * (uint32_t)(triggerActualTeeth - 1U);
 }
 static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 {
@@ -3459,7 +3496,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Daihatsu, getConfigPriTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_Daihatsu)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Daihatsu>)
                   .setGetCrankAngle(getCrankAngle_Daihatsu)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -3517,37 +3554,20 @@ static void triggerPri_Harley(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_Harley(void)
+static uint32_t getRevolutionTime_Harley(void)
 {
-  uint16_t tempRPM = 0;
-  if (decoderStatus.syncStatus==SyncStatus::Full)
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t revolutionTime = 0U;
+
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
+
+  if (currentStatus.RPM < currentStatus.crankRPM)
   {
-    if ( currentStatus.RPM < currentStatus.crankRPM )
-    {
-      // No difference with this option?
-      int tempToothAngle;
-      unsigned long toothTime;
-      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
-      else
-      {
-        noInterrupts();
-        tempToothAngle = triggerToothAngle;
-        /* High-res mode
-          if(toothCurrentCount == 1) { tempToothAngle = 129; }
-          else { tempToothAngle = toothAngles[toothCurrentCount-1] - toothAngles[toothCurrentCount-2]; }
-        */
-        SetRevolutionTime(toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); //Note that trigger tooth angle changes between 129 and 332 depending on the last tooth that was seen
-        interrupts();
-        toothTime = toothTime * 36;
-        tempRPM = ((unsigned long)tempToothAngle * (MICROS_PER_MIN/10U)) / toothTime;
-      }
-    }
-    else {
-      tempRPM = stdGetRPM(CRANK_SPEED);
-    }
+    //Tooth #1 sets triggerToothAngle to 0, so there is no per tooth calculation: keep the last speed until the next tooth
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
+    return publishedRevolutionTime();
   }
-  return tempRPM;
+  return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_Harley(uint32_t currMicros)
@@ -3576,7 +3596,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Harley, RISING)
-                  .setGetRPM(getRPM_Harley)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Harley>)
                   .setGetCrankAngle(getCrankAngle_Harley)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -3687,27 +3707,27 @@ static void triggerPri_ThirtySixMinus222(void)
    }
 }
 
-static uint16_t getRPM_ThirtySixMinus222(void)
+static uint32_t getRevolutionTime_ThirtySixMinus222(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
     
     if( (configPage2.nCylinders == 4) && (toothCurrentCount != 19) && (toothCurrentCount != 16) && (toothCurrentCount != 34) && (decoderStatus.toothAngleIsCorrect) )
     {
-      tempRPM = crankingGetRPM(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
     else if( (configPage2.nCylinders == 6) && (toothCurrentCount != 9) && (toothCurrentCount != 12) && (toothCurrentCount != 33) && (decoderStatus.toothAngleIsCorrect) )
     {
-      tempRPM = crankingGetRPM(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
-    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at and of the missing teeth as it messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
   }
   else
   {
-    tempRPM = stdGetRPM(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
   }
-  return tempRPM;
+  return revolutionTime;
 }
 
 static void triggerSetEndTeeth_ThirtySixMinus222(void)
@@ -3759,7 +3779,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_ThirtySixMinus222, getConfigPriTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_ThirtySixMinus222)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_ThirtySixMinus222>)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
                   .setReset(sharedDecoderReset)
@@ -3844,22 +3864,22 @@ static void triggerPri_ThirtySixMinus21(void)
    
 }
 
-static uint16_t getRPM_ThirtySixMinus21(void)
+static uint32_t getRevolutionTime_ThirtySixMinus21(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
     if( (toothCurrentCount != 20) && (decoderStatus.toothAngleIsCorrect) )
     {
-      tempRPM = crankingGetRPM(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
-    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    tempRPM = stdGetRPM(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
   }
-  return tempRPM;
+  return revolutionTime;
 }
 
 static void triggerSetEndTeeth_ThirtySixMinus21(void)
@@ -3886,7 +3906,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_ThirtySixMinus21, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_missingTooth, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_ThirtySixMinus21)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_ThirtySixMinus21>)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
                   .setReset(sharedDecoderReset)
@@ -3990,19 +4010,19 @@ static void triggerSec_420a(void)
   }
 }
 
-static uint16_t getRPM_420a(void)
+static uint32_t getRevolutionTime_420a(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
     //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
-    tempRPM = stdGetRPM(CAM_SPEED);
+    revolutionTime = stdGetRevolutionTime(CAM_SPEED);
   }
   else
   {
-    tempRPM = stdGetRPM(CAM_SPEED);
+    revolutionTime = stdGetRevolutionTime(CAM_SPEED);
   }
-  return tempRPM;
+  return revolutionTime;
 }
 
 static int16_t getCrankAngle_420a(uint32_t currMicros)
@@ -4061,7 +4081,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_420a, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_420a, FALLING) //Always falling edge
-                  .setGetRPM(getRPM_420a)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_420a>)
                   .setGetCrankAngle(getCrankAngle_420a)
                   .setSetEndTeeth(triggerSetEndTeeth_420a)
                   .setReset(sharedDecoderReset)
@@ -4227,22 +4247,22 @@ static void triggerSec_FordST170(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_FordST170(void)
+static uint32_t getRevolutionTime_FordST170(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM )
   {
     if(toothCurrentCount != 1)
     {
-      tempRPM = crankingGetRPM(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
     }
-    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    tempRPM = stdGetRPM(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
   }
-  return tempRPM;
+  return revolutionTime;
 }
 
 static int16_t getCrankAngle_FordST170(uint32_t currMicros)
@@ -4310,7 +4330,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_FordST170, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_FordST170)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_FordST170>)
                   .setGetCrankAngle(getCrankAngle_FordST170)
                   .setSetEndTeeth(triggerSetEndTeeth_FordST170)
                   .setReset(sharedDecoderReset)
@@ -4364,7 +4384,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_DRZ400, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_DualWheel)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_DualWheel>)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
                   .setReset(sharedDecoderReset)
@@ -4601,19 +4621,19 @@ static void triggerSec_NGC68(void)
   }
 }
 
-static uint16_t getRPM_NGC(void)
+static uint32_t getRevolutionTime_NGC(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
-    if (decoderStatus.toothAngleIsCorrect) { tempRPM = crankingGetRPM(36, CRANK_SPEED); }
-    else { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM if we're at any of the missing teeth as it messes the calculation
+    if (decoderStatus.toothAngleIsCorrect) { revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED); }
+    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at any of the missing teeth as it messes the calculation
   }
   else
   {
-    tempRPM = stdGetRPM(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
   }
-  return tempRPM;
+  return revolutionTime;
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
@@ -4718,7 +4738,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
                   .setPrimaryTrigger(triggerPri_NGC, CHANGE)
                   .setSecondaryTrigger( configPage2.nCylinders == 4U ? triggerSec_NGC4 : triggerSec_NGC68,
                                         configPage2.nCylinders == 4U ? CHANGE : FALLING)
-                  .setGetRPM(getRPM_NGC)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_NGC>)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_NGC)
                   .setReset(sharedDecoderReset)
@@ -4837,32 +4857,19 @@ static void triggerPri_Vmax(void)
   }
 }
 
-static uint16_t getRPM_Vmax(void)
+static uint32_t getRevolutionTime_Vmax(void)
 {
-  uint16_t tempRPM = 0;
-  if (decoderStatus.syncStatus==SyncStatus::Full)
+  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  uint32_t revolutionTime = 0U;
+
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
+
+  if (currentStatus.RPM < currentStatus.crankRPM)
   {
-    if ( currentStatus.RPM < currentStatus.crankRPM )
-    {
-      int tempToothAngle;
-      unsigned long toothTime;
-      if ( (toothLastToothTime == 0) || (toothLastMinusOneToothTime == 0) ) { tempRPM = 0; }
-      else
-      {
-        noInterrupts();
-        tempToothAngle = triggerToothAngle;
-        SetRevolutionTime(toothOneTime - toothOneMinusOneTime); //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-        toothTime = (toothLastToothTime - toothLastMinusOneToothTime); 
-        interrupts();
-        toothTime = toothTime * 36;
-        tempRPM = ((unsigned long)tempToothAngle * (MICROS_PER_MIN/10U)) / toothTime;
-      }
-    }
-    else {
-      tempRPM = stdGetRPM(CRANK_SPEED);
-    }
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; } //triggerToothAngle is zero until the first tooth after sync
+    return publishedRevolutionTime();
   }
-  return tempRPM;
+  return stdGetRevolutionTime(CRANK_SPEED);
 }
 
 
@@ -4891,7 +4898,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Vmax, CHANGE)
-                  .setGetRPM(getRPM_Vmax)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_Vmax>)
                   .setGetCrankAngle(getCrankAngle_Vmax)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
@@ -5068,7 +5075,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Renix, getConfigPriTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_missingTooth)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_missingTooth>)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_Renix)
                   .setReset(sharedDecoderReset)
@@ -5334,9 +5341,9 @@ static void triggerSec_RoverMEMS(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_RoverMEMS(void) 
+static uint32_t getRevolutionTime_RoverMEMS(void)
 {
-  uint16_t tempRPM = 0;
+  uint32_t revolutionTime = 0;
 
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
@@ -5344,13 +5351,13 @@ static uint16_t getRPM_RoverMEMS(void)
         (toothCurrentCount != (unsigned int) toothAngles[SKIP_TOOTH2]) && 
         (toothCurrentCount != (unsigned int) toothAngles[SKIP_TOOTH3]) && 
         (toothCurrentCount != (unsigned int) toothAngles[SKIP_TOOTH4]) )
-    { tempRPM = crankingGetRPM(36, CRANK_SPEED); }
+    { revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED); }
     else
-    { tempRPM = currentStatus.RPM; } //Can't do per tooth RPM as the missing tooth messes the calculation
+    { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation as the missing tooth messes the calculation
   }
   else
-  { tempRPM = stdGetRPM(CRANK_SPEED); }
-  return tempRPM;
+  { revolutionTime = stdGetRevolutionTime(CRANK_SPEED); }
+  return revolutionTime;
 }
 
 static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSchedule &schedule, uint8_t toothAdder) {
@@ -5438,7 +5445,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_RoverMEMS, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_RoverMEMS, getConfigSecTriggerEdge(configPage4)) 
-                  .setGetRPM(getRPM_RoverMEMS)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_RoverMEMS>)
                   .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   
                   .setReset(sharedDecoderReset)
@@ -5661,16 +5668,16 @@ static void triggerPri_SuzukiK6A(void)
   } //Trigger filter
 }
 
-static uint16_t getRPM_SuzukiK6A(void)
+static uint32_t getRevolutionTime_SuzukiK6A(void)
 {
   //Cranking code needs working out. 
 
-  uint16_t tempRPM = stdGetRPM(CAM_SPEED);
+  uint32_t revolutionTime = stdGetRevolutionTime(CAM_SPEED);
 
-  MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
-  return tempRPM;
+  return revolutionTime;
 }
 
 static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
@@ -5762,7 +5769,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_SuzukiK6A, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
-                  .setGetRPM(getRPM_SuzukiK6A)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_SuzukiK6A>)
                   .setGetCrankAngle(getCrankAngle_SuzukiK6A)
                   .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
                   .setReset(sharedDecoderReset)
@@ -5895,21 +5902,18 @@ static void triggerSec_FordTFI(void)
 /** Ford TFI - Get RPM.
  * 
  * */
-static uint16_t getRPM_FordTFI(void)
+static uint32_t getRevolutionTime_FordTFI(void)
 {
-  uint16_t tempRPM;
-  uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
-  
-  if( currentStatus.RPM < currentStatus.crankRPM || currentStatus.RPM < 1500)
-  { 
-    tempRPM = crankingGetRPM(triggerActualTeeth, distributorSpeed);
-  } 
-  else { tempRPM = stdGetRPM(distributorSpeed); }
+  const uint8_t distributorSpeed = CAM_SPEED;
 
-  MAX_STALL_TIME = currentStatus.revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(distributorSpeed);
+
+  MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(MAX_STALL_TIME < 366667UL) { MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
 
-  return tempRPM;
+  return revolutionTime;
   
 }
 
@@ -6028,7 +6032,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_FordTFI, getConfigSecTriggerEdge(configPage4))
-                  .setGetRPM(getRPM_FordTFI)
+                  .setGetRPM(getRPMFromRevolutionTime<getRevolutionTime_FordTFI>)
                   .setGetCrankAngle(getCrankAngle_FordTFI)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
                   .setReset(sharedDecoderReset)
