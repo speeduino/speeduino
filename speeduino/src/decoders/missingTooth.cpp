@@ -2,6 +2,7 @@
 #include "perToothIgnition.h"
 #include "rev_time_calcs.h"
 #include "scheduler_ignition_controller.h"
+#include "unit_testing.h"
 
 namespace decoders {
 
@@ -38,6 +39,20 @@ detail::state_t __attribute__((optimize("Os"))) intialise(const config4 &page4)
   return state;
 }
 
+TESTABLE_STATIC void applyPerToothIgnition(const statuses &current, detail::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
+  {
+    int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
+    if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (decoderState.revolutionOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
+    {
+      crankAngle += 360;
+      detail::checkPerToothTiming(current, decoderState, page4, crankAngle, (page4.triggerTeeth + decoderState.toothCurrentCount)); 
+    }
+    else{ checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
+  }
+
+}
 void triggerPrimary(uint32_t curTime, statuses &current, detail::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
    decoderState.curGap = curTime - decoderState.toothLastToothTime;
@@ -136,17 +151,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, detail::state_t &decode
         decoderState.toothLastToothTime = curTime;
       }     
 
-      //NEW IGNITION MODE
-      if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
-      {
-        int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
-        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (decoderState.revolutionOne == true) && (page4.TrigSpeed == CRANK_SPEED) && (page2.strokes == FOUR_STROKE) )
-        {
-          crankAngle += 360;
-          detail::checkPerToothTiming(current, decoderState, page4, crankAngle, (page4.triggerTeeth + decoderState.toothCurrentCount)); 
-        }
-        else{ checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
-      }
+      applyPerToothIgnition(current, decoderState, page2, page4);
    }
 }
 
