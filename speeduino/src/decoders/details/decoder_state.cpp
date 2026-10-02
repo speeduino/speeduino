@@ -32,5 +32,16 @@ void __attribute__((optimize("Os"))) state_t::setTriggerToothAngle(int16_t angle
 #endif
 }
 
+void __attribute__((optimize("Os"))) state_t::reset(void) 
+{
+  toothLastSecToothTime = 0;
+  toothLastToothTime = 0;
+  toothSystemCount = 0;
+  secondaryToothCount = 0;
+  decoderStatus.syncStatus = SyncStatus::None;
+  triggerFilterTime = 0;
+  decoderStatus.validTrigger = false;
+}
+
 }
 }

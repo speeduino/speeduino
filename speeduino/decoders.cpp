@@ -273,13 +273,7 @@ static decoder_features_t sharedGetDecoderFeatures(void)
 
 // Common function shared between decoders.
 static void sharedDecoderReset(void) {
-  _decoderState.toothLastSecToothTime = 0;
-  _decoderState.toothLastToothTime = 0;
-  _decoderState.toothSystemCount = 0;
-  _decoderState.secondaryToothCount = 0;
-  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-  _decoderState.triggerFilterTime = 0;
-  _decoderState.decoderStatus.validTrigger = false;
+  _decoderState.reset();
 }
 
 static uint8_t getConfigPriTriggerEdge(const config4 &page4)

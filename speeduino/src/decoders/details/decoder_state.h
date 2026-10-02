@@ -65,6 +65,9 @@ namespace detail {
          */
         void setTriggerToothAngle(int16_t angle);
 
+        /** @brief Reset tooth statues & times */
+        void reset(void);
+        
         inline uint16_t clampToActualTeeth(const config4 &page4, uint16_t toothNum, uint8_t toothAdder) const {
             if(toothNum > triggerActualTeeth && toothNum <= page4.triggerTeeth) { toothNum = triggerActualTeeth; }
             return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
