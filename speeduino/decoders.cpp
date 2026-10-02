@@ -6042,3 +6042,191 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
                   .build();
 }
 /** @} */
+
+/** GM Gen II LT1 Optispark, eight-slot low-resolution track only.
+ * @defgroup dec_optispark8 GM LT1 Optispark (8-slot only)
+ * @ingroup dec
+ * @{
+ * Both edges of one cam-speed input identify the 720-degree cycle. Geometry:
+ * https://github.com/speeduino/Ardu-Stim/blob/51f624a9ae369035211952862befe099c2b93a58/ardustim/ardustim/wheel_defs.h
+ * This reference is NOT a verified cylinder #1 TDC offset. See reference/Optispark8.md.
+ */
+struct optispark8_state_t
+{
+  uint32_t gaps[3];                 // Previous intervals, newest first (ISR only)
+  volatile uint32_t quarterPeriod; // Time between the evenly spaced rising edges (90 crank degrees)
+  uint8_t history;                  // Edges seen, saturated at five
+  bool lastHigh;
+};
+static optispark8_state_t optispark8;
+static constexpr uint32_t OPTISPARK_MAX_GAP = MICROS_PER_SEC / 2U;
+
+static void resetOptispark8(void)
+{
+  ATOMIC()
+  {
+    sharedDecoderReset();
+    optispark8 = {};
+    toothCurrentCount = 0;
+    toothLastMinusOneToothTime = 0;
+    toothOneTime = toothOneMinusOneTime = 0;
+    revolutionOne = false;
+    currentStatus.startRevolutions = 0;
+    decoderStatus.toothAngleIsCorrect = false;
+    MAX_STALL_TIME = OPTISPARK_MAX_GAP;
+  }
+}
+
+static void loseOptispark8Sync(void)
+{
+  if (decoderStatus.syncStatus == SyncStatus::Full) { ++currentStatus.syncLossCounter; }
+  resetOptispark8();
+}
+
+static bool isOptispark8Sync(uint32_t gap)
+{
+  // 14/86, 86/4, 4/46. The third ratio rejects reverse rotation.
+  // All gaps are bounded by OPTISPARK_MAX_GAP, so these products fit uint32_t.
+  return (gap * 100U >= optispark8.gaps[0] * 12U)
+      && (gap * 100U <= optispark8.gaps[0] * 21U)
+      && (optispark8.gaps[0] >= optispark8.gaps[1] * 16U)
+      && (optispark8.gaps[0] <= optispark8.gaps[1] * 27U)
+      && (optispark8.gaps[1] * 1000U >= optispark8.gaps[2] * 65U)
+      && (optispark8.gaps[1] * 1000U <= optispark8.gaps[2] * 110U);
+}
+
+// Separate timestamp/pin sampling from decoding, also allowing deterministic edge-stream tests.
+TESTABLE_STATIC void processOptispark8Edge(uint32_t now, bool pinHigh)
+{
+  const bool high = pinHigh != (configPage4.TrigEdge != 0U);
+  const uint32_t gap = now - toothLastToothTime;
+  decoderStatus.validTrigger = false;
+  if (optispark8.history != 0U)
+  {
+    // A timeout, duplicate edge or impossible interval invalidates the history.
+    if ((gap == 0U) || (gap > MAX_STALL_TIME) || (high == optispark8.lastHigh))
+    {
+      loseOptispark8Sync();
+    }
+  }
+  if (optispark8.history == 0U)
+  {
+    toothLastToothTime = now;
+    optispark8.lastHigh = high;
+    optispark8.history = 1;
+    return;
+  }
+
+  const bool syncEdge = !high && (optispark8.history >= 4U) && isOptispark8Sync(gap);
+  if (decoderStatus.syncStatus == SyncStatus::Full)
+  {
+    const uint8_t next = toothCurrentCount == 16U ? 1U : toothCurrentCount + 1U;
+    const uint16_t degrees = next == 1U ? 86U : toothAngles[next - 1U] - toothAngles[next - 2U];
+    const uint32_t expected = optispark8.quarterPeriod * degrees;
+    const uint32_t measured = gap * 90U;
+    // Check every edge, not just the sync marker. Allow one-third timing variation.
+    if ((high != ((next & 1U) != 0U))
+        || (measured < expected - expected / 3U)
+        || (measured > expected + expected / 3U)
+        || (syncEdge != (next == 2U)))
+    {
+      loseOptispark8Sync();
+      toothLastToothTime = now;
+      optispark8.lastHigh = high;
+      optispark8.history = 1;
+      return;
+    }
+    toothCurrentCount = next;
+  }
+  else if (syncEdge && (optispark8.quarterPeriod != 0U))
+  {
+    toothCurrentCount = 2; // Falling edge at 100 reference crank degrees
+    decoderStatus.syncStatus = SyncStatus::Full;
+  }
+
+  if (high && (optispark8.history >= 2U))
+  {
+    // A complete high+low interval is always 90 degrees, independent of window width.
+    optispark8.quarterPeriod = gap + optispark8.gaps[0];
+  }
+  toothLastMinusOneToothTime = toothLastToothTime;
+  toothLastToothTime = now;
+  curGap = gap; // The common tooth logger uses this interval.
+  optispark8.gaps[2] = optispark8.gaps[1];
+  optispark8.gaps[1] = optispark8.gaps[0];
+  optispark8.gaps[0] = gap;
+  optispark8.lastHigh = high;
+  if (optispark8.history < 5U) { ++optispark8.history; }
+  decoderStatus.validTrigger = true;
+
+  if (decoderStatus.syncStatus == SyncStatus::Full)
+  {
+    MAX_STALL_TIME = std::min(OPTISPARK_MAX_GAP, (uint32_t)optispark8.quarterPeriod * 2U);
+    revolutionOne = (toothCurrentCount >= 8U) && (toothCurrentCount < 16U);
+    if ((toothCurrentCount == 8U) || (toothCurrentCount == 16U))
+    {
+      if (currentStatus.startRevolutions != UINT32_MAX) { ++currentStatus.startRevolutions; }
+    }
+    if (toothCurrentCount == 16U)
+    {
+      toothOneMinusOneTime = toothOneTime;
+      toothOneTime = now;
+    }
+  }
+}
+
+static void triggerPri_Optispark8(void)
+{
+  processOptispark8Edge(micros(), currentStatus.decoder.primary.isPinHigh());
+}
+
+static uint16_t getRPM_Optispark8(void)
+{
+  const auto data = atomic_copy(decoderStatus.syncStatus, optispark8.quarterPeriod);
+  if ((std::get<0>(data) != SyncStatus::Full) || (std::get<1>(data) == 0U)) { return 0; }
+  const uint32_t revolutionTime = std::get<1>(data) * 4U;
+  SetRevolutionTime(revolutionTime);
+  return RpmFromRevolutionTimeUs(revolutionTime);
+}
+
+static int16_t getCrankAngle_Optispark8(uint32_t now)
+{
+  const auto data = atomic_copy(decoderStatus.syncStatus, toothCurrentCount, toothLastToothTime, optispark8.quarterPeriod);
+  const uint16_t tooth = std::get<1>(data);
+  const uint32_t period = std::get<3>(data);
+  if ((std::get<0>(data) != SyncStatus::Full) || (tooth == 0U) || (tooth > 16U) || (period == 0U)) { return 0; }
+  uint32_t elapsed = now - std::get<2>(data);
+  // An ISR may have recorded a newer timestamp than the caller sampled. Also bound stale queries.
+  if (elapsed > period * 2U) { elapsed = 0; }
+  int16_t angle = toothAngles[tooth - 1U] + configPage4.triggerAngle + (int16_t)((elapsed * 90U) / period);
+  // The table already describes 720 degrees: do not add revolutionOne or depend on TrigSpeed.
+  if (angle >= 720) { angle -= 720; }
+  if (angle < 0) { angle += 720; }
+  if ((std::max(CRANK_ANGLE_MAX_IGN, CRANK_ANGLE_MAX_INJ) == 360) && (angle >= 360)) { angle -= 360; }
+  return angle;
+}
+
+decoder_t triggerSetup_Optispark8(void)
+{
+  resetOptispark8();
+  decoderFeatures = decoder_features_t();
+  decoderFeatures.supportsSequential = true;
+  triggerToothAngle = 0; // Uneven edge spacing; no per-tooth ignition adjustment.
+  for (uint8_t window = 0; window < 8U; ++window)
+  {
+    // High widths alternate 14,4,24,4,34,4,44,4 crank degrees.
+    const uint8_t width = (window & 1U) != 0U ? 4U : 14U + (window / 2U) * 10U;
+    toothAngles[window * 2U] = 86U + window * 90U;
+    toothAngles[window * 2U + 1U] = toothAngles[window * 2U] + width;
+  }
+  return decoder_builder_t()
+      .setPrimaryTrigger(triggerPri_Optispark8, CHANGE)
+      .setGetRPM(getRPM_Optispark8)
+      .setGetCrankAngle(getCrankAngle_Optispark8)
+      .setReset(resetOptispark8)
+      .setIsEngineRunning(sharedEngineIsRunning)
+      .setGetStatus(sharedGetStatus)
+      .setGetFeatures(sharedGetDecoderFeatures)
+      .build();
+}
+/** @} */

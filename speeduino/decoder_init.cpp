@@ -119,6 +119,9 @@ static decoder_init_func_t getDecoderInitFunc(uint8_t decoderIndex)
 #if !defined(SMALL_FLASH_DECODER) || (SMALL_FLASH_DECODER==28)
   &triggerSetup_FordTFI,
 #endif
+#if !defined(SMALL_FLASH_DECODER) || (SMALL_FLASH_DECODER==29)
+  &triggerSetup_Optispark8,
+#endif
   };
   if (decoderIndex<DECODER_COUNT)
   {
