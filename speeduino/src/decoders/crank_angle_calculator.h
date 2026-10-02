@@ -16,6 +16,11 @@
 #include <tuple>
 #include "config_pages.h"
 
+namespace decoders {
+
+namespace detail {
+
+
 /**
  * @addtogroup CrankCalcMixins Crank calculation mixins
  * @brief Mix-in classes, each capturing one component of a crank angle computation.
@@ -180,3 +185,6 @@ struct compute_crank_angle_calculator_tooth_interval_t : public tooth_interval_c
 };
 
 /// @}
+
+}
+}

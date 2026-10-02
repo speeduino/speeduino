@@ -3,6 +3,11 @@
 #include "crankMaths.h"
 #include "elapsed_time.h"
 
+namespace decoders {
+
+namespace detail {
+
+
 // ================================ Calculator Mixins =====================================
 
 last_tooth_rev_calculator_t::last_tooth_rev_calculator_t(uint32_t toothLastToothTime)
@@ -158,4 +163,7 @@ int16_t compute_crank_angle_calculator_tooth_interval_t::calculateCrankAngle(uin
         + page4.triggerAngle 
         + tooth_interval_calculator_t::calculate(currMicros)
         + sequential_correction_calculator_t::calculate(page4);
+}
+
+}
 }
