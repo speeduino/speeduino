@@ -328,7 +328,7 @@ static uint32_t getRevolutionTime_missingTooth(void)
 
 static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
 {
-  return decoders::detail::clampCrankAngle(decoders::detail::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
+  return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
 }
 
 static void triggerSetEndTeeth_missingTooth(void)

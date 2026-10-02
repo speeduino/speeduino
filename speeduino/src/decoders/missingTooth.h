@@ -19,6 +19,8 @@ namespace missing_tooth {
     uint32_t getRevolutionTime(const statuses &current, detail::state_t &decoderState, const config4 &page4);
 
     void setEndTeeth(detail::state_t &decoderState, const config4 &page4);
+
+    int16_t getCrankAngle(uint32_t currMicros, const detail::state_t &decoderState, const config4 &page4);
 }
 
 }

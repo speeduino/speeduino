@@ -3,6 +3,7 @@
 #include "rev_time_calcs.h"
 #include "scheduler_ignition_controller.h"
 #include "unit_testing.h"
+#include "crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -313,6 +314,11 @@ void setEndTeeth(detail::state_t &decoderState, const config4 &page4)
 #if IGN_CHANNELS >= 8
   decoderState.ignitionEndTeeth[7] = calcEndTooth(decoderState, page4, ignitionSchedule8, toothAdder);
 #endif 
+}
+
+int16_t getCrankAngle(uint32_t currMicros, const detail::state_t &decoderState, const config4 &page4)
+{
+  return decoders::detail::clampCrankAngle(decoders::detail::atomic_make_angle_caa(decoderState).calculateCrankAngle(currMicros, page4));
 }
 
 }
