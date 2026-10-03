@@ -245,10 +245,7 @@ void loggerTertiaryISR(void)
 static decoder_status_t sharedGetStatus(void) noexcept
 {
   // NOTE: we are deliberately returning a copy of the struct to avoid read tearing since it's written to within interrupts
-  ATOMIC() {
-    return _decoderState.decoderStatus;
-  }
-  __builtin_unreachable(); 
+  return std::get<0>(atomic_copy(_decoderState.decoderStatus));
 }
 
 static bool sharedEngineIsRunning(uint32_t curTime) {

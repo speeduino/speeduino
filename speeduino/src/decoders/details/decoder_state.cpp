@@ -47,10 +47,7 @@ void __attribute__((optimize("Os"))) state_t::reset(void)
 
 bool state_t::toothWithinMaxStallTime(uint32_t curTime)
 {
-  uint32_t lastToothTime = 0U;
-  ATOMIC() {
-    lastToothTime = toothLastToothTime;
-  }
+  uint32_t lastToothTime = std::get<0>(atomic_copy(toothLastToothTime));
 
   // lastToothTime can be slightly ahead of curTime if a pulse occurred after
   // curTime was sampled. Accept that race only within the stall interval; an
