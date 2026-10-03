@@ -140,7 +140,7 @@ static void test_stage2(void)
 
 static void test_stage_both(void)
 {
-  auto context = setup_rpm_overlap_tune(NITROUS_STAGE2);
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
   context.init();
   setup_valid_conditions_stageboth(context);
 
