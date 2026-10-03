@@ -67,7 +67,7 @@ static byte buildStatus3(const statuses &current)
 {
   bool bits[] = {
     isResetPreventActive(),
-    current.nitrousActive,
+    current.nitrous_status!=NITROUS_OFF,
     current.secondFuelTableActive,
     current.vssUiRefresh,
     current.decoder.getStatus().syncStatus==SyncStatus::Partial,
