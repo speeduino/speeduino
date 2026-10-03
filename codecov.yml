@@ -11,3 +11,5 @@ coverage:
     patch:
       default:   # default is the status check's name, not default settings
         target: 90%    # Required coverage for newly added/modified code lines
+  range: 80..90 # 80% == yellow, 90% == green
+  
