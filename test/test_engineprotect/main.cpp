@@ -603,14 +603,14 @@ static void test_applyHardLaunchRevLimit(void)
     uint8_t curLimit = 80;
 
     engineProtection_test_context_t context;
-    context.current.launchingHard = false;
+    context.current.launchStatus.launchingHard = false;
     context.page6.lnchHardLim = curLimit-10;
     TEST_ASSERT_EQUAL_UINT8(curLimit, applyHardLaunchRevLimit(curLimit, context.current, context.page6)); // no change
 
-    context.current.launchingHard = true;
+    context.current.launchStatus.launchingHard = true;
     TEST_ASSERT_EQUAL_UINT8(context.page6.lnchHardLim, applyHardLaunchRevLimit(curLimit, context.current, context.page6)); // no change
 
-    context.current.launchingHard = true;
+    context.current.launchStatus.launchingHard = true;
     context.page6.lnchHardLim = curLimit+10;
     TEST_ASSERT_EQUAL_UINT8(curLimit, applyHardLaunchRevLimit(curLimit, context.current, context.page6)); // no change
 }
@@ -620,14 +620,14 @@ static void test_applyFlatShiftRevLimit(void)
     uint16_t curLimit = 8000;
     engineProtection_test_context_t context;
 
-    context.current.flatShiftingHard = false;
-    context.current.clutchEngagedRPM = curLimit-100;
+    context.current.launchStatus.flatShiftingHard = false;
+    context.current.launchStatus.clutchEngagedRPM = curLimit-100;
     TEST_ASSERT_EQUAL_UINT16(curLimit, applyFlatShiftRevLimit(curLimit, context.current)); // no change
    
-    context.current.flatShiftingHard = true;
-    TEST_ASSERT_EQUAL_UINT16(context.current.clutchEngagedRPM, applyFlatShiftRevLimit(curLimit, context.current)); // no change
+    context.current.launchStatus.flatShiftingHard = true;
+    TEST_ASSERT_EQUAL_UINT16(context.current.launchStatus.clutchEngagedRPM, applyFlatShiftRevLimit(curLimit, context.current)); // no change
 
-    context.current.clutchEngagedRPM = curLimit+100;
+    context.current.launchStatus.clutchEngagedRPM = curLimit+100;
     TEST_ASSERT_EQUAL_UINT16(curLimit, applyFlatShiftRevLimit(curLimit, context.current)); // no change
 }
 
@@ -674,16 +674,16 @@ static void test_getMaxRpm_launch_and_flatshift_priority(void)
     // Part A: launchingHard should apply lnchHardLim
     context.page9.hardRevMode = HARD_REV_FIXED;
     context.page4.HardRevLim = 80; // 8000
-    context.current.launchingHard = true;
+    context.current.launchStatus.launchingHard = true;
     context.page6.lnchHardLim = 30; // div100 -> 3000
 
     uint16_t resultA = getMaxRpm(context.current, context.page4, context.page6, context.page9);
     TEST_ASSERT_EQUAL_UINT16(3000, resultA);
 
     // Part B: flat shift clamps to absolute clutchEngagedRPM
-    context.current.launchingHard = false;
-    context.current.flatShiftingHard = true;
-    context.current.clutchEngagedRPM = 2500; // absolute RPM clamp
+    context.current.launchStatus.launchingHard = false;
+    context.current.launchStatus.flatShiftingHard = true;
+    context.current.launchStatus.clutchEngagedRPM = 2500; // absolute RPM clamp
     // Ensure other limits would be higher (force engine protect active to produce > 2500)
     context.current.engineProtect.boostCut = true;
     context.page4.engineProtectMaxRPM = 40; // 4000
@@ -1442,13 +1442,13 @@ static void test_getMaxRpm_launch_and_flatshift_both_active(void)
     engineProtection_test_context_t context;
     context.page9.hardRevMode = HARD_REV_FIXED;
     context.page4.HardRevLim = RPM_COARSE.toRaw(8000);
-    context.current.launchingHard = true;
+    context.current.launchStatus.launchingHard = true;
     context.page6.lnchHardLim = RPM_COARSE.toRaw(5000U);
-    context.current.flatShiftingHard = true;
-    context.current.clutchEngagedRPM = 3000; // Even lower
+    context.current.launchStatus.flatShiftingHard = true;
+    context.current.launchStatus.clutchEngagedRPM = 3000; // Even lower
 
     // Flat shift should win (lowest limit)
-    TEST_ASSERT_EQUAL_UINT16(context.current.clutchEngagedRPM, getMaxRpm(context.current, context.page4, context.page6, context.page9));
+    TEST_ASSERT_EQUAL_UINT16(context.current.launchStatus.clutchEngagedRPM, getMaxRpm(context.current, context.page4, context.page6, context.page9));
 }
 
 // Test staging boundary at StgCycles

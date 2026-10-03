@@ -51,8 +51,8 @@ static byte buildStatus1(const statuses &current)
 static byte buildStatus2(const statuses &current)
 {
   bool bits[] = {
-    current.hardLaunchActive,
-    current.softLaunchActive,
+    current.launchStatus.launchingHard,
+    current.launchStatus.launchingSoft,
     current.schedulerCutState.status == SchedulerCutStatus::Full,
     current.softLimitActive,
     false, // Unused
@@ -96,11 +96,11 @@ static byte buildStatus5(const statuses &current)
 {
   bool bits[] = {
     false, // Unused
-    current.flatShiftSoftCut,
+    current.launchStatus.flatShiftingSoft,
     current.secondSparkTableActive,
     current.knockRetardActive,
     current.knockPulseDetected,
-    current.clutchTriggerActive,
+    current.launchStatus.clutchTrigger,
   };
   return setStatusBits(0U, bits);
 }
