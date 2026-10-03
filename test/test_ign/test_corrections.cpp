@@ -504,13 +504,13 @@ static void test_correctionSoftRevLimit(void) {
 extern int8_t correctionNitrous(int8_t advance);
 
 static void test_correctionNitrous_disabled(void) {
-    configPage10.n2o_enable = 0;
+    configPage10.n2o_enable = NITROUS_OFF;
     TEST_ASSERT_EQUAL(13, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-13, correctionNitrous(-13));
 }
 
 static void test_correctionNitrous_stage1(void) {
-    configPage10.n2o_enable = 1;
+    configPage10.n2o_enable = NITROUS_STAGE1;
     configPage10.n2o_stage1_retard = 5;
     configPage10.n2o_stage2_retard = 0;
     
@@ -524,7 +524,7 @@ static void test_correctionNitrous_stage1(void) {
 }
 
 static void test_correctionNitrous_stage2(void) {
-    configPage10.n2o_enable = 1;
+    configPage10.n2o_enable = NITROUS_STAGE1;
     configPage10.n2o_stage1_retard = 0;
     configPage10.n2o_stage2_retard = 5;
     
@@ -538,7 +538,7 @@ static void test_correctionNitrous_stage2(void) {
 }
 
 static void test_correctionNitrous_stageboth(void) {
-    configPage10.n2o_enable = 1;
+    configPage10.n2o_enable = NITROUS_STAGE1;
     configPage10.n2o_stage1_retard = 3;
     configPage10.n2o_stage2_retard = 5;
       
