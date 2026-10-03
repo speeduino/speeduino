@@ -42,6 +42,17 @@ static constexpr uint16_t MIN_REVOLUTION_TIME = MICROS_PER_MIN/MAX_RPM;
  */
 static constexpr uint32_t MAX_REVOLUTION_TIME = MICROS_PER_MIN/MIN_RPM;
 
+/**
+ * @brief Converts a crank revolution time to engine speed
+ * 
+ * @param revolutionTime The time in µS that one crank revolution takes. Zero if the engine speed is unknown
+ * @return The engine speed in RPM, rounded to the closest integer & limited to MAX_RPM. Zero if revolutionTime is zero
+ */
+static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revolutionTime) {
+    if (revolutionTime==0U) { return 0U; }
+    return (uint16_t)clamp(fast_div_closest(MICROS_PER_MIN, revolutionTime), (uint32_t)0UL, (uint32_t)MAX_RPM);
+}
+
 extern int16_t CRANK_ANGLE_MAX_IGN; ///< The number of crank degrees that the system tracks ignition over.
 extern int16_t CRANK_ANGLE_MAX_INJ; ///< The number of crank degrees that the system tracks fuel injection over.
 

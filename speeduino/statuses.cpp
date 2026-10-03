@@ -19,12 +19,6 @@ void statuses::setRpm(uint16_t rpm)
   }
 }
 
-static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime)
-{
-  if (revTime==0U) { return 0U; }
-  return clamp(fast_div_closest(MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
-}
-
 void statuses::setRevolutionTime(uint32_t revTime)
 {
   // The divisions are relatively expensive, so only recalculate when the revolution time changes

@@ -57,6 +57,20 @@ static void test_setAngleConverterRevolutionTime_revolution_values(void)
     TEST_ASSERT_UINT32_WITHIN(1U, revolutionTime * 2UL, angleToTime(720));
 }
 
+static void test_RpmFromRevolutionTimeUs(void)
+{
+    TEST_ASSERT_EQUAL_UINT16(1000U, RpmFromRevolutionTimeUs(60000UL));
+    // Rounded to the closest integer: 60000000/9000 = 6666.67
+    TEST_ASSERT_EQUAL_UINT16(6667U, RpmFromRevolutionTimeUs(9000UL));
+    TEST_ASSERT_EQUAL_UINT16(MAX_RPM, RpmFromRevolutionTimeUs(MIN_REVOLUTION_TIME));
+    TEST_ASSERT_EQUAL_UINT16(MIN_RPM, RpmFromRevolutionTimeUs(MAX_REVOLUTION_TIME));
+    // Limited to MAX_RPM
+    TEST_ASSERT_EQUAL_UINT16(MAX_RPM, RpmFromRevolutionTimeUs(MIN_REVOLUTION_TIME/2U));
+    TEST_ASSERT_EQUAL_UINT16(MAX_RPM, RpmFromRevolutionTimeUs(1UL));
+    // Zero means the engine speed is unknown
+    TEST_ASSERT_EQUAL_UINT16(0U, RpmFromRevolutionTimeUs(0UL));
+}
+
 void testCrankMath()
 {
   SET_UNITY_FILENAME() {
@@ -65,5 +79,6 @@ void testCrankMath()
       RUN_TEST_P(test_angleToTimerTicks_matches_uS_conversion);
       RUN_TEST_P(test_timeToAngle_inverse_roundtrip);
       RUN_TEST_P(test_setAngleConverterRevolutionTime_revolution_values);
+      RUN_TEST_P(test_RpmFromRevolutionTimeUs);
   }
 }
