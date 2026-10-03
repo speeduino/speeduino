@@ -286,7 +286,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     }
     if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_4HZ))
     {
-      nitrousControl();
+      nitrousControl(currentStatus, configPage10);
 
       //Lookup the current target idle RPM. This is aligned with coolant and so needs to be calculated at the same rate CLT is read
       if( (configPage2.idleAdvEnabled != IDLEADVANCE_MODE_OFF) || (configPage6.iacAlgorithm != IAC_ALGORITHM_NONE) )
