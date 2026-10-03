@@ -20,7 +20,8 @@ static void test_getRPM(void)
   currentStatus.setRpm((currentStatus.crankRPM*2U)+111);
   toothCurrentCount = 20;
   currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+  uint16_t rpm = currentStatus.RPM;
+  TEST_ASSERT_EQUAL(rpm, decoder.getRPM());
 
   // Cranking
   currentStatus.setRpm(currentStatus.crankRPM/2U);
@@ -31,11 +32,13 @@ static void test_getRPM(void)
   toothCurrentCount = 1;
   decoderStatus.toothAngleIsCorrect = false;
   currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+  rpm = currentStatus.RPM;
+  TEST_ASSERT_EQUAL(rpm, decoder.getRPM());
 
   decoderStatus.toothAngleIsCorrect = true;
   currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_NOT_EQUAL(currentStatus.RPM, decoder.getRPM());
+  rpm = currentStatus.RPM;
+  TEST_ASSERT_NOT_EQUAL(rpm, decoder.getRPM());
 }
 
 void testThirtySixMinus21(void)

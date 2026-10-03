@@ -45,9 +45,18 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
+  extern decoder_status_t decoderStatus;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+
   auto decoder = triggerSetup_HondaJ32();
-  currentStatus.revolutionTime = 1000;
-  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.revolutionTime = 12345UL;
+
+  // The time between the last 2 tooth #1 (as recorded by the trigger handler)
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000 -> 1000 RPM
+  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
 }
 
 void testHondaJ32(void)

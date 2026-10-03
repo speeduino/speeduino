@@ -81,10 +81,18 @@ static void test_getRPM(void)
   triggerToothAngle = 120;
   toothLastMinusOneToothTime = 1000UL;
   toothLastToothTime = toothLastMinusOneToothTime + 20000UL; // gap = 20000 -> toothTime=20000*36 -> yields 1000 RPM
-  // toothOne values used by SetRevolutionTime; set harmless values
   toothOneMinusOneTime = 0UL;
   toothOneTime = 0UL;
   TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+
+  // --- Tooth #1 sets triggerToothAngle to 0: keep the last revolution time.
+  // The tooth #1 times aren't used: they can span a stall (E.g. the first tooth after a restart)
+  currentStatus.setRpm(0); // Stay on the cranking path
+  triggerToothAngle = 0;
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 5000000UL;
+  (void)decoder.getRPM();
+  TEST_ASSERT_EQUAL_UINT32(60000UL, currentStatus.revolutionTime);
 
   // --- Running path: should call stdGetRPM(CRANK_SPEED)
   currentStatus.setRpm(2000);

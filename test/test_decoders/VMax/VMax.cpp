@@ -56,15 +56,16 @@ static void test_getRPM(void)
   triggerToothAngle = 10;
   toothLastMinusOneToothTime = 1000UL;
   toothLastToothTime = toothLastMinusOneToothTime + 1667UL; // gap
-  unsigned long toothTime = (toothLastToothTime - toothLastMinusOneToothTime) * 36UL;
-  uint16_t expected = (uint16_t)(((unsigned long)triggerToothAngle * (MICROS_PER_MIN/10U)) / toothTime);
-  TEST_ASSERT_EQUAL_UINT16(expected, decoder.getRPM());
+  // revTime = gap * 360 / triggerToothAngle = 1667 * 36 = 60012uS -> 999.8 RPM
+  TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
 
-  // --- If tooth times missing, expect 0
+  // --- If tooth times missing, keep the last revolution time
+  currentStatus.setRpm(0); // Stay on the cranking path
   toothLastMinusOneToothTime = 0;
   toothLastToothTime = 0;
-  currentStatus.revolutionTime = UINT32_MAX; // To trigger a change
-  TEST_ASSERT_EQUAL_UINT16(0U, decoder.getRPM());
+  (void)decoder.getRPM();
+  TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
 
   // --- Running path: use stdGetRPM via toothOne pair -> RpmFromRevolutionTimeUs
   currentStatus.setRpm(2000);
