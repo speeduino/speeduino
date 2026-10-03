@@ -10,30 +10,30 @@ extern inputPin_t n2o_arming_pin;
 extern outputPin_t n2o_stage1_pin;
 extern outputPin_t n2o_stage2_pin;
 
-static void assert_n2o_off(void)
+static void assert_n2o_off(test_context_t &context)
 {
-  currentStatus.nitrousActive = true;
-  currentStatus.nitrous_status = NITROUS_BOTH;
-  nitrousControl();
-  TEST_ASSERT_FALSE(currentStatus.nitrousActive);
-  TEST_ASSERT_EQUAL(NITROUS_OFF, currentStatus.nitrous_status);
+  context.current.nitrousActive = true;
+  context.current.nitrous_status = NITROUS_BOTH;
+  context.control();
+  TEST_ASSERT_FALSE(context.current.nitrousActive);
+  TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrous_status);
   TEST_ASSERT_FALSE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_FALSE(n2o_stage2_pin._pin.isPinHigh());
 }
 
 static void test_off(void)
 {
-  setup_n20_tune(NITROUS_OFF);
-  assert_n2o_off();
+  auto context = setup_n20_tune(NITROUS_OFF);
+  assert_n2o_off(context);
 
-  setup_n20_tune(NITROUS_OFF);
-  configPage10.n2o_enable = false;
-  assert_n2o_off();
+  context = setup_n20_tune(NITROUS_OFF);
+  context.page10.n2o_enable = false;
+  assert_n2o_off(context);
 }
 
-static void setup_valid_conditions(void)
+static void setup_valid_conditions(test_context_t &context)
 {
-  if (configPage10.n2o_pin_polarity)
+  if (context.page10.n2o_pin_polarity)
   {
     n2o_arming_pin._pin.setPinLow();
   }
@@ -41,39 +41,39 @@ static void setup_valid_conditions(void)
   {
     n2o_arming_pin._pin.setPinHigh();
   }
-  currentStatus.coolant = temperatureRemoveOffset(configPage10.n2o_minCLT)+1;
-  currentStatus.TPS = configPage10.n2o_minTPS+1;
-  currentStatus.O2 = configPage10.n2o_maxAFR -1;
-  currentStatus.MAP = (configPage10.n2o_maxMAP-1)/2U;
+  context.current.coolant = temperatureRemoveOffset(context.page10.n2o_minCLT)+1;
+  context.current.TPS = context.page10.n2o_minTPS+1;
+  context.current.O2 = context.page10.n2o_maxAFR -1;
+  context.current.MAP = (context.page10.n2o_maxMAP-1)/2U;
 }
 
-static void setup_valid_conditions_stage1(void)
+static void setup_valid_conditions_stage1(test_context_t &context)
 {
-  setup_valid_conditions();
-  uint8_t maxRpm = (std::min)(configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage2_minRPM); // Just in case the ranges overlap
-  currentStatus.setRpm(RPM_COARSE.toUser(intermediate(configPage10.n2o_stage1_minRPM, maxRpm, (uint8_t)50)));
+  setup_valid_conditions(context);
+  uint8_t maxRpm = (std::min)(context.page10.n2o_stage1_maxRPM, context.page10.n2o_stage2_minRPM); // Just in case the ranges overlap
+  context.current.setRpm(RPM_COARSE.toUser(intermediate(context.page10.n2o_stage1_minRPM, maxRpm, (uint8_t)50)));
 }
 
-static void setup_valid_conditions_stage2(void)
+static void setup_valid_conditions_stage2(test_context_t &context)
 {
-  setup_valid_conditions();
-  uint8_t minRpm = (std::max)(configPage10.n2o_stage1_maxRPM, configPage10.n2o_stage2_minRPM); // Just in case the ranges overlap
-  currentStatus.setRpm(RPM_COARSE.toUser(intermediate(minRpm, configPage10.n2o_stage2_maxRPM, (uint8_t)50)));
+  setup_valid_conditions(context);
+  uint8_t minRpm = (std::max)(context.page10.n2o_stage1_maxRPM, context.page10.n2o_stage2_minRPM); // Just in case the ranges overlap
+  context.current.setRpm(RPM_COARSE.toUser(intermediate(minRpm, context.page10.n2o_stage2_maxRPM, (uint8_t)50)));
 }
 
-static void setup_valid_conditions_stageboth(void)
+static void setup_valid_conditions_stageboth(test_context_t &context)
 {
-  setup_valid_conditions();
-  currentStatus.setRpm(RPM_COARSE.toUser(intermediate(configPage10.n2o_stage2_minRPM, configPage10.n2o_stage1_maxRPM, (uint8_t)50)));
+  setup_valid_conditions(context);
+  context.current.setRpm(RPM_COARSE.toUser(intermediate(context.page10.n2o_stage2_minRPM, context.page10.n2o_stage1_maxRPM, (uint8_t)50)));
 }
 
 static void test_not_armed(void)
 {
-  setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseNitrous();
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  context.init();
 
-  setup_valid_conditions_stageboth();
-  if (configPage10.n2o_pin_polarity)
+  setup_valid_conditions_stageboth(context);
+  if (context.page10.n2o_pin_polarity)
   {
     n2o_arming_pin._pin.setPinHigh();
   }
@@ -82,84 +82,84 @@ static void test_not_armed(void)
     n2o_arming_pin._pin.setPinLow();
   }
 
-  assert_n2o_off();
+  assert_n2o_off(context);
 }
 
 static void test_coolant_threshhold(void)
 {
-  setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseNitrous();
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  context.init();
 
-  setup_valid_conditions_stageboth();
-  currentStatus.coolant = TEMPERATURE.toUser(configPage10.n2o_minCLT-1);
-  assert_n2o_off();
+  setup_valid_conditions_stageboth(context);
+  context.current.coolant = TEMPERATURE.toUser(context.page10.n2o_minCLT-1);
+  assert_n2o_off(context);
 }
 
 static void test_tps_threshhold(void)
 {
-  setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseNitrous();
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  context.init();
 
-  setup_valid_conditions_stageboth();
-  currentStatus.TPS =configPage10.n2o_minTPS-1;
-  assert_n2o_off();
+  setup_valid_conditions_stageboth(context);
+  context.current.TPS =context.page10.n2o_minTPS-1;
+  assert_n2o_off(context);
 }
 
 static void test_o2_threshhold(void)
 {
-  setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseNitrous();
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  context.init();
 
-  setup_valid_conditions_stageboth();
-  currentStatus.O2 = configPage10.n2o_maxAFR+1;
-  assert_n2o_off();
+  setup_valid_conditions_stageboth(context);
+  context.current.O2 = context.page10.n2o_maxAFR+1;
+  assert_n2o_off(context);
 }
 
 static void test_map_threshhold(void)
 {
-  setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseNitrous();
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  context.init();
 
-  setup_valid_conditions_stageboth();
-  currentStatus.MAP = (configPage10.n2o_maxMAP * 2U) + 1;
-  assert_n2o_off();
+  setup_valid_conditions_stageboth(context);
+  context.current.MAP = (context.page10.n2o_maxMAP * 2U) + 1;
+  assert_n2o_off(context);
 }
 
 static void test_stage1(void)
 {
-  setup_rpm_overlap_tune(NITROUS_BOTH);
-  initialiseNitrous();
-  setup_valid_conditions_stage1();
+  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  context.init();
+  setup_valid_conditions_stage1(context);
 
-  nitrousControl();
-  TEST_ASSERT_TRUE(currentStatus.nitrousActive);
-  TEST_ASSERT_EQUAL(NITROUS_STAGE1, currentStatus.nitrous_status);
+  context.control();
+  TEST_ASSERT_TRUE(context.current.nitrousActive);
+  TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrous_status);
   TEST_ASSERT_TRUE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_FALSE(n2o_stage2_pin._pin.isPinHigh());
 }
 
 static void test_stage2(void)
 {
-  setup_rpm_overlap_tune(NITROUS_STAGE2);
-  initialiseNitrous();
-  setup_valid_conditions_stage2();
+  auto context = setup_rpm_overlap_tune(NITROUS_STAGE2);
+  context.init();
+  setup_valid_conditions_stage2(context);
 
-  nitrousControl();
-  TEST_ASSERT_TRUE(currentStatus.nitrousActive);
-  TEST_ASSERT_EQUAL(NITROUS_STAGE2, currentStatus.nitrous_status);
+  context.control();
+  TEST_ASSERT_TRUE(context.current.nitrousActive);
+  TEST_ASSERT_EQUAL(NITROUS_STAGE2, context.current.nitrous_status);
   // TEST_ASSERT_FALSE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_TRUE(n2o_stage2_pin._pin.isPinHigh());
 }
 
 static void test_stage_both(void)
 {
-  setup_rpm_overlap_tune(NITROUS_STAGE2);
-  initialiseNitrous();
-  setup_valid_conditions_stageboth();
+  auto context = setup_rpm_overlap_tune(NITROUS_STAGE2);
+  context.init();
+  setup_valid_conditions_stageboth(context);
 
-  nitrousControl();
-  TEST_ASSERT_TRUE(currentStatus.nitrousActive);
-  TEST_ASSERT_EQUAL(NITROUS_BOTH, currentStatus.nitrous_status);
+  context.control();
+  TEST_ASSERT_TRUE(context.current.nitrousActive);
+  TEST_ASSERT_EQUAL(NITROUS_BOTH, context.current.nitrous_status);
   TEST_ASSERT_TRUE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_TRUE(n2o_stage2_pin._pin.isPinHigh());
 }
