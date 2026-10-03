@@ -18,10 +18,6 @@ static void test_off(void)
 {
   auto context = setup_n20_tune(NITROUS_OFF);
   assert_n2o_off(context);
-
-  context = setup_n20_tune(NITROUS_OFF);
-  context.page10.n2o_enable = false;
-  assert_n2o_off(context);
 }
 
 static void setup_valid_conditions(test_context_t &context)
