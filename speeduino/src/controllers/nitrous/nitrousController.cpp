@@ -16,7 +16,7 @@ static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config
 
 static __attribute__((optimize("Os"))) void initialiseN2oArmPin(const config10 &page10)
 {
-  if(page10.n2o_enable!=0U && !pinIsReserved(page10.n2o_arming_pin))
+  if(page10.n2o_enable!=NITROUS_OFF && !pinIsReserved(page10.n2o_arming_pin))
   {
     // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
     // with other inputs. 
@@ -37,7 +37,7 @@ void __attribute__((optimize("Os"))) initialiseNitrous(statuses &current, config
 
   //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
   //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
-  if(page10.n2o_minTPS == 255) { page10.n2o_enable = 0; }
+  if(page10.n2o_minTPS == 255) { page10.n2o_enable = NITROUS_OFF; }
 
   current.nitrous_status = NITROUS_OFF;
 }
@@ -46,7 +46,7 @@ void nitrousControl(statuses &current, const config10 &page10)
 {
   current.nitrous_status = NITROUS_OFF; //Reset the current state
 
-  if(page10.n2o_enable > 0)
+  if(page10.n2o_enable!=NITROUS_OFF)
   {
     bool isArmed = _n2oState.armingPin.isPinHigh();
     if (page10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
@@ -83,7 +83,7 @@ void nitrousControl(statuses &current, const config10 &page10)
 
   if (current.nitrous_status == NITROUS_OFF)
   {
-    if(page10.n2o_enable > 0)
+    if(page10.n2o_enable!=NITROUS_OFF)
     {
       _n2oState.stage1Pin.setPinLow();
       _n2oState.stage2Pin.setPinLow();
