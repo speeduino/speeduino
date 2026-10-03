@@ -5,6 +5,8 @@
 
 TESTABLE_STATIC nitrous::detail::state_t _n2oState;
 
+static_assert(NITROUS_BOTH==NITROUS_STAGE1+NITROUS_STAGE2, "Check nitrous stage flag values");
+
 static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
   if(page10.n2o_pin_polarity == 1U) 
@@ -14,13 +16,22 @@ static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config
   return INPUT;
 }
 
+static inline bool isStage1(uint8_t status)
+{
+  return (status==NITROUS_STAGE1) || (status==NITROUS_BOTH);
+}
+static inline bool isStage2(uint8_t status)
+{
+  return (status==NITROUS_STAGE2) || (status==NITROUS_BOTH);
+}
+
 static inline bool isStage1Enabled(const config10 &page10)
 {
-  return (page10.n2o_enable==NITROUS_STAGE1) || (page10.n2o_enable==NITROUS_BOTH);
+  return isStage1(page10.n2o_enable);
 }
 static inline bool isStage2Enabled(const config10 &page10)
 {
-  return (page10.n2o_enable==NITROUS_STAGE2) || (page10.n2o_enable==NITROUS_BOTH);
+  return isStage2(page10.n2o_enable);
 }
 
 static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
@@ -73,48 +84,78 @@ void __attribute__((optimize("Os"))) initialiseNitrous(statuses &current, config
   current.nitrous_status = NITROUS_OFF;
 }
 
-void nitrousControl(statuses &current, const config10 &page10)
+static inline bool isArmed(const statuses &current, const config10 &page10)
 {
-  current.nitrous_status = NITROUS_OFF; //Reset the current state
-
-  if(page10.n2o_enable!=NITROUS_OFF)
-  {
-    bool isArmed = _n2oState.armingPin.isPinHigh();
-    if (page10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
+    bool isArmed = _n2oState.armingPin.isPinHigh()!=page10.n2o_pin_polarity; //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
-    if( (isArmed == true) && (current.coolant > temperatureRemoveOffset(page10.n2o_minCLT)) && (current.TPS > page10.n2o_minTPS) && (current.O2 < page10.n2o_maxAFR) && (current.MAP < (uint16_t)(page10.n2o_maxMAP * 2U)) )
-    {
-      //Config page values are divided by 100 to fit within a byte. Multiply them back out to real values. 
-      uint16_t realStage1MinRPM = (uint16_t)page10.n2o_stage1_minRPM * 100;
-      uint16_t realStage1MaxRPM = (uint16_t)page10.n2o_stage1_maxRPM * 100;
-      uint16_t realStage2MinRPM = (uint16_t)page10.n2o_stage2_minRPM * 100;
-      uint16_t realStage2MaxRPM = (uint16_t)page10.n2o_stage2_maxRPM * 100;
+    return isArmed 
+        && (current.coolant > temperatureRemoveOffset(page10.n2o_minCLT)) 
+        && (current.TPS > page10.n2o_minTPS)
+        && (current.O2 < page10.n2o_maxAFR) 
+        && (current.MAP < MAP.toUser(page10.n2o_maxMAP))
+        ;
+}
 
-      //The nitrous state is set to 0 and then the subsequent stages are added
-      // OFF    = 0
-      // STAGE1 = 1
-      // STAGE2 = 2
-      // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
-      if( (current.RPM > realStage1MinRPM) && (current.RPM < realStage1MaxRPM) )
-      {
-        current.nitrous_status += NITROUS_STAGE1;
-        _n2oState.stage1Pin.setPinHigh();
-      }
-      if(isStage2Enabled(page10) && (current.RPM > realStage2MinRPM) && (current.RPM < realStage2MaxRPM) )
-      {
-        current.nitrous_status += NITROUS_STAGE2;
-        _n2oState.stage2Pin.setPinHigh();
-      }
-    }
-  }
+static inline bool isStage1Active(const statuses &current, const config10 &page10)
+{
+    return (current.RPM > RPM_COARSE.toUser(page10.n2o_stage1_minRPM)) 
+        && (current.RPM < RPM_COARSE.toUser(page10.n2o_stage1_maxRPM));
+}
 
-  if (current.nitrous_status == NITROUS_OFF)
+static inline bool isStage2Active(const statuses &current, const config10 &page10)
+{
+    return isStage2Enabled(page10) 
+        && (current.RPM > RPM_COARSE.toUser(page10.n2o_stage2_minRPM)) 
+        && (current.RPM < RPM_COARSE.toUser(page10.n2o_stage2_maxRPM));
+}
+
+static inline uint8_t calcStatus(const statuses &current, const config10 &page10)
+{
+  //The nitrous state is set to 0 and then the subsequent stages are added
+  // OFF    = 0
+  // STAGE1 = 1
+  // STAGE2 = 2
+  // BOTH   = 3 (ie STAGE1 + STAGE2 = BOTH)
+  uint8_t status = NITROUS_OFF;
+
+  if(_n2oState.armingPin.isValid() && isArmed(current, page10))
   {
-    if(page10.n2o_enable!=NITROUS_OFF)
+    if(isStage1Active(current, page10))
     {
-      _n2oState.stage1Pin.setPinLow();
-      _n2oState.stage2Pin.setPinLow();
+      status += NITROUS_STAGE1;
+    }
+    if(isStage2Active(current, page10))
+    {
+      status += NITROUS_STAGE2;
     }
   }
+  return status;
+}
+
+static inline void setPinState(uint8_t status)
+{
+  if (isStage1(status))
+  {
+    _n2oState.stage1Pin.setPinHigh();
+  }
+  else
+  {
+    _n2oState.stage1Pin.setPinLow();
+  }
+
+  if (isStage2(status))
+  {
+    _n2oState.stage2Pin.setPinHigh();
+  }
+  else
+  {
+    _n2oState.stage2Pin.setPinLow();
+  }
+}
+
+void nitrousControl(statuses &current, const config10 &page10)
+{
+  current.nitrous_status = calcStatus(current, page10);
+  setPinState(current.nitrous_status);
 }
