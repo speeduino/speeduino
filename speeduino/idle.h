@@ -9,3 +9,5 @@ void disableIdle(void);
 void idleInterrupt(void);
 
 #endif
+
+void idleBenchRestorePosition(bool known,uint16_t position);

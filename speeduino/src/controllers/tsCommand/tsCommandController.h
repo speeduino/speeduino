@@ -81,10 +81,3 @@ static constexpr uint16_t TS_CMD_VSS_RATIO6 = 39174U;
  * @return true if the command was processed, false otherwise
  */
 bool handleTsCommand(uint16_t command, statuses &current, config2 &page2);
-
-/**
- * @brief Start/stop pulsing injectors & coils based on configuration set by @ref handleTsCommand
- * 
- * **Must be called at least once a millisecond from the main loop**
- */
-void pulsedCommandController(const statuses &current, const config13 &page13);

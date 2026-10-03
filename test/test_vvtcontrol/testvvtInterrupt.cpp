@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "../test_utils.h"
 #include "src/controllers/vvt/vvtController.h"
 #include "units.h"
@@ -7,8 +8,8 @@
 #include "src/pins/boardOutputPin.h"
 
 // External declarations for testing VVT PWM interrupt handler
-extern PwmOutputChannel<boardOutputPin_t> vvtChannel1;
-extern PwmOutputChannel<boardOutputPin_t> vvtChannel2;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> vvtChannel1;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> vvtChannel2;
 extern uint16_t lastVvtComparatorOffset;
 
 constexpr uint8_t LOOP_COUNT = 6; // Number of iterations for each test loop

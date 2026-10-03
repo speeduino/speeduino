@@ -1,3 +1,4 @@
+#include "../../../bench_output_pin.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../units.h"
 #include "../../../unit_testing.h"
@@ -11,7 +12,7 @@ TESTABLE_STATIC long fan_pwm_value;
 #endif
 TESTABLE_CONSTEXPR table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
-TESTABLE_STATIC boardOutputPin_t fan_pin;
+TESTABLE_STATIC BenchOutputPin<boardOutputPin_t> fan_pin;
 
 void fanOn(void) 
 {
