@@ -224,7 +224,7 @@ static void test_initialiseProgrammableIO_fan_modes(void)
     const uint8_t oldFanPin = pinNumbers.pinFan;
     const uint8_t oldFanMode = configPage2.fanEnable;
     pinNumbers.pinFan = 11;
-    configPage2.fanEnable = 0;
+    configPage2.fanEnable = FANMODE_OFF;
     TEST_ASSERT_FALSE(pinIsUsed(pinNumbers.pinFan));
 
     for (uint8_t mode = 0; mode <= 2; ++mode)

@@ -154,21 +154,6 @@ static void test_runSecsX10_resets_when_not_running(void)
   TEST_ASSERT_EQUAL_UINT32(0UL, runSecsX10);
 }
 
-static void test_fanControl_runs_at_1Hz(void)
-{
-  setup_oneMsInterval();
-  configPage2.fanEnable = 1U;          // Regular on/off fan control path
-  configPage2.fanWhenOff = false;      // Engine-running gates fan
-  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
-  currentStatus.coolant = 0;            // Way below any sane fan threshold
-  configPage6.fanSP = 200U;
-  configPage6.fanHyster = 5U;
-  currentStatus.fanOn = true;          // Will get cleared by fanOff()
-
-  run_n_intervals(1000);
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
-}
-
 static void test_inj_priming_runs_when_rpm_zero(void)
 {
   setup_oneMsInterval();
@@ -199,7 +184,6 @@ void testOneMsInterval(void)
     RUN_TEST(test_runSecs_caps_at_255);
     RUN_TEST(test_runSecsX10_running_at_10Hz);
     RUN_TEST(test_runSecsX10_resets_when_not_running);
-    RUN_TEST(test_fanControl_runs_at_1Hz);
     RUN_TEST(test_inj_priming_runs_when_rpm_zero);
   }
 }

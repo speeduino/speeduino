@@ -1,359 +1,354 @@
-#include "globals.h"
 #include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
-#include "src/pins/boardOutputPin.h"
+#include "src/pins/outputPin.h"
+#include "src/pwm/PwmOutputChannel.h"
+#include "src/pins/invertableOutputPin.h"
 
- extern boardOutputPin_t fan_pin;
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+extern fanPwmChannel_t _fanPwm;
  extern table2D_u8_u8_4 fanPWMTable;
 
-static void set_coolant_above_ontemp(void)
+static void assert_nopwm_fan_pin_state(const test_context_t &context, bool active)
 {
-  currentStatus.coolant = temperatureAddOffset(configPage6.fanSP + configPage6.fanHyster + 1);
+  if (active)
+  {
+    TEST_ASSERT_EQUAL(200, context.current.fanDuty);
+  }
+  else
+  {
+    TEST_ASSERT_EQUAL(0, context.current.fanDuty);
+  }
+  TEST_ASSERT_EQUAL(active, _fanPwm.pin.isPinHigh());
 }
 
-static void set_coolant_below_ontemp(void)
+static void set_coolant_above_ontemp(test_context_t &context)
 {
-  currentStatus.coolant = temperatureRemoveOffset((configPage6.fanSP - configPage6.fanHyster) - 1);
+  context.current.coolant = temperatureAddOffset(context.page6.fanSP + context.page6.fanHyster + 1);
 }
 
-static void setup_status_fanoff(void)
+static void set_coolant_below_ontemp(test_context_t &context)
 {
-  currentStatus.fanOn = false;
-  currentStatus.fanDuty = 0U;
-  currentStatus.rotationStatus = EngineRotationStatus::Stopped;
-  currentStatus.acStatus.turningOn = false;
-  set_coolant_below_ontemp();
+  context.current.coolant = temperatureRemoveOffset((context.page6.fanSP - context.page6.fanHyster) - 1);
 }
 
-static void setup_status_fanon(void)
+static void setup_status_fanoff(test_context_t &context)
 {
-  currentStatus.fanOn = true;
-  currentStatus.fanDuty = 50U;
-  currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.acStatus.turningOn = false;
-  set_coolant_above_ontemp();
+  context.current.fanDuty = 0U;
+  context.current.rotationStatus = EngineRotationStatus::Stopped;
+  context.current.acStatus.turningOn = false;
+  set_coolant_below_ontemp(context);
 }
 
-
-static void test_fanControl_disabled_does_nothing(void)
+static void setup_status_fanon(test_context_t &context)
 {
-  setup_nopwm_tune();
-  configPage2.fanEnable = 0U;
-  initialiseFan(TEST_FAN_PIN);
-
-  setup_status_fanon(); 
-  fanControl();
-  // fanOn flag is only modified inside fanEnable branches -> stays whatever it was
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
-
-  setup_status_fanoff(); 
-  fanControl();
-  // fanOn flag is only modified inside fanEnable branches -> stays whatever it was
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  context.current.fanDuty = 50U;
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.current.acStatus.turningOn = false;
+  set_coolant_above_ontemp(context);
 }
 
-static void setup_fanControl_on_when_engine_running_and_hot(void)
+static void test_fanControl_disabled_zero_duty(void)
 {
-  configPage2.fanWhenOff = 0U;
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_nopwm_tune();
+  context.page2.fanEnable = FANMODE_OFF;
+  context.initialise();
 
-  setup_status_fanon();
+  setup_status_fanon(context); 
+  context.current.fanDuty = 99;
+  context.fanControl();
+  TEST_ASSERT_EQUAL(0, context.current.fanDuty);
+
+  setup_status_fanoff(context); 
+  context.current.fanDuty = 99;
+  context.fanControl();
+  TEST_ASSERT_EQUAL(0, context.current.fanDuty);
+}
+
+static void setup_fanControl_on_when_engine_running_and_hot(test_context_t &context)
+{
+  context.page2.fanWhenOff = 0U;
+  context.initialise();
+
+  setup_status_fanon(context);
 }
 
 static void test_fanControl_nopwm_on_when_engine_running_and_hot(void)
 {
-  setup_nopwm_tune();
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_nopwm_tune();
+  context.initialise();
 
-  setup_fanControl_on_when_engine_running_and_hot();
-  fanControl();
-  TEST_ASSERT_TRUE(fan_pin._pin.isPinHigh());
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  setup_fanControl_on_when_engine_running_and_hot(context);
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 }
-
 
 static void test_fanControl_pwm_on_when_engine_running_and_hot(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  initialiseFan(TEST_FAN_PIN);
+  auto context = setup_pwm_tune();
+  context.initialise();
 
-  setup_fanControl_on_when_engine_running_and_hot();
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
+  setup_fanControl_on_when_engine_running_and_hot(context);
+  context.fanControl();
+  TEST_ASSERT_EQUAL(200, context.current.fanDuty);
 #endif
 }
 
-static void seetup_fanControl_with_engine_stopped(void)
+static void setup_fanControl_with_engine_stopped(test_context_t &context)
 {
-  configPage2.fanWhenOff = 0U;             // engine-running gates fan
-  initialiseFan(TEST_FAN_PIN);
+  context.page2.fanWhenOff = 0U;             // engine-running gates fan
+  context.initialise();
 
-  setup_status_fanoff();
-  set_coolant_above_ontemp();
+  setup_status_fanoff(context);
+  set_coolant_above_ontemp(context);
 }
 
 static void test_fanControl_nopwm_off_when_engine_stopped(void)
 {
-  setup_nopwm_tune();
-  seetup_fanControl_with_engine_stopped();
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
+  auto context = setup_nopwm_tune();
+  setup_fanControl_with_engine_stopped(context);
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
 }
 
 static void test_fanControl_pwm_off_when_engine_stopped(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  seetup_fanControl_with_engine_stopped();
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
+  auto context = setup_pwm_tune();
+  setup_fanControl_with_engine_stopped(context);
+  context.fanControl();
+  TEST_ASSERT_EQUAL(0, context.current.fanDuty);
 #endif
 }
 
-static void setup_fanControl_with_fanWhenOff_set(void)
+static void setup_fanControl_with_fanWhenOff_set(test_context_t &context)
 {
-  configPage2.fanWhenOff = 1U;
-  initialiseFan(TEST_FAN_PIN);
+  context.page2.fanWhenOff = 1U;
+  context.initialise();
 
-  setup_status_fanoff();
-  set_coolant_above_ontemp();
+  setup_status_fanoff(context);
+  set_coolant_above_ontemp(context);
 }
 
 static void test_fanControl_nopwm_runs_when_fanWhenOff_set(void)
 {
-  setup_nopwm_tune();
-  setup_fanControl_with_fanWhenOff_set();
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  auto context = setup_nopwm_tune();
+  setup_fanControl_with_fanWhenOff_set(context);
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 }
 
 static void test_fanControl_pwm_runs_when_fanWhenOff_set(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  setup_fanControl_with_fanWhenOff_set();
-  fanControl();
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  auto context = setup_pwm_tune();
+  setup_fanControl_with_fanWhenOff_set(context);
+  context.fanControl();
+  TEST_ASSERT_EQUAL(200, context.current.fanDuty);
 #endif
 }
 
-static void setup_fanControl_below_hysteresis(void)
+static void setup_fanControl_below_hysteresis(test_context_t &context)
 {
-  configPage2.fanWhenOff = 0U;
-  initialiseFan(TEST_FAN_PIN);
+  context.page2.fanWhenOff = 0U;
+  context.initialise();
 
-  setup_status_fanon();
-  set_coolant_below_ontemp();
+  setup_status_fanon(context);
+  set_coolant_below_ontemp(context);
 }
 
 static void test_fanControl_nopwm_when_below_hysteresis(void)
 {
-  setup_nopwm_tune();
-  setup_fanControl_below_hysteresis();
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  auto context = setup_nopwm_tune();
+  setup_fanControl_below_hysteresis(context);
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
 }
 
 static void test_fanControl_pwm_when_below_hysteresis(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  setup_fanControl_below_hysteresis();
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
+  auto context = setup_pwm_tune();
+  setup_fanControl_below_hysteresis(context);
+  context.fanControl();
+
+  // Hysterisis isn't a PWM feature.
+  TEST_ASSERT_EQUAL(75, context.current.fanDuty);
 #endif
 }
 
-static void setup_fanControl_in_hysteresis_band(void)
+static void setup_fanControl_in_hysteresis_band(test_context_t &context)
 {
-  initialiseFan(TEST_FAN_PIN);
+  context.initialise();
 
-  setup_status_fanon();
+  setup_status_fanon(context);
   // Coolant is between offTemp (75) and onTemp (80). Fan should stay
   // whatever it was — neither branch fires.
-  currentStatus.coolant = temperatureRemoveOffset(configPage6.fanSP - (configPage6.fanHyster/2));
+  context.current.coolant = temperatureRemoveOffset(context.page6.fanSP - (context.page6.fanHyster/2));
 }
 
 static void test_fanControl_nopwm_holds_in_hysteresis_band(void)
 {
-  setup_nopwm_tune();
-  setup_fanControl_in_hysteresis_band();
+  auto context = setup_nopwm_tune();
+  setup_fanControl_in_hysteresis_band(context);
 
-  currentStatus.fanOn = false;
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
+  context.current.fanDuty = 0;
+  context.fanControl();
+  TEST_ASSERT_EQUAL(0, context.current.fanDuty);
 
-  currentStatus.fanOn = true;
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  context.current.fanDuty = 50;
+  context.fanControl();
+  TEST_ASSERT_EQUAL(50, context.current.fanDuty);
 }
 
 static void test_fanControl_pwm_holds_in_hysteresis_band(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  setup_fanControl_in_hysteresis_band();
+  auto context = setup_pwm_tune();
+  setup_fanControl_in_hysteresis_band(context);
 
-  currentStatus.fanOn = false;
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
+  context.current.fanDuty = 0;
+  context.fanControl();
+  TEST_ASSERT_EQUAL(125, context.current.fanDuty);
 
-  currentStatus.fanOn = true;
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
+  context.current.fanDuty = 50;
+  context.fanControl();
+  TEST_ASSERT_EQUAL(125, context.current.fanDuty);
 #endif
 }
 
-static void setup_fanControl_disabled_during_crank(void)
+static void setup_fanControl_disabled_during_crank(test_context_t &context)
 {
-  configPage2.fanWhenOff = 1U;             // permit even when not running
-  configPage2.fanWhenCranking = 0U;        // disable during cranking
-  initialiseFan(TEST_FAN_PIN);
+  context.page2.fanWhenOff = 1U;             // permit even when not running
+  context.page2.fanWhenCranking = 0U;        // disable during cranking
+  context.initialise();
 
-  setup_status_fanon();
-  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  setup_status_fanon(context);
+  context.current.rotationStatus = EngineRotationStatus::Cranking;
 }
 
 static void test_fanControl_nopwm_disables_during_crank_when_configured(void)
 {
-  setup_nopwm_tune();
-  setup_fanControl_disabled_during_crank();
+  auto context = setup_nopwm_tune();
+  setup_fanControl_disabled_during_crank(context);
 
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_TRUE(fan_pin._pin.isPinLow());
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
 }
 
 static void test_fanControl_pwm_disables_during_crank_when_configured(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  setup_fanControl_disabled_during_crank();
+  auto context = setup_pwm_tune();
+  setup_fanControl_disabled_during_crank(context);
 
-  fanControl();
-  TEST_ASSERT_FALSE(currentStatus.fanOn);
-  TEST_ASSERT_EQUAL(0, currentStatus.fanDuty);
+  context.fanControl();
+  TEST_ASSERT_EQUAL(0, context.current.fanDuty);
 #endif
 }
 
-static void setup_fanControl_running_during_crank(void)
+static void setup_fanControl_running_during_crank(test_context_t &context)
 {
-  configPage2.fanWhenOff = 1U;
-  configPage2.fanWhenCranking = 1U;        // allow during cranking
-  initialiseFan(TEST_FAN_PIN);
+  context.page2.fanWhenOff = 1U;
+  context.page2.fanWhenCranking = 1U;        // allow during cranking
+  context.initialise();
 
-  setup_status_fanoff();
-  set_coolant_above_ontemp();
-  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
+  setup_status_fanoff(context);
+  set_coolant_above_ontemp(context);
+  context.current.rotationStatus = EngineRotationStatus::Cranking;
 }
 
 static void test_fanControl_nopwm_runs_during_crank_when_permitted(void)
 {
-  setup_nopwm_tune();
-  setup_fanControl_running_during_crank();
+  auto context = setup_nopwm_tune();
+  setup_fanControl_running_during_crank(context);
   
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 }
 
 static void test_fanControl_pwm_runs_during_crank_when_permitted(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  setup_fanControl_running_during_crank();
+  auto context = setup_pwm_tune();
+  setup_fanControl_running_during_crank(context);
   
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
+  context.fanControl();
+  TEST_ASSERT_EQUAL(200, context.current.fanDuty);
 #endif
 }
 
-static void setup_fanControl_aircon_request_turns_fan_on(void)
+static void setup_fanControl_aircon_request_turns_fan_on(test_context_t &context)
 {
-  configPage15.airConTurnsFanOn = 1U;
-  configPage15.airConPwmFanMinDuty = 200;
-  initialiseFan(TEST_FAN_PIN);
+  context.page15.airConTurnsFanOn = 1U;
+  context.page15.airConPwmFanMinDuty = 200;
+  context.initialise();
 
-  setup_status_fanoff();
-  currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.acStatus.turningOn = true;
+  setup_status_fanoff(context);
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.current.acStatus.turningOn = true;
 }
 
 static void test_fanControl_nopwm_aircon_request_turns_fan_on(void)
 {
-  setup_nopwm_tune();
-  setup_fanControl_aircon_request_turns_fan_on();
+  auto context = setup_nopwm_tune();
+  setup_fanControl_aircon_request_turns_fan_on(context);
 
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 }
 
 static void test_fanControl_pwm_aircon_request_turns_fan_on(void)
 {
 #if defined(PWM_FAN_AVAILABLE)
-  setup_pwm_tune();
-  setup_fanControl_aircon_request_turns_fan_on();
+  auto context = setup_pwm_tune();
+  setup_fanControl_aircon_request_turns_fan_on(context);
 
-  fanControl();
-  TEST_ASSERT_TRUE(currentStatus.fanOn);
-  TEST_ASSERT_NOT_EQUAL(0, currentStatus.fanDuty);
-  TEST_ASSERT_GREATER_OR_EQUAL(configPage15.airConPwmFanMinDuty, currentStatus.fanDuty);
+  context.fanControl();
+  TEST_ASSERT_NOT_EQUAL(0, context.current.fanDuty);
+  TEST_ASSERT_GREATER_OR_EQUAL(context.page15.airConPwmFanMinDuty, context.current.fanDuty);
 #endif
-}
-
-static void assert_fan_pin_state(bool active)
-{
-  TEST_ASSERT_EQUAL(active, currentStatus.fanOn);
-  TEST_ASSERT_EQUAL(active != (configPage6.fanInv != 0U), fan_pin._pin.isPinHigh());
 }
 
 static void assert_cranking_overrides_hysteresis(bool inverted)
 {
-  setup_nopwm_tune();
-  configPage6.fanInv = inverted;
-  configPage2.fanWhenOff = 1U;
-  configPage2.fanWhenCranking = 0U;
-  initialiseFan(TEST_FAN_PIN);
-  currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.acStatus.turningOn = false;
+  auto context = setup_nopwm_tune();
+  context.page6.fanInv = inverted;
+  context.page2.fanWhenOff = 1U;
+  context.page2.fanWhenCranking = 0U;
+  context.initialise();
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.current.acStatus.turningOn = false;
 
-  const int16_t onTemp = temperatureRemoveOffset(configPage6.fanSP);
-  const int16_t holdTemp = onTemp - configPage6.fanHyster / 2U;
-  currentStatus.coolant = onTemp;
-  fanControl();
-  assert_fan_pin_state(true);
-  currentStatus.coolant = holdTemp;
-  fanControl();
-  assert_fan_pin_state(true);
+  const int16_t onTemp = temperatureRemoveOffset(context.page6.fanSP);
+  const int16_t holdTemp = onTemp - context.page6.fanHyster / 2U;
+  context.current.coolant = onTemp;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
+  context.current.coolant = holdTemp;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 
-  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
-  fanControl();
-  assert_fan_pin_state(false);
+  context.current.rotationStatus = EngineRotationStatus::Cranking;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
 
   // A/C demand must not bypass the configured cranking inhibit either.
-  configPage15.airConTurnsFanOn = 1U;
-  currentStatus.acStatus.turningOn = true;
-  fanControl();
-  assert_fan_pin_state(false);
+  context.page15.airConTurnsFanOn = 1U;
+  context.current.acStatus.turningOn = true;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
 
   // Resume normal hysteresis once cranking ends.
-  currentStatus.acStatus.turningOn = false;
-  currentStatus.rotationStatus = EngineRotationStatus::Running;
-  fanControl();
-  assert_fan_pin_state(false);
-  currentStatus.coolant = onTemp;
-  fanControl();
-  assert_fan_pin_state(true);
+  context.current.acStatus.turningOn = false;
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
+  context.current.coolant = onTemp;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 }
 
 static void test_fanControl_cranking_overrides_hysteresis(void)
@@ -368,22 +363,22 @@ static void test_fanControl_cranking_overrides_hysteresis_inverted(void)
 
 static void test_fanControl_cranking_preserves_hysteresis_when_permitted(void)
 {
-  setup_nopwm_tune();
-  configPage2.fanWhenOff = 1U;
-  configPage2.fanWhenCranking = 1U;
-  initialiseFan(TEST_FAN_PIN);
-  currentStatus.acStatus.turningOn = false;
-  currentStatus.rotationStatus = EngineRotationStatus::Cranking;
-  const int16_t onTemp = temperatureRemoveOffset(configPage6.fanSP);
-  currentStatus.coolant = onTemp - configPage6.fanHyster / 2U;
-  fanControl();
-  assert_fan_pin_state(false);
-  currentStatus.coolant = onTemp;
-  fanControl();
-  assert_fan_pin_state(true);
-  currentStatus.coolant = onTemp - configPage6.fanHyster / 2U;
-  fanControl();
-  assert_fan_pin_state(true);
+  auto context = setup_nopwm_tune();
+  context.page2.fanWhenOff = 1U;
+  context.page2.fanWhenCranking = 1U;
+  context.initialise();
+  context.current.acStatus.turningOn = false;
+  context.current.rotationStatus = EngineRotationStatus::Cranking;
+  const int16_t onTemp = temperatureRemoveOffset(context.page6.fanSP);
+  context.current.coolant = onTemp - context.page6.fanHyster / 2U;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, false);
+  context.current.coolant = onTemp;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
+  context.current.coolant = onTemp - context.page6.fanHyster / 2U;
+  context.fanControl();
+  assert_nopwm_fan_pin_state(context, true);
 }
 
 void tesFanControl(void)
@@ -393,7 +388,7 @@ void tesFanControl(void)
     RUN_TEST_P(test_fanControl_cranking_overrides_hysteresis);
     RUN_TEST_P(test_fanControl_cranking_overrides_hysteresis_inverted);
     RUN_TEST_P(test_fanControl_cranking_preserves_hysteresis_when_permitted);
-    RUN_TEST_P(test_fanControl_disabled_does_nothing);
+    RUN_TEST_P(test_fanControl_disabled_zero_duty);
     RUN_TEST_P(test_fanControl_nopwm_on_when_engine_running_and_hot);
     RUN_TEST_P(test_fanControl_pwm_on_when_engine_running_and_hot);
     RUN_TEST_P(test_fanControl_nopwm_off_when_engine_stopped);
