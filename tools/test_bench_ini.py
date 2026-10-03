@@ -81,11 +81,7 @@ assert 'dialog = injActions, "Injector test", xAxis' in s
 assert 'benchOwned && benchKind == 4 ? idleBenchRaw : 0' in s
 print('PASS: All dropdowns, explicit Enable/Disable, grouped pump, gated idle telemetry')
 
-for file,fn,pin in [('src/controllers/fan/fanController.cpp','fanInterrupt','pinFan'),('src/controllers/boost/boostController.cpp','boostInterrupt','pinBoost')]:
-    body=(root/'speeduino'/file).read_text().split('void '+fn+'(void)')[1]
-    assert body.lstrip().startswith('{\n  if(injectorBenchOwnsPin(pinNumbers.'+pin+')) return;')
-assert 'PwmOutputChannel<BenchOutputPin<boardOutputPin_t>>' in (root/'speeduino/src/controllers/vvt/vvtController.cpp').read_text()
-print('PASS: normal PWM interrupt interlocks')
+# Fan/Boost PWM ownership is exercised by test_injector_bench.py using the real ISRs.
 
 for target,condition in {1:'fanEnable == 1 || fanEnable == 2',2:'boostEnabled',3:'vvtEnabled',4:'vvtEnabled && vvt2Enabled && !wmiEnabled',5:'wmiEnabled && !vvt2Enabled',6:'airConEnable',7:'airConEnable && airConFanEnabled'}.items():
     block=s.split(f'dialog = auxColumn{target},')[1].split('  dialog =')[0]

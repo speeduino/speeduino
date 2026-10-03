@@ -35,6 +35,7 @@ int main() {
  void (*ignCallbacks[])()={beginCoil1Charge,beginCoil2Charge,beginCoil3Charge,beginCoil4Charge,beginCoil5Charge,beginCoil6Charge,beginCoil7Charge,beginCoil8Charge};
  for(unsigned i=0;i<8;++i) {fuelSchedules[i]->_pStartCallback=fuelCallbacks[i];ignSchedules[i]->_pStartCallback=ignCallbacks[i];}
  for(uint8_t board: {uint8_t(0),uint8_t(14),uint8_t(60)}) {configPage2.pinMapping=board;assert(arm(1)==0);stop();}
+ testNormalPwmDuringBench();
  // Nothing can drive outputs until an explicit mode-specific Enable.
  cmd(1);assert(packet[0]==0x85);cmd(7);assert(packet[0]==0x85);
  assert(pump(true)==0x85 && aux(0,1)==0x85 && idle(0)==0x85);allIdle();
