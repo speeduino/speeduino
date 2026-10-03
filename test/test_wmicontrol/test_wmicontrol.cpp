@@ -192,17 +192,17 @@ static void test_mode_cl(void)
     populate_table_axis(wmiTable.axisX, (table3d_axis_t)10);
     populate_table_axis(wmiTable.axisY, (table3d_axis_t)10);
     fill_table_values(wmiTable, 177);
-    fuelSchedule1.pw = abs(context.page10.wmiOffset)*2;
+    fuelSchedules[0].pw = abs(context.page10.wmiOffset)*2;
 
     setup_assert_wmipw(context, 29);
 
     // Test 0-200 clamp
     fill_table_values(wmiTable, 1);
-    fuelSchedule1.pw = 1;
+    fuelSchedules[0].pw = 1;
     assert_wmipw(context, 0);
 
     fill_table_values(wmiTable, 255);
-    fuelSchedule1.pw = 255;
+    fuelSchedules[0].pw = 255;
     assert_wmipw(context, 200);
 }
 

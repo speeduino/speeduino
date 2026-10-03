@@ -80,18 +80,9 @@ struct init_context_t
 
   const init_context_t& assertFuelChannels(const bool (&enabled)[8], const uint16_t (&angle)[8]) const
   {
-    #define ASSERT_CHANNEL(channel) \
-      CONCAT(RUNIF_INJCHANNEL, channel) \
-      (assert_fuel_channel(enabled[channel-1], angle[channel-1], channel, fuelSchedule ## channel), {});
-
-    ASSERT_CHANNEL(1);
-    ASSERT_CHANNEL(2);
-    ASSERT_CHANNEL(3);
-    ASSERT_CHANNEL(4);
-    ASSERT_CHANNEL(5);
-    ASSERT_CHANNEL(6);
-    ASSERT_CHANNEL(7);
-    ASSERT_CHANNEL(8);
+    for (uint8_t index=0; index<_countof(fuelSchedules); ++index) {
+      assert_fuel_channel(enabled[index], angle[index], index+1, fuelSchedules[index]);
+    }
 
     return *this;
   }
@@ -110,8 +101,8 @@ private:
   {
     if (&schedule1!=&schedule2)
     {
-      UNITY_TEST_ASSERT(schedule1._pStartCallback!=schedule2._pStartCallback, _assertLine, "_pStartCallback unique");
-      UNITY_TEST_ASSERT(schedule1._pEndCallback!=schedule2._pEndCallback, _assertLine, "_pEndCallback unique");
+      UNITY_TEST_ASSERT(schedule1._callbacks.start!=schedule2._callbacks.start, _assertLine, "_callbacks.start unique");
+      UNITY_TEST_ASSERT(schedule1._callbacks.end!=schedule2._callbacks.end, _assertLine, "_callbacks.end unique");
     }
   }
 
@@ -125,21 +116,16 @@ private:
       sprintf_P(msg, PSTR("channel%" PRIu8 ".InjDegrees"), channelIndex);
       UNITY_TEST_ASSERT_EQUAL_UINT16(angle, schedule.channelDegrees, _assertLine, msg);
       sprintf_P(msg, PSTR("inj%" PRIu8 ".StartFunction"), channelIndex);
-      UNITY_TEST_ASSERT(schedule._pStartCallback!=nullCallback, _assertLine, msg);
+      UNITY_TEST_ASSERT(schedule._callbacks.start!=nullCallback, _assertLine, msg);
       sprintf_P(msg, PSTR("inj%" PRIu8 ".EndFunction"), channelIndex);
-      UNITY_TEST_ASSERT(schedule._pEndCallback!=nullCallback, _assertLine, msg);
+      UNITY_TEST_ASSERT(schedule._callbacks.end!=nullCallback, _assertLine, msg);
       sprintf_P(msg, PSTR("injAngle"));
       UNITY_TEST_ASSERT_SMALLER_THAN_UINT16(CRANK_ANGLE_MAX_INJ, angle, _assertLine, msg);
 
       // Are the channel callbacks unique?
-      RUNIF_INJCHANNEL1({ assert_callbacks_not_equal(schedule, fuelSchedule1); }, {});
-      RUNIF_INJCHANNEL2({ assert_callbacks_not_equal(schedule, fuelSchedule2); }, {});
-      RUNIF_INJCHANNEL3({ assert_callbacks_not_equal(schedule, fuelSchedule3); }, {});
-      RUNIF_INJCHANNEL4({ assert_callbacks_not_equal(schedule, fuelSchedule4); }, {});
-      RUNIF_INJCHANNEL5({ assert_callbacks_not_equal(schedule, fuelSchedule5); }, {});
-      RUNIF_INJCHANNEL6({ assert_callbacks_not_equal(schedule, fuelSchedule6); }, {});
-      RUNIF_INJCHANNEL7({ assert_callbacks_not_equal(schedule, fuelSchedule7); }, {});
-      RUNIF_INJCHANNEL8({ assert_callbacks_not_equal(schedule, fuelSchedule8); }, {});
+      for (uint8_t index=0; index<_countof(fuelSchedules); ++index) {
+        assert_callbacks_not_equal(schedule, fuelSchedules[index]);
+      }
     }
     else 
     {

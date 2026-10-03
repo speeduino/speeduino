@@ -12,57 +12,21 @@
 #include "src/controllers/fan/fanController.h"
 #include "src/controllers/boost/boostController.h"
 
-#define IGNITION_INTERRUPT_NAME(index) CONCAT(CONCAT(ignitionSchedule, index), Interrupt)
-#define FUEL_INTERRUPT_NAME(index) CONCAT(CONCAT(fuelSchedule, index), Interrupt)
+template <uint8_t index>
+void fuelScheduleIsr(void) {
+    if (index<_countof(fuelSchedules)) 
+    {
+        moveToNextState(fuelSchedules[index]);
+    }
+}
 
-#define FUEL_INTERRUPT(index) void FUEL_INTERRUPT_NAME(index)(void) {moveToNextState(fuelSchedule ## index);}
-#define IGNITION_INTERRUPT(index) void IGNITION_INTERRUPT_NAME(index)(void) {moveToNextState(ignitionSchedule ## index);}
-
-FUEL_INTERRUPT(1)
-#if INJ_CHANNELS>=2
-FUEL_INTERRUPT(2)
-#endif
-#if INJ_CHANNELS>=3
-FUEL_INTERRUPT(3)
-#endif
-#if INJ_CHANNELS>=4
-FUEL_INTERRUPT(4)
-#endif
-#if INJ_CHANNELS>=5
-FUEL_INTERRUPT(5)
-#endif
-#if INJ_CHANNELS>=6
-FUEL_INTERRUPT(6)
-#endif
-#if INJ_CHANNELS>=7
-FUEL_INTERRUPT(7)
-#endif
-#if INJ_CHANNELS>=8
-FUEL_INTERRUPT(8)
-#endif
-
-IGNITION_INTERRUPT(1)
-#if IGN_CHANNELS>=2
-IGNITION_INTERRUPT(2)
-#endif
-#if IGN_CHANNELS>=3
-IGNITION_INTERRUPT(3)
-#endif
-#if IGN_CHANNELS>=4
-IGNITION_INTERRUPT(4)
-#endif
-#if IGN_CHANNELS>=5
-IGNITION_INTERRUPT(5)
-#endif
-#if IGN_CHANNELS>=6
-IGNITION_INTERRUPT(6)
-#endif
-#if IGN_CHANNELS>=7
-IGNITION_INTERRUPT(7)
-#endif
-#if IGN_CHANNELS>=8
-IGNITION_INTERRUPT(8)
-#endif
+template <uint8_t index>
+void ignitionScheduleIsr(void) {
+    if (index<_countof(ignitionSchedules)) 
+    {
+        moveToNextState(ignitionSchedules[index]);
+    }
+}
 
 std::array<software_timer_t, INJ_CHANNELS> fuelTimers;
 std::array<software_timer_t, IGN_CHANNELS> ignitionTimers;
@@ -79,50 +43,50 @@ void initBoard(uint32_t /*baudRate*/) {
     vvtTimer.setCallback(vvtInterrupt);
     oneMSTimer.setCallback(oneMSInterval);
 
-    fuelTimers[0].setCallback(FUEL_INTERRUPT_NAME(1));
+    fuelTimers[0].setCallback(fuelScheduleIsr<0>);
 #if INJ_CHANNELS>=2
-    fuelTimers[1].setCallback(FUEL_INTERRUPT_NAME(2));
+    fuelTimers[1].setCallback(fuelScheduleIsr<1>);
 #endif
 #if INJ_CHANNELS>=3
-    fuelTimers[2].setCallback(FUEL_INTERRUPT_NAME(3));
+    fuelTimers[2].setCallback(fuelScheduleIsr<2>);
 #endif
 #if INJ_CHANNELS>=4
-    fuelTimers[3].setCallback(FUEL_INTERRUPT_NAME(4));
+    fuelTimers[3].setCallback(fuelScheduleIsr<3>);
 #endif
 #if INJ_CHANNELS>=5
-    fuelTimers[4].setCallback(FUEL_INTERRUPT_NAME(5));
+    fuelTimers[4].setCallback(fuelScheduleIsr<4>);
 #endif
 #if INJ_CHANNELS>=6
-    fuelTimers[5].setCallback(FUEL_INTERRUPT_NAME(6));
+    fuelTimers[5].setCallback(fuelScheduleIsr<5>);
 #endif
 #if INJ_CHANNELS>=7
-    fuelTimers[6].setCallback(FUEL_INTERRUPT_NAME(7));
+    fuelTimers[6].setCallback(fuelScheduleIsr<6>);
 #endif
 #if INJ_CHANNELS>=8
-    fuelTimers[7].setCallback(FUEL_INTERRUPT_NAME(8));
+    fuelTimers[7].setCallback(fuelScheduleIsr<7>);
 #endif
     
-    ignitionTimers[0].setCallback(IGNITION_INTERRUPT_NAME(1));
+    ignitionTimers[0].setCallback(ignitionScheduleIsr<0>);
 #if IGN_CHANNELS>=2
-    ignitionTimers[1].setCallback(IGNITION_INTERRUPT_NAME(2));
+    ignitionTimers[1].setCallback(ignitionScheduleIsr<1>);
 #endif
 #if IGN_CHANNELS>=3
-    ignitionTimers[2].setCallback(IGNITION_INTERRUPT_NAME(3));
+    ignitionTimers[2].setCallback(ignitionScheduleIsr<2>);
 #endif
 #if IGN_CHANNELS>=4
-    ignitionTimers[3].setCallback(IGNITION_INTERRUPT_NAME(4));
+    ignitionTimers[3].setCallback(ignitionScheduleIsr<3>);
 #endif
 #if IGN_CHANNELS>=5
-    ignitionTimers[4].setCallback(IGNITION_INTERRUPT_NAME(5));
+    ignitionTimers[4].setCallback(ignitionScheduleIsr<4>);
 #endif
 #if IGN_CHANNELS>=6
-    ignitionTimers[5].setCallback(IGNITION_INTERRUPT_NAME(6));
+    ignitionTimers[5].setCallback(ignitionScheduleIsr<5>);
 #endif
 #if IGN_CHANNELS>=7
-    ignitionTimers[6].setCallback(IGNITION_INTERRUPT_NAME(7));
+    ignitionTimers[6].setCallback(ignitionScheduleIsr<6>);
 #endif
 #if IGN_CHANNELS>=8
-    ignitionTimers[7].setCallback(IGNITION_INTERRUPT_NAME(8));
+    ignitionTimers[7].setCallback(ignitionScheduleIsr<7>);
 #endif
 }
 
