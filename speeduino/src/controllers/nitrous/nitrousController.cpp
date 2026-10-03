@@ -47,7 +47,6 @@ void __attribute__((optimize("Os"))) initialiseNitrous(statuses &current, config
 
 void nitrousControl(statuses &current, const config10 &page10)
 {
-  current.nitrousActive = false;
   current.nitrous_status = NITROUS_OFF; //Reset the current state
 
   if(page10.n2o_enable > 0)
@@ -72,7 +71,6 @@ void nitrousControl(statuses &current, const config10 &page10)
       if( (current.RPM > realStage1MinRPM) && (current.RPM < realStage1MaxRPM) )
       {
         current.nitrous_status += NITROUS_STAGE1;
-        current.nitrousActive = true;
         n2o_stage1_pin.setPinHigh();
       }
       if(page10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
@@ -80,14 +78,13 @@ void nitrousControl(statuses &current, const config10 &page10)
         if( (current.RPM > realStage2MinRPM) && (current.RPM < realStage2MaxRPM) )
         {
           current.nitrous_status += NITROUS_STAGE2;
-          current.nitrousActive = true;
           n2o_stage2_pin.setPinHigh();
         }
       }
     }
   }
 
-  if (current.nitrousActive == false)
+  if (current.nitrous_status == NITROUS_OFF)
   {
     if(page10.n2o_enable > 0)
     {
