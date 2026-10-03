@@ -14,30 +14,61 @@ static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config
   return INPUT;
 }
 
-static __attribute__((optimize("Os"))) void initialiseN2oArmPin(const config10 &page10)
+static inline bool isStage1Enabled(const config10 &page10)
 {
-  if(page10.n2o_enable!=NITROUS_OFF && !pinIsReserved(page10.n2o_arming_pin))
-  {
-    // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
-    // with other inputs. 
-    _n2oState.armingPin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
-  }
+  return (page10.n2o_enable==NITROUS_STAGE1) || (page10.n2o_enable==NITROUS_BOTH);
+}
+static inline bool isStage2Enabled(const config10 &page10)
+{
+  return (page10.n2o_enable==NITROUS_STAGE2) || (page10.n2o_enable==NITROUS_BOTH);
 }
 
 static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
 {
-  _n2oState.stage1Pin.setPin(page10.n2o_stage1_pin, OUTPUT);
-  _n2oState.stage2Pin.setPin(page10.n2o_stage2_pin, OUTPUT);
-  initialiseN2oArmPin(page10);
+  if (isStage1Enabled(page10))
+  {
+    _n2oState.stage1Pin.setPin(page10.n2o_stage1_pin, OUTPUT);
+    _n2oState.armingPin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
+  }
+  if (isStage2Enabled(page10))
+  {
+    _n2oState.stage2Pin.setPin(page10.n2o_stage2_pin, OUTPUT);
+    _n2oState.armingPin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
+  }
+}
+
+static inline bool isValidPin(uint8_t pinNum)
+{
+  return (pinNum!=NOT_A_PIN)
+// LCOV_EXCL_BR_START
+   && !pinIsReserved(pinNum);
+// LCOV_EXCL_BR_STOP
 }
 
 void __attribute__((optimize("Os"))) initialiseNitrous(statuses &current, config10 &page10)
 {
-  initialiseN2oPins(page10);
+  _n2oState = nitrous::detail::state_t();
 
-  //This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
-  //The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
-  if(page10.n2o_minTPS == 255) { page10.n2o_enable = NITROUS_OFF; }
+  // It's either stage 1 or both: stage 2 on it's own makes no sense
+  if (page10.n2o_enable==NITROUS_STAGE2)
+  {
+    page10.n2o_enable = NITROUS_BOTH;
+  }
+
+  // This is a safety check that will be true if the board is uninitialised. This prevents hangs on a new
+  // board that could otherwise try to write to an invalid pin port/mask (Without this a new Teensy 4.x hangs on startup)
+  // The n2o_minTPS variable is capped at 100 by TS, so 255 indicates a new board.
+  if ( (page10.n2o_minTPS == 255) 
+    // Check the pins are not in use
+    || (!isValidPin(page10.n2o_stage1_pin))
+    || (!isValidPin(page10.n2o_arming_pin))
+    || (isStage2Enabled(page10) && !isValidPin(page10.n2o_stage2_pin))
+  )
+  { 
+    page10.n2o_enable = NITROUS_OFF; 
+  }
+
+  initialiseN2oPins(page10);
 
   current.nitrous_status = NITROUS_OFF;
 }
@@ -70,13 +101,10 @@ void nitrousControl(statuses &current, const config10 &page10)
         current.nitrous_status += NITROUS_STAGE1;
         _n2oState.stage1Pin.setPinHigh();
       }
-      if(page10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
+      if(isStage2Enabled(page10) && (current.RPM > realStage2MinRPM) && (current.RPM < realStage2MaxRPM) )
       {
-        if( (current.RPM > realStage2MinRPM) && (current.RPM < realStage2MaxRPM) )
-        {
-          current.nitrous_status += NITROUS_STAGE2;
-          _n2oState.stage2Pin.setPinHigh();
-        }
+        current.nitrous_status += NITROUS_STAGE2;
+        _n2oState.stage2Pin.setPinHigh();
       }
     }
   }
