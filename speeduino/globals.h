@@ -76,7 +76,9 @@ extern struct config10 configPage10;
 extern struct config13 configPage13;
 extern struct config15 configPage15;
 
-bool pinIsOutput(byte pin);
-bool pinIsUsed(byte pin);
+bool pinIsOutput(byte pin, const pinNumbers_t &pins);
+static inline bool pinIsOutput(byte pin) { return pinIsOutput(pin, pinNumbers); }
+bool pinIsUsed(byte pin, const pinNumbers_t &pins);
+static inline bool pinIsUsed(byte pin) { return pinIsUsed(pin, pinNumbers); }
 
 #endif // GLOBALS_H
