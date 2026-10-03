@@ -116,38 +116,40 @@ static void test_map_threshhold(void)
 
 static void test_stage1(void)
 {
-  auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
+  auto context = setup_rpm_overlap_tune(NITROUS_STAGE1);
   context.init();
-  setup_valid_conditions_stage1(context);
 
+  setup_valid_conditions_stage1(context);
   context.control();
   TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrous_status);
   TEST_ASSERT_TRUE(_n2oState.stage1Pin._pin.isPinHigh());
-  TEST_ASSERT_FALSE(_n2oState.stage2Pin._pin.isPinHigh());
+
+  context.current.setRpm(RPM_COARSE.toUser(context.page10.n2o_stage1_minRPM-1));
+  context.control();
+  TEST_ASSERT_FALSE(_n2oState.stage1Pin._pin.isPinHigh());
+
+  context.current.setRpm(RPM_COARSE.toUser(context.page10.n2o_stage1_maxRPM+1));
+  context.control();
+  TEST_ASSERT_FALSE(_n2oState.stage1Pin._pin.isPinHigh());
 }
 
 static void test_stage2(void)
 {
-  auto context = setup_rpm_overlap_tune(NITROUS_STAGE2);
-  context.init();
-  setup_valid_conditions_stage2(context);
-
-  context.control();
-  TEST_ASSERT_EQUAL(NITROUS_STAGE2, context.current.nitrous_status);
-  // TEST_ASSERT_FALSE(_n2oState.stage1_pin._pin.isPinHigh());
-  TEST_ASSERT_TRUE(_n2oState.stage2Pin._pin.isPinHigh());
-}
-
-static void test_stage_both(void)
-{
   auto context = setup_rpm_overlap_tune(NITROUS_BOTH);
   context.init();
-  setup_valid_conditions_stageboth(context);
 
+  setup_valid_conditions_stage2(context);
   context.control();
-  TEST_ASSERT_EQUAL(NITROUS_BOTH, context.current.nitrous_status);
-  TEST_ASSERT_TRUE(_n2oState.stage1Pin._pin.isPinHigh());
+  TEST_ASSERT_EQUAL(NITROUS_STAGE2, context.current.nitrous_status);
   TEST_ASSERT_TRUE(_n2oState.stage2Pin._pin.isPinHigh());
+
+  context.current.setRpm(RPM_COARSE.toUser(context.page10.n2o_stage2_minRPM-1));
+  context.control();
+  TEST_ASSERT_FALSE(_n2oState.stage2Pin._pin.isPinHigh());
+
+  context.current.setRpm(RPM_COARSE.toUser(context.page10.n2o_stage2_maxRPM+1));
+  context.control();
+  TEST_ASSERT_FALSE(_n2oState.stage2Pin._pin.isPinHigh());
 }
 
 void testN2oControl(void)
@@ -162,6 +164,5 @@ void testN2oControl(void)
     RUN_TEST_P(test_map_threshhold);
     RUN_TEST_P(test_stage1);
     RUN_TEST_P(test_stage2);
-    RUN_TEST_P(test_stage_both);
   }
 }
