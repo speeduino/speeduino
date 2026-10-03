@@ -360,10 +360,6 @@ static bool UpdateRevolutionTimeFromTeeth(bool isCamTeeth) {
   return false; // Silence incorrect compiler warning
 }
 
-static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revTime) {
-  return clamp(fast_div_closest(MICROS_PER_MIN, revTime), (uint32_t)0UL, (uint32_t)MAX_RPM); //Calc RPM based on last full revolution time
-}
-
 // As nearly all the decoders use a common method of determining RPM (The time the last full revolution took) A common function is simpler.
 TESTABLE_STATIC __attribute__((noinline)) uint16_t stdGetRPM(bool isCamTeeth)
 {

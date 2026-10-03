@@ -3,8 +3,6 @@
 #include "decoders.h"
 #include "../test_utils.h"
 
-extern void SetRevolutionTime(uint32_t revTime);
-
 struct crankmaths_rev_testdata {
   uint16_t rpm;
   unsigned long revolutionTime;
@@ -14,7 +12,7 @@ struct crankmaths_rev_testdata {
 
 void test_crankmaths_angletotime_revolution_execute() {
   crankmaths_rev_testdata *testdata = crankmaths_rev_testdata_current;
-  SetRevolutionTime(testdata->revolutionTime);
+  setAngleConverterRevolutionTime(testdata->revolutionTime);
   TEST_ASSERT_INT32_WITHIN(1, testdata->expected, angleToTime(testdata->angle));
 }
 
