@@ -1,4 +1,4 @@
-#include "../../../injector_bench.h"
+#include "../../../bench_output_pin.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../units.h"
 #include "../../../unit_testing.h"
@@ -12,7 +12,7 @@ TESTABLE_STATIC long fan_pwm_value;
 #endif
 TESTABLE_CONSTEXPR table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
 
-TESTABLE_STATIC boardOutputPin_t fan_pin;
+TESTABLE_STATIC BenchOutputPin<boardOutputPin_t> fan_pin;
 
 void fanOn(void) 
 {
@@ -149,7 +149,6 @@ void fanControl(void)
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
 void fanInterrupt(void)
 {
-  if(injectorBenchOwnsPin(pinNumbers.pinFan)) return;
 #if defined(PWM_FAN_AVAILABLE)
   if (fan_pwm_state == true)
   {

@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "globals.h"
 #include "src/controllers/fan/fanController.h"
 #include "units.h"
@@ -5,7 +6,7 @@
 #include "shared.h"
 #include "src/pins/boardOutputPin.h"
 
- extern boardOutputPin_t fan_pin;
+ extern BenchOutputPin<boardOutputPin_t> fan_pin;
  extern table2D_u8_u8_4 fanPWMTable;
 
 static void set_coolant_above_ontemp(void)

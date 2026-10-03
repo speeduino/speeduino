@@ -111,6 +111,12 @@ can be reused by AUX, but cannot simultaneously be selected as a raw test output
 MC33810 outputs are logical driver channels; their SPI pins cannot be claimed
 by AUX. These checks are test admission checks, not global tune validation.
 
+Fan, boost, VVT and PWM idle protect their physical writes through the shared
+`BenchOutputPin` adapter. PWM phase tracking and compare scheduling continue
+while a pin is claimed; the controllers do not look up global pin numbers in
+their interrupt handlers to decide whether to run. Releasing ownership permits
+normal pin writes again without reinitialising the output objects.
+
 The tester borrows the existing fuel-1 compare channel only while normal engine
 control is suspended. Long waits are split at intermediate compare deadlines
 without adding output edges. The hardware timer's counter is not reset. Normal

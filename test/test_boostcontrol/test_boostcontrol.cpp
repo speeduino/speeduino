@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "../test_utils.h"
 #include "globals.h"
 #include "src/controllers/boost/boostController.h"
@@ -8,7 +9,7 @@
 #include "src/pwm/PwmOutputChannel.h"
 #include "src/pins/boardOutputPin.h"
 
-extern PwmOutputChannel<boardOutputPin_t> boostOutput;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> boostOutput;
 extern table2D_u8_s16_6 flexBoostTable;
 extern integerPID_ideal boostPID;
 
