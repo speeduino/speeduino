@@ -10,7 +10,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     TEST_ASSERT_NOT_NULL(decoder.secondary.callback);
     TEST_ASSERT_NOT_NULL(decoder.tertiary.callback);
 
-    TEST_ASSERT_NOT_NULL(decoder.getRPM);
+    TEST_ASSERT_NOT_NULL(decoder.getRevolutionTime);
     TEST_ASSERT_NOT_NULL(decoder.pGetCrankAngle);
     TEST_ASSERT_NOT_NULL(decoder.setEndTeeth);
     TEST_ASSERT_NOT_NULL(decoder.reset);
@@ -21,7 +21,7 @@ static void assert_decoder_builder(const decoder_builder_t& builder)
     decoder.primary.callback();
     decoder.secondary.callback();
     decoder.tertiary.callback();
-    decoder.getRPM();
+    decoder.getRevolutionTime();
     decoder.getCrankAngle();
     decoder.setEndTeeth();
     decoder.reset();
@@ -82,23 +82,23 @@ static void test_setTertiaryTrigger(void)
     assert_decoder_builder( builder );
 }
 
-static uint16_t incrementGetRPM(void)
+static uint32_t incrementGetRevolutionTime(void)
 {
     counter++;
     return 0;
 }
 
-static void test_setGetRPM(void)
+static void test_setGetRevolutionTime(void)
 {
-    auto builder = decoder_builder_t().setGetRPM( incrementGetRPM );
+    auto builder = decoder_builder_t().setGetRevolutionTime( incrementGetRevolutionTime );
 
     counter = 0;
-    builder.build().getRPM();
+    builder.build().getRevolutionTime();
     TEST_ASSERT_EQUAL_UINT8( 1, counter );
 
     assert_decoder_builder( builder );
 
-    builder.setGetRPM( nullptr);
+    builder.setGetRevolutionTime( nullptr);
     assert_decoder_builder( builder );
 }
 
@@ -118,7 +118,7 @@ static void test_setGetCrankAngle(void)
 
     assert_decoder_builder( builder );
 
-    builder.setGetRPM( nullptr);
+    builder.setGetRevolutionTime( nullptr);
     assert_decoder_builder( builder );
 }
 
@@ -214,7 +214,7 @@ void testDecoderBuilder(void)
     RUN_TEST_P( test_setPrimaryTrigger );
     RUN_TEST_P( test_setSecondaryTrigger );
     RUN_TEST_P( test_setTertiaryTrigger );
-    RUN_TEST_P( test_setGetRPM );
+    RUN_TEST_P( test_setGetRevolutionTime );
     RUN_TEST_P( test_setGetCrankAngle );
     RUN_TEST_P( test_setSetEndTeeth );
     RUN_TEST_P( test_setReset );

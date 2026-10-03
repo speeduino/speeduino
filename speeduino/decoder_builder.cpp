@@ -5,7 +5,7 @@
 #pragma GCC optimize ("Os")
 
 static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
-static uint16_t nullGetRPM(void){return 0;} //initialisation function for getRpm, returns safe value of 0
+static uint32_t nullGetRevolutionTime(void){return 0;} //initialisation function for getRevolutionTime, returns safe value of 0
 static int16_t nullGetCrankAngle(uint32_t currMicros){ UNUSED(currMicros); return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
 static decoder_status_t nullGetStatus(void) noexcept { return decoder_status_t{}; }
@@ -16,7 +16,7 @@ decoder_builder_t::decoder_builder_t(void)
     (void)setPrimaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
     (void)setSecondaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
     (void)setTertiaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
-    (void)setGetRPM(&nullGetRPM);
+    (void)setGetRevolutionTime(&nullGetRevolutionTime);
     (void)setGetCrankAngle(&nullGetCrankAngle);
     (void)setSetEndTeeth(&nullTriggerHandler);
     (void)setReset(&nullTriggerHandler);
@@ -29,7 +29,7 @@ decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
     (void)setPrimaryTrigger(decoder.primary);
     (void)setSecondaryTrigger(decoder.secondary);
     (void)setTertiaryTrigger(decoder.tertiary);
-    (void)setGetRPM(decoder.getRPM);
+    (void)setGetRevolutionTime(decoder.getRevolutionTime);
     (void)setGetCrankAngle(decoder.pGetCrankAngle);
     (void)setSetEndTeeth(decoder.setEndTeeth);
     (void)setReset(decoder.reset);
@@ -80,9 +80,9 @@ decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t::callback_t
     return setTertiaryTrigger( interrupt_t{ handler, edge } );
 }
 
-decoder_builder_t& decoder_builder_t::setGetRPM(decoder_t::getRPM_t getRPM)
+decoder_builder_t& decoder_builder_t::setGetRevolutionTime(decoder_t::getRevolutionTime_t getRevolutionTime)
 {
-    _decoder.getRPM = getRPM==nullptr ? &nullGetRPM : getRPM;
+    _decoder.getRevolutionTime = getRevolutionTime==nullptr ? &nullGetRevolutionTime : getRevolutionTime;
     return *this;
 }
 

@@ -114,9 +114,25 @@ struct statuses {
   /**
    * @brief Set the RPM field, keeping RPMDiv100 in sync.
    * 
+   * @note Firmware code should use setRevolutionTime() instead, so that RPM & revolutionTime remain consistent.
+   * 
    * @param rpm 
    */
   void setRpm(uint16_t rpm);
+
+  /**
+   * @brief Set the crank revolution time & the values derived from it.
+   *
+   * This is the single point at which the engine speed is updated. It keeps the following in sync:
+   * - revolutionTime
+   * - RPM & RPMdiv100
+   * - The crank angle<->time conversion factors (see setAngleConverterRevolutionTime())
+   *
+   * @param revTime The time in µS that one crank revolution takes at the current speed.
+   * Zero means the engine speed is unknown (E.g. the engine has stopped): RPM will be zero and the
+   * angle<->time conversion factors are left unchanged.
+   */
+  void setRevolutionTime(uint32_t revTime);
 
   bool isFixedCrankingIgnitionTimingActive(const config4 &page4) const;
 
@@ -345,7 +361,7 @@ struct statuses {
   airConStatus_t acStatus = {};
   
   uint8_t systemTemp;
-  uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+  uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that). Zero if the speed is unknown
 
   uint8_t maxIgnOutputs; /**< Number of ignition outputs being used by the current tune configuration */
   uint8_t injLayout : 3; ///< Normally the same value as config2::injLayout, but under some situations will change to one of the other INJ_* constants

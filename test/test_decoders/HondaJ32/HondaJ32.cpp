@@ -43,17 +43,32 @@ static void test_getCrankAngle(void)
   run_case(1, 15 + 18 + 10, 10);
 }
 
-static void test_getRPM(void)
+static void test_getRevolutionTime(void)
 {
+  extern decoder_status_t decoderStatus;
+  extern volatile unsigned long toothOneTime;
+  extern volatile unsigned long toothOneMinusOneTime;
+
   auto decoder = triggerSetup_HondaJ32();
-  currentStatus.revolutionTime = 1000;
-  TEST_ASSERT_NOT_EQUAL(0, decoder.getRPM());
+  decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.revolutionTime = 12345UL;
+  // No tooth #1 history yet: keep the published period
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
+
+  // The time between the last 2 tooth #1 (as recorded by the trigger handler)
+  toothOneMinusOneTime = 1000UL;
+  toothOneTime = toothOneMinusOneTime + 60000UL;
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+
+  // No sync: the tooth #1 times may be stale, so keep the published period
+  decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 
 void testHondaJ32(void)
 {
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRPM);
+    RUN_TEST_P(test_getRevolutionTime);
   }
 }
