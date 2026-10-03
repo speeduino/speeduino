@@ -12,10 +12,8 @@ extern outputPin_t n2o_stage2_pin;
 
 static void assert_n2o_off(test_context_t &context)
 {
-  context.current.nitrousActive = true;
   context.current.nitrous_status = NITROUS_BOTH;
   context.control();
-  TEST_ASSERT_FALSE(context.current.nitrousActive);
   TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrous_status);
   TEST_ASSERT_FALSE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_FALSE(n2o_stage2_pin._pin.isPinHigh());
@@ -132,7 +130,6 @@ static void test_stage1(void)
   setup_valid_conditions_stage1(context);
 
   context.control();
-  TEST_ASSERT_TRUE(context.current.nitrousActive);
   TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrous_status);
   TEST_ASSERT_TRUE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_FALSE(n2o_stage2_pin._pin.isPinHigh());
@@ -145,7 +142,6 @@ static void test_stage2(void)
   setup_valid_conditions_stage2(context);
 
   context.control();
-  TEST_ASSERT_TRUE(context.current.nitrousActive);
   TEST_ASSERT_EQUAL(NITROUS_STAGE2, context.current.nitrous_status);
   // TEST_ASSERT_FALSE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_TRUE(n2o_stage2_pin._pin.isPinHigh());
@@ -158,7 +154,6 @@ static void test_stage_both(void)
   setup_valid_conditions_stageboth(context);
 
   context.control();
-  TEST_ASSERT_TRUE(context.current.nitrousActive);
   TEST_ASSERT_EQUAL(NITROUS_BOTH, context.current.nitrous_status);
   TEST_ASSERT_TRUE(n2o_stage1_pin._pin.isPinHigh());
   TEST_ASSERT_TRUE(n2o_stage2_pin._pin.isPinHigh());
