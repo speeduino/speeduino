@@ -1,12 +1,9 @@
 #include "nitrousController.h"
-#include "src/pins/inputPin.h"
-#include "src/pins/outputPin.h"
+#include "nitrousController_state.h"
 #include "unit_testing.h"
 #include "units.h"
 
-TESTABLE_STATIC inputPin_t n2o_arming_pin;
-TESTABLE_STATIC outputPin_t n2o_stage1_pin;
-TESTABLE_STATIC outputPin_t n2o_stage2_pin;
+TESTABLE_STATIC nitrous::detail::state_t _n2oState;
 
 static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config10 &page10)
 {
@@ -23,14 +20,14 @@ static __attribute__((optimize("Os"))) void initialiseN2oArmPin(const config10 &
   {
     // The pin modes are only set if the if n2o is enabled to prevent them conflicting 
     // with other inputs. 
-    n2o_arming_pin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
+    _n2oState.armingPin.setPin(page10.n2o_arming_pin, getN2oArmPinPolarity(page10));
   }
 }
 
 static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
 {
-  n2o_stage1_pin.setPin(page10.n2o_stage1_pin, OUTPUT);
-  n2o_stage2_pin.setPin(page10.n2o_stage2_pin, OUTPUT);
+  _n2oState.stage1Pin.setPin(page10.n2o_stage1_pin, OUTPUT);
+  _n2oState.stage2Pin.setPin(page10.n2o_stage2_pin, OUTPUT);
   initialiseN2oArmPin(page10);
 }
 
@@ -51,7 +48,7 @@ void nitrousControl(statuses &current, const config10 &page10)
 
   if(page10.n2o_enable > 0)
   {
-    bool isArmed = n2o_arming_pin.isPinHigh();
+    bool isArmed = _n2oState.armingPin.isPinHigh();
     if (page10.n2o_pin_polarity == 1) { isArmed = !isArmed; } //If nitrous is active when pin is low, flip the reading (n2o_pin_polarity = 0 = active when High)
 
     //Perform the main checks to see if nitrous is ready
@@ -71,14 +68,14 @@ void nitrousControl(statuses &current, const config10 &page10)
       if( (current.RPM > realStage1MinRPM) && (current.RPM < realStage1MaxRPM) )
       {
         current.nitrous_status += NITROUS_STAGE1;
-        n2o_stage1_pin.setPinHigh();
+        _n2oState.stage1Pin.setPinHigh();
       }
       if(page10.n2o_enable == NITROUS_STAGE2) //This is really just a sanity check
       {
         if( (current.RPM > realStage2MinRPM) && (current.RPM < realStage2MaxRPM) )
         {
           current.nitrous_status += NITROUS_STAGE2;
-          n2o_stage2_pin.setPinHigh();
+          _n2oState.stage2Pin.setPinHigh();
         }
       }
     }
@@ -88,8 +85,8 @@ void nitrousControl(statuses &current, const config10 &page10)
   {
     if(page10.n2o_enable > 0)
     {
-      n2o_stage1_pin.setPinLow();
-      n2o_stage2_pin.setPinLow();
+      _n2oState.stage1Pin.setPinLow();
+      _n2oState.stage2Pin.setPinLow();
     }
   }
 }
