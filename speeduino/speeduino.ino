@@ -1,3 +1,4 @@
+#include "injector_bench.h"
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
@@ -166,6 +167,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
         serialReceive();
       }
       
+      if(injectorBenchOwnsOutputs()) return;
       //Check for any secondary comms requiring action. Note that AVR runs this at a fixed 30Hz. 
       if ((configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
       && (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD))
@@ -425,7 +427,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 
     } //Has sync and RPM
     matchResetControlToEngineState(currentStatus);
-    pulsedCommandController(currentStatus, configPage13);
     onPowerSourceSwitch(originalBatteryVoltage, currentStatus, configPage2, configPage6);
 } //loop()
 END_LTO_INLINE()

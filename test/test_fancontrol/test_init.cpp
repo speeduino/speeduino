@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
@@ -6,7 +7,7 @@
 #include "src/pwm/PwmOutputChannel.h"
 #include "src/pins/invertableOutputPin.h"
 
-using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<BenchOutputPin<outputPin_t>>>;
 extern fanPwmChannel_t _fanPwm;
 
 static void test_initialiseFan_resets_state(void)

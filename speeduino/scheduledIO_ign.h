@@ -60,3 +60,7 @@ void beginCoil3and7Charge(void);
 void endCoil3and7Charge(void);
 void beginCoil4and8Charge(void);
 void endCoil4and8Charge(void);
+
+// Driver-aware bench control without generating tachometer pulses.
+void beginCoilTestCharge(uint8_t channel);
+void endCoilTestCharge(uint8_t channel);

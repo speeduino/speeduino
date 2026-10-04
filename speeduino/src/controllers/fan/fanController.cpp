@@ -1,3 +1,4 @@
+#include "../../../bench_output_pin.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../units.h"
 #include "../../../unit_testing.h"
@@ -8,7 +9,7 @@
 #include "src/pwm/interruptHandlers.h"
 
 TESTABLE_CONSTEXPR table2D_u8_u8_4 fanPWMTable(&configPage6.fanPWMBins, &configPage9.PWMFanDuty);
-using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<BenchOutputPin<outputPin_t>>>;
 TESTABLE_STATIC fanPwmChannel_t _fanPwm;
 
 static void applyDutyToPwm(const statuses &current)
@@ -17,12 +18,12 @@ static void applyDutyToPwm(const statuses &current)
 
 #if defined(PWM_FAN_AVAILABLE)
   if (_fanPwm.isPartialDuty())
-  { 
+  {
     ENABLE_FAN_TIMER(); //Turn on the compare unit (ie turn on the interrupt) if boost duty >0
   }
   else
   {
-    DISABLE_FAN_TIMER(); 
+    DISABLE_FAN_TIMER();
   }
 #endif
 }
@@ -35,7 +36,7 @@ void __attribute__((optimize("Os"))) initialiseFan(statuses &current, config2 &p
   {
     // ...force on/off mode
     page2.fanEnable = FANMODE_ONOFF;
-  }  
+  }
 #endif
 
   _fanPwm = fanPwmChannel_t(pins.pinFan, FREQUENCY.toUser(page6.fanFreq));
@@ -71,7 +72,7 @@ static uint8_t calculateDutyOnOffMode(const statuses &current, const config2 &pa
   }
   else if ( (current.coolant <= offTemp) || (!fanPermit) )
   {
-    //Fan needs to be turned off. 
+    //Fan needs to be turned off.
     duty = 0;
   }
   else

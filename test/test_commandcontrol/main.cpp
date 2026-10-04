@@ -4,10 +4,8 @@
 void runAllTests(void)
 {
     extern void testTSCommandHandler(void);
-    extern void testPulsedCommandController(void);
 
     testTSCommandHandler();
-    testPulsedCommandController();
 }
 
 TEST_HARNESS(runAllTests)

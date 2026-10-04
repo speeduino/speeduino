@@ -30,7 +30,7 @@ void __attribute__((optimize("Os"))) initialiseIgnitionIO(const config4 &page4, 
 // LCOV_EXCL_START
 // Exclude from code coverage, since this is all board output control
 
-void beginCoilCharge(uint8_t channel) 
+void beginCoilTestCharge(uint8_t channel)
 { 
 #if defined(MC33810_SUPPORT)
     if(controlModeDirect) 
@@ -44,10 +44,9 @@ void beginCoilCharge(uint8_t channel)
 #else
     coilCharging_DIRECT(channel);
 #endif
-    tachoOutputOn(); 
 }
 
-void endCoilCharge(uint8_t channel)
+void endCoilTestCharge(uint8_t channel)
 {
 #if defined(MC33810_SUPPORT)
     if(controlModeDirect) 
@@ -61,8 +60,11 @@ void endCoilCharge(uint8_t channel)
 #else
     coilStopCharging_DIRECT(channel);
 #endif
-    tachoOutputOff();
+
 }
+
+void beginCoilCharge(uint8_t channel) {beginCoilTestCharge(channel);tachoOutputOn();}
+void endCoilCharge(uint8_t channel) {endCoilTestCharge(channel);tachoOutputOff();}
 
 void beginCoil1Charge(void) { beginCoilCharge(1U); }
 void endCoil1Charge(void) { endCoilCharge(1U); }

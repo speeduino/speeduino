@@ -1,3 +1,4 @@
+#include "../../../bench_output_pin.h"
 #include "../../pins/boardOutputPin.h"
 #include "../../../globals.h"
 #include "../../../unit_testing.h"
@@ -8,7 +9,7 @@
 #include "src/pins/boardOutputPin.h"
 #include "src/pwm/interruptHandlers.h"
 
-TESTABLE_STATIC PwmOutputChannel<boardOutputPin_t> boostOutput;
+TESTABLE_STATIC PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> boostOutput;
 TESTABLE_STATIC integerPID_ideal boostPID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
 TESTABLE_CONSTEXPR table2D_u8_s16_6 flexBoostTable(&configPage10.flexBoostBins, &configPage10.flexBoostAdj);
@@ -42,7 +43,7 @@ static __attribute__((optimize("Os"))) void setBoostPidTunings(const config2 &pa
 
 __attribute__((optimize("Os"))) void initialiseBoost(statuses &current, const config2 &page2, const config6 &page6, const config10 &page10, const pinNumbers_t &pins)
 {
-  boostOutput = PwmOutputChannel<boardOutputPin_t>(pins.pinBoost, FREQUENCY.toUser(page6.boostFreq));
+  boostOutput = PwmOutputChannel<BenchOutputPin<boardOutputPin_t>>(pins.pinBoost, FREQUENCY.toUser(page6.boostFreq));
   setBoostPidTunings(page2, page6, page10);
   current.boostDuty = 0;
 }

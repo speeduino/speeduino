@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "../test_utils.h"
 #include "globals.h"
 #include "src/controllers/vvt/vvtController.h"
@@ -6,8 +7,8 @@
 #include "src/pwm/PwmOutputChannel.h"
 #include "src/pins/boardOutputPin.h"
 
-extern PwmOutputChannel<boardOutputPin_t> vvtChannel1;
-extern PwmOutputChannel<boardOutputPin_t> vvtChannel2;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> vvtChannel1;
+extern PwmOutputChannel<BenchOutputPin<boardOutputPin_t>> vvtChannel2;
 
 static void test_wmi_enabled(void)
 {

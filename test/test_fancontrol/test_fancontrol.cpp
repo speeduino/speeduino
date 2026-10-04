@@ -1,3 +1,4 @@
+#include "bench_output_pin.h"
 #include "src/controllers/fan/fanController.h"
 #include "units.h"
 #include "../test_utils.h"
@@ -6,7 +7,7 @@
 #include "src/pwm/PwmOutputChannel.h"
 #include "src/pins/invertableOutputPin.h"
 
-using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<outputPin_t>>;
+using fanPwmChannel_t = PwmOutputChannel<invertableOutputPinAdaper_t<BenchOutputPin<outputPin_t>>>;
 extern fanPwmChannel_t _fanPwm;
  extern table2D_u8_u8_4 fanPWMTable;
 
@@ -55,12 +56,12 @@ static void test_fanControl_disabled_zero_duty(void)
   context.page2.fanEnable = FANMODE_OFF;
   context.initialise();
 
-  setup_status_fanon(context); 
+  setup_status_fanon(context);
   context.current.fanDuty = 99;
   context.fanControl();
   TEST_ASSERT_EQUAL(0, context.current.fanDuty);
 
-  setup_status_fanoff(context); 
+  setup_status_fanoff(context);
   context.current.fanDuty = 99;
   context.fanControl();
   TEST_ASSERT_EQUAL(0, context.current.fanDuty);
@@ -264,7 +265,7 @@ static void test_fanControl_nopwm_runs_during_crank_when_permitted(void)
 {
   auto context = setup_nopwm_tune();
   setup_fanControl_running_during_crank(context);
-  
+
   context.fanControl();
   assert_nopwm_fan_pin_state(context, true);
 }
@@ -274,7 +275,7 @@ static void test_fanControl_pwm_runs_during_crank_when_permitted(void)
 #if defined(PWM_FAN_AVAILABLE)
   auto context = setup_pwm_tune();
   setup_fanControl_running_during_crank(context);
-  
+
   context.fanControl();
   TEST_ASSERT_EQUAL(200, context.current.fanDuty);
 #endif

@@ -1,3 +1,4 @@
+#include "injector_bench.h"
 /*
 Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
@@ -69,7 +70,7 @@ static constexpr uint8_t SEND_OUTPUT_CHANNELS = 48U; //!< Code for the "send out
 /// @{
 static constexpr byte serialVersion[] PROGMEM = {SERIAL_RC_OK, '0', '0', '2'};
 static constexpr byte canId[] PROGMEM = {SERIAL_RC_OK, 0};
-static constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','5','0','4','-','d','e','v'} ; //Note no null terminator in array and status variable at the start
+static constexpr byte codeVersion[] PROGMEM = {SERIAL_RC_OK,'s','p','e','e','d','u','i','n','o',' ','2','0','2','5','0','4','-','o','u','t','p','u','t','t','e','s','t','1'};
 static constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '5', '.', '0', '4', '-', 'd', 'e', 'v'};
 //static constexpr byte codeVersion[] PROGMEM = { SERIAL_RC_OK, 's','p','e','e','d','u','i','n','o',' ','2','0','2','5','0','1'} ; //Note no null terminator in array and status variable at the start
 //static constexpr byte productString[] PROGMEM = { SERIAL_RC_OK, 'S', 'p', 'e', 'e', 'd', 'u', 'i', 'n', 'o', ' ', '2', '0', '2', '5', '.', '0', '1'};
@@ -618,10 +619,24 @@ static void burnSinglePage(uint8_t page)
 
 void processSerialCommand(void)
 {
+  // Bench sessions accept reads, Stop and bench protocol only. Avoid tune burns,
+  // logger interrupt changes, legacy tests and resets while an output is owned.
+  if (injectorBenchOwnsOutputs()) {
+    const uint8_t c=serialPayload[0];
+    const bool read = c=='A' || c=='C' || c=='Q' || c=='S' || c=='f' || c=='F'
+        || c=='p' || c=='d' || c=='k'
+        || (c=='r' && serialPayloadLength==7 && serialPayload[2]==48);
+    const bool stop = c=='E' && serialPayloadLength==3 && serialPayload[1]==1 && serialPayload[2]==0;
+    if (!read && !stop && c!='N') { sendReturnCodeMsg(SERIAL_RC_BUSY_ERR); return; }
+  }
   switch (serialPayload[0])
   {
+    case 'N':
+      sendSerialPayloadNonBlocking(injectorBenchCommand(serialPayload,serialPayloadLength));
+      break;
 
     case 'A': // send x bytes of realtime values in legacy support format
+      injectorBenchKeepAlive();
       generateLiveValues(0, LOG_ENTRY_SIZE); 
       break;
 
@@ -790,6 +805,7 @@ void processSerialCommand(void)
 
       if(cmd == SEND_OUTPUT_CHANNELS) //Send output channels command 0x30 is 48dec
       {
+        injectorBenchKeepAlive();
         if (length < _countof(serialPayload))
         {
           generateLiveValues(offset, length);
