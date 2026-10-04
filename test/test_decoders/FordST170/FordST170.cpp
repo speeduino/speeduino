@@ -220,7 +220,8 @@ static void test_getRPM(void)
 
   toothCurrentCount = 1;
   currentStatus.setRpm(currentStatus.crankRPM/2);
-  TEST_ASSERT_EQUAL(currentStatus.RPM, decoder.getRPM());
+  const uint16_t rpm = currentStatus.RPM;
+  TEST_ASSERT_EQUAL(rpm, decoder.getRPM());
 }
 
 void testFordST170()

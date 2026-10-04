@@ -185,6 +185,10 @@ static void test_getCrankAngle(void)
 
 static void test_getRPM(void)
 {
+    // 36-1 crank wheel
+    configPage4.triggerTeeth = 36;
+    configPage4.triggerMissingTeeth = 1;
+    configPage4.TrigSpeed = CRANK_SPEED;
     auto decoder = triggerSetup_missingTooth();
 
     // Ensure staging allows cranking calculation
@@ -202,11 +206,13 @@ static void test_getRPM(void)
     currentStatus.revolutionTime = 99999UL; // ensure SetRevolutionTime will update
     TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
 
-    // --- If at tooth #1, cranking path should return currentStatus.RPM
-    // currentStatus.setRpm(555);
+    // --- If at tooth #1, the cranking path can't use the tooth gap: keep the last revolution time
+    currentStatus.setRpm(currentStatus.crankRPM/2U); // Stay on the cranking path
+    toothLastToothTime = toothLastMinusOneToothTime + 3000UL; // Would change the revolution time if used
     toothCurrentCount = 1;
     decoderStatus.syncStatus = SyncStatus::Full;
-    TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+    (void)decoder.getRPM();
+    TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
 
     // --- Running path: stdGetRPM should be used when not cranking
     currentStatus.setRpm(currentStatus.crankRPM*2U);

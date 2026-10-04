@@ -72,15 +72,21 @@ static void test_getRPM(void)
   toothLastToothTime = toothLastMinusOneToothTime + 1667UL; // gap -> revTime ~=1667*36 ~=60012 -> ~1000 RPM
   TEST_ASSERT_EQUAL_UINT16(1000U, decoder.getRPM());
 
-  // --- If at a skip tooth, return currentStatus.RPM
+  // --- If at a skip tooth, keep the last revolution time
+  currentStatus.setRpm(currentStatus.crankRPM/2U); // Stay on the cranking path
+  toothLastToothTime = toothLastMinusOneToothTime + 3000UL; // Would change the revolution time if used
   toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH1];
-  TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+  (void)decoder.getRPM();
+  TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
   toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH2];
-  TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+  (void)decoder.getRPM();
+  TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
   toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH3];
-  TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+  (void)decoder.getRPM();
+  TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
   toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH4];
-  TEST_ASSERT_EQUAL_UINT16(currentStatus.RPM, decoder.getRPM());
+  (void)decoder.getRPM();
+  TEST_ASSERT_EQUAL_UINT32(60012UL, currentStatus.revolutionTime);
 
   // --- Running path: stdGetRPM(CRANK_SPEED)
   currentStatus.setRpm(currentStatus.crankRPM*2U);

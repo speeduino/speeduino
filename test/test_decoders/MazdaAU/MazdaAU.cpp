@@ -10,6 +10,7 @@ extern volatile int toothCurrentCount;
 extern volatile unsigned long toothLastMinusOneToothTime;
 extern volatile unsigned long toothOneTime;
 extern volatile unsigned long toothOneMinusOneTime;
+extern volatile uint16_t triggerToothAngle;
 
 static void test_getCrankAngle(void)
 {
@@ -61,13 +62,19 @@ static void test_getRPM(void)
   // --- Cranking branch: currentStatus.RPM < currentStatus.crankRPM
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 200;
-  // ensure SetRevolutionTime will update
   currentStatus.revolutionTime = 12345UL;
-  // gap such that revTime = 36 * gap = 6,480,000 -> RPM = (108 * MICROS_PER_MIN)/6,480,000 = 1000
+  // 108 degree tooth gap of 180000uS -> revTime = 180000 * 360 / 108 = 600000 -> 100 RPM
+  triggerToothAngle = 108;
   toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = toothLastMinusOneToothTime + 180000UL; // gap = 180000
-  // triggerToothAngle set by decoder setup to 108; assert expected RPM
-  TEST_ASSERT_EQUAL_UINT16(337, decoder.getRPM());
+  toothLastToothTime = toothLastMinusOneToothTime + 180000UL;
+  TEST_ASSERT_EQUAL_UINT16(100U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(600000UL, currentStatus.revolutionTime);
+
+  // 72 degree tooth gap of 100000uS -> revTime = 100000 * 360 / 72 = 500000 -> 120 RPM
+  triggerToothAngle = 72;
+  toothLastToothTime = toothLastMinusOneToothTime + 100000UL;
+  TEST_ASSERT_EQUAL_UINT16(120U, decoder.getRPM());
+  TEST_ASSERT_EQUAL_UINT32(500000UL, currentStatus.revolutionTime);
 
   // --- Running path: uses stdGetRPM(CRANK_SPEED)
   currentStatus.setRpm(2000);
