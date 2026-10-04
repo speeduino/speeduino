@@ -76,22 +76,31 @@ jobs:
         gcov_ignore: ${{ env.GCOV_IGNORES }}
         # verbose: true 
 
+    - name: Install gcovr
+      if: ${{ env.ACT }}
+      run: |
+        source PIO/bin/activate
+        pip install gcovr
+
     - name: Generate coverage report
       if: ${{ env.ACT }}
-      uses: threeal/gcovr-action@v1.2.0
-      with:
-        coveralls-send: false
-        print-summary: true
-        excludes: ${{ env.GCOV_IGNORES }}
-        html-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.html
-        html-details: true
-        coveralls-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.coveralls
-        cobertura-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.cobertura
-        xml-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.xml
-        jacoco-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.jacoco
-        json-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.json
-        lcov-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.lcov
-        sonarqube-out: .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.sonarqube
+      run: |
+        mkdir -p .pio/build/${{ env.PIO_ENV }}
+        EXCLUDES=$(echo "${{ env.GCOV_IGNORES }}" | sed '/^[[:space:]]*$/d' | sed 's/^/--exclude /' | tr '\n' ' ')
+        OUTPUT_ROOT=.pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}
+        source PIO/bin/activate
+        gcovr \
+          $EXCLUDES \
+          --cobertura $OUTPUT_ROOT.cobertura \
+          --html-details $OUTPUT_ROOT.html \
+          --json $OUTPUT_ROOT.json \
+          --json-pretty \
+          --lcov $OUTPUT_ROOT.lcov \
+          --sonarqube $OUTPUT_ROOT.sonarqube \
+          --xml $OUTPUT_ROOT.xml \
+          --coveralls $OUTPUT_ROOT.coveralls \
+          --exclude-unreachable-branches \
+          --exclude-throw-branches
 
     - name: Upload reports
       if: ${{ env.ACT }}
@@ -99,6 +108,7 @@ jobs:
       with:
         path: |
           .pio/build/${{ env.PIO_ENV }}/${{ env.FILE_ROOT }}.*
+
     - name: Check native test results
       if: ${{ always() && (steps.tests_8x8.outcome == 'failure' || steps.tests_other.outcome == 'failure') }}
       run: |

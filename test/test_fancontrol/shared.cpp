@@ -1,39 +1,45 @@
 #include "../test_utils.h"
-#include "globals.h"
-#include "src/controllers/vvt/vvtController.h"
 #include "units.h"
 #include "shared.h"
 
 extern table2D_u8_u8_4 fanPWMTable;
 
-static void setup_default_tune(void)
-{
-  pinNumbers.pinFan = TEST_FAN_PIN;
+constexpr uint8_t TEST_FAN_PIN  = 19U;
 
-  configPage6.fanInv = 0U;
-  configPage6.fanSP = temperatureAddOffset(80);   // ON above 80C
-  configPage6.fanHyster = 5U;                      // OFF below 75C
-  configPage2.fanEnable = 0U;
-  configPage2.fanWhenOff = 0U;
-  configPage2.fanWhenCranking = 0U;
-  configPage15.airConTurnsFanOn = 0U;
+static test_context_t setup_default_tune(void)
+{
+  test_context_t context;
+
+  context.pins.pinFan = TEST_FAN_PIN;
+
+  context.page6.fanInv = 0U;
+  context.page6.fanSP = temperatureAddOffset(80);   // ON above 80C
+  context.page6.fanHyster = 5U;                      // OFF below 75C
+  context.page2.fanEnable = FANMODE_OFF;
+  context.page2.fanWhenOff = 0U;
+  context.page2.fanWhenCranking = 0U;
+  context.page15.airConTurnsFanOn = 0U;
+
+  return context;
 }
 
-void setup_nopwm_tune(void)
+test_context_t setup_nopwm_tune(void)
 {
-    setup_default_tune();
-    configPage2.fanEnable = 1U;
+    auto context = setup_default_tune();
+    context.page2.fanEnable = FANMODE_ONOFF;
+    return context;
 }
 
-void setup_pwm_tune(void)
+test_context_t setup_pwm_tune(void)
 {
-    setup_default_tune();
+    auto context = setup_default_tune();
     const uint8_t bins[] = { 0U,
-         (uint8_t)((configPage6.fanSP - configPage6.fanHyster) - 1U), 
-         configPage6.fanSP, 
-         (uint8_t)((configPage6.fanSP + configPage6.fanHyster) + 1U)};
-    const uint8_t values[] = {0, 0, 200, 200};
+         (uint8_t)((context.page6.fanSP - context.page6.fanHyster) - 1U), 
+         context.page6.fanSP, 
+         (uint8_t)((context.page6.fanSP + context.page6.fanHyster) + 1U)};
+    const uint8_t values[] = {0, 75, 150, 200};
     populate_2dtable(&fanPWMTable, values, bins);
-    configPage2.fanEnable = 2U;
-    configPage6.fanFreq = 55;
+    context.page2.fanEnable = FANMODE_PWM;
+    context.page6.fanFreq = 55;
+    return context;
 }

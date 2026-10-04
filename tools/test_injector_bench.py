@@ -25,6 +25,7 @@ def pwm_fixture():
 #define ATOMIC() if (true) // Single-threaded host test; no MCU interrupt masking.
 #define PWM_FAN_AVAILABLE
 using boardOutputPin_t = MockOutputPin;
+using outputPin_t = MockOutputPin;
 uint16_t pwmFreqToTicks(uint16_t hz) {return hz;}
 uint16_t halfPercentage(uint8_t percent, uint16_t total) {return uint32_t(percent)*total/200;}
 uint16_t boostCompare=0, boostCounter=0, fanCompare=0, fanCounter=0;
@@ -35,14 +36,13 @@ uint16_t boostCompare=0, boostCounter=0, fanCompare=0, fanCounter=0;
 #undef SET_COMPARE
 #define SET_COMPARE(compare, value) ((compare) = (value))
 """
-    for path in ['src/pins/trackedOutputPin.h', 'src/pwm/PwmOutputChannel.h', 'src/pwm/interruptHandlers.h']:
+    for path in ['src/pins/invertableOutputPin.h', 'src/pins/trackedOutputPin.h', 'src/pwm/PwmOutputChannel.h', 'src/pwm/interruptHandlers.h']:
         preamble += without_includes((root/'speeduino'/path).read_text())+'\n'
     # Keep production pin types: regressing to an unguarded pin must fail.
     preamble += re.search(r'^TESTABLE_STATIC (.+ boostOutput;)$', boost, re.M).group(1)+'\n'
-    preamble += re.search(r'^TESTABLE_STATIC (.+ fan_pin;)$', fan, re.M).group(1)+'\n'
-    preamble += 'bool fan_pwm_state=false; unsigned int fan_pwm_cur_value=0; long fan_pwm_value=0; uint16_t fan_pwm_max_count=0;\n'
-    for name in ['fanOn', 'fanOff', 'fanInterrupt']:
-        preamble += controller_function(fan, name)
+    preamble += re.search(r'^using fanPwmChannel_t = .+;$', fan, re.M).group(0)+'\n'
+    preamble += re.search(r'^TESTABLE_STATIC (.+ _fanPwm;)$', fan, re.M).group(1)+'\n'
+    preamble += controller_function(fan, 'fanInterrupt')
     preamble += controller_function(boost, 'boostInterrupt')
     return preamble+(root/'tools/tests/bench_host/pwm_cases.cpp').read_text()
 

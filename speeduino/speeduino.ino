@@ -190,15 +190,11 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
     if ( currentStatus.decoder.isEngineRunning(micros()) )
     {
       currentStatus.setRpm(currentStatus.decoder.getRPM());
-      if (currentStatus.RPM > 0)
-      {
-        fuelPumpOn();
-      }
     }
     else
     {
       //We reach here if the time between teeth is too great. This VERY likely means the engine has stopped
-      currentStatus.setRpm(0);
+      currentStatus.setRevolutionTime(0);
       fuelSchedule1.pw = 0;
       currentStatus.VE = 0;
       currentStatus.VE2 = 0;
@@ -209,7 +205,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       currentStatus.rpmDOT = 0;
       initialiseCorrections();
       ignitionCount = 0;
-      stopPumpPriming(currentStatus, configPage2); //Turn off the fuel pump, but only if the priming is complete
       if (configPage6.iacPWMrun == false) { disableIdle(); } //Turn off the idle PWM
       currentStatus.wueIsActive = false; //Same as above except for WUE
       currentStatus.rotationStatus = EngineRotationStatus::Stopped;
@@ -224,10 +219,14 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
       if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); } //Reset the ignition bypass ready for next crank attempt
     }
+
+    fuelPumpControl(currentStatus, configPage2);
+
     //***Perform sensor reads***
     //-----------------------------------------------------------------------------------------------------
     readPolledSensors(currentStatus.LOOP_TIMER);
     boostControl(currentStatus, configPage2, configPage4, configPage6, configPage9, configPage10, configPage15);
+    fanControl(currentStatus, configPage2, configPage6, configPage15);
 
     if(BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_50HZ)) //50 hertz
     {
@@ -334,7 +333,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
           if(syncSDLog()) { msSinceLastSDSync = 0; } //Run SD sync and reset  
         }
       #endif
-
     } //1Hz timer
 
     // Run idlecontrol every loop for stepper idle...
@@ -379,9 +377,6 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
             currentStatus.rotationStatus = EngineRotationStatus::Cranking;
             currentStatus.runSecs = 0; //We're cranking (hopefully), so reset the engine run time to prompt ASE.
             if(configPage4.ignBypassEnabled > 0) { digitalWrite(pinNumbers.pinIgnBypass, LOW); }
-
-            //Check whether the user has selected to disable to the fan during cranking
-            if(configPage2.fanWhenCranking == 0) { fanOff(); }
           }
         }
 

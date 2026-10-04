@@ -162,14 +162,12 @@ void initialiseAll(void)
 
     //Must come after setPinMapping() as secondary serial can be changed on a per board basis
     if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
-  
-    //Set the tacho output default state
-    digitalWrite(pinNumbers.pinTachOut, HIGH);
+
     //Perform all initialisations
     initialiseIgnitionSchedules(currentStatus, configPage2, configPage4, configPage10, configPage13, pinNumbers);
     initialiseFuelSchedules(currentStatus, configPage2, configPage4, configPage6, configPage10, pinNumbers);
     initialiseIdle(true);
-    initialiseFan(pinNumbers.pinFan);
+    initialiseFan(currentStatus, configPage2, configPage6, pinNumbers);
     initialiseBoost(currentStatus, configPage2, configPage6, configPage10, pinNumbers);
     initialiseAirCon(currentStatus, configPage15, pinNumbers);
     initialiseNitrous();
@@ -209,7 +207,7 @@ void initialiseAll(void)
     //Begin the main crank trigger interrupt pin setup
     //The interrupt numbering is a bit odd - See here for reference: arduino.cc/en/Reference/AttachInterrupt
     //These assignments are based on the Arduino Mega AND VARY BETWEEN BOARDS. Please confirm the board you are using and update accordingly.
-    currentStatus.setRpm(0U);
+    currentStatus.setRevolutionTime(0U);
     currentStatus.runSecs = 0;
     currentStatus.secl = 0;
     //currentStatus.seclx10 = 0;
@@ -235,7 +233,7 @@ void initialiseAll(void)
     //Initial values for loop times
     mainLoopCount = 0;
       
-    initialiseFuelPump(currentStatus, configPage2, pinNumbers.pinFuelPump);
+    initialiseFuelPump(currentStatus, configPage2, pinNumbers);
 
     interrupts();
     initialiseCLT();
