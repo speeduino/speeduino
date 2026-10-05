@@ -81,7 +81,7 @@ void __attribute__((optimize("Os"))) initialiseNitrous(statuses &current, config
 
   initialiseN2oPins(page10);
 
-  current.nitrous_status = NITROUS_OFF;
+  current.nitrousStatus = NITROUS_OFF;
 }
 
 static inline bool isArmed(const statuses &current, const config10 &page10)
@@ -156,8 +156,8 @@ static inline void setPinState(uint8_t status)
 
 TESTABLE_STATIC void nitrousControlCore(statuses &current, const config10 &page10)
 {
-  current.nitrous_status = calcStatus(current, page10);
-  setPinState(current.nitrous_status);
+  current.nitrousStatus = calcStatus(current, page10);
+  setPinState(current.nitrousStatus);
 }
 
 void nitrousControl(statuses &current, const config10 &page10)
