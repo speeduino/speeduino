@@ -5,6 +5,7 @@
 #include "decoders.h"
 #include "units.h"
 #include "scheduler_fuel_controller.h"
+#include "src/controllers/nitrous/nitrousController.h"
 
 TESTABLE_INLINE_STATIC uint16_t calculateRequiredFuel(const config2 &page2, const statuses &current) {
   uint16_t reqFuel = page2.reqFuel * 100U; //Convert to uS and an int. This is the only variable to be used in calculations
@@ -42,11 +43,11 @@ TESTABLE_INLINE_STATIC uint16_t pwApplyNitrous(uint16_t pw, const config10 &page
 {
   if (current.nitrousStatus!=NITROUS_OFF && pw!=0U)
   {
-    if( (current.nitrousStatus == NITROUS_STAGE1) || (current.nitrousStatus == NITROUS_BOTH) )
+    if( isNitrousStage1(current.nitrousStatus) )
     {
       pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage1_minRPM, page10.n2o_stage1_maxRPM, page10.n2o_stage1_adderMin, page10.n2o_stage1_adderMax, current);
     }
-    if( (current.nitrousStatus == NITROUS_STAGE2) || (current.nitrousStatus == NITROUS_BOTH) )
+    if( isNitrousStage2(current.nitrousStatus) )
     {
       pw = pw + calcNitrousStagePulseWidth(page10.n2o_stage2_minRPM, page10.n2o_stage2_maxRPM, page10.n2o_stage2_adderMin, page10.n2o_stage2_adderMax, current);
     }

@@ -16,22 +16,13 @@ static __attribute__((optimize("Os"))) uint8_t getN2oArmPinPolarity(const config
   return INPUT;
 }
 
-static inline bool isStage1(uint8_t status)
-{
-  return (status==NITROUS_STAGE1) || (status==NITROUS_BOTH);
-}
-static inline bool isStage2(uint8_t status)
-{
-  return (status==NITROUS_STAGE2) || (status==NITROUS_BOTH);
-}
-
 static inline bool isStage1Enabled(const config10 &page10)
 {
-  return isStage1(page10.n2o_enable);
+  return isNitrousStage1(page10.n2o_enable);
 }
 static inline bool isStage2Enabled(const config10 &page10)
 {
-  return isStage2(page10.n2o_enable);
+  return isNitrousStage2(page10.n2o_enable);
 }
 
 static __attribute__((optimize("Os"))) void initialiseN2oPins(const config10 &page10)
@@ -135,7 +126,7 @@ static inline uint8_t calcStatus(const statuses &current, const config10 &page10
 
 static inline void setPinState(uint8_t status)
 {
-  if (isStage1(status))
+  if (isNitrousStage1(status))
   {
     _n2oState.stage1Pin.setPinHigh();
   }
@@ -144,7 +135,7 @@ static inline void setPinState(uint8_t status)
     _n2oState.stage1Pin.setPinLow();
   }
 
-  if (isStage2(status))
+  if (isNitrousStage2(status))
   {
     _n2oState.stage2Pin.setPinHigh();
   }
