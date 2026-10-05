@@ -154,8 +154,16 @@ static inline void setPinState(uint8_t status)
   }
 }
 
-void nitrousControl(statuses &current, const config10 &page10)
+TESTABLE_STATIC void nitrousControlCore(statuses &current, const config10 &page10)
 {
   current.nitrous_status = calcStatus(current, page10);
   setPinState(current.nitrous_status);
+}
+
+void nitrousControl(statuses &current, const config10 &page10)
+{
+  if (BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ))
+  {
+    nitrousControlCore(current, page10);  
+  }
 }

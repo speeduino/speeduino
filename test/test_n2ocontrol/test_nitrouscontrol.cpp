@@ -152,6 +152,20 @@ static void test_stage2(void)
   TEST_ASSERT_FALSE(_n2oState.stage2Pin._pin.isPinHigh());
 }
 
+static void test_controlFrequency(void)
+{
+  auto context = setup_rpm_overlap_tune(NITROUS_STAGE1);
+  context.init();
+
+  setup_valid_conditions_stage1(context);
+  nitrousControl(context.current, context.page10);
+  TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrous_status);
+ 
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_4HZ);
+  nitrousControl(context.current, context.page10);
+  TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrous_status);
+}
+
 void testN2oControl(void)
 {
   SET_UNITY_FILENAME()
@@ -164,5 +178,6 @@ void testN2oControl(void)
     RUN_TEST_P(test_map_threshhold);
     RUN_TEST_P(test_stage1);
     RUN_TEST_P(test_stage2);
+    RUN_TEST_P(test_controlFrequency);
   }
 }
