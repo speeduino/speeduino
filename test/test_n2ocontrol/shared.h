@@ -14,7 +14,8 @@ struct test_context_t
 
     void control(void)
     {
-        ::nitrousControl(current, page10);
+        extern void nitrousControlCore(statuses &current, const config10 &page10);
+        nitrousControlCore(current, page10);
     }
 };
 
