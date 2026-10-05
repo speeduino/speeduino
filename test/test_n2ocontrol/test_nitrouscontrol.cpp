@@ -7,9 +7,9 @@ extern nitrous::detail::state_t _n2oState;
 
 static void assert_n2o_off(test_context_t &context)
 {
-  context.current.nitrous_status = NITROUS_BOTH;
+  context.current.nitrousStatus = NITROUS_BOTH;
   context.control();
-  TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrous_status);
+  TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
   TEST_ASSERT_FALSE(_n2oState.stage1Pin._pin.isPinHigh());
   TEST_ASSERT_FALSE(_n2oState.stage2Pin._pin.isPinHigh());
 }
@@ -121,7 +121,7 @@ static void test_stage1(void)
 
   setup_valid_conditions_stage1(context);
   context.control();
-  TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrous_status);
+  TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrousStatus);
   TEST_ASSERT_TRUE(_n2oState.stage1Pin._pin.isPinHigh());
 
   context.current.setRpm(RPM_COARSE.toUser(context.page10.n2o_stage1_minRPM-1));
@@ -140,7 +140,7 @@ static void test_stage2(void)
 
   setup_valid_conditions_stage2(context);
   context.control();
-  TEST_ASSERT_EQUAL(NITROUS_STAGE2, context.current.nitrous_status);
+  TEST_ASSERT_EQUAL(NITROUS_STAGE2, context.current.nitrousStatus);
   TEST_ASSERT_TRUE(_n2oState.stage2Pin._pin.isPinHigh());
 
   context.current.setRpm(RPM_COARSE.toUser(context.page10.n2o_stage2_minRPM-1));
@@ -159,11 +159,11 @@ static void test_controlFrequency(void)
 
   setup_valid_conditions_stage1(context);
   nitrousControl(context.current, context.page10);
-  TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrous_status);
+  TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
  
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_4HZ);
   nitrousControl(context.current, context.page10);
-  TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrous_status);
+  TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.current.nitrousStatus);
 }
 
 void testN2oControl(void)
