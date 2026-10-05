@@ -15,7 +15,7 @@ struct ComputePulseWidthsContext {
 
 static inline ComputePulseWidthsContext getBasicPwContext(void) {
   ComputePulseWidthsContext context = {};
-  context.current.nitrous_status = NITROUS_OFF;
+  context.current.nitrousStatus = NITROUS_OFF;
   context.page10.stagingEnabled = false;
   context.page2.multiplyMAP = MULTIPLY_MAP_MODE_OFF;
   context.page2.includeAFR = false;

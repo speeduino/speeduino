@@ -1054,11 +1054,11 @@ TESTABLE_INLINE_STATIC int8_t correctionNitrous(int8_t advance)
   if(configPage10.n2o_enable != NITROUS_OFF)
   {
     //Check which stage is running (if any)
-    if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+    if( (currentStatus.nitrousStatus == NITROUS_STAGE1) || (currentStatus.nitrousStatus == NITROUS_BOTH) )
     {
       advance = advance - (int8_t)configPage10.n2o_stage1_retard;
     }
-    if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+    if( (currentStatus.nitrousStatus == NITROUS_STAGE2) || (currentStatus.nitrousStatus == NITROUS_BOTH) )
     {
       advance = advance - (int8_t)configPage10.n2o_stage2_retard;
     }
