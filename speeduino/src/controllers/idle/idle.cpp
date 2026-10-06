@@ -21,11 +21,11 @@ TESTABLE_STATIC state_t _idleState;
 #define STEPPER_LESS_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD)
 #define STEPPER_MORE_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD)
 
-constexpr table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
-constexpr table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
+TESTABLE_CONSTEXPR table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
+TESTABLE_CONSTEXPR table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
 //Open loop tables specifically for cranking
-constexpr table2D_u8_u8_4 iacCrankStepsTable(&configPage6.iacCrankBins, &configPage6.iacCrankSteps);
-constexpr table2D_u8_u8_4 iacCrankDutyTable(&configPage6.iacCrankBins, &configPage6.iacCrankDuty);
+TESTABLE_CONSTEXPR table2D_u8_u8_4 iacCrankStepsTable(&configPage6.iacCrankBins, &configPage6.iacCrankSteps);
+TESTABLE_CONSTEXPR table2D_u8_u8_4 iacCrankDutyTable(&configPage6.iacCrankBins, &configPage6.iacCrankDuty);
 
 /*
 These functions cover the PWM and stepper idle control
@@ -81,7 +81,9 @@ void initialiseIdle(bool forcehoming)
   _idleState.idle_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.idleFreq));
   
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
+// LCOV_EXCL_BR_START
   switch(configPage6.iacAlgorithm)
+// LCOV_EXCL_BR_STOP
   {
     case IAC_ALGORITHM_NONE:       
       //Case 0 is no idle control ('None')
@@ -174,10 +176,11 @@ void initialiseIdle(bool forcehoming)
                        0);
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
-
+// LCOV_EXCL_START
     default:
       //Well this just shouldn't happen
       break;
+// LCOV_EXCL_STOP
   }
 
   initialiseIdleUpOutput();
@@ -352,7 +355,9 @@ void idleControl(void)
   else { currentStatus.idleUpActive = false; }
 
   bool PID_computed = false;
+// LCOV_EXCL_BR_START
   switch(configPage6.iacAlgorithm)
+// LCOV_EXCL_BR_STOP  
   {
     case IAC_ALGORITHM_NONE:       //Case 0 is no idle control ('None')
       break;
@@ -662,9 +667,11 @@ void idleControl(void)
       }
       break;
 
+// LCOV_EXCL_START
     default:
       //There really should be a valid idle type
       break;
+// LCOV_EXCL_STOP
   }
   _idleState.lastDFCOValue = currentStatus.isDFCOActive;
 
