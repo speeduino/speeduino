@@ -4,7 +4,7 @@
 #include "globals.h"
 #include "src/controllers/vvt/vvtController.h"
 #include "comms_secondary.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "timers.h"
 #ifdef USE_SPI_EEPROM
   #include "src/SPIAsEEPROM/SPIAsEEPROM.h"

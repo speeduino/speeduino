@@ -2,7 +2,7 @@
 
 #if defined(STM32_CORE_VERSION_MAJOR)
 #include "src/controllers/vvt/vvtController.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "HardwareTimer.h"
 #include "timers.h"
 #include "comms_secondary.h"

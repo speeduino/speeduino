@@ -3,7 +3,7 @@
 #if defined(CORE_TEENSY) && defined(__IMXRT1062__)
 #include <EEPROM.h>
 #include "src/controllers/vvt/vvtController.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>

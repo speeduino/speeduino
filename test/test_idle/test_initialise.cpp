@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "prepare_idle.h"
 #include "units.h"
 

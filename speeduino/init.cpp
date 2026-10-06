@@ -14,7 +14,7 @@
 #include "sensors.h"
 #include "decoders.h"
 #include "corrections.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "table2d.h"
 #include "acc_mc33810.h"
 #include "board_definition.h"

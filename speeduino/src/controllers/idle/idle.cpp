@@ -3,11 +3,10 @@ Speeduino - Simple engine management for the Arduino Mega 2560 platform
 Copyright (C) Josh Stewart
 A full copy of the license may be found in the projects root directory
 */
-#include <Arduino.h>
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "elapsed_time.h"
 #include "maths.h"
-#include "timers.h"
+// #include "timers.h"
 #include "preprocessor.h"
 #include "src/PID/integerPID.h"
 #include "units.h"

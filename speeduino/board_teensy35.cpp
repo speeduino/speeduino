@@ -7,7 +7,7 @@
   #include <EEPROM.h>
 #endif
 #include "src/controllers/vvt/vvtController.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "timers.h"
 #include "comms_secondary.h"
 #include <InternalTemperature.h>

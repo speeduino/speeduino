@@ -1,5 +1,5 @@
 #include "../test_utils.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "prepare_idle.h"
 // idle1/idle2_pin are fastOutputPin_t — port-register writes are not visible
 // to ArduinoFake's digitalRead(). The disableIdle tests below verify the
