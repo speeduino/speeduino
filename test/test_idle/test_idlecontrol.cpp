@@ -263,6 +263,38 @@ static void test_stepOpenLoopStepperSteppingAndCooling(void)
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::SOFF, _idleState.idleStepper.stepperStatus);
 }
 
+static void test_stepOpenLoopMovesTowardLowerTarget(void)
+{
+  context_t context;
+  prepare_stepOpenLoop(context);
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.current.RPM = 1000U;
+  _idleState.idleStepper.curIdleStep = 5;
+  _idleState.idleStepper.targetIdleStep = 0;
+
+  idleControl();
+
+  TEST_ASSERT_EQUAL_INT(4, _idleState.idleStepper.curIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+}
+
+static void test_stepOpenLoopIdleLoadAtByteBoundary(void)
+{
+  context_t context;
+  prepare_stepOpenLoop(context);
+  context.page9.iacMaxSteps = 85U;
+  context.current.rotationStatus = EngineRotationStatus::Running;
+  context.current.RPM = 1000U;
+  _idleState.idleStepper.curIdleStep = 10;
+  _idleState.idleStepper.targetIdleStep = 10;
+
+  idleControl();
+
+  TEST_ASSERT_EQUAL_UINT8(10U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_INT(10, _idleState.idleStepper.curIdleStep);
+  TEST_ASSERT_FALSE(context.current.idleOn);
+}
+
 // static void test_stepOpenLoopStepperSteppingAndCooling(void)
 // {
 //   context_t context;
@@ -871,6 +903,28 @@ static void test_pwmOpenLoopRunningTaper(void)
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
+static void test_stepperModeDisablesIdle(void)
+{
+  context_t context;
+  // Use a stepper mode to ensure isStepperIac(configPage6) evaluates to true
+  prepare_stepOpenLoop(context); 
+
+  // Simulate a state where idle is active (to ensure disableIdle works)
+  _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
+  _idleState.idleStepper.targetIdleStep = 10;
+  context.current.idleOn = true;
+  context.current.idleLoad = 50;
+
+  // Run idleControl once to fully initialize and set up the state variables correctly for the test
+  idleControl(); 
+  
+  // Now test the disableIdle function
+  disableIdle();
+
+  // Assert that idle control has been turned off and load set to zero
+  TEST_ASSERT_FALSE(context.current.idleOn);
+  TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
+}
 void testIdleControl(void)
 {
   unity_filename_guard_t guard(__FILE__);
@@ -884,6 +938,8 @@ void testIdleControl(void)
   RUN_TEST_P(test_stepOpenLoopStoppedUsesCrankTable);
   RUN_TEST_P(test_stepOpenLoopCrankingUsesCrankTable);
   RUN_TEST_P(test_stepOpenLoopStepperSteppingAndCooling);
+  RUN_TEST_P(test_stepOpenLoopMovesTowardLowerTarget);
+  RUN_TEST_P(test_stepOpenLoopIdleLoadAtByteBoundary);
   RUN_TEST_P(test_stepOpenLoopRunningUsesRunningTable);
   RUN_TEST_P(test_stepOpenLoopRunningTaper);
   RUN_TEST_P(test_stepOpenLoopRunningIdleUp);
@@ -911,4 +967,5 @@ void testIdleControl(void)
   RUN_TEST_P(test_pwmOpenLoopStoppedUsesCrankDuty);
   RUN_TEST_P(test_pwmOpenLoopRunningUsesRunningTable);
   RUN_TEST_P(test_pwmOpenLoopRunningTaper);
+  RUN_TEST_P(test_stepperModeDisablesIdle);
 }
