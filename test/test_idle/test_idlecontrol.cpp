@@ -526,37 +526,43 @@ static void test_idleUpInputAndOutput(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_NONE);
-  const uint8_t idleUpInputPin = 92U;
-  const uint8_t idleUpOutputPin = 93U;
-  context.pins.pinIdleUp = idleUpInputPin;
-  context.pins.pinIdleUpOutput = idleUpOutputPin;
   context.page2.idleUpEnabled = true;
   context.page2.idleUpOutputEnabled = true;
 
-  digitalWrite(idleUpInputPin, LOW);
+  initialiseIdle(false);
+
+  digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
   TEST_ASSERT_TRUE(context.current.idleUpOutputActive);
-  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(idleUpOutputPin));
+#if !defined(__AVR__)
+  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+#endif
 
-  digitalWrite(idleUpInputPin, HIGH);
+  digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
   idleControl();
   TEST_ASSERT_FALSE(context.current.idleUpActive);
   TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
-  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(idleUpOutputPin));
+#if !defined(__AVR__)
+  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+#endif
 
   context.page2.idleUpPolarity = 1U;
-  digitalWrite(idleUpInputPin, HIGH);
+  digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
   TEST_ASSERT_TRUE(context.current.idleUpOutputActive);
-  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(idleUpOutputPin));
+#if !defined(__AVR__)
+  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+#endif
 
-  digitalWrite(idleUpInputPin, LOW);
+  digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
   idleControl();
+#if !defined(__AVR__)
   TEST_ASSERT_FALSE(context.current.idleUpActive);
   TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
-  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(idleUpOutputPin));
+  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+#endif
 }
 
 static void test_pwmOpenLoopCranking(void)

@@ -3,9 +3,10 @@
 #include "globals.h"
 
 // Idle test pins; values are arbitrary free pins under ArduinoFake.
-static constexpr uint8_t TEST_IDLE1_PIN = 90U;
-static constexpr uint8_t TEST_IDLE2_PIN = 91U;
-
+static constexpr uint8_t TEST_IDLE1_PIN = 18U;
+static constexpr uint8_t TEST_IDLE2_PIN = 19U;
+static constexpr uint8_t TEST_IDLEUP_INPUT_PIN = 20U;
+static constexpr uint8_t TEST_IDLEUP_OUTPUT_PIN = 21U;
 struct context_t
 {
     statuses &current;
@@ -35,6 +36,8 @@ struct context_t
     {
         pins.pinIdle1 = TEST_IDLE1_PIN;
         pins.pinIdle2 = TEST_IDLE2_PIN;
+        pins.pinIdleUp = TEST_IDLEUP_INPUT_PIN;
+        pins.pinIdleUpOutput = TEST_IDLEUP_OUTPUT_PIN;
         page6.iacAlgorithm = algorithm;
         page6.iacChannels = 0U;
         page6.iacPWMdir = 0U;
