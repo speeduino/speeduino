@@ -13,6 +13,8 @@ A full copy of the license may be found in the projects root directory
 
 using namespace idleController::detail;
 TESTABLE_STATIC state_t _idleState;
+TESTABLE_STATIC fnCurMicros_t _idleCurMicros = &micros;
+
 
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
@@ -211,13 +213,13 @@ static inline uint8_t checkForStepping(void)
       timeCheck = _idleState.iacCoolTime_uS;
     }
 
-    if( hasIntervalElapsed(micros(), _idleState.idleStepper.stepStartTime, timeCheck) )
+    if( hasIntervalElapsed(_idleCurMicros(), _idleState.idleStepper.stepStartTime, timeCheck) )
     {         
       if(_idleState.idleStepper.stepperStatus == StepperStatus::STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
         digitalWrite(pinNumbers.pinStepperStep, LOW); //Turn off the step
-        _idleState.idleStepper.stepStartTime = micros();
+        _idleState.idleStepper.stepStartTime = _idleCurMicros();
 
 	//Set status to StepperStatus::COOLING. In next cycle, status will be set to SOFF and set stepper power OFF based on given settings
         _idleState.idleStepper.stepperStatus = StepperStatus::COOLING; //'Cooling' is the time the stepper needs to sit in LOW state before the next step can be made
@@ -271,7 +273,7 @@ static inline void doStep(void)
 
     digitalWrite(pinNumbers.pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinNumbers.pinStepperStep, HIGH);
-    _idleState.idleStepper.stepStartTime = micros();
+    _idleState.idleStepper.stepStartTime = _idleCurMicros();
     _idleState.idleStepper.stepperStatus = StepperStatus::STEPPING;
     _idleState.idleOn = true;
 
@@ -289,7 +291,9 @@ static inline uint8_t calculateIdleLoad(const config9 &page9, const StepperIdle 
   { 
     return idleState.curIdleStep / 2; 
   }
+  // LCOV_EXCL_START
   return idleState.curIdleStep;
+  // LCOV_EXCL_STOP
 }
 
 /*
@@ -318,7 +322,7 @@ static inline uint8_t isStepperHomed(void)
     digitalWrite(pinNumbers.pinStepperDir, STEPPER_LESS_AIR_DIRECTION() ); //homing the stepper closes off the air bleed
     digitalWrite(pinNumbers.pinStepperEnable, LOW); //Enable the DRV8825
     digitalWrite(pinNumbers.pinStepperStep, HIGH);
-    _idleState.idleStepper.stepStartTime = micros();
+    _idleState.idleStepper.stepStartTime = _idleCurMicros();
     _idleState.idleStepper.stepperStatus = StepperStatus::STEPPING;
     _idleState.completedHomeSteps++;
     _idleState.idleOn = true;
@@ -658,6 +662,7 @@ void idleControl(void)
         
         updateIdleStepAndLoad(currentStatus, configPage9, _idleState.idleStepper);
       }
+      // LCOV_EXCL_START
       if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) //Use timer flag instead idle count
       {
         //This only needs to be run very infrequently, once per second
@@ -665,6 +670,7 @@ void idleControl(void)
         _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
         _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
       }
+      // LCOV_EXCL_STOP
       break;
 
 // LCOV_EXCL_START

@@ -6,10 +6,34 @@
 #include "context.h"
 
 extern idleController::detail::state_t _idleState;
+extern idleController::detail::fnCurMicros_t _idleCurMicros;
+
 extern table2D_u8_u8_10 iacPWMTable;
 extern table2D_u8_u8_10 iacStepTable;
 extern table2D_u8_u8_4 iacCrankStepsTable;
 extern table2D_u8_u8_4 iacCrankDutyTable;
+
+static unsigned long mockIdleMicrosValue;
+
+static unsigned long mockIdleMicros(void)
+{
+  return mockIdleMicrosValue;
+}
+
+struct idle_micros_override_t
+{
+  idleController::detail::fnCurMicros_t original;
+
+  idle_micros_override_t(void) : original(_idleCurMicros)
+  {
+    _idleCurMicros = &mockIdleMicros;
+  }
+
+  ~idle_micros_override_t(void)
+  {
+    _idleCurMicros = original;
+  }
+};
 
 static void prepare_pwmFullDuty(context_t &context, uint8_t direction, uint8_t channels)
 {
@@ -200,6 +224,81 @@ static void test_stepOpenLoopCrankingUsesCrankTable(void)
 
   TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
 }
+
+static void test_stepOpenLoopStepperSteppingAndCooling(void)
+{
+  context_t context;
+  prepare_stepOpenLoop(context);
+  context.current.coolant = temperatureAddOffset(50);
+  context.current.rotationStatus = EngineRotationStatus::Stopped;
+  initialiseIdle(false);
+
+  idle_micros_override_t microsOverride;
+  _idleState.iacStepTime_uS = 100U;
+  _idleState.iacCoolTime_uS = 200U;
+  _idleState.idleStepper.stepStartTime = 50U;
+  _idleState.idleStepper.targetIdleStep = 17;
+  _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
+
+  mockIdleMicrosValue = 149U;
+  idleControl();
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+
+  mockIdleMicrosValue = 150U;
+  idleControl();
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+
+  mockIdleMicrosValue = 349U;
+  idleControl();
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+
+  mockIdleMicrosValue = 350U;
+  context.page6.iacStepHyster = 255;
+  idleControl();
+  TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(0, _idleState.idleStepper.curIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::SOFF, _idleState.idleStepper.stepperStatus);
+}
+
+// static void test_stepOpenLoopStepperSteppingAndCooling(void)
+// {
+//   context_t context;
+//   prepare_stepOpenLoop(context);
+//   context.current.coolant = temperatureAddOffset(50);
+//   context.current.rotationStatus = EngineRotationStatus::Stopped;
+//   initialiseIdle(false);
+
+//   idle_micros_override_t microsOverride;
+//   _idleState.iacStepTime_uS = 100U;
+//   _idleState.iacCoolTime_uS = 200U;
+//   _idleState.idleStepper.stepStartTime = 50U;
+//   _idleState.idleStepper.targetIdleStep = 17;
+//   _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
+
+//   mockIdleMicrosValue = 149U;
+//   idleControl();
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+
+//   mockIdleMicrosValue = 150U;
+//   idleControl();
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
+//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+
+//   mockIdleMicrosValue = 349U;
+//   idleControl();
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
+//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+
+//   mockIdleMicrosValue = 350U;
+//   idleControl();
+//   TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+//   TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+// }
 
 static void test_stepOpenLoopRunningUsesRunningTable(void)
 {
@@ -784,6 +883,7 @@ void testIdleControl(void)
   RUN_TEST_P(test_pwmZeroDutyDisablesIdle);
   RUN_TEST_P(test_stepOpenLoopStoppedUsesCrankTable);
   RUN_TEST_P(test_stepOpenLoopCrankingUsesCrankTable);
+  RUN_TEST_P(test_stepOpenLoopStepperSteppingAndCooling);
   RUN_TEST_P(test_stepOpenLoopRunningUsesRunningTable);
   RUN_TEST_P(test_stepOpenLoopRunningTaper);
   RUN_TEST_P(test_stepOpenLoopRunningIdleUp);

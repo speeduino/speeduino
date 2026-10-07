@@ -7,6 +7,8 @@ namespace idleController {
 
 namespace detail {
 
+using fnCurMicros_t = decltype(micros)*;
+
 enum class StepperStatus : uint8_t 
 {
     SOFF, 
