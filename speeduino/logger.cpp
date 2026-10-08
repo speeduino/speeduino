@@ -170,6 +170,15 @@ static byte buildEngineProtectStatus(const statuses &current)
   return setStatusBits(0, bits);
 }
 
+static constexpr uint16_t lookupSchedulePw(uint8_t index)
+{
+  if (index<_countof(fuelSchedules))
+  {
+    return fuelSchedules[index].pw;
+  }
+  return 0;
+}
+
 /** 
  * Returns a numbered byte-field (partial field in case of multi-byte fields) from "current status" structure in the format expected by TunerStudio
  * Notes on fields:
@@ -283,20 +292,14 @@ byte getTSLogEntry(uint16_t byteNum)
     case 74: statusValue = currentStatus.tpsADC; break;
     case 75: statusValue = 0U /*getNextError()*/; break;
 
-    case 76: statusValue = lowByte(fuelSchedule1.pw); break;
-    case 77: statusValue = highByte(fuelSchedule1.pw); break;
-#if (INJ_CHANNELS >= 2)
-    case 78: statusValue = lowByte(fuelSchedule2.pw); break;
-    case 79: statusValue = highByte(fuelSchedule2.pw); break;
-#endif
-#if (INJ_CHANNELS >= 3)
-    case 80: statusValue = lowByte(fuelSchedule3.pw); break;
-    case 81: statusValue = highByte(fuelSchedule3.pw); break;
-#endif
-#if (INJ_CHANNELS >= 4)
-    case 82: statusValue = lowByte(fuelSchedule4.pw); break;
-    case 83: statusValue = highByte(fuelSchedule4.pw); break;
-#endif
+    case 76: statusValue = lowByte(lookupSchedulePw(0)); break;
+    case 77: statusValue = highByte(lookupSchedulePw(0)); break;
+    case 78: statusValue = lowByte(lookupSchedulePw(1)); break;
+    case 79: statusValue = highByte(lookupSchedulePw(1)); break;
+    case 80: statusValue = lowByte(lookupSchedulePw(2)); break;
+    case 81: statusValue = highByte(lookupSchedulePw(2)); break;
+    case 82: statusValue = lowByte(lookupSchedulePw(3)); break;
+    case 83: statusValue = highByte(lookupSchedulePw(3)); break;
 
     case 84: statusValue = buildStatus3(currentStatus); break;
     case 85: statusValue = buildEngineProtectStatus(currentStatus); break;
@@ -344,22 +347,16 @@ byte getTSLogEntry(uint16_t byteNum)
     case 127: statusValue = buildStatus5(currentStatus); break;
     case 128: statusValue = currentStatus.knockCount; break;
     case 129: statusValue = currentStatus.knockRetard; break;
-#if INJ_CHANNELS >= 5
-    case 130: statusValue = lowByte(fuelSchedule5.pw); break;
-    case 131: statusValue = highByte(fuelSchedule5.pw); break;
-#endif
-#if INJ_CHANNELS >= 6
-    case 132: statusValue = lowByte(fuelSchedule6.pw); break;
-    case 133: statusValue = highByte(fuelSchedule6.pw); break;
-#endif
-#if INJ_CHANNELS >= 7
-    case 134: statusValue = lowByte(fuelSchedule7.pw); break;
-    case 135: statusValue = highByte(fuelSchedule7.pw); break;
-#endif
-#if INJ_CHANNELS >= 8
-    case 136: statusValue = lowByte(fuelSchedule8.pw); break;
-    case 137: statusValue = highByte(fuelSchedule8.pw); break;
-#endif
+
+    case 130: statusValue = lowByte(lookupSchedulePw(4)); break;
+    case 131: statusValue = highByte(lookupSchedulePw(4)); break;
+    case 132: statusValue = lowByte(lookupSchedulePw(5)); break;
+    case 133: statusValue = highByte(lookupSchedulePw(5)); break;
+    case 134: statusValue = lowByte(lookupSchedulePw(6)); break;
+    case 135: statusValue = highByte(lookupSchedulePw(6)); break;
+    case 136: statusValue = lowByte(lookupSchedulePw(7)); break;
+    case 137: statusValue = highByte(lookupSchedulePw(7)); break;
+
     case 138: statusValue = currentStatus.systemTemp; break;
     default: statusValue = 0; // MISRA check
   }
@@ -444,16 +441,10 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 51: statusValue = currentStatus.tpsADC; break;
     case 52: statusValue = 0U /*getNextError()*/; break;
 
-    case 53: statusValue = fuelSchedule1.pw; break;
-#if (INJ_CHANNELS >= 2)
-    case 54: statusValue = fuelSchedule2.pw; break;
-#endif
-#if (INJ_CHANNELS >= 3)
-    case 55: statusValue = fuelSchedule3.pw; break;
-#endif
-#if (INJ_CHANNELS >= 4)
-    case 56: statusValue = fuelSchedule4.pw; break;
-#endif
+    case 53: statusValue = lookupSchedulePw(0); break;
+    case 54: statusValue = lookupSchedulePw(1); break;
+    case 55: statusValue = lookupSchedulePw(2); break;
+    case 56: statusValue = lookupSchedulePw(3); break;
 
     case 57: statusValue = buildStatus3(currentStatus); break;
     case 58: statusValue = buildEngineProtectStatus(currentStatus); break;
@@ -494,18 +485,12 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 91: statusValue = buildStatus5(currentStatus); break;
     case 92: statusValue = currentStatus.knockCount; break;
     case 93: statusValue = currentStatus.knockRetard; break;
-#if INJ_CHANNELS >= 5
-    case 94: statusValue = fuelSchedule5.pw; break;
-#endif
-#if INJ_CHANNELS >= 6
-    case 95: statusValue = fuelSchedule6.pw; break;
-#endif
-#if INJ_CHANNELS >= 7
-    case 96: statusValue = fuelSchedule7.pw; break;
-#endif
-#if INJ_CHANNELS >= 8
-    case 97: statusValue = fuelSchedule8.pw; break;
-#endif
+
+    case 94: statusValue = lookupSchedulePw(4); break;
+    case 95: statusValue = lookupSchedulePw(5); break;
+    case 96: statusValue = lookupSchedulePw(6); break;
+    case 97: statusValue = lookupSchedulePw(7); break;
+
     case 98: statusValue = currentStatus.systemTemp; break;
     default: statusValue = 0; // MISRA check
   }
@@ -531,18 +516,10 @@ float getReadableFloatLogEntry(uint16_t logIndex)
     case 18: statusValue = currentStatus.afrTarget / 10.0; break;
     case 21: statusValue = currentStatus.TPS / 2.0; break; // TPS (0% to 100% = 0 to 200)
     case 33: statusValue = currentStatus.O2_2 / 10.0; break; //O2
-
-    case 53: statusValue = fuelSchedule1.pw / 1000.0; break; //Pulsewidth 1 Have to convert from uS to mS.
-#if (INJ_CHANNELS >= 2)
-    case 54: statusValue = fuelSchedule2.pw / 1000.0; break; //Pulsewidth 2 Have to convert from uS to mS.
-#endif
-#if (INJ_CHANNELS >= 3)
-    case 55: statusValue = fuelSchedule3.pw / 1000.0; break; //Pulsewidth 3 Have to convert from uS to mS.
-#endif
-#if (INJ_CHANNELS >= 4)
-    case 56: statusValue = fuelSchedule4.pw / 1000.0; break; //Pulsewidth 4 Have to convert from uS to mS.
-#endif
-
+    case 53: statusValue = lookupSchedulePw(0) / 1000.0; break; //Pulsewidth 1 Have to convert from uS to mS.
+    case 54: statusValue = lookupSchedulePw(1) / 1000.0; break; //Pulsewidth 2 Have to convert from uS to mS.
+    case 55: statusValue = lookupSchedulePw(2) / 1000.0; break; //Pulsewidth 3 Have to convert from uS to mS.
+    case 56: statusValue = lookupSchedulePw(3) / 1000.0; break; //Pulsewidth 4 Have to convert from uS to mS.
     default: statusValue = getReadableLogEntry(logIndex); break; //If logIndex value is NOT a float based one, use the regular function
   }
 
@@ -577,8 +554,8 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 17: statusValue = currentStatus.corrections; break; //Total GammaE (%)
     case 18: statusValue = currentStatus.VE; break; //Current VE 1 (%)
     case 19: statusValue = currentStatus.afrTarget; break;
-    case 20: statusValue = lowByte(fuelSchedule1.pw); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 21: statusValue = highByte(fuelSchedule1.pw); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 20: statusValue = lowByte(lookupSchedulePw(0)); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 21: statusValue = highByte(lookupSchedulePw(0)); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.
     case 22: statusValue = (uint8_t)(currentStatus.tpsDOT / 10); break; //TPS DOT
     case 23: statusValue = currentStatus.advance; break;
     case 24: statusValue = currentStatus.TPS; break; // TPS (0% to 100%)
@@ -637,18 +614,13 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 74: statusValue = 0U /*getNextError()*/; break; // errorNum (0:1), currentError(2:7)
 
     case 75: statusValue = currentStatus.launchCorrection; break;
-#if INJ_CHANNELS>=2
-    case 76: statusValue = lowByte(fuelSchedule2.pw); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 77: statusValue = highByte(fuelSchedule2.pw); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
-#endif
-#if INJ_CHANNELS>=3
-    case 78: statusValue = lowByte(fuelSchedule3.pw); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 79: statusValue = highByte(fuelSchedule3.pw); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
-#endif
-#if INJ_CHANNELS>=4
-    case 80: statusValue = lowByte(fuelSchedule4.pw); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-    case 81: statusValue = highByte(fuelSchedule4.pw); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
-#endif
+
+    case 76: statusValue = lowByte(lookupSchedulePw(1)); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 77: statusValue = highByte(lookupSchedulePw(1)); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 78: statusValue = lowByte(lookupSchedulePw(2)); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 79: statusValue = highByte(lookupSchedulePw(2)); break; //Pulsewidth 3 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 80: statusValue = lowByte(lookupSchedulePw(3)); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
+    case 81: statusValue = highByte(lookupSchedulePw(3)); break; //Pulsewidth 4 multiplied by 10 in ms. Have to convert from uS to mS.
 
     case 82: statusValue = buildStatus3(currentStatus); break;
     case 83: statusValue = buildEngineProtectStatus(currentStatus); break; //RPM(0), MAP(1), OIL(2), AFR(3), Unused(4:7)
