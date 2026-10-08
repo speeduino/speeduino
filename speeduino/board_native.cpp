@@ -4,7 +4,7 @@
 #include <EEPROM.h>
 #include "board_native.h"
 #include "src/controllers/vvt/vvtController.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "timers.h"
 #include "board_eeprom_adapter.hpp"
 #include "scheduler_ignition_controller.h"

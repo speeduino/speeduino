@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "corrections.h"
 #include "timers.h"
 #include "decoders.h"
-#include "idle.h"
+#include "src/controllers/idle/idle.h"
 #include "src/controllers/vvt/vvtController.h"
 #include "sensors.h"
 #include "storage.h"
