@@ -1,64 +1,86 @@
-#include "globals.h"
-#include "src/controllers/nitrous/nitrousController.h"
-#include "units.h"
 #include "../test_utils.h"
 #include "shared.h"
-#include "src/pins/inputPin.h"
-#include "src/pins/outputPin.h"
+#include "units.h"
+#include "src/controllers/nitrous/nitrousController_state.h"
 
-extern inputPin_t n2o_arming_pin;
-extern outputPin_t n2o_stage1_pin;
-extern outputPin_t n2o_stage2_pin;
+extern nitrous::detail::state_t _n2oState;
 
 static void test_newboard_reset(void)
 {
-    setup_n20_tune(NITROUS_STAGE1);
+    auto context = setup_n20_tune(NITROUS_BOTH);
 
-    configPage10.n2o_minTPS = 255;
-    TEST_ASSERT_EQUAL(NITROUS_STAGE1, configPage10.n2o_enable);
-    initialiseNitrous();
-    TEST_ASSERT_EQUAL(NITROUS_OFF, configPage10.n2o_enable);
+    context.page10.n2o_minTPS = 255;
+    context.init();
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.page10.n2o_enable);
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
+    TEST_ASSERT_FALSE(_n2oState.stage1Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.stage2Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.armingPin.isValid());
 }
 
 static void test_init_basic(void)
 {
-    setup_n20_tune(NITROUS_STAGE1);
+    auto context = setup_n20_tune(NITROUS_STAGE1);
 
-    TEST_ASSERT_EQUAL(NITROUS_STAGE1, configPage10.n2o_enable);
-    initialiseNitrous();
-    TEST_ASSERT_EQUAL(NITROUS_STAGE1, configPage10.n2o_enable);
-    TEST_ASSERT_EQUAL(NITROUS_OFF, currentStatus.nitrous_status);
+    context.init();
+    TEST_ASSERT_EQUAL(NITROUS_STAGE1, context.page10.n2o_enable);
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
+    TEST_ASSERT_TRUE(_n2oState.stage1Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.stage2Pin.isValid());
+    TEST_ASSERT_TRUE(_n2oState.armingPin.isValid());
+
+    context = setup_n20_tune(NITROUS_STAGE2);
+    context.init();
+    TEST_ASSERT_EQUAL(NITROUS_BOTH, context.page10.n2o_enable);
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
+    TEST_ASSERT_TRUE(_n2oState.stage1Pin.isValid());
+    TEST_ASSERT_TRUE(_n2oState.stage2Pin.isValid());
+    TEST_ASSERT_TRUE(_n2oState.armingPin.isValid());
 }
 
-static void test_n2o_armingpin(void)
+static void test_n2o_armingpin_polarity(void)
 {
-    setup_n20_tune(NITROUS_STAGE1);
-    n2o_arming_pin.setPin(NOT_A_PIN);
-    initialiseNitrous();
-    TEST_ASSERT_TRUE(n2o_arming_pin.isValid());
+    auto context = setup_n20_tune(NITROUS_STAGE1);
+    _n2oState.armingPin.setPin(NOT_A_PIN);
+    context.init();
+    TEST_ASSERT_TRUE(_n2oState.armingPin.isValid());
 
     // Reverse polarity - coverage only
-    setup_n20_tune(NITROUS_STAGE1);
-    configPage10.n2o_pin_polarity = !configPage10.n2o_pin_polarity;
-    n2o_arming_pin.setPin(NOT_A_PIN);
-    initialiseNitrous();
-    TEST_ASSERT_TRUE(n2o_arming_pin.isValid());
-
-    // Disabled
-    setup_n20_tune(NITROUS_OFF);
-    n2o_arming_pin.setPin(NOT_A_PIN);
-    initialiseNitrous();
-    TEST_ASSERT_FALSE(n2o_arming_pin.isValid());
-
+    context = setup_n20_tune(NITROUS_STAGE1);
+    context.page10.n2o_pin_polarity = !context.page10.n2o_pin_polarity;
+    _n2oState.armingPin.setPin(NOT_A_PIN);
+    context.init();
+    TEST_ASSERT_TRUE(_n2oState.armingPin.isValid());
 }
 
-static void test_n2o_stage_pins(void)
+static void test_invalid_pins(void)
 {
-    setup_n20_tune(NITROUS_STAGE1);
-    n2o_stage1_pin.setPin(NOT_A_PIN);
-    initialiseNitrous();
-    TEST_ASSERT_TRUE(n2o_stage1_pin.isValid()==(configPage10.n2o_stage1_pin!=NOT_A_PIN));
-    TEST_ASSERT_TRUE(n2o_stage2_pin.isValid()==(configPage10.n2o_stage2_pin!=NOT_A_PIN));
+    auto context = setup_n20_tune(NITROUS_BOTH);
+    context.page10.n2o_arming_pin = NOT_A_PIN;
+    context.init();
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.page10.n2o_enable);
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
+    TEST_ASSERT_FALSE(_n2oState.stage1Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.stage2Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.armingPin.isValid());
+
+    context = setup_n20_tune(NITROUS_BOTH);
+    context.page10.n2o_stage1_pin = NOT_A_PIN;
+    context.init();
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.page10.n2o_enable);
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
+    TEST_ASSERT_FALSE(_n2oState.stage1Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.stage2Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.armingPin.isValid());    
+
+    context = setup_n20_tune(NITROUS_BOTH);
+    context.page10.n2o_stage2_pin = NOT_A_PIN;
+    context.init();
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.page10.n2o_enable);
+    TEST_ASSERT_EQUAL(NITROUS_OFF, context.current.nitrousStatus);
+    TEST_ASSERT_FALSE(_n2oState.stage1Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.stage2Pin.isValid());
+    TEST_ASSERT_FALSE(_n2oState.armingPin.isValid());
 }
 
 void testInit(void)
@@ -67,7 +89,7 @@ void testInit(void)
   {
     RUN_TEST_P(test_newboard_reset);
     RUN_TEST_P(test_init_basic);
-    RUN_TEST_P(test_n2o_armingpin);
-    RUN_TEST_P(test_n2o_stage_pins);
+    RUN_TEST_P(test_n2o_armingpin_polarity);
+    RUN_TEST_P(test_invalid_pins);
   }
 }

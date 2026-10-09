@@ -170,7 +170,7 @@ void initialiseAll(void)
     initialiseFan(currentStatus, configPage2, configPage6, pinNumbers);
     initialiseBoost(currentStatus, configPage2, configPage6, configPage10, pinNumbers);
     initialiseAirCon(currentStatus, configPage15, pinNumbers);
-    initialiseNitrous();
+    initialiseNitrous(currentStatus, configPage10);
     initialiseVvtWmi(currentStatus, pinNumbers, configPage4, configPage6, configPage10);
     initialiseCorrections();
     currentStatus.ioError = false; //Clear the I/O error bit. The bit will be set in initialiseADC() if there is problem in there.
