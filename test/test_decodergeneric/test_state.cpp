@@ -29,9 +29,35 @@ static void test_toothWithinMaxStallTime(void)
     TEST_ASSERT_FALSE(decoderState.toothWithinMaxStallTime(600UL)); // 1101 uS elapsed
 }
 
+static void test_setFilter(void)
+{
+    decoders::detail::state_t decoderState;
+    config4 page4 = {};
+
+    decoderState.setFilter(1000, page4);
+    TEST_ASSERT_EQUAL(0, decoderState.triggerFilterTime);
+
+    page4.triggerFilter = TRIGGER_FILTER_OFF;
+    decoderState.setFilter(1000, page4);
+    TEST_ASSERT_EQUAL(0, decoderState.triggerFilterTime);
+
+    page4.triggerFilter = TRIGGER_FILTER_LITE;
+    decoderState.setFilter(1000, page4);
+    TEST_ASSERT_EQUAL(250, decoderState.triggerFilterTime);
+
+    page4.triggerFilter = TRIGGER_FILTER_MEDIUM;
+    decoderState.setFilter(1000, page4);
+    TEST_ASSERT_EQUAL(500, decoderState.triggerFilterTime);
+
+    page4.triggerFilter = TRIGGER_FILTER_AGGRESSIVE;
+    decoderState.setFilter(1000, page4);
+    TEST_ASSERT_EQUAL(3000/4, decoderState.triggerFilterTime);
+}
+
 void testDecoderState()
 {
     unity_filename_guard_t guard(__FILE__);
 
     RUN_TEST_P(test_toothWithinMaxStallTime);
+    RUN_TEST_P(test_setFilter);
 }
