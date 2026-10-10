@@ -1,29 +1,24 @@
 #include "decoder_init.h"
 #include "shared.h"
+#include "src/decoders/details/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 void configureStateForPrimaryTrigger(uint8_t decoder, decoder_status_t &status)
 {
-    extern volatile uint8_t toothSystemCount;
-    extern volatile unsigned long toothLastToothRisingTime;
-    extern volatile unsigned long toothLastSecToothRisingTime;
-    extern volatile uint32_t toothLastToothTime;
-    extern volatile unsigned long toothSystemLastToothTime;
-    extern volatile uint16_t toothCurrentCount;
-    extern volatile unsigned long triggerFilterTime;
-    
     if (decoder==DECODER_24X) {
-        toothCurrentCount = 0U;
+        _decoderState.toothCurrentCount = 0U;
     } else if (decoder==DECODER_JEEP2000) {
-        toothCurrentCount = 0U;
+        _decoderState.toothCurrentCount = 0U;
     } else if (decoder==DECODER_AUDI135) {
-        toothSystemCount = 2U;
-        toothSystemLastToothTime = micros() - triggerFilterTime;
+        _decoderState.toothSystemCount = 2U;
+        _decoderState.toothSystemLastToothTime = micros() - _decoderState.triggerFilterTime;
         status.syncStatus = SyncStatus::Full;
     } else if (decoder==DECODER_RENIX) {
-        toothLastToothRisingTime = micros() - triggerFilterTime;
-        toothLastSecToothRisingTime = toothLastToothRisingTime - triggerFilterTime;
+        _decoderState.toothLastToothRisingTime = micros() - _decoderState.triggerFilterTime;
+        _decoderState.toothLastSecToothRisingTime = _decoderState.toothLastToothRisingTime - _decoderState.triggerFilterTime;
     } else if (decoder==DECODER_ROVERMEMS) {
-        toothLastToothTime = micros() - triggerFilterTime;
+        _decoderState.toothLastToothTime = micros() - _decoderState.triggerFilterTime;
     }
 }
 

@@ -1,12 +1,12 @@
 #include "../test_utils.h"
-#include "src/decoders/crank_angle_calculator.h"
+#include "src/decoders/details/crank_angle_calculator.h"
 #include "crankMaths.h"
 
 static void test_last_tooth_rev_calculator_t(void)
 {
     setAngleConverterRevolutionTime(360);
 
-    last_tooth_rev_calculator_t subject;
+    decoders::detail::last_tooth_rev_calculator_t subject;
     // No time elapsed -> zero degrees
     subject._toothLastToothTime = 1000;
     TEST_ASSERT_EQUAL_INT16(0, subject.calculate(1000));
@@ -23,7 +23,7 @@ static void test_last_tooth_rev_calculator_t(void)
 
 static void test_tooth_interval_calculator_t(void)
 {
-    tooth_interval_calculator_t subject;
+    decoders::detail::tooth_interval_calculator_t subject;
 
     // Use 360us per revolution so timeToAngle(delta) == delta
     setAngleConverterRevolutionTime(360);
@@ -62,7 +62,7 @@ static void test_tooth_interval_calculator_t(void)
 
 static void test_lookup_initial_calculator_t(void)
 {
-    lookup_initial_calculator_t subject;
+    decoders::detail::lookup_initial_calculator_t subject;
 
     int16_t toothAngles[] = { -33, 0, 33 };
 
@@ -86,7 +86,7 @@ static void test_lookup_initial_calculator_t(void)
 
 static void test_compute_initial_calculator_t(void)
 {
-    compute_initial_calculator_t subject;
+    decoders::detail::compute_initial_calculator_t subject;
 
     // Default count 0 -> calculate() == 0
     TEST_ASSERT_EQUAL_INT16(0, subject.calculate());
@@ -112,7 +112,7 @@ static void test_compute_initial_calculator_t(void)
 
 static void test_sequential_correction_calculator_t(void)
 {
-    sequential_correction_calculator_t subject;
+    decoders::detail::sequential_correction_calculator_t subject;
 
     config4 page4;
 
@@ -137,7 +137,7 @@ static void test_simple_crank_angle_calculator_t(void)
 {
     setAngleConverterRevolutionTime(360);
 
-    simple_crank_angle_calculator_t subject;
+    decoders::detail::simple_crank_angle_calculator_t subject;
     config4 page4;
     page4.triggerAngle = 10;
 
@@ -157,7 +157,7 @@ static void test_lookup_crank_angle_calculator_t(void)
 {
     setAngleConverterRevolutionTime(360);
 
-    lookup_crank_angle_calculator_t subject;
+    decoders::detail::lookup_crank_angle_calculator_t subject;
     config4 page4;
     page4.triggerAngle = 7;
     subject._toothLastToothTime = 1000;
@@ -174,7 +174,7 @@ static void test_trigger_angle_crank_angle_calculator_t(void)
 {
     setAngleConverterRevolutionTime(360);
 
-    trigger_angle_crank_angle_calculator_t subject;
+    decoders::detail::trigger_angle_crank_angle_calculator_t subject;
     config4 page4;
     page4.triggerAngle = 9;
     subject._toothLastToothTime = 2000;
@@ -190,7 +190,7 @@ static void test_lookup_crank_angle_calculator_tooth_interval_t(void)
 {
     setAngleConverterRevolutionTime(360);
 
-    lookup_crank_angle_calculator_tooth_interval_t subject;
+    decoders::detail::lookup_crank_angle_calculator_tooth_interval_t subject;
     config4 page4;
     page4.triggerAngle = 4;
     subject._toothLastMinusOneToothTime = 900;
@@ -211,7 +211,7 @@ static void test_compute_crank_angle_calculator_tooth_interval_t(void)
 {
     setAngleConverterRevolutionTime(360);
 
-    compute_crank_angle_calculator_tooth_interval_t subject;
+    decoders::detail::compute_crank_angle_calculator_tooth_interval_t subject;
     config4 page4;
     page4.triggerAngle = 6;
     subject._toothLastMinusOneToothTime = 1000;

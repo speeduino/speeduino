@@ -4,12 +4,10 @@
 #include "scheduler.h"
 #include "../../test_utils.h"
 #include "scheduler_ignition_controller.h"
+#include "src/decoders/details/decoder_state.h"
 
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
-extern decoder_status_t decoderStatus;
-extern volatile uint32_t toothLastToothTime;
-extern volatile int toothCurrentCount;
-extern volatile bool revolutionOne;
+extern decoders::detail::state_t _decoderState;
+
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
 void test_fordst170_newIgn_12_trig0_1()
@@ -24,19 +22,19 @@ void test_fordst170_newIgn_12_trig0_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
   
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(34, _decoderState.ignitionEndTeeth[0]);
 
     //Test again with 0 degrees advance
     calculateIgnitionAngles(ignitionSchedule1, 5, 0);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(35, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(35, _decoderState.ignitionEndTeeth[0]);
 
     //Test again with 35 degrees advance
     calculateIgnitionAngles(ignitionSchedule1, 5, 35);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(31, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(31, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig90_1()
@@ -51,7 +49,7 @@ void test_fordst170_newIgn_12_trig90_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 35);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(22, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(22, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig180_1()
@@ -66,7 +64,7 @@ void test_fordst170_newIgn_12_trig180_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
  
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(16, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig270_1()
@@ -81,7 +79,7 @@ void test_fordst170_newIgn_12_trig270_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(7, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trig360_1()
@@ -96,7 +94,7 @@ void test_fordst170_newIgn_12_trig360_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(34, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg90_1()
@@ -111,7 +109,7 @@ void test_fordst170_newIgn_12_trigNeg90_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(7, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(7, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg180_1()
@@ -126,7 +124,7 @@ void test_fordst170_newIgn_12_trigNeg180_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(16, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(16, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg270_1()
@@ -141,7 +139,7 @@ void test_fordst170_newIgn_12_trigNeg270_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(25, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(25, _decoderState.ignitionEndTeeth[0]);
 }
 
 void test_fordst170_newIgn_12_trigNeg360_1()
@@ -156,7 +154,7 @@ void test_fordst170_newIgn_12_trigNeg360_1()
     calculateIgnitionAngles(ignitionSchedule1, 5, 10);
 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(34, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(34, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_getCrankAngle(void)
@@ -164,15 +162,15 @@ static void test_getCrankAngle(void)
     auto decoder = triggerSetup_FordST170();
 
     auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
-        toothLastToothTime = 2000;
-        toothCurrentCount = toothCount;
-        revolutionOne = revOne;
-        decoderStatus.syncStatus = SyncStatus::Full;
-        decoderStatus.toothAngleIsCorrect = true;
+        _decoderState.toothLastToothTime = 2000;
+        _decoderState.toothCurrentCount = toothCount;
+        _decoderState.revolutionOne = revOne;
+        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        _decoderState.decoderStatus.toothAngleIsCorrect = true;
         configPage4.triggerAngle = trigAngle;
         CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
         setAngleConverterRevolutionTime(2000);
-        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
+        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
     };
 
     // timeToAngle(100) ~= 18 deg when revolution time = 2000
@@ -212,24 +210,24 @@ static void test_getRevolutionTime(void)
   configPage4.StgCycles = 0;
   currentStatus.crankRPM = 400;
   currentStatus.startRevolutions = 1;
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.revolutionTime = 12345UL;
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // Full revolution: 60000uS
-  toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = toothLastMinusOneToothTime + 1000UL; // Tooth gap of 1000uS * 36 teeth: 36000uS
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // Full revolution: 60000uS
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 1000UL; // Tooth gap of 1000uS * 36 teeth: 36000uS
 
   // Running: full revolution
   currentStatus.setRpm(currentStatus.crankRPM*2);
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // Cranking: per tooth
-  toothCurrentCount = 2;
+  _decoderState.toothCurrentCount = 2;
   currentStatus.setRpm(currentStatus.crankRPM/2);
   TEST_ASSERT_EQUAL_UINT32(36000UL, decoder.getRevolutionTime());
 
   // Can't do a per tooth calculation at tooth #1, so no change
-  toothCurrentCount = 1;
+  _decoderState.toothCurrentCount = 1;
   TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 

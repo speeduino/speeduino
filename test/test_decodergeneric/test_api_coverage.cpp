@@ -4,14 +4,9 @@
 #include "decoder_name.h"
 #include "shared.h"
 #include "src/pins/boardInputPin.h"
+#include "src/decoders/details/decoder_state.h"
 
-extern decoder_status_t decoderStatus;
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
-extern volatile uint32_t toothLastToothTime;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern uint16_t toothCurrentCount;
-extern unsigned long MAX_STALL_TIME;
+extern decoders::detail::state_t _decoderState;
 
 static void test_primary_trigger(decoder_t &decoder, uint8_t decoderNum)
 {
@@ -28,7 +23,7 @@ static void test_primary_trigger(decoder_t &decoder, uint8_t decoderNum)
     }
 
     decoder.reset();
-    configureStateForPrimaryTrigger(decoderNum, decoderStatus);
+    configureStateForPrimaryTrigger(decoderNum, _decoderState.decoderStatus);
     TEST_ASSERT_FALSE_MESSAGE(decoder.getStatus().validTrigger, szMsg);
 
     decoder.primary.callback();
@@ -86,11 +81,11 @@ static void test_getRevolutionTime_coverage(uint8_t decoderNum)
     currentStatus.revolutionTime = 3333;
     currentStatus.crankRPM = 400;
     currentStatus.setRpm(currentStatus.crankRPM*3U);
-    decoderStatus.syncStatus = SyncStatus::Full; 
-    toothLastMinusOneToothTime = 1111;
-    toothOneMinusOneTime = toothLastMinusOneToothTime*5U;
-    toothLastToothTime = 5555;
-    toothOneTime = toothLastToothTime * 3U;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full; 
+    _decoderState.toothLastMinusOneToothTime = 1111;
+    _decoderState.toothOneMinusOneTime = _decoderState.toothLastMinusOneToothTime*5U;
+    _decoderState.toothLastToothTime = 5555;
+    _decoderState.toothOneTime = _decoderState.toothLastToothTime * 3U;
     TEST_ASSERT_NOT_EQUAL(0, decoder.getRevolutionTime());
 }
 
@@ -102,12 +97,12 @@ static void test_getCrankAngle_coverage(uint8_t decoderNum)
     currentStatus.revolutionTime = 3333;
     currentStatus.crankRPM = 400;
     currentStatus.setRpm(currentStatus.crankRPM*3U);
-    decoderStatus.syncStatus = SyncStatus::Full; 
-    toothLastMinusOneToothTime = 1111;
-    toothOneMinusOneTime = toothLastMinusOneToothTime*5U;
-    toothLastToothTime = 5555;
-    toothOneTime = toothLastToothTime * 3U;
-    toothCurrentCount = configPage4.triggerTeeth / 2U;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full; 
+    _decoderState.toothLastMinusOneToothTime = 1111;
+    _decoderState.toothOneMinusOneTime = _decoderState.toothLastMinusOneToothTime*5U;
+    _decoderState.toothLastToothTime = 5555;
+    _decoderState.toothOneTime = _decoderState.toothLastToothTime * 3U;
+    _decoderState.toothCurrentCount = configPage4.triggerTeeth / 2U;
 
     TEST_ASSERT_NOT_EQUAL(0, decoder.getCrankAngle());
 }
@@ -137,8 +132,8 @@ static void test_isEngineRunning_coverage(uint8_t decoderNum)
     setup_prebuild_state();
     auto decoder = buildDecoder(decoderNum);
 
-    toothLastToothTime = 3333;
-    TEST_ASSERT_TRUE(decoder.isEngineRunning(toothLastToothTime+(MAX_STALL_TIME/2U)));
+    _decoderState.toothLastToothTime = 3333;
+    TEST_ASSERT_TRUE(decoder.isEngineRunning(_decoderState.toothLastToothTime+(_decoderState.MAX_STALL_TIME/2U)));
 
     TEST_PASS(); // Coverage only
 }

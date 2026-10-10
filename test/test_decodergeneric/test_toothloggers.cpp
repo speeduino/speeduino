@@ -5,9 +5,9 @@
 #include "../test_utils.h"
 #include "decoder_name.h"
 #include "shared.h"
+#include "src/decoders/details/decoder_state.h"
 
-extern decoder_status_t decoderStatus;
-extern volatile unsigned long triggerFilterTime;
+extern decoders::detail::state_t _decoderState;
 
 static const char* edgeName(uint8_t edge)
 {
@@ -35,7 +35,7 @@ static void assertValidTrigger(const decoder_t &decoder, uint8_t decoderNum, uin
   // We only expect a valid trigger when the decoder trigger conditions are met.
   bool expected = currentStatus.decoder.primary.isTriggered();
   // The NGC decoder triggers on change, but only sets 
-  // decoderStatus.validTrigger on falling interrupts.
+  // _decoderState.decoderStatus.validTrigger on falling interrupts.
   if (DECODER_NGC==decoderNum)
   {
     expected = testEdge==FALLING;
@@ -54,7 +54,7 @@ static void test_toothLogger(decoder_t &decoder, uint8_t decoderNum, uint8_t tes
   configurePinState(currentStatus.decoder.primary._pin, testEdge);
 
   currentStatus.decoder.reset();
-  configureStateForPrimaryTrigger(decoderNum, decoderStatus);
+  configureStateForPrimaryTrigger(decoderNum, _decoderState.decoderStatus);
 
   loggerPrimaryISR();
   assertValidTrigger(currentStatus.decoder, decoderNum, testEdge);

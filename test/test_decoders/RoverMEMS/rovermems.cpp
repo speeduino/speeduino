@@ -3,6 +3,9 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "scheduler_ignition_controller.h"
+#include "src/decoders/details/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 // used by the ROVER MEMS pattern
 // #define ID_TOOTH_PATTERN 0 // have we identified teeth to skip for calculating RPM?
@@ -11,18 +14,15 @@
 #define SKIP_TOOTH3 3
 #define SKIP_TOOTH4 4
 
-extern int16_t toothAngles[24];
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
-
 static void assert_rover_setEndTeeth(int triggerAngle, uint8_t sparkMode, uint8_t trigSpeed, 
   const uint16_t (&dischargeAngles)[4], const uint16_t (&expected)[4], const int16_t (&skipTeeth)[4])
 {
   auto decoder = triggerSetup_RoverMEMS();
 
-  toothAngles[1] = skipTeeth[0];
-  toothAngles[2] = skipTeeth[1];
-  toothAngles[3] = skipTeeth[2];
-  toothAngles[4] = skipTeeth[3];
+  _decoderState.toothAngles[1] = skipTeeth[0];
+  _decoderState.toothAngles[2] = skipTeeth[1];
+  _decoderState.toothAngles[3] = skipTeeth[2];
+  _decoderState.toothAngles[4] = skipTeeth[3];
 
   configPage4.triggerAngle = triggerAngle;
   configPage4.sparkMode = sparkMode;
@@ -37,28 +37,21 @@ static void assert_rover_setEndTeeth(int triggerAngle, uint8_t sparkMode, uint8_
 
   for (uint8_t i = 0; i < 4; i++)
   {
-    TEST_ASSERT_EQUAL_UINT16(expected[i], ignitionEndTeeth[i]);
+    TEST_ASSERT_EQUAL_UINT16(expected[i], _decoderState.ignitionEndTeeth[i]);
   }
 }
 
 static void test_getRevolutionTime(void)
 {
-  extern volatile unsigned long toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern volatile unsigned int toothCurrentCount;
-  extern decoder_status_t decoderStatus;
-
   auto decoder = triggerSetup_RoverMEMS();
 
   currentStatus.crankRPM = 400;
 
   // Make skip-tooth definitions deterministic for this test
-  toothAngles[SKIP_TOOTH1] = 100;
-  toothAngles[SKIP_TOOTH2] = 101;
-  toothAngles[SKIP_TOOTH3] = 102;
-  toothAngles[SKIP_TOOTH4] = 103;
+  _decoderState.toothAngles[SKIP_TOOTH1] = 100;
+  _decoderState.toothAngles[SKIP_TOOTH2] = 101;
+  _decoderState.toothAngles[SKIP_TOOTH3] = 102;
+  _decoderState.toothAngles[SKIP_TOOTH4] = 103;
 
   // Ensure staging allows cranking calculation
   configPage4.StgCycles = 0;
@@ -67,32 +60,32 @@ static void test_getRevolutionTime(void)
   currentStatus.setRpm(currentStatus.crankRPM/2U);
   currentStatus.startRevolutions = 0; // cranking
   currentStatus.revolutionTime = 99999UL;
-  decoderStatus.syncStatus = SyncStatus::Full;
-  toothCurrentCount = 1; // not a skip tooth
-  toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = toothLastMinusOneToothTime + 1667UL; // gap -> revTime ~=1667*36 ~=60012
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.toothCurrentCount = 1; // not a skip tooth
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 1667UL; // gap -> revTime ~=1667*36 ~=60012
   TEST_ASSERT_EQUAL_UINT32(1667UL*36UL, decoder.getRevolutionTime());
 
   // --- If at a skip tooth, return currentStatus.revolutionTime
-  toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH1];
+  _decoderState.toothCurrentCount = (unsigned int)_decoderState.toothAngles[SKIP_TOOTH1];
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-  toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH2];
+  _decoderState.toothCurrentCount = (unsigned int)_decoderState.toothAngles[SKIP_TOOTH2];
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-  toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH3];
+  _decoderState.toothCurrentCount = (unsigned int)_decoderState.toothAngles[SKIP_TOOTH3];
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-  toothCurrentCount = (unsigned int)toothAngles[SKIP_TOOTH4];
+  _decoderState.toothCurrentCount = (unsigned int)_decoderState.toothAngles[SKIP_TOOTH4];
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 
   // --- Running path: stdGetRevolutionTime(CRANK_SPEED)
   currentStatus.setRpm(currentStatus.crankRPM*2U);
   currentStatus.startRevolutions = 1; // not cranking
-  decoderStatus.syncStatus = SyncStatus::Full;
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // revTime = 60000
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // --- Fallback: when sync lost, stdGetRevolutionTime returns currentStatus.revolutionTime
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 }
 

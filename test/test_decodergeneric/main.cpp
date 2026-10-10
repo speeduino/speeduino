@@ -19,6 +19,8 @@ void runAllTests(void)
     extern void testDecoderApiCoverage(void);
     extern void testinterrupt_t(void);
     extern void testCrankAngleCalculators(void);
+    extern void testPerToothIgnition(void);
+    extern void testRevTimeCalcs(void);
 
     testDecoder_General();
     testToothLoggers();
@@ -27,6 +29,8 @@ void runAllTests(void)
     testDecoderApiCoverage();
     testinterrupt_t();
     testCrankAngleCalculators();
+    testPerToothIgnition();
+    testRevTimeCalcs();
 }
 
 TEST_HARNESS(runAllTests)

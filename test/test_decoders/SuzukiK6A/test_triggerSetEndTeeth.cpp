@@ -5,6 +5,9 @@
 #include "scheduler.h"
 #include "decoder_init.h"
 #include "scheduler_ignition_controller.h"
+#include "src/decoders/details/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 static decoder_t test_setup_SuzukiK6A()
 {
@@ -14,8 +17,6 @@ static decoder_t test_setup_SuzukiK6A()
 
     return triggerSetup_SuzukiK6A();
 }
-
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
 
 //************************************** Begin the new ignition setEndTooth tests **************************************
 
@@ -30,7 +31,7 @@ static void test_k6A_newIgn_trig0_1()
     configPage4.triggerAngle = 0; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trig90_1()
@@ -45,7 +46,7 @@ static void test_k6A_newIgn_trig90_1()
     configPage4.triggerAngle = 90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trig180_1()
@@ -59,7 +60,7 @@ static void test_k6A_newIgn_trig180_1()
     configPage4.triggerAngle = 180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trig270_1()
@@ -73,7 +74,7 @@ static void test_k6A_newIgn_trig270_1()
     configPage4.triggerAngle = 270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trig360_1()
@@ -87,7 +88,7 @@ static void test_k6A_newIgn_trig360_1()
     configPage4.triggerAngle = 360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trigNeg90_1()
@@ -101,7 +102,7 @@ static void test_k6A_newIgn_trigNeg90_1()
     configPage4.triggerAngle = -90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trigNeg180_1()
@@ -115,7 +116,7 @@ static void test_k6A_newIgn_trigNeg180_1()
     configPage4.triggerAngle = -180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trigNeg270_1()
@@ -129,7 +130,7 @@ static void test_k6A_newIgn_trigNeg270_1()
     configPage4.triggerAngle = -270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[0]);
 }
 
 static void test_k6A_newIgn_trigNeg360_1()
@@ -143,7 +144,7 @@ static void test_k6A_newIgn_trigNeg360_1()
     configPage4.triggerAngle = -360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[0]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[0]);
 }
 
 // ******* CHannel 2 *******
@@ -158,7 +159,7 @@ static void test_k6A_newIgn_trig0_2()
     configPage4.triggerAngle = 0; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[1]);
 }
 
 static void test_k6A_newIgn_trig90_2()
@@ -172,7 +173,7 @@ static void test_k6A_newIgn_trig90_2()
     configPage4.triggerAngle = 90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[1]);
 }
 
 static void test_k6A_newIgn_trig180_2()
@@ -186,7 +187,7 @@ static void test_k6A_newIgn_trig180_2()
     configPage4.triggerAngle = 180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[1]);
 }
 
 static void test_k6A_newIgn_trig270_2()
@@ -200,7 +201,7 @@ static void test_k6A_newIgn_trig270_2()
     configPage4.triggerAngle = 270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[1]);
 }
 
 void test_K6A_newIgn_trig366()
@@ -214,7 +215,7 @@ void test_K6A_newIgn_trig366()
     configPage4.triggerAngle = 360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[1]);
 }
 
 static void test_k6A_newIgn_trigNeg90_2()
@@ -228,7 +229,7 @@ static void test_k6A_newIgn_trigNeg90_2()
     configPage4.triggerAngle = -90; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[1]);
 }
 
 static void test_k6A_newIgn_trigNeg180_2()
@@ -242,7 +243,7 @@ static void test_k6A_newIgn_trigNeg180_2()
     configPage4.triggerAngle = -180; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(3, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(3, _decoderState.ignitionEndTeeth[1]);
 }
 
 static void test_k6A_newIgn_trigNeg270_2()
@@ -256,7 +257,7 @@ static void test_k6A_newIgn_trigNeg270_2()
     configPage4.triggerAngle = -270; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[1]);
 }
 
 void test_K6A_newIgn_trigNeg366()
@@ -270,7 +271,7 @@ void test_K6A_newIgn_trigNeg366()
     configPage4.triggerAngle = -360; //No trigger offset
     
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(1, ignitionEndTeeth[1]);
+    TEST_ASSERT_EQUAL(1, _decoderState.ignitionEndTeeth[1]);
 }
 
 

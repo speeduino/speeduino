@@ -5,22 +5,16 @@
 #include "test_utils.h"
 #include "scheduler_ignition_controller.h"
 #include "crankMaths.h"
+#include "src/decoders/details/decoder_state.h"
 
-extern volatile uint32_t toothLastToothTime;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern volatile int toothCurrentCount;
-extern decoder_status_t decoderStatus;
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
+extern decoders::detail::state_t _decoderState;
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
 static void assert_setEndTeeth(uint16_t expected, decoder_t &decoder, IgnitionSchedule &schedule, uint8_t index, int8_t advance)
 {
     schedule.dischargeAngle = 360 + advance; 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(expected, ignitionEndTeeth[index]);
+    TEST_ASSERT_EQUAL(expected, _decoderState.ignitionEndTeeth[index]);
 }
 
 void test_setEndTeeth_channel1()
@@ -64,14 +58,14 @@ static void test_getCrankAngle(void)
 
     auto run_case = [&](int toothNum, unsigned long elapsedDelta, int trigAngle, int16_t expected) {
         // Set deterministic tooth times so halfTooth is known
-        toothLastMinusOneToothTime = 1000;
-        toothLastToothTime = 1500; // halfTooth = 250
-        toothCurrentCount = toothNum;
-        decoderStatus.syncStatus = SyncStatus::Full;
+        _decoderState.toothLastMinusOneToothTime = 1000;
+        _decoderState.toothLastToothTime = 1500; // halfTooth = 250
+        _decoderState.toothCurrentCount = toothNum;
+        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
         configPage4.triggerAngle = trigAngle;
         CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 360;
         setAngleConverterRevolutionTime(2000);
-        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + elapsedDelta));
+        TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + elapsedDelta));
     };
 
     // halfTooth = (1500-1000)/2 = 250
@@ -96,24 +90,24 @@ static void test_getRevolutionTime(void)
         currentStatus.crankRPM = 400;
         currentStatus.revolutionTime = 12345UL;
         currentStatus.startRevolutions = 0; // cranking
-        decoderStatus.syncStatus = SyncStatus::Full;
-        toothLastMinusOneToothTime = 1000UL;
-        toothLastToothTime = toothLastMinusOneToothTime + 333UL; // gap = 333 -> revTime = 333*180
+        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        _decoderState.toothLastMinusOneToothTime = 1000UL;
+        _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 333UL; // gap = 333 -> revTime = 333*180
         TEST_ASSERT_EQUAL_UINT32(333UL*180UL, decoder.getRevolutionTime());
 
         // --- Running path: use the toothOne pair and >>1 scaling
         currentStatus.setRpm(2000);
         currentStatus.startRevolutions = 2; // not cranking
-        decoderStatus.syncStatus = SyncStatus::Full;
-        toothOneMinusOneTime = 1000UL;
-        toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 => 60000 uS revTime
+        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        _decoderState.toothOneMinusOneTime = 1000UL;
+        _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL; // >>1 => 60000 uS revTime
         TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
-        TEST_ASSERT_EQUAL_UINT32(120000UL, MAX_STALL_TIME);
+        TEST_ASSERT_EQUAL_UINT32(120000UL, _decoderState.MAX_STALL_TIME);
 
         // --- Fallback: when sync is lost, the speed is unknown. The stall time is kept
-        decoderStatus.syncStatus = SyncStatus::None;
+        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
         TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
-        TEST_ASSERT_EQUAL_UINT32(120000UL, MAX_STALL_TIME);
+        TEST_ASSERT_EQUAL_UINT32(120000UL, _decoderState.MAX_STALL_TIME);
 }
 
 void testNissan360()

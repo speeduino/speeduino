@@ -3,23 +3,22 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "crankMaths.h"
+#include "src/decoders/details/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile uint32_t toothLastToothTime;
-  extern volatile int toothCurrentCount;
-
   auto decoder = triggerSetup_420a();
 
   auto run_case = [&](int toothNum, int16_t expected, int trigAngle = 0) {
-    toothLastToothTime = 2000;
-    toothCurrentCount = toothNum;
-    decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.toothCurrentCount = toothNum;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg
@@ -48,16 +47,12 @@ static void test_getCrankAngle(void)
 
 static void test_getRevolutionTime(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   auto decoder = triggerSetup_420a();
 
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.startRevolutions = 1; // not cranking
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
 
   // Running & cranking both use the standard calculation
   currentStatus.crankRPM = 400;

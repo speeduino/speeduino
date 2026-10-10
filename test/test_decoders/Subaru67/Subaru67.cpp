@@ -3,31 +3,27 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "crankMaths.h"
+#include "src/decoders/details/decoder_state.h"
 
+extern decoders::detail::state_t _decoderState;
 static void test_getCrankAngle(void)
-{
-  extern decoder_status_t decoderStatus;
-  extern volatile uint32_t toothLastToothTime;
-  extern volatile unsigned long toothLastMinusOneToothTime;
-  extern volatile uint16_t triggerToothAngle;
-  extern volatile int toothCurrentCount;
-
+{  
   auto decoder = triggerSetup_Subaru67();
 
   auto setup_case = [&](int toothNum, int trigAngle) {
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
-    toothLastMinusOneToothTime = 1500;
-    toothLastToothTime = 2000; // toothTime = 500
-    triggerToothAngle = 90; // scale interval-based angle to make delta noticeable
-    toothCurrentCount = toothNum;
-    decoderStatus.syncStatus = SyncStatus::Full;
-    decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.toothLastMinusOneToothTime = 1500;
+    _decoderState.toothLastToothTime = 2000; // toothTime = 500
+    _decoderState.triggerToothAngle = 90; // scale interval-based angle to make delta noticeable
+    _decoderState.toothCurrentCount = toothNum;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
   };
 
   auto run_case = [&](int toothNum, int trigAngle, int delta, int16_t expected) {
     setup_case(toothNum, trigAngle);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
   };
 
   // dt = timeToAngleIntervalTooth(100) = 100*90/500 = 18
@@ -52,25 +48,21 @@ static void test_getCrankAngle(void)
 
   // Zero if not full sync
   setup_case(1, 0);
-  decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
   setup_case(1, 0);
-  decoderStatus.syncStatus = SyncStatus::Partial;
-  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(toothLastToothTime + 100));
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Partial;
+  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
 }
 
 static void test_getRevolutionTime(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   auto decoder = triggerSetup_Subaru67();
 
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.revolutionTime = 12345UL;
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
 
   // No speed until the first revolution has completed
   currentStatus.startRevolutions = 0;
