@@ -1,4 +1,6 @@
 #include "decoder_state.h"
+#include "atomic.h"
+#include "elapsed_time.h"
 
 namespace decoders {
 
@@ -33,6 +35,17 @@ void __attribute__((optimize("Os"))) state_t::reset(void)
   decoderStatus.syncStatus = SyncStatus::None;
   triggerFilterTime = 0;
   decoderStatus.validTrigger = false;
+}
+
+bool state_t::toothWithinMaxStallTime(uint32_t curTime)
+{
+  uint32_t lastToothTime = std::get<0>(atomic_copy(toothLastToothTime));
+
+  // lastToothTime can be slightly ahead of curTime if a pulse occurred after
+  // curTime was sampled. Accept that race only within the stall interval; an
+  // unconditional ordering check would mistake a real counter rollover for it.
+  return (timeElapsed(curTime, lastToothTime) < MAX_STALL_TIME)
+      || (timeElapsed(lastToothTime, curTime) < MAX_STALL_TIME);
 }
 
 }

@@ -55,9 +55,18 @@ namespace detail {
          * This ONLY works for even spaced decoders.
          */
         void setFilter(unsigned long curGap, const config4 &page4);
-        
+
         /** @brief Reset tooth statues & times */
         void reset(void);
+        
+        /**
+         * @brief Check how long ago the last tooth was seen compared to now. 
+         * If it was more than MAX_STALL_TIME then the engine is probably stopped. 
+         * 
+         * @param curTime "now" time in microseconds
+         * @return true if curTime less than MAX_STALL_TIME, false otherwise
+         */
+        bool toothWithinMaxStallTime(uint32_t curTime);
     };
 }
 }
