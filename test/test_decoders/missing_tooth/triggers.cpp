@@ -49,6 +49,7 @@ static void test_primary_updates_regular_tooth(void)
     config2 page2{};
     config4 page4{};
 
+    page4.triggerFilter = TRIGGER_FILTER_LITE;
     decoderState.toothLastMinusOneToothTime = 500;
     decoderState.toothLastToothTime = 1000;
     decoderState.toothCurrentCount = 5;
@@ -62,6 +63,36 @@ static void test_primary_updates_regular_tooth(void)
     TEST_ASSERT_EQUAL_UINT32(1000, decoderState.toothLastMinusOneToothTime);
     TEST_ASSERT_EQUAL_UINT32(1500, decoderState.toothLastToothTime);
     TEST_ASSERT_TRUE(decoderState.decoderStatus.toothAngleIsCorrect);
+    // Assert that filtering occurred
+    TEST_ASSERT_NOT_EQUAL_UINT32(0, decoderState.triggerFilterTime);
+}
+
+static void test_primary_no_missing_tooth_after_initial_sync(void)
+{
+    statuses current;
+    decoders::detail::state_t decoderState{};
+    config2 page2{};
+    config4 page4{};
+
+    // Set up a known good scenario: Sync=Full, teeth seen, time gaps are correct.
+    decoderState.toothLastMinusOneToothTime = 500;
+    decoderState.toothLastToothTime = 1000;
+    decoderState.toothCurrentCount = 5;
+    decoderState.triggerActualTeeth = 36;
+    decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    current.setRpm(3000);
+    page4.triggerMissingTeeth = 2; // Test with a value, but we expect no gap detection
+
+    decoders::missing_tooth::triggerPrimary(1500, current, decoderState, page2, page4);
+
+    // Assert that the tooth count incremented (regular tooth path)
+    TEST_ASSERT_EQUAL_UINT16(6, decoderState.toothCurrentCount);
+    // Assert that sync status remains Full
+    TEST_ASSERT_EQUAL(SyncStatus::Full, decoderState.decoderStatus.syncStatus);
+    // Assert that the tooth angle is marked as correct
+    TEST_ASSERT_TRUE(decoderState.decoderStatus.toothAngleIsCorrect);
+    // Assert that filtering was performed
+    TEST_ASSERT_TRUE(decoderState.triggerFilterTime > 0);
 }
 
 static void test_primary_syncs_on_missing_tooth_gap(void)

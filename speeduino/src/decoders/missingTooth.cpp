@@ -209,6 +209,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, detail::state_t &deco
         triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
         break;
 
+      default:
       case SEC_TRIGGER_SINGLE:
         //Standard single tooth cam trigger
         decoderState.revolutionOne = 1; //Sequential revolution reset
