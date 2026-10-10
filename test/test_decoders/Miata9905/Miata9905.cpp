@@ -3,26 +3,22 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "crankMaths.h"
+#include "src/decoders/decoder_state.h"
 
-extern decoder_status_t decoderStatus;
-extern volatile uint32_t toothLastToothTime;
-extern volatile int toothCurrentCount;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
   auto decoder = triggerSetup_Miata9905();
 
   auto run_case = [&](int toothNum, int16_t expected, int trigAngle = 0) {
-    toothLastToothTime = 2000;
-    toothCurrentCount = toothNum;
-    decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.toothCurrentCount = toothNum;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
   };
 
   // timeToAngle(100) ~= 18 deg when revolution time is 2000us
@@ -47,29 +43,29 @@ static void test_getRevolutionTime(void)
   auto decoder = triggerSetup_Miata9905();
 
   // --- Cranking branch: currentStatus.RPM < currentStatus.crankRPM and sync full
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.setRpm(0);
   currentStatus.crankRPM = 400;
   currentStatus.revolutionTime = 99999UL;
   // triggerToothAngle=90 (from decoder setup), gap=15000 -> revTime = 15000 * 360 / 90 = 60000
-  toothLastMinusOneToothTime = 1000UL;
-  toothLastToothTime = toothLastMinusOneToothTime + 15000UL;
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 15000UL;
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // Missing tooth history while cranking: keep the published period
-  toothLastToothTime = 0;
-  toothLastMinusOneToothTime = 0;
+  _decoderState.toothLastToothTime = 0;
+  _decoderState.toothLastMinusOneToothTime = 0;
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 
   // --- Running path: should call stdGetRevolutionTime(CAM_SPEED)
   currentStatus.setRpm(2000);
-  decoderStatus.syncStatus = SyncStatus::Full;
-  toothOneMinusOneTime = 2000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 -> 60000
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.toothOneMinusOneTime = 2000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL; // >>1 -> 60000
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // --- Fallback: when the revolution time can't be calculated, stdGetRevolutionTime returns currentStatus.revolutionTime
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
 }
 
