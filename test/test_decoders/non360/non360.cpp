@@ -2,13 +2,9 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "src/decoders/decoder_state.h"
 
-extern volatile uint32_t toothLastToothTime;
-extern volatile int toothCurrentCount;
-extern volatile unsigned long toothLastMinusOneToothTime;
-extern volatile unsigned long toothOneTime;
-extern volatile unsigned long toothOneMinusOneTime;
-extern decoder_status_t decoderStatus;
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
@@ -22,33 +18,33 @@ static void test_getCrankAngle(void)
   // Deterministic angle conversion
   setAngleConverterRevolutionTime(2000);
 
-  toothLastToothTime = 10000;
+  _decoderState.toothLastToothTime = 10000;
 
   // tooth 1 -> base 0
-  toothCurrentCount = 1;
-  TEST_ASSERT_EQUAL(18, decoder.pGetCrankAngle(toothLastToothTime + 100));
+  _decoderState.toothCurrentCount = 1;
+  TEST_ASSERT_EQUAL(18, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
 
   // tooth 0 -> treated as last tooth (triggerTeeth)
-  toothCurrentCount = 0;
-  TEST_ASSERT_EQUAL(351, decoder.pGetCrankAngle(toothLastToothTime + 200));
+  _decoderState.toothCurrentCount = 0;
+  TEST_ASSERT_EQUAL(351, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 200));
 
   // Test with TrigAngMul >1 and different tooth count
   configPage4.triggerTeeth = 10;
   configPage4.TrigAngMul = 2;
   configPage4.triggerAngle = 0;
   decoder = triggerSetup_non360(); // recompute triggerToothAngle
-  toothLastToothTime = 20000;
-  toothCurrentCount = 3;
-  TEST_ASSERT_EQUAL(81, decoder.pGetCrankAngle(toothLastToothTime + 50));
+  _decoderState.toothLastToothTime = 20000;
+  _decoderState.toothCurrentCount = 3;
+  TEST_ASSERT_EQUAL(81, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 50));
 
   // Wrap-around: force triggerAngle large so result >=720
   configPage4.triggerTeeth = 8;
   configPage4.TrigAngMul = 1;
   configPage4.triggerAngle = 500;
   decoder = triggerSetup_non360();
-  toothLastToothTime = 30000;
-  toothCurrentCount = 8; // base = 7*45 = 315 -> +500 = 815 >=720 -> subtract 720 -> 95
-  TEST_ASSERT_EQUAL(97, decoder.pGetCrankAngle(toothLastToothTime + 10));
+  _decoderState.toothLastToothTime = 30000;
+  _decoderState.toothCurrentCount = 8; // base = 7*45 = 315 -> +500 = 815 >=720 -> subtract 720 -> 95
+  TEST_ASSERT_EQUAL(97, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 10));
 }
 
 static void test_getRevolutionTime(void)
@@ -65,23 +61,23 @@ static void test_getRevolutionTime(void)
   currentStatus.crankRPM = 400;
   currentStatus.startRevolutions = 0; // cranking
   currentStatus.revolutionTime = UINT32_MAX;
-  decoderStatus.syncStatus = SyncStatus::Full;
-  toothCurrentCount = 1;
-  toothLastMinusOneToothTime = 1000UL;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.toothCurrentCount = 1;
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
   // Choose gap so (gap * triggerTeeth) == 60000us
-  toothLastToothTime = toothLastMinusOneToothTime + (60000UL / configPage4.triggerTeeth); // 60000/8 = 7500
+  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + (60000UL / configPage4.triggerTeeth); // 60000/8 = 7500
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // --- Running path: use stdGetRevolutionTime(CRANK_SPEED) via toothOne pair
   currentStatus.setRpm(2000);
   currentStatus.startRevolutions = 1; // not cranking
-  decoderStatus.syncStatus = SyncStatus::Full;
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL; // revTime = 60000
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // revTime = 60000
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // --- Fallback: when sync lost, the speed is unknown
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
 }
 

@@ -3,23 +3,22 @@
 #include "../test_utils.h"
 #include "globals.h"
 #include "crankMaths.h"
+#include "src/decoders/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile uint32_t toothLastToothTime;
-  extern volatile uint16_t toothCurrentCount;
-
   auto decoder = triggerSetup_HondaJ32();
 
   auto run_case = [&](uint16_t toothNum, int16_t expected, int16_t triggerAngle = 0) {
-    toothLastToothTime = 2000;
-    toothCurrentCount = toothNum;
-    decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.toothCurrentCount = toothNum;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = triggerAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 360;
     setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + 100));  
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));  
   };
 
   // Basic teeth
@@ -45,23 +44,19 @@ static void test_getCrankAngle(void)
 
 static void test_getRevolutionTime(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-
   auto decoder = triggerSetup_HondaJ32();
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.revolutionTime = 12345UL;
   // No tooth #1 history yet: keep the published period
   TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 
   // The time between the last 2 tooth #1 (as recorded by the trigger handler)
-  toothOneMinusOneTime = 1000UL;
-  toothOneTime = toothOneMinusOneTime + 60000UL;
+  _decoderState.toothOneMinusOneTime = 1000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL;
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // No sync: the tooth #1 times may be stale, so keep the published period
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 

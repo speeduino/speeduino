@@ -2,23 +2,22 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
+#include "src/decoders/decoder_state.h"
+
+extern decoders::detail::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
-  extern decoder_status_t decoderStatus;
-  extern volatile uint32_t toothLastToothTime;
-  extern volatile int toothCurrentCount;
-  extern bool revolutionOne;
   auto run_case = [&](decoder_t &decoder, int toothCount, int trigAngle, int delta, int16_t expected) {
-    toothLastToothTime = 2000;
-    revolutionOne = false;
-    toothCurrentCount = toothCount;
-    decoderStatus.syncStatus = SyncStatus::Full;
-    decoderStatus.toothAngleIsCorrect = true;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.revolutionOne = false;
+    _decoderState.toothCurrentCount = toothCount;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
     configPage4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(toothLastToothTime + delta));
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
   };
 
   const int dt = 18; // timeToAngle(100) ~= 18 deg with revolution time 2000
@@ -46,25 +45,21 @@ static void test_getCrankAngle(void)
 
 static void test_getRevolutionTime(void)
 {
-  extern volatile unsigned long toothOneTime;
-  extern volatile unsigned long toothOneMinusOneTime;
-  extern decoder_status_t decoderStatus;
-
   auto decoder = triggerSetup_Daihatsu();
 
   // Prepare state so the revolution time can be calculated
-  decoderStatus.syncStatus = SyncStatus::Full;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
   currentStatus.startRevolutions = 1; // not cranking
   currentStatus.setRpm(2000);
   currentStatus.revolutionTime = 12345UL;
 
   // Cam-speed: set times such that (toothOneTime - toothOneMinusOneTime) >> 1 == 60000us
-  toothOneMinusOneTime = 2000UL;
-  toothOneTime = toothOneMinusOneTime + 120000UL; // >>1 -> 60000
+  _decoderState.toothOneMinusOneTime = 2000UL;
+  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL; // >>1 -> 60000
   TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
 
   // Fallback: when not synced, should return currentStatus.revolutionTime
-  decoderStatus.syncStatus = SyncStatus::None;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
   TEST_ASSERT_EQUAL_UINT32(12345UL, decoder.getRevolutionTime());
 }
 

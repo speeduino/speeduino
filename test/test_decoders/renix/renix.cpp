@@ -5,8 +5,10 @@
 #include "../../test_utils.h"
 #include "decoder_init.h"
 #include "scheduler_ignition_controller.h"
+#include "src/decoders/decoder_state.h"
 
-extern uint16_t ignitionEndTeeth[IGN_CHANNELS];
+extern decoders::detail::state_t _decoderState;
+
 extern void calculateIgnitionAngles(IgnitionSchedule &schedule, uint16_t dwellAngle, int8_t advance);
 
 static decoder_t test_setup_renix44(void)
@@ -33,7 +35,7 @@ static void assert_setEndTeeth(uint8_t expected, decoder_t &decoder, IgnitionSch
 {
     schedule.dischargeAngle = 180 + advance; 
     decoder.setEndTeeth();
-    TEST_ASSERT_EQUAL(expected, ignitionEndTeeth[index]);
+    TEST_ASSERT_EQUAL(expected, _decoderState.ignitionEndTeeth[index]);
 }
 
 static void test_setEndTeeth_44_channel_1()

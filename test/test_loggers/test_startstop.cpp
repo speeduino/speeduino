@@ -3,8 +3,9 @@
 #include "decoder_init.h"
 #include "decoders.h"
 #include "globals.h"
+#include "src/decoders/decoder_state.h"
 
-extern decoder_status_t decoderStatus;
+extern decoders::detail::state_t _decoderState;
 
 static uint8_t decoderToTest;
 static void test_start_stop(void)
