@@ -24,5 +24,16 @@ void state_t::setFilter(unsigned long curGap, const config4 &page4)
     }
 }
 
+void __attribute__((optimize("Os"))) state_t::reset(void) 
+{
+  toothLastSecToothTime = 0;
+  toothLastToothTime = 0;
+  toothSystemCount = 0;
+  secondaryToothCount = 0;
+  decoderStatus.syncStatus = SyncStatus::None;
+  triggerFilterTime = 0;
+  decoderStatus.validTrigger = false;
+}
+
 }
 }

@@ -55,6 +55,9 @@ namespace detail {
          * This ONLY works for even spaced decoders.
          */
         void setFilter(unsigned long curGap, const config4 &page4);
+        
+        /** @brief Reset tooth statues & times */
+        void reset(void);
     };
 }
 }
