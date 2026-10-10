@@ -10,6 +10,7 @@ statuses::statuses(void)
   decoder = decoder_builder_t().build();
 }
 
+#if defined(UNIT_TEST)
 void statuses::setRpm(uint16_t rpm)
 {
   ATOMIC()
@@ -18,6 +19,7 @@ void statuses::setRpm(uint16_t rpm)
     this->RPMdiv100 = div100(rpm);
   }
 }
+#endif
 
 void statuses::setRevolutionTime(uint32_t revTime)
 {
