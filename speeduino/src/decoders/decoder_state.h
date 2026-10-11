@@ -1,10 +1,13 @@
 #pragma once
 
+#include "src/utils/nominmax.h"
+#include <algorithm>
 #include <stdint.h>
 #ifdef USE_LIBDIVIDE
 #include <libdivide.h>
 #endif
 #include "config_pages.h"
+#include "scheduler.h"
 
 namespace decoders {
 
@@ -67,6 +70,22 @@ namespace shared {
          * @return true if curTime less than MAX_STALL_TIME, false otherwise
          */
         bool toothWithinMaxStallTime(uint32_t curTime);
+        
+        inline uint16_t clampToActualTeeth(const config4 &page4, uint16_t toothNum, uint8_t toothAdder) const {
+            if(toothNum > triggerActualTeeth && toothNum <= page4.triggerTeeth) { toothNum = triggerActualTeeth; }
+            return (std::min)(toothNum, (uint16_t)(triggerActualTeeth + toothAdder));
+        }
+
+        int16_t toothNumFromScheduleAngles(const config4 &page4, const IgnitionSchedule &schedule) const {
+            int16_t angle = schedule.dischargeAngle - page4.triggerAngle;
+#ifdef USE_LIBDIVIDE
+            // LCOV_EXCL_BR_START
+            return libdivide::libdivide_s16_do(angle, &divTriggerToothAngle);
+            // LCOV_EXCL_BR_STOP
+#else
+            return angle / (int16_t)triggerToothAngle;
+#endif
+        }
     };
 }
 }
