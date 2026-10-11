@@ -663,29 +663,13 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
   return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
 }
 
-static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
-  int16_t toothRange = (int16_t)configPage4.triggerTeeth + (int16_t)toothAdder;
-  return (uint16_t)nudge((int16_t)1, (int16_t)(toothRange+1), toothNum);
-}
-
-static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder) {
-  if(toothNum > _decoderState.triggerActualTeeth && toothNum <= configPage4.triggerTeeth) { toothNum = _decoderState.triggerActualTeeth; }
-  return (std::min)(toothNum, (uint16_t)(_decoderState.triggerActualTeeth + toothAdder));
-}
-
 static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  //Temp variable used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempEndTooth;
-#ifdef USE_LIBDIVIDE  
-  tempEndTooth = libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)_decoderState.triggerToothAngle;
-#endif
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
   //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
   if(configPage4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
   
   // Clamp to tooth count
-  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
+  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
 }
 
 static void triggerSetEndTeeth_missingTooth(void)
@@ -888,13 +872,7 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth =
-#ifdef USE_LIBDIVIDE
-      libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &_decoderState.divTriggerToothAngle);
-#else
-      (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)_decoderState.triggerToothAngle;
-#endif
-  return clampToToothCount(tempEndTooth, toothAdder);
+  return decoders::shared::clampToToothCount(configPage4, _decoderState.toothNumFromScheduleAngles(configPage4, schedule), toothAdder);
 }
 
 /** Dual Wheel - Set End Teeth.
@@ -4062,14 +4040,9 @@ static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)_decoderState.triggerToothAngle;
-#endif  
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
   tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
-  return clampToActualTeeth((uint16_t)tempEndTooth, toothAdder);
+  return _decoderState.clampToActualTeeth(configPage4, (uint16_t)tempEndTooth, toothAdder);
 }
 
 static void triggerSetEndTeeth_FordST170(void)
@@ -4436,13 +4409,8 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)_decoderState.triggerToothAngle;
-#endif  
-  return calcSetEndTeeth_NGC_SkipMissing(clampToToothCount(tempEndTooth - 1, toothAdder));
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
+  return calcSetEndTeeth_NGC_SkipMissing(decoders::shared::clampToToothCount(configPage4, tempEndTooth - 1, toothAdder));
 }
 
 static void triggerSetEndTeeth_NGC(void)
@@ -4791,15 +4759,9 @@ static void triggerPri_Renix(void)
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)_decoderState.triggerToothAngle;
-#endif  
-  tempEndTooth = tempEndTooth - 1;
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule) - 1;
   // Clamp to tooth count
-  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
+  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
 }
 
 static void triggerSetEndTeeth_Renix(void)

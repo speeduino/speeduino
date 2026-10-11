@@ -2,7 +2,7 @@
 #include "src/decoders/perToothIgnition.h"
 #include "scheduler_ignition_controller.h"
 
-using namespace decoders::detail;
+using namespace decoders::shared;
 
 static decoder_features_t test_get_decoder_features(void)
 {
