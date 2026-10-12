@@ -230,9 +230,7 @@ void initialiseAll(void)
     if( VSS_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinNumbers.pinVSS), vssPulse, RISING); } //Secondary trigger input can safely be used for VSS
     if( FLEX_USES_RPM2() ) { attachInterrupt(digitalPinToInterrupt(pinNumbers.pinFlex), flexPulse, CHANGE); } //Secondary trigger input can safely be used for Flex sensor
 
-    //Initial values for loop times
-    mainLoopCount = 0;
-      
+     
     initialiseFuelPump(currentStatus, configPage2, pinNumbers);
 
     interrupts();

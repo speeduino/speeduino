@@ -69,9 +69,12 @@ constexpr table2D_u8_u8_10 idleTargetTable(&configPage6.iacBins, &configPage6.ia
 
 #ifndef UNIT_TEST // Scope guard for unit testing
 
+static uint16_t mainLoopCount = 0;
+
 void setup(void)
 {
   currentStatus.initialisationComplete = false; //Tracks whether the initialiseAll() function has run completely
+  mainLoopCount = 0;
   initialiseAll();
 }
 
@@ -123,6 +126,24 @@ static void onPowerSourceSwitch(uint8_t originalBatteryVoltage, const statuses &
   }
 }
 
+static void updateTimingTracking(void)
+{
+  if (BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ)) 
+  { 
+    currentStatus.loopsPerSecond = mainLoopCount;
+    mainLoopCount = 0; 
+  }
+  else if(mainLoopCount < UINT16_MAX) 
+  { 
+    ++mainLoopCount; 
+  }
+  else
+  {
+    // Very fast main loop, at least 65535 loop/sec!
+    // Do nothing.
+  }
+}
+
 /** Speeduino main loop.
  * 
  * Main loop chores (roughly in the order that they are performed):
@@ -149,9 +170,9 @@ static void onPowerSourceSwitch(uint8_t originalBatteryVoltage, const statuses &
 BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
 {
   uint8_t originalBatteryVoltage = currentStatus.battery10;
-
-      if(mainLoopCount < UINT16_MAX) { mainLoopCount++; }
+    
       currentStatus.LOOP_TIMER = getAndClearTimerMask();
+      updateTimingTracking();
 
       //SERIAL Comms
       //Initially check that the last serial send values request is not still outstanding

@@ -94,7 +94,6 @@ static void test_250ms_boundary_sets_4Hz(void)
 static void test_1Hz_boundary(void)
 {
   setup_oneMsInterval();
-  mainLoopCount = 7777U;
   currentStatus.secl = 100U;
 
   run_n_intervals(1000);
@@ -104,8 +103,6 @@ static void test_1Hz_boundary(void)
   TEST_ASSERT_FALSE(BIT_CHECK(TIMER_mask, BIT_TIMER_1HZ));
 
   TEST_ASSERT_EQUAL_UINT8(101U, currentStatus.secl);
-  TEST_ASSERT_EQUAL_UINT16(7777U, currentStatus.loopsPerSecond);
-  TEST_ASSERT_EQUAL_UINT16(0U, mainLoopCount);
   // crankRPM = configPage4.crankRPM * 10
   TEST_ASSERT_EQUAL_UINT16(400U, currentStatus.crankRPM);
 }
