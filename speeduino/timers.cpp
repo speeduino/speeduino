@@ -151,10 +151,6 @@ void oneMSInterval(void)
         { currentStatus.runSecs++; } //Increment our run counter by 1 second.
     }
     //**************************************************************************************************************************************************
-    //This records the number of main loops the system has completed in the last second
-    currentStatus.loopsPerSecond = mainLoopCount;
-    mainLoopCount = 0;
-    //**************************************************************************************************************************************************
     //increment secl (secl is simply a counter that increments every second and is used to track whether the system has unexpectedly reset
     currentStatus.secl++;
     //**************************************************************************************************************************************************
