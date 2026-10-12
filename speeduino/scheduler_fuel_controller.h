@@ -11,28 +11,7 @@
 #include "statuses.h"
 #include "fuel_calcs.h"
 
-extern FuelSchedule fuelSchedule1;
-#if (INJ_CHANNELS >= 2)
-extern FuelSchedule fuelSchedule2;
-#endif
-#if (INJ_CHANNELS >= 3)
-extern FuelSchedule fuelSchedule3;
-#endif
-#if (INJ_CHANNELS >= 4)
-extern FuelSchedule fuelSchedule4;
-#endif
-#if INJ_CHANNELS >= 5
-extern FuelSchedule fuelSchedule5;
-#endif
-#if INJ_CHANNELS >= 6
-extern FuelSchedule fuelSchedule6;
-#endif
-#if INJ_CHANNELS >= 7
-extern FuelSchedule fuelSchedule7;
-#endif
-#if INJ_CHANNELS >= 8
-extern FuelSchedule fuelSchedule8;
-#endif
+extern FuelSchedule fuelSchedules[INJ_CHANNELS];
 
 /**
  * @brief Schedule all fuel channels

@@ -16,11 +16,12 @@ static void endCallback(void) { /*Empty*/ }
 
 static void test_accuracy_timeout(Schedule &schedule)
 {
-    setCallbacks(schedule, startCallback, endCallback);
+    schedule.setCallbacks(startCallback, endCallback);
     start_time = micros();
     setSchedule(schedule, TIMEOUT, DURATION, true);
     while(schedule._status == PENDING) /*Wait*/ ;
     while(schedule._status != OFF) /*Wait*/ ;
+    TEST_ASSERT_GREATER_THAN(DELTA, TIMEOUT);
     TEST_ASSERT_UINT32_WITHIN(DELTA, TIMEOUT, end_time - start_time);
 }
 
@@ -32,44 +33,11 @@ static void test_accuracy_timeout_inj(FuelSchedule &schedule)
     stopFuelSchedulers();
 }
 
-static void test_accuracy_timeout_inj1(void)
+static void test_accuracy_timeout_inj(void)
 {
-    INJCHANNEL_TEST_HELPER1(test_accuracy_timeout_inj(fuelSchedule1));
-}
-
-static void test_accuracy_timeout_inj2(void)
-{
-    INJCHANNEL_TEST_HELPER2(test_accuracy_timeout_inj(fuelSchedule2));
-}
-
-static void test_accuracy_timeout_inj3(void)
-{
-    INJCHANNEL_TEST_HELPER3(test_accuracy_timeout_inj(fuelSchedule3));
-}
-
-static void test_accuracy_timeout_inj4(void)
-{
-    INJCHANNEL_TEST_HELPER4(test_accuracy_timeout_inj(fuelSchedule4));
-}
-
-static void test_accuracy_timeout_inj5(void)
-{
-    INJCHANNEL_TEST_HELPER5(test_accuracy_timeout_inj(fuelSchedule5))
-}
-
-static void test_accuracy_timeout_inj6(void)
-{
-    INJCHANNEL_TEST_HELPER6(test_accuracy_timeout_inj(fuelSchedule6))
-}
-
-static void test_accuracy_timeout_inj7(void)
-{
-    INJCHANNEL_TEST_HELPER7(test_accuracy_timeout_inj(fuelSchedule7));
-}
-
-static void test_accuracy_timeout_inj8(void)
-{
-    INJCHANNEL_TEST_HELPER8(test_accuracy_timeout_inj(fuelSchedule8));
+  for (auto& schedule: fuelSchedules) {
+    test_accuracy_timeout_inj(schedule);
+  }
 }
 
 static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
@@ -80,66 +48,19 @@ static void test_accuracy_timeout_ign(IgnitionSchedule &schedule)
     stopIgnitionSchedulers();
 }
 
-static void test_accuracy_timeout_ign1(void)
+static void test_accuracy_timeout_ign(void)
 {
-    IGNCHANNEL_TEST_HELPER1(test_accuracy_timeout_ign(ignitionSchedule1));
-}
-
-static void test_accuracy_timeout_ign2(void)
-{
-    IGNCHANNEL_TEST_HELPER2(test_accuracy_timeout_ign(ignitionSchedule2));
-}
-
-static void test_accuracy_timeout_ign3(void)
-{
-    IGNCHANNEL_TEST_HELPER3(test_accuracy_timeout_ign(ignitionSchedule3));
-}
-
-static void test_accuracy_timeout_ign4(void)
-{
-    IGNCHANNEL_TEST_HELPER4(test_accuracy_timeout_ign(ignitionSchedule4));
-}
-
-static void test_accuracy_timeout_ign5(void)
-{
-    IGNCHANNEL_TEST_HELPER5(test_accuracy_timeout_ign(ignitionSchedule5));
-}
-
-static void test_accuracy_timeout_ign6(void)
-{
-    IGNCHANNEL_TEST_HELPER6(test_accuracy_timeout_ign(ignitionSchedule6));
-}
-
-static void test_accuracy_timeout_ign7(void)
-{
-    IGNCHANNEL_TEST_HELPER7(test_accuracy_timeout_ign(ignitionSchedule7));
-}
-
-static void test_accuracy_timeout_ign8(void)
-{
-    IGNCHANNEL_TEST_HELPER8(test_accuracy_timeout_ign(ignitionSchedule8));
+    for (auto& schedule: ignitionSchedules)
+    {
+        test_accuracy_timeout_ign(schedule);
+    }
 }
 
 void test_accuracy_timeout(void)
 {
   SET_UNITY_FILENAME() {
 
-    RUN_TEST_P(test_accuracy_timeout_inj1);
-    RUN_TEST_P(test_accuracy_timeout_inj2);
-    RUN_TEST_P(test_accuracy_timeout_inj3);
-    RUN_TEST_P(test_accuracy_timeout_inj4);
-    RUN_TEST_P(test_accuracy_timeout_inj5);
-    RUN_TEST_P(test_accuracy_timeout_inj6);
-    RUN_TEST_P(test_accuracy_timeout_inj7);
-    RUN_TEST_P(test_accuracy_timeout_inj8);
-
-    RUN_TEST_P(test_accuracy_timeout_ign1);
-    RUN_TEST_P(test_accuracy_timeout_ign2);
-    RUN_TEST_P(test_accuracy_timeout_ign3);
-    RUN_TEST_P(test_accuracy_timeout_ign4);
-    RUN_TEST_P(test_accuracy_timeout_ign5);
-    RUN_TEST_P(test_accuracy_timeout_ign6);
-    RUN_TEST_P(test_accuracy_timeout_ign7);
-    RUN_TEST_P(test_accuracy_timeout_ign8);
+    RUN_TEST_P(test_accuracy_timeout_inj);
+    RUN_TEST_P(test_accuracy_timeout_ign);
   }
 }
