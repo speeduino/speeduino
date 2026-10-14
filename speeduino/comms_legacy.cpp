@@ -93,12 +93,12 @@ void legacySerialCommand(void)
       break;
 
     case 'b': // Note this is now deprecated. No EEPROM burn will take place in legacy mode
-      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
+      legacySerialHandler(currentCommand, primarySerial, serialStatusFlag);
       break;
 
     case 'B': // Note this is now deprecated. No EEPROM burn will take place in legacy mode
       currentStatus.commCompat = true; //Force the compat mode
-      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
+      legacySerialHandler(currentCommand, primarySerial, serialStatusFlag);
       break;
 
     case 'C': // test communications. This is used by Tunerstudio to see whether there is an ECU on a given serial port
@@ -133,7 +133,7 @@ void legacySerialCommand(void)
 
       if(primarySerial.available() >= 2)
       {
-        byte cmdGroup = (byte)Serial.read();
+        byte cmdGroup = (byte)primarySerial.read();
         (void)handleTsCommand(word(cmdGroup, primarySerial.read()), currentStatus, configPage2);
         serialStatusFlag = SERIAL_INACTIVE;
       }
@@ -225,7 +225,7 @@ void legacySerialCommand(void)
       break;
 
     case 'M':
-      legacySerialHandler(currentCommand, Serial, serialStatusFlag);
+      legacySerialHandler(currentCommand, primarySerial, serialStatusFlag);
       break;
 
     case 'N': // Displays a new line.  Like pushing enter in a text editor
@@ -332,7 +332,7 @@ void legacySerialCommand(void)
 
         if(cmd == 0x30) //Send output channels command 0x30 is 48dec
         {
-          sendValues(offset, length, cmd, Serial, serialStatusFlag);
+          sendValues(offset, length, cmd, primarySerial, serialStatusFlag);
         }
         else
         {
@@ -738,7 +738,7 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
     //targetPort.write(getTSLogEntry(offset+x));
     targetPort.write(logFunction(offset+x));
 
-    if( (&targetPort == &Serial) ) 
+    if( (&targetPort == pPrimarySerial) )
     { 
       //If the transmit buffer is full, wait for it to clear. This cannot be used with Read Dash as it will cause a timeout
       if(targetPort.availableForWrite() < 1) { bufferFull = true; }

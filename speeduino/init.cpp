@@ -162,6 +162,9 @@ void initialiseAll(void)
     #endif
 
     //Must come after setPinMapping() as secondary serial can be changed on a per board basis
+    #if defined(SPEEDUINO_DUAL_SERIAL)
+    Serial1.begin(115200);
+    #endif
     if (configPage9.enable_secondarySerial == 1) { secondarySerial.begin(115200); }
 
     //Perform all initialisations

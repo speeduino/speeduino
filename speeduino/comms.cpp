@@ -105,6 +105,18 @@ static uint32_t SDreadCompletedSectors = 0;
 static uint8_t serialPayload[TS_SERIAL_BUFFER_SIZE]; //!< Serial payload buffer. */
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 Stream* pPrimarySerial;
+#if defined(SPEEDUINO_DUAL_SERIAL)
+// Each tuning transport performs its own legacy discovery before framed traffic.
+void selectPrimaryTransport(Stream &port)
+{
+  static bool usbLegacy = true;
+  static bool uartLegacy = true;
+  if (pPrimarySerial == &Serial) { usbLegacy = currentStatus.allowLegacyComms; }
+  else if (pPrimarySerial == &Serial1) { uartLegacy = currentStatus.allowLegacyComms; }
+  pPrimarySerial = &port;
+  currentStatus.allowLegacyComms = (&port == &Serial) ? usbLegacy : uartLegacy;
+}
+#endif
 static uint32_t deferEEPROMWritesStart = 0; //!< Time (µS) at which the current EEPROM write deferral began
 static uint32_t deferEEPROMWritesDelay = 0; //!< How long (µS) after deferEEPROMWritesStart before page writing can resume
 static constexpr uint32_t EEPROM_DEFER_DELAY = MICROS_PER_SEC; //1.0 second pause after large comms before writing to EEPROM
@@ -582,7 +594,7 @@ void serialTransmit(void)
   switch (serialStatusFlag)
   {
     case SERIAL_TRANSMIT_INPROGRESS_LEGACY:
-      sendValues(logItemsTransmitted, inProgressLength, SEND_OUTPUT_CHANNELS, Serial, serialStatusFlag);
+      sendValues(logItemsTransmitted, inProgressLength, SEND_OUTPUT_CHANNELS, primarySerial, serialStatusFlag);
       break;
 
     case SERIAL_TRANSMIT_TOOTH_INPROGRESS:

@@ -182,13 +182,33 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       }
 
       //Check for any new or in-progress requests from serial.
-      if( (Serial.available() > 0) || serialRecieveInProgress() )
-      {
-        serialReceive();
-      }
+       #if defined(SPEEDUINO_DUAL_SERIAL)
+       if (serialRecieveInProgress())
+       {
+         serialReceive();
+       }
+       else if (!serialTransmitInProgress() && Serial.available() > 0)
+       {
+         selectPrimaryTransport(Serial);
+         serialReceive();
+       }
+       else if (!serialTransmitInProgress() && Serial1.available() > 0)
+       {
+         selectPrimaryTransport(Serial1);
+         serialReceive();
+       }
+       #else
+       if( (Serial.available() > 0) || serialRecieveInProgress() )
+       {
+         serialReceive();
+       }
+       #endif
       
       //Check for any secondary comms requiring action. Note that AVR runs this at a fixed 30Hz. 
       if ((configPage9.enable_secondarySerial == 1)  //secondary serial interface enabled
+      #if defined(SPEEDUINO_DUAL_SERIAL)
+      && (configPage9.secondarySerialProtocol != SECONDARY_SERIAL_PROTO_TUNERSTUDIO || serialStatusFlag == SERIAL_INACTIVE)
+      #endif
       && (secondarySerial.available() > SERIAL_BUFFER_THRESHOLD))
       {
         secondserial_Command();
