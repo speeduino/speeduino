@@ -197,6 +197,7 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
          selectPrimaryTransport(Serial1);
          serialReceive();
        }
+       else { /* No new primary request, or a response is still being sent. */ }
        #else
        if( (Serial.available() > 0) || serialRecieveInProgress() )
        {

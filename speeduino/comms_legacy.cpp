@@ -738,10 +738,10 @@ void sendValues(uint16_t offset, uint16_t packetLength, byte cmd, Stream &target
     //targetPort.write(getTSLogEntry(offset+x));
     targetPort.write(logFunction(offset+x));
 
-    if( (&targetPort == pPrimarySerial) )
-    { 
-      //If the transmit buffer is full, wait for it to clear. This cannot be used with Read Dash as it will cause a timeout
-      if(targetPort.availableForWrite() < 1) { bufferFull = true; }
+    // Only primary tuning traffic supports resuming a partial response.
+    if ((&targetPort == pPrimarySerial) && (targetPort.availableForWrite() < 1))
+    {
+      bufferFull = true;
     }
 
     //Check whether the tx buffer still has space

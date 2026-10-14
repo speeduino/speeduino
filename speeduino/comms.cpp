@@ -106,13 +106,14 @@ static uint8_t serialPayload[TS_SERIAL_BUFFER_SIZE]; //!< Serial payload buffer.
 static uint16_t serialPayloadLength = 0; //!< How many bytes in serialPayload were received or sent */
 Stream* pPrimarySerial;
 #if defined(SPEEDUINO_DUAL_SERIAL)
+static bool usbLegacy = true;
+static bool uartLegacy = true;
 // Each tuning transport performs its own legacy discovery before framed traffic.
 void selectPrimaryTransport(Stream &port)
 {
-  static bool usbLegacy = true;
-  static bool uartLegacy = true;
   if (pPrimarySerial == &Serial) { usbLegacy = currentStatus.allowLegacyComms; }
   else if (pPrimarySerial == &Serial1) { uartLegacy = currentStatus.allowLegacyComms; }
+  else { /* The secondary serial transport has its own configuration. */ }
   pPrimarySerial = &port;
   currentStatus.allowLegacyComms = (&port == &Serial) ? usbLegacy : uartLegacy;
 }
