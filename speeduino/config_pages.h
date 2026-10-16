@@ -450,6 +450,11 @@ struct config4 : public config_page_t {
 
 } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
+constexpr uint8_t TRIGGER_FILTER_OFF        = 0;
+constexpr uint8_t TRIGGER_FILTER_LITE       = 1;
+constexpr uint8_t TRIGGER_FILTER_MEDIUM     = 2;
+constexpr uint8_t TRIGGER_FILTER_AGGRESSIVE = 3;
+
 /** Page 6 of the config - mostly variables that are required for AFR targets and closed loop.
 See the ini file for further reference.
 */
