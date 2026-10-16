@@ -12,21 +12,25 @@ void tearDown(void)
 
 void runAllTests(void)
 {
-    extern void testDecoder_General(void);
     extern void testToothLoggers(void);
     extern void testDecoderBuilder(void);
     extern void testDecoderInit(void);
     extern void testDecoderApiCoverage(void);
     extern void testinterrupt_t(void);
     extern void testCrankAngleCalculators(void);
+    extern void testDecoderState(void);
+    extern void testPerToothIgnition(void);
+    extern void testRevTimeCalcs(void);
 
-    testDecoder_General();
     testToothLoggers();
     testDecoderBuilder();
     testDecoderInit();
     testDecoderApiCoverage();
     testinterrupt_t();
     testCrankAngleCalculators();
+    testDecoderState();
+    testPerToothIgnition();
+    testRevTimeCalcs();
 }
 
 TEST_HARNESS(runAllTests)
