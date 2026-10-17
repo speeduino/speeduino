@@ -931,6 +931,18 @@ static void test_stepperModeDisablesIdle(void)
   TEST_ASSERT_FALSE(context.current.idleOn);
   TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
 }
+
+static void test_basic_coverage_allModes(void)
+{
+  for (auto mode : { IAC_ALGORITHM_NONE, IAC_ALGORITHM_ONOFF, IAC_ALGORITHM_PWM_OL, IAC_ALGORITHM_PWM_CL, IAC_ALGORITHM_STEP_OL, IAC_ALGORITHM_STEP_CL, IAC_ALGORITHM_PWM_OLCL, IAC_ALGORITHM_STEP_OLCL })
+  {
+    context_t context;
+    context.prepare_idle(mode);
+    idleControl();
+    TEST_ASSERT_EQUAL(mode, _idleState.idleInitComplete);
+  }
+}
+
 void testIdleControl(void)
 {
   unity_filename_guard_t guard(__FILE__);
@@ -974,4 +986,5 @@ void testIdleControl(void)
   RUN_TEST_P(test_pwmOpenLoopRunningUsesRunningTable);
   RUN_TEST_P(test_pwmOpenLoopRunningTaper);
   RUN_TEST_P(test_stepperModeDisablesIdle);
+  RUN_TEST_P(test_basic_coverage_allModes);
 }
