@@ -59,7 +59,7 @@ static inline void initialiseIdleUpOutput(void)
 
 static void setIdlePidTunings(const config6 &page6)
 {
-  _idleState.idlePID.setTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), millis(), 250); //4Hz means 250ms
+  _idleState.idlePID.setTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), TIME_MILLIS.toRaw(_idleCurMicros()), 250); //4Hz means 250ms
   _idleState.idlePID.setSetPoint(_idleState.idle_cl_target_rpm);
 }
 
@@ -450,7 +450,7 @@ void idleControl(void)
         _idleState.idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         
-        PID_computed = _idleState.idlePID.compute(millis(), currentStatus.RPM, &_idleState.idle_pid_target_value);
+        PID_computed = _idleState.idlePID.compute(TIME_MILLIS.toRaw(_idleCurMicros()), currentStatus.RPM, &_idleState.idle_pid_target_value);
         long TEMP_idle_pwm_target_value;
         if(PID_computed == true)
         {
@@ -535,7 +535,7 @@ void idleControl(void)
         }
         
         _idleState.idlePID.setFeedForwardTerm(_idleState.FeedForwardTerm);
-        PID_computed = _idleState.idlePID.compute(millis(), currentStatus.RPM, &_idleState.idle_pid_target_value);
+        PID_computed = _idleState.idlePID.compute(TIME_MILLIS.toRaw(_idleCurMicros()), currentStatus.RPM, &_idleState.idle_pid_target_value);
 
         if(PID_computed == true)
         {
@@ -644,7 +644,7 @@ void idleControl(void)
           }
 
           _idleState.idlePID.setFeedForwardTerm(_idleState.FeedForwardTerm);
-          PID_computed = _idleState.idlePID.compute(millis(), currentStatus.RPM, &_idleState.idle_pid_target_value);
+          PID_computed = _idleState.idlePID.compute(TIME_MILLIS.toRaw(_idleCurMicros()), currentStatus.RPM, &_idleState.idle_pid_target_value);
 
           //If DFCO conditions are met keep output from changing
           if( (currentStatus.TPS > configPage2.iacTPSlimit) || _idleState.lastDFCOValue

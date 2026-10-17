@@ -98,6 +98,12 @@ static constexpr conversionFactor<int16_t, int8_t> SIGNED_RPM_MEDIUM = { .scale=
  */
 static constexpr conversionFactor<uint16_t, uint8_t> RPM_FINE = { .scale=5U, .translate=0U };
 
+/** @brief Time values stored in milliseconds 
+ * 
+ * We convert to/from µS
+ */
+static constexpr conversionFactor<uint32_t, uint32_t> TIME_MILLIS = { .scale=1000U, .translate=0U };
+
 /** @brief Time values stored in 1/10th milliseconds I.e ms/10 
  * 
  * We convert to/from µS
