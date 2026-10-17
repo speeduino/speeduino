@@ -43,14 +43,6 @@ static void prepare_pwmFullDuty(context_t &context, uint8_t direction, uint8_t c
   context.current.rotationStatus = EngineRotationStatus::Cranking;
 }
 
-static void prepare_stepOpenLoop(context_t &context)
-{
-  context.prepare_idle(IAC_ALGORITHM_STEP_OL);
-  context.page9.iacMaxSteps = 100U;
-  context.page6.iacStepHyster = 0U;
-  context.page6.iacStepHome = 0U;
-}
-
 static void test_pwmFullDutyNormalSingleChannel(void)
 {
   context_t context;
@@ -119,220 +111,6 @@ static void test_pwmZeroDutyDisablesIdle(void)
   TEST_ASSERT_FALSE(context.current.idleOn);
   TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
   TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinLow());
-}
-
-static void test_stepOpenLoopStoppedUsesCrankTable(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.init();
-
-  context.current.coolant = 110;
-  context.current.rotationStatus = EngineRotationStatus::Stopped;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepOpenLoopCrankingUsesCrankTable(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.init();
-
-  context.current.coolant = 110;
-  context.current.RPM = 600U;
-  context.current.rotationStatus = EngineRotationStatus::Cranking;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepOpenLoopStepperSteppingAndCooling(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.init();
-
-  context.current.coolant = 110;
-  context.current.rotationStatus = EngineRotationStatus::Stopped;
-
-  idle_micros_override_t microsOverride;
-  _idleState.iacStepTime_uS = 100U;
-  _idleState.iacCoolTime_uS = 200U;
-  _idleState.idleStepper.stepStartTime = 50U;
-  _idleState.idleStepper.targetIdleStep = 17;
-  _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
-
-  mockIdleMicrosValue = 149U;
-  idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
-
-  mockIdleMicrosValue = 150U;
-  idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
-
-  mockIdleMicrosValue = 349U;
-  idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
-
-  mockIdleMicrosValue = 350U;
-  context.page6.iacStepHyster = 255;
-  idleControl();
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-}
-
-static void test_stepOpenLoopMovesTowardLowerTarget(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.init();
-
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  context.current.RPM = 1000U;
-  _idleState.idleStepper.curIdleStep = 5;
-  _idleState.idleStepper.targetIdleStep = 0;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(4, _idleState.idleStepper.curIdleStep);
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-}
-
-static void test_stepOpenLoopIdleLoadAtByteBoundary(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.page9.iacMaxSteps = 85U;
-  context.init();
-
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  context.current.RPM = 1000U;
-  _idleState.idleStepper.curIdleStep = 10;
-  _idleState.idleStepper.targetIdleStep = 10;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_UINT8(10U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_INT(10, _idleState.idleStepper.curIdleStep);
-  TEST_ASSERT_FALSE(context.current.idleOn);
-}
-
-// static void test_stepOpenLoopStepperSteppingAndCooling(void)
-// {
-//   context_t context;
-//   prepare_stepOpenLoop(context);
-//   context.current.coolant = 110;
-//   context.current.rotationStatus = EngineRotationStatus::Stopped;
-//   initialiseIdle(false);
-
-//   idle_micros_override_t microsOverride;
-//   _idleState.iacStepTime_uS = 100U;
-//   _idleState.iacCoolTime_uS = 200U;
-//   _idleState.idleStepper.stepStartTime = 50U;
-//   _idleState.idleStepper.targetIdleStep = 17;
-//   _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
-
-//   mockIdleMicrosValue = 149U;
-//   idleControl();
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
-
-//   mockIdleMicrosValue = 150U;
-//   idleControl();
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
-
-//   mockIdleMicrosValue = 349U;
-//   idleControl();
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
-
-//   mockIdleMicrosValue = 350U;
-//   idleControl();
-//   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-//   TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-// }
-
-static void test_stepOpenLoopRunningUsesRunningTable(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.init();
-
-  context.current.coolant = 50;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepOpenLoopRunningTaper(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.page2.idleTaperTime = 2U;
-  context.init();
-
-  context.current.coolant = 50;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  _idleState.idleTaper = 1U;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(174, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
-}
-
-static void test_stepOpenLoopRunningIdleUp(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.page2.idleUpEnabled = true;
-  context.page2.idleUpAdder = 15U;
-  context.init();
-
-  digitalWrite(context.pins.pinIdleUp, LOW);
-  context.current.coolant = 50;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_EQUAL_INT(195, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepOpenLoopRunningAirConditioning(void)
-{
-  context_t context;
-  prepare_stepOpenLoop(context);
-  context.page15.airConIdleSteps = 10U;
-  context.init();
-
-  context.current.acStatus.turningOn = true;
-  context.current.coolant = 50;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(190, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_idleUpInputAndOutput(void)
@@ -645,30 +423,6 @@ static void test_pwmOpenLoopRunningTaper(void)
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
-static void test_stepperModeDisablesIdle(void)
-{
-  context_t context;
-  // Use a stepper mode to ensure isStepperIac(configPage6) evaluates to true
-  prepare_stepOpenLoop(context); 
-  context.init();
-
-  // Simulate a state where idle is active (to ensure disableIdle works)
-  _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
-  _idleState.idleStepper.targetIdleStep = 10;
-  context.current.idleOn = true;
-  context.current.idleLoad = 50;
-
-  // Run idleControl once to fully initialize and set up the state variables correctly for the test
-  idleControl(); 
-  
-  // Now test the disableIdle function
-  disableIdle();
-
-  // Assert that idle control has been turned off and load set to zero
-  TEST_ASSERT_FALSE(context.current.idleOn);
-  TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
-}
-
 static void test_basic_coverage_allModes(void)
 {
   for (auto mode : { IAC_ALGORITHM_NONE, IAC_ALGORITHM_ONOFF, IAC_ALGORITHM_PWM_OL, IAC_ALGORITHM_PWM_CL, IAC_ALGORITHM_STEP_OL, IAC_ALGORITHM_STEP_CL, IAC_ALGORITHM_PWM_OLCL, IAC_ALGORITHM_STEP_OLCL })
@@ -689,15 +443,6 @@ void testIdleControl(void)
   RUN_TEST_P(test_pwmFullDutyReversedSingleChannel);
   RUN_TEST_P(test_pwmFullDutyReversedDualChannel);
   RUN_TEST_P(test_pwmZeroDutyDisablesIdle);
-  RUN_TEST_P(test_stepOpenLoopStoppedUsesCrankTable);
-  RUN_TEST_P(test_stepOpenLoopCrankingUsesCrankTable);
-  RUN_TEST_P(test_stepOpenLoopStepperSteppingAndCooling);
-  RUN_TEST_P(test_stepOpenLoopMovesTowardLowerTarget);
-  RUN_TEST_P(test_stepOpenLoopIdleLoadAtByteBoundary);
-  RUN_TEST_P(test_stepOpenLoopRunningUsesRunningTable);
-  RUN_TEST_P(test_stepOpenLoopRunningTaper);
-  RUN_TEST_P(test_stepOpenLoopRunningIdleUp);
-  RUN_TEST_P(test_stepOpenLoopRunningAirConditioning);
   RUN_TEST_P(test_idleUpInputAndOutput);
   RUN_TEST_P(test_pwmOpenLoopCranking);
   RUN_TEST_P(test_pwmClosedLoopCranking);
@@ -713,6 +458,5 @@ void testIdleControl(void)
   RUN_TEST_P(test_pwmOpenLoopStoppedUsesCrankDuty);
   RUN_TEST_P(test_pwmOpenLoopRunningUsesRunningTable);
   RUN_TEST_P(test_pwmOpenLoopRunningTaper);
-  RUN_TEST_P(test_stepperModeDisablesIdle);
   RUN_TEST_P(test_basic_coverage_allModes);
 }
