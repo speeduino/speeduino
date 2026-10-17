@@ -68,38 +68,44 @@ static void test_StepperSteppingAndCooling(void)
 {
   context_t context;
   prepare_stepOpenLoop(context);
+  constexpr uint8_t COOL_MILLIS = 1;
+  context.page9.iacCoolTime = COOL_MILLIS;
+  constexpr uint8_t STEP_MILLIS = 2;
+  context.page6.iacStepTime = STEP_MILLIS;
   context.init();
 
   context.current.coolant = 110;
   context.current.rotationStatus = EngineRotationStatus::Stopped;
 
   idle_micros_override_t microsOverride;
-  _idleState.iacStepTime_uS = 100U;
-  _idleState.iacCoolTime_uS = 200U;
-  _idleState.idleStepper.stepStartTime = 50U;
-  _idleState.idleStepper.targetIdleStep = 17;
-  _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
-
-  mockIdleMicrosValue = 149U;
+  constexpr uint32_t TIME_INCREMENT_STEP = STEP_MILLIS * 1000UL;
+  constexpr uint32_t TIME_INCREMENT_COOL = COOL_MILLIS * 1000UL;
+  
+  mockIdleMicrosValue = TIME_INCREMENT_STEP;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  
+  mockIdleMicrosValue += TIME_INCREMENT_STEP-1;
+  idleControl();
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 
-  mockIdleMicrosValue = 150U;
+  mockIdleMicrosValue += 1;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 
-  mockIdleMicrosValue = 349U;
+  mockIdleMicrosValue += TIME_INCREMENT_COOL-1;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 
-  mockIdleMicrosValue = 350U;
+  mockIdleMicrosValue += 1;
   context.page6.iacStepHyster = 255;
   idleControl();
   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
+  TEST_ASSERT_EQUAL_INT(2, _idleState.idleStepper.curIdleStep);
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
 }
 
