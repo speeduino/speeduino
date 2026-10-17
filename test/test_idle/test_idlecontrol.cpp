@@ -407,45 +407,6 @@ static void test_stepClosedLoopRunningTaper(void)
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
-static void test_stepOpenLoopClosedLoopRunningTaper(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context, IAC_ALGORITHM_STEP_OLCL);
-  context.page2.idleTaperTime = 3U;
-  context.init();
-
-  context.current.coolant = 110;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  _idleState.idle_pid_target_value = 1200;
-  _idleState.idleTaper = 1U;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(295, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
-}
-
-static void test_stepOpenLoopClosedLoopRunningUsesFeedForward(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context, IAC_ALGORITHM_STEP_OLCL);
-  context.page2.idleTaperTime = 1U;
-  context.init();
-
-  context.current.coolant = 50;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  _idleState.idleTaper = 1U;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(720, _idleState.FeedForwardTerm);
-  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
-}
-
 static void test_stepClosedLoopRunningIdleUp(void)
 {
   context_t context;
@@ -850,8 +811,6 @@ void testIdleControl(void)
   RUN_TEST_P(test_stepClosedLoopCrankingUsesCrankTable);
   RUN_TEST_P(test_stepClosedLoopRunning);
   RUN_TEST_P(test_stepClosedLoopRunningTaper);
-  RUN_TEST_P(test_stepOpenLoopClosedLoopRunningTaper);
-  RUN_TEST_P(test_stepOpenLoopClosedLoopRunningUsesFeedForward);
   RUN_TEST_P(test_stepClosedLoopRunningIdleUp);
   RUN_TEST_P(test_stepClosedLoopRunningAirConditioning);
   RUN_TEST_P(test_idleUpInputAndOutput);
