@@ -12,6 +12,7 @@ void runAllTests(void)
     extern void testIdleControlStepOl(void);
     extern void testIdleControlPwmOl(void);
     extern void testIdleControlPwmOlCl(void);
+    extern void testIdleControlPwmCl(void);
     extern void testIdleInterrupt(void);
 
     testInitialiseIdle();
@@ -23,6 +24,7 @@ void runAllTests(void)
     testIdleControlStepOl();
     testIdleControlPwmOl();
     testIdleControlPwmOlCl();
+    testIdleControlPwmCl();
     testIdleInterrupt();
 }
 
