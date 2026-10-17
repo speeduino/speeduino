@@ -33,4 +33,6 @@ struct context_t
     }
 
     void prepare_idle(uint8_t algorithm);
+
+    void init(void);
 };

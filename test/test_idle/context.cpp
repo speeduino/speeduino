@@ -1,11 +1,14 @@
 #include "context.h"
 #include "../test_utils.h"
+#include "src/controllers/idle/idle.h"
+#include "src/controllers/idle/idleController_state.h"
 #include "units.h"
 
 extern table2D_u8_u8_4 iacCrankDutyTable;
 extern table2D_u8_u8_10 iacPWMTable;
 extern table2D_u8_u8_4 iacCrankStepsTable;
 extern table2D_u8_u8_10 iacStepTable;
+extern idleController::detail::state_t _idleState;
 
 static void prepare_pwm_crank_table(void)
 {
@@ -52,24 +55,22 @@ void context_t::prepare_idle(uint8_t algorithm)
     pins.pinIdleUp = TEST_IDLEUP_INPUT_PIN;
     pins.pinIdleUpOutput = TEST_IDLEUP_OUTPUT_PIN;
     page6.iacAlgorithm = algorithm;
-    page6.iacChannels = 0U;
-    page6.iacPWMdir = 0U;
-    page6.iacPWMrun = 0U;
-    page6.iacFastTemp = 0U;            // Skip ON branch in ON_OFF unless we set coolant low
     page6.idleKP = 100U;
     page6.idleKI = 50U;
     page6.idleKD = 0U;
     page6.iacStepTime = 1U;
     page9.iacCoolTime = 1U;
-    page2.iacCLminValue = 0U;
     page2.iacCLmaxValue = 100U;
-    page2.idleUpAdder = 0U;
-    current.coolant = 80;
-    current.idleUpActive = false;
-    current.CLIdleTarget = 80U;
+    current.CLIdleTarget = 80U; // Set outside of idleControl() so set a default here
 
     prepare_pwm_crank_table();
     prepare_pwm_running_table();
     prepare_stepper_crank_table();
     prepare_stepper_run_table();
+}
+
+void context_t::init(void)
+{
+    _idleState = idleController::detail::state_t();
+    initialiseIdle(false);
 }
