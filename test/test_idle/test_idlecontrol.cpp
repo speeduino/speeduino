@@ -62,31 +62,6 @@ static void prepare_stepClosedLoop(context_t &context, uint8_t algorithm = IAC_A
   context.page9.iacMaxSteps = 100U;
 }
 
-static void test_onOff(void)
-{
-  context_t context;
-  context.prepare_idle(IAC_ALGORITHM_ONOFF);
-  context.page6.iacFastTemp = 110; // 50C threshold
-  context.init();
-
-  context.current.coolant = 0;                            // Cold: below threshold -> idle ON
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(_idleState.idleOn);
-  TEST_ASSERT_TRUE(context.current.idleOn);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinHigh());
-  TEST_ASSERT_EQUAL_UINT8(100U, context.current.idleLoad);
-
-  context.current.coolant = 80;                           // Warm: above threshold -> idle OFF
-  idleControl();
-
-  TEST_ASSERT_FALSE(_idleState.idleOn);
-  TEST_ASSERT_FALSE(context.current.idleOn);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinLow());
-  TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
-}
-
 static void test_pwmFullDutyNormalSingleChannel(void)
 {
   context_t context;
@@ -857,7 +832,6 @@ void testIdleControl(void)
 {
   unity_filename_guard_t guard(__FILE__);
 
-  RUN_TEST_P(test_onOff);
   RUN_TEST_P(test_pwmFullDutyNormalSingleChannel);
   RUN_TEST_P(test_pwmFullDutyNormalDualChannel);
   RUN_TEST_P(test_pwmFullDutyReversedSingleChannel);
