@@ -31,88 +31,6 @@ struct idle_micros_override_t
   }
 };
 
-static void prepare_pwmFullDuty(context_t &context, uint8_t direction, uint8_t channels)
-{
-  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  context.page6.idleFreq = 100U;
-  context.page6.iacPWMdir = direction;
-  context.page6.iacChannels = channels;
-
-  context.current.coolant = 110;
-  context.current.RPM = 600U;
-  context.current.rotationStatus = EngineRotationStatus::Cranking;
-}
-
-static void test_pwmFullDutyNormalSingleChannel(void)
-{
-  context_t context;
-  prepare_pwmFullDuty(context, 0U, 0U);
-  context.init();
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(context.current.idleOn);
-  TEST_ASSERT_EQUAL_UINT8(100U, context.current.idleLoad);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinHigh());
-}
-
-static void test_pwmFullDutyNormalDualChannel(void)
-{
-  context_t context;
-  prepare_pwmFullDuty(context, 0U, 1U);
-  context.init();
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(context.current.idleOn);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinHigh());
-  TEST_ASSERT_TRUE(_idleState.idle2_pin._pin.isPinLow());
-}
-
-static void test_pwmFullDutyReversedSingleChannel(void)
-{
-  context_t context;
-  prepare_pwmFullDuty(context, 1U, 0U);
-  context.init();
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(context.current.idleOn);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinLow());
-}
-
-static void test_pwmFullDutyReversedDualChannel(void)
-{
-  context_t context;
-  prepare_pwmFullDuty(context, 1U, 1U);
-  context.init();
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(context.current.idleOn);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinLow());
-  TEST_ASSERT_TRUE(_idleState.idle2_pin._pin.isPinHigh());
-}
-
-static void test_pwmZeroDutyDisablesIdle(void)
-{
-  context_t context;
-  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  context.page6.idleFreq = 100U;
-  context.init();
-
-  context.current.coolant = -20;
-  context.current.RPM = 600U;
-  context.current.rotationStatus = EngineRotationStatus::Cranking;
-  context.current.idleOn = true;
-
-  idleControl();
-
-  TEST_ASSERT_FALSE(context.current.idleOn);
-  TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
-  TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinLow());
-}
-
 static void test_idleUpInputAndOutput(void)
 {
   context_t context;
@@ -153,20 +71,6 @@ static void test_idleUpInputAndOutput(void)
   TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
   TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
 #endif
-}
-
-static void test_pwmOpenLoopCranking(void)
-{
-  context_t context;
-  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  context.page6.idleFreq = 100U;
-  context.page2.idleTaperTime = 0U;
-  context.init();
-
-  context.current.coolant = 91;
-  context.current.rotationStatus = EngineRotationStatus::Cranking;
-  idleControl();
-  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
 }
 
 static void test_pwmClosedLoopCranking(void)
@@ -376,53 +280,6 @@ static void test_pwmClosedLoopRunningAirConditioning(void)
                            _idleState.idle_pwm_target_value);
 }
 
-static void test_pwmOpenLoopStoppedUsesCrankDuty(void)
-{
-  context_t context;
-  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  context.page6.idleFreq = 100U;
-  context.page2.idleTaperTime = 0U;
-  context.page6.iacPWMrun = true;
-  context.init();
-
-  context.current.coolant = 91;
-  context.current.rotationStatus = EngineRotationStatus::Stopped;
-  idleControl();
-  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
-}
-
-static void test_pwmOpenLoopRunningUsesRunningTable(void)
-{
-  context_t context;
-  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  context.page6.idleFreq = 100U;
-  context.page2.idleTaperTime = 0U;
-  context.init();
-
-  context.current.coolant = 110;
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  idleControl();
-  TEST_ASSERT_EQUAL_UINT8(31U, context.current.idleLoad);
-}
-
-static void test_pwmOpenLoopRunningTaper(void)
-{
-  context_t context;
-  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  context.page6.idleFreq = 100U;
-  context.page2.idleTaperTime = 2U;
-  context.init();
-
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.coolant = 53;
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  _idleState.idleTaper = 1U;
-  idleControl();
-
-  TEST_ASSERT_EQUAL_UINT8(39U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
-}
-
 static void test_basic_coverage_allModes(void)
 {
   for (auto mode : { IAC_ALGORITHM_NONE, IAC_ALGORITHM_ONOFF, IAC_ALGORITHM_PWM_OL, IAC_ALGORITHM_PWM_CL, IAC_ALGORITHM_STEP_OL, IAC_ALGORITHM_STEP_CL, IAC_ALGORITHM_PWM_OLCL, IAC_ALGORITHM_STEP_OLCL })
@@ -438,13 +295,7 @@ void testIdleControl(void)
 {
   unity_filename_guard_t guard(__FILE__);
 
-  RUN_TEST_P(test_pwmFullDutyNormalSingleChannel);
-  RUN_TEST_P(test_pwmFullDutyNormalDualChannel);
-  RUN_TEST_P(test_pwmFullDutyReversedSingleChannel);
-  RUN_TEST_P(test_pwmFullDutyReversedDualChannel);
-  RUN_TEST_P(test_pwmZeroDutyDisablesIdle);
   RUN_TEST_P(test_idleUpInputAndOutput);
-  RUN_TEST_P(test_pwmOpenLoopCranking);
   RUN_TEST_P(test_pwmClosedLoopCranking);
   RUN_TEST_P(test_pwmOpenLoopClosedLoopCranking);
   RUN_TEST_P(test_pwmOpenLoopClosedLoopStoppedUsesCrankDuty);
@@ -455,8 +306,5 @@ void testIdleControl(void)
   RUN_TEST_P(test_pwmClosedLoopRunning);
   RUN_TEST_P(test_pwmClosedLoopRunningIdleUp);
   RUN_TEST_P(test_pwmClosedLoopRunningAirConditioning);
-  RUN_TEST_P(test_pwmOpenLoopStoppedUsesCrankDuty);
-  RUN_TEST_P(test_pwmOpenLoopRunningUsesRunningTable);
-  RUN_TEST_P(test_pwmOpenLoopRunningTaper);
   RUN_TEST_P(test_basic_coverage_allModes);
 }
