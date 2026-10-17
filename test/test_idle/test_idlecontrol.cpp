@@ -51,17 +51,6 @@ static void prepare_stepOpenLoop(context_t &context)
   context.page6.iacStepHome = 0U;
 }
 
-static void prepare_stepClosedLoop(context_t &context, uint8_t algorithm = IAC_ALGORITHM_STEP_CL)
-{
-  context.prepare_idle(algorithm);
-  context.page6.idleKP = 0U;
-  context.page6.idleKI = 0U;
-  context.page6.idleKD = 0U;
-  context.page6.iacStepHyster = 0U;
-  context.page6.iacStepHome = 0U;
-  context.page9.iacMaxSteps = 100U;
-}
-
 static void test_pwmFullDutyNormalSingleChannel(void)
 {
   context_t context;
@@ -344,104 +333,6 @@ static void test_stepOpenLoopRunningAirConditioning(void)
   idleControl();
 
   TEST_ASSERT_EQUAL_INT(190, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepClosedLoopStoppedUsesCrankTable(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context);
-  context.init();
-  context.current.coolant = 110;
-  context.current.rotationStatus = EngineRotationStatus::Stopped;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepClosedLoopCrankingUsesCrankTable(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context);
-  context.init();
-  context.current.coolant = 110;
-  context.current.RPM = 600U;
-  context.current.rotationStatus = EngineRotationStatus::Cranking;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepClosedLoopRunning(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context);
-  context.init();
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(60, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepClosedLoopRunningTaper(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context);
-  context.page2.idleTaperTime = 3U;
-  context.init();
-
-  context.current.coolant = 110;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-  _idleState.idle_pid_target_value = 1200;
-  _idleState.idleTaper = 1U;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
-}
-
-static void test_stepClosedLoopRunningIdleUp(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context);
-  context.page2.idleUpEnabled = true;
-  context.page2.idleUpAdder = 15U;
-  context.init();
-
-  context.pins.pinIdleUp = TEST_IDLE1_PIN;
-  digitalWrite(context.pins.pinIdleUp, LOW);
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-
-  idleControl();
-
-  TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_EQUAL_INT(75, _idleState.idleStepper.targetIdleStep);
-}
-
-static void test_stepClosedLoopRunningAirConditioning(void)
-{
-  context_t context;
-  prepare_stepClosedLoop(context);
-  context.page15.airConIdleSteps = 10U;
-  context.init();
-
-  context.current.acStatus.turningOn = true;
-  context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-  context.current.rotationStatus = EngineRotationStatus::Running;
-
-  idleControl();
-
-  TEST_ASSERT_EQUAL_INT(70, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_idleUpInputAndOutput(void)
@@ -807,12 +698,6 @@ void testIdleControl(void)
   RUN_TEST_P(test_stepOpenLoopRunningTaper);
   RUN_TEST_P(test_stepOpenLoopRunningIdleUp);
   RUN_TEST_P(test_stepOpenLoopRunningAirConditioning);
-  RUN_TEST_P(test_stepClosedLoopStoppedUsesCrankTable);
-  RUN_TEST_P(test_stepClosedLoopCrankingUsesCrankTable);
-  RUN_TEST_P(test_stepClosedLoopRunning);
-  RUN_TEST_P(test_stepClosedLoopRunningTaper);
-  RUN_TEST_P(test_stepClosedLoopRunningIdleUp);
-  RUN_TEST_P(test_stepClosedLoopRunningAirConditioning);
   RUN_TEST_P(test_idleUpInputAndOutput);
   RUN_TEST_P(test_pwmOpenLoopCranking);
   RUN_TEST_P(test_pwmClosedLoopCranking);
