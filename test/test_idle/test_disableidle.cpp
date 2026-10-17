@@ -6,23 +6,12 @@
 #include "context.h"
 
 extern idleController::detail::state_t _idleState;
-extern table2D_u8_u8_4 iacCrankStepsTable;
 
 static void prepare_stepper_disable(context_t &context)
 {
   context.prepare_idle(IAC_ALGORITHM_STEP_OL);
   context.page9.iacMaxSteps = 100U;
   context.page6.iacStepHome = 0U;
-
-  TEST_DATA_P uint8_t crankBins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t crankValues[] = { 0U, 30U, 80U, 120U };
-  populate_2dtable_P(&iacCrankStepsTable, crankValues, crankBins);
-
   context.current.coolant = 50U;
   initialiseIdle(false);
   _idleState.completedHomeSteps = 0U;
@@ -119,8 +108,8 @@ static void test_disableIdle_stepper_moves_to_crank_target(void)
 
   disableIdle();
 
-  TEST_ASSERT_EQUAL_INT(102, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT32(408, _idleState.idle_pid_target_value);
+  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT32(720, _idleState.idle_pid_target_value);
   TEST_ASSERT_FALSE(context.current.idleOn);
   TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
 }

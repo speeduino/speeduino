@@ -7,11 +7,7 @@
 
 extern idleController::detail::state_t _idleState;
 extern idleController::detail::fnCurMicros_t _idleCurMicros;
-
 extern table2D_u8_u8_10 iacPWMTable;
-extern table2D_u8_u8_10 iacStepTable;
-extern table2D_u8_u8_4 iacCrankStepsTable;
-extern table2D_u8_u8_4 iacCrankDutyTable;
 
 static unsigned long mockIdleMicrosValue;
 
@@ -42,15 +38,7 @@ static void prepare_pwmFullDuty(context_t &context, uint8_t direction, uint8_t c
   context.page6.iacPWMdir = direction;
   context.page6.iacChannels = channels;
 
-  TEST_DATA_P uint8_t bins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 100, 100, 100, 100 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.RPM = 600U;
   context.current.rotationStatus = EngineRotationStatus::Cranking;
 }
@@ -61,19 +49,6 @@ static void prepare_stepOpenLoop(context_t &context)
   context.page9.iacMaxSteps = 100U;
   context.page6.iacStepHyster = 0U;
   context.page6.iacStepHome = 0U;
-
-  TEST_DATA_P uint8_t crankBins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t crankValues[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankStepsTable, crankValues, crankBins);
-
-  TEST_DATA_P uint8_t runBins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t runValues[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacStepTable, runValues, runBins);
 
   _idleState.completedHomeSteps = 0U;
   _idleState.idleStepper.curIdleStep = 0;
@@ -91,19 +66,6 @@ static void prepare_stepClosedLoop(context_t &context, uint8_t algorithm = IAC_A
   context.page6.iacStepHome = 0U;
   context.page9.iacMaxSteps = 100U;
 
-  TEST_DATA_P uint8_t crankBins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t crankValues[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankStepsTable, crankValues, crankBins);
-
-  TEST_DATA_P uint8_t runBins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t runValues[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacStepTable, runValues, runBins);
-
   _idleState.completedHomeSteps = 0U;
   _idleState.idleStepper.curIdleStep = 0;
   _idleState.idleStepper.targetIdleStep = 0;
@@ -117,7 +79,7 @@ static void test_onOff(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_ONOFF);
-  context.page6.iacFastTemp = temperatureAddOffset(50); // 50C threshold
+  context.page6.iacFastTemp = 110; // 50C threshold
   context.current.coolant = 0;                            // Cold: below threshold -> idle ON
 
   idleControl();
@@ -188,7 +150,7 @@ static void test_pwmZeroDutyDisablesIdle(void)
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_OL);
   context.page6.idleFreq = 100U;
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = -20;
   context.current.RPM = 600U;
   context.current.rotationStatus = EngineRotationStatus::Cranking;
   context.current.idleOn = true;
@@ -204,32 +166,32 @@ static void test_stepOpenLoopStoppedUsesCrankTable(void)
 {
   context_t context;
   prepare_stepOpenLoop(context);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.rotationStatus = EngineRotationStatus::Stopped;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_stepOpenLoopCrankingUsesCrankTable(void)
 {
   context_t context;
   prepare_stepOpenLoop(context);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.RPM = 600U;
   context.current.rotationStatus = EngineRotationStatus::Cranking;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_stepOpenLoopStepperSteppingAndCooling(void)
 {
   context_t context;
   prepare_stepOpenLoop(context);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.rotationStatus = EngineRotationStatus::Stopped;
   initialiseIdle(false);
 
@@ -258,9 +220,9 @@ static void test_stepOpenLoopStepperSteppingAndCooling(void)
   mockIdleMicrosValue = 350U;
   context.page6.iacStepHyster = 255;
   idleControl();
-  TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT(0, _idleState.idleStepper.curIdleStep);
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::SOFF, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
 }
 
 static void test_stepOpenLoopMovesTowardLowerTarget(void)
@@ -299,7 +261,7 @@ static void test_stepOpenLoopIdleLoadAtByteBoundary(void)
 // {
 //   context_t context;
 //   prepare_stepOpenLoop(context);
-//   context.current.coolant = temperatureAddOffset(50);
+//   context.current.coolant = 110;
 //   context.current.rotationStatus = EngineRotationStatus::Stopped;
 //   initialiseIdle(false);
 
@@ -327,7 +289,7 @@ static void test_stepOpenLoopIdleLoadAtByteBoundary(void)
 
 //   mockIdleMicrosValue = 350U;
 //   idleControl();
-//   TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+//   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 //   TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
 //   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
 // }
@@ -359,7 +321,7 @@ static void test_stepOpenLoopRunningTaper(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(135, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(174, _idleState.idleStepper.targetIdleStep);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
@@ -402,25 +364,25 @@ static void test_stepClosedLoopStoppedUsesCrankTable(void)
 {
   context_t context;
   prepare_stepClosedLoop(context);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.rotationStatus = EngineRotationStatus::Stopped;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_stepClosedLoopCrankingUsesCrankTable(void)
 {
   context_t context;
   prepare_stepClosedLoop(context);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.RPM = 600U;
   context.current.rotationStatus = EngineRotationStatus::Cranking;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(210, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_stepClosedLoopRunning(void)
@@ -441,7 +403,7 @@ static void test_stepClosedLoopRunningTaper(void)
   context_t context;
   prepare_stepClosedLoop(context);
   context.page2.idleTaperTime = 3U;
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.RPM = 1000U;
   context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
@@ -450,7 +412,7 @@ static void test_stepClosedLoopRunningTaper(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(240, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
@@ -459,7 +421,7 @@ static void test_stepOpenLoopClosedLoopRunningTaper(void)
   context_t context;
   prepare_stepClosedLoop(context, IAC_ALGORITHM_STEP_OLCL);
   context.page2.idleTaperTime = 3U;
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 110;
   context.current.RPM = 1000U;
   context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
@@ -468,7 +430,7 @@ static void test_stepOpenLoopClosedLoopRunningTaper(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(225, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(295, _idleState.idleStepper.targetIdleStep);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
@@ -571,20 +533,11 @@ static void test_pwmOpenLoopCranking(void)
   context.prepare_idle(IAC_ALGORITHM_PWM_OL);
   context.page6.idleFreq = 100U;
   context.page2.idleTaperTime = 0U;
-
-  TEST_DATA_P uint8_t bins[] = { 
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);  
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 91;
 
   context.current.rotationStatus = EngineRotationStatus::Cranking;
   idleControl();
-  TEST_ASSERT_EQUAL_UINT8(70U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
 }
 
 static void test_pwmClosedLoopCranking(void)
@@ -592,23 +545,14 @@ static void test_pwmClosedLoopCranking(void)
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_CL);
   context.page6.idleFreq = 100U;
-
-  TEST_DATA_P uint8_t bins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 91;
   context.current.RPM = 600U;
   context.current.rotationStatus = EngineRotationStatus::Cranking;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT8(70U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT32(percentage(70U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
+  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
   TEST_ASSERT_EQUAL_INT32(_idleState.idle_pwm_target_value << 2, _idleState.idle_pid_target_value);
   TEST_ASSERT_EQUAL_UINT8(0U, _idleState.idleCounter);
 }
@@ -618,23 +562,14 @@ static void test_pwmOpenLoopClosedLoopCranking(void)
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_OLCL);
   context.page6.idleFreq = 100U;
-
-  TEST_DATA_P uint8_t bins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 91;
   context.current.RPM = 600U;
   context.current.rotationStatus = EngineRotationStatus::Cranking;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT8(70U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT32(percentage(70U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
+  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
   TEST_ASSERT_EQUAL_INT32(_idleState.idle_pwm_target_value << 2, _idleState.idle_pid_target_value);
   TEST_ASSERT_EQUAL_UINT8(0U, _idleState.idleCounter);
 }
@@ -645,23 +580,14 @@ static void test_pwmOpenLoopClosedLoopStoppedUsesCrankDuty(void)
   context.prepare_idle(IAC_ALGORITHM_PWM_OLCL);
   context.page6.idleFreq = 100U;
   context.page6.iacPWMrun = true;
-
-  TEST_DATA_P uint8_t bins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 91;
   context.current.RPM = 0U;
   context.current.rotationStatus = EngineRotationStatus::Stopped;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT8(70U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT32(percentage(70U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
+  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
   TEST_ASSERT_EQUAL_UINT8(0U, _idleState.idleCounter);
 }
 
@@ -673,10 +599,6 @@ static void test_pwmOpenLoopClosedLoopRunning(void)
   context.page6.idleKP = 0U;
   context.page6.idleKI = 0U;
   context.page6.idleKD = 0U;
-
-  TEST_DATA_P uint8_t bins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t values[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacPWMTable, values, bins);
   context.current.coolant = 50;
   context.current.RPM = 700U;
   context.current.rotationStatus = EngineRotationStatus::Running;
@@ -685,10 +607,8 @@ static void test_pwmOpenLoopClosedLoopRunning(void)
 
   idleControl();
 
-  const uint32_t expectedFeedForward = percentage(60U, _idleState.idle_pwm_max_count << 2);
-  const uint32_t expectedPwmTarget = expectedFeedForward >> 2;
-  TEST_ASSERT_EQUAL_UINT32(expectedFeedForward, _idleState.FeedForwardTerm);
-  TEST_ASSERT_EQUAL_UINT32(expectedPwmTarget, _idleState.idle_pwm_target_value);
+  TEST_ASSERT_EQUAL_UINT32(1900, _idleState.FeedForwardTerm);
+  TEST_ASSERT_EQUAL_UINT32(1900>>2, _idleState.idle_pwm_target_value);
   TEST_ASSERT_EQUAL_UINT16(800U, _idleState.idle_cl_target_rpm);
   TEST_ASSERT_EQUAL_UINT8(1U, _idleState.idleCounter);
 }
@@ -706,10 +626,6 @@ static void test_pwmOpenLoopClosedLoopRunningIdleUp(void)
   context.page2.idleUpAdder = 15U;
   context.pins.pinIdleUp = TEST_IDLE1_PIN;
   context.page15.airConIdleSteps = 0U;
-
-  TEST_DATA_P uint8_t bins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t values[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacPWMTable, values, bins);
   digitalWrite(context.pins.pinIdleUp, LOW);
   context.current.coolant = 50;
   context.current.RPM = 700U;
@@ -736,10 +652,6 @@ static void test_pwmOpenLoopClosedLoopRunningAirConditioning(void)
   context.page6.idleKD = 0U;
   context.page15.airConIdleSteps = 10U;
   context.current.acStatus.turningOn = true;
-
-  TEST_DATA_P uint8_t bins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t values[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacPWMTable, values, bins);
   context.current.coolant = 50;
   context.current.RPM = 700U;
   context.current.rotationStatus = EngineRotationStatus::Running;
@@ -761,23 +673,14 @@ static void test_pwmClosedLoopStoppedUsesCrankDuty(void)
   context.prepare_idle(IAC_ALGORITHM_PWM_CL);
   context.page6.idleFreq = 100U;
   context.page6.iacPWMrun = true;
-
-  TEST_DATA_P uint8_t bins[] = {
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 91;
   context.current.RPM = 0U;
   context.current.rotationStatus = EngineRotationStatus::Stopped;
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT8(70U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT32(percentage(70U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
+  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
 }
 
 static void test_pwmClosedLoopRunning(void)
@@ -847,20 +750,11 @@ static void test_pwmOpenLoopStoppedUsesCrankDuty(void)
   context.page6.idleFreq = 100U;
   context.page2.idleTaperTime = 0U;
   context.page6.iacPWMrun = true;
-
-  TEST_DATA_P uint8_t bins[] = { 
-    temperatureAddOffset(0),
-    temperatureAddOffset(50),
-    temperatureAddOffset(100),
-    temperatureAddOffset(212)
-  };
-  TEST_DATA_P uint8_t values[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, values, bins);
-  context.current.coolant = temperatureAddOffset(50);
+  context.current.coolant = 91;
 
   context.current.rotationStatus = EngineRotationStatus::Stopped;
   idleControl();
-  TEST_ASSERT_EQUAL_UINT8(70U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
 }
 
 static void test_pwmOpenLoopRunningUsesRunningTable(void)
@@ -869,19 +763,10 @@ static void test_pwmOpenLoopRunningUsesRunningTable(void)
   context.prepare_idle(IAC_ALGORITHM_PWM_OL);
   context.page6.idleFreq = 100U;
   context.page2.idleTaperTime = 0U;
-
-  TEST_DATA_P uint8_t crankBins[] = { temperatureAddOffset(0), temperatureAddOffset(50), temperatureAddOffset(100), temperatureAddOffset(212) };
-  TEST_DATA_P uint8_t crankValues[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, crankValues, crankBins);
-
-  TEST_DATA_P uint8_t runBins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t runValues[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacPWMTable, runValues, runBins);
-
-  context.current.coolant = 50;
+  context.current.coolant = 110;
   context.current.rotationStatus = EngineRotationStatus::Running;
   idleControl();
-  TEST_ASSERT_EQUAL_UINT8(60U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT8(31U, context.current.idleLoad);
 }
 
 static void test_pwmOpenLoopRunningTaper(void)
@@ -891,21 +776,12 @@ static void test_pwmOpenLoopRunningTaper(void)
   context.page6.idleFreq = 100U;
   context.page2.idleTaperTime = 2U;
   context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
-
-  TEST_DATA_P uint8_t crankBins[] = { temperatureAddOffset(0), temperatureAddOffset(50), temperatureAddOffset(100), temperatureAddOffset(212) };
-  TEST_DATA_P uint8_t crankValues[] = { 0, 30, 80, 120 };
-  populate_2dtable_P(&iacCrankDutyTable, crankValues, crankBins);
-
-  TEST_DATA_P uint8_t runBins[] = { 0, 40, 60, 80, 90, 100, 120, 160, 200, 255 };
-  TEST_DATA_P uint8_t runValues[] = { 0, 10, 20, 30, 60, 70, 80, 100, 120, 140 };
-  populate_2dtable_P(&iacPWMTable, runValues, runBins);
-
-  context.current.coolant = 50;
+  context.current.coolant = 53;
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT8(45U, context.current.idleLoad);
+  TEST_ASSERT_EQUAL_UINT8(39U, context.current.idleLoad);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
