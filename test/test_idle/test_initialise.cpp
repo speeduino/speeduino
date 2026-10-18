@@ -10,7 +10,8 @@ static void test_initialiseIdle_none(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_NONE);
-  initialiseIdle(false);
+  context.init();
+
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_NONE, _idleState.idleInitComplete);
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.idleLoad);
 }
@@ -21,7 +22,8 @@ static void test_initialiseIdle_onoff_warm_no_pin(void)
   context.prepare_idle(IAC_ALGORITHM_ONOFF);
   context.page6.iacFastTemp = temperatureAddOffset(50);  // Threshold is 50C
   context.current.coolant = 80;                          // Warm -> no fast idle
-  initialiseIdle(false);
+  context.init();
+
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_ONOFF, _idleState.idleInitComplete);
   TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_EQUAL_UINT8(0U, currentStatus.idleLoad);
@@ -34,7 +36,7 @@ static void test_initialiseIdle_onoff_cold_runs(void)
   context.prepare_idle(IAC_ALGORITHM_ONOFF);
   context.page6.iacFastTemp = temperatureAddOffset(50);
   context.current.coolant = -10;                          // Cold -> fast idle ON
-  initialiseIdle(false);
+  context.init();
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_ONOFF, _idleState.idleInitComplete);
   TEST_ASSERT_TRUE(_idleState.idleOn);
   TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinHigh());
@@ -44,9 +46,9 @@ static void test_initialiseIdle_pwm_open_loop(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_OL);
-  initialiseIdle(false);
+  context.init();
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_PWM_OL, _idleState.idleInitComplete);
-  TEST_ASSERT_TRUE(_idleState.idleOn);
+  TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 
@@ -54,9 +56,9 @@ static void test_initialiseIdle_pwm_closed_loop(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_CL);
-  initialiseIdle(false);
+  context.init();
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_PWM_CL, _idleState.idleInitComplete);
-  TEST_ASSERT_TRUE(_idleState.idleOn);
+  TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 
@@ -64,9 +66,9 @@ static void test_initialiseIdle_pwm_olcl(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_OLCL);
-  initialiseIdle(false);
+  context.init();
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_PWM_OLCL, _idleState.idleInitComplete);
-  TEST_ASSERT_TRUE(_idleState.idleOn);
+  TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 
@@ -74,9 +76,10 @@ static void test_initialiseIdle_step_open_loop(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_STEP_OL);
-  initialiseIdle(true);
+  context.init();
+
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_STEP_OL, _idleState.idleInitComplete);
-  TEST_ASSERT_TRUE(_idleState.idleOn);
+  TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 
@@ -84,9 +87,10 @@ static void test_initialiseIdle_step_closed_loop(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_STEP_CL);
-  initialiseIdle(true);
+  context.init();
+
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_STEP_CL, _idleState.idleInitComplete);
-  TEST_ASSERT_TRUE(_idleState.idleOn);
+  TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 
@@ -94,9 +98,10 @@ static void test_initialiseIdle_step_olcl(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_STEP_OLCL);
-  initialiseIdle(true);
+  context.init();
+
   TEST_ASSERT_EQUAL_UINT8(IAC_ALGORITHM_STEP_OLCL, _idleState.idleInitComplete);
-  TEST_ASSERT_TRUE(_idleState.idleOn);
+  TEST_ASSERT_FALSE(_idleState.idleOn);
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 

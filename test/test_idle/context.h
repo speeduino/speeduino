@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globals.h"
+#include "src/controllers/idle/idleController_state.h"
 
 // Idle test pins; values are arbitrary free pins under ArduinoFake.
 static constexpr uint8_t TEST_IDLE1_PIN = 18U;
@@ -32,27 +33,23 @@ struct context_t
         pinNumbers = pinNumbers_t();
     }
 
-    void prepare_idle(uint8_t algorithm)
-    {
-        pins.pinIdle1 = TEST_IDLE1_PIN;
-        pins.pinIdle2 = TEST_IDLE2_PIN;
-        pins.pinIdleUp = TEST_IDLEUP_INPUT_PIN;
-        pins.pinIdleUpOutput = TEST_IDLEUP_OUTPUT_PIN;
-        page6.iacAlgorithm = algorithm;
-        page6.iacChannels = 0U;
-        page6.iacPWMdir = 0U;
-        page6.iacPWMrun = 0U;
-        page6.iacFastTemp = 0U;            // Skip ON branch in ON_OFF unless we set coolant low
-        page6.idleKP = 100U;
-        page6.idleKI = 50U;
-        page6.idleKD = 0U;
-        page6.iacStepTime = 1U;
-        page9.iacCoolTime = 1U;
-        page2.iacCLminValue = 0U;
-        page2.iacCLmaxValue = 100U;
-        page2.idleUpAdder = 0U;
-        current.coolant = 80;
-        current.idleUpActive = false;
-        current.CLIdleTarget = 80U;
-    }
+    void prepare_idle(uint8_t algorithm);
+
+    void init(void);
+
+    uint32_t idleControl(uint32_t startTime, uint32_t increment, uint8_t stepCount);
+};
+
+struct idle_micros_override_t
+{
+  idleController::detail::fnCurMicros_t original;
+
+  idle_micros_override_t(void);
+  ~idle_micros_override_t(void);
+
+  static unsigned long mockIdleMicrosValue;
+  static unsigned long mockIdleMicros(void)
+  {
+    return mockIdleMicrosValue;
+  }
 };
