@@ -60,10 +60,73 @@ static void test_basic_coverage_allModes(void)
   }
 }
 
+static uint8_t transitionMode = IAC_ALGORITHM_NONE;
+static void test_transitions(void)
+{
+    context_t context;
+    context.prepare_idle(transitionMode);
+    context.page6.iacStepHome = 0U;
+    context.page9.iacCoolTime = 0U;
+    context.page6.iacStepTime = 0U;
+    context.page6.iacPWMrun = true;
+    context.page9.iacMaxSteps = 100U;
+    context.current.coolant = 50U;
+    context.init();
+    TEST_ASSERT_EQUAL(transitionMode, _idleState.idleInitComplete);
+
+    BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+    BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
+
+    idle_micros_override_t microsOverride;
+    const uint8_t ITERS = 15;
+    const uint32_t TIME_STEP = 500;
+    uint32_t time = 1000;
+    context.current.rotationStatus = EngineRotationStatus::Stopped;
+    // Steppers need a couple of iterations to "move"
+    for (uint8_t i=0; i<ITERS; ++i)
+    {
+      idle_micros_override_t::mockIdleMicrosValue = time; idleControl(); time += TIME_STEP;
+    }
+    uint8_t stoppedLoad = context.current.idleLoad;
+    TEST_ASSERT_NOT_EQUAL(0, stoppedLoad);
+
+    context.current.rotationStatus = EngineRotationStatus::Cranking;
+    // Steppers need a couple of iterations to "move"
+    for (uint8_t i=0; i<ITERS; ++i)
+    {
+      idle_micros_override_t::mockIdleMicrosValue = time; idleControl(); time += TIME_STEP;
+    }
+    uint8_t crankingLoad = context.current.idleLoad;
+    TEST_ASSERT_NOT_EQUAL(0, crankingLoad);
+
+    context.current.rotationStatus = EngineRotationStatus::Running;
+    // Steppers need a couple of iterations to "move"
+    for (uint8_t i=0; i<ITERS; ++i)
+    {
+      idle_micros_override_t::mockIdleMicrosValue = time; idleControl(); time += TIME_STEP;
+    }
+    uint8_t runningLoad = context.current.idleLoad;
+    TEST_ASSERT_NOT_EQUAL(0, runningLoad);
+    TEST_ASSERT_NOT_EQUAL(crankingLoad, runningLoad);
+}
+
+static void test_transitions_allModes(void)
+{
+  for (auto mode : { IAC_ALGORITHM_PWM_OL, IAC_ALGORITHM_PWM_CL, IAC_ALGORITHM_STEP_OL, IAC_ALGORITHM_STEP_CL, IAC_ALGORITHM_PWM_OLCL, IAC_ALGORITHM_STEP_OLCL })
+  {
+    transitionMode = mode;
+    char szMsg[64];
+    sprintf(szMsg, "%" PRIu8, transitionMode);
+    RUN_TEST_POSTFIX_P(test_transitions, szMsg)
+  }
+}
+
 void testIdleControl(void)
 {
   unity_filename_guard_t guard(__FILE__);
 
   RUN_TEST_P(test_idleUpInputAndOutput);
   RUN_TEST_P(test_basic_coverage_allModes);
+
+  test_transitions_allModes();
 }
