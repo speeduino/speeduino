@@ -6,27 +6,6 @@
 extern idleController::detail::state_t _idleState;
 extern idleController::detail::fnCurMicros_t _idleCurMicros;
 
-static unsigned long mockIdleMicrosValue;
-static unsigned long mockIdleMicros(void)
-{
-  return mockIdleMicrosValue;
-}
-
-struct idle_micros_override_t
-{
-  idleController::detail::fnCurMicros_t original;
-
-  idle_micros_override_t(void) : original(_idleCurMicros)
-  {
-    _idleCurMicros = &mockIdleMicros;
-  }
-
-  ~idle_micros_override_t(void)
-  {
-    _idleCurMicros = original;
-  }
-};
-
 static void prepare_stepOpenLoop(context_t &context)
 {
   context.prepare_idle(IAC_ALGORITHM_STEP_OL);
@@ -81,27 +60,27 @@ static void test_StepperSteppingAndCooling(void)
   constexpr uint32_t TIME_INCREMENT_STEP = STEP_MILLIS * 1000UL;
   constexpr uint32_t TIME_INCREMENT_COOL = COOL_MILLIS * 1000UL;
   
-  mockIdleMicrosValue = TIME_INCREMENT_STEP;
+  idle_micros_override_t::mockIdleMicrosValue = TIME_INCREMENT_STEP;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
   
-  mockIdleMicrosValue += TIME_INCREMENT_STEP-1;
+  idle_micros_override_t::mockIdleMicrosValue += TIME_INCREMENT_STEP-1;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 
-  mockIdleMicrosValue += 1;
+  idle_micros_override_t::mockIdleMicrosValue += 1;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 
-  mockIdleMicrosValue += TIME_INCREMENT_COOL-1;
+  idle_micros_override_t::mockIdleMicrosValue += TIME_INCREMENT_COOL-1;
   idleControl();
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 
-  mockIdleMicrosValue += 1;
+  idle_micros_override_t::mockIdleMicrosValue += 1;
   context.page6.iacStepHyster = 255;
   idleControl();
   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
@@ -160,22 +139,22 @@ static void test_IdleLoadAtByteBoundary(void)
 //   _idleState.idleStepper.targetIdleStep = 17;
 //   _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
 
-//   mockIdleMicrosValue = 149U;
+//   idle_micros_override_t::mockIdleMicrosValue = 149U;
 //   idleControl();
 //   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
 //   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
 
-//   mockIdleMicrosValue = 150U;
+//   idle_micros_override_t::mockIdleMicrosValue = 150U;
 //   idleControl();
 //   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
 //   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
 
-//   mockIdleMicrosValue = 349U;
+//   idle_micros_override_t::mockIdleMicrosValue = 349U;
 //   idleControl();
 //   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
 //   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
 
-//   mockIdleMicrosValue = 350U;
+//   idle_micros_override_t::mockIdleMicrosValue = 350U;
 //   idleControl();
 //   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
 //   TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);

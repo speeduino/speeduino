@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globals.h"
+#include "src/controllers/idle/idleController_state.h"
 
 // Idle test pins; values are arbitrary free pins under ArduinoFake.
 static constexpr uint8_t TEST_IDLE1_PIN = 18U;
@@ -35,4 +36,19 @@ struct context_t
     void prepare_idle(uint8_t algorithm);
 
     void init(void);
+};
+
+
+struct idle_micros_override_t
+{
+  idleController::detail::fnCurMicros_t original;
+
+  idle_micros_override_t(void);
+  ~idle_micros_override_t(void);
+
+  static unsigned long mockIdleMicrosValue;
+  static unsigned long mockIdleMicros(void)
+  {
+    return mockIdleMicrosValue;
+  }
 };

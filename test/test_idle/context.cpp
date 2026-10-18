@@ -1,7 +1,6 @@
 #include "context.h"
 #include "../test_utils.h"
 #include "src/controllers/idle/idle.h"
-#include "src/controllers/idle/idleController_state.h"
 #include "units.h"
 
 extern table2D_u8_u8_4 iacCrankDutyTable;
@@ -9,6 +8,7 @@ extern table2D_u8_u8_10 iacPWMTable;
 extern table2D_u8_u8_4 iacCrankStepsTable;
 extern table2D_u8_u8_10 iacStepTable;
 extern idleController::detail::state_t _idleState;
+extern idleController::detail::fnCurMicros_t _idleCurMicros;
 
 static void prepare_pwm_crank_table(void)
 {
@@ -74,3 +74,16 @@ void context_t::init(void)
     _idleState = idleController::detail::state_t();
     initialiseIdle(false);
 }
+
+idle_micros_override_t::idle_micros_override_t(void) : original(_idleCurMicros)
+{
+    _idleCurMicros = &mockIdleMicros;
+}
+
+idle_micros_override_t::~idle_micros_override_t(void)
+{
+    _idleCurMicros = original;
+}
+
+// Definition and initialization outside the class
+unsigned long idle_micros_override_t::mockIdleMicrosValue = 0; 
