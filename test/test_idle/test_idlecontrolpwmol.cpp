@@ -147,6 +147,54 @@ static void test_OpenLoopCranking(void)
   TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
 }
 
+static void test_RunningIdleUp(void)
+{
+  context_t context;
+  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
+  context.page2.idleUpAdder = 15U;
+  context.page2.idleUpEnabled = true;
+  context.page2.idleUpOutputEnabled = true;
+  context.init();
+
+  context.current.coolant = 110;
+  context.current.RPM = 1000U;
+  context.current.rotationStatus = EngineRotationStatus::Running;
+
+  digitalWrite(context.pins.pinIdleUp, HIGH);
+  idleControl();
+  auto baseLoad = context.current.idleLoad;
+  TEST_ASSERT_NOT_EQUAL(0, baseLoad);
+  TEST_ASSERT_FALSE(context.current.idleUpActive);
+
+#if !defined(__AVR__) // Fix when using pin wrappers
+  digitalWrite(context.pins.pinIdleUp, LOW);
+  idleControl();
+  TEST_ASSERT_EQUAL(baseLoad+context.page2.idleUpAdder, context.current.idleLoad);
+  TEST_ASSERT_TRUE(context.current.idleUpActive);
+#endif
+}
+
+static void test_RunningAirConditioning(void)
+{
+  context_t context;
+  context.prepare_idle(IAC_ALGORITHM_PWM_OL);
+  context.page15.airConIdleSteps = 10U;
+  context.init();
+
+  context.current.coolant = 110;
+  context.current.setRpm(500);
+  context.current.rotationStatus = EngineRotationStatus::Running;
+
+  context.current.acStatus.turningOn = false;
+  idleControl();
+  auto baseLoad = context.current.idleLoad;
+  TEST_ASSERT_NOT_EQUAL(0, baseLoad);
+
+  context.current.acStatus.turningOn = true;
+  idleControl();
+  TEST_ASSERT_UINT8_WITHIN(1, baseLoad+context.page15.airConIdleSteps, context.current.idleLoad);
+}
+
 void testIdleControlPwmOl(void)
 {
   unity_filename_guard_t guard(__FILE__);
@@ -160,4 +208,6 @@ void testIdleControlPwmOl(void)
   RUN_TEST_P(test_FullDutyReversedDualChannel);
   RUN_TEST_P(test_ZeroDutyDisablesIdle);
   RUN_TEST_P(test_OpenLoopCranking);
+  RUN_TEST_P(test_RunningIdleUp);
+  RUN_TEST_P(test_RunningAirConditioning);
 }
