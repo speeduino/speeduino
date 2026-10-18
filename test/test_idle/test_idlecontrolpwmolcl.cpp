@@ -22,7 +22,6 @@ static void test_Cranking(void)
 
   TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
   TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
-  TEST_ASSERT_EQUAL_INT32(_idleState.idle_pwm_target_value << 2, _idleState.idle_pid_target_value);
   TEST_ASSERT_EQUAL_UINT8(0U, _idleState.idleCounter);
 }
 

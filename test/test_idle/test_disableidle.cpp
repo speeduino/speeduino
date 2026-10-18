@@ -108,12 +108,10 @@ static void test_disableIdle_stepper_moves_to_crank_target(void)
 
   context.current.idleUpActive = true;
   _idleState.idleStepper.targetIdleStep = 0;
-  _idleState.idle_pid_target_value = 0;
 
   disableIdle();
 
   TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT32(720, _idleState.idle_pid_target_value);
   TEST_ASSERT_FALSE(context.current.idleOn);
   TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
 }
@@ -128,12 +126,10 @@ static void test_disableIdle_stepper_clamps_crank_target(void)
 
   context.current.idleUpActive = true;
   _idleState.idleStepper.targetIdleStep = 0;
-  _idleState.idle_pid_target_value = 0;
 
   disableIdle();
 
   TEST_ASSERT_EQUAL_INT(60, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT32(240, _idleState.idle_pid_target_value);
 }
 
 static void test_disableIdle_stepper_unhomed_starts_homing(void)
@@ -144,13 +140,11 @@ static void test_disableIdle_stepper_unhomed_starts_homing(void)
   context.init();
 
   _idleState.idleStepper.targetIdleStep = 321;
-  _idleState.idle_pid_target_value = 654;
 
   disableIdle();
 
   TEST_ASSERT_EQUAL_UINT(1U, _idleState.completedHomeSteps);
   TEST_ASSERT_EQUAL_INT(321, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT32(654, _idleState.idle_pid_target_value);
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
 }
 

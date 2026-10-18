@@ -28,7 +28,6 @@ static void test_runningTaper(void)
   context.current.RPM = 1000U;
   context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
-  _idleState.idle_pid_target_value = 1200;
   _idleState.idleTaper = 1U;
 
   idleControl();
