@@ -4,7 +4,6 @@
 #include "context.h"
 
 extern idleController::detail::state_t _idleState;
-extern idleController::detail::fnCurMicros_t _idleCurMicros;
 
 static void prepare_stepOpenLoop(context_t &context)
 {
@@ -12,6 +11,8 @@ static void prepare_stepOpenLoop(context_t &context)
   context.page9.iacMaxSteps = 100U;
   context.page6.iacStepHyster = 0U;
   context.page6.iacStepHome = 0U;
+  context.page9.iacCoolTime = 1U;
+  context.page6.iacStepTime = 1U;
 }
 
 static void test_StoppedUsesCrankTable(void)
@@ -202,21 +203,29 @@ static void test_RunningIdleUp(void)
 {
   context_t context;
   prepare_stepOpenLoop(context);
-  context.page2.idleUpEnabled = true;
   context.page2.idleUpAdder = 15U;
+  context.page2.idleUpEnabled = true;
+  context.page2.idleUpOutputEnabled = true;
   context.init();
 
-  digitalWrite(context.pins.pinIdleUp, LOW);
-  context.current.coolant = 50;
+  context.current.coolant = 110;
   context.current.RPM = 1000U;
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  idleControl();
+  digitalWrite(context.pins.pinIdleUp, HIGH);
+  auto curMicros = context.idleControl(10000, 2000, 1);
+  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  TEST_ASSERT_NOT_EQUAL(0, baseSteps);
+  TEST_ASSERT_FALSE(context.current.idleUpActive);
 
+#if !defined(__AVR__) // Fix when using pin wrapper
+  digitalWrite(context.pins.pinIdleUp, LOW);
+  curMicros = context.idleControl(curMicros, 2000, 2);
+  TEST_ASSERT_EQUAL(baseSteps+context.page2.idleUpAdder, _idleState.idleStepper.targetIdleStep);
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_EQUAL_INT(195, _idleState.idleStepper.targetIdleStep);
+#endif
 }
 
 static void test_RunningAirConditioning(void)
@@ -226,16 +235,20 @@ static void test_RunningAirConditioning(void)
   context.page15.airConIdleSteps = 10U;
   context.init();
 
-  context.current.acStatus.turningOn = true;
-  context.current.coolant = 50;
+  context.current.coolant = 110;
   context.current.RPM = 1000U;
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  idleControl();
+  context.current.acStatus.turningOn = false;
+  auto curMicros = context.idleControl(10000, 2000, 1);
+  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  TEST_ASSERT_NOT_EQUAL(0, baseSteps);
 
-  TEST_ASSERT_EQUAL_INT(190, _idleState.idleStepper.targetIdleStep);
+  context.current.acStatus.turningOn = true;
+  curMicros = context.idleControl(curMicros, 2000, 2);
+  TEST_ASSERT_EQUAL(baseSteps+context.page15.airConIdleSteps, _idleState.idleStepper.targetIdleStep);
 }
 
 static void test_stepperModeDisablesIdle(void)

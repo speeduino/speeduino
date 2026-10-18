@@ -79,21 +79,29 @@ static void test_RunningTaper(void)
 static void test_RunningIdleUp(void)
 {
   auto context = setup_stepper_cl();
-  context.page2.idleUpEnabled = true;
   context.page2.idleUpAdder = 15U;
+  context.page2.idleUpEnabled = true;
+  context.page2.idleUpOutputEnabled = true;
   context.init();
 
-  context.pins.pinIdleUp = TEST_IDLE1_PIN;
-  digitalWrite(context.pins.pinIdleUp, LOW);
+  context.current.coolant = 110;
   context.current.RPM = 1000U;
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  idleControl();
+  digitalWrite(context.pins.pinIdleUp, HIGH);
+  auto curMicros = context.idleControl(10000, 2000, 1);
+  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  TEST_ASSERT_NOT_EQUAL(0, baseSteps);
+  TEST_ASSERT_FALSE(context.current.idleUpActive);
 
+#if !defined(__AVR__) // Fix when using pin wrappers
+  digitalWrite(context.pins.pinIdleUp, LOW);
+  curMicros = context.idleControl(curMicros, 2000, 2);
+  TEST_ASSERT_EQUAL(baseSteps+context.page2.idleUpAdder, _idleState.idleStepper.targetIdleStep);
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_EQUAL_INT(75, _idleState.idleStepper.targetIdleStep);
+#endif
 }
 
 static void test_RunningAirConditioning(void)
@@ -102,15 +110,20 @@ static void test_RunningAirConditioning(void)
   context.page15.airConIdleSteps = 10U;
   context.init();
 
-  context.current.acStatus.turningOn = true;
+  context.current.coolant = 110;
   context.current.RPM = 1000U;
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
   BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  idleControl();
+  context.current.acStatus.turningOn = false;
+  auto curMicros = context.idleControl(10000, 2000, 1);
+  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  TEST_ASSERT_NOT_EQUAL(0, baseSteps);
 
-  TEST_ASSERT_EQUAL_INT(70, _idleState.idleStepper.targetIdleStep);
+  context.current.acStatus.turningOn = true;
+  curMicros = context.idleControl(curMicros, 2000, 2);
+  TEST_ASSERT_EQUAL(baseSteps+context.page15.airConIdleSteps, _idleState.idleStepper.targetIdleStep);
 }
 
 void testIdleControlStepCl(void)

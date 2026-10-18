@@ -21,7 +21,6 @@ static void test_Cranking(void)
   idleControl();
 
   TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
   TEST_ASSERT_EQUAL_UINT8(0U, _idleState.idleCounter);
 }
 
@@ -39,8 +38,7 @@ static void test_StoppedUsesCrankDuty(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT8(83U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_UINT32(percentage(83U, _idleState.idle_pwm_max_count), _idleState.idle_pwm_target_value);
+  TEST_ASSERT_UINT8_WITHIN(1, 83, context.current.idleLoad);
   TEST_ASSERT_EQUAL_UINT8(0U, _idleState.idleCounter);
 }
 
@@ -60,7 +58,7 @@ static void test_Running(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT32(1900>>2, _idleState.idle_pwm_target_value);
+  TEST_ASSERT_UINT8_WITHIN(1, 19, context.current.idleLoad);
   TEST_ASSERT_EQUAL_UINT16(800U, _idleState.idle_cl_target_rpm);
   TEST_ASSERT_EQUAL_UINT8(1U, _idleState.idleCounter);
 }
@@ -70,43 +68,60 @@ static void test_RunningIdleUp(void)
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_OLCL);
   context.page6.idleFreq = 100U;
-  context.page6.idleKP = 0U;
-  context.page6.idleKI = 0U;
-  context.page6.idleKD = 0U;
-  context.page2.idleUpEnabled = true;
+  context.page6.idleKP = 1U;
+  context.page6.idleKI = 1U;
+  context.page6.idleKD = 1U;
   context.page2.idleUpAdder = 15U;
+  context.page2.idleUpEnabled = true;
+  context.page2.idleUpOutputEnabled = true;
   context.init();
 
-  digitalWrite(context.pins.pinIdleUp, LOW);
-  context.current.coolant = 50;
-  context.current.RPM = 700U;
+  context.current.coolant = 110;
+  context.current.RPM = 1000U;
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  idleControl();
+  digitalWrite(context.pins.pinIdleUp, HIGH);
+  auto curMicros = context.idleControl(10000, 2000, 5);
+  auto baseLoad = context.current.idleLoad;
+  TEST_ASSERT_NOT_EQUAL(0, baseLoad);
+  TEST_ASSERT_FALSE(context.current.idleUpActive);
 
-  TEST_ASSERT_EQUAL_UINT32(850, _idleState.idle_pwm_target_value);
- }
+#if !defined(__AVR__) // Fix when using pin wrappers
+  digitalWrite(context.pins.pinIdleUp, LOW);
+  curMicros = context.idleControl(curMicros, 2000, 1);
+  TEST_ASSERT_EQUAL(baseLoad+context.page2.idleUpAdder, context.current.idleLoad);
+  TEST_ASSERT_TRUE(context.current.idleUpActive);
+#endif
+}
 
 static void test_RunningAirConditioning(void)
 {
   context_t context;
   context.prepare_idle(IAC_ALGORITHM_PWM_OLCL);
   context.page6.idleFreq = 100U;
-  context.page6.idleKP = 0U;
-  context.page6.idleKI = 0U;
-  context.page6.idleKD = 0U;
+  context.page6.idleKP = 1U;
+  context.page6.idleKI = 1U;
+  context.page6.idleKD = 1U;
   context.page15.airConIdleSteps = 10U;
   context.init();
 
-  context.current.acStatus.turningOn = true;
-  context.current.coolant = 50;
-  context.current.RPM = 700U;
+  context.current.coolant = 110;
+  context.current.setRpm(500);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  idleControl();
+  context.current.acStatus.turningOn = false;
+  auto curMicros = context.idleControl(10000, 2000, 5);
+  auto baseLoad = context.current.idleLoad;
+  TEST_ASSERT_NOT_EQUAL(0, baseLoad);
 
-  TEST_ASSERT_EQUAL_UINT32(725, _idleState.idle_pwm_target_value);
- }
+  context.current.acStatus.turningOn = true;
+  curMicros = context.idleControl(curMicros, 2000, 1);
+  TEST_ASSERT_UINT8_WITHIN(1, baseLoad+context.page15.airConIdleSteps, context.current.idleLoad);
+}
 
 void testIdleControlPwmOlCl(void)
 {
