@@ -26,8 +26,6 @@ static void test_runningTaper(void)
 
   context.current.coolant = 110;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
 
@@ -45,8 +43,6 @@ static void test_runningUsesFeedForward(void)
 
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
 

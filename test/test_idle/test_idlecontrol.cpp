@@ -74,9 +74,6 @@ static void test_transitions(void)
     context.init();
     TEST_ASSERT_EQUAL(transitionMode, _idleState.idleInitComplete);
 
-    BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-    BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
-
     const uint8_t ITERS = 15;
     const uint32_t TIME_STEP = 500;
     context.current.rotationStatus = EngineRotationStatus::Stopped;

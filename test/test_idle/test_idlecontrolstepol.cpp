@@ -100,6 +100,8 @@ static void test_MovesTowardLowerTarget(void)
   _idleState.idleStepper.curIdleStep = 5;
   _idleState.idleStepper.targetIdleStep = 0;
 
+  BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   idleControl();
 
   TEST_ASSERT_EQUAL_INT(4, _idleState.idleStepper.curIdleStep);
@@ -118,6 +120,8 @@ static void test_IdleLoadAtByteBoundary(void)
   _idleState.idleStepper.curIdleStep = 10;
   _idleState.idleStepper.targetIdleStep = 10;
 
+  BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   idleControl();
 
   TEST_ASSERT_EQUAL_UINT8(10U, context.current.idleLoad);
@@ -170,8 +174,6 @@ static void test_RunningUsesRunningTable(void)
 
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   idleControl();
@@ -188,8 +190,6 @@ static void test_RunningTaper(void)
 
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
 
@@ -210,8 +210,6 @@ static void test_RunningIdleUp(void)
 
   context.current.coolant = 110;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   digitalWrite(context.pins.pinIdleUp, HIGH);
@@ -237,8 +235,6 @@ static void test_RunningAirConditioning(void)
 
   context.current.coolant = 110;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   context.current.acStatus.turningOn = false;

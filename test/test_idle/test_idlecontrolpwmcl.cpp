@@ -69,8 +69,6 @@ static void test_RunningIdleUp(void)
 
   context.current.coolant = 110;
   context.current.setRpm(500);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   digitalWrite(context.pins.pinIdleUp, HIGH);
@@ -100,8 +98,6 @@ static void test_RunningAirConditioning(void)
 
   context.current.coolant = 110;
   context.current.setRpm(500);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   context.current.acStatus.turningOn = false;

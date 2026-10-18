@@ -62,6 +62,8 @@ void context_t::prepare_idle(uint8_t algorithm)
     page9.iacCoolTime = 1U;
     page2.iacCLmaxValue = 100U;
     current.CLIdleTarget = 80U; // Set outside of idleControl() so set a default here
+    BIT_SET(current.LOOP_TIMER, BIT_TIMER_1HZ);
+    BIT_SET(current.LOOP_TIMER, BIT_TIMER_10HZ);
 
     prepare_pwm_crank_table();
     prepare_pwm_running_table();

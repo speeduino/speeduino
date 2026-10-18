@@ -48,8 +48,6 @@ static void test_Running(void)
   auto context = setup_stepper_cl();
   context.init();
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   idleControl();
@@ -65,8 +63,6 @@ static void test_RunningTaper(void)
 
   context.current.coolant = 110;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
 
@@ -86,8 +82,6 @@ static void test_RunningIdleUp(void)
 
   context.current.coolant = 110;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   digitalWrite(context.pins.pinIdleUp, HIGH);
@@ -112,8 +106,6 @@ static void test_RunningAirConditioning(void)
 
   context.current.coolant = 110;
   context.current.RPM = 1000U;
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
-  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   context.current.acStatus.turningOn = false;
