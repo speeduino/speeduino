@@ -169,7 +169,8 @@ static void test_RunningUsesRunningTable(void)
 
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   idleControl();
@@ -186,7 +187,8 @@ static void test_RunningTaper(void)
 
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
 
@@ -207,7 +209,8 @@ static void test_RunningIdleUp(void)
   digitalWrite(context.pins.pinIdleUp, LOW);
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   idleControl();
@@ -226,7 +229,8 @@ static void test_RunningAirConditioning(void)
   context.current.acStatus.turningOn = true;
   context.current.coolant = 50;
   context.current.RPM = 1000U;
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
   idleControl();

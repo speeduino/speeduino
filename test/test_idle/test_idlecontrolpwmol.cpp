@@ -42,7 +42,8 @@ static void test_RunningTaper(void)
   context.page2.idleTaperTime = 2U;
   context.init();
 
-  context.current.LOOP_TIMER = (1U << BIT_TIMER_10HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
+  BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   context.current.coolant = 53;
   context.current.rotationStatus = EngineRotationStatus::Running;
   _idleState.idleTaper = 1U;
