@@ -36,8 +36,9 @@ struct context_t
     void prepare_idle(uint8_t algorithm);
 
     void init(void);
-};
 
+    uint32_t idleControl(uint32_t startTime, uint32_t increment, uint8_t stepCount);
+};
 
 struct idle_micros_override_t
 {

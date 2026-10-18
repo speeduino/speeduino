@@ -75,6 +75,16 @@ void context_t::init(void)
     initialiseIdle(false);
 }
 
+uint32_t context_t::idleControl(uint32_t startTime, uint32_t increment, uint8_t stepCount)
+{
+  idle_micros_override_t microsOverride;
+  for (uint8_t i=0; i<stepCount; ++i)
+  {
+    idle_micros_override_t::mockIdleMicrosValue = startTime; ::idleControl(); startTime += increment;
+  }
+  return startTime;
+}
+
 idle_micros_override_t::idle_micros_override_t(void) : original(_idleCurMicros)
 {
     _idleCurMicros = &mockIdleMicros;

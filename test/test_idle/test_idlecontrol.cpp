@@ -77,34 +77,22 @@ static void test_transitions(void)
     BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
     BIT_SET(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
 
-    idle_micros_override_t microsOverride;
     const uint8_t ITERS = 15;
     const uint32_t TIME_STEP = 500;
-    uint32_t time = 1000;
     context.current.rotationStatus = EngineRotationStatus::Stopped;
+    uint32_t time = 1000;
     // Steppers need a couple of iterations to "move"
-    for (uint8_t i=0; i<ITERS; ++i)
-    {
-      idle_micros_override_t::mockIdleMicrosValue = time; idleControl(); time += TIME_STEP;
-    }
+    time = context.idleControl(time, TIME_STEP, ITERS);
     uint8_t stoppedLoad = context.current.idleLoad;
     TEST_ASSERT_NOT_EQUAL(0, stoppedLoad);
 
     context.current.rotationStatus = EngineRotationStatus::Cranking;
-    // Steppers need a couple of iterations to "move"
-    for (uint8_t i=0; i<ITERS; ++i)
-    {
-      idle_micros_override_t::mockIdleMicrosValue = time; idleControl(); time += TIME_STEP;
-    }
+    time = context.idleControl(time, TIME_STEP, ITERS);
     uint8_t crankingLoad = context.current.idleLoad;
     TEST_ASSERT_NOT_EQUAL(0, crankingLoad);
 
     context.current.rotationStatus = EngineRotationStatus::Running;
-    // Steppers need a couple of iterations to "move"
-    for (uint8_t i=0; i<ITERS; ++i)
-    {
-      idle_micros_override_t::mockIdleMicrosValue = time; idleControl(); time += TIME_STEP;
-    }
+    time = context.idleControl(time, TIME_STEP, ITERS);
     uint8_t runningLoad = context.current.idleLoad;
     TEST_ASSERT_NOT_EQUAL(0, runningLoad);
     TEST_ASSERT_NOT_EQUAL(crankingLoad, runningLoad);
