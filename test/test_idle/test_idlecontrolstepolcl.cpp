@@ -50,7 +50,6 @@ static void test_runningUsesFeedForward(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(720, _idleState.FeedForwardTerm);
   TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
 }
 

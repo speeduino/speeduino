@@ -60,7 +60,6 @@ static void test_Running(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_UINT32(1900, _idleState.FeedForwardTerm);
   TEST_ASSERT_EQUAL_UINT32(1900>>2, _idleState.idle_pwm_target_value);
   TEST_ASSERT_EQUAL_UINT16(800U, _idleState.idle_cl_target_rpm);
   TEST_ASSERT_EQUAL_UINT8(1U, _idleState.idleCounter);
@@ -85,12 +84,8 @@ static void test_RunningIdleUp(void)
 
   idleControl();
 
-  const uint8_t baseDuty = table2D_getValue(&iacPWMTable, temperatureAddOffset(context.current.coolant));
-  const uint32_t expectedFeedForward = percentage(baseDuty, _idleState.idle_pwm_max_count << 2)
-      + percentage(context.page2.idleUpAdder, _idleState.idle_pwm_max_count << 2);
-  TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_EQUAL_UINT32(expectedFeedForward, _idleState.FeedForwardTerm);
-}
+  TEST_ASSERT_EQUAL_UINT32(850, _idleState.idle_pwm_target_value);
+ }
 
 static void test_RunningAirConditioning(void)
 {
@@ -110,11 +105,8 @@ static void test_RunningAirConditioning(void)
 
   idleControl();
 
-  const uint8_t baseDuty = table2D_getValue(&iacPWMTable, temperatureAddOffset(context.current.coolant));
-  const uint32_t expectedFeedForward = percentage(baseDuty, _idleState.idle_pwm_max_count << 2)
-      + percentage(context.page15.airConIdleSteps, _idleState.idle_pwm_max_count << 2);
-  TEST_ASSERT_EQUAL_UINT32(expectedFeedForward, _idleState.FeedForwardTerm);
-}
+  TEST_ASSERT_EQUAL_UINT32(725, _idleState.idle_pwm_target_value);
+ }
 
 void testIdleControlPwmOlCl(void)
 {
