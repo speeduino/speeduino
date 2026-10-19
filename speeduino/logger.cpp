@@ -83,7 +83,7 @@ static byte buildStatus4(const statuses &current)
     current.wmiTankEmpty,
     current.vvt1.angleError,
     current.vvt2.angleError,
-    current.fanDuty,
+    current.fanDuty!=0,
     current.burnPending,
     current.stagingActive,
     current.commCompat,
