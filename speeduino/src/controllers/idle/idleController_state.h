@@ -2,27 +2,12 @@
 
 #include "src/PID/integerPID.h"
 #include "src/pins/fastOutputPin.h"
-
+#include "stepper.h"
 namespace idleController {
 
 namespace detail {
 
 using fnCurMicros_t = decltype(micros)*;
-
-enum class StepperStatus : uint8_t 
-{
-    SOFF, 
-    STEPPING, ///< a high pulse is currently being sent and will need to be turned off at some point.
-    COOLING
-}; 
-
-struct StepperIdle
-{
-  int curIdleStep; //Tracks the current location of the stepper
-  int targetIdleStep; //What the targeted step is
-  volatile StepperStatus stepperStatus;
-  volatile unsigned long stepStartTime;
-};
 
 struct state_t
 {
@@ -31,7 +16,7 @@ struct state_t
     uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
     uint8_t idleTaper;
 
-    struct StepperIdle idleStepper;
+    StepperIdle idleStepper;
     bool idleOn; //Simply tracks whether idle was on last time around
     uint8_t idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
     unsigned int iacStepTime_uS;
