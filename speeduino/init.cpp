@@ -311,9 +311,6 @@ void setPinMapping(byte boardID)
   
 
   //Finally, set the relevant pin modes for outputs
-  pinMode(pinNumbers.pinIdle1, OUTPUT);
-  pinMode(pinNumbers.pinIdle2, OUTPUT);
-  pinMode(pinNumbers.pinIdleUpOutput, OUTPUT);
   pinMode(pinNumbers.pinStepperDir, OUTPUT);
   pinMode(pinNumbers.pinStepperStep, OUTPUT);
   pinMode(pinNumbers.pinStepperEnable, OUTPUT);
@@ -350,11 +347,6 @@ void setPinMapping(byte boardID)
   {
     if (configPage6.lnchPullRes == true) { pinMode(pinNumbers.pinLaunch, INPUT_PULLUP); }
     else { pinMode(pinNumbers.pinLaunch, INPUT); } //If Launch Pull Resistor is not set make input float.
-  }
-  if( (configPage2.idleUpEnabled > 0) && (!pinIsOutput(pinNumbers.pinIdleUp)) )
-  {
-    if (configPage2.idleUpPolarity == 0) { pinMode(pinNumbers.pinIdleUp, INPUT_PULLUP); } //Normal setting
-    else { pinMode(pinNumbers.pinIdleUp, INPUT); } //inverted setting
   }
   if( (configPage2.CTPSEnabled > 0) && (!pinIsOutput(pinNumbers.pinCTPS)) )
   {

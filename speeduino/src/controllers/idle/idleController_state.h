@@ -1,8 +1,14 @@
 #pragma once
 
 #include "src/PID/integerPID.h"
-#include "src/pins/fastOutputPin.h"
 #include "stepper.h"
+#include "src/pins/fastOutputPin.h"
+#include "src/pins/outputPin.h"
+#include "src/pins/invertableOutputPin.h"
+#include "src/pins/inputPin.h"
+#include "src/pins/pinNumbers_t.h"
+#include "config_pages.h"
+
 namespace idleController {
 
 namespace detail {
@@ -11,8 +17,6 @@ using fnCurMicros_t = decltype(micros)*;
 
 struct state_t
 {
-    uint8_t idleUpOutputHIGH = HIGH; // Used to invert the idle Up Output 
-    uint8_t idleUpOutputLOW = LOW;   // Used to invert the idle Up Output 
     uint8_t idleCounter = 0; //Used for tracking the number of calls to the idle control function
     uint8_t idleTaper = 0;
 
@@ -32,10 +36,15 @@ struct state_t
     uint32_t idle_pwm_target_value = 0;
     int32_t idle_cl_target_rpm = 0;
 
-    fastOutputPin_t idle_pin;
-    fastOutputPin_t idle2_pin;
+    invertableOutputPinAdaper_t<fastOutputPin_t> idle_pin;
+    invertableOutputPinAdaper_t<fastOutputPin_t> idle2_pin;
+    invertableOutputPinAdaper_t<outputPin_t> pinIdleUpOutput;
+    inputPin_t pinIdleUpInput;
 
     integerPID idlePID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
+
+    state_t() = default;
+    state_t(const pinNumbers_t &pins, const config2 &page2, const config6 &page6);
 };
 
 } // detail

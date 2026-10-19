@@ -15,7 +15,6 @@ using namespace idleController::detail;
 TESTABLE_STATIC state_t _idleState;
 TESTABLE_STATIC fnCurMicros_t _idleCurMicros = &micros;
 
-
 #define STEPPER_FORWARD 0
 #define STEPPER_BACKWARD 1
 #define STEPPER_POWER_WHEN_ACTIVE 0
@@ -48,14 +47,6 @@ static inline void enableIdle(void)
   }
 }
 
-static inline void initialiseIdleUpOutput(void)
-{
-  if (configPage2.idleUpOutputInv) { _idleState.idleUpOutputHIGH = LOW; _idleState.idleUpOutputLOW = HIGH; }
-  else { _idleState.idleUpOutputHIGH = HIGH; _idleState.idleUpOutputLOW = LOW; }
-
-  if(configPage2.idleUpEnabled) { digitalWrite(pinNumbers.pinIdleUpOutput, _idleState.idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
-}
-
 static void setIdlePidTunings(const config6 &page6)
 {
   _idleState.idlePID.setTunings(PidTuningParameters(page6.idleKP, page6.idleKI, page6.idleKD), TIME_MILLIS.toRaw(_idleCurMicros()), 250); //4Hz means 250ms
@@ -75,13 +66,7 @@ void initialiseIdle(bool forcehoming)
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
-  _idleState = idleController::detail::state_t();
-  
-  //Pin masks must always be initialised, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restart/overflow
-  _idleState.idle_pin.setPin(pinNumbers.pinIdle1, OUTPUT);
-  _idleState.idle2_pin.setPin(pinNumbers.pinIdle2, OUTPUT);
-
-  _idleState.idle_pwm_max_count = pwmFreqToTicks(FREQUENCY.toUser(configPage6.idleFreq));
+  _idleState = state_t(pinNumbers, configPage2, configPage6);
   
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
 // LCOV_EXCL_BR_START
@@ -185,8 +170,6 @@ void initialiseIdle(bool forcehoming)
       break;
 // LCOV_EXCL_STOP
   }
-
-  initialiseIdleUpOutput();
 
   _idleState.idleInitComplete = configPage6.iacAlgorithm; //Sets which idle method was initialised
   currentStatus.idleLoad = 0;
@@ -338,24 +321,15 @@ void idleControl(void)
   if( (currentStatus.RPM > 0) || (configPage6.iacPWMrun == true) ) { enableIdle(); }
 
   //Check whether the idleUp is active
-  if (configPage2.idleUpEnabled == true)
+  currentStatus.idleUpActive = configPage2.idleUpPolarity==_idleState.pinIdleUpInput.isPinHigh();
+  if (currentStatus.idleUpActive == true)
   {
-    if (configPage2.idleUpPolarity == 0) { currentStatus.idleUpActive = !digitalRead(pinNumbers.pinIdleUp); } //Normal mode (ground switched)
-    else { currentStatus.idleUpActive = digitalRead(pinNumbers.pinIdleUp); } //Inverted mode (5v activates idleUp)
-
-    if (configPage2.idleUpOutputEnabled  == true)
-    {
-      if (currentStatus.idleUpActive == true)
-      {
-        digitalWrite(pinNumbers.pinIdleUpOutput, _idleState.idleUpOutputHIGH);
-      }
-      else
-      {
-        digitalWrite(pinNumbers.pinIdleUpOutput, _idleState.idleUpOutputLOW);
-      }      
-    }
+    _idleState.pinIdleUpOutput.setPinHigh();
   }
-  else { currentStatus.idleUpActive = false; }
+  else
+  {
+    _idleState.pinIdleUpOutput.setPinLow();
+  }      
 
   bool PID_computed = false;
 // LCOV_EXCL_BR_START
@@ -687,18 +661,8 @@ void idleControl(void)
     {
       currentStatus.idleOn = true;
       IDLE_TIMER_DISABLE();
-      if (configPage6.iacPWMdir == 0)
-      {
-        //Normal direction
-        _idleState.idle_pin.setPinHigh();  // Switch pin high
-        if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      }
-      else
-      {
-        //Reversed direction
-        _idleState.idle_pin.setPinLow();  // Switch pin to low
-        if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      }
+      _idleState.idle_pin.setPinHigh();  // Switch pin high
+      _idleState.idle2_pin.setPinLow(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
     }
     else if (currentStatus.idleLoad == 0)
     {
@@ -719,18 +683,8 @@ void disableIdle(void)
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
     IDLE_TIMER_DISABLE();
-    if (configPage6.iacPWMdir == 0)
-    {
-      //Normal direction
-      _idleState.idle_pin.setPinLow();  // Switch pin to low
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-    }
-    else
-    {
-      //Reversed direction
-      _idleState.idle_pin.setPinHigh();  // Switch pin high
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-    }
+    _idleState.idle_pin.setPinLow();  // Switch pin to low
+    _idleState.idle2_pin.setPinHigh(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
   }
   else if( isStepperIac(configPage6) )
   {
@@ -760,55 +714,25 @@ void idleInterrupt(void)
 {
   if (_idleState.idle_pwm_state)
   {
-    if (configPage6.iacPWMdir == 0)
-    {
-      //Normal direction
-      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      _idleState.idle_pin.setPinHigh();
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinLow(); }
-      #else
-      _idleState.idle_pin.setPinLow();  // Switch pin to low (1 pin mode)
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      #endif
-    }
-    else
-    {
-      //Reversed direction
-      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      _idleState.idle_pin.setPinLow();
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinHigh(); }
-      #else
-      _idleState.idle_pin.setPinHigh();  // Switch pin high
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      #endif
-    }
+    #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+    _idleState.idle_pin.setPinHigh();
+    _idleState.idle2_pin.setPinLow();
+    #else
+    _idleState.idle_pin.setPinLow();  // Switch pin to low (1 pin mode)
+    _idleState.idle2_pin.setPinHigh(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    #endif
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (_idleState.idle_pwm_max_count - _idleState.idle_pwm_cur_value) );
     _idleState.idle_pwm_state = false;
   }
   else
   {
-    if (configPage6.iacPWMdir == 0)
-    {
-      //Normal direction
-      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      _idleState.idle_pin.setPinLow();
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinHigh(); }
-      #else
-      _idleState.idle_pin.setPinHigh();  // Switch pin high
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinLow(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      #endif
-    }
-    else
-    {
-      //Reversed direction
-      #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-      _idleState.idle_pin.setPinHigh();
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinLow(); }
-      #else
-      _idleState.idle_pin.setPinLow();  // Switch pin to low (1 pin mode)
-      if(configPage6.iacChannels == 1) { _idleState.idle2_pin.setPinHigh(); } //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
-      #endif
-    }
+    #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
+    _idleState.idle_pin.setPinLow();
+    _idleState.idle2_pin.setPinHigh();
+    #else
+    _idleState.idle_pin.setPinHigh();  // Switch pin high
+    _idleState.idle2_pin.setPinLow();  //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    #endif
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + _idleState.idle_pwm_target_value);
     _idleState.idle_pwm_cur_value = _idleState.idle_pwm_target_value;
     _idleState.idle_pwm_state = true;
