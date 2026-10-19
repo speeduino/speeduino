@@ -71,18 +71,16 @@ static void test_RunningIdleUp(void)
   context.current.setRpm(500);
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  digitalWrite(context.pins.pinIdleUp, HIGH);
+  _idleState.pinIdleUpInput._pin.setPinHigh();
   auto curMicros = context.idleControl(10000, 2000, 10);
   auto baseLoad = context.current.idleLoad;
   TEST_ASSERT_NOT_EQUAL(0, baseLoad);
   TEST_ASSERT_FALSE(context.current.idleUpActive);
 
-#if !defined(__AVR__) // Fix when using pin wrappers
-  digitalWrite(context.pins.pinIdleUp, LOW);
+  _idleState.pinIdleUpInput._pin.setPinLow();
   curMicros = context.idleControl(curMicros, 2000, 1);
   TEST_ASSERT_UINT8_WITHIN(1, baseLoad+context.page2.idleUpAdder, context.current.idleLoad);
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-#endif
 }
 
 static void test_RunningAirConditioning(void)
