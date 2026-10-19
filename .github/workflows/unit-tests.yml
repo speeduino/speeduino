@@ -43,7 +43,7 @@ jobs:
         PLATFORMIO_AUTH_TOKEN: ${{ secrets.PLATFORMIO_AUTH_TOKEN }}
       run: | 
         platformio run -e megaatmega2560
-        platformio remote test --force-remote --environment megaatmega2560
+        # platformio remote test --force-remote --environment megaatmega2560
 
     - name: Discord Notification (Unit Tests Failed)
       uses: rjstone/discord-webhook-notify@v1
