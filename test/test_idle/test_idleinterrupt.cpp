@@ -10,9 +10,10 @@ extern idleController::detail::state_t _idleState;
 static void test_normalDirection(uint8_t numChannels)
 {
     context_t context;
-
+    context.prepare_idle(IAC_ALGORITHM_PWM_CL);
     context.page6.iacPWMdir = 0;
     context.page6.iacChannels = numChannels;
+    context.init();
 
     _idleState.idle_pwm_state = true;
     _idleState.idle_pin.setPinHigh();
@@ -38,9 +39,10 @@ static void test_normalDirection(void)
 static void test_reverseDirection(uint8_t numChannels)
 {
     context_t context;
-
+    context.prepare_idle(IAC_ALGORITHM_PWM_CL);
     context.page6.iacPWMdir = 1;
     context.page6.iacChannels = numChannels;
+    context.init();
 
     _idleState.idle_pwm_state = true;
     _idleState.idle_pin.setPinLow();
