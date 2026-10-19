@@ -15,12 +15,7 @@ using namespace idleController::detail;
 TESTABLE_STATIC state_t _idleState;
 TESTABLE_STATIC fnCurMicros_t _idleCurMicros = &micros;
 
-#define STEPPER_FORWARD 0
-#define STEPPER_BACKWARD 1
 #define STEPPER_POWER_WHEN_ACTIVE 0
-
-#define STEPPER_LESS_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_BACKWARD : STEPPER_FORWARD)
-#define STEPPER_MORE_AIR_DIRECTION() ((configPage9.iacStepperInv == 0) ? STEPPER_FORWARD : STEPPER_BACKWARD)
 
 TESTABLE_CONSTEXPR table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
 TESTABLE_CONSTEXPR table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
@@ -66,7 +61,7 @@ void initialiseIdle(bool forcehoming)
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
-  _idleState = state_t(pinNumbers, configPage2, configPage6);
+  _idleState = state_t(pinNumbers, configPage2, configPage6, configPage9);
   
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
 // LCOV_EXCL_BR_START
@@ -202,7 +197,7 @@ static inline uint8_t checkForStepping(void)
       if(_idleState.idleStepper.status == StepperStatus::STEPPING)
       {
         //Means we're currently in a step, but it needs to be turned off
-        digitalWrite(pinNumbers.pinStepperStep, LOW); //Turn off the step
+        _idleState.idleStepper.pinStepperStep.setPinLow(); //Turn off the step        
         _idleState.idleStepper.startTime = _idleCurMicros();
 
 	//Set status to StepperStatus::COOLING. In next cycle, status will be set to SOFF and set stepper power OFF based on given settings
@@ -219,7 +214,7 @@ static inline uint8_t checkForStepping(void)
           //Disable the DRV8825, but only if we're at the final step in this cycle or within the hysteresis range. 
           if ( (_idleState.idleStepper.curStep >= (_idleState.idleStepper.targetStep - configPage6.iacStepHyster)) && (_idleState.idleStepper.curStep <= (_idleState.idleStepper.targetStep + configPage6.iacStepHyster))) //Hysteresis check
           { 
-            digitalWrite(pinNumbers.pinStepperEnable, HIGH); 
+            _idleState.idleStepper.pinStepperEnable.setPinHigh();
           } 
         }
       }
@@ -245,18 +240,18 @@ static inline void doStep(void)
     if (error < 0)
     {
       // we are moving toward the home position (reducing air)
-      digitalWrite(pinNumbers.pinStepperDir, STEPPER_LESS_AIR_DIRECTION() );
+      _idleState.idleStepper.pinStepperDir.setPinLow();
       _idleState.idleStepper.curStep--;
     }
     else
     {
       // we are moving away from the home position (adding air).
-      digitalWrite(pinNumbers.pinStepperDir, STEPPER_MORE_AIR_DIRECTION() );
+      _idleState.idleStepper.pinStepperDir.setPinHigh();
       _idleState.idleStepper.curStep++;
     }
 
-    digitalWrite(pinNumbers.pinStepperEnable, LOW); //Enable the DRV8825
-    digitalWrite(pinNumbers.pinStepperStep, HIGH);
+    _idleState.idleStepper.pinStepperEnable.setPinLow(); //Enable the DRV8825
+    _idleState.idleStepper.pinStepperStep.setPinHigh();
     _idleState.idleStepper.startTime = _idleCurMicros();
     _idleState.idleStepper.status = StepperStatus::STEPPING;
     _idleState.idleOn = true;
@@ -303,9 +298,9 @@ static inline uint8_t isStepperHomed(void)
   bool isHomed = true; //As it's the most common scenario, default value is true
   if( _idleState.completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
-    digitalWrite(pinNumbers.pinStepperDir, STEPPER_LESS_AIR_DIRECTION() ); //homing the stepper closes off the air bleed
-    digitalWrite(pinNumbers.pinStepperEnable, LOW); //Enable the DRV8825
-    digitalWrite(pinNumbers.pinStepperStep, HIGH);
+    _idleState.idleStepper.pinStepperDir.setPinLow(); //homing the stepper closes off the air bleed
+    _idleState.idleStepper.pinStepperEnable.setPinLow(); //Enable the DRV8825
+    _idleState.idleStepper.pinStepperStep.setPinHigh();
     _idleState.idleStepper.startTime = _idleCurMicros();
     _idleState.idleStepper.status = StepperStatus::STEPPING;
     _idleState.completedHomeSteps++;

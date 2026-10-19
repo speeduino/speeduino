@@ -60,6 +60,10 @@ void context_t::prepare_idle(uint8_t algorithm)
     pins.pinIdle2 = TEST_IDLE2_PIN;
     pins.pinIdleUp = TEST_IDLEUP_INPUT_PIN;
     pins.pinIdleUpOutput = TEST_IDLEUP_OUTPUT_PIN;
+    pins.pinStepperEnable = 22;
+    pins.pinStepperStep = 23;
+    pins.pinStepperDir = 24;
+
     page6.iacAlgorithm = algorithm;
     page6.idleKP = 100U;
     page6.idleKI = 50U;

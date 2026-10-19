@@ -6,8 +6,8 @@ namespace idleController {
 
 namespace detail {
 
-    __attribute__((optimize("Os"))) state_t::state_t(const pinNumbers_t &pins, const config2 &page2, const config6 &page6)
-    : idleStepper()
+    __attribute__((optimize("Os"))) state_t::state_t(const pinNumbers_t &pins, const config2 &page2, const config6 &page6, const config9 &page9)
+    : idleStepper(pins, page9)
     , idle_pwm_max_count(pwmFreqToTicks(FREQUENCY.toUser(page6.idleFreq)))
     {
         idle_pin.setPin(pins.pinIdle1, OUTPUT);

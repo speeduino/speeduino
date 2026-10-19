@@ -44,7 +44,7 @@ struct state_t
     integerPID idlePID; //This is the PID object if that algorithm is used. Needs to be global as it maintains state outside of each function call
 
     state_t() = default;
-    state_t(const pinNumbers_t &pins, const config2 &page2, const config6 &page6);
+    state_t(const pinNumbers_t &pins, const config2 &page2, const config6 &page6, const config9 &page9);
 };
 
 } // detail
