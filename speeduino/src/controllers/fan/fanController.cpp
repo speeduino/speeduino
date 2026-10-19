@@ -138,7 +138,6 @@ void fanControl(statuses &current, const config2 &page2, const config6 &page6, c
   }
 }
 
-// LCOV_EXCL_START
 //The interrupt to control the FAN PWM. Mega2560 doesn't have enough timers, so this is only for the ARM chip ones
 void fanInterrupt(void)
 {
