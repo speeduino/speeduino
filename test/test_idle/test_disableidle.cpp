@@ -143,7 +143,7 @@ static void test_disableIdle_stepper_unhomed_starts_homing(void)
 
   disableIdle();
 
-  TEST_ASSERT_EQUAL_UINT(1U, _idleState.completedHomeSteps);
+  TEST_ASSERT_EQUAL_UINT(1U, _idleState.idleStepper.completedHomeSteps);
   TEST_ASSERT_EQUAL_INT(321, _idleState.idleStepper.targetStep);
   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
 }

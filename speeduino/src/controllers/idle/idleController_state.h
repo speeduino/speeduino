@@ -25,7 +25,6 @@ struct state_t
     uint8_t idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
     unsigned int iacStepTime_uS = 0;
     unsigned int iacCoolTime_uS = 0;
-    unsigned int completedHomeSteps = 0;
 
     volatile bool idle_pwm_state = false;
     bool lastDFCOValue = false;
