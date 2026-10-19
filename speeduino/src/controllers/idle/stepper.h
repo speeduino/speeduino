@@ -6,20 +6,22 @@ namespace idleController {
 
 namespace detail {
 
-enum class StepperStatus : uint8_t 
-{
-    SOFF, 
-    STEPPING, ///< a high pulse is currently being sent and will need to be turned off at some point.
-    COOLING
-}; 
+    /** @brief Stepper motor status */
+    enum class StepperStatus : uint8_t 
+    {
+        OFF,      ///< The motor is not stepping or cooling
+        STEPPING, ///< The motor is moving
+        COOLING   ///< The motor is in it's cooling phase
+    }; 
 
-struct StepperIdle
-{
-  int curIdleStep; //Tracks the current location of the stepper
-  int targetIdleStep; //What the targeted step is
-  volatile StepperStatus stepperStatus;
-  volatile unsigned long stepStartTime;
-};
+    /** @brief Captures the state of the stepper motor */
+    struct stepperState_t
+    {
+        uint16_t curStep = 0;                       ///< The current location of the motor
+        uint16_t targetStep = 0;                    ///< The target step we want to move *to*
+        StepperStatus status = StepperStatus::OFF;  ///< What phase the motor is in
+        uint32_t startTime = 0;                     ///< The time in µS that we started the current phase
+    };
 
 }
 }
