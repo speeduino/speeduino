@@ -112,7 +112,7 @@ void initialiseIdle(bool forcehoming)
       if (forcehoming)
       {
         //Change between modes running make engine stall
-        _idleState.completedHomeSteps = 0;
+        _idleState.idleStepper.completedHomeSteps = 0;
         _idleState.idleStepper.curStep = 0;
         _idleState.idleStepper.status = StepperStatus::OFF;
       }
@@ -128,7 +128,7 @@ void initialiseIdle(bool forcehoming)
       if (forcehoming)
       {
         //Change between modes running make engine stall
-        _idleState.completedHomeSteps = 0;
+        _idleState.idleStepper.completedHomeSteps = 0;
         _idleState.idleStepper.curStep = 0;
          _idleState.idleStepper.status = StepperStatus::OFF;
       }
@@ -148,7 +148,7 @@ void initialiseIdle(bool forcehoming)
       if (forcehoming)
       {
         //Change between modes running make engine stall
-        _idleState.completedHomeSteps = 0;
+        _idleState.idleStepper.completedHomeSteps = 0;
         _idleState.idleStepper.curStep = 0;
          _idleState.idleStepper.status = StepperStatus::OFF;
       }
@@ -296,14 +296,14 @@ False: If the motor has not yet been homed. Will also perform another homing ste
 static inline uint8_t isStepperHomed(void)
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
-  if( _idleState.completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
+  if( _idleState.idleStepper.completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
   {
     _idleState.idleStepper.pinStepperDir.setPinLow(); //homing the stepper closes off the air bleed
     _idleState.idleStepper.pinStepperEnable.setPinLow(); //Enable the DRV8825
     _idleState.idleStepper.pinStepperStep.setPinHigh();
     _idleState.idleStepper.startTime = _idleCurMicros();
     _idleState.idleStepper.status = StepperStatus::STEPPING;
-    _idleState.completedHomeSteps++;
+    _idleState.idleStepper.completedHomeSteps++;
     _idleState.idleOn = true;
     isHomed = false;
   }

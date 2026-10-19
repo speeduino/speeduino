@@ -22,6 +22,7 @@ namespace detail {
     {
         uint16_t curStep = 0;                       ///< The current location of the motor
         uint16_t targetStep = 0;                    ///< The target step we want to move *to*
+        uint16_t completedHomeSteps = 0;            ///< Number of homing steps completed
         StepperStatus status = StepperStatus::OFF;  ///< What phase the motor is in
         uint32_t startTime = 0;                     ///< The time in µS that we started the current phase
 
