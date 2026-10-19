@@ -15,33 +15,33 @@ static void test_idleUpInputAndOutput(void)
   context.page2.idleUpOutputEnabled = true;
   context.init();
 
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
+  digitalWrite(context.pins.pinIdleUp, LOW);
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
 #if !defined(__AVR__)
-  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(context.pins.pinIdleUpOutput));
 #endif
 
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
+  digitalWrite(context.pins.pinIdleUp, HIGH);
   idleControl();
   TEST_ASSERT_FALSE(context.current.idleUpActive);
 #if !defined(__AVR__)
-  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(context.pins.pinIdleUpOutput));
 #endif
 
   context.page2.idleUpPolarity = 1U;
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
+  digitalWrite(context.pins.pinIdleUp, HIGH);
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
 #if !defined(__AVR__)
-  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(context.pins.pinIdleUpOutput));
 #endif
 
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
+  digitalWrite(context.pins.pinIdleUp, LOW);
   idleControl();
 #if !defined(__AVR__)
   TEST_ASSERT_FALSE(context.current.idleUpActive);
-  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
+  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(context.pins.pinIdleUpOutput));
 #endif
 }
 

@@ -50,6 +50,12 @@ static void prepare_stepper_run_table(void)
 
 void context_t::prepare_idle(uint8_t algorithm)
 {
+    // Idle test pins; 
+    constexpr uint8_t TEST_IDLE1_PIN = 18U;
+    constexpr uint8_t TEST_IDLE2_PIN = 19U;
+    constexpr uint8_t TEST_IDLEUP_INPUT_PIN = 20U;
+    constexpr uint8_t TEST_IDLEUP_OUTPUT_PIN = 21U;
+
     pins.pinIdle1 = TEST_IDLE1_PIN;
     pins.pinIdle2 = TEST_IDLE2_PIN;
     pins.pinIdleUp = TEST_IDLEUP_INPUT_PIN;
