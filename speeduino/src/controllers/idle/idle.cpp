@@ -75,6 +75,8 @@ void initialiseIdle(bool forcehoming)
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
+  _idleState = idleController::detail::state_t();
+  
   //Pin masks must always be initialised, regardless of whether PWM idle is used. This is required for STM32 to prevent issues if the IRQ function fires on restart/overflow
   _idleState.idle_pin.setPin(pinNumbers.pinIdle1, OUTPUT);
   _idleState.idle2_pin.setPin(pinNumbers.pinIdle2, OUTPUT);

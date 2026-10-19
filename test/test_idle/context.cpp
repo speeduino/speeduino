@@ -79,7 +79,6 @@ void context_t::prepare_idle(uint8_t algorithm)
 
 void context_t::init(void)
 {
-    _idleState = idleController::detail::state_t();
     initialiseIdle(false);
 }
 
