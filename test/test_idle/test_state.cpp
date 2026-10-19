@@ -103,6 +103,33 @@ static void test_ctor_idleupoutput_pin(void)
   }
 }
 
+
+static void test_setPinHigh_Low(void)
+{
+  context_t context;
+  context.prepare_idle(IAC_ALGORITHM_ONOFF);
+  context.page6.iacChannels = 1;
+ 
+  state_t subject(context.pins, context.page2, context.page6, context.page9); 
+  subject.setPinHigh();
+  TEST_ASSERT_TRUE(subject.idle_pin._pin.isPinHigh());
+  TEST_ASSERT_TRUE(subject.idle2_pin._pin.isPinLow());
+
+  // Should be a no-op
+  subject.setPinHigh();
+  TEST_ASSERT_TRUE(subject.idle_pin._pin.isPinHigh());
+  TEST_ASSERT_TRUE(subject.idle2_pin._pin.isPinLow());
+
+  subject.setPinLow();
+  TEST_ASSERT_TRUE(subject.idle_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(subject.idle2_pin._pin.isPinHigh());
+
+  // Should be a no-op
+  subject.setPinLow();
+  TEST_ASSERT_TRUE(subject.idle_pin._pin.isPinLow());
+  TEST_ASSERT_TRUE(subject.idle2_pin._pin.isPinHigh());
+}
+
 void testIdleControlState(void)
 {
   unity_filename_guard_t guard(__FILE__);
@@ -111,4 +138,5 @@ void testIdleControlState(void)
   RUN_TEST_P(test_ctor_idle2_pin);
   RUN_TEST_P(test_ctor_idleupinput_pin);
   RUN_TEST_P(test_ctor_idleupoutput_pin);
+  RUN_TEST_P(test_setPinHigh_Low);
 }

@@ -76,7 +76,7 @@ void initialiseIdle(bool forcehoming)
       //Case 1 is on/off idle control
       if ((temperatureAddOffset(currentStatus.coolant)) < configPage6.iacFastTemp)
       {
-        _idleState.idle_pin.setPinHigh();
+        _idleState.setPinHigh();
         _idleState.idleOn = true;
       }
       break;
@@ -337,14 +337,14 @@ void idleControl(void)
     case IAC_ALGORITHM_ONOFF:      //Case 1 is on/off idle control
       if ( (temperatureAddOffset(currentStatus.coolant)) < configPage6.iacFastTemp) //All temps are offset by 40 degrees
       {
-        _idleState.idle_pin.setPinHigh();
+        _idleState.setPinHigh();
         _idleState.idleOn = true;
         currentStatus.idleOn = true;
 		    currentStatus.idleLoad = 100;
       }
       else if (_idleState.idleOn)
       {
-        _idleState.idle_pin.setPinLow();
+        _idleState.setPinLow();
         _idleState.idleOn = false; 
         currentStatus.idleOn = false;
 		    currentStatus.idleLoad = 0;
@@ -656,8 +656,7 @@ void idleControl(void)
     {
       currentStatus.idleOn = true;
       IDLE_TIMER_DISABLE();
-      _idleState.idle_pin.setPinHigh();  // Switch pin high
-      _idleState.idle2_pin.setPinLow(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+      _idleState.setPinHigh();  // Switch pin high
     }
     else if (currentStatus.idleLoad == 0)
     {
@@ -678,8 +677,7 @@ void disableIdle(void)
   if( (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_CL) || (configPage6.iacAlgorithm == IAC_ALGORITHM_PWM_OL) )
   {
     IDLE_TIMER_DISABLE();
-    _idleState.idle_pin.setPinLow();  // Switch pin to low
-    _idleState.idle2_pin.setPinHigh(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    _idleState.setPinLow();  // Switch pin to low
   }
   else if( isStepperIac(configPage6) )
   {
@@ -710,11 +708,9 @@ void idleInterrupt(void)
   if (_idleState.idle_pwm_state)
   {
     #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    _idleState.idle_pin.setPinHigh();
-    _idleState.idle2_pin.setPinLow();
+    _idleState.setPinHigh();
     #else
-    _idleState.idle_pin.setPinLow();  // Switch pin to low (1 pin mode)
-    _idleState.idle2_pin.setPinHigh(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    _idleState.setPinLow();  // Switch pin to low (1 pin mode)
     #endif
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + (_idleState.idle_pwm_max_count - _idleState.idle_pwm_cur_value) );
     _idleState.idle_pwm_state = false;
@@ -722,11 +718,9 @@ void idleInterrupt(void)
   else
   {
     #if defined (CORE_TEENSY41) //PIT TIMERS count down and have opposite effect on PWM
-    _idleState.idle_pin.setPinLow();
-    _idleState.idle2_pin.setPinHigh();
+    _idleState.setPinLow();
     #else
-    _idleState.idle_pin.setPinHigh();  // Switch pin high
-    _idleState.idle2_pin.setPinLow();  //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    _idleState.setPinHigh();  // Switch pin high
     #endif
     SET_COMPARE(IDLE_COMPARE, IDLE_COUNTER + _idleState.idle_pwm_target_value);
     _idleState.idle_pwm_cur_value = _idleState.idle_pwm_target_value;

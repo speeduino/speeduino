@@ -16,8 +16,7 @@ static void test_normalDirection(uint8_t numChannels)
     context.init();
 
     _idleState.idle_pwm_state = true;
-    _idleState.idle_pin.setPinHigh();
-    _idleState.idle2_pin.setPinLow();
+    _idleState.setPinHigh();
 
     idleInterrupt();
     TEST_ASSERT_FALSE(_idleState.idle_pin._pin.isPinHigh());
@@ -45,8 +44,7 @@ static void test_reverseDirection(uint8_t numChannels)
     context.init();
 
     _idleState.idle_pwm_state = true;
-    _idleState.idle_pin.setPinLow();
-    _idleState.idle2_pin.setPinHigh();
+    _idleState.setPinLow();
 
     idleInterrupt();
     TEST_ASSERT_TRUE(_idleState.idle_pin._pin.isPinHigh());
