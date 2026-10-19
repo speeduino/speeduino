@@ -311,10 +311,6 @@ void setPinMapping(byte boardID)
   
 
   //Finally, set the relevant pin modes for outputs
-  pinMode(pinNumbers.pinStepperDir, OUTPUT);
-  pinMode(pinNumbers.pinStepperStep, OUTPUT);
-  pinMode(pinNumbers.pinStepperEnable, OUTPUT);
-
   //This is a legacy mode option to revert the MAP reading behaviour to match what was in place prior to the 201905 firmware
   if(configPage2.legacyMAP > 0) { digitalWrite(pinNumbers.pinMAP, HIGH); }
 
