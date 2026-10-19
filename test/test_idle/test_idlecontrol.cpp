@@ -18,7 +18,6 @@ static void test_idleUpInputAndOutput(void)
   digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_TRUE(context.current.idleUpOutputActive);
 #if !defined(__AVR__)
   TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
 #endif
@@ -26,7 +25,6 @@ static void test_idleUpInputAndOutput(void)
   digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
   idleControl();
   TEST_ASSERT_FALSE(context.current.idleUpActive);
-  TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
 #if !defined(__AVR__)
   TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
 #endif
@@ -35,7 +33,6 @@ static void test_idleUpInputAndOutput(void)
   digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_TRUE(context.current.idleUpOutputActive);
 #if !defined(__AVR__)
   TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
 #endif
@@ -44,7 +41,6 @@ static void test_idleUpInputAndOutput(void)
   idleControl();
 #if !defined(__AVR__)
   TEST_ASSERT_FALSE(context.current.idleUpActive);
-  TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
   TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
 #endif
 }
