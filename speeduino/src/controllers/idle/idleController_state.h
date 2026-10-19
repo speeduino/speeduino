@@ -16,7 +16,7 @@ struct state_t
     uint8_t idleCounter; //Used for tracking the number of calls to the idle control function
     uint8_t idleTaper;
 
-    StepperIdle idleStepper;
+    stepperState_t idleStepper;
     bool idleOn; //Simply tracks whether idle was on last time around
     uint8_t idleInitComplete = 99; //Tracks which idle method was initialised. 99 is a method that will never exist
     unsigned int iacStepTime_uS;

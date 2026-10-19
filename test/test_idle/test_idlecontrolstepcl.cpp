@@ -27,7 +27,7 @@ static void test_StoppedUsesCrankTable(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 }
 
 static void test_CrankingUsesCrankTable(void)
@@ -40,7 +40,7 @@ static void test_CrankingUsesCrankTable(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 }
 
 static void test_Running(void)
@@ -52,7 +52,7 @@ static void test_Running(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(60, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(60, _idleState.idleStepper.targetStep);
 }
 
 static void test_RunningTaper(void)
@@ -68,7 +68,7 @@ static void test_RunningTaper(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
@@ -86,14 +86,14 @@ static void test_RunningIdleUp(void)
 
   digitalWrite(context.pins.pinIdleUp, HIGH);
   auto curMicros = context.idleControl(10000, 2000, 1);
-  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  auto baseSteps = _idleState.idleStepper.targetStep;
   TEST_ASSERT_NOT_EQUAL(0, baseSteps);
   TEST_ASSERT_FALSE(context.current.idleUpActive);
 
 #if !defined(__AVR__) // Fix when using pin wrappers
   digitalWrite(context.pins.pinIdleUp, LOW);
   curMicros = context.idleControl(curMicros, 2000, 2);
-  TEST_ASSERT_EQUAL(baseSteps+context.page2.idleUpAdder, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(baseSteps+context.page2.idleUpAdder, _idleState.idleStepper.targetStep);
   TEST_ASSERT_TRUE(context.current.idleUpActive);
 #endif
 }
@@ -110,12 +110,12 @@ static void test_RunningAirConditioning(void)
 
   context.current.acStatus.turningOn = false;
   auto curMicros = context.idleControl(10000, 2000, 1);
-  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  auto baseSteps = _idleState.idleStepper.targetStep;
   TEST_ASSERT_NOT_EQUAL(0, baseSteps);
 
   context.current.acStatus.turningOn = true;
   curMicros = context.idleControl(curMicros, 2000, 2);
-  TEST_ASSERT_EQUAL(baseSteps+context.page15.airConIdleSteps, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(baseSteps+context.page15.airConIdleSteps, _idleState.idleStepper.targetStep);
 }
 
 void testIdleControlStepCl(void)
