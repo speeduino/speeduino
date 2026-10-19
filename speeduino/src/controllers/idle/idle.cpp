@@ -54,7 +54,6 @@ static inline void initialiseIdleUpOutput(void)
   else { _idleState.idleUpOutputHIGH = HIGH; _idleState.idleUpOutputLOW = LOW; }
 
   if(configPage2.idleUpEnabled) { digitalWrite(pinNumbers.pinIdleUpOutput, _idleState.idleUpOutputLOW); } //Initialise program with the idle up output in the off state if it is enabled. 
-  currentStatus.idleUpOutputActive = false;
 }
 
 static void setIdlePidTunings(const config6 &page6)
@@ -347,12 +346,10 @@ void idleControl(void)
       if (currentStatus.idleUpActive == true)
       {
         digitalWrite(pinNumbers.pinIdleUpOutput, _idleState.idleUpOutputHIGH);
-        currentStatus.idleUpOutputActive = true;
       }
       else
       {
         digitalWrite(pinNumbers.pinIdleUpOutput, _idleState.idleUpOutputLOW);
-        currentStatus.idleUpOutputActive = false;
       }      
     }
   }
