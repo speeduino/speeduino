@@ -45,6 +45,18 @@ struct state_t
 
     state_t() = default;
     state_t(const pinNumbers_t &pins, const config2 &page2, const config6 &page6, const config9 &page9);
+
+    void setPinHigh(void)
+    {
+        idle_pin.setPinHigh();
+        idle2_pin.setPinLow(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+
+    void setPinLow(void)
+    {
+        idle_pin.setPinLow();
+        idle2_pin.setPinHigh(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }    
 };
 
 } // detail
