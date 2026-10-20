@@ -49,8 +49,11 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/crank_angle_calculator.h"
 #include "src/decoders/decoder_state.h"
 #include "src/decoders/perToothIgnition.h"
+#include "src/decoders/rev_time_calcs.h"
 
-TESTABLE_STATIC decoders::shared::state_t _decoderState;
+using namespace decoders::shared;
+
+TESTABLE_STATIC state_t _decoderState;
 
 static inline void triggerRecordVVT1Angle (void);
 
@@ -263,121 +266,6 @@ static void sharedDecoderReset(void) {
   _decoderState.reset();
 }
 
-// If tooth angle calculations are based on cam teeth (not crank teeth), then results must be
-// divided by 2 (shifted by 1) 
-static inline uint8_t calcToothCalcShift(bool isCamTeeth)
-{
-  return isCamTeeth ? 1U : 0U;
-}
-
-/** Tooth timestamps copied in one critical section, so a 32-bit read cannot tear and the pair cannot split. */
-struct tooth_speed_sample_t {
-  uint32_t lastToothTime;
-  uint32_t prevToothTime;
-  uint32_t lastToothOneTime;
-  uint32_t prevToothOneTime;
-  uint32_t startRevolutions;
-  uint16_t toothAngle;
-  SyncStatus syncStatus;
-};
-
-static inline tooth_speed_sample_t atomicToothSpeedSample(void)
-{
-  tooth_speed_sample_t sample = {};
-  ATOMIC()
-  {
-    sample.lastToothTime = _decoderState.toothLastToothTime;
-    sample.prevToothTime = _decoderState.toothLastMinusOneToothTime;
-    sample.lastToothOneTime = _decoderState.toothOneTime;
-    sample.prevToothOneTime = _decoderState.toothOneMinusOneTime;
-    sample.startRevolutions = currentStatus.startRevolutions;
-    sample.toothAngle = _decoderState.triggerToothAngle;
-    sample.syncStatus = _decoderState.decoderStatus.syncStatus;
-  }
-  return sample;
-}
-
-static inline uint32_t publishedRevolutionTime(void)
-{
-  return currentStatus.revolutionTime;
-}
-
-// The tooth times are micros() values, which wrap around: timeElapsed() handles that, so the times are only checked for being set & distinct
-static __attribute__((noinline)) bool toothInterval(uint32_t lastTime, uint32_t prevTime, uint32_t &intervalUs)
-{
-  if ((prevTime==0U) || (lastTime==0U) || (lastTime==prevTime)) { return false; }
-  intervalUs = timeElapsed(lastTime, prevTime);
-  return true;
-}
-
-static inline bool lastToothInterval(const tooth_speed_sample_t &sample, uint32_t &intervalUs)
-{
-  return toothInterval(sample.lastToothTime, sample.prevToothTime, intervalUs);
-}
-
-static inline bool toothOneInterval(const tooth_speed_sample_t &sample, uint32_t &intervalUs)
-{
-  return toothInterval(sample.lastToothOneTime, sample.prevToothOneTime, intervalUs);
-}
-
-/**
- * Crank period implied by one tooth interval that covers toothAngleDeg degrees.
- * Split so interval * 360 cannot wrap a uint32_t: (interval / angle) * 360 + (interval % angle) * 360 / angle.
- */
-static inline uint32_t revolutionTimeFromInterval(uint32_t intervalUs, uint16_t toothAngleDeg)
-{
-  uint32_t whole = intervalUs / toothAngleDeg;
-  uint32_t remainder = intervalUs % toothAngleDeg;
-  return (whole * 360UL) + ((remainder * 360UL) / toothAngleDeg);
-}
-
-/** @return false when the angle or the interval cannot be used. Caller keeps the published period. */
-static inline bool revolutionTimeFromLastTooth(const tooth_speed_sample_t &sample, uint32_t &revolutionTime)
-{
-  uint32_t interval = 0U;
-  if ((sample.toothAngle==0U) || (lastToothInterval(sample, interval)==false)) { return false; }
-  revolutionTime = revolutionTimeFromInterval(interval, sample.toothAngle);
-  return true;
-}
-
-// As nearly all the decoders use a common method of determining revolution time (The time the last full revolution took) A common function is simpler.
-// If the revolution time cannot be calculated, the current value is returned unchanged.
-TESTABLE_STATIC __attribute__((noinline)) uint32_t stdGetRevolutionTime(bool isCamTeeth)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
-  bool cranking = (currentStatus.RPM < currentStatus.crankRPM) && (sample.startRevolutions==0U);
-  uint32_t interval = 0U;
-  if ((sample.syncStatus!=SyncStatus::None) && (cranking==false) && (toothOneInterval(sample, interval)==true))
-  {
-    //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-    return interval >> calcToothCalcShift(isCamTeeth);
-  }
-
-  return publishedRevolutionTime();
-}
-
-/**
-This is a special case of revolution time measure that is based on the time between the last 2 teeth rather than the time of the last full revolution.
-This gives much more volatile reading, but is quite useful during cranking, particularly on low resolution patterns.
-It can only be used on patterns where the teeth are evenly spaced.
-It takes an argument of the full (COMPLETE) number of teeth per revolution.
-For a missing tooth wheel, this is the number if the tooth had NOT been missing (Eg 36-1 = 36)
-If the revolution time cannot be calculated, the current value is returned unchanged.
-*/
-TESTABLE_STATIC __attribute__((noinline)) uint32_t crankingGetRevolutionTime(byte totalTeeth, bool isCamTeeth)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
-  uint32_t interval = 0U;
-  if ( (sample.startRevolutions >= configPage4.StgCycles)
-    && (sample.syncStatus!=SyncStatus::None)
-    && (lastToothInterval(sample, interval)==true) )
-  {
-    return (interval * totalTeeth) >> calcToothCalcShift(isCamTeeth);
-  }
-
-  return publishedRevolutionTime();
-}
-
 static auto atomic_make_lookup_caa(void)
 {
   return lookup_crank_angle_calculator_t(atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount));
@@ -525,9 +413,9 @@ static void triggerPri_missingTooth(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) )
         {
           crankAngle += 360;
-          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
         }
-        else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+        else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
    }
 }
@@ -647,13 +535,13 @@ static uint32_t getRevolutionTime_missingTooth(void)
   {
     if(_decoderState.toothCurrentCount != 1)
     {
-      revolutionTime = crankingGetRevolutionTime(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
+      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
     }
-    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    revolutionTime = stdGetRevolutionTime(configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, configPage4.TrigSpeed==CAM_SPEED); //Account for cam speed
   }
   return revolutionTime;
 }
@@ -796,7 +684,7 @@ static void triggerPri_DualWheel(void)
           currentTooth = (configPage4.triggerTeeth + _decoderState.toothCurrentCount); 
         }
         else{ currentTooth = _decoderState.toothCurrentCount; }
-        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
+        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
       }
    } //Trigger filter
 }
@@ -844,11 +732,11 @@ static uint32_t getRevolutionTime_DualWheel(void)
     //Account for cam speed
     if( currentStatus.RPM < currentStatus.crankRPM )
     {
-      return crankingGetRevolutionTime(configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED);
+      return crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED);
     }
     else
     {
-      return stdGetRevolutionTime(configPage4.TrigSpeed==CAM_SPEED);
+      return stdGetRevolutionTime(currentStatus, _decoderState, configPage4.TrigSpeed==CAM_SPEED);
     }
   }
   return 0U; //Speed is unknown without sync
@@ -985,7 +873,7 @@ static void triggerPri_BasicDistributor(void)
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       uint16_t currentTooth = _decoderState.toothCurrentCount;
       if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
+      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
     }
 
     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
@@ -999,8 +887,8 @@ static uint32_t getRevolutionTime_BasicDistributor(void)
   if(configPage2.strokes == TWO_STROKE) { distributorSpeed = CRANK_SPEED; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
 
   const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
-  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(_decoderState.triggerActualTeeth, distributorSpeed)
-                                                  : stdGetRevolutionTime(distributorSpeed);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, _decoderState.triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(currentStatus, _decoderState, distributorSpeed);
 
   _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(_decoderState.triggerActualTeeth == 1) { _decoderState.MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
@@ -1176,7 +1064,7 @@ static void triggerPri_GM7X(void)
         {
           crankAngle = ((_decoderState.toothCurrentCount - 2) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
         }
-        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
+        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
       } 
     }
 
@@ -1188,7 +1076,7 @@ static void triggerPri_GM7X(void)
 
 static uint32_t getRevolutionTime_GM7X(void)
 {
-   return stdGetRevolutionTime(CRANK_SPEED);
+   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 static int16_t getCrankAngle_GM7X(uint32_t currMicros)
 {
@@ -1415,8 +1303,8 @@ static void triggerPri_4G63(void)
           int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
           //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-          else { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
+          else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
         }
       }
     } //Has sync
@@ -1523,7 +1411,7 @@ static uint32_t getRevolutionTime_4G63(void)
   During cranking, revolution time is calculated 4 times per revolution, once for each rising/falling of the crank signal.
   Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   */
-  sample = atomicToothSpeedSample();
+  sample = atomicToothSpeedSample(currentStatus, _decoderState);
   if (sample.syncStatus==SyncStatus::Full)
   {
     if (currentStatus.RPM < currentStatus.crankRPM)
@@ -1533,10 +1421,10 @@ static uint32_t getRevolutionTime_4G63(void)
         _decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
         return revolutionTime;
       }
-      return publishedRevolutionTime();
+      return publishedRevolutionTime(currentStatus);
     }
 
-    revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
     //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
     //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
     _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
@@ -1710,7 +1598,7 @@ static void triggerSec_24X(void)
 
 static uint32_t getRevolutionTime_24X(void)
 {
-   return stdGetRevolutionTime(CRANK_SPEED);
+   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_24X(uint32_t currMicros)
@@ -1816,7 +1704,7 @@ static void triggerSec_Jeep2000(void)
 
 static uint32_t getRevolutionTime_Jeep2000(void)
 {
-   return stdGetRevolutionTime(CRANK_SPEED);
+   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
@@ -1942,7 +1830,7 @@ static void triggerSec_Audi135(void)
 
 static uint32_t getRevolutionTime_Audi135(void)
 {
-   return stdGetRevolutionTime(CRANK_SPEED);
+   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_Audi135(uint32_t currMicros)
@@ -2029,7 +1917,7 @@ static void triggerPri_HondaD17(void)
 
 static uint32_t getRevolutionTime_HondaD17(void)
 {
-   return stdGetRevolutionTime(CRANK_SPEED);
+   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
@@ -2142,10 +2030,10 @@ static void triggerPri_HondaJ32(void)
 static uint32_t getRevolutionTime_HondaJ32(void)
 {
   // The tooth #1 times are only updated while we have sync. They are estimated from the tooth gap when sync is first gained,
-  // so this doesn't have to wait for a full revolution (as stdGetRevolutionTime() would)
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  // so this doesn't have to wait for a full revolution (as stdGetRevolutionTime(currentStatus, _decoderState, ) would)
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   uint32_t interval = 0U;
-  if ((sample.syncStatus==SyncStatus::None) || (toothOneInterval(sample, interval)==false)) { return publishedRevolutionTime(); }
+  if ((sample.syncStatus==SyncStatus::None) || (toothOneInterval(sample, interval)==false)) { return publishedRevolutionTime(currentStatus); }
   return interval;
 }
 
@@ -2270,8 +2158,8 @@ static void triggerPri_Miata9905(void)
         int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-        else { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
+        else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
     } //Has sync
 
@@ -2323,7 +2211,7 @@ static uint32_t getRevolutionTime_Miata9905(void)
   During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
   Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
   */
-  sample = atomicToothSpeedSample();
+  sample = atomicToothSpeedSample(currentStatus, _decoderState);
   if ( (currentStatus.RPM < currentStatus.crankRPM) && (sample.syncStatus==SyncStatus::Full) )
   {
     if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
@@ -2331,10 +2219,10 @@ static uint32_t getRevolutionTime_Miata9905(void)
       _decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
       return revolutionTime;
     }
-    return publishedRevolutionTime();
+    return publishedRevolutionTime(currentStatus);
   }
 
-  revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+  revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
   _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if (_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
   return revolutionTime;
@@ -2525,7 +2413,7 @@ static void triggerSec_MazdaAU(void)
 
 static uint32_t getRevolutionTime_MazdaAU(void)
 {
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   uint32_t revolutionTime = 0U;
 
   if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
@@ -2537,9 +2425,9 @@ static uint32_t getRevolutionTime_MazdaAU(void)
   if (currentStatus.RPM < currentStatus.crankRPM)
   {
     if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
-    return publishedRevolutionTime();
+    return publishedRevolutionTime(currentStatus);
   }
-  return stdGetRevolutionTime(CRANK_SPEED);
+  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
@@ -2594,8 +2482,8 @@ static uint32_t getRevolutionTime_non360(void)
 {
   if ( (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) && (_decoderState.toothCurrentCount != 0) )
   {
-    if (currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRevolutionTime(configPage4.triggerTeeth, CRANK_SPEED); }
-    return stdGetRevolutionTime(CRANK_SPEED);
+    if (currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, CRANK_SPEED); }
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
   }
   return 0U; //Speed is unknown without sync
 }
@@ -2681,11 +2569,11 @@ static void triggerPri_Nissan360(void)
         if(crankAngle > CRANK_ANGLE_MAX_IGN) 
         { 
           crankAngle -= CRANK_ANGLE_MAX_IGN;
-          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount/2) );
+          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount/2) );
         }
         else
         {
-          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
+          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
         }
        
      }
@@ -2785,19 +2673,19 @@ static void triggerSec_Nissan360(void)
 static uint32_t getRevolutionTime_Nissan360(void)
 {
   //Can't use stdGetRevolutionTime as there is no separate cranking calc (stdGetRevolutionTime doesn't update if cranking)
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
 
   uint32_t interval = 0U;
   uint32_t revolutionTime = 0U;
   if (sample.startRevolutions < 2U)
   {
-    if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+    if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
     revolutionTime = interval * 180UL; //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time.
   }
   else
   {
-    if (toothOneInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+    if (toothOneInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
     revolutionTime = interval >> 1; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
   }
   _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
@@ -2987,10 +2875,10 @@ static void triggerPri_Subaru67(void)
         crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-6) ); }
-        else { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-6) ); }
+        else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
-      else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+      else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }
   }
  }
@@ -3035,10 +2923,10 @@ static void triggerSec_Subaru67(void)
 
 static uint32_t getRevolutionTime_Subaru67(void)
 {
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   if (sample.startRevolutions==0U) { return 0U; } //No speed until the first revolution has completed
   //As the tooth count is over 720 degrees
-  return stdGetRevolutionTime(CAM_SPEED);
+  return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
 }
 
 static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
@@ -3212,15 +3100,15 @@ static uint32_t getRevolutionTime_Daihatsu(void)
   static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
   if( (crankingCalcEnabled==false) || (currentStatus.RPM >= currentStatus.crankRPM) )
   {
-    return stdGetRevolutionTime(CAM_SPEED); //Tracking over 2 crank revolutions
+    return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED); //Tracking over 2 crank revolutions
   }
 
   //Can't use standard cranking revolution time function due to extra tooth
-  if (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { return publishedRevolutionTime(); } //No sync
-  if ((_decoderState.toothCurrentCount == 2U) || (_decoderState.toothCurrentCount == 3U)) { return publishedRevolutionTime(); } //Extra tooth
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  if (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { return publishedRevolutionTime(currentStatus); } //No sync
+  if ((_decoderState.toothCurrentCount == 2U) || (_decoderState.toothCurrentCount == 3U)) { return publishedRevolutionTime(currentStatus); } //Extra tooth
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   uint32_t interval = 0U;
-  if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(); }
+  if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
   return interval * (uint32_t)(_decoderState.triggerActualTeeth - 1U);
 }
 static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
@@ -3319,7 +3207,7 @@ static void triggerPri_Harley(void)
 
 static uint32_t getRevolutionTime_Harley(void)
 {
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   uint32_t revolutionTime = 0U;
 
   if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
@@ -3328,9 +3216,9 @@ static uint32_t getRevolutionTime_Harley(void)
   {
     //Tooth #1 sets triggerToothAngle to 0, so there is no per tooth calculation: keep the last speed until the next tooth
     if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
-    return publishedRevolutionTime();
+    return publishedRevolutionTime(currentStatus);
   }
-  return stdGetRevolutionTime(CRANK_SPEED);
+  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 static int16_t getCrankAngle_Harley(uint32_t currMicros)
@@ -3464,7 +3352,7 @@ static void triggerPri_ThirtySixMinus222(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
+       checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
      }
 
    }
@@ -3478,17 +3366,17 @@ static uint32_t getRevolutionTime_ThirtySixMinus222(void)
     
     if( (configPage2.nCylinders == 4) && (_decoderState.toothCurrentCount != 19) && (_decoderState.toothCurrentCount != 16) && (_decoderState.toothCurrentCount != 34) && (_decoderState.decoderStatus.toothAngleIsCorrect) )
     {
-      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
     }
     else if( (configPage2.nCylinders == 6) && (_decoderState.toothCurrentCount != 9) && (_decoderState.toothCurrentCount != 12) && (_decoderState.toothCurrentCount != 33) && (_decoderState.decoderStatus.toothAngleIsCorrect) )
     {
-      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
     }
-    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
+    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
   }
   else
   {
-    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
   }
   return revolutionTime;
 }
@@ -3621,7 +3509,7 @@ static void triggerPri_ThirtySixMinus21(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
+       checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
      }
 
    
@@ -3634,13 +3522,13 @@ static uint32_t getRevolutionTime_ThirtySixMinus21(void)
   {
     if( (_decoderState.toothCurrentCount != 20) && (_decoderState.decoderStatus.toothAngleIsCorrect) )
     {
-      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
     }
-    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
   }
   return revolutionTime;
 }
@@ -3722,7 +3610,7 @@ static void triggerPri_420a(void)
     if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] ) + configPage4.triggerAngle;
-      decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
+      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
     }
   }
 }
@@ -3778,11 +3666,11 @@ static uint32_t getRevolutionTime_420a(void)
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
     //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
-    revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
   }
   else
   {
-    revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
   }
   return revolutionTime;
 }
@@ -4016,13 +3904,13 @@ static uint32_t getRevolutionTime_FordST170(void)
   {
     if(_decoderState.toothCurrentCount != 1)
     {
-      revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED);
+      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
     }
-    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
   }
   else
   {
-    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
   }
   return revolutionTime;
 }
@@ -4261,9 +4149,9 @@ static void triggerPri_NGC(void)
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
       {
         crankAngle += 360;
-        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
       }
-    else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+    else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }
   }
 }
@@ -4380,12 +4268,12 @@ static uint32_t getRevolutionTime_NGC(void)
   uint32_t revolutionTime = 0;
   if( currentStatus.RPM < currentStatus.crankRPM)
   {
-    if (_decoderState.decoderStatus.toothAngleIsCorrect) { revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED); }
-    else { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation if we're at any of the missing teeth as it messes the calculation
+    if (_decoderState.decoderStatus.toothAngleIsCorrect) { revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED); }
+    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at any of the missing teeth as it messes the calculation
   }
   else
   {
-    revolutionTime = stdGetRevolutionTime(CRANK_SPEED);
+    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
   }
   return revolutionTime;
 }
@@ -4605,7 +4493,7 @@ static void triggerPri_Vmax(void)
 
 static uint32_t getRevolutionTime_Vmax(void)
 {
-  tooth_speed_sample_t sample = atomicToothSpeedSample();
+  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
   uint32_t revolutionTime = 0U;
 
   if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
@@ -4613,9 +4501,9 @@ static uint32_t getRevolutionTime_Vmax(void)
   if (currentStatus.RPM < currentStatus.crankRPM)
   {
     if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; } //triggerToothAngle is zero until the first tooth after sync
-    return publishedRevolutionTime();
+    return publishedRevolutionTime(currentStatus);
   }
-  return stdGetRevolutionTime(CRANK_SPEED);
+  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
 }
 
 
@@ -4737,9 +4625,9 @@ static void triggerPri_Renix(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
         {
           crankAngle += 360;
-          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
         }
-        else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+        else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
     }
   } 
@@ -4988,9 +4876,9 @@ static void triggerPri_RoverMEMS(void)
     {  
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true))
-      { crankAngle += 360; decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
+      { crankAngle += 360; checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
       else
-      { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
+      { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }     
   }
 
@@ -5087,12 +4975,12 @@ static uint32_t getRevolutionTime_RoverMEMS(void)
         (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH2]) && 
         (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH3]) && 
         (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH4]) )
-    { revolutionTime = crankingGetRevolutionTime(36, CRANK_SPEED); }
+    { revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED); }
     else
-    { revolutionTime = publishedRevolutionTime(); } //Can't do per tooth calculation as the missing tooth messes the calculation
+    { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation as the missing tooth messes the calculation
   }
   else
-  { revolutionTime = stdGetRevolutionTime(CRANK_SPEED); }
+  { revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED); }
   return revolutionTime;
 }
 
@@ -5396,7 +5284,7 @@ static void triggerPri_SuzukiK6A(void)
       if( (configPage2.perToothIgn == true) ) 
       {  
         int16_t crankAngle = _decoderState.toothAngles[_decoderState.toothCurrentCount] + configPage4.triggerAngle;
-        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
+        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
       }     
 
     } // has sync
@@ -5408,7 +5296,7 @@ static uint32_t getRevolutionTime_SuzukiK6A(void)
 {
   //Cranking code needs working out. 
 
-  uint32_t revolutionTime = stdGetRevolutionTime(CAM_SPEED);
+  uint32_t revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
 
   _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
@@ -5561,7 +5449,7 @@ static void triggerPri_FordTFI(void)
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       uint16_t currentTooth = _decoderState.toothCurrentCount;
       if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
+      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
     }
         
     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
@@ -5643,8 +5531,8 @@ static uint32_t getRevolutionTime_FordTFI(void)
   const uint8_t distributorSpeed = CAM_SPEED;
 
   const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
-  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(_decoderState.triggerActualTeeth, distributorSpeed)
-                                                  : stdGetRevolutionTime(distributorSpeed);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, _decoderState.triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(currentStatus, _decoderState, distributorSpeed);
 
   _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
