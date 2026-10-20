@@ -113,15 +113,15 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_STEP_OL:
       //Case 2 is Stepper open loop
-      _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
-      _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+      _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
+      _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
 
     case IAC_ALGORITHM_STEP_CL:
       //Case 5 is Stepper closed loop
-      _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
-      _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+      _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
+      _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
       configureIdlePID(configPage6, 
                        IAC_STEPS.toUser(configPage2.iacCLminValue)<<2, 
                        IAC_STEPS.toUser(configPage2.iacCLmaxValue)<<2,
@@ -131,8 +131,8 @@ void initialiseIdle(bool forcehoming)
 
     case IAC_ALGORITHM_STEP_OLCL:
       //Case 7 is Stepper closed loop with open loop table used as feed forward
-      _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
-      _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+      _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
+      _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
       configureIdlePID(configPage6, 
                        IAC_STEPS.toUser(configPage2.iacCLminValue)<<2,
                        IAC_STEPS.toUser(configPage2.iacCLmaxValue)<<2, //Maximum number of steps; always less than home steps count.
@@ -531,8 +531,8 @@ void idleControl(void)
             // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
             if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true) { _idleState.idleStepper.targetStep += configPage15.airConIdleSteps; }
             
-            _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
-            _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+            _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
+            _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
           }
         }
         updateIdleStepAndLoad(currentStatus, configPage9, _idleState.idleStepper);
@@ -615,8 +615,8 @@ void idleControl(void)
       {
         //This only needs to be run very infrequently, once per second
         setIdlePidTunings(configPage6);
-        _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
-        _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
+        _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
+        _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
       }
       // LCOV_EXCL_STOP
       break;
