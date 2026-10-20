@@ -61,8 +61,15 @@ void initialiseIdle(bool forcehoming)
   //By default, turn off the PWM interrupt (It gets turned on below if needed)
   IDLE_TIMER_DISABLE();
 
+  auto oldPosition = (stepperPosition_t)_idleState.idleStepper;
   _idleState = state_t(pinNumbers, configPage2, configPage6, configPage9);
-  
+  if (!forcehoming)
+  {
+    _idleState.idleStepper.completedHomeSteps = oldPosition.completedHomeSteps;
+    _idleState.idleStepper.curStep = oldPosition.curStep;
+    _idleState.idleStepper.status = oldPosition.status;
+  }
+
   //Initialising comprises of setting the 2D tables with the relevant values from the config pages
 // LCOV_EXCL_BR_START
   switch(configPage6.iacAlgorithm)
@@ -108,15 +115,6 @@ void initialiseIdle(bool forcehoming)
       //Case 2 is Stepper open loop
       _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
       _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
-
-      if (forcehoming)
-      {
-        //Change between modes running make engine stall
-        _idleState.idleStepper.completedHomeSteps = 0;
-        _idleState.idleStepper.curStep = 0;
-        _idleState.idleStepper.status = StepperStatus::OFF;
-      }
-
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
 
@@ -124,15 +122,6 @@ void initialiseIdle(bool forcehoming)
       //Case 5 is Stepper closed loop
       _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
       _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
-
-      if (forcehoming)
-      {
-        //Change between modes running make engine stall
-        _idleState.idleStepper.completedHomeSteps = 0;
-        _idleState.idleStepper.curStep = 0;
-         _idleState.idleStepper.status = StepperStatus::OFF;
-      }
-
       configureIdlePID(configPage6, 
                        (configPage2.iacCLminValue * 3)<<2, 
                        (configPage2.iacCLmaxValue * 3)<<2,
@@ -144,15 +133,6 @@ void initialiseIdle(bool forcehoming)
       //Case 7 is Stepper closed loop with open loop table used as feed forward
       _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
       _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
-
-      if (forcehoming)
-      {
-        //Change between modes running make engine stall
-        _idleState.idleStepper.completedHomeSteps = 0;
-        _idleState.idleStepper.curStep = 0;
-         _idleState.idleStepper.status = StepperStatus::OFF;
-      }
-
       configureIdlePID(configPage6, 
                        (configPage2.iacCLminValue * 3)<<2,
                        (configPage2.iacCLmaxValue * 3)<<2, //Maximum number of steps; always less than home steps count.
