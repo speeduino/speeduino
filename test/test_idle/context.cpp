@@ -83,7 +83,7 @@ void context_t::prepare_idle(uint8_t algorithm)
 
 void context_t::init(void)
 {
-    initialiseIdle(false);
+    initialiseIdle(true);
 }
 
 uint32_t context_t::idleControl(uint32_t startTime, uint32_t increment, uint8_t stepCount)
