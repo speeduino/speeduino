@@ -123,9 +123,9 @@ void initialiseIdle(bool forcehoming)
       _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
       _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
       configureIdlePID(configPage6, 
-                       (configPage2.iacCLminValue * 3)<<2, 
-                       (configPage2.iacCLmaxValue * 3)<<2,
-                       currentStatus.CLIdleTarget * 3);
+                       IAC_STEPS.toUser(configPage2.iacCLminValue)<<2, 
+                       IAC_STEPS.toUser(configPage2.iacCLmaxValue)<<2,
+                       IAC_STEPS.toUser(currentStatus.CLIdleTarget));
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
 
@@ -134,8 +134,8 @@ void initialiseIdle(bool forcehoming)
       _idleState.iacStepTime_uS = configPage6.iacStepTime * 1000;
       _idleState.iacCoolTime_uS = configPage9.iacCoolTime * 1000;
       configureIdlePID(configPage6, 
-                       (configPage2.iacCLminValue * 3)<<2,
-                       (configPage2.iacCLmaxValue * 3)<<2, //Maximum number of steps; always less than home steps count.
+                       IAC_STEPS.toUser(configPage2.iacCLminValue)<<2,
+                       IAC_STEPS.toUser(configPage2.iacCLmaxValue)<<2, //Maximum number of steps; always less than home steps count.
                        0);
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
@@ -276,7 +276,7 @@ False: If the motor has not yet been homed. Will also perform another homing ste
 static inline uint8_t isStepperHomed(void)
 {
   bool isHomed = true; //As it's the most common scenario, default value is true
-  if( _idleState.idleStepper.completedHomeSteps < (configPage6.iacStepHome * 3) ) //Home steps are divided by 3 from TS
+  if( _idleState.idleStepper.completedHomeSteps < IAC_STEPS.toUser(configPage6.iacStepHome) ) //Home steps are divided by 3 from TS
   {
     _idleState.idleStepper.pinStepperDir.setPinLow(); //homing the stepper closes off the air bleed
     _idleState.idleStepper.pinStepperEnable.setPinLow(); //Enable the DRV8825
@@ -504,7 +504,7 @@ void idleControl(void)
         if( currentStatus.rotationStatus!=EngineRotationStatus::Running ) //If ain't running it means off or cranking
         {
           //Currently cranking. Use the cranking table
-          _idleState.idleStepper.targetStep = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          _idleState.idleStepper.targetStep = IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant))); //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
           if(currentStatus.idleUpActive == true) { _idleState.idleStepper.targetStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
           _idleState.idleTaper = 0;
         }
@@ -517,14 +517,14 @@ void idleControl(void)
             {
               //Tapering between cranking IAC value and running
               _idleState.idleStepper.targetStep = map(_idleState.idleTaper, 0, configPage2.idleTaperTime,\
-              table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3,\
-              table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant)) * 3);
+              IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant))),\
+              IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant))));
               if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { _idleState.idleTaper++; }
             }
             else
             {
               //Standard running
-              _idleState.idleStepper.targetStep = table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+              _idleState.idleStepper.targetStep = IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant))); //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
             }
             if(currentStatus.idleUpActive == true) { _idleState.idleStepper.targetStep += configPage2.idleUpAdder; } //Add Idle Up amount if active
             
@@ -547,13 +547,13 @@ void idleControl(void)
         if( currentStatus.rotationStatus!=EngineRotationStatus::Running ) //If ain't running it means off or cranking
         {
           //Currently cranking. Use the cranking table
-          _idleState.idleStepper.targetStep = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+          _idleState.idleStepper.targetStep = IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant))); //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
           //Note: Idle Up amount is added to targetStep after this if/else block, common to all engine states. Adding it here as well would apply it twice.
 
           //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-          if (_idleState.idleStepper.targetStep > (configPage9.iacMaxSteps * 3) )
+          if (_idleState.idleStepper.targetStep > IAC_STEPS.toUser(configPage9.iacMaxSteps) )
           {
-            _idleState.idleStepper.targetStep = configPage9.iacMaxSteps * 3;
+            _idleState.idleStepper.targetStep = IAC_STEPS.toUser(configPage9.iacMaxSteps);
           }
           
           _idleState.idleTaper = 0;
@@ -568,10 +568,10 @@ void idleControl(void)
             _idleState.idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
             if( _idleState.idleTaper < configPage2.idleTaperTime )
             {
-              uint16_t minValue = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3;
+              uint16_t minValue = IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)));
               if( _idleState.idle_pid_target_value < minValue<<2 ) { _idleState.idle_pid_target_value = minValue<<2; }
               uint16_t maxValue = _idleState.idle_pid_target_value>>2;
-              if( configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL ) { maxValue = table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant)) * 3; }
+              if( configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL ) { maxValue = IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant))); }
 
               //Tapering between cranking IAC value and running
               _idleState.FeedForwardTerm = map(_idleState.idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
@@ -581,7 +581,7 @@ void idleControl(void)
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
             {
               //Standard running
-              _idleState.FeedForwardTerm = (table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant)) * 3)<<2; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+              _idleState.FeedForwardTerm = IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant)))<<2; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
               //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Hysteresis (coming back from high rpm with throttle closed) 
               if (((currentStatus.RPM - _idleState.idle_cl_target_rpm) > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit) || _idleState.lastDFCOValue )
               {
@@ -668,13 +668,13 @@ void disableIdle(void)
            disabling idle, since the only time this function is called in this scenario
            is if the engine stops.
         */
-        _idleState.idleStepper.targetStep = table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)) * 3; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+        _idleState.idleStepper.targetStep = IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant))); //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
         if(currentStatus.idleUpActive == true) { _idleState.idleStepper.targetStep += configPage2.idleUpAdder; } //Add Idle Up amount if active?
 
         //limit to the configured max steps. This must include any idle up adder, to prevent over-opening.
-        if (_idleState.idleStepper.targetStep > (configPage9.iacMaxSteps * 3) )
+        if (_idleState.idleStepper.targetStep > IAC_STEPS.toUser(configPage9.iacMaxSteps) )
         {
-          _idleState.idleStepper.targetStep = configPage9.iacMaxSteps * 3;
+          _idleState.idleStepper.targetStep = IAC_STEPS.toUser(configPage9.iacMaxSteps);
         }
         _idleState.idle_pid_target_value = _idleState.idleStepper.targetStep<<2;
     }
