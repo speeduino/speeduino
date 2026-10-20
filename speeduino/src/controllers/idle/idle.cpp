@@ -96,8 +96,8 @@ void initialiseIdle(bool forcehoming)
     case IAC_ALGORITHM_PWM_OLCL:
       //Case 6 is PWM closed loop with open loop table used as feed forward
       configureIdlePID(configPage6, 
-                        percentage(configPage2.iacCLminValue, _idleState.idle_pwm_max_count<<2), 
-                        percentage(configPage2.iacCLmaxValue, _idleState.idle_pwm_max_count<<2), 
+                        _idleState.rpmToPidCount(configPage2.iacCLminValue), 
+                        _idleState.rpmToPidCount(configPage2.iacCLmaxValue), 
                         0);
       _idleState.idleCounter = 0;
       break;
@@ -105,8 +105,8 @@ void initialiseIdle(bool forcehoming)
     case IAC_ALGORITHM_PWM_CL:
       //Case 3 is PWM closed loop
       configureIdlePID( configPage6, 
-                        percentage(configPage2.iacCLminValue, _idleState.idle_pwm_max_count<<2), 
-                        percentage(configPage2.iacCLmaxValue, _idleState.idle_pwm_max_count<<2),
+                        _idleState.rpmToPidCount(configPage2.iacCLminValue), 
+                        _idleState.rpmToPidCount(configPage2.iacCLmaxValue),
                         table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)));
       _idleState.idleCounter = 0;
       break;
@@ -123,8 +123,8 @@ void initialiseIdle(bool forcehoming)
       _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
       _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
       configureIdlePID(configPage6, 
-                       IAC_STEPS.toUser(configPage2.iacCLminValue)<<2, 
-                       IAC_STEPS.toUser(configPage2.iacCLmaxValue)<<2,
+                       pwmTicksToPidCount(IAC_STEPS.toUser(configPage2.iacCLminValue)), 
+                       pwmTicksToPidCount(IAC_STEPS.toUser(configPage2.iacCLmaxValue)),
                        IAC_STEPS.toUser(currentStatus.CLIdleTarget));
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
@@ -134,8 +134,8 @@ void initialiseIdle(bool forcehoming)
       _idleState.iacStepTime_uS = TIME_MILLIS.toUser(configPage6.iacStepTime);
       _idleState.iacCoolTime_uS = TIME_MILLIS.toUser(configPage9.iacCoolTime);
       configureIdlePID(configPage6, 
-                       IAC_STEPS.toUser(configPage2.iacCLminValue)<<2,
-                       IAC_STEPS.toUser(configPage2.iacCLmaxValue)<<2, //Maximum number of steps; always less than home steps count.
+                       pwmTicksToPidCount(IAC_STEPS.toUser(configPage2.iacCLminValue)),
+                       pwmTicksToPidCount(IAC_STEPS.toUser(configPage2.iacCLmaxValue)), //Maximum number of steps; always less than home steps count.
                        0);
       configPage6.iacPWMrun = false; // just in case. This needs to be false with stepper idle
       break;
@@ -370,7 +370,7 @@ void idleControl(void)
       if(currentStatus.idleUpActive == true) { currentStatus.idleLoad += configPage2.idleUpAdder; } //Add Idle Up amount if active
       
       if( currentStatus.idleLoad > 100 ) { currentStatus.idleLoad = 100; } //Safety Check
-      _idleState.idle_pwm_target_value = percentage(currentStatus.idleLoad, _idleState.idle_pwm_max_count);
+      _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
       
       break;
 
@@ -380,8 +380,8 @@ void idleControl(void)
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
-        _idleState.idle_pwm_target_value = percentage(currentStatus.idleLoad, _idleState.idle_pwm_max_count);
-        _idleState.idle_pid_target_value = _idleState.idle_pwm_target_value << 2; //Resolution increased
+        _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
+        _idleState.idle_pid_target_value = pwmTicksToPidCount(_idleState.idle_pwm_target_value);
         _idleState.idlePID.reset(currentStatus.RPM); //Update output to smooth transition
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
@@ -390,7 +390,7 @@ void idleControl(void)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
           currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
-          _idleState.idle_pwm_target_value = percentage(currentStatus.idleLoad, _idleState.idle_pwm_max_count);
+          _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
         }
       }
       else
@@ -410,8 +410,8 @@ void idleControl(void)
           {
             // Add air conditioning idle-up
             // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count
-            TEMP_idle_pwm_target_value += percentage(configPage15.airConIdleSteps, _idleState.idle_pwm_max_count<<2);
-            if(TEMP_idle_pwm_target_value > (_idleState.idle_pwm_max_count<<2)) { TEMP_idle_pwm_target_value = (_idleState.idle_pwm_max_count<<2); }
+            TEMP_idle_pwm_target_value += _idleState.rpmToPidCount(configPage15.airConIdleSteps);
+            if(TEMP_idle_pwm_target_value > (int32_t)_idleState.getPidMaxCount()) { TEMP_idle_pwm_target_value = _idleState.getPidMaxCount(); }
           }
 
           // Fixed this by putting it here, however I have not tested it. It used to be after the calculation of _idleState.idle_pwm_target_value, meaning the percentage would update in currentStatus, but the idle would not actually increase.
@@ -419,13 +419,13 @@ void idleControl(void)
           { 
             // Add Idle Up amount if active
             // Again, we use configPage15.airConIdleSteps * _idleState.idle_pwm_max_count / 100 because we are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count
-            TEMP_idle_pwm_target_value += percentage(configPage2.idleUpAdder, _idleState.idle_pwm_max_count<<2);
-            if(TEMP_idle_pwm_target_value > (_idleState.idle_pwm_max_count<<2)) { TEMP_idle_pwm_target_value = (_idleState.idle_pwm_max_count<<2); }
+            TEMP_idle_pwm_target_value += _idleState.rpmToPidCount(configPage2.idleUpAdder);
+            if(TEMP_idle_pwm_target_value > (int32_t)_idleState.getPidMaxCount()) { TEMP_idle_pwm_target_value = _idleState.getPidMaxCount(); }
           }
 
           // Now assign the real PWM value
-          _idleState.idle_pwm_target_value = TEMP_idle_pwm_target_value>>2; //increased resolution
-          currentStatus.idleLoad = fast_div32_16((uint32_t)(_idleState.idle_pwm_target_value * 100UL), _idleState.idle_pwm_max_count);
+          _idleState.idle_pwm_target_value = pidCountToPwmTicks(TEMP_idle_pwm_target_value);
+          currentStatus.idleLoad = _idleState.pwmTicksToLoad(_idleState.idle_pwm_target_value);
         }
         _idleState.idleCounter++;
       }
@@ -438,8 +438,8 @@ void idleControl(void)
       {
         //Currently cranking. Use the cranking table
         currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
-        _idleState.idle_pwm_target_value = percentage(currentStatus.idleLoad, _idleState.idle_pwm_max_count);
-        _idleState.idle_pid_target_value = _idleState.idle_pwm_target_value << 2; //Resolution increased
+        _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
+        _idleState.idle_pid_target_value = pwmTicksToPidCount(_idleState.idle_pwm_target_value);
         _idleState.idlePID.reset(currentStatus.RPM); //Update output to smooth transition
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
@@ -448,13 +448,13 @@ void idleControl(void)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
           currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
-          _idleState.idle_pwm_target_value = percentage(currentStatus.idleLoad, _idleState.idle_pwm_max_count);
+          _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
         }
       }
       else
       {
         //Read the OL table as feedforward term
-        _idleState.FeedForwardTerm = percentage(table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)), _idleState.idle_pwm_max_count<<2); //All temps are offset by 40 degrees
+        _idleState.FeedForwardTerm = _idleState.rpmToPidCount(table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)));
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
@@ -462,8 +462,8 @@ void idleControl(void)
         {
           // Add air conditioning idle-up
           // We are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count <<2 (PWM count * 4)
-          _idleState.FeedForwardTerm += percentage(configPage15.airConIdleSteps, (_idleState.idle_pwm_max_count<<2));
-          if(_idleState.FeedForwardTerm > (_idleState.idle_pwm_max_count<<2)) { _idleState.FeedForwardTerm = (_idleState.idle_pwm_max_count<<2); }
+          _idleState.FeedForwardTerm += _idleState.rpmToPidCount(configPage15.airConIdleSteps);
+          if(_idleState.FeedForwardTerm > (int32_t)_idleState.getPidMaxCount()) { _idleState.FeedForwardTerm = _idleState.getPidMaxCount(); }
         }
         
         // Fixed this by putting it here, however I have not tested it. It used to be after the calculation of _idleState.idle_pwm_target_value, meaning the percentage would update in currentStatus, but the idle would not actually increase.
@@ -471,8 +471,8 @@ void idleControl(void)
         { 
           // Add Idle Up amount if active
           // Again, we are adding percentage steps, but the loop doesn't operate in percentage steps - it works in PWM count <<2 (PWM count * 4)
-          _idleState.FeedForwardTerm += percentage(configPage2.idleUpAdder, (_idleState.idle_pwm_max_count<<2));
-          if(_idleState.FeedForwardTerm > (_idleState.idle_pwm_max_count<<2)) { _idleState.FeedForwardTerm = (_idleState.idle_pwm_max_count<<2); }
+          _idleState.FeedForwardTerm += _idleState.rpmToPidCount(configPage2.idleUpAdder);
+          if(_idleState.FeedForwardTerm > (int32_t)_idleState.getPidMaxCount()) { _idleState.FeedForwardTerm = _idleState.getPidMaxCount(); }
         }
         
     
@@ -487,8 +487,8 @@ void idleControl(void)
 
         if(PID_computed == true)
         {
-          _idleState.idle_pwm_target_value = _idleState.idle_pid_target_value>>2; //increased resolution
-          currentStatus.idleLoad = ((unsigned long)(_idleState.idle_pwm_target_value * 100UL) / _idleState.idle_pwm_max_count);
+          _idleState.idle_pwm_target_value = pidCountToPwmTicks(_idleState.idle_pid_target_value);
+          currentStatus.idleLoad = _idleState.pwmTicksToLoad(_idleState.idle_pwm_target_value);
         }
         _idleState.idleCounter++;
       }
@@ -557,7 +557,7 @@ void idleControl(void)
           }
           
           _idleState.idleTaper = 0;
-          _idleState.idle_pid_target_value = _idleState.idleStepper.targetStep << 2; //Resolution increased
+          _idleState.idle_pid_target_value = pwmTicksToPidCount(_idleState.idleStepper.targetStep);
           _idleState.idlePID.resetIntegeral();
           _idleState.FeedForwardTerm = _idleState.idle_pid_target_value;
         }
@@ -569,19 +569,19 @@ void idleControl(void)
             if( _idleState.idleTaper < configPage2.idleTaperTime )
             {
               uint16_t minValue = IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)));
-              if( _idleState.idle_pid_target_value < minValue<<2 ) { _idleState.idle_pid_target_value = minValue<<2; }
-              uint16_t maxValue = _idleState.idle_pid_target_value>>2;
+              if( _idleState.idle_pid_target_value < (int32_t)pwmTicksToPidCount(minValue) ) { _idleState.idle_pid_target_value = pwmTicksToPidCount(minValue); }
+              uint16_t maxValue = pidCountToPwmTicks(_idleState.idle_pid_target_value);
               if( configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL ) { maxValue = IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant))); }
 
               //Tapering between cranking IAC value and running
-              _idleState.FeedForwardTerm = map(_idleState.idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue)<<2;
+              _idleState.FeedForwardTerm = pwmTicksToPidCount(map(_idleState.idleTaper, 0, configPage2.idleTaperTime, minValue, maxValue));
               _idleState.idleTaper++;
               _idleState.idle_pid_target_value = _idleState.FeedForwardTerm;
             }
             else if (configPage6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL)
             {
               //Standard running
-              _idleState.FeedForwardTerm = IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant)))<<2; //All temps are offset by 40 degrees. Step counts are divided by 3 in TS. Multiply back out here
+              _idleState.FeedForwardTerm = pwmTicksToPidCount(IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant))));
               //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Hysteresis (coming back from high rpm with throttle closed) 
               if (((currentStatus.RPM - _idleState.idle_cl_target_rpm) > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit) || _idleState.lastDFCOValue )
               {
@@ -600,7 +600,7 @@ void idleControl(void)
           {
             _idleState.idle_pid_target_value = _idleState.FeedForwardTerm;
           }
-          _idleState.idleStepper.targetStep = _idleState.idle_pid_target_value>>2; //Increase resolution
+          _idleState.idleStepper.targetStep = pidCountToPwmTicks(_idleState.idle_pid_target_value);
 
           // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
           if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true) { _idleState.idleStepper.targetStep += configPage15.airConIdleSteps; }
@@ -676,7 +676,7 @@ void disableIdle(void)
         {
           _idleState.idleStepper.targetStep = IAC_STEPS.toUser(configPage9.iacMaxSteps);
         }
-        _idleState.idle_pid_target_value = _idleState.idleStepper.targetStep<<2;
+        _idleState.idle_pid_target_value = pwmTicksToPidCount(_idleState.idleStepper.targetStep);
     }
   }
   currentStatus.idleOn = false;
