@@ -48,5 +48,16 @@ bool state_t::toothWithinMaxStallTime(uint32_t curTime)
       || (timeElapsed(lastToothTime, curTime) < MAX_STALL_TIME);
 }
 
+void __attribute__((optimize("Os"))) state_t::setTriggerToothAngle(uint16_t angle)
+{
+    triggerToothAngle = angle;
+#ifdef USE_LIBDIVIDE
+    // ATM we need signed math here - see usage of divTriggerToothAngle
+    // LCOV_EXCL_BR_START
+    divTriggerToothAngle = libdivide::libdivide_s16_gen((int16_t)angle);
+    // LCOV_EXCL_BR_STOP
+#endif
+}
+
 }
 }

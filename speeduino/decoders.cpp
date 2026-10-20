@@ -48,6 +48,7 @@ A full copy of the license may be found in the projects root directory
 #include "scheduler_ignition_controller.h"
 #include "src/decoders/crank_angle_calculator.h"
 #include "src/decoders/decoder_state.h"
+#include "src/decoders/perToothIgnition.h"
 
 TESTABLE_STATIC decoders::shared::state_t _decoderState;
 
@@ -396,65 +397,6 @@ static inline uint16_t clampCrankAngle(int16_t crankAngle)
   return nudge((int16_t)0, (int16_t)crankMax, (int16_t)crankAngle);
 }
 
-/**
-On decoders that are enabled for per tooth based timing adjustments, this function performs the timer compare changes on the schedules themselves
-For each ignition channel, a check is made whether we're at the relevant tooth and whether that ignition schedule is currently running
-Only if both these conditions are met will the schedule be updated with the latest timing information.
-If it's the correct tooth, but the schedule is not yet started, calculate and an end compare value (This situation occurs when both the start and end of the ignition pulse happen after the end tooth, but before the next tooth)
-*/
-static inline void checkPerToothTiming(int16_t crankAngle, uint16_t currentTooth)
-{
-  if ( !currentStatus.isFixedCrankingIgnitionTimingActive(configPage4) && (currentStatus.rotationStatus!=EngineRotationStatus::Stopped) )
-  {
-    if ( (currentTooth == _decoderState.ignitionEndTeeth[0]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule1, crankAngle);
-    }
-#if IGN_CHANNELS >= 2
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[1]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule2, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 3
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[2]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule3, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 4
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[3]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule4, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 5
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[4]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule5, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 6
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[5]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule6, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 7
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[6]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule7, crankAngle);
-    }
-#endif
-#if IGN_CHANNELS >= 8
-    else if ( (currentTooth == _decoderState.ignitionEndTeeth[7]) )
-    {
-      adjustCrankAngle(currentStatus, ignitionSchedule8, crankAngle);
-    }
-#endif
-  }
-}
-
 static uint8_t getConfigPriTriggerEdge(const config4 &page4)
 {
   return page4.TrigEdge == 0U ? RISING : FALLING;
@@ -583,9 +525,9 @@ static void triggerPri_missingTooth(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) && (configPage2.strokes == FOUR_STROKE) )
         {
           crankAngle += 360;
-          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
         }
-        else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
    }
 }
@@ -721,29 +663,13 @@ static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
   return clampCrankAngle(atomic_make_angle_caa().calculateCrankAngle(currMicros, configPage4));
 }
 
-static inline uint16_t clampToToothCount(int16_t toothNum, uint8_t toothAdder) {
-  int16_t toothRange = (int16_t)configPage4.triggerTeeth + (int16_t)toothAdder;
-  return (uint16_t)nudge((int16_t)1, (int16_t)(toothRange+1), toothNum);
-}
-
-static inline uint16_t clampToActualTeeth(uint16_t toothNum, uint8_t toothAdder) {
-  if(toothNum > _decoderState.triggerActualTeeth && toothNum <= configPage4.triggerTeeth) { toothNum = _decoderState.triggerActualTeeth; }
-  return (std::min)(toothNum, (uint16_t)(_decoderState.triggerActualTeeth + toothAdder));
-}
-
 static uint16_t __attribute__((noinline)) calcEndTeeth_missingTooth(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  //Temp variable used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempEndTooth;
-#ifdef USE_LIBDIVIDE  
-  tempEndTooth = libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)_decoderState.triggerToothAngle;
-#endif
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
   //For higher tooth count triggers, add a 1 tooth margin to allow for calculation time. 
   if(configPage4.triggerTeeth > 12U) { tempEndTooth = tempEndTooth - 1; }
   
   // Clamp to tooth count
-  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
+  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
 }
 
 static void triggerSetEndTeeth_missingTooth(void)
@@ -780,13 +706,12 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
   _decoderState.decoderFeatures = decoder_features_t();
 	sharedDecoderReset();
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage4.TrigSpeed == CAM_SPEED) 
-  { 
-    //Account for cam speed missing tooth
-    _decoderState.triggerToothAngle = 720 / configPage4.triggerTeeth; 
-    _decoderState.decoderFeatures.supportsSequential = true;
-  } 
+  _decoderState.decoderFeatures.supportsSequential = configPage4.TrigSpeed == CAM_SPEED;
+
+  // The number of degrees that passes from tooth to tooth
+  uint16_t degreeTracking = (configPage4.TrigSpeed == CAM_SPEED) ? 720 : 360;
+  _decoderState.setTriggerToothAngle(degreeTracking / configPage4.triggerTeeth);
+
   _decoderState.triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   if (configPage4.trigPatternSec == SEC_TRIGGER_4_1)
@@ -808,9 +733,6 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                     && ( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
                       || (configPage2.injLayout == INJ_SEQUENTIAL) 
                       || (configPage6.vvtEnabled > 0) );
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
@@ -874,7 +796,7 @@ static void triggerPri_DualWheel(void)
           currentTooth = (configPage4.triggerTeeth + _decoderState.toothCurrentCount); 
         }
         else{ currentTooth = _decoderState.toothCurrentCount; }
-        checkPerToothTiming(crankAngle, currentTooth);
+        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
       }
    } //Trigger filter
 }
@@ -946,13 +868,7 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth =
-#ifdef USE_LIBDIVIDE
-      libdivide::libdivide_s16_do(schedule.dischargeAngle - configPage4.triggerAngle, &_decoderState.divTriggerToothAngle);
-#else
-      (schedule.dischargeAngle - (int16_t)configPage4.triggerAngle) / (int16_t)_decoderState.triggerToothAngle;
-#endif
-  return clampToToothCount(tempEndTooth, toothAdder);
+  return decoders::shared::clampToToothCount(configPage4, _decoderState.toothNumFromScheduleAngles(configPage4, schedule), toothAdder);
 }
 
 /** Dual Wheel - Set End Teeth.
@@ -992,8 +908,8 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 {
   _decoderState.decoderFeatures = decoder_features_t();
 	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage4.TrigSpeed == CAM_SPEED) { _decoderState.triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
+  uint16_t degreeTracking = (configPage4.TrigSpeed == CAM_SPEED) ? 720 : 360;
+  _decoderState.setTriggerToothAngle(degreeTracking / configPage4.triggerTeeth);
   _decoderState.toothCurrentCount = UINT8_MAX; //Default value
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
@@ -1001,9 +917,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
   _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
   _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
@@ -1072,7 +985,7 @@ static void triggerPri_BasicDistributor(void)
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       uint16_t currentTooth = _decoderState.toothCurrentCount;
       if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(crankAngle, currentTooth);
+      decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
     }
 
     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
@@ -1263,7 +1176,7 @@ static void triggerPri_GM7X(void)
         {
           crankAngle = ((_decoderState.toothCurrentCount - 2) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
         }
-        checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
       } 
     }
 
@@ -1502,8 +1415,8 @@ static void triggerPri_4G63(void)
           int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
           //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-          else { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
+          else { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
         }
       }
     } //Has sync
@@ -2357,8 +2270,8 @@ static void triggerPri_Miata9905(void)
         int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-        else { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
+        else { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
     } //Has sync
 
@@ -2768,11 +2681,11 @@ static void triggerPri_Nissan360(void)
         if(crankAngle > CRANK_ANGLE_MAX_IGN) 
         { 
           crankAngle -= CRANK_ANGLE_MAX_IGN;
-          checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount/2) );
+          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount/2) );
         }
         else
         {
-          checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
         }
        
      }
@@ -3074,10 +2987,10 @@ static void triggerPri_Subaru67(void)
         crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
 
         //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { checkPerToothTiming(crankAngle, (_decoderState.toothCurrentCount-6) ); }
-        else { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-6) ); }
+        else { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
-      else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+      else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }
   }
  }
@@ -3551,7 +3464,7 @@ static void triggerPri_ThirtySixMinus222(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+       decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
      }
 
    }
@@ -3708,7 +3621,7 @@ static void triggerPri_ThirtySixMinus21(void)
      if(configPage2.perToothIgn == true)
      {
        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+       decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
      }
 
    
@@ -3809,7 +3722,7 @@ static void triggerPri_420a(void)
     if(configPage2.perToothIgn == true)
     {
       int16_t crankAngle = ( _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] ) + configPage4.triggerAngle;
-      checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+      decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
     }
   }
 }
@@ -4120,14 +4033,9 @@ static int16_t getCrankAngle_FordST170(uint32_t currMicros)
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)_decoderState.triggerToothAngle;
-#endif  
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
   tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
-  return clampToActualTeeth((uint16_t)tempEndTooth, toothAdder);
+  return _decoderState.clampToActualTeeth(configPage4, (uint16_t)tempEndTooth, toothAdder);
 }
 
 static void triggerSetEndTeeth_FordST170(void)
@@ -4157,8 +4065,8 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   configPage4.triggerTeeth = 36;  
   configPage4.triggerMissingTeeth = 1;
   configPage4.TrigSpeed = CRANK_SPEED;
-
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
+  
+  _decoderState.setTriggerToothAngle(360 / configPage4.triggerTeeth);
   _decoderState.triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   
@@ -4172,9 +4080,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   _decoderState.toothOneTime = 0;
   _decoderState.toothOneMinusOneTime = 0;
   _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * (1U + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif  
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
@@ -4356,9 +4261,9 @@ static void triggerPri_NGC(void)
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
       {
         crankAngle += 360;
-        checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
       }
-    else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+    else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }
   }
 }
@@ -4494,13 +4399,8 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)_decoderState.triggerToothAngle;
-#endif  
-  return calcSetEndTeeth_NGC_SkipMissing(clampToToothCount(tempEndTooth - 1, toothAdder));
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
+  return calcSetEndTeeth_NGC_SkipMissing(decoders::shared::clampToToothCount(configPage4, tempEndTooth - 1, toothAdder));
 }
 
 static void triggerSetEndTeeth_NGC(void)
@@ -4538,7 +4438,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 
   //Primary trigger
   configPage4.triggerTeeth = 36; //The number of teeth on the wheel incl missing teeth.
-  _decoderState.triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
+  _decoderState.setTriggerToothAngle(10);  //The number of degrees that passes from tooth to tooth
   _decoderState.triggerFilterTime = MICROS_PER_SEC / (MAX_RPM/60U) / (360U/_decoderState.triggerToothAngle); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   _decoderState.toothCurrentCount = 0;
   _decoderState.toothOneTime = 0;
@@ -4579,9 +4479,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
     _decoderState.toothAngles[8] = 3;
     _decoderState.toothAngles[9] = 1; // Pos 9 is required to be the same as group 1 for easier math
   }
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif  
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_NGC, CHANGE)
@@ -4840,24 +4737,18 @@ static void triggerPri_Renix(void)
         if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
         {
           crankAngle += 360;
-          checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
+          decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
         }
-        else{ checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+        else{ decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
       }
     }
   } 
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = schedule.dischargeAngle - configPage4.triggerAngle;
-#ifdef USE_LIBDIVIDE
-  tempEndTooth = libdivide::libdivide_s16_do(tempEndTooth, &_decoderState.divTriggerToothAngle);
-#else
-  tempEndTooth = tempEndTooth / (int16_t)_decoderState.triggerToothAngle;
-#endif  
-  tempEndTooth = tempEndTooth - 1;
+  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule) - 1;
   // Clamp to tooth count
-  return clampToActualTeeth(clampToToothCount(tempEndTooth, toothAdder), toothAdder);
+  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
 }
 
 static void triggerSetEndTeeth_Renix(void)
@@ -4898,7 +4789,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
 	sharedDecoderReset();
   if( configPage2.nCylinders == 4)
   {
-    _decoderState.triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
+    _decoderState.setTriggerToothAngle(90); //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
     configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
     configPage4.triggerMissingTeeth = 0;
     _decoderState.triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
@@ -4906,21 +4797,17 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
   }
   else if (configPage2.nCylinders == 6)
   {
-    _decoderState.triggerToothAngle = 60;
+    _decoderState.setTriggerToothAngle(60);
     configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 6 teeth.
     configPage4.triggerMissingTeeth = 0;
     _decoderState.triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
     _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 66U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   }
-
   _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
 
   _decoderState.toothSystemCount = 1;
   _decoderState.toothCurrentCount = 1;
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif  
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Renix, getConfigPriTriggerEdge(configPage4))
@@ -5101,9 +4988,9 @@ static void triggerPri_RoverMEMS(void)
     {  
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true))
-      { crankAngle += 360; checkPerToothTiming(crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
+      { crankAngle += 360; decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
       else
-      { checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount); }
+      { decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
     }     
   }
 
@@ -5509,7 +5396,7 @@ static void triggerPri_SuzukiK6A(void)
       if( (configPage2.perToothIgn == true) ) 
       {  
         int16_t crankAngle = _decoderState.toothAngles[_decoderState.toothCurrentCount] + configPage4.triggerAngle;
-        checkPerToothTiming(crankAngle, _decoderState.toothCurrentCount);
+        decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
       }     
 
     } // has sync
@@ -5674,7 +5561,7 @@ static void triggerPri_FordTFI(void)
       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
       uint16_t currentTooth = _decoderState.toothCurrentCount;
       if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(crankAngle, currentTooth);
+      decoders::shared::checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
     }
         
     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
@@ -5864,7 +5751,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   _decoderState.triggerActualTeeth = configPage2.nCylinders;
   if(_decoderState.triggerActualTeeth == 0) { _decoderState.triggerActualTeeth = 1; }
 
-  _decoderState.triggerToothAngle = 720U / _decoderState.triggerActualTeeth; //The number of degrees that passes from tooth to tooth, half cylinder count
+  _decoderState.setTriggerToothAngle(720U / _decoderState.triggerActualTeeth); //The number of degrees that passes from tooth to tooth, half cylinder count
   _decoderState.toothCurrentCount = 0; //Default value
   _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 30U * configPage2.nCylinders)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   _decoderState.triggerSecFilterTime = _decoderState.triggerFilterTime * 4U /5u; //Same as above, but slightly about lower due to signature trigger (about 80%)
@@ -5874,9 +5761,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   _decoderState.decoderFeatures.supportsPerToothIgnition = true;
   if(configPage2.nCylinders <= 4U) { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
   else { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
-#ifdef USE_LIBDIVIDE
-  _decoderState.divTriggerToothAngle = libdivide::libdivide_s16_gen(_decoderState.triggerToothAngle);
-#endif
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))
