@@ -361,19 +361,7 @@ static void triggerSec_DualWheel(void)
  * */
 static uint32_t getRevolutionTime_DualWheel(void)
 {
-  if( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-  {
-    //Account for cam speed
-    if( currentStatus.RPM < currentStatus.crankRPM )
-    {
-      return crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED);
-    }
-    else
-    {
-      return stdGetRevolutionTime(currentStatus, _decoderState, configPage4.TrigSpeed==CAM_SPEED);
-    }
-  }
-  return 0U; //Speed is unknown without sync
+    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
 }
 
 /** Dual Wheel - Get Crank angle.

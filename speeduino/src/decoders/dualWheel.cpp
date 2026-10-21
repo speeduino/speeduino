@@ -97,7 +97,23 @@ namespace dual_wheel {
         {
             decoderState.triggerSecFilterTime = current.revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and decoderState.triggerSecFilterTime get out of alignment and decoderState.curGap2 never exceeds the filter value
         } //Trigger filter
+    }
 
+    uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4)
+    {
+        if( decoderState.decoderStatus.syncStatus==SyncStatus::Full )
+        {
+            //Account for cam speed
+            if( current.RPM < current.crankRPM )
+            {
+                return crankingGetRevolutionTime(current, decoderState, page4, page4.triggerTeeth, page4.TrigSpeed==CAM_SPEED);
+            }
+            else
+            {
+                return stdGetRevolutionTime(current, decoderState, page4.TrigSpeed==CAM_SPEED);
+            }
+        }
+        return 0U; //Speed is unknown without sync
     }
 }
 }
