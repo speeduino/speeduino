@@ -369,12 +369,7 @@ static uint32_t getRevolutionTime_DualWheel(void)
  * */
 static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 {
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  //Handle case where the secondary tooth was the last one seen
-  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = configPage4.triggerTeeth; }
-
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
+    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
 }
 
 static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
