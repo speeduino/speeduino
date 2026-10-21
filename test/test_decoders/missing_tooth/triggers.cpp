@@ -73,6 +73,8 @@ static void test_primary_syncs_on_missing_tooth_gap(void)
     decoders::shared::state_t decoderState{};
     config2 page2{};
     config4 page4{};
+    
+    page4.trigPatternSec = SEC_TRIGGER_POLL;
 
     decoderState.toothLastMinusOneToothTime = 500;
     decoderState.toothLastToothTime = 1000;
@@ -154,6 +156,8 @@ static void test_primary_recovers_after_tooth_count_overflow_at_cam_speed(void)
     page4.trigPatternSec = SEC_TRIGGER_SINGLE;
     page4.TrigSpeed = CAM_SPEED;
     page4.sparkMode = IGN_MODE_WASTED;
+    page4.trigPatternSec = SEC_TRIGGER_POLL;
+    page4.PollLevelPolarity = true;
 
     decoders::missing_tooth::triggerPrimary(1100, current, decoderState, page2, page4);
 
@@ -161,7 +165,7 @@ static void test_primary_recovers_after_tooth_count_overflow_at_cam_speed(void)
     TEST_ASSERT_EQUAL_UINT32(2, current.startRevolutions);
     TEST_ASSERT_EQUAL_UINT32(700, decoderState.toothOneMinusOneTime);
     TEST_ASSERT_EQUAL_UINT32(1100, decoderState.toothOneTime);
-    TEST_ASSERT_EQUAL_UINT16(0, decoderState.secondaryToothCount);
+    TEST_ASSERT_EQUAL_UINT16(3, decoderState.secondaryToothCount);
     TEST_ASSERT_EQUAL_UINT32(0, decoderState.triggerFilterTime);
     TEST_ASSERT_EQUAL(SyncStatus::Full, decoderState.decoderStatus.syncStatus);
     TEST_ASSERT_FALSE(decoderState.decoderStatus.toothAngleIsCorrect);

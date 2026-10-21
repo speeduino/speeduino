@@ -4,9 +4,11 @@ void testMissingTooth()
     extern void testMissingToothTriggers(void);
     extern void testMissingToothPerToothIgn(void);
     extern void testMissingToothCrankAngle(void);
+    extern void testMissingToothInitialise(void);
 
     testMissingToothRevTime();
     testMissingToothTriggers();
     testMissingToothPerToothIgn();
     testMissingToothCrankAngle();
+    testMissingToothInitialise();
 }
