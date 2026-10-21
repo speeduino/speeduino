@@ -337,49 +337,33 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .build();
 }
 
-/** Dual wheels - 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
-Note: There can be no missing teeth on the primary wheel.
-* @defgroup dec_dual Dual wheels
-* @{
-*/
-/** Dual Wheel Primary.
- * 
- * */
+// LCOV_EXCL_START
+// Exclude one line wrappers from coverage
 static void triggerPri_DualWheel(void)
 {
     decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
 }
-/** Dual Wheel Secondary.
- * 
- * */
+
 static void triggerSec_DualWheel(void)
 {
     decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
 }
-/** Dual Wheel - Get revolution time.
- * 
- * */
+
 static uint32_t getRevolutionTime_DualWheel(void)
 {
     return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
 }
 
-/** Dual Wheel - Get Crank angle.
- * 
- * */
 static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 {
     return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
 }
 
-
-/** Dual Wheel - Set End Teeth.
- * 
- * */
 static void triggerSetEndTeeth_DualWheel(void)
 {
     decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
 }
+// LCOV_EXCL_STOP
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 {
