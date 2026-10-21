@@ -347,45 +347,7 @@ Note: There can be no missing teeth on the primary wheel.
  * */
 static void triggerPri_DualWheel(void)
 {
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-    {
-      _decoderState.toothCurrentCount++; //Increment the tooth counter
-      _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime;
-
-      if ( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-      {
-        if ( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount > configPage4.triggerTeeth) )
-        {
-          _decoderState.toothCurrentCount = 1;
-          _decoderState.revolutionOne = !_decoderState.revolutionOne; //Flip sequential revolution tracker
-          _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-          _decoderState.toothOneTime = curTime;
-          currentStatus.startRevolutions++; //Counter
-          if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
-        }
-
-        _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-      }
-
-      //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-      {
-        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-        uint16_t currentTooth;
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
-        {
-          crankAngle += 360;
-          currentTooth = (configPage4.triggerTeeth + _decoderState.toothCurrentCount); 
-        }
-        else{ currentTooth = _decoderState.toothCurrentCount; }
-        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
-      }
-   } //Trigger filter
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
 }
 /** Dual Wheel Secondary.
  * 

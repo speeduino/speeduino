@@ -1,4 +1,8 @@
 #include "dualWheel.h"
+#include "shared/perToothIgnition.h"
+#include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
+#include "scheduler_ignition_controller.h"
 
 namespace decoders {
 
@@ -22,5 +26,46 @@ namespace dual_wheel {
         return state;
     }
 
+    void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+    {
+        decoderState.curGap = curTime - decoderState.toothLastToothTime;
+        if ( decoderState.curGap >= decoderState.triggerFilterTime )
+        {
+            decoderState.toothCurrentCount++; //Increment the tooth counter
+            decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+            decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+            decoderState.toothLastToothTime = curTime;
+
+            if ( decoderState.decoderStatus.syncStatus==SyncStatus::Full )
+            {
+                if ( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount > page4.triggerTeeth) )
+                {
+                    decoderState.toothCurrentCount = 1;
+                    decoderState.revolutionOne = !decoderState.revolutionOne; //Flip sequential revolution tracker
+                    decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+                    decoderState.toothOneTime = curTime;
+                    current.startRevolutions++; //Counter
+                    if ( page4.TrigSpeed == CAM_SPEED ) { current.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
+                }
+
+                decoderState.setFilter(decoderState.curGap, page4); //Recalc the new filter value
+            }
+
+            //NEW IGNITION MODE
+            if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
+            {
+                int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
+                uint16_t currentTooth;
+                if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (decoderState.revolutionOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
+                {
+                crankAngle += 360;
+                currentTooth = (page4.triggerTeeth + decoderState.toothCurrentCount); 
+                }
+                else{ currentTooth = decoderState.toothCurrentCount; }
+                checkPerToothTiming(current, decoderState, page4, crankAngle, currentTooth);
+            }
+        } //Trigger filter
+    }
 }
 }
