@@ -126,5 +126,39 @@ namespace dual_wheel {
         return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, page4));
     }
 
+    static uint16_t __attribute__((noinline)) calcEndTooth(const IgnitionSchedule &schedule, uint8_t toothAdder, const shared::state_t &decoderState, const config4 &page4) {
+      return decoders::shared::clampToToothCount(page4, decoderState.toothNumFromScheduleAngles(page4, schedule), toothAdder);
+    }
+
+    void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+    {
+        //The toothAdder variable is used for when a setup is running sequentially, but the primary wheel is running at crank speed. This way the count of teeth will go up to 2* the number of primary teeth to allow for a sequential count. 
+        byte toothAdder = 0;
+        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) { toothAdder = page4.triggerTeeth; }
+
+        decoderState.ignitionEndTeeth[0] = calcEndTooth(ignitionSchedule1, toothAdder, decoderState, page4);
+        #if (IGN_CHANNELS >= 2)
+        decoderState.ignitionEndTeeth[1] = calcEndTooth(ignitionSchedule2, toothAdder, decoderState, page4);
+        #endif
+        #if (IGN_CHANNELS >= 3)
+        decoderState.ignitionEndTeeth[2] = calcEndTooth(ignitionSchedule3, toothAdder, decoderState, page4);
+        #endif
+        #if (IGN_CHANNELS >= 4)
+        decoderState.ignitionEndTeeth[3] = calcEndTooth(ignitionSchedule4, toothAdder, decoderState, page4);
+        #endif
+        #if IGN_CHANNELS >= 5
+        decoderState.ignitionEndTeeth[4] = calcEndTooth(ignitionSchedule5, toothAdder, decoderState, page4);
+        #endif
+        #if IGN_CHANNELS >= 6
+        decoderState.ignitionEndTeeth[5] = calcEndTooth(ignitionSchedule6, toothAdder, decoderState, page4);
+        #endif
+        #if IGN_CHANNELS >= 7
+        decoderState.ignitionEndTeeth[6] = calcEndTooth(ignitionSchedule7, toothAdder, decoderState, page4);
+        #endif
+        #if IGN_CHANNELS >= 8
+        decoderState.ignitionEndTeeth[7] = calcEndTooth(ignitionSchedule8, toothAdder, decoderState, page4);
+        #endif
+    }
+
 }
 }

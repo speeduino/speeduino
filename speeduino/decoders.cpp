@@ -372,41 +372,13 @@ static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
     return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
 }
 
-static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  return decoders::shared::clampToToothCount(configPage4, _decoderState.toothNumFromScheduleAngles(configPage4, schedule), toothAdder);
-}
 
 /** Dual Wheel - Set End Teeth.
  * 
  * */
 static void triggerSetEndTeeth_DualWheel(void)
 {
-  //The toothAdder variable is used for when a setup is running sequentially, but the primary wheel is running at crank speed. This way the count of teeth will go up to 2* the number of primary teeth to allow for a sequential count. 
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_DualWheel(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_DualWheel(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_DualWheel(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcEndTeeth_DualWheel(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  _decoderState.ignitionEndTeeth[4] = calcEndTeeth_DualWheel(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  _decoderState.ignitionEndTeeth[5] = calcEndTeeth_DualWheel(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  _decoderState.ignitionEndTeeth[6] = calcEndTeeth_DualWheel(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  _decoderState.ignitionEndTeeth[7] = calcEndTeeth_DualWheel(ignitionSchedule8, toothAdder);
-#endif
+    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
