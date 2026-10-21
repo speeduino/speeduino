@@ -354,34 +354,7 @@ static void triggerPri_DualWheel(void)
  * */
 static void triggerSec_DualWheel(void)
 {
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-    _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed
-
-    if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (currentStatus.startRevolutions <= configPage4.StgCycles) )
-    {
-      _decoderState.toothLastToothTime = micros();
-      _decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
-      _decoderState.toothCurrentCount = configPage4.triggerTeeth;
-      _decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
-
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else 
-    {
-      if ( (_decoderState.toothCurrentCount != configPage4.triggerTeeth) && (currentStatus.startRevolutions > 2)) { currentStatus.syncLossCounter++; } //Indicates likely sync loss.
-      if (configPage4.useResync == 1) { _decoderState.toothCurrentCount = configPage4.triggerTeeth; }
-    }
-
-    _decoderState.revolutionOne = 1; //Sequential revolution reset
-  }
-  else 
-  {
-    _decoderState.triggerSecFilterTime = currentStatus.revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and _decoderState.triggerSecFilterTime get out of alignment and _decoderState.curGap2 never exceeds the filter value
-  } //Trigger filter
+    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
 }
 /** Dual Wheel - Get revolution time.
  * 
