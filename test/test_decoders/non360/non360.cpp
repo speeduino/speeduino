@@ -2,7 +2,7 @@
 #include "crankMaths.h"
 #include "../test_utils.h"
 #include "globals.h"
-#include "src/decoders/decoder_state.h"
+#include "src/decoders/shared/decoder_state.h"
 
 extern decoders::shared::state_t _decoderState;
 
