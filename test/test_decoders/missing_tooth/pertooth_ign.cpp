@@ -4,7 +4,7 @@
 
 namespace decoders {
 namespace missing_tooth {
-extern void applyPerToothIgnition(const statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
+extern void applyPerToothIgnition(const statuses &current, const shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 }
 }
 

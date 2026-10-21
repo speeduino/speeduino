@@ -40,7 +40,7 @@ shared::state_t __attribute__((optimize("Os"))) initialise(const config4 &page4)
   return state;
 }
 
-TESTABLE_STATIC void applyPerToothIgnition(const statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+TESTABLE_STATIC void applyPerToothIgnition(const statuses &current, const shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
   if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
   {
@@ -78,7 +78,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           //Begin the missing tooth detection
           //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
           if(page4.triggerMissingTeeth == 1) { decoderState.targetGap = (3 * (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-          else { decoderState.targetGap = ((decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) * page4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+          else { decoderState.targetGap = (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime) * page4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
 
           if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
 
@@ -105,8 +105,8 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
                 decoderState.toothCurrentCount = 1;
                 if (page4.trigPatternSec == SEC_TRIGGER_POLL) // at tooth one check if the cam sensor is high or low in poll level mode
                 {
-                  if (page4.PollLevelPolarity == current.decoder.secondary.isPinHigh()) { decoderState.revolutionOne = 1; }
-                  else { decoderState.revolutionOne = 0; }
+                  if (page4.PollLevelPolarity == current.decoder.secondary.isPinHigh()) { decoderState.revolutionOne = true; }
+                  else { decoderState.revolutionOne = false; }
                 }
                 else {decoderState.revolutionOne = !decoderState.revolutionOne;} //Flip sequential revolution tracker if poll level is not used
                 decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
@@ -121,6 +121,10 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
                     decoderState.decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit                    
                   }
                   else if(decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { decoderState.decoderStatus.syncStatus = SyncStatus::Partial; } //If there is primary trigger but no secondary we only have half sync.
+                  else 
+                  {
+                    // Nothing to do?
+                  }
                 }
                 else { decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //If nothing is using sequential, we have sync and also clear half sync bit
                 if(page4.trigPatternSec == SEC_TRIGGER_SINGLE || page4.trigPatternSec == SEC_TRIGGER_TOYOTA_3) //Reset the secondary tooth counter to prevent it overflowing, done outside of sequental as v6 & v8 engines could be batch firing with VVT that needs the cam resetting
@@ -175,7 +179,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
 
   //Safety check for initial startup
-  if( (decoderState.toothLastSecToothTime == 0) )
+  if (decoderState.toothLastSecToothTime == 0)
   { 
     decoderState.curGap2 = 0; 
     decoderState.toothLastSecToothTime = curTime;
@@ -191,7 +195,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
         if ( (decoderState.curGap2 >= decoderState.targetGap2) || (decoderState.secondaryToothCount > 3) )
         {
           decoderState.secondaryToothCount = 1;
-          decoderState.revolutionOne = 1; //Sequential revolution reset
+          decoderState.revolutionOne = true; //Sequential revolution reset
           decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
           triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
         }
@@ -212,7 +216,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       default:
       case SEC_TRIGGER_SINGLE:
         //Standard single tooth cam trigger
-        decoderState.revolutionOne = 1; //Sequential revolution reset
+        decoderState.revolutionOne = true; //Sequential revolution reset
         decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap
         decoderState.secondaryToothCount++;
         triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
@@ -224,7 +228,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
         decoderState.secondaryToothCount++;
         if(decoderState.secondaryToothCount == 2)
         { 
-          decoderState.revolutionOne = 1; // sequential revolution reset
+          decoderState.revolutionOne = true; // sequential revolution reset
           triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
         }        
         //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
@@ -241,7 +245,7 @@ void triggerTertiary(uint32_t curTime, statuses &current, shared::state_t &decod
   decoderState.curGap3 = curTime - decoderState.toothLastThirdToothTime;
 
   //Safety check for initial startup
-  if( (decoderState.toothLastThirdToothTime == 0) )
+  if (decoderState.toothLastThirdToothTime == 0)
   { 
     decoderState.curGap3 = 0; 
     decoderState.toothLastThirdToothTime = curTime;
@@ -261,7 +265,7 @@ void triggerTertiary(uint32_t curTime, statuses &current, shared::state_t &decod
   }
 }
 
-uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config4 &page4)
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4)
 {
   uint32_t revolutionTime = 0;
   if( current.RPM < current.crankRPM )
