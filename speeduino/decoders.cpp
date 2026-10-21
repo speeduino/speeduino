@@ -280,13 +280,6 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
 
 /** @} */
   
-/** A (single) multi-tooth wheel with one of more 'missing' teeth.
-* The first tooth after the missing one is considered number 1 and is the basis for the trigger angle.
-* Optionally a cam signal can be added to provide a sequential reference. 
-* @defgroup dec_miss Missing tooth wheel
-* @{
-*/
-
 // LCOV_EXCL_START
 // Exclude one line wrappers from coverage
 static void triggerPri_missingTooth(void)
@@ -342,8 +335,6 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Dual wheels - 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
 Note: There can be no missing teeth on the primary wheel.
