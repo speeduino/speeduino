@@ -392,80 +392,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * @defgroup dec_dist Basic Distributor
 * @{
 */
-static void triggerSetEndTeeth_BasicDistributor(void)
-{
-
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - configPage4.triggerAngle);
-  tempEndAngle = ignitionLimits((tempEndAngle));
-
-  switch(configPage2.nCylinders)
-  {
-    case 4:
-      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 1;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-      }
-      break;
-    case 3: //Shared with 6 cylinder
-    case 6:
-      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 1;
-      }
-      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-      }
-      break;
-    case 8:
-      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 4;
-        _decoderState.ignitionEndTeeth[3] = 1;
-      }
-      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 4;
-        _decoderState.ignitionEndTeeth[2] = 1;
-        _decoderState.ignitionEndTeeth[3] = 2;
-      }
-      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 4;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-        _decoderState.ignitionEndTeeth[3] = 3;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-        _decoderState.ignitionEndTeeth[3] = 4;
-      }
-      break;
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
   _decoderState = decoders::basic_distributor::initialise(configPage2);
@@ -479,12 +405,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
   static auto getCrankAngle = [](uint32_t currMicros) {
     return decoders::basic_distributor::getCrankAngle(currMicros, _decoderState, configPage4);
   };
-
+  static auto setEndTeeth = []() {
+    decoders::basic_distributor::setEndTeeth(_decoderState, configPage2, configPage4);
+  };
+  
   return decoder_builder_t()
                 .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                 .setGetRevolutionTime(getRevolutionTime)
                 .setGetCrankAngle(getCrankAngle)
-                .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
+                .setSetEndTeeth(setEndTeeth)
                 .setReset(sharedDecoderReset)
                 .setIsEngineRunning(sharedEngineIsRunning)
                 .setGetStatus(sharedGetStatus)

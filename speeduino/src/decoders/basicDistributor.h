@@ -23,5 +23,7 @@ namespace basic_distributor {
 
     int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4);
 
+    void setEndTeeth(shared::state_t &decoderState, const config2 &page2, const config4 &page4);
+
 }
 }
