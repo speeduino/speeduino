@@ -56,7 +56,7 @@ namespace dual_wheel {
             if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
             {
                 int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
-                uint16_t currentTooth;
+                uint16_t currentTooth = 0;
                 if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (decoderState.revolutionOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
                 {
                 crankAngle += 360;
@@ -91,7 +91,7 @@ namespace dual_wheel {
                 if (page4.useResync == 1) { decoderState.toothCurrentCount = page4.triggerTeeth; }
             }
 
-            decoderState.revolutionOne = 1; //Sequential revolution reset
+            decoderState.revolutionOne = true; //Sequential revolution reset
         }
         else 
         {
