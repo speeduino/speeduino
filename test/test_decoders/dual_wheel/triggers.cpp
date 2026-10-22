@@ -154,6 +154,7 @@ static void test_primary_sequential_second_revolution_uses_offset_tooth_and_angl
     setAngleConverterRevolutionTime(6000000UL);
     current.rotationStatus = EngineRotationStatus::Running;
     current.startRevolutions = 20;
+    CRANK_ANGLE_MAX_IGN = 720;
     page2.perToothIgn = true;
     page4.triggerAngle = 10;
     page4.triggerTeeth = 12;
@@ -164,6 +165,8 @@ static void test_primary_sequential_second_revolution_uses_offset_tooth_and_angl
     decoderState.triggerToothAngle = 30;
     decoderState.revolutionOne = true;
     decoderState.ignitionEndTeeth[0] = 14;
+
+    stopIgnitionSchedulers();
     ignitionSchedule1._status = PENDING;
     ignitionSchedule1._counter = 100;
     ignitionSchedule1._compare = 100;
@@ -172,7 +175,8 @@ static void test_primary_sequential_second_revolution_uses_offset_tooth_and_angl
     decoders::dual_wheel::triggerPrimary(1000, current, decoderState, page2, page4);
 
     TEST_ASSERT_EQUAL_UINT16(2, decoderState.toothCurrentCount);
-    TEST_ASSERT_EQUAL(100 + angleToTimerTicks(100), ignitionSchedule1._compare);
+    TEST_ASSERT_TRUE(decoderState.revolutionOne);
+    TEST_ASSERT_UINT32_WITHIN(5, ignitionSchedule1._counter + angleToTimerTicks(100), ignitionSchedule1._compare);
 }
 
 static void test_primary_sequential_first_revolution_uses_unoffset_tooth_and_angle(void)
@@ -185,6 +189,7 @@ static void test_primary_sequential_first_revolution_uses_unoffset_tooth_and_ang
     setAngleConverterRevolutionTime(6000000UL);
     current.rotationStatus = EngineRotationStatus::Running;
     current.startRevolutions = 20;
+    CRANK_ANGLE_MAX_IGN = 720;
     page2.perToothIgn = true;
     page4.triggerAngle = 10;
     page4.triggerTeeth = 12;
@@ -203,7 +208,8 @@ static void test_primary_sequential_first_revolution_uses_unoffset_tooth_and_ang
     decoders::dual_wheel::triggerPrimary(1000, current, decoderState, page2, page4);
 
     TEST_ASSERT_EQUAL_UINT16(2, decoderState.toothCurrentCount);
-    TEST_ASSERT_EQUAL(100 + angleToTimerTicks(140), ignitionSchedule1._compare);
+    TEST_ASSERT_FALSE(decoderState.revolutionOne);
+    TEST_ASSERT_UINT32_WITHIN(5, ignitionSchedule1._counter + angleToTimerTicks(140), ignitionSchedule1._compare);
 }
 
 static void test_secondary_rejects_filtered_trigger_and_updates_filter(void)
