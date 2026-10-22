@@ -31,5 +31,57 @@ shared::state_t __attribute__((optimize("Os"))) initialise(const config2 &page2)
   return state;
 }
 
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( (decoderState.curGap >= decoderState.triggerFilterTime) )
+  {
+    if(decoderState.decoderStatus.syncStatus==SyncStatus::Full) { decoderState.setFilter(decoderState.curGap, page4); } //Recalc the new filter value
+    else { decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored. 
+    
+    if( (decoderState.toothCurrentCount == decoderState.triggerActualTeeth) || (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) ) //Check if we're back to the beginning of a revolution
+    {
+      decoderState.toothCurrentCount = 1; //Reset the counter
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+      current.startRevolutions++; //Counter
+    }
+    else
+    {
+      if( (decoderState.toothCurrentCount < decoderState.triggerActualTeeth) ) { decoderState.toothCurrentCount++; } //Increment the tooth counter
+      else
+      {
+        //This means decoderState.toothCurrentCount is greater than decoderState.triggerActualTeeth, which is bad.
+        //If we have sync here then there's a problem. Throw a sync loss
+        if( decoderState.decoderStatus.syncStatus==SyncStatus::Full ) 
+        { 
+          current.syncLossCounter++;
+          decoderState.decoderStatus.syncStatus = SyncStatus::None;
+        }
+      }
+    }
+
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    if ( page4.ignCranklock && (current.rotationStatus==EngineRotationStatus::Cranking) )
+    {
+      stopAllCoilsCharging();
+    }
+
+    if(page2.perToothIgn == true)
+    {
+      int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
+      uint16_t currentTooth = decoderState.toothCurrentCount;
+      if(decoderState.toothCurrentCount > (decoderState.triggerActualTeeth/2) ) { currentTooth = (decoderState.toothCurrentCount - (decoderState.triggerActualTeeth/2)); }
+      checkPerToothTiming(current, decoderState, page4, crankAngle, currentTooth);
+    }
+
+    decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+    decoderState.toothLastToothTime = curTime;
+  } //Trigger filter
+}
+
 }
 }

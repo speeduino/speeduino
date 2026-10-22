@@ -392,59 +392,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * @defgroup dec_dist Basic Distributor
 * @{
 */
-static void triggerPri_BasicDistributor(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) )
-  {
-    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { _decoderState.setFilter(_decoderState.curGap, configPage4); } //Recalc the new filter value
-    else { _decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored. 
-    
-    if( (_decoderState.toothCurrentCount == _decoderState.triggerActualTeeth) || (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) ) //Check if we're back to the beginning of a revolution
-    {
-      _decoderState.toothCurrentCount = 1; //Reset the counter
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-      currentStatus.startRevolutions++; //Counter
-    }
-    else
-    {
-      if( (_decoderState.toothCurrentCount < _decoderState.triggerActualTeeth) ) { _decoderState.toothCurrentCount++; } //Increment the tooth counter
-      else
-      {
-        //This means _decoderState.toothCurrentCount is greater than _decoderState.triggerActualTeeth, which is bad.
-        //If we have sync here then there's a problem. Throw a sync loss
-        if( _decoderState.decoderStatus.syncStatus==SyncStatus::Full ) 
-        { 
-          currentStatus.syncLossCounter++;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        }
-      }
-      
-    }
-
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
-    {
-      stopAllCoilsCharging();
-    }
-
-    if(configPage2.perToothIgn == true)
-    {
-      int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-      uint16_t currentTooth = _decoderState.toothCurrentCount;
-      if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
-    }
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-  } //Trigger filter
-}
-
 static uint32_t getRevolutionTime_BasicDistributor(void)
 {
   uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
@@ -544,9 +491,13 @@ static void triggerSetEndTeeth_BasicDistributor(void)
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
   _decoderState = decoders::basic_distributor::initialise(configPage2);
-  
+
+  static auto primaryTrigger = []() {
+    decoders::basic_distributor::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                .setPrimaryTrigger(triggerPri_BasicDistributor, getConfigPriTriggerEdge(configPage4))
+                .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                 .setGetRevolutionTime(getRevolutionTime_BasicDistributor)
                 .setGetCrankAngle(getCrankAngle_BasicDistributor)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)

@@ -1,3 +1,10 @@
+/**
+ * @file
+ * @brief Basic Distributor where tooth count is equal to the number of cylinders and teeth are evenly spaced on the cam.
+ * 
+ * No position sensing (Distributor is retained) so crank angle is a made up figure based purely on the first teeth to be seen.
+ * @note This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
+ */
 #pragma once
 
 #include "shared/decoder_state.h"
@@ -9,6 +16,8 @@ namespace decoders {
 namespace basic_distributor {
 
     shared::state_t initialise(const config2 &page2);
+
+    void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 
 }
 }
