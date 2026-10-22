@@ -52,6 +52,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/shared/rev_time_calcs.h"
 #include "src/decoders/missingTooth.h"
 #include "src/decoders/dualWheel.h"
+#include "src/decoders/basicDistributor.h"
 
 using namespace decoders::shared;
 
@@ -542,22 +543,8 @@ static void triggerSetEndTeeth_BasicDistributor(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerActualTeeth = configPage2.nCylinders;
-  if(_decoderState.triggerActualTeeth == 0) { _decoderState.triggerActualTeeth = 1; }
-
-  //The number of degrees that passes from tooth to tooth. Depends on number of cylinders and whether 4 or 2 stroke
-  if(configPage2.strokes == FOUR_STROKE) { _decoderState.triggerToothAngle = 720U / _decoderState.triggerActualTeeth; }
-  else { _decoderState.triggerToothAngle = 360U / _decoderState.triggerActualTeeth; }
-
-  _decoderState.toothCurrentCount = 0; //Default value
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  if(configPage2.nCylinders <= 4U) { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
-  else { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
-
+  _decoderState = decoders::basic_distributor::initialise(configPage2);
+  
   return decoder_builder_t()
                 .setPrimaryTrigger(triggerPri_BasicDistributor, getConfigPriTriggerEdge(configPage4))
                 .setGetRevolutionTime(getRevolutionTime_BasicDistributor)
