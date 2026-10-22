@@ -78,17 +78,17 @@ namespace dual_wheel {
 
             if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (current.startRevolutions <= page4.StgCycles) )
             {
-            decoderState.toothLastToothTime = micros();
-            decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / page4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
-            decoderState.toothCurrentCount = page4.triggerTeeth;
-            decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
+                decoderState.toothLastToothTime = curTime;
+                decoderState.toothLastMinusOneToothTime = curTime - ((MICROS_PER_MIN/10U) / page4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+                decoderState.toothCurrentCount = page4.triggerTeeth;
+                decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
 
-            decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+                decoderState.decoderStatus.syncStatus = SyncStatus::Full;
             }
             else 
             {
-            if ( (decoderState.toothCurrentCount != page4.triggerTeeth) && (current.startRevolutions > 2)) { current.syncLossCounter++; } //Indicates likely sync loss.
-            if (page4.useResync == 1) { decoderState.toothCurrentCount = page4.triggerTeeth; }
+                if ( (decoderState.toothCurrentCount != page4.triggerTeeth) && (current.startRevolutions > 2)) { current.syncLossCounter++; } //Indicates likely sync loss.
+                if (page4.useResync == 1) { decoderState.toothCurrentCount = page4.triggerTeeth; }
             }
 
             decoderState.revolutionOne = 1; //Sequential revolution reset
