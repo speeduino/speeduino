@@ -392,12 +392,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * @defgroup dec_dist Basic Distributor
 * @{
 */
-static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-  return decoders::shared::clampCrankAngle(decoders::shared::compute_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, configPage4));
-}
-
 static void triggerSetEndTeeth_BasicDistributor(void)
 {
 
@@ -482,11 +476,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
   static auto getRevolutionTime = []() {
     return decoders::basic_distributor::getRevolutionTime(currentStatus, _decoderState, configPage2, configPage4);
   };
+  static auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::basic_distributor::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                 .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                 .setGetRevolutionTime(getRevolutionTime)
-                .setGetCrankAngle(getCrankAngle_BasicDistributor)
+                .setGetCrankAngle(getCrankAngle)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
                 .setReset(sharedDecoderReset)
                 .setIsEngineRunning(sharedEngineIsRunning)
