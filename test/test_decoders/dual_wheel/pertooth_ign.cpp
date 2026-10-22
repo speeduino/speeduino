@@ -23,7 +23,7 @@ static config4 setup_dualwheel_12_1(void)
     return page4;
 }
 
-static void test_dualwheel_newIgn_12_1()
+static void test_perToothIgn_wasted()
 {
     auto page4 = setup_dualwheel_12_1();
     auto decoderState = decoders::dual_wheel::initialise(page4);
@@ -75,11 +75,23 @@ static void test_dualwheel_newIgn_12_1()
     assert_setEndTeeth(7, ignitionSchedule1, 0, 30, decoderState, page4);
 }
 
+static void test_perToothIgn_sequential()
+{
+    auto page4 = setup_dualwheel_12_1();
+    auto decoderState = decoders::dual_wheel::initialise(page4);
+    page4.sparkMode = IGN_MODE_SEQUENTIAL;
+    page4.TrigSpeed = CRANK_SPEED;
+
+    page4.triggerAngle = 360;
+    assert_setEndTeeth(18, ignitionSchedule1, 0, -20, decoderState, page4);
+    assert_setEndTeeth(18, ignitionSchedule1, 0, 0, decoderState, page4);
+    assert_setEndTeeth(19, ignitionSchedule1, 0, 30, decoderState, page4);
+}
+
 void testDualWheelPerToothIgn(void)
 {
     unity_filename_guard_t guard(__FILE__);
 
-    RUN_TEST_P(test_dualwheel_newIgn_12_1);
-    // RUN_TEST_P(test_primary_per_tooth_ignition_adjusts_timing);
-    // RUN_TEST_P(test_primary_skips_per_tooth_ignition_while_cranking);
+    RUN_TEST_P(test_perToothIgn_wasted);
+    RUN_TEST_P(test_perToothIgn_sequential);
 }
