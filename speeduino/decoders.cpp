@@ -392,22 +392,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * @defgroup dec_dist Basic Distributor
 * @{
 */
-static uint32_t getRevolutionTime_BasicDistributor(void)
-{
-  uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
-  if(configPage2.strokes == TWO_STROKE) { distributorSpeed = CRANK_SPEED; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
-
-  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
-  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, _decoderState.triggerActualTeeth, distributorSpeed)
-                                                  : stdGetRevolutionTime(currentStatus, _decoderState, distributorSpeed);
-
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(_decoderState.triggerActualTeeth == 1) { _decoderState.MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
-  if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-
-  return revolutionTime;
-
-}
 static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
 {
   auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
@@ -495,10 +479,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
   static auto primaryTrigger = []() {
     decoders::basic_distributor::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static auto getRevolutionTime = []() {
+    return decoders::basic_distributor::getRevolutionTime(currentStatus, _decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                 .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                .setGetRevolutionTime(getRevolutionTime_BasicDistributor)
+                .setGetRevolutionTime(getRevolutionTime)
                 .setGetCrankAngle(getCrankAngle_BasicDistributor)
                 .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
                 .setReset(sharedDecoderReset)

@@ -83,5 +83,21 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   } //Trigger filter
 }
 
+uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
+  if(page2.strokes == TWO_STROKE) { distributorSpeed = CRANK_SPEED; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
+
+  const bool useCrankingCalc = (current.RPM < current.crankRPM) || (current.RPM < 1500U);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(current, decoderState, page4, decoderState.triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(current, decoderState, distributorSpeed);
+
+  decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(decoderState.triggerActualTeeth == 1) { decoderState.MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
+  if(decoderState.MAX_STALL_TIME < 366667UL) { decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+
+  return revolutionTime;
+}
+
 }
 }
