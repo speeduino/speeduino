@@ -104,5 +104,21 @@ int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, 
   return decoders::shared::clampCrankAngle(crankAngle);
 }
 
+void setEndTeeth(shared::state_t &decoderState, const statuses &current)
+{
+  if(current.advance < 18 ) 
+  { 
+    decoderState.ignitionEndTeeth[0] = 7;
+    decoderState.ignitionEndTeeth[1] = 2;
+    decoderState.ignitionEndTeeth[2] = 5;
+  }
+  else 
+  { 
+    decoderState.ignitionEndTeeth[0] = 6;
+    decoderState.ignitionEndTeeth[1] = 1;
+    decoderState.ignitionEndTeeth[2] = 4;
+  }
+}
+
 }
 }

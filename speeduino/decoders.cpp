@@ -424,25 +424,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 /** Decode GM 7X trigger wheel with six equally spaced teeth and a seventh tooth for cylinder identification.
 * Note: Within the decoder code pf GM7X, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
 * (See: http://www.speeduino.com/forum/download/file.php?id=4743 ).
-* @defgroup dec_gm7x GM7X
-* @{
 */
-static void triggerSetEndTeeth_GM7X(void)
-{
-  if(currentStatus.advance < 18 ) 
-  { 
-    _decoderState.ignitionEndTeeth[0] = 7;
-    _decoderState.ignitionEndTeeth[1] = 2;
-    _decoderState.ignitionEndTeeth[2] = 5;
-  }
-  else 
-  { 
-    _decoderState.ignitionEndTeeth[0] = 6;
-    _decoderState.ignitionEndTeeth[1] = 1;
-    _decoderState.ignitionEndTeeth[2] = 4;
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 {
   _decoderState = decoders::gm7x::initialise();
@@ -456,12 +438,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
   static const auto getCrankAngle = [](uint32_t curMicros) {
       return decoders::gm7x::getCrankAngle(curMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+      return decoders::gm7x::setEndTeeth(_decoderState, currentStatus);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_GM7X)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -469,7 +454,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
                   .build();
 }
 
-/** @} */
 
 /** Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2.
 Note: raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
