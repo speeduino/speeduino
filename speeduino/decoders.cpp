@@ -53,6 +53,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/missingTooth.h"
 #include "src/decoders/dualWheel.h"
 #include "src/decoders/basicDistributor.h"
+#include "src/decoders/gm7x.h"
 
 using namespace decoders::shared;
 
@@ -534,11 +535,7 @@ static void triggerSetEndTeeth_GM7X(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::gm7x::initialise();
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_GM7X, getConfigPriTriggerEdge(configPage4))
