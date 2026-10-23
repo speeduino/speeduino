@@ -79,5 +79,30 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     decoderState.toothLastToothTime = curTime;
 }
 
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto data = atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount, decoderState.triggerToothAngle);
+
+  //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
+  int16_t crankAngle = 0;
+  if( std::get<2>(data) == 3 )
+  {
+    decoders::shared::simple_crank_angle_calculator_t calculator;
+    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
+    crankAngle = calculator.calculateCrankAngle(112, currMicros, page4);
+  }
+  else
+  {
+    decoders::shared::trigger_angle_crank_angle_calculator_t calculator(data);
+    if (calculator._toothCurrentCount > 3 )
+    {
+      --calculator._toothCurrentCount;
+    }
+    crankAngle = calculator.calculateCrankAngle(currMicros, page4)+42;
+  }
+
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
+
 }
 }

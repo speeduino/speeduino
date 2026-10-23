@@ -19,5 +19,7 @@ namespace gm7x {
 
     void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 
+    int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4);
+
 }
 }

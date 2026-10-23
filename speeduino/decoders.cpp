@@ -427,36 +427,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 * @defgroup dec_gm7x GM7X
 * @{
 */
-static uint32_t getRevolutionTime_GM7X(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-static int16_t getCrankAngle_GM7X(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle);
-
-  //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
-  int16_t crankAngle = 0;
-  if( std::get<2>(data) == 3 )
-  {
-    decoders::shared::simple_crank_angle_calculator_t calculator;
-    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
-    crankAngle = calculator.calculateCrankAngle(112, currMicros, configPage4);
-  }
-  else
-  {
-    decoders::shared::trigger_angle_crank_angle_calculator_t calculator(data);
-    if (calculator._toothCurrentCount > 3 )
-    {
-      --calculator._toothCurrentCount;
-    }
-    crankAngle = calculator.calculateCrankAngle(currMicros, configPage4)+42;
-  }
-
-  //Estimate the number of degrees travelled since the last tooth}
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 static void triggerSetEndTeeth_GM7X(void)
 {
   if(currentStatus.advance < 18 ) 
@@ -480,11 +450,17 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
   static const auto primaryTrigger = []() {
     decoders::gm7x::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+      return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+      return decoders::gm7x::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_GM7X)
-                  .setGetCrankAngle(getCrankAngle_GM7X)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_GM7X)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
