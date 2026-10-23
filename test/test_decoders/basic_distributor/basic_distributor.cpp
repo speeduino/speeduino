@@ -1,81 +1,16 @@
-#include "decoders.h"
-#include "crankMaths.h"
 #include "../test_utils.h"
-#include "globals.h"
-#include "src/decoders/shared/decoder_state.h"
-
-extern decoders::shared::state_t _decoderState;
-
-static void test_getCrankAngle(void)
-{
-  // Configure a 4-tooth distributor (4-cylinder cam-spaced)
-  configPage2.nCylinders = 4;
-  configPage4.triggerTeeth = 4;
-
-  auto decoder = triggerSetup_BasicDistributor();
-
-  auto run_case = [&](int toothCount, int delta, int trigAngle, int16_t expected) {
-    _decoderState.toothLastToothTime = 2000;
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime - (5*delta);
-    _decoderState.toothCurrentCount = toothCount;
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    _decoderState.decoderStatus.toothAngleIsCorrect = true;
-    configPage4.triggerAngle = trigAngle;
-    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
-    setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
-  };
-
-  // timeToAngleIntervalTooth(100) ~ 18 deg when revolution time = 2000
-  const int dt = 36;
-
-  run_case(1, 100, 0, 0 + dt);
-  run_case(2, 100, 0, 180 + dt);
-  run_case(3, 100, 0, 360 + dt);
-  run_case(4, 100, 0, 540 + dt);
-
-  // trigger offset
-  run_case(1, 100, 30, 30 + dt);
-}
-
-static void test_getRevolutionTime(void)
-{
-  // Configure a 4-tooth distributor (4-cylinder cam-spaced)
-  configPage2.nCylinders = 4;
-  configPage2.strokes = FOUR_STROKE;
-  auto decoder = triggerSetup_BasicDistributor();
-
-  // Prepare for cranking path: RPM < crankRPM
-  configPage4.StgCycles = 0;
-  currentStatus.startRevolutions = 1;
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  currentStatus.setRpm(0);
-  currentStatus.crankRPM = 400;
-  currentStatus.revolutionTime = 99999UL;
-  _decoderState.toothLastMinusOneToothTime = 1000UL;
-  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 30000UL; // gap=30000 -> revTime = gap*totalTeeth/2 = 30000*4/2 = 60000
-  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
-
-  // Running path: should return stdGetRevolutionTime(CAM_SPEED) -> currentStatus.revolutionTime when no toothOne* update
-  currentStatus.setRpm(2000);
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-
-  configPage2.strokes = TWO_STROKE;
-  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-
-  // If not synced, should return currentStatus.revolutionTime
-  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-  currentStatus.setRpm(555);
-  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
-}
 
 void testBasicDistributor(void)
 {
-  SET_UNITY_FILENAME() {
-    RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRevolutionTime);
-  }
+    extern void testBasicDistribCrankAngle(void);
+    extern void testBasicDistribRevTime(void);
+    extern void testBasicDistribInitialise(void);
+    extern void testBasicDistribTriggers(void);
+    extern void testBasicDistribPerToothIgn(void);
+
+    testBasicDistribCrankAngle();
+    testBasicDistribRevTime();
+    testBasicDistribInitialise();
+    testBasicDistribTriggers();
+    testBasicDistribPerToothIgn();
 }

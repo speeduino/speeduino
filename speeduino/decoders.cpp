@@ -52,6 +52,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/shared/rev_time_calcs.h"
 #include "src/decoders/missingTooth.h"
 #include "src/decoders/dualWheel.h"
+#include "src/decoders/basicDistributor.h"
 
 using namespace decoders::shared;
 
@@ -382,8 +383,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
                   .build();
 }
 
-/** @} */
-
 /** Basic Distributor where tooth count is equal to the number of cylinders and teeth are evenly spaced on the cam.
 * No position sensing (Distributor is retained) so crank angle is
 * a made up figure based purely on the first teeth to be seen.
@@ -391,178 +390,28 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * @defgroup dec_dist Basic Distributor
 * @{
 */
-static void triggerPri_BasicDistributor(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) )
-  {
-    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { _decoderState.setFilter(_decoderState.curGap, configPage4); } //Recalc the new filter value
-    else { _decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored. 
-    
-    if( (_decoderState.toothCurrentCount == _decoderState.triggerActualTeeth) || (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) ) //Check if we're back to the beginning of a revolution
-    {
-      _decoderState.toothCurrentCount = 1; //Reset the counter
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-      currentStatus.startRevolutions++; //Counter
-    }
-    else
-    {
-      if( (_decoderState.toothCurrentCount < _decoderState.triggerActualTeeth) ) { _decoderState.toothCurrentCount++; } //Increment the tooth counter
-      else
-      {
-        //This means _decoderState.toothCurrentCount is greater than _decoderState.triggerActualTeeth, which is bad.
-        //If we have sync here then there's a problem. Throw a sync loss
-        if( _decoderState.decoderStatus.syncStatus==SyncStatus::Full ) 
-        { 
-          currentStatus.syncLossCounter++;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        }
-      }
-      
-    }
-
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
-    {
-      stopAllCoilsCharging();
-    }
-
-    if(configPage2.perToothIgn == true)
-    {
-      int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-      uint16_t currentTooth = _decoderState.toothCurrentCount;
-      if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
-    }
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-  } //Trigger filter
-}
-
-static uint32_t getRevolutionTime_BasicDistributor(void)
-{
-  uint8_t distributorSpeed = CAM_SPEED; //Default to cam speed
-  if(configPage2.strokes == TWO_STROKE) { distributorSpeed = CRANK_SPEED; } //For 2 stroke distributors, the tooth rate is based on crank speed, not 'cam'
-
-  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
-  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, _decoderState.triggerActualTeeth, distributorSpeed)
-                                                  : stdGetRevolutionTime(currentStatus, _decoderState, distributorSpeed);
-
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(_decoderState.triggerActualTeeth == 1) { _decoderState.MAX_STALL_TIME = revolutionTime << 1; } //Special case for 1 cylinder engines that only get 1 pulse every 720 degrees
-  if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-
-  return revolutionTime;
-
-}
-static int16_t getCrankAngle_BasicDistributor(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-  return decoders::shared::clampCrankAngle(decoders::shared::compute_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, configPage4));
-}
-
-static void triggerSetEndTeeth_BasicDistributor(void)
-{
-
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - configPage4.triggerAngle);
-  tempEndAngle = ignitionLimits((tempEndAngle));
-
-  switch(configPage2.nCylinders)
-  {
-    case 4:
-      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 1;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-      }
-      break;
-    case 3: //Shared with 6 cylinder
-    case 6:
-      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 1;
-      }
-      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-      }
-      break;
-    case 8:
-      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 4;
-        _decoderState.ignitionEndTeeth[3] = 1;
-      }
-      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 4;
-        _decoderState.ignitionEndTeeth[2] = 1;
-        _decoderState.ignitionEndTeeth[3] = 2;
-      }
-      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 4;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-        _decoderState.ignitionEndTeeth[3] = 3;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-        _decoderState.ignitionEndTeeth[3] = 4;
-      }
-      break;
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerActualTeeth = configPage2.nCylinders;
-  if(_decoderState.triggerActualTeeth == 0) { _decoderState.triggerActualTeeth = 1; }
+  _decoderState = decoders::basic_distributor::initialise(configPage2);
 
-  //The number of degrees that passes from tooth to tooth. Depends on number of cylinders and whether 4 or 2 stroke
-  if(configPage2.strokes == FOUR_STROKE) { _decoderState.triggerToothAngle = 720U / _decoderState.triggerActualTeeth; }
-  else { _decoderState.triggerToothAngle = 360U / _decoderState.triggerActualTeeth; }
-
-  _decoderState.toothCurrentCount = 0; //Default value
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  if(configPage2.nCylinders <= 4U) { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
-  else { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
-
+  static const auto primaryTrigger = []() {
+    decoders::basic_distributor::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::basic_distributor::getRevolutionTime(currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::basic_distributor::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::basic_distributor::setEndTeeth(_decoderState, configPage2, configPage4);
+  };
+  
   return decoder_builder_t()
-                .setPrimaryTrigger(triggerPri_BasicDistributor, getConfigPriTriggerEdge(configPage4))
-                .setGetRevolutionTime(getRevolutionTime_BasicDistributor)
-                .setGetCrankAngle(getCrankAngle_BasicDistributor)
-                .setSetEndTeeth(triggerSetEndTeeth_BasicDistributor)
+                .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                .setGetRevolutionTime(getRevolutionTime)
+                .setGetCrankAngle(getCrankAngle)
+                .setSetEndTeeth(setEndTeeth)
                 .setReset(sharedDecoderReset)
                 .setIsEngineRunning(sharedEngineIsRunning)
                 .setGetStatus(sharedGetStatus)
