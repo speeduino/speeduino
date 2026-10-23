@@ -463,17 +463,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
 * @{
 */
-static int16_t getCrankAngle_4G63(uint32_t currMicros)
-{
-  int16_t crankAngle = 0;
-  if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-  {
-    auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
-  }
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 static void triggerSetEndTeeth_4G63(void)
 {
   if(configPage2.nCylinders == 4)
@@ -526,12 +515,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
   static const auto getRevolutionTime = []() {
     return decoders::fourg63::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::fourg63::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_4G63)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

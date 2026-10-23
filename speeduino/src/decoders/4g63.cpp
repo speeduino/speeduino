@@ -347,5 +347,17 @@ uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderStat
   return 0U; //Speed is unknown without sync
 }
 
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  int16_t crankAngle = 0;
+  if(decoderState.decoderStatus.syncStatus==SyncStatus::Full)
+  {
+    auto data = atomic_copy(decoderState.toothLastToothTime, decoderState.toothLastMinusOneToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount, decoderState.triggerToothAngle, decoderState.decoderStatus.toothAngleIsCorrect);
+    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, decoderState.toothAngles, page4);
+  }
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
+
+
 }
 }
