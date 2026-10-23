@@ -26,7 +26,7 @@ static void test_StoppedUsesCrankTable(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 }
 
 static void test_CrankingUsesCrankTable(void)
@@ -41,7 +41,7 @@ static void test_CrankingUsesCrankTable(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 }
 
 static void test_StepperSteppingAndCooling(void)
@@ -63,30 +63,30 @@ static void test_StepperSteppingAndCooling(void)
   
   idle_micros_override_t::mockIdleMicrosValue = TIME_INCREMENT_STEP;
   idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
   
   idle_micros_override_t::mockIdleMicrosValue += TIME_INCREMENT_STEP-1;
   idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 
   idle_micros_override_t::mockIdleMicrosValue += 1;
   idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.status);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 
   idle_micros_override_t::mockIdleMicrosValue += TIME_INCREMENT_COOL-1;
   idleControl();
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.status);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
 
   idle_micros_override_t::mockIdleMicrosValue += 1;
   context.page6.iacStepHyster = 255;
   idleControl();
-  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL_INT(2, _idleState.idleStepper.curIdleStep);
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
+  TEST_ASSERT_EQUAL_INT(2, _idleState.idleStepper.curStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
 }
 
 static void test_MovesTowardLowerTarget(void)
@@ -97,15 +97,15 @@ static void test_MovesTowardLowerTarget(void)
 
   context.current.rotationStatus = EngineRotationStatus::Running;
   context.current.RPM = 1000U;
-  _idleState.idleStepper.curIdleStep = 5;
-  _idleState.idleStepper.targetIdleStep = 0;
+  _idleState.idleStepper.curStep = 5;
+  _idleState.idleStepper.targetStep = 0;
 
   BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
   BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(4, _idleState.idleStepper.curIdleStep);
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_INT(4, _idleState.idleStepper.curStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
 }
 
 static void test_IdleLoadAtByteBoundary(void)
@@ -117,15 +117,15 @@ static void test_IdleLoadAtByteBoundary(void)
 
   context.current.rotationStatus = EngineRotationStatus::Running;
   context.current.RPM = 1000U;
-  _idleState.idleStepper.curIdleStep = 10;
-  _idleState.idleStepper.targetIdleStep = 10;
+  _idleState.idleStepper.curStep = 10;
+  _idleState.idleStepper.targetStep = 10;
 
   BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_1HZ);
   BIT_CLEAR(context.current.LOOP_TIMER, BIT_TIMER_10HZ);
   idleControl();
 
   TEST_ASSERT_EQUAL_UINT8(10U, context.current.idleLoad);
-  TEST_ASSERT_EQUAL_INT(10, _idleState.idleStepper.curIdleStep);
+  TEST_ASSERT_EQUAL_INT(10, _idleState.idleStepper.curStep);
   TEST_ASSERT_FALSE(context.current.idleOn);
 }
 
@@ -140,30 +140,30 @@ static void test_IdleLoadAtByteBoundary(void)
 //   idle_micros_override_t microsOverride;
 //   _idleState.iacStepTime_uS = 100U;
 //   _idleState.iacCoolTime_uS = 200U;
-//   _idleState.idleStepper.stepStartTime = 50U;
-//   _idleState.idleStepper.targetIdleStep = 17;
-//   _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
+//   _idleState.idleStepper.startTime = 50U;
+//   _idleState.idleStepper.targetStep = 17;
+//   _idleState.idleStepper.status = idleController::detail::StepperStatus::STEPPING;
 
 //   idle_micros_override_t::mockIdleMicrosValue = 149U;
 //   idleControl();
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
-//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
+//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetStep);
 
 //   idle_micros_override_t::mockIdleMicrosValue = 150U;
 //   idleControl();
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.status);
+//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetStep);
 
 //   idle_micros_override_t::mockIdleMicrosValue = 349U;
 //   idleControl();
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.stepperStatus);
-//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetIdleStep);
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::COOLING, _idleState.idleStepper.status);
+//   TEST_ASSERT_EQUAL_INT(17, _idleState.idleStepper.targetStep);
 
 //   idle_micros_override_t::mockIdleMicrosValue = 350U;
 //   idleControl();
-//   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetIdleStep);
-//   TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curIdleStep);
-//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+//   TEST_ASSERT_EQUAL_INT(300, _idleState.idleStepper.targetStep);
+//   TEST_ASSERT_EQUAL_INT(1, _idleState.idleStepper.curStep);
+//   TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
 // }
 
 static void test_RunningUsesRunningTable(void)
@@ -178,7 +178,7 @@ static void test_RunningUsesRunningTable(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetStep);
 }
 
 static void test_RunningTaper(void)
@@ -195,7 +195,7 @@ static void test_RunningTaper(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(174, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(174, _idleState.idleStepper.targetStep);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
@@ -212,18 +212,16 @@ static void test_RunningIdleUp(void)
   context.current.RPM = 1000U;
   context.current.rotationStatus = EngineRotationStatus::Running;
 
-  digitalWrite(context.pins.pinIdleUp, HIGH);
+  _idleState.pinIdleUpInput._pin.setPinHigh();
   auto curMicros = context.idleControl(10000, 2000, 1);
-  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  auto baseSteps = _idleState.idleStepper.targetStep;
   TEST_ASSERT_NOT_EQUAL(0, baseSteps);
   TEST_ASSERT_FALSE(context.current.idleUpActive);
 
-#if !defined(__AVR__) // Fix when using pin wrapper
-  digitalWrite(context.pins.pinIdleUp, LOW);
+  _idleState.pinIdleUpInput._pin.setPinLow();
   curMicros = context.idleControl(curMicros, 2000, 2);
-  TEST_ASSERT_EQUAL(baseSteps+context.page2.idleUpAdder, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(baseSteps+context.page2.idleUpAdder, _idleState.idleStepper.targetStep);
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-#endif
 }
 
 static void test_RunningAirConditioning(void)
@@ -239,12 +237,12 @@ static void test_RunningAirConditioning(void)
 
   context.current.acStatus.turningOn = false;
   auto curMicros = context.idleControl(10000, 2000, 1);
-  auto baseSteps = _idleState.idleStepper.targetIdleStep;
+  auto baseSteps = _idleState.idleStepper.targetStep;
   TEST_ASSERT_NOT_EQUAL(0, baseSteps);
 
   context.current.acStatus.turningOn = true;
   curMicros = context.idleControl(curMicros, 2000, 2);
-  TEST_ASSERT_EQUAL(baseSteps+context.page15.airConIdleSteps, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL(baseSteps+context.page15.airConIdleSteps, _idleState.idleStepper.targetStep);
 }
 
 static void test_stepperModeDisablesIdle(void)
@@ -255,8 +253,8 @@ static void test_stepperModeDisablesIdle(void)
   context.init();
 
   // Simulate a state where idle is active (to ensure disableIdle works)
-  _idleState.idleStepper.stepperStatus = idleController::detail::StepperStatus::STEPPING;
-  _idleState.idleStepper.targetIdleStep = 10;
+  _idleState.idleStepper.status = idleController::detail::StepperStatus::STEPPING;
+  _idleState.idleStepper.targetStep = 10;
   context.current.idleOn = true;
   context.current.idleLoad = 50;
 

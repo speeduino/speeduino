@@ -31,7 +31,7 @@ static void test_runningTaper(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(295, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(295, _idleState.idleStepper.targetStep);
   TEST_ASSERT_EQUAL_UINT8(2U, _idleState.idleTaper);
 }
 
@@ -48,7 +48,7 @@ static void test_runningUsesFeedForward(void)
 
   idleControl();
 
-  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetStep);
 }
 
 void testIdleControlStepOlCl(void)

@@ -292,7 +292,6 @@ struct statuses {
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
-  bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */

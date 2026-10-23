@@ -3,11 +3,6 @@
 #include "globals.h"
 #include "src/controllers/idle/idleController_state.h"
 
-// Idle test pins; values are arbitrary free pins under ArduinoFake.
-static constexpr uint8_t TEST_IDLE1_PIN = 18U;
-static constexpr uint8_t TEST_IDLE2_PIN = 19U;
-static constexpr uint8_t TEST_IDLEUP_INPUT_PIN = 20U;
-static constexpr uint8_t TEST_IDLEUP_OUTPUT_PIN = 21U;
 struct context_t
 {
     statuses &current;

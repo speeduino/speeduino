@@ -105,6 +105,48 @@ static void test_initialiseIdle_step_olcl(void)
   TEST_ASSERT_NOT_EQUAL(0, _idleState.idle_pwm_max_count);
 }
 
+static context_t setup_stepper_cl(void)
+{
+  context_t context;
+  context.prepare_idle(IAC_ALGORITHM_STEP_CL);
+  context.page6.idleKP = 0U;
+  context.page6.idleKI = 0U;
+  context.page6.idleKD = 0U;
+  context.page6.iacStepHyster = 0U;
+  context.page6.iacStepHome = 3U;
+  context.page9.iacMaxSteps = 100U;
+  return context;
+}
+
+static void test_forceHoming(void)
+{
+  auto context = setup_stepper_cl();
+  context.init();
+
+  context.current.coolant = 110;
+  context.current.setRpm(100);
+  context.current.rotationStatus = EngineRotationStatus::Running;
+
+  TEST_ASSERT_EQUAL(0, _idleState.idleStepper.curStep);
+  TEST_ASSERT_EQUAL(0, _idleState.idleStepper.completedHomeSteps);
+  TEST_ASSERT_EQUAL(0, _idleState.idleStepper.curStep);
+
+  auto curMicros = context.idleControl(10000, 2000, 100);
+  TEST_ASSERT_NOT_EQUAL(0, _idleState.idleStepper.curStep);
+  TEST_ASSERT_NOT_EQUAL(0, _idleState.idleStepper.completedHomeSteps);
+  TEST_ASSERT_NOT_EQUAL(0, _idleState.idleStepper.curStep);
+
+  initialiseIdle(false);
+  TEST_ASSERT_NOT_EQUAL(0, _idleState.idleStepper.curStep);
+  TEST_ASSERT_NOT_EQUAL(0, _idleState.idleStepper.completedHomeSteps);
+  TEST_ASSERT_NOT_EQUAL(0, _idleState.idleStepper.curStep);
+
+  initialiseIdle(true);
+  TEST_ASSERT_EQUAL(0, _idleState.idleStepper.curStep);
+  TEST_ASSERT_EQUAL(0, _idleState.idleStepper.completedHomeSteps);
+  TEST_ASSERT_EQUAL(0, _idleState.idleStepper.curStep);
+}
+
 void testInitialiseIdle(void)
 {
   unity_filename_guard_t guard(__FILE__);
@@ -118,4 +160,5 @@ void testInitialiseIdle(void)
   RUN_TEST(test_initialiseIdle_step_open_loop);
   RUN_TEST(test_initialiseIdle_step_closed_loop);
   RUN_TEST(test_initialiseIdle_step_olcl);
+  RUN_TEST_P(test_forceHoming);
 }
