@@ -427,66 +427,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 * @defgroup dec_gm7x GM7X
 * @{
 */
-static void triggerPri_GM7X(void)
-{
-    _decoderState.lastGap = _decoderState.curGap;
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if( (_decoderState.toothLastToothTime > 0) && (_decoderState.toothLastMinusOneToothTime > 0) )
-    {
-      if( _decoderState.toothCurrentCount > 7 )
-      {
-        _decoderState.toothCurrentCount = 1;
-        _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-        _decoderState.toothOneTime = curTime;
-
-        _decoderState.decoderStatus.toothAngleIsCorrect = true;
-      }
-      else
-      {
-        _decoderState.targetGap = (_decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
-        if ( _decoderState.curGap < _decoderState.targetGap ) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
-        {
-          _decoderState.toothCurrentCount = 3;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-          _decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
-          currentStatus.startRevolutions++; //Counter
-        }
-        else
-        {
-          _decoderState.decoderStatus.toothAngleIsCorrect = true;
-        }
-      }
-    }
-
-    //New ignition mode!
-    if(configPage2.perToothIgn == true)
-    {
-      if(_decoderState.toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
-      {
-        //configPage4.triggerAngle must currently be below 48 and above -81
-        int16_t crankAngle;
-        if( _decoderState.toothCurrentCount < 3 )
-        {
-          crankAngle = ((_decoderState.toothCurrentCount - 1) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-        }
-        else
-        {
-          crankAngle = ((_decoderState.toothCurrentCount - 2) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-        }
-        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-      } 
-    }
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-
-}
-
 static uint32_t getRevolutionTime_GM7X(void)
 {
    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
@@ -537,8 +477,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 {
   _decoderState = decoders::gm7x::initialise();
 
+  static const auto primaryTrigger = []() {
+    decoders::gm7x::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_GM7X, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_GM7X)
                   .setGetCrankAngle(getCrankAngle_GM7X)
                   .setSetEndTeeth(triggerSetEndTeeth_GM7X)

@@ -21,5 +21,63 @@ shared::state_t __attribute__((optimize("Os"))) initialise(void)
     return state;
 }
 
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+    decoderState.lastGap = decoderState.curGap;
+    decoderState.curGap = curTime - decoderState.toothLastToothTime;
+    decoderState.toothCurrentCount++; //Increment the tooth counter
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    if( (decoderState.toothLastToothTime > 0) && (decoderState.toothLastMinusOneToothTime > 0) )
+    {
+      if( decoderState.toothCurrentCount > 7 )
+      {
+        decoderState.toothCurrentCount = 1;
+        decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+        decoderState.toothOneTime = curTime;
+
+        decoderState.decoderStatus.toothAngleIsCorrect = true;
+      }
+      else
+      {
+        decoderState.targetGap = (decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
+        if ( decoderState.curGap < decoderState.targetGap ) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
+        {
+          decoderState.toothCurrentCount = 3;
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+          decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
+          current.startRevolutions++; //Counter
+        }
+        else
+        {
+          decoderState.decoderStatus.toothAngleIsCorrect = true;
+        }
+      }
+    }
+
+    //New ignition mode!
+    if(page2.perToothIgn == true)
+    {
+      if(decoderState.toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
+      {
+        //page4.triggerAngle must currently be below 48 and above -81
+        int16_t crankAngle;
+        if( decoderState.toothCurrentCount < 3 )
+        {
+          crankAngle = ((decoderState.toothCurrentCount - 1) * decoderState.triggerToothAngle) + 42 + page4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+        }
+        else
+        {
+          crankAngle = ((decoderState.toothCurrentCount - 2) * decoderState.triggerToothAngle) + 42 + page4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
+        }
+        checkPerToothTiming(current , decoderState, page4, crankAngle, decoderState.toothCurrentCount);
+      } 
+    }
+
+    decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+    decoderState.toothLastToothTime = curTime;
+}
+
 }
 }
