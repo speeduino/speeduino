@@ -358,6 +358,44 @@ int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, 
   return decoders::shared::clampCrankAngle(crankAngle);
 }
 
+void setEndTeeth(shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  if(page2.nCylinders == 4)
+  {
+    if(page4.sparkMode == IGN_MODE_SEQUENTIAL) 
+    { 
+      decoderState.ignitionEndTeeth[0] = 8;
+      decoderState.ignitionEndTeeth[1] = 2;
+      decoderState.ignitionEndTeeth[2] = 4;
+      decoderState.ignitionEndTeeth[3] = 6;
+    }
+    else
+    {
+      decoderState.ignitionEndTeeth[0] = 4;
+      decoderState.ignitionEndTeeth[1] = 2;
+      decoderState.ignitionEndTeeth[2] = 4; //Not used
+      decoderState.ignitionEndTeeth[3] = 2;
+    }
+  }
+  if(page2.nCylinders == 6)
+  {
+    if(page4.sparkMode == IGN_MODE_SEQUENTIAL) 
+    { 
+      //This should never happen as 6 cylinder sequential not supported
+      decoderState.ignitionEndTeeth[0] = 8;
+      decoderState.ignitionEndTeeth[1] = 2;
+      decoderState.ignitionEndTeeth[2] = 4;
+      decoderState.ignitionEndTeeth[3] = 6;
+    }
+    else
+    {
+      decoderState.ignitionEndTeeth[0] = 6;
+      decoderState.ignitionEndTeeth[1] = 2;
+      decoderState.ignitionEndTeeth[2] = 4;
+      decoderState.ignitionEndTeeth[3] = 2; //Not used
+    }
+  }
+}
 
 }
 }

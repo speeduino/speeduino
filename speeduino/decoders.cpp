@@ -460,48 +460,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 Note: raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC.
-* @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
-* @{
 */
-static void triggerSetEndTeeth_4G63(void)
-{
-  if(configPage2.nCylinders == 4)
-  {
-    if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-    { 
-      _decoderState.ignitionEndTeeth[0] = 8;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 6;
-    }
-    else
-    {
-      _decoderState.ignitionEndTeeth[0] = 4;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4; //Not used
-      _decoderState.ignitionEndTeeth[3] = 2;
-    }
-  }
-  if(configPage2.nCylinders == 6)
-  {
-    if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-    { 
-      //This should never happen as 6 cylinder sequential not supported
-      _decoderState.ignitionEndTeeth[0] = 8;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 6;
-    }
-    else
-    {
-      _decoderState.ignitionEndTeeth[0] = 6;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 2; //Not used
-    }
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
 {
   _decoderState = decoders::fourg63::initialise(micros(), currentStatus, configPage2);
@@ -518,20 +477,22 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
   static const auto getCrankAngle = [](uint32_t curMicros) {
     return decoders::fourg63::getCrankAngle(curMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    decoders::fourg63::setEndTeeth(_decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_4G63)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** GM 24X Decoder (eg early LS1 1996-2005).
 Note: Useful references:
