@@ -316,5 +316,36 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   } //Trigger filter
 }
 
+uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  shared::tooth_speed_sample_t sample;
+  uint32_t revolutionTime = 0U;
+
+  /*
+  During cranking, revolution time is calculated 4 times per revolution, once for each rising/falling of the crank signal.
+  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  */
+  sample = atomicToothSpeedSample(current, decoderState);
+  if (sample.syncStatus==SyncStatus::Full)
+  {
+    if (current.RPM < current.crankRPM)
+    {
+      if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
+      {
+        decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
+        return revolutionTime;
+      }
+      return shared::publishedRevolutionTime(current);
+    }
+
+    revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
+    decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+    if (decoderState.MAX_STALL_TIME < 366667UL) { decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+    return revolutionTime;
+  }
+
+  return 0U; //Speed is unknown without sync
+}
+
 }
 }

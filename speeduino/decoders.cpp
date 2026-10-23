@@ -463,39 +463,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
 * @{
 */
-static uint32_t getRevolutionTime_4G63(void)
-{
-  tooth_speed_sample_t sample;
-  uint32_t revolutionTime = 0U;
-
-  /*
-  During cranking, revolution time is calculated 4 times per revolution, once for each rising/falling of the crank signal.
-  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
-  */
-  sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  if (sample.syncStatus==SyncStatus::Full)
-  {
-    if (currentStatus.RPM < currentStatus.crankRPM)
-    {
-      if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
-      {
-        _decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
-        return revolutionTime;
-      }
-      return publishedRevolutionTime(currentStatus);
-    }
-
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-    //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
-    //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
-    _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-    if (_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-    return revolutionTime;
-  }
-
-  return 0U; //Speed is unknown without sync
-}
-
 static int16_t getCrankAngle_4G63(uint32_t currMicros)
 {
   int16_t crankAngle = 0;
@@ -556,11 +523,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
   static const auto secondaryTrigger = []() {
     decoders::fourg63::triggerSecondary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::fourg63::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
-                  .setGetRevolutionTime(getRevolutionTime_4G63)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_4G63)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
                   .setReset(sharedDecoderReset)
