@@ -1,72 +1,167 @@
 #include "auxChannelController.h"
+#include "auxChannelController_detail.h"
 #include "src/pins/pinMapping.h"
 #include "unit_testing.h"
 #include "sensors.h"
 #include "comms_secondary.h"
+#include "globals.h"
+
+using namespace auxChannelController::detail;
+
+TESTABLE_STATIC state _auxState;
+
+constexpr uint8_t MASK_SELECTORA =           0b00000011;
+constexpr uint8_t SELECTORA_ANALOG =         0b00000010;
+constexpr uint8_t SELECTORA_DIGITAL =        0b00000011;
+
+constexpr uint8_t MASK_SELECTORB =           0b00001100;
+constexpr uint8_t SELECTORB_EXTERNAL =       0b00000100;
+constexpr uint8_t SELECTORB_ANALOG =         0b00001000;
+constexpr uint8_t SELECTORB_DIGITAL =        0b00001100;
+
+constexpr uint8_t MASK_SOURCEA =             0b00100000;
+
+constexpr uint8_t MASK_SOURCEB =             0b01000000;
+constexpr uint8_t SOURCEB_SECONDARY_SERIAL = 0b00000000;
+constexpr uint8_t SOURCEB_INTERNAL_CAN =     0b01000000;
+
+constexpr uint8_t MASK_SOURCEC =             0b10000000;
+constexpr uint8_t SOURCEC_INTERNAL_CAN =     0b10000000;
+
+constexpr uint8_t MASK_ANALOG_PIN =          0b00111111;
+constexpr uint8_t MASK_DIGITAL_PIN =         0b00111111;
+
+constexpr uint16_t MASK_SOURCE_ADDRESS =     0b0000'0111'1111'1111;
+
+static inline bool isExternalInput(uint8_t selector)
+{
+    return (selector & MASK_SELECTORB) == SELECTORB_EXTERNAL;
+}
+
+static inline bool isAnalogInput(uint8_t selector)
+{
+    return ((selector & MASK_SELECTORA) == SELECTORA_ANALOG)
+        || ((selector & MASK_SELECTORB) == SELECTORB_ANALOG)
+        ;
+}
+
+static inline uint8_t getAnalogPin(uint8_t channel, const config9 &page9)
+{
+    return pinTranslateAnalog(page9.Auxinpina[channel] & MASK_ANALOG_PIN);
+}
+
+static inline bool isDigitalInput(uint8_t selector)
+{
+    return ((selector & MASK_SELECTORA) == SELECTORA_DIGITAL)
+        || ((selector & MASK_SELECTORB) == SELECTORB_DIGITAL)
+        ;
+}
+
+static inline uint8_t getDigitalPin(uint8_t channel, const config9 &page9)
+{
+    return (page9.Auxinpinb[channel] & MASK_DIGITAL_PIN) + 1U;
+}
+
+void __attribute__((optimize("Os"))) initAuxChannels(statuses &current, const config9 &page9)
+{
+    _auxState = state();
+
+    const bool is_sec_serial = page9.enable_secondarySerial;
+    const bool is_intcan     = page9.enable_intcan;
+    const bool intcan_avail  = page9.intcan_available;
+    const bool bus_enabled   = is_sec_serial || (is_intcan && intcan_avail);
+
+    // Helper lambda to consolidate pin initialization and error tracking
+    auto tryInitPin = [](statuses &current, uint8_t pinNumber) {
+        if (pinIsUsed(pinNumber)) {
+            current.ioError = true;
+            return false;
+        } else {
+            pinMode(pinNumber, INPUT);
+            return true;
+        }
+    };
+
+    for (uint8_t channel = 0U; channel < _countof(page9.caninput_sel); channel++)
+    {
+        const auto selector = page9.caninput_sel[channel];
+        if (isExternalInput(selector))
+        {                
+            _auxState.enabled |= bus_enabled;
+        }
+        else if (isAnalogInput(selector))
+        {  
+            _auxState.enabled |= tryInitPin(current, getAnalogPin(channel, page9));
+        }
+        else if (isDigitalInput(selector))
+        {  
+            _auxState.enabled |= tryInitPin(current, getDigitalPin(channel, page9));
+        }
+        else 
+        {
+            // Do nothing. Keep MISRA checker happy
+        }
+    } 
+}
 
 using fnSendCanCommand_t = void (*)(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 using fnReadAuxanalog_t = uint16_t (*)(uint8_t analogPin);
-using fnReadAuxdigital_t = uint16_t (*)(uint8_t digitalPin);
+using fnReadAuxdigital_t = decltype(&digitalRead);
 
 TESTABLE_STATIC void auxChannelControl(statuses &current, const config9 &page9, fnSendCanCommand_t fnSendCanCommand, fnReadAuxanalog_t fnReadAuxanalog, fnReadAuxdigital_t fnReadAuxdigital)
 {
-    //check through the Aux input channels if enabled for Can or local use
-    for (byte AuxinChan = 0; AuxinChan <16 ; AuxinChan++)
+    const bool is_sec_serial = page9.enable_secondarySerial;
+    const bool is_intcan     = page9.enable_intcan;
+    const bool intcan_avail  = page9.intcan_available;
+    const bool use_intcan    = is_intcan && intcan_avail;
+
+    for (uint8_t channel = 0; channel < _countof(page9.caninput_sel); channel++)
     {
-        current.current_caninchannel = AuxinChan;          
-        
-        if (((page9.caninput_sel[current.current_caninchannel]&12) == 4) 
-            && (((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 0)&&(page9.intcan_available == 1)))
-            || ((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 1))&& 
-            ((page9.caninput_sel[current.current_caninchannel]&64) == 0))
-            || ((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 0)))))              
-        { //if current input channel is enabled as external & secondary serial enabled & internal can disabled(but internal can is available)
-        // or current input channel is enabled as external & secondary serial enabled & internal can enabled(and internal can is available)
-        //current.canin[13] = 11;  Dev test use only!
-        if (page9.enable_secondarySerial == 1)  // megas only support can via secondary serial
+        const auto selector = page9.caninput_sel[channel];
+        const uint16_t can_addr = (page9.caninput_source_can_address[channel] & MASK_SOURCE_ADDRESS) + 0x100;
+
+        if (isExternalInput(selector))
         {
-            fnSendCanCommand(2,0,current.current_caninchannel,0,((page9.caninput_source_can_address[current.current_caninchannel]&2047)+0x100));
-            //send an R command for data from caninput_source_address[current.current_caninchannel] from secondarySerial
-        }
+            // Route A: Secondary Serial (Megas only support CAN via secondary serial)
+            if (is_sec_serial && (!use_intcan || ((selector & MASK_SOURCEB) == SOURCEB_SECONDARY_SERIAL)))
+            {
+                fnSendCanCommand(2, 0, channel, 0, can_addr);
+            }
+            // Route B: Internal CAN (STM32 / Teensy only)
+#if defined(CORE_STM32) || defined(CORE_TEENSY)
+            else if (use_intcan && (!is_sec_serial || ((selector & MASK_SOURCEB) == SOURCEB_INTERNAL_CAN)))
+            {
+                fnSendCanCommand(3, page9.speeduino_tsCanId, channel, 0, can_addr);
+            }
+            else 
+            {
+                // Do nothing. Keep MISRA checker happy
+            }
+#endif
         }  
-        else if (((page9.caninput_sel[current.current_caninchannel]&12) == 4) 
-            && (((page9.enable_secondarySerial == 1) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 1))&& 
-            ((page9.caninput_sel[current.current_caninchannel]&64) == 64))
-            || ((page9.enable_secondarySerial == 0) && ((page9.enable_intcan == 1)&&(page9.intcan_available == 1))&& 
-            ((page9.caninput_sel[current.current_caninchannel]&128) == 128))))                             
-        { //if current input channel is enabled as external for canbus & secondary serial enabled & internal can enabled(and internal can is available)
-        // or current input channel is enabled as external for canbus & secondary serial disabled & internal can enabled(and internal can is available)
-        //current.canin[13] = 12;  Dev test use only!  
-        #if defined(CORE_STM32) || defined(CORE_TEENSY)
-        if (page9.enable_intcan == 1) //  if internal can is enabled 
+        else if (isAnalogInput(selector))
+        { 
+            current.canin[channel] = fnReadAuxanalog(getAnalogPin(channel, page9));
+        }
+        else if (isDigitalInput(selector))
+        { 
+            current.canin[channel] = fnReadAuxdigital(getDigitalPin(channel, page9));
+        }
+        else 
         {
-            fnSendCanCommand(3,page9.speeduino_tsCanId,current.current_caninchannel,0,((page9.caninput_source_can_address[current.current_caninchannel]&2047)+0x100));  
-            //send an R command for data from caninput_source_address[current.current_caninchannel] from internal canbus
+            // Do nothing. Keep MISRA checker happy
         }
-        #endif
-        }   
-        else if ((((page9.enable_secondarySerial == 1) || ((page9.enable_intcan == 1) && (page9.intcan_available == 1))) && (page9.caninput_sel[current.current_caninchannel]&12) == 8)
-                || (((page9.enable_secondarySerial == 0) && ( (page9.enable_intcan == 1) && (page9.intcan_available == 0) )) && (page9.caninput_sel[current.current_caninchannel]&3) == 2)  
-                || (((page9.enable_secondarySerial == 0) && (page9.enable_intcan == 0)) && ((page9.caninput_sel[current.current_caninchannel]&3) == 2)))  
-        { //if current input channel is enabled as analog local pin
-        //read analog channel specified
-        //current.canin[13] = (page9.Auxinpina[current.current_caninchannel]&63);  Dev test use only!127
-        current.canin[current.current_caninchannel] = fnReadAuxanalog(pinTranslateAnalog(page9.Auxinpina[current.current_caninchannel]&63));
-        }
-        else if ((((page9.enable_secondarySerial == 1) || ((page9.enable_intcan == 1) && (page9.intcan_available == 1))) && (page9.caninput_sel[current.current_caninchannel]&12) == 12)
-                || (((page9.enable_secondarySerial == 0) && ( (page9.enable_intcan == 1) && (page9.intcan_available == 0) )) && (page9.caninput_sel[current.current_caninchannel]&3) == 3)
-                || (((page9.enable_secondarySerial == 0) && (page9.enable_intcan == 0)) && ((page9.caninput_sel[current.current_caninchannel]&3) == 3)))
-        { //if current input channel is enabled as digital local pin
-        //read digital channel specified
-        //current.canin[14] = ((page9.Auxinpinb[current.current_caninchannel]&63)+1);  Dev test use only!127+1
-        current.canin[current.current_caninchannel] = fnReadAuxdigital((page9.Auxinpinb[current.current_caninchannel]&63)+1);
-        } //Channel type
-    } //For loop going through each channel
+    } 
 }
+
 
 // LCOV_EXCL_START
 void auxChannelControl(statuses &current, const config9 &page9)
 {
-    auxChannelControl(current, page9, sendCancommand, readAuxanalog, readAuxdigital);
+    if(_auxState.enabled
+    && BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_4HZ))
+    {
+        auxChannelControl(current, page9, sendCancommand, readAnalogSensor, digitalRead);
+    }
 }
 // LCOV_EXCL_STOP

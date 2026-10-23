@@ -4,7 +4,7 @@
 
 using fnSendCanCommand_t = void (*)(uint8_t cmdtype, uint16_t canaddress, uint8_t candata1, uint8_t candata2, uint16_t sourcecanAddress);
 using fnReadAuxanalog_t = uint16_t (*)(uint8_t analogPin);
-using fnReadAuxdigital_t = uint16_t (*)(uint8_t digitalPin);
+using fnReadAuxdigital_t = decltype(&digitalRead);
 
 extern void auxChannelControl(statuses &current, const config9 &page9, fnSendCanCommand_t fnSendCanCommand, fnReadAuxanalog_t fnReadAuxanalog, fnReadAuxdigital_t fnReadAuxdigital);
 
@@ -28,7 +28,7 @@ static uint16_t stubReadAuxanalog(uint8_t analogPin)
   return analogReadValue;
 }
 
-static uint16_t stubReadAuxdigital(uint8_t digitalPin)
+static int stubReadAuxdigital(uint8_t digitalPin)
 {
   ++digitalReadCount;
   lastDigitalPin = digitalPin;
@@ -83,7 +83,6 @@ static void test_auxChannelControl_can_input(void)
   TEST_ASSERT_EQUAL_UINT16(0x445U, lastCanSourceAddress);
   TEST_ASSERT_EQUAL_UINT8(0U, analogReadCount);
   TEST_ASSERT_EQUAL_UINT8(0U, digitalReadCount);
-  TEST_ASSERT_EQUAL_UINT8(15U, current.current_caninchannel);
 }
 
 static void test_auxChannelControl_can_input_secondary_serial_variants(void)
@@ -304,7 +303,6 @@ static void test_auxChannelControl_disabled_input(void)
   TEST_ASSERT_EQUAL_UINT8(0U, analogReadCount);
   TEST_ASSERT_EQUAL_UINT8(0U, digitalReadCount);
   TEST_ASSERT_EQUAL_UINT16(77U, current.canin[2]);
-  TEST_ASSERT_EQUAL_UINT8(15U, current.current_caninchannel);
 }
 
 void testAuxControl(void)
