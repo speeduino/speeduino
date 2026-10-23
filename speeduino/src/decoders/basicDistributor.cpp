@@ -65,10 +65,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
+    // LCOV_EXCL_START
+    // This is untestable ATM
     if ( page4.ignCranklock && (current.rotationStatus==EngineRotationStatus::Cranking) )
     {
       stopAllCoilsCharging();
     }
+    // LCOV_EXCL_STOP
 
     if(page2.perToothIgn == true)
     {
