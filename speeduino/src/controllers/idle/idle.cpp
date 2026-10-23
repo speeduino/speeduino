@@ -395,7 +395,7 @@ void idleControl(void)
       }
       else
       {
-        _idleState.idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
+        _idleState.idle_cl_target_rpm = RPM_MEDIUM.toUser(currentStatus.CLIdleTarget);
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
         
         PID_computed = _idleState.idlePID.compute(TIME_MILLIS.toRaw(_idleCurMicros()), currentStatus.RPM, &_idleState.idle_pid_target_value);
@@ -476,9 +476,9 @@ void idleControl(void)
         }
         
     
-        _idleState.idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10U; //Multiply the byte target value back out by 10
+        _idleState.idle_cl_target_rpm = RPM_MEDIUM.toUser(currentStatus.CLIdleTarget);
         if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_1HZ) ) { setIdlePidTunings(configPage6); } //Re-read the PID settings once per second
-        if((currentStatus.RPM - _idleState.idle_cl_target_rpm > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (coming back from high rpm with throttle closed)
+        if((currentStatus.RPM - _idleState.idle_cl_target_rpm > RPM_MEDIUM.toUser(configPage2.iacRPMlimitHysteresis)) || (currentStatus.TPS > configPage2.iacTPSlimit)){ //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Histeresis (coming back from high rpm with throttle closed)
           _idleState.idlePID.resetIntegeral();
         }
         
@@ -565,7 +565,7 @@ void idleControl(void)
         {
           if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) )
           {
-            _idleState.idle_cl_target_rpm = (uint16_t)currentStatus.CLIdleTarget * 10; //Multiply the byte target value back out by 10
+            _idleState.idle_cl_target_rpm = RPM_MEDIUM.toUser(currentStatus.CLIdleTarget);
             if( _idleState.idleTaper < configPage2.idleTaperTime )
             {
               uint16_t minValue = IAC_STEPS.toUser(table2D_getValue(&iacCrankStepsTable, temperatureAddOffset(currentStatus.coolant)));
@@ -583,7 +583,7 @@ void idleControl(void)
               //Standard running
               _idleState.FeedForwardTerm = pwmTicksToPidCount(IAC_STEPS.toUser(table2D_getValue(&iacStepTable, temperatureAddOffset(currentStatus.coolant))));
               //reset integral to zero when TPS is bigger than set value in TS (opening throttle so not idle anymore). OR when RPM higher than Idle Target + RPM Hysteresis (coming back from high rpm with throttle closed) 
-              if (((currentStatus.RPM - _idleState.idle_cl_target_rpm) > configPage2.iacRPMlimitHysteresis*10) || (currentStatus.TPS > configPage2.iacTPSlimit) || _idleState.lastDFCOValue )
+              if (((currentStatus.RPM - _idleState.idle_cl_target_rpm) > RPM_MEDIUM.toUser(configPage2.iacRPMlimitHysteresis)) || (currentStatus.TPS > configPage2.iacTPSlimit) || _idleState.lastDFCOValue )
               {
                 _idleState.idlePID.resetIntegeral();
               }
