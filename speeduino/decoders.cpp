@@ -463,70 +463,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
 * @{
 */
-static void triggerSec_4G63(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( (_decoderState.curGap2 >= _decoderState.triggerSecFilterTime) )//|| (currentStatus.startRevolutions == 0) )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    //addToothLogEntry(_decoderState.curGap, TOOTH_CAM_SECONDARY);
-
-    _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 1; //Basic 50% filter for the secondary reading
-    //More aggressive options:
-    //62.5%:
-    //_decoderState.triggerSecFilterTime = (_decoderState.curGap2 * 9) >> 5;
-    //75%:
-    //_decoderState.triggerSecFilterTime = (_decoderState.curGap2 * 6) >> 3;
-
-    if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) )
-    {
-
-      _decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
-      _decoderState.triggerSecFilterTime = _decoderState.triggerSecFilterTime >> 1; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
-      if(currentStatus.decoder.primary.isPinHigh())
-      {
-        if(configPage2.nCylinders == 4)
-        { 
-          if(_decoderState.toothCurrentCount == 8) { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Is 8 for sequential, was 4
-        }
-        else if(configPage2.nCylinders == 6) 
-        { 
-          if(_decoderState.toothCurrentCount == 7) { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
-        }
-
-      }
-      else
-      {
-        if(configPage2.nCylinders == 4)
-        { 
-          if(_decoderState.toothCurrentCount == 5) { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Is 5 for sequential, was 1
-        }
-        //Cannot gain sync for 6 cylinder here. 
-      }
-    }
-
-    if ( (currentStatus.RPM < currentStatus.crankRPM) || (configPage4.useResync == 1) )
-    {
-      if( (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) && (configPage2.nCylinders == 4) )
-      {
-        if(currentStatus.decoder.primary.isPinHigh())
-        {
-          //Whilst we're cranking and have sync, we need to watch for noise pulses.
-          if(_decoderState.toothCurrentCount != 8) 
-          { 
-            // This should never be true, except when there's noise
-            _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-            currentStatus.syncLossCounter++;
-          } 
-        }
-      } //Has sync and 4 cylinder 
-    } // Use resync or cranking
-  } //Trigger filter
-}
-
-
 static uint32_t getRevolutionTime_4G63(void)
 {
   tooth_speed_sample_t sample;
@@ -617,10 +553,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
   static const auto primaryTrigger = []() {
     decoders::fourg63::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::fourg63::triggerSecondary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
-                  .setSecondaryTrigger(triggerSec_4G63, FALLING)
+                  .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime_4G63)
                   .setGetCrankAngle(getCrankAngle_4G63)
                   .setSetEndTeeth(triggerSetEndTeeth_4G63)
