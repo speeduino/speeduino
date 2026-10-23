@@ -157,6 +157,7 @@ static void test_primary_uses_early_tooth_per_tooth_angle(void)
     decoderState.toothLastToothTime = 1000;
     decoderState.toothCurrentCount = 1;
     decoderState.ignitionEndTeeth[0] = 2;
+    stopIgnitionSchedulers();
     ignitionSchedule1._status = PENDING;
     ignitionSchedule1._counter = 100;
     ignitionSchedule1._compare = 100;
@@ -165,7 +166,7 @@ static void test_primary_uses_early_tooth_per_tooth_angle(void)
     decoders::gm7x::triggerPrimary(1300, current, decoderState, page2, page4);
 
     TEST_ASSERT_EQUAL_UINT16(2, decoderState.toothCurrentCount);
-    TEST_ASSERT_EQUAL(100 + angleToTimerTicks(200 - (60 + 42 + 10)), ignitionSchedule1._compare);
+    TEST_ASSERT_EQUAL(ignitionSchedule1._counter + angleToTimerTicks(200 - (60 + 42 + 10)), ignitionSchedule1._compare);
 }
 
 void testGM7XTriggers(void)
