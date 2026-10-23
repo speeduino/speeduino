@@ -160,7 +160,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
    }
 }
 
-void triggerRecordVVT1Angle (statuses &current, const shared::state_t &decoderState, const config4 &page4, const config6 &page6, const config10 &page10)
+static void triggerRecordVVT1Angle (statuses &current, const shared::state_t &decoderState, const config4 &page4, const config6 &page6, const config10 &page10)
 {
   //Record the VVT Angle
   if( (page6.vvtEnabled > 0) && (decoderState.revolutionOne == 1) )

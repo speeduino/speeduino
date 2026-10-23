@@ -51,6 +51,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/shared/perToothIgnition.h"
 #include "src/decoders/shared/rev_time_calcs.h"
 #include "src/decoders/missingTooth.h"
+#include "src/decoders/dualWheel.h"
 
 using namespace decoders::shared;
 
@@ -280,13 +281,6 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
 
 /** @} */
   
-/** A (single) multi-tooth wheel with one of more 'missing' teeth.
-* The first tooth after the missing one is considered number 1 and is the basis for the trigger angle.
-* Optionally a cam signal can be added to provide a sequential reference. 
-* @defgroup dec_miss Missing tooth wheel
-* @{
-*/
-
 // LCOV_EXCL_START
 // Exclude one line wrappers from coverage
 static void triggerPri_missingTooth(void)
@@ -343,175 +337,37 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .build();
 }
 
-/** @} */
-
-/** Dual wheels - 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
-Note: There can be no missing teeth on the primary wheel.
-* @defgroup dec_dual Dual wheels
-* @{
-*/
-/** Dual Wheel Primary.
- * 
- * */
+// LCOV_EXCL_START
+// Exclude one line wrappers from coverage
 static void triggerPri_DualWheel(void)
 {
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-    {
-      _decoderState.toothCurrentCount++; //Increment the tooth counter
-      _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime;
-
-      if ( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-      {
-        if ( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount > configPage4.triggerTeeth) )
-        {
-          _decoderState.toothCurrentCount = 1;
-          _decoderState.revolutionOne = !_decoderState.revolutionOne; //Flip sequential revolution tracker
-          _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-          _decoderState.toothOneTime = curTime;
-          currentStatus.startRevolutions++; //Counter
-          if ( configPage4.TrigSpeed == CAM_SPEED ) { currentStatus.startRevolutions++; } //Add an extra revolution count if we're running at cam speed
-        }
-
-        _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-      }
-
-      //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-      {
-        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-        uint16_t currentTooth;
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
-        {
-          crankAngle += 360;
-          currentTooth = (configPage4.triggerTeeth + _decoderState.toothCurrentCount); 
-        }
-        else{ currentTooth = _decoderState.toothCurrentCount; }
-        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
-      }
-   } //Trigger filter
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
 }
-/** Dual Wheel Secondary.
- * 
- * */
+
 static void triggerSec_DualWheel(void)
 {
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-    _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed
-
-    if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (currentStatus.startRevolutions <= configPage4.StgCycles) )
-    {
-      _decoderState.toothLastToothTime = micros();
-      _decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
-      _decoderState.toothCurrentCount = configPage4.triggerTeeth;
-      _decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
-
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else 
-    {
-      if ( (_decoderState.toothCurrentCount != configPage4.triggerTeeth) && (currentStatus.startRevolutions > 2)) { currentStatus.syncLossCounter++; } //Indicates likely sync loss.
-      if (configPage4.useResync == 1) { _decoderState.toothCurrentCount = configPage4.triggerTeeth; }
-    }
-
-    _decoderState.revolutionOne = 1; //Sequential revolution reset
-  }
-  else 
-  {
-    _decoderState.triggerSecFilterTime = currentStatus.revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and _decoderState.triggerSecFilterTime get out of alignment and _decoderState.curGap2 never exceeds the filter value
-  } //Trigger filter
+    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
 }
-/** Dual Wheel - Get revolution time.
- * 
- * */
+
 static uint32_t getRevolutionTime_DualWheel(void)
 {
-  if( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-  {
-    //Account for cam speed
-    if( currentStatus.RPM < currentStatus.crankRPM )
-    {
-      return crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, configPage4.TrigSpeed==CAM_SPEED);
-    }
-    else
-    {
-      return stdGetRevolutionTime(currentStatus, _decoderState, configPage4.TrigSpeed==CAM_SPEED);
-    }
-  }
-  return 0U; //Speed is unknown without sync
+    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
 }
 
-/** Dual Wheel - Get Crank angle.
- * 
- * */
 static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
 {
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  //Handle case where the secondary tooth was the last one seen
-  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = configPage4.triggerTeeth; }
-
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
+    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
 }
 
-static uint16_t __attribute__((noinline)) calcEndTeeth_DualWheel(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  return decoders::shared::clampToToothCount(configPage4, _decoderState.toothNumFromScheduleAngles(configPage4, schedule), toothAdder);
-}
-
-/** Dual Wheel - Set End Teeth.
- * 
- * */
 static void triggerSetEndTeeth_DualWheel(void)
 {
-  //The toothAdder variable is used for when a setup is running sequentially, but the primary wheel is running at crank speed. This way the count of teeth will go up to 2* the number of primary teeth to allow for a sequential count. 
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_DualWheel(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_DualWheel(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_DualWheel(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcEndTeeth_DualWheel(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  _decoderState.ignitionEndTeeth[4] = calcEndTeeth_DualWheel(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  _decoderState.ignitionEndTeeth[5] = calcEndTeeth_DualWheel(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  _decoderState.ignitionEndTeeth[6] = calcEndTeeth_DualWheel(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  _decoderState.ignitionEndTeeth[7] = calcEndTeeth_DualWheel(ignitionSchedule8, toothAdder);
-#endif
+    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
 }
+// LCOV_EXCL_STOP
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  uint16_t degreeTracking = (configPage4.TrigSpeed == CAM_SPEED) ? 720 : 360;
-  _decoderState.setTriggerToothAngle(degreeTracking / configPage4.triggerTeeth);
-  _decoderState.toothCurrentCount = UINT8_MAX; //Default value
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::dual_wheel::initialise(configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
