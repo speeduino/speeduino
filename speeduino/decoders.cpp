@@ -383,8 +383,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
                   .build();
 }
 
-/** @} */
-
 /** Basic Distributor where tooth count is equal to the number of cylinders and teeth are evenly spaced on the cam.
 * No position sensing (Distributor is retained) so crank angle is
 * a made up figure based purely on the first teeth to be seen.
@@ -396,16 +394,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
   _decoderState = decoders::basic_distributor::initialise(configPage2);
 
-  static auto primaryTrigger = []() {
+  static const auto primaryTrigger = []() {
     decoders::basic_distributor::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
-  static auto getRevolutionTime = []() {
+  static const auto getRevolutionTime = []() {
     return decoders::basic_distributor::getRevolutionTime(currentStatus, _decoderState, configPage2, configPage4);
   };
-  static auto getCrankAngle = [](uint32_t currMicros) {
+  static const auto getCrankAngle = [](uint32_t currMicros) {
     return decoders::basic_distributor::getCrankAngle(currMicros, _decoderState, configPage4);
   };
-  static auto setEndTeeth = []() {
+  static const auto setEndTeeth = []() {
     decoders::basic_distributor::setEndTeeth(_decoderState, configPage2, configPage4);
   };
   

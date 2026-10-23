@@ -35,7 +35,7 @@ shared::state_t __attribute__((optimize("Os"))) initialise(const config2 &page2)
 void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
   decoderState.curGap = curTime - decoderState.toothLastToothTime;
-  if ( (decoderState.curGap >= decoderState.triggerFilterTime) )
+  if (decoderState.curGap >= decoderState.triggerFilterTime)
   {
     if(decoderState.decoderStatus.syncStatus==SyncStatus::Full) { decoderState.setFilter(decoderState.curGap, page4); } //Recalc the new filter value
     else { decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored. 
@@ -50,7 +50,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     }
     else
     {
-      if( (decoderState.toothCurrentCount < decoderState.triggerActualTeeth) ) { decoderState.toothCurrentCount++; } //Increment the tooth counter
+      if (decoderState.toothCurrentCount < decoderState.triggerActualTeeth) { decoderState.toothCurrentCount++; } //Increment the tooth counter
       else
       {
         //This means decoderState.toothCurrentCount is greater than decoderState.triggerActualTeeth, which is bad.
@@ -110,11 +110,12 @@ int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, 
 
 void setEndTeeth(shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - page4.triggerAngle);
-  tempEndAngle = ignitionLimits((tempEndAngle));
+  int16_t tempEndAngle = (ignitionSchedule1.dischargeAngle - page4.triggerAngle);
+  tempEndAngle = ignitionLimits(tempEndAngle);
 
   switch(page2.nCylinders)
   {
+    default:
     case 4:
       if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
       {
