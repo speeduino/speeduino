@@ -54,6 +54,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/dualWheel.h"
 #include "src/decoders/basicDistributor.h"
 #include "src/decoders/gm7x.h"
+#include "src/decoders/4g63.h"
 
 using namespace decoders::shared;
 
@@ -800,55 +801,7 @@ static void triggerSetEndTeeth_4G63(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-
-  //Note that these angles are for every rising and falling edge
-  if(configPage2.nCylinders == 6)
-  {
-    //New values below
-    _decoderState.toothAngles[0] = 715; //Rising edge of tooth #1
-    _decoderState.toothAngles[1] = 45;  //Falling edge of tooth #1
-    _decoderState.toothAngles[2] = 115; //Rising edge of tooth #2
-    _decoderState.toothAngles[3] = 165; //Falling edge of tooth #2
-    _decoderState.toothAngles[4] = 235; //Rising edge of tooth #3
-    _decoderState.toothAngles[5] = 285; //Falling edge of tooth #3
-
-    _decoderState.toothAngles[6] = 355; //Rising edge of tooth #4
-    _decoderState.toothAngles[7] = 405; //Falling edge of tooth #4
-    _decoderState.toothAngles[8] = 475; //Rising edge of tooth #5
-    _decoderState.toothAngles[9] = 525; //Falling edge of tooth $5
-    _decoderState.toothAngles[10] = 595; //Rising edge of tooth #6
-    _decoderState.toothAngles[11] = 645; //Falling edge of tooth #6
-
-    _decoderState.triggerActualTeeth = 12; //Both sides of all teeth over 720 degrees
-  }
-  else
-  {
-    // 70 / 110 for 4 cylinder
-    _decoderState.toothAngles[0] = 715; //Falling edge of tooth #1
-    _decoderState.toothAngles[1] = 105; //Rising edge of tooth #2
-    _decoderState.toothAngles[2] = 175; //Falling edge of tooth #2
-    _decoderState.toothAngles[3] = 285; //Rising edge of tooth #1
-
-    _decoderState.toothAngles[4] = 355; //Falling edge of tooth #1
-    _decoderState.toothAngles[5] = 465; //Rising edge of tooth #2
-    _decoderState.toothAngles[6] = 535; //Falling edge of tooth #2
-    _decoderState.toothAngles[7] = 645; //Rising edge of tooth #1
-
-    _decoderState.triggerActualTeeth = 8;
-  }
-
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  _decoderState = decoders::fourg63::initialise(micros(), currentStatus, configPage2);
   
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_4G63, CHANGE)
