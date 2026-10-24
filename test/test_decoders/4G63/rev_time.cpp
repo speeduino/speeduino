@@ -39,9 +39,28 @@ static void test_getRevolutionTime(void)
   TEST_ASSERT_EQUAL_UINT32(0UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4));
 }
 
+  static void test_getRevolutionTime_uses_published_period_without_tooth_interval(void)
+  {
+    config4 page4{};
+    config2 page2{};
+    statuses current{};
+    auto decoderState = decoders::fourg63::initialise(1000, current, page2);
+
+    current.setRpm(0);
+    current.crankRPM = 400;
+    current.revolutionTime = 123456UL;
+    decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    decoderState.triggerToothAngle = 70;
+    decoderState.toothLastToothTime = 0;
+    decoderState.toothLastMinusOneToothTime = 0;
+
+    TEST_ASSERT_EQUAL_UINT32(123456UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4));
+  }
+
 void test4G63RevTime(void)
 {
     unity_filename_guard_t guard(__FILE__);
 
     RUN_TEST_P(test_getRevolutionTime);
+    RUN_TEST_P(test_getRevolutionTime_uses_published_period_without_tooth_interval);
 }
