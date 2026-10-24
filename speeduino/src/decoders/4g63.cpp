@@ -66,6 +66,16 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   return state;
 }
 
+TESTABLE_INLINE_STATIC bool is70DegTooth(uint16_t toothNum)
+{
+    return (toothNum == 1) 
+        || (toothNum == 3)
+        || (toothNum == 5)
+        || (toothNum == 7)
+        || (toothNum == 9)
+        || (toothNum == 11);
+}
+
 void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
   decoderState.curGap = curTime - decoderState.toothLastToothTime;
@@ -112,16 +122,15 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       if( (page4.triggerFilter == TRIGGER_FILTER_LITE) || (current.RPM < 1400) )
       {
         //Lite filter
-        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
+        if( is70DegTooth(decoderState.toothCurrentCount) )
         {
+          decoderState.triggerToothAngle = 70;
           if(page2.nCylinders == 4)
           {
-            decoderState.triggerToothAngle = 70;
             decoderState.triggerFilterTime = decoderState.curGap; //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
           }
           else if(page2.nCylinders == 6)
           {
-            decoderState.triggerToothAngle = 70;
             decoderState.triggerFilterTime = (decoderState.curGap >> 2); //Trigger filter is set to (70/4)=17.5=17 degrees (Next trigger is 50 degrees away).
           }
         }
@@ -142,7 +151,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       else if(page4.triggerFilter == TRIGGER_FILTER_MEDIUM)
       {
         //Medium filter level
-        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
+        if( is70DegTooth(decoderState.toothCurrentCount) )
         { 
           decoderState.triggerToothAngle = 70; 
           if(page2.nCylinders == 4)
@@ -171,7 +180,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       else if (page4.triggerFilter == TRIGGER_FILTER_AGGRESSIVE)
       {
         //Aggressive filter level
-        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
+        if( is70DegTooth(decoderState.toothCurrentCount) )
         { 
           decoderState.triggerToothAngle = 70; 
           if(page2.nCylinders == 4)
@@ -201,7 +210,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       {
         //trigger filter is turned off.
         decoderState.triggerFilterTime = 0;
-        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
+        if( is70DegTooth(decoderState.toothCurrentCount) )
         { 
           decoderState.triggerToothAngle = 70;
         } 
