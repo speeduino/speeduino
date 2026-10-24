@@ -47,6 +47,40 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   return state;
 
 }
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState)
+{
+  if(decoderState.toothCurrentCount == 25) { decoderState.decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
+  else
+  {
+    decoderState.curGap = curTime - decoderState.toothLastToothTime;
+
+    if(decoderState.toothCurrentCount == 0)
+    {
+       decoderState.toothCurrentCount = 1; //Reset the counter
+       decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+       decoderState.toothOneTime = curTime;
+       decoderState.revolutionOne = !decoderState.revolutionOne; //Sequential revolution flip
+       decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+       current.startRevolutions++; //Counter
+       decoderState.triggerToothAngle = 15; //Always 15 degrees for tooth #15
+    }
+    else
+    {
+      decoderState.toothCurrentCount++; //Increment the tooth counter
+      decoderState.triggerToothAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)] - decoderState.toothAngles[(decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
+    }
+
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    decoderState.toothLastToothTime = curTime;
+  }
+}
+
+void triggerSecondary(shared::state_t &decoderState)
+{
+  decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+  decoderState.revolutionOne = 1; //Sequential revolution reset
+}
 
 }
 }

@@ -501,72 +501,35 @@ Note: Useful references:
 - www.vems.hu/wiki/index.php?page=MembersPage%2FJorgenKarlsson%2FTwentyFourX
 
 Provided that the cam signal is used, this decoder simply counts the teeth and then looks their angles up against a lookup table. The cam signal is used to determine tooth #1
-* @defgroup dec_gm GM 24X
-* @{
 */
-static void triggerPri_24X(void)
-{
-  if(_decoderState.toothCurrentCount == 25) { _decoderState.decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
-  else
-  {
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-
-    if(_decoderState.toothCurrentCount == 0)
-    {
-       _decoderState.toothCurrentCount = 1; //Reset the counter
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       _decoderState.revolutionOne = !_decoderState.revolutionOne; //Sequential revolution flip
-       _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-       currentStatus.startRevolutions++; //Counter
-       _decoderState.triggerToothAngle = 15; //Always 15 degrees for tooth #15
-    }
-    else
-    {
-      _decoderState.toothCurrentCount++; //Increment the tooth counter
-      _decoderState.triggerToothAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] - _decoderState.toothAngles[(_decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
-    }
-
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    _decoderState.toothLastToothTime = curTime;
-  }
-}
-
-static void triggerSec_24X(void)
-{
-  _decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
-  _decoderState.revolutionOne = 1; //Sequential revolution reset
-}
-
-static uint32_t getRevolutionTime_24X(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_24X(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 decoder_t __attribute__((optimize("Os"))) triggerSetup_24X(void)
 {
   _decoderState = decoders::gm24x::initialise(micros(), currentStatus);
  
+  static const auto primaryTrigger = []() {
+    decoders::gm24x::triggerPrimary(micros(), currentStatus, _decoderState);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::gm24x::triggerSecondary(_decoderState);
+  };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(curMicros, _decoderState.toothAngles, configPage4));
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_24X, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_24X, CHANGE)
-                  .setGetRevolutionTime(getRevolutionTime_24X)
-                  .setGetCrankAngle(getCrankAngle_24X)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, CHANGE)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Jeep 2000 - 24 crank teeth over 720 degrees, in groups of 4 ('91 to 2000 6 cylinder Jeep engines).
 * Crank wheel is high for 360 crank degrees. Quite similar to the 24X setup.
