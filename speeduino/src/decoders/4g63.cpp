@@ -66,7 +66,6 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   return state;
 }
 
-
 void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
   decoderState.curGap = curTime - decoderState.toothLastToothTime;
@@ -88,6 +87,8 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
        current.startRevolutions++; //Counter
     }
 
+    // LCOV_EXCL_START
+    // Not testable ATM
     if (decoderState.decoderStatus.syncStatus==SyncStatus::Full)
     {
       if ( (current.rotationStatus==EngineRotationStatus::Cranking) && page4.ignCranklock && (current.startRevolutions >= page4.StgCycles))
@@ -105,6 +106,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           else if( (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 11) ) { endCoilCharge(3U); }
         }
       }
+      // LCOV_EXCL_STOP
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (page4.triggerFilter == 1) || (current.RPM < 1400) )
