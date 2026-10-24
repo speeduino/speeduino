@@ -109,7 +109,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
           else if( (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
         }
-        else if(page2.nCylinders == 6)
+        else
         {
           if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(1U); }
           else if( (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 9) ) { endCoilCharge(2U); }
@@ -129,7 +129,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           {
             decoderState.triggerFilterTime = decoderState.curGap; //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
           }
-          else if(page2.nCylinders == 6)
+          else
           {
             decoderState.triggerFilterTime = (decoderState.curGap >> 2); //Trigger filter is set to (70/4)=17.5=17 degrees (Next trigger is 50 degrees away).
           }
@@ -141,7 +141,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
             decoderState.triggerToothAngle = 110;
             decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 3UL)); //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
           }
-          else if(page2.nCylinders == 6)
+          else
           {
             decoderState.triggerToothAngle = 50;
             decoderState.triggerFilterTime = decoderState.curGap >> 1; //Trigger filter is set to 25 degrees (Next trigger is 70 degrees away).
@@ -257,7 +257,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
         { 
           //Crank is low, cam is high and the crank pulse STARTED when the cam was high. 
           if(page2.nCylinders == 4) { decoderState.toothCurrentCount = 5; } //Means we're at 5* BTDC on a 4G63 4 cylinder
-          else if(page2.nCylinders == 6) { decoderState.toothCurrentCount = 2; decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Means we're at 45* ATDC on 6G72 6 cylinder
+          else { decoderState.toothCurrentCount = 2; decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Means we're at 45* ATDC on 6G72 6 cylinder
         } 
       }
     }
@@ -291,7 +291,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
         { 
           if(decoderState.toothCurrentCount == 8) { decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Is 8 for sequential, was 4
         }
-        else if(page2.nCylinders == 6) 
+        else 
         { 
           if(decoderState.toothCurrentCount == 7) { decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
         }
@@ -387,7 +387,7 @@ void setEndTeeth(shared::state_t &decoderState, const config2 &page2, const conf
       decoderState.ignitionEndTeeth[3] = 2;
     }
   }
-  if(page2.nCylinders == 6)
+  else
   {
     if(page4.sparkMode == IGN_MODE_SEQUENTIAL) 
     { 
