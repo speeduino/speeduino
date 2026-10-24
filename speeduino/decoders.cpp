@@ -56,6 +56,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/gm7x.h"
 #include "src/decoders/4g63.h"
 #include "src/decoders/gm24x.h"
+#include "src/decoders/jeep2000.h"
 
 using namespace decoders::shared;
 
@@ -607,25 +608,7 @@ static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothAngles[0] = 174;
-  _decoderState.toothAngles[1] = 194;
-  _decoderState.toothAngles[2] = 214;
-  _decoderState.toothAngles[3] = 234;
-  _decoderState.toothAngles[4] = 294;
-  _decoderState.toothAngles[5] = 314;
-  _decoderState.toothAngles[6] = 334;
-  _decoderState.toothAngles[7] = 354;
-  _decoderState.toothAngles[8] = 414;
-  _decoderState.toothAngles[9] = 434;
-  _decoderState.toothAngles[10] = 454;
-  _decoderState.toothAngles[11] = 474;
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothCurrentCount = 13; _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
+  _decoderState = decoders::jeep2000::initialise(micros(), currentStatus);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Jeep2000, getConfigPriTriggerEdge(configPage4))
