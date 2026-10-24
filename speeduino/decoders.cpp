@@ -472,7 +472,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
     decoders::fourg63::triggerSecondary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
   static const auto getRevolutionTime = []() {
-    return decoders::fourg63::getRevolutionTime(currentStatus, _decoderState, configPage4);
+    return decoders::fourg63::getRevolutionTime(currentStatus, _decoderState);
   };
   static const auto getCrankAngle = [](uint32_t curMicros) {
     return decoders::fourg63::getCrankAngle(curMicros, _decoderState, configPage4);

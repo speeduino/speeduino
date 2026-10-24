@@ -326,7 +326,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   } //Trigger filter
 }
 
-uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config4 &page4)
+uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState)
 {
   shared::tooth_speed_sample_t sample;
   uint32_t revolutionTime = 0U;

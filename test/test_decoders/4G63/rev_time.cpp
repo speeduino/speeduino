@@ -4,7 +4,6 @@
 static void test_getRevolutionTime(void)
 {
     config2 page2={};
-    config4 page4={};
     statuses current={};
   auto decoderState = decoders::fourg63::initialise(1000, current, page2);
 
@@ -19,11 +18,11 @@ static void test_getRevolutionTime(void)
 
   // For a 70 degree tooth gap (one of the 4G63 cranking gaps)
   decoderState.triggerToothAngle = 70;
-  TEST_ASSERT_EQUAL_UINT32(2571UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4)); // 500 * 360 / 70 = 2571
+  TEST_ASSERT_EQUAL_UINT32(2571UL, decoders::fourg63::getRevolutionTime(current, decoderState)); // 500 * 360 / 70 = 2571
 
   // For a 110 degree tooth gap
   decoderState.triggerToothAngle = 110;
-  TEST_ASSERT_EQUAL_UINT32(1636UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4)); // 500 * 360 / 110 = 1636
+  TEST_ASSERT_EQUAL_UINT32(1636UL, decoders::fourg63::getRevolutionTime(current, decoderState)); // 500 * 360 / 110 = 1636
 
   // Running path: should return stdGetRevolutionTime(CAM_SPEED) -> defaults to current.revolutionTime when no revolution update
   current.setRpm(1000);
@@ -32,11 +31,11 @@ static void test_getRevolutionTime(void)
   decoderState.toothOneTime = 0;
   decoderState.toothOneMinusOneTime = 0;
   decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  TEST_ASSERT_EQUAL_UINT32(60000UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4));
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoders::fourg63::getRevolutionTime(current, decoderState));
 
   // No sync: the speed is unknown
   decoderState.decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL_UINT32(0UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4));
+  TEST_ASSERT_EQUAL_UINT32(0UL, decoders::fourg63::getRevolutionTime(current, decoderState));
 }
 
   static void test_getRevolutionTime_uses_published_period_without_tooth_interval(void)
@@ -54,7 +53,7 @@ static void test_getRevolutionTime(void)
     decoderState.toothLastToothTime = 0;
     decoderState.toothLastMinusOneToothTime = 0;
 
-    TEST_ASSERT_EQUAL_UINT32(123456UL, decoders::fourg63::getRevolutionTime(current, decoderState, page4));
+    TEST_ASSERT_EQUAL_UINT32(123456UL, decoders::fourg63::getRevolutionTime(current, decoderState));
   }
 
 void test4G63RevTime(void)
