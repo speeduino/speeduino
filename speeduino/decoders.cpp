@@ -55,6 +55,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/basicDistributor.h"
 #include "src/decoders/gm7x.h"
 #include "src/decoders/4g63.h"
+#include "src/decoders/gm24x.h"
 
 using namespace decoders::shared;
 
@@ -549,41 +550,10 @@ static int16_t getCrankAngle_24X(uint32_t currMicros)
   return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
 }
 
-decoder_t  __attribute__((optimize("Os"))) triggerSetup_24X(void)
+decoder_t __attribute__((optimize("Os"))) triggerSetup_24X(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 15; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothAngles[0] = 12;
-  _decoderState.toothAngles[1] = 18;
-  _decoderState.toothAngles[2] = 33;
-  _decoderState.toothAngles[3] = 48;
-  _decoderState.toothAngles[4] = 63;
-  _decoderState.toothAngles[5] = 78;
-  _decoderState.toothAngles[6] = 102;
-  _decoderState.toothAngles[7] = 108;
-  _decoderState.toothAngles[8] = 123;
-  _decoderState.toothAngles[9] = 138;
-  _decoderState.toothAngles[10] = 162;
-  _decoderState.toothAngles[11] = 177;
-  _decoderState.toothAngles[12] = 183;
-  _decoderState.toothAngles[13] = 198;
-  _decoderState.toothAngles[14] = 222;
-  _decoderState.toothAngles[15] = 237;
-  _decoderState.toothAngles[16] = 252;
-  _decoderState.toothAngles[17] = 258;
-  _decoderState.toothAngles[18] = 282;
-  _decoderState.toothAngles[19] = 288;
-  _decoderState.toothAngles[20] = 312;
-  _decoderState.toothAngles[21] = 327;
-  _decoderState.toothAngles[22] = 342;
-  _decoderState.toothAngles[23] = 357;
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothCurrentCount = 25; _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the init check to prevent the fuel pump just staying on all the time
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
-
+  _decoderState = decoders::gm24x::initialise(micros(), currentStatus);
+ 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_24X, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_24X, CHANGE)
