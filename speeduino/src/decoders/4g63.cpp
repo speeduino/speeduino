@@ -109,7 +109,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       // LCOV_EXCL_STOP
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (page4.triggerFilter == 1) || (current.RPM < 1400) )
+      if( (page4.triggerFilter == TRIGGER_FILTER_LITE) || (current.RPM < 1400) )
       {
         //Lite filter
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
@@ -139,7 +139,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }
         }
       }
-      else if(page4.triggerFilter == 2)
+      else if(page4.triggerFilter == TRIGGER_FILTER_MEDIUM)
       {
         //Medium filter level
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
@@ -168,7 +168,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }
         } 
       }
-      else if (page4.triggerFilter == 3)
+      else if (page4.triggerFilter == TRIGGER_FILTER_AGGRESSIVE)
       {
         //Aggressive filter level
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
