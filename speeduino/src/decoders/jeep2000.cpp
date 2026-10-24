@@ -73,5 +73,27 @@ void triggerSecondary(shared::state_t &decoderState)
   decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
 }
 
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto data = atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount);
+
+  int16_t crankAngle = 0;
+  // This is the special case to handle when the 'last tooth' seen was the cam tooth. Since
+  // the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
+  if (std::get<2>(data) == 0)
+  {
+    decoders::shared::simple_crank_angle_calculator_t calculator;
+    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
+    crankAngle = calculator.calculateCrankAngle(114, currMicros, page4);
+  } 
+  else
+  { 
+    crankAngle = decoders::shared::lookup_crank_angle_calculator_t(data).calculateCrankAngle(currMicros, decoderState.toothAngles, page4);
+  }
+
+  //Estimate the number of degrees travelled since the last tooth}
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
+
 }
 }
