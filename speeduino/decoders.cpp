@@ -540,45 +540,6 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_24X(void)
 * @defgroup dec_jeep Jeep 2000 (6 cyl)
 * @{
 */
-static void triggerPri_Jeep2000(void)
-{
-  if(_decoderState.toothCurrentCount == 13) { _decoderState.decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
-  else
-  {
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-    {
-      if(_decoderState.toothCurrentCount == 0)
-      {
-         _decoderState.toothCurrentCount = 1; //Reset the counter
-         _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-         _decoderState.toothOneTime = curTime;
-         _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-         currentStatus.startRevolutions++; //Counter
-         _decoderState.triggerToothAngle = 60; //There are groups of 4 pulses (Each 20 degrees apart), with each group being 60 degrees apart. Hence #1 is always 60
-      }
-      else
-      {
-        _decoderState.toothCurrentCount++; //Increment the tooth counter
-        _decoderState.triggerToothAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] - _decoderState.toothAngles[(_decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
-      }
-
-      _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-
-      _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime;
-    } //Trigger filter
-  } //Sync check
-}
-static void triggerSec_Jeep2000(void)
-{
-  _decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
-  return;
-}
-
 static uint32_t getRevolutionTime_Jeep2000(void)
 {
    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
@@ -610,9 +571,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 {
   _decoderState = decoders::jeep2000::initialise(micros(), currentStatus);
 
+  static const auto primaryTrigger = []() {
+    decoders::jeep2000::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::jeep2000::triggerSecondary(_decoderState);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Jeep2000, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Jeep2000, CHANGE)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime_Jeep2000)
                   .setGetCrankAngle(getCrankAngle_Jeep2000)
                   .setReset(sharedDecoderReset)

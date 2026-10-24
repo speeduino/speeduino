@@ -34,5 +34,44 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
     return state;
 }
 
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  if(decoderState.toothCurrentCount == 13) { decoderState.decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
+  else
+  {
+    decoderState.curGap = curTime - decoderState.toothLastToothTime;
+    if ( decoderState.curGap >= decoderState.triggerFilterTime )
+    {
+      if(decoderState.toothCurrentCount == 0)
+      {
+         decoderState.toothCurrentCount = 1; //Reset the counter
+         decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+         decoderState.toothOneTime = curTime;
+         decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+         current.startRevolutions++; //Counter
+         decoderState.triggerToothAngle = 60; //There are groups of 4 pulses (Each 20 degrees apart), with each group being 60 degrees apart. Hence #1 is always 60
+      }
+      else
+      {
+        decoderState.toothCurrentCount++; //Increment the tooth counter
+        decoderState.triggerToothAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)] - decoderState.toothAngles[(decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
+      }
+
+      decoderState.setFilter(decoderState.curGap, page4); //Recalc the new filter value
+
+      decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+      decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+      decoderState.toothLastToothTime = curTime;
+    } //Trigger filter
+  } //Sync check
+}
+
+void triggerSecondary(shared::state_t &decoderState)
+{
+  decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
+}
+
 }
 }
