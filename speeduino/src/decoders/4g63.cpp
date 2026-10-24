@@ -203,8 +203,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
         decoderState.triggerFilterTime = 0;
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) || (decoderState.toothCurrentCount == 9) || (decoderState.toothCurrentCount == 11) )
         { 
-          if(page2.nCylinders == 4) { decoderState.triggerToothAngle = 70; }
-          else  { decoderState.triggerToothAngle = 70; }
+          decoderState.triggerToothAngle = 70;
         } 
         else 
         { 
