@@ -644,66 +644,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 *  The second tooth in the string of 15 teeth is designated as tooth 1 in this code. This means that
 *  when the interrupt for tooth 1 fires (as we just pass tooth 1), crank angle = 360/24 = 15 degrees.
 *  It follows that the first tooth in the string of 7 teeth is tooth 16. 
-* @defgroup dec_honda_j_32 Honda J 32
-* @{
 */ 
-static void triggerPri_HondaJ32(void)
-{
-  // This function is called only on rising edges, which occur as we lose sight of a tooth.
-  // This function sets the following state variables for use in other functions:
-  // _decoderState.toothLastToothTime, _decoderState.toothOneTime, _decoderState.revolutionOne (just toggles - not correct)
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  _decoderState.toothLastToothTime = curTime;
-
-  _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-  
-  if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) // We have sync
-  {
-    _decoderState.toothCurrentCount++;
-
-    if (_decoderState.toothCurrentCount == 25) { // handle rollover.  Normal sized tooth here
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++;
-    }
-    else if (_decoderState.toothCurrentCount == 23 || _decoderState.toothCurrentCount == 15) // This is the first tooth after a missing tooth
-    {
-      _decoderState.toothCurrentCount++; // account for missing tooth
-      if (_decoderState.curGap < (_decoderState.lastGap >> 1) * 3) // This should be a big gap, if we find it's not actually big, we lost sync
-      {
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        _decoderState.toothCurrentCount=1;
-      }
-    }
-    else if (_decoderState.toothCurrentCount != 14 && _decoderState.toothCurrentCount != 22)
-    {
-      // Teeth 14 and 22 are about 18 rather than 15 degrees so don't update last_gap with this unusual spacing
-      _decoderState.lastGap = _decoderState.curGap;
-    }
-    // else _decoderState.toothCurrentCount == 14 or 22.  Take no further action. 
-  }
-  else // we do not have sync yet. While syncing, treat tooth 14 and 22 as normal teeth
-  {
-    if (_decoderState.curGap < (_decoderState.lastGap >> 1) * 3 || _decoderState.lastGap == 0){ // Regular tooth, _decoderState.lastGap == 0 at startup
-      _decoderState.toothCurrentCount++;  // Increment teeth between gaps
-      _decoderState.lastGap = _decoderState.curGap;
-    }
-    else { // First tooth after the missing tooth
-      if (_decoderState.toothCurrentCount == 15) {  // 15 teeth since the gap before this, meaning we just passed the second gap and are synced
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        _decoderState.toothCurrentCount = 16;  // This so happens to be the tooth number of the first tooth in the string of 7 (where we are now)
-        _decoderState.toothOneTime = curTime - (15 * _decoderState.lastGap); // Initialize tooth 1 times based on last gap width.
-        _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime - (24 * _decoderState.lastGap);
-      }
-      else{ // Unclear which gap we just passed. reset counter
-        _decoderState.toothCurrentCount = 1;
-      }
-    }
-  }
-}
-
 static uint32_t getRevolutionTime_HondaJ32(void)
 {
   // The tooth #1 times are only updated while we have sync. They are estimated from the tooth gap when sync is first gained,
@@ -736,8 +677,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
 {
   _decoderState = decoders::hondaj32::initialise();
 
+  static const auto triggerPrimary = []() {
+    decoders::hondaj32::triggerPrimary(micros(), currentStatus, _decoderState);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_HondaJ32, RISING) // Don't honor the config, always use rising edge
+                  .setPrimaryTrigger(triggerPrimary, RISING) // Don't honor the config, always use rising edge
                   .setGetRevolutionTime(getRevolutionTime_HondaJ32)
                   .setGetCrankAngle(getCrankAngle_HondaJ32)
                   .setReset(sharedDecoderReset)
