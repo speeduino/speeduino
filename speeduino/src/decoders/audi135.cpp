@@ -74,6 +74,15 @@ void triggerSecondary(const statuses &current, shared::state_t &decoderState, co
   decoderState.revolutionOne = 1; //Sequential revolution reset
 }
 
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto calculator = decoders::shared::atomic_make_angle_caa(decoderState);
+
+  //Handle case where the secondary tooth was the last one seen
+  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 45; }
+
+  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, page4));
+}
 
 }
 }

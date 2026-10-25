@@ -571,24 +571,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 /** Audi with 135 teeth on the crank and 1 tooth on the cam.
 * This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360,
 * only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup.
-* @defgroup dec_audi135 Audi 135
-* @{
 */
-static uint32_t getRevolutionTime_Audi135(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_Audi135(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  //Handle case where the secondary tooth was the last one seen
-  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 45; }
-
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 {
   _decoderState = decoders::audi135::initialise();
@@ -599,12 +582,18 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
   static const auto secondaryTrigger = []() {
     decoders::audi135::triggerSecondary(currentStatus, _decoderState, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::audi135::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, RISING)
-                  .setGetRevolutionTime(getRevolutionTime_Audi135)
-                  .setGetCrankAngle(getCrankAngle_Audi135)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -612,7 +601,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
                   .build();
 }
 
-/** @} */
 /** Honda D17 (1.7 liter 4 cyl SOHC).
 * 
 * @defgroup dec_honda_d17 Honda D17

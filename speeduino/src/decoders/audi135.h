@@ -21,5 +21,6 @@ namespace audi135 {
 
     void triggerSecondary(const statuses &current, shared::state_t &decoderState, const config4 &page4);
 
+    int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4);
 }
 }
