@@ -54,7 +54,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       else
       {
         decoderState.toothCurrentCount++; //Increment the tooth counter
-        decoderState.triggerToothAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)] - decoderState.toothAngles[(decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
+        decoderState.triggerToothAngle = decoderState.toothAngles[decoderState.toothCurrentCount-1] - decoderState.toothAngles[decoderState.toothCurrentCount-2]; //Calculate the last tooth gap in degrees
       }
 
       decoderState.setFilter(decoderState.curGap, page4); //Recalc the new filter value
