@@ -574,26 +574,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 * @defgroup dec_audi135 Audi 135
 * @{
 */
-static void triggerSec_Audi135(void)
-{
-  /*
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( _decoderState.curGap2 < _decoderState.triggerSecFilterTime ) { return; }
-  _decoderState.toothLastSecToothTime = curTime2;
-  */
-
-  if( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
-  {
-    _decoderState.toothCurrentCount = 0;
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    _decoderState.toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
-  }
-  else if (configPage4.useResync == 1) { _decoderState.toothCurrentCount = 0; _decoderState.toothSystemCount = 3; }
-  else if ( (currentStatus.startRevolutions < 100) && (_decoderState.toothCurrentCount != 45) ) { _decoderState.toothCurrentCount = 0; }
-  _decoderState.revolutionOne = 1; //Sequential revolution reset
-}
-
 static uint32_t getRevolutionTime_Audi135(void)
 {
    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
@@ -616,10 +596,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
   static const auto primaryTrigger = []() {
     decoders::audi135::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::audi135::triggerSecondary(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Audi135, RISING)
+                  .setSecondaryTrigger(secondaryTrigger, RISING)
                   .setGetRevolutionTime(getRevolutionTime_Audi135)
                   .setGetCrankAngle(getCrankAngle_Audi135)
                   .setReset(sharedDecoderReset)

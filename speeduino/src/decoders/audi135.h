@@ -19,5 +19,7 @@ namespace audi135 {
 
     void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4);
 
+    void triggerSecondary(const statuses &current, shared::state_t &decoderState, const config4 &page4);
+
 }
 }

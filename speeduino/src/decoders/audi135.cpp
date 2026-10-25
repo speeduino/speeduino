@@ -61,5 +61,19 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
    } // Trigger filter
 }
 
+void triggerSecondary(const statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  if( decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
+  {
+    decoderState.toothCurrentCount = 0;
+    decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    decoderState.toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
+  }
+  else if (page4.useResync == 1) { decoderState.toothCurrentCount = 0; decoderState.toothSystemCount = 3; }
+  else if ( (current.startRevolutions < 100) && (decoderState.toothCurrentCount != 45) ) { decoderState.toothCurrentCount = 0; }
+  decoderState.revolutionOne = 1; //Sequential revolution reset
+}
+
+
 }
 }
