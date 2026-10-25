@@ -57,6 +57,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/4g63.h"
 #include "src/decoders/gm24x.h"
 #include "src/decoders/jeep2000.h"
+#include "src/decoders/audi135.h"
 
 using namespace decoders::shared;
 
@@ -648,15 +649,7 @@ static int16_t getCrankAngle_Audi135(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 8; //135/3 = 45, 360/45 = 8 degrees every 3 teeth
-  _decoderState.toothCurrentCount = UINT8_MAX; //Default value
-  _decoderState.triggerFilterTime = (unsigned long)(MICROS_PER_SEC / (MAX_RPM / 60U * 135UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
+  _decoderState = decoders::audi135::initialise();
   
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Audi135, getConfigPriTriggerEdge(configPage4))
