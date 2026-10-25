@@ -59,6 +59,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/jeep2000.h"
 #include "src/decoders/audi135.h"
 #include "src/decoders/hondad17.h"
+#include "src/decoders/hondaj32.h"
 
 using namespace decoders::shared;
 
@@ -733,18 +734,7 @@ static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / 24; //The number of degrees that passes from tooth to tooth
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/10U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  
-  // Filter (ignore) triggers that are faster than this.
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60 * 24));
-  _decoderState.toothCurrentCount = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.lastGap = 0;
-  _decoderState.revolutionOne = 0;
+  _decoderState = decoders::hondaj32::initialise();
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_HondaJ32, RISING) // Don't honor the config, always use rising edge
