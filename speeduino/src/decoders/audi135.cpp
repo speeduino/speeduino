@@ -23,5 +23,43 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
   return state;
 }
 
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+   decoderState.curGap = curTime - decoderState.toothSystemLastToothTime;
+   if ( (decoderState.curGap > decoderState.triggerFilterTime) || (current.startRevolutions == 0) )
+   {
+     decoderState.toothSystemCount++;
+
+     if ( decoderState.decoderStatus.syncStatus!=SyncStatus::Full ) { decoderState.toothLastToothTime = curTime; }
+     else
+     {
+       if ( decoderState.toothSystemCount >= 3 )
+       {
+         //We only proceed for every third tooth
+
+         decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+         decoderState.toothSystemLastToothTime = curTime;
+         decoderState.toothSystemCount = 0;
+         decoderState.toothCurrentCount++; //Increment the tooth counter
+
+         if ( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount > 45) )
+         {
+           decoderState.toothCurrentCount = 1;
+           decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+           decoderState.toothOneTime = curTime;
+           decoderState.revolutionOne = !decoderState.revolutionOne;
+           current.startRevolutions++; //Counter
+         }
+
+         decoderState.setFilter(decoderState.curGap, page4); //Recalc the new filter value
+
+         decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+         decoderState.toothLastToothTime = curTime;
+       } //3rd tooth check
+     } // Sync check
+   } // Trigger filter
+}
+
 }
 }

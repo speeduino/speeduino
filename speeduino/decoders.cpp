@@ -574,44 +574,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 * @defgroup dec_audi135 Audi 135
 * @{
 */
-static void triggerPri_Audi135(void)
-{
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothSystemLastToothTime;
-   if ( (_decoderState.curGap > _decoderState.triggerFilterTime) || (currentStatus.startRevolutions == 0) )
-   {
-     _decoderState.toothSystemCount++;
-
-     if ( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full ) { _decoderState.toothLastToothTime = curTime; }
-     else
-     {
-       if ( _decoderState.toothSystemCount >= 3 )
-       {
-         //We only proceed for every third tooth
-
-         _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-         _decoderState.toothSystemLastToothTime = curTime;
-         _decoderState.toothSystemCount = 0;
-         _decoderState.toothCurrentCount++; //Increment the tooth counter
-
-         if ( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount > 45) )
-         {
-           _decoderState.toothCurrentCount = 1;
-           _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-           _decoderState.toothOneTime = curTime;
-           _decoderState.revolutionOne = !_decoderState.revolutionOne;
-           currentStatus.startRevolutions++; //Counter
-         }
-
-         _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-
-         _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-         _decoderState.toothLastToothTime = curTime;
-       } //3rd tooth check
-     } // Sync check
-   } // Trigger filter
-}
-
 static void triggerSec_Audi135(void)
 {
   /*
@@ -650,9 +612,13 @@ static int16_t getCrankAngle_Audi135(uint32_t currMicros)
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 {
   _decoderState = decoders::audi135::initialise();
-  
+
+  static const auto primaryTrigger = []() {
+    decoders::audi135::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Audi135, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Audi135, RISING)
                   .setGetRevolutionTime(getRevolutionTime_Audi135)
                   .setGetCrankAngle(getCrankAngle_Audi135)
