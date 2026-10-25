@@ -9,6 +9,7 @@ extern decoders::shared::state_t _decoderState;
 static void test_getCrankAngle(void)
 {
   // Configure and create decoder
+    configPage4.TrigSpeed = CRANK_SPEED;
   auto decoder = triggerSetup_Audi135();
 
   auto run_case = [&](int toothCount, bool revOne, int delta, int trigAngle, int16_t expected) {
