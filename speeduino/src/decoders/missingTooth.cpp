@@ -9,7 +9,7 @@ namespace decoders {
 
 namespace missing_tooth {
 
-shared::state_t __attribute__((optimize("Os"))) initialise(const config4 &page4)
+shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const config4 &page4)
 {
   shared::state_t state = {};
 
@@ -31,10 +31,6 @@ shared::state_t __attribute__((optimize("Os"))) initialise(const config4 &page4)
     state.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U));
   }
   state.checkSyncToothCount = (page4.triggerTeeth) >> 1; //50% of the total teeth.
-  state.toothLastMinusOneToothTime = 0;
-  state.toothCurrentCount = 0; 
-  state.toothOneTime = 0;
-  state.toothOneMinusOneTime = 0;
   state.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * state.triggerToothAngle * (page4.triggerMissingTeeth + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return state;

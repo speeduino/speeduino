@@ -2,20 +2,19 @@
 #include "preprocessor.h"
 #include "decoder_t.h"
 
-#pragma GCC optimize ("Os")
-
 static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
 static uint32_t nullGetRevolutionTime(void){return 0;} //initialisation function for getRevolutionTime, returns safe value of 0
 static int16_t nullGetCrankAngle(uint32_t currMicros){ UNUSED(currMicros); return 0;} //initialisation function for getCrankAngle, returns safe value of 0
 static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
 static decoder_status_t nullGetStatus(void) noexcept { return decoder_status_t{}; }
 static decoder_features_t nullGetFeatures(void) { return decoder_features_t(); }
+static constexpr interrupt_t NULL_TRIGGER = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
 
 decoder_builder_t::decoder_builder_t(void)
 {
-    (void)setPrimaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
-    (void)setSecondaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
-    (void)setTertiaryTrigger(&nullTriggerHandler, TRIGGER_EDGE_NONE);
+    (void)setPrimaryTrigger(NULL_TRIGGER);
+    (void)setSecondaryTrigger(NULL_TRIGGER);
+    (void)setTertiaryTrigger(NULL_TRIGGER);
     (void)setGetRevolutionTime(&nullGetRevolutionTime);
     (void)setGetCrankAngle(&nullGetCrankAngle);
     (void)setSetEndTeeth(&nullTriggerHandler);
@@ -40,11 +39,7 @@ decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
 
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
 {
-    if (trigger.callback == nullptr || trigger.edge == TRIGGER_EDGE_NONE)
-    {
-        trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
-    } 
-    _decoder.primary = trigger;
+    _decoder.primary = trigger.isSetup() ? trigger : NULL_TRIGGER;
     return *this;
 }
 decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
@@ -54,11 +49,7 @@ decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t::callback_t 
 
 decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t trigger)
 {
-    if (trigger.callback == nullptr || trigger.edge == TRIGGER_EDGE_NONE)
-    {
-        trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
-    }
-    _decoder.secondary = trigger;
+    _decoder.secondary = trigger.isSetup() ? trigger : NULL_TRIGGER;
     return *this;
 }
 decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
@@ -68,11 +59,7 @@ decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t::callback_
 
 decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t trigger)
 {
-    if (trigger.callback == nullptr || trigger.edge == TRIGGER_EDGE_NONE)
-    {
-        trigger = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
-    }
-    _decoder.tertiary = trigger;
+    _decoder.tertiary = trigger.isSetup() ? trigger : NULL_TRIGGER;
     return *this;
 }
 decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t::callback_t handler, uint8_t edge)

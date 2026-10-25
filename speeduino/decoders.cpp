@@ -53,6 +53,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/missingTooth.h"
 #include "src/decoders/dualWheel.h"
 #include "src/decoders/basicDistributor.h"
+#include "src/decoders/gm7x.h"
 
 using namespace decoders::shared;
 
@@ -423,128 +424,29 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 /** Decode GM 7X trigger wheel with six equally spaced teeth and a seventh tooth for cylinder identification.
 * Note: Within the decoder code pf GM7X, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
 * (See: http://www.speeduino.com/forum/download/file.php?id=4743 ).
-* @defgroup dec_gm7x GM7X
-* @{
 */
-static void triggerPri_GM7X(void)
-{
-    _decoderState.lastGap = _decoderState.curGap;
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if( (_decoderState.toothLastToothTime > 0) && (_decoderState.toothLastMinusOneToothTime > 0) )
-    {
-      if( _decoderState.toothCurrentCount > 7 )
-      {
-        _decoderState.toothCurrentCount = 1;
-        _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-        _decoderState.toothOneTime = curTime;
-
-        _decoderState.decoderStatus.toothAngleIsCorrect = true;
-      }
-      else
-      {
-        _decoderState.targetGap = (_decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
-        if ( _decoderState.curGap < _decoderState.targetGap ) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
-        {
-          _decoderState.toothCurrentCount = 3;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-          _decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
-          currentStatus.startRevolutions++; //Counter
-        }
-        else
-        {
-          _decoderState.decoderStatus.toothAngleIsCorrect = true;
-        }
-      }
-    }
-
-    //New ignition mode!
-    if(configPage2.perToothIgn == true)
-    {
-      if(_decoderState.toothCurrentCount != 3) //Never do the check on the extra tooth. It's not needed anyway
-      {
-        //configPage4.triggerAngle must currently be below 48 and above -81
-        int16_t crankAngle;
-        if( _decoderState.toothCurrentCount < 3 )
-        {
-          crankAngle = ((_decoderState.toothCurrentCount - 1) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-        }
-        else
-        {
-          crankAngle = ((_decoderState.toothCurrentCount - 2) * _decoderState.triggerToothAngle) + 42 + configPage4.triggerAngle; //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-        }
-        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-      } 
-    }
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-
-}
-
-static uint32_t getRevolutionTime_GM7X(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-static int16_t getCrankAngle_GM7X(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle);
-
-  //Check if the last tooth seen was the reference tooth (Number 3). All others can be calculated, but tooth 3 has a unique angle
-  int16_t crankAngle = 0;
-  if( std::get<2>(data) == 3 )
-  {
-    decoders::shared::simple_crank_angle_calculator_t calculator;
-    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
-    crankAngle = calculator.calculateCrankAngle(112, currMicros, configPage4);
-  }
-  else
-  {
-    decoders::shared::trigger_angle_crank_angle_calculator_t calculator(data);
-    if (calculator._toothCurrentCount > 3 )
-    {
-      --calculator._toothCurrentCount;
-    }
-    crankAngle = calculator.calculateCrankAngle(currMicros, configPage4)+42;
-  }
-
-  //Estimate the number of degrees travelled since the last tooth}
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
-static void triggerSetEndTeeth_GM7X(void)
-{
-  if(currentStatus.advance < 18 ) 
-  { 
-    _decoderState.ignitionEndTeeth[0] = 7;
-    _decoderState.ignitionEndTeeth[1] = 2;
-    _decoderState.ignitionEndTeeth[2] = 5;
-  }
-  else 
-  { 
-    _decoderState.ignitionEndTeeth[0] = 6;
-    _decoderState.ignitionEndTeeth[1] = 1;
-    _decoderState.ignitionEndTeeth[2] = 4;
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / 6; //The number of degrees that passes from tooth to tooth
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::gm7x::initialise();
+
+  static const auto primaryTrigger = []() {
+    decoders::gm7x::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+      return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+      return decoders::gm7x::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+      return decoders::gm7x::setEndTeeth(_decoderState, currentStatus);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_GM7X, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_GM7X)
-                  .setGetCrankAngle(getCrankAngle_GM7X)
-                  .setSetEndTeeth(triggerSetEndTeeth_GM7X)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -552,7 +454,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
                   .build();
 }
 
-/** @} */
 
 /** Mitsubishi 4G63 / NA/NB Miata + MX-5 / 4/2.
 Note: raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png

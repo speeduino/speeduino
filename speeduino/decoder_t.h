@@ -16,11 +16,17 @@ struct interrupt_t
   /** @brief The edge type for the interrupt. E.g. RISING, FALLING, CHANGE */
   uint8_t edge = TRIGGER_EDGE_NONE;
 
-  interrupt_t() = default;
-  interrupt_t(callback_t _callback, uint8_t _edge)
+  constexpr interrupt_t() = default;
+  constexpr interrupt_t(callback_t _callback, uint8_t _edge)
   : callback(_callback)
   , edge(_edge)
   {
+  }
+
+  bool isSetup(void) const 
+  {
+    return edge!=TRIGGER_EDGE_NONE 
+        && callback!=nullptr;
   }
 
   /** @brief Attach the interrupt to a pin */
@@ -39,8 +45,7 @@ struct interrupt_t
   /** @brief Is the interrupt configured correctly? */
   bool isValid(void) const
   {
-    return edge!=TRIGGER_EDGE_NONE 
-        && callback!=nullptr
+    return isSetup()
         && _pin.isValid();
   }
 
