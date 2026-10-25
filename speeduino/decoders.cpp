@@ -58,7 +58,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/gm24x.h"
 #include "src/decoders/jeep2000.h"
 #include "src/decoders/audi135.h"
-#include "src/decoders/hondaD17.h"
+#include "src/decoders/hondad17.h"
 
 using namespace decoders::shared;
 
