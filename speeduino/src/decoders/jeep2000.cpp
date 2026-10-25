@@ -13,7 +13,6 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
 {
     shared::state_t state;
 
-    state.triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary)
     state.toothAngles[0] = 174;
     state.toothAngles[1] = 194;
     state.toothAngles[2] = 214;

@@ -1,24 +1,20 @@
-#include "decoders.h"
-#include "crankMaths.h"
 #include "../test_utils.h"
-#include "globals.h"
-#include "crankMaths.h"
-#include "src/decoders/shared/decoder_state.h"
-
-extern decoders::shared::state_t _decoderState;
+#include "src/decoders/jeep2000.h"
 
 static void test_getCrankAngle(void)
 {
-  auto decoder = triggerSetup_Jeep2000();
+  statuses current={};
+  config4 page4={};
+  auto decoderState = decoders::jeep2000::initialise(100, current);
 
   auto run_case = [&](uint8_t toothNum, int16_t expected, int trigAngle = 0) {
-    _decoderState.toothLastToothTime = 2000;
-    _decoderState.toothCurrentCount = toothNum;
-    _decoderState.decoderStatus.toothAngleIsCorrect = true;
-    configPage4.triggerAngle = trigAngle;
+    decoderState.toothLastToothTime = 2000;
+    decoderState.toothCurrentCount = toothNum;
+    decoderState.decoderStatus.toothAngleIsCorrect = true;
+    page4.triggerAngle = trigAngle;
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
     setAngleConverterRevolutionTime(2000);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
+    TEST_ASSERT_EQUAL(expected, decoders::jeep2000::getCrankAngle(decoderState.toothLastToothTime + 100, decoderState, page4));
   };
 
   // timeToAngle(100) ~= 18 deg
@@ -46,22 +42,122 @@ static void test_getCrankAngle(void)
   run_case(1, 174 + dt + 10, 10);
 }
 
-static void test_getRevolutionTime(void)
+static void test_primary_waits_for_first_revolution(void)
 {
-  auto decoder = triggerSetup_Jeep2000();
+  statuses current{};
+  config4 page4{};
+  auto decoderState = decoders::jeep2000::initialise(100, current);
 
-  // Standard calculation: the time between the last 2 tooth #1
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  currentStatus.startRevolutions = 1; // not cranking
-  _decoderState.toothOneMinusOneTime = 1000UL;
-  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL;
-  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+  decoders::jeep2000::triggerPrimary(200, current, decoderState, page4);
+
+  TEST_ASSERT_EQUAL_UINT16(13, decoderState.toothCurrentCount);
+  TEST_ASSERT_EQUAL(SyncStatus::None, decoderState.decoderStatus.syncStatus);
+  TEST_ASSERT_FALSE(decoderState.decoderStatus.validTrigger);
+  TEST_ASSERT_EQUAL_UINT32(100, decoderState.toothLastToothTime);
+  TEST_ASSERT_EQUAL_UINT32(0, current.startRevolutions);
+}
+
+static void test_primary_rejects_filtered_pulse(void)
+{
+  statuses current{};
+  config4 page4{};
+  current.initialisationComplete = true;
+  auto decoderState = decoders::jeep2000::initialise(0, current);
+  decoderState.toothCurrentCount = 1;
+  decoderState.toothLastToothTime = 1000;
+  decoderState.triggerFilterTime = 100;
+
+  decoders::jeep2000::triggerPrimary(1050, current, decoderState, page4);
+
+  TEST_ASSERT_EQUAL_UINT32(50, decoderState.curGap);
+  TEST_ASSERT_EQUAL_UINT16(1, decoderState.toothCurrentCount);
+  TEST_ASSERT_FALSE(decoderState.decoderStatus.validTrigger);
+  TEST_ASSERT_EQUAL_UINT32(1000, decoderState.toothLastToothTime);
+}
+
+static void test_primary_synchronizes_on_tooth_one(void)
+{
+  statuses current{};
+  config4 page4{};
+  current.initialisationComplete = true;
+  auto decoderState = decoders::jeep2000::initialise(0, current);
+  decoderState.toothCurrentCount = 0;
+  decoderState.toothLastToothTime = 1000;
+
+  decoders::jeep2000::triggerPrimary(1200, current, decoderState, page4);
+
+  TEST_ASSERT_EQUAL_UINT16(1, decoderState.toothCurrentCount);
+  TEST_ASSERT_EQUAL(SyncStatus::Full, decoderState.decoderStatus.syncStatus);
+  TEST_ASSERT_TRUE(decoderState.decoderStatus.validTrigger);
+  TEST_ASSERT_EQUAL_UINT32(1, current.startRevolutions);
+  TEST_ASSERT_EQUAL_UINT16(60, decoderState.triggerToothAngle);
+  TEST_ASSERT_EQUAL_UINT32(1200, decoderState.toothOneTime);
+  TEST_ASSERT_EQUAL_UINT32(1200, decoderState.toothLastToothTime);
+}
+
+static void test_primary_uses_variable_tooth_angles(void)
+{
+  statuses current{};
+  config4 page4{};
+  current.initialisationComplete = true;
+  auto decoderState = decoders::jeep2000::initialise(0, current);
+  decoderState.toothCurrentCount = 1;
+  decoderState.toothLastToothTime = 1000;
+  decoderState.triggerFilterTime = 0;
+  const uint16_t expectedAngles[] = {20, 20, 20, 60, 20};
+
+  for(size_t index = 0; index < sizeof(expectedAngles) / sizeof(expectedAngles[0]); ++index)
+  {
+    const uint32_t triggerTime = decoderState.toothLastToothTime + 100;
+    decoders::jeep2000::triggerPrimary(triggerTime, current, decoderState, page4);
+
+    TEST_ASSERT_EQUAL_UINT16(index + 2, decoderState.toothCurrentCount);
+    TEST_ASSERT_EQUAL_UINT16(expectedAngles[index], decoderState.triggerToothAngle);
+    TEST_ASSERT_EQUAL_UINT32(triggerTime, decoderState.toothLastToothTime);
+  }
+}
+
+static void test_secondary(void)
+{
+  statuses current{};
+  auto decoderState = decoders::jeep2000::initialise(0, current);
+
+  decoderState.toothCurrentCount = 99;
+  decoders::jeep2000::triggerSecondary(decoderState);;
+
+  TEST_ASSERT_EQUAL(0, decoderState.toothCurrentCount);
+}
+
+static void test_initialise(void)
+{
+    {
+        statuses current{};
+        current.initialisationComplete = true;
+        auto subject = decoders::jeep2000::initialise(5000, current);
+
+        TEST_ASSERT_EQUAL(0, subject.toothCurrentCount);
+        TEST_ASSERT_EQUAL(0, subject.toothLastToothTime);
+    }
+
+    {
+        statuses current{};
+        current.initialisationComplete = false;
+        auto subject = decoders::jeep2000::initialise(5000, current);
+
+        TEST_ASSERT_EQUAL(13, subject.toothCurrentCount);
+        TEST_ASSERT_EQUAL(5000, subject.toothLastToothTime);
+    }
 }
 
 void testJeep2000(void)
 {
-  SET_UNITY_FILENAME() {
-    RUN_TEST_P(test_getCrankAngle);
-    RUN_TEST_P(test_getRevolutionTime);
-  }
+  unity_filename_guard_t guard(__FILE__);
+
+  RUN_TEST_P(test_getCrankAngle);
+  RUN_TEST_P(test_primary_waits_for_first_revolution);
+  RUN_TEST_P(test_primary_rejects_filtered_pulse);
+  RUN_TEST_P(test_primary_synchronizes_on_tooth_one);
+  RUN_TEST_P(test_primary_uses_variable_tooth_angles);
+  RUN_TEST_P(test_secondary);
+  RUN_TEST_P(test_initialise);
 }
