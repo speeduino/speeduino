@@ -67,7 +67,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     else
     {
       decoderState.toothCurrentCount++; //Increment the tooth counter
-      decoderState.triggerToothAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)] - decoderState.toothAngles[(decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
+      decoderState.triggerToothAngle = decoderState.toothAngles[decoderState.toothCurrentCount-1] - decoderState.toothAngles[decoderState.toothCurrentCount-2]; //Calculate the last tooth gap in degrees
     }
 
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
@@ -79,7 +79,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 void triggerSecondary(shared::state_t &decoderState)
 {
   decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
-  decoderState.revolutionOne = 1; //Sequential revolution reset
+  decoderState.revolutionOne = true; //Sequential revolution reset
 }
 
 }
