@@ -8,7 +8,7 @@ namespace decoders {
 
 namespace dual_wheel {
 
-    shared::state_t __attribute__((optimize("Os"))) initialise(const config4 &page4)
+    shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const config4 &page4)
     {
         shared::state_t state = {};
 

@@ -9,9 +9,9 @@ namespace decoders {
 
 namespace gm7x {
 
-shared::state_t __attribute__((optimize("Os"))) initialise(void)
+shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
 {
-    shared::state_t state;
+  shared::state_t state = {};
 
     state.decoderFeatures.supportsPerToothIgnition = true;
     
