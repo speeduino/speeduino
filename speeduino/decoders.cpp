@@ -54,6 +54,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/dualWheel.h"
 #include "src/decoders/basicDistributor.h"
 #include "src/decoders/gm7x.h"
+#include "src/decoders/4g63.h"
 
 using namespace decoders::shared;
 
@@ -459,410 +460,39 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_GM7X(void)
 Note: raw.githubusercontent.com/noisymime/speeduino/master/reference/wiki/decoders/4g63_trace.png
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC.
-* @defgroup dec_mitsu_miata Mistsubishi 4G63 and Miata + MX-5
-* @{
 */
-static void triggerPri_4G63(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) || (currentStatus.startRevolutions == 0) )
-  {
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    _decoderState.triggerFilterTime = _decoderState.curGap >> 2; //This only applies during non-sync conditions. If there is sync then _decoderState.triggerFilterTime gets changed again below with a better value.
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    _decoderState.toothCurrentCount++;
-
-    if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount > _decoderState.triggerActualTeeth) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev (or 6 pulses for 6 cylinders)
-    {
-       _decoderState.toothCurrentCount = 1; //Reset the counter
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       currentStatus.startRevolutions++; //Counter
-    }
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-      if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock && (currentStatus.startRevolutions >= configPage4.StgCycles))
-      {
-        if(configPage2.nCylinders == 4)
-        {
-          //This operates in forced wasted spark mode during cranking to align with crank teeth
-          if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
-          else if( (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
-        }
-        else if(configPage2.nCylinders == 6)
-        {
-          if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 7) ) { endCoilCharge(1U); }
-          else if( (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 9) ) { endCoilCharge(2U); }
-          else if( (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 11) ) { endCoilCharge(3U); }
-        }
-      }
-
-      //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (configPage4.triggerFilter == 1) || (currentStatus.RPM < 1400) )
-      {
-        //Lite filter
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) || (_decoderState.toothCurrentCount == 9) || (_decoderState.toothCurrentCount == 11) )
-        {
-          if(configPage2.nCylinders == 4)
-          {
-            _decoderState.triggerToothAngle = 70;
-            _decoderState.triggerFilterTime = _decoderState.curGap; //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-          }
-          else if(configPage2.nCylinders == 6)
-          {
-            _decoderState.triggerToothAngle = 70;
-            _decoderState.triggerFilterTime = (_decoderState.curGap >> 2); //Trigger filter is set to (70/4)=17.5=17 degrees (Next trigger is 50 degrees away).
-          }
-        }
-        else
-        {
-          if(configPage2.nCylinders == 4)
-          {
-            _decoderState.triggerToothAngle = 110;
-            _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 3UL)); //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
-          }
-          else if(configPage2.nCylinders == 6)
-          {
-            _decoderState.triggerToothAngle = 50;
-            _decoderState.triggerFilterTime = _decoderState.curGap >> 1; //Trigger filter is set to 25 degrees (Next trigger is 70 degrees away).
-          }
-        }
-      }
-      else if(configPage4.triggerFilter == 2)
-      {
-        //Medium filter level
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) || (_decoderState.toothCurrentCount == 9) || (_decoderState.toothCurrentCount == 11) )
-        { 
-          _decoderState.triggerToothAngle = 70; 
-          if(configPage2.nCylinders == 4)
-          { 
-            _decoderState.triggerFilterTime = (_decoderState.curGap * 5) >> 2 ; //87.5 degrees with a target of 110
-          }
-          else
-          {
-            _decoderState.triggerFilterTime = _decoderState.curGap >> 1 ; //35 degrees with a target of 50
-          }
-        } 
-        else 
-        { 
-          if(configPage2.nCylinders == 4)
-          { 
-            _decoderState.triggerToothAngle = 110; 
-            _decoderState.triggerFilterTime = (_decoderState.curGap >> 1); //55 degrees with a target of 70
-          }
-          else
-          {
-            _decoderState.triggerToothAngle = 50; 
-            _decoderState.triggerFilterTime = (_decoderState.curGap * 3) >> 2; //Trigger filter is set to (50*3)/4=37.5=37 degrees (Next trigger is 70 degrees away).
-          }
-        } 
-      }
-      else if (configPage4.triggerFilter == 3)
-      {
-        //Aggressive filter level
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) || (_decoderState.toothCurrentCount == 9) || (_decoderState.toothCurrentCount == 11) )
-        { 
-          _decoderState.triggerToothAngle = 70; 
-          if(configPage2.nCylinders == 4)
-          { 
-            _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 11UL));//96.26 degrees with a target of 110
-          }
-          else
-          {
-            _decoderState.triggerFilterTime = _decoderState.curGap >> 1 ; //35 degrees with a target of 50
-          }
-        } 
-        else 
-        { 
-          if(configPage2.nCylinders == 4)
-          { 
-            _decoderState.triggerToothAngle = 110; 
-            _decoderState.triggerFilterTime = rshift<5>((uint32_t)(_decoderState.curGap * 9UL)); //61.87 degrees with a target of 70
-          }
-          else
-          {
-            _decoderState.triggerToothAngle = 50; 
-            _decoderState.triggerFilterTime = _decoderState.curGap; //50 degrees with a target of 70
-          }
-        } 
-      }
-      else
-      {
-        //trigger filter is turned off.
-        _decoderState.triggerFilterTime = 0;
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) || (_decoderState.toothCurrentCount == 9) || (_decoderState.toothCurrentCount == 11) )
-        { 
-          if(configPage2.nCylinders == 4) { _decoderState.triggerToothAngle = 70; }
-          else  { _decoderState.triggerToothAngle = 70; }
-        } 
-        else 
-        { 
-          if(configPage2.nCylinders == 4) { _decoderState.triggerToothAngle = 110; }
-          else  { _decoderState.triggerToothAngle = 50; }
-        }
-      }
-
-      //EXPERIMENTAL!
-      //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
-      if( (configPage2.perToothIgn == true) && (configPage4.triggerAngle == 0) )
-      {
-        if( (configPage2.nCylinders == 4) && (currentStatus.advance > 0) )
-        {
-          int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
-
-          //Handle non-sequential tooth counts 
-          if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-          else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-        }
-      }
-    } //Has sync
-    else
-    {
-      _decoderState.triggerSecFilterTime = 0;
-      //New secondary method of determining sync
-      if(currentStatus.decoder.primary.isPinHigh())
-      {
-        if(currentStatus.decoder.secondary.isPinHigh()) { _decoderState.revolutionOne = true; }
-        else { _decoderState.revolutionOne = false; }
-      }
-      else
-      {
-        if( (!currentStatus.decoder.secondary.isPinHigh()) && (_decoderState.revolutionOne == true) ) 
-        { 
-          //Crank is low, cam is low and the crank pulse STARTED when the cam was high. 
-          if(configPage2.nCylinders == 4) { _decoderState.toothCurrentCount = 1; } //Means we're at 5* BTDC on a 4G63 4 cylinder
-          //else if(configPage2.nCylinders == 6) { _decoderState.toothCurrentCount = 8; } 
-        } 
-        //If sequential is ever enabled, the below _decoderState.toothCurrentCount will need to change:
-        else if( (currentStatus.decoder.secondary.isPinHigh()) && (_decoderState.revolutionOne == true) ) 
-        { 
-          //Crank is low, cam is high and the crank pulse STARTED when the cam was high. 
-          if(configPage2.nCylinders == 4) { _decoderState.toothCurrentCount = 5; } //Means we're at 5* BTDC on a 4G63 4 cylinder
-          else if(configPage2.nCylinders == 6) { _decoderState.toothCurrentCount = 2; _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Means we're at 45* ATDC on 6G72 6 cylinder
-        } 
-      }
-    }
-  } //Filter time
-
-}
-
-static void triggerSec_4G63(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( (_decoderState.curGap2 >= _decoderState.triggerSecFilterTime) )//|| (currentStatus.startRevolutions == 0) )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    //addToothLogEntry(_decoderState.curGap, TOOTH_CAM_SECONDARY);
-
-    _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 1; //Basic 50% filter for the secondary reading
-    //More aggressive options:
-    //62.5%:
-    //_decoderState.triggerSecFilterTime = (_decoderState.curGap2 * 9) >> 5;
-    //75%:
-    //_decoderState.triggerSecFilterTime = (_decoderState.curGap2 * 6) >> 3;
-
-    if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) )
-    {
-
-      _decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
-      _decoderState.triggerSecFilterTime = _decoderState.triggerSecFilterTime >> 1; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
-      if(currentStatus.decoder.primary.isPinHigh())
-      {
-        if(configPage2.nCylinders == 4)
-        { 
-          if(_decoderState.toothCurrentCount == 8) { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Is 8 for sequential, was 4
-        }
-        else if(configPage2.nCylinders == 6) 
-        { 
-          if(_decoderState.toothCurrentCount == 7) { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
-        }
-
-      }
-      else
-      {
-        if(configPage2.nCylinders == 4)
-        { 
-          if(_decoderState.toothCurrentCount == 5) { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Is 5 for sequential, was 1
-        }
-        //Cannot gain sync for 6 cylinder here. 
-      }
-    }
-
-    if ( (currentStatus.RPM < currentStatus.crankRPM) || (configPage4.useResync == 1) )
-    {
-      if( (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) && (configPage2.nCylinders == 4) )
-      {
-        if(currentStatus.decoder.primary.isPinHigh())
-        {
-          //Whilst we're cranking and have sync, we need to watch for noise pulses.
-          if(_decoderState.toothCurrentCount != 8) 
-          { 
-            // This should never be true, except when there's noise
-            _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-            currentStatus.syncLossCounter++;
-          } 
-        }
-      } //Has sync and 4 cylinder 
-    } // Use resync or cranking
-  } //Trigger filter
-}
-
-
-static uint32_t getRevolutionTime_4G63(void)
-{
-  tooth_speed_sample_t sample;
-  uint32_t revolutionTime = 0U;
-
-  /*
-  During cranking, revolution time is calculated 4 times per revolution, once for each rising/falling of the crank signal.
-  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
-  */
-  sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  if (sample.syncStatus==SyncStatus::Full)
-  {
-    if (currentStatus.RPM < currentStatus.crankRPM)
-    {
-      if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
-      {
-        _decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
-        return revolutionTime;
-      }
-      return publishedRevolutionTime(currentStatus);
-    }
-
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-    //EXPERIMENTAL! Add/subtract RPM based on the last rpmDOT calc
-    //tempRPM += (micros() - toothOneTime) * currentStatus.rpmDOT
-    _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-    if (_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-    return revolutionTime;
-  }
-
-  return 0U; //Speed is unknown without sync
-}
-
-static int16_t getCrankAngle_4G63(uint32_t currMicros)
-{
-  int16_t crankAngle = 0;
-  if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-  {
-    auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
-  }
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
-static void triggerSetEndTeeth_4G63(void)
-{
-  if(configPage2.nCylinders == 4)
-  {
-    if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-    { 
-      _decoderState.ignitionEndTeeth[0] = 8;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 6;
-    }
-    else
-    {
-      _decoderState.ignitionEndTeeth[0] = 4;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4; //Not used
-      _decoderState.ignitionEndTeeth[3] = 2;
-    }
-  }
-  if(configPage2.nCylinders == 6)
-  {
-    if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-    { 
-      //This should never happen as 6 cylinder sequential not supported
-      _decoderState.ignitionEndTeeth[0] = 8;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 6;
-    }
-    else
-    {
-      _decoderState.ignitionEndTeeth[0] = 6;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 2; //Not used
-    }
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_4G63(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-
-  //Note that these angles are for every rising and falling edge
-  if(configPage2.nCylinders == 6)
-  {
-    //New values below
-    _decoderState.toothAngles[0] = 715; //Rising edge of tooth #1
-    _decoderState.toothAngles[1] = 45;  //Falling edge of tooth #1
-    _decoderState.toothAngles[2] = 115; //Rising edge of tooth #2
-    _decoderState.toothAngles[3] = 165; //Falling edge of tooth #2
-    _decoderState.toothAngles[4] = 235; //Rising edge of tooth #3
-    _decoderState.toothAngles[5] = 285; //Falling edge of tooth #3
-
-    _decoderState.toothAngles[6] = 355; //Rising edge of tooth #4
-    _decoderState.toothAngles[7] = 405; //Falling edge of tooth #4
-    _decoderState.toothAngles[8] = 475; //Rising edge of tooth #5
-    _decoderState.toothAngles[9] = 525; //Falling edge of tooth $5
-    _decoderState.toothAngles[10] = 595; //Rising edge of tooth #6
-    _decoderState.toothAngles[11] = 645; //Falling edge of tooth #6
-
-    _decoderState.triggerActualTeeth = 12; //Both sides of all teeth over 720 degrees
-  }
-  else
-  {
-    // 70 / 110 for 4 cylinder
-    _decoderState.toothAngles[0] = 715; //Falling edge of tooth #1
-    _decoderState.toothAngles[1] = 105; //Rising edge of tooth #2
-    _decoderState.toothAngles[2] = 175; //Falling edge of tooth #2
-    _decoderState.toothAngles[3] = 285; //Rising edge of tooth #1
-
-    _decoderState.toothAngles[4] = 355; //Falling edge of tooth #1
-    _decoderState.toothAngles[5] = 465; //Rising edge of tooth #2
-    _decoderState.toothAngles[6] = 535; //Falling edge of tooth #2
-    _decoderState.toothAngles[7] = 645; //Rising edge of tooth #1
-
-    _decoderState.triggerActualTeeth = 8;
-  }
-
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  _decoderState = decoders::fourg63::initialise(micros(), currentStatus, configPage2);
   
+  static const auto primaryTrigger = []() {
+    decoders::fourg63::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::fourg63::triggerSecondary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::fourg63::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::fourg63::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::fourg63::setEndTeeth(_decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_4G63, CHANGE)
-                  .setSecondaryTrigger(triggerSec_4G63, FALLING)
-                  .setGetRevolutionTime(getRevolutionTime_4G63)
-                  .setGetCrankAngle(getCrankAngle_4G63)
-                  .setSetEndTeeth(triggerSetEndTeeth_4G63)
+                  .setPrimaryTrigger(primaryTrigger, CHANGE)
+                  .setSecondaryTrigger(secondaryTrigger, FALLING)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** GM 24X Decoder (eg early LS1 1996-2005).
 Note: Useful references:
