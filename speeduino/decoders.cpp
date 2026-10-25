@@ -607,48 +607,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 * @defgroup dec_honda_d17 Honda D17
 * @{
 */
-static void triggerPri_HondaD17(void)
-{
-   _decoderState.lastGap = _decoderState.curGap;
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-   _decoderState.toothCurrentCount++; //Increment the tooth counter
-
-   _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-   //
-   if( (_decoderState.toothCurrentCount == 13) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
-   {
-     _decoderState.toothCurrentCount = 0;
-   }
-   else if( (_decoderState.toothCurrentCount == 1) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
-   {
-     _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-     _decoderState.toothOneTime = curTime;
-     currentStatus.startRevolutions++; //Counter
-
-     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-     _decoderState.toothLastToothTime = curTime;
-   }
-   else
-   {
-     //13th tooth
-     _decoderState.targetGap = (_decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
-     if ( _decoderState.curGap < _decoderState.targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 13th tooth
-     {
-       _decoderState.toothCurrentCount = 0;
-       _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-     }
-     else
-     {
-       //The tooth times below don't get set on tooth 13(The magical 13th tooth should not be considered for any calculations that use those times)
-       _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-       _decoderState.toothLastToothTime = curTime;
-     }
-   }
-
-}
-
 static uint32_t getRevolutionTime_HondaD17(void)
 {
    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
@@ -670,9 +628,13 @@ static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 {
   _decoderState = decoders::hondad17::initialise();
-  
+
+  static const auto primaryTrigger = []() {
+    decoders::hondad17::triggerPrimary(micros(), currentStatus, _decoderState);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_HondaD17, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_HondaD17)
                   .setGetCrankAngle(getCrankAngle_HondaD17)
                   .setReset(sharedDecoderReset)
