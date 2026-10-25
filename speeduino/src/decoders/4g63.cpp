@@ -61,7 +61,7 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   }
 
   state.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  state.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
+  state.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60UL * 2UL)) / 2UL; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
 
   return state;
 }
@@ -108,12 +108,14 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           //This operates in forced wasted spark mode during cranking to align with crank teeth
           if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
           else if( (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
+          else { /* Do Nothing */}
         }
         else
         {
           if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(1U); }
           else if( (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 9) ) { endCoilCharge(2U); }
           else if( (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 11) ) { endCoilCharge(3U); }
+          else { /* Do Nothing */}
         }
       }
       // LCOV_EXCL_STOP
@@ -223,16 +225,16 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 
       //EXPERIMENTAL!
       //New ignition mode is ONLY available on 4g63 when the trigger angle is set to the stock value of 0.
-      if( (page2.perToothIgn == true) && (page4.triggerAngle == 0) )
+      if( (page2.perToothIgn == true) 
+       && (page4.triggerAngle == 0) 
+       && (page2.nCylinders == 4) 
+       && (current.advance > 0) )
       {
-        if( (page2.nCylinders == 4) && (current.advance > 0) )
-        {
-          int16_t crankAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)];
+        int16_t crankAngle = decoderState.toothAngles[decoderState.toothCurrentCount-1];
 
-          //Handle non-sequential tooth counts 
-          if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) && (decoderState.toothCurrentCount > page2.nCylinders) ) { checkPerToothTiming(current, decoderState, page4, crankAngle, (decoderState.toothCurrentCount-page2.nCylinders) ); }
-          else { checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
-        }
+        //Handle non-sequential tooth counts 
+        if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) && (decoderState.toothCurrentCount > page2.nCylinders) ) { checkPerToothTiming(current, decoderState, page4, crankAngle, (decoderState.toothCurrentCount-page2.nCylinders) ); }
+        else { checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
       }
     } //Has sync
     else
@@ -246,19 +248,21 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       }
       else
       {
-        if( (!current.decoder.secondary.isPinHigh()) && (decoderState.revolutionOne == true) ) 
-        { 
-          //Crank is low, cam is low and the crank pulse STARTED when the cam was high. 
-          if(page2.nCylinders == 4) { decoderState.toothCurrentCount = 1; } //Means we're at 5* BTDC on a 4G63 4 cylinder
-          //else if(page2.nCylinders == 6) { decoderState.toothCurrentCount = 8; } 
-        } 
-        //If sequential is ever enabled, the below decoderState.toothCurrentCount will need to change:
-        else if( (current.decoder.secondary.isPinHigh()) && (decoderState.revolutionOne == true) ) 
-        { 
-          //Crank is low, cam is high and the crank pulse STARTED when the cam was high. 
-          if(page2.nCylinders == 4) { decoderState.toothCurrentCount = 5; } //Means we're at 5* BTDC on a 4G63 4 cylinder
-          else { decoderState.toothCurrentCount = 2; decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Means we're at 45* ATDC on 6G72 6 cylinder
-        } 
+        if (decoderState.revolutionOne)
+        {
+          if (!current.decoder.secondary.isPinHigh()) 
+          { 
+            //Crank is low, cam is low and the crank pulse STARTED when the cam was high. 
+            if(page2.nCylinders == 4) { decoderState.toothCurrentCount = 1; } //Means we're at 5* BTDC on a 4G63 4 cylinder
+          } 
+          //If sequential is ever enabled, the below decoderState.toothCurrentCount will need to change:
+          else
+          { 
+            //Crank is low, cam is high and the crank pulse STARTED when the cam was high. 
+            if(page2.nCylinders == 4) { decoderState.toothCurrentCount = 5; } //Means we're at 5* BTDC on a 4G63 4 cylinder
+            else { decoderState.toothCurrentCount = 2; decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Means we're at 45* ATDC on 6G72 6 cylinder
+          }
+        }
       }
     }
   } //Filter time
@@ -267,12 +271,10 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
   decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
-  if ( (decoderState.curGap2 >= decoderState.triggerSecFilterTime) )//|| (current.startRevolutions == 0) )
+  if (decoderState.curGap2 >= decoderState.triggerSecFilterTime)
   {
     decoderState.toothLastSecToothTime = curTime;
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    //addToothLogEntry(decoderState.curGap, TOOTH_CAM_SECONDARY);
-
     decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Basic 50% filter for the secondary reading
     //More aggressive options:
     //62.5%:
@@ -280,7 +282,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
     //75%:
     //decoderState.triggerSecFilterTime = (decoderState.curGap2 * 6) >> 3;
 
-    if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) )
+    if (decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
     {
 
       decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
@@ -299,9 +301,9 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       }
       else
       {
-        if(page2.nCylinders == 4)
+        if ((page2.nCylinders == 4) && (decoderState.toothCurrentCount == 5))
         { 
-          if(decoderState.toothCurrentCount == 5) { decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //Is 5 for sequential, was 1
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full; //Is 5 for sequential, was 1
         }
         //Cannot gain sync for 6 cylinder here. 
       }
@@ -309,18 +311,16 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
 
     if ( (current.RPM < current.crankRPM) || (page4.useResync == 1) )
     {
-      if( (decoderState.decoderStatus.syncStatus==SyncStatus::Full) && (page2.nCylinders == 4) )
+      if ( (decoderState.decoderStatus.syncStatus==SyncStatus::Full) 
+        && (page2.nCylinders == 4) 
+        && (current.decoder.primary.isPinHigh())
+        && (decoderState.toothCurrentCount != 8)
+      )
       {
-        if(current.decoder.primary.isPinHigh())
-        {
-          //Whilst we're cranking and have sync, we need to watch for noise pulses.
-          if(decoderState.toothCurrentCount != 8) 
-          { 
-            // This should never be true, except when there's noise
-            decoderState.decoderStatus.syncStatus = SyncStatus::None;
-            current.syncLossCounter++;
-          } 
-        }
+        //Whilst we're cranking and have sync, we need to watch for noise pulses.
+        // This should never be true, except when there's noise
+        decoderState.decoderStatus.syncStatus = SyncStatus::None;
+        current.syncLossCounter++;
       } //Has sync and 4 cylinder 
     } // Use resync or cranking
   } //Trigger filter
