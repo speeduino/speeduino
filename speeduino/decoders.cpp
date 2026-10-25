@@ -603,28 +603,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 }
 
 /** Honda D17 (1.7 liter 4 cyl SOHC).
-* 
-* @defgroup dec_honda_d17 Honda D17
-* @{
 */
-static uint32_t getRevolutionTime_HondaD17(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  // if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference.
-  if(calculator._toothCurrentCount == 0 )
-  {
-    calculator._toothCurrentCount = 12;
-  }
-  
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 {
   _decoderState = decoders::hondad17::initialise();
@@ -632,19 +611,23 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
   static const auto primaryTrigger = []() {
     decoders::hondad17::triggerPrimary(micros(), currentStatus, _decoderState);
   };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::hondad17::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_HondaD17)
-                  .setGetCrankAngle(getCrankAngle_HondaD17)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Honda J 32 (3.2 liter 6 cyl SOHC).
 *  The Honda J32a4 (and all J series I'm aware of) has a crank trigger with nominal 24 teeth (22 teeth actually present). 

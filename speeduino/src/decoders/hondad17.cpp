@@ -1,7 +1,7 @@
 #include "hondad17.h"
 // #include "shared/perToothIgnition.h"
 // #include "shared/rev_time_calcs.h"
-// #include "shared/crank_angle_calculator.h"
+#include "shared/crank_angle_calculator.h"
 // #include "scheduler_ignition_controller.h"
 // #include "unit_testing.h"
 
@@ -56,6 +56,19 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       decoderState.toothLastToothTime = curTime;
     }
   }
+}
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto calculator = decoders::shared::atomic_make_angle_caa(decoderState);
+
+  // if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference.
+  if(calculator._toothCurrentCount == 0 )
+  {
+    calculator._toothCurrentCount = 12;
+  }
+  
+  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, page4));
 }
 
 }
