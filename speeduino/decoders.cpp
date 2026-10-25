@@ -58,6 +58,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/gm24x.h"
 #include "src/decoders/jeep2000.h"
 #include "src/decoders/audi135.h"
+#include "src/decoders/hondaD17.h"
 
 using namespace decoders::shared;
 
@@ -668,10 +669,7 @@ static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / 12; //The number of degrees that passes from tooth to tooth
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::hondad17::initialise();
   
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_HondaD17, getConfigPriTriggerEdge(configPage4))
