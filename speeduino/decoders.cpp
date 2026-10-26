@@ -60,6 +60,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/audi135.h"
 #include "src/decoders/hondad17.h"
 #include "src/decoders/hondaj32.h"
+#include "src/decoders/miata9905.h"
 
 using namespace decoders::shared;
 
@@ -873,41 +874,7 @@ static void triggerSetEndTeeth_Miata9905(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.triggerActualTeeth = 8;
-
-  if(currentStatus.initialisationComplete == false) { _decoderState.secondaryToothCount = 0; _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  else { _decoderState.toothLastToothTime = 0; }
-  _decoderState.toothLastMinusOneToothTime = 0;
-
-  //Note that these angles are for every rising and falling edge
-
-  /*
-  _decoderState.toothAngles[0] = 350;
-  _decoderState.toothAngles[1] = 100;
-  _decoderState.toothAngles[2] = 170;
-  _decoderState.toothAngles[3] = 280;
-  */
-
-  _decoderState.toothAngles[0] = 710; //
-  _decoderState.toothAngles[1] = 100; //First crank pulse after the SINGLE cam pulse
-  _decoderState.toothAngles[2] = 170; //
-  _decoderState.toothAngles[3] = 280; //
-  _decoderState.toothAngles[4] = 350; //
-  _decoderState.toothAngles[5] = 460; //First crank pulse AFTER the DOUBLE cam pulse
-  _decoderState.toothAngles[6] = 530; //
-  _decoderState.toothAngles[7] = 640; //
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = 0; //Need to figure out something better for this
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
+  _decoderState = decoders::miata9905::initialise(micros(), currentStatus);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Miata9905, getConfigPriTriggerEdge(configPage4))
