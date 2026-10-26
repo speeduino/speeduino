@@ -56,6 +56,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/gm7x.h"
 #include "src/decoders/4g63.h"
 #include "src/decoders/gm24x.h"
+#include "src/decoders/jeep2000.h"
 
 using namespace decoders::shared;
 
@@ -536,109 +537,35 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_24X(void)
 * As we only need timing within 360 degrees, only 12 tooth angles are defined.
 * Tooth number 1 represents the first tooth seen after the cam signal goes high.
 * www.speeduino.com/forum/download/file.php?id=205
-* @defgroup dec_jeep Jeep 2000 (6 cyl)
-* @{
 */
-static void triggerPri_Jeep2000(void)
-{
-  if(_decoderState.toothCurrentCount == 13) { _decoderState.decoderStatus.syncStatus = SyncStatus::None; } //Indicates sync has not been achieved (Still waiting for 1 revolution of the crank to take place)
-  else
-  {
-    uint32_t curTime = micros();
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-    {
-      if(_decoderState.toothCurrentCount == 0)
-      {
-         _decoderState.toothCurrentCount = 1; //Reset the counter
-         _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-         _decoderState.toothOneTime = curTime;
-         _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-         currentStatus.startRevolutions++; //Counter
-         _decoderState.triggerToothAngle = 60; //There are groups of 4 pulses (Each 20 degrees apart), with each group being 60 degrees apart. Hence #1 is always 60
-      }
-      else
-      {
-        _decoderState.toothCurrentCount++; //Increment the tooth counter
-        _decoderState.triggerToothAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] - _decoderState.toothAngles[(_decoderState.toothCurrentCount-2)]; //Calculate the last tooth gap in degrees
-      }
-
-      _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-
-      _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime;
-    } //Trigger filter
-  } //Sync check
-}
-static void triggerSec_Jeep2000(void)
-{
-  _decoderState.toothCurrentCount = 0; //All we need to do is reset the tooth count back to zero, indicating that we're at the beginning of a new revolution
-  return;
-}
-
-static uint32_t getRevolutionTime_Jeep2000(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_Jeep2000(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount);
-
-  int16_t crankAngle = 0;
-  // This is the special case to handle when the 'last tooth' seen was the cam tooth. Since
-  // the tooth timings were taken on the previous crank tooth, the previous crank tooth angle is used here, not cam angle.
-  if (std::get<2>(data) == 0)
-  {
-    decoders::shared::simple_crank_angle_calculator_t calculator;
-    std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
-    crankAngle = calculator.calculateCrankAngle(114, currMicros, configPage4);
-  } 
-  else
-  { 
-    crankAngle = decoders::shared::lookup_crank_angle_calculator_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
-  }
-
-  //Estimate the number of degrees travelled since the last tooth}
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 0; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothAngles[0] = 174;
-  _decoderState.toothAngles[1] = 194;
-  _decoderState.toothAngles[2] = 214;
-  _decoderState.toothAngles[3] = 234;
-  _decoderState.toothAngles[4] = 294;
-  _decoderState.toothAngles[5] = 314;
-  _decoderState.toothAngles[6] = 334;
-  _decoderState.toothAngles[7] = 354;
-  _decoderState.toothAngles[8] = 414;
-  _decoderState.toothAngles[9] = 434;
-  _decoderState.toothAngles[10] = 454;
-  _decoderState.toothAngles[11] = 474;
+  _decoderState = decoders::jeep2000::initialise(micros(), currentStatus);
 
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 60 degrees.
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothCurrentCount = 13; _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
+  static const auto primaryTrigger = []() {
+    decoders::jeep2000::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::jeep2000::triggerSecondary(_decoderState);
+  };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::jeep2000::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Jeep2000, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Jeep2000, CHANGE)
-                  .setGetRevolutionTime(getRevolutionTime_Jeep2000)
-                  .setGetCrankAngle(getCrankAngle_Jeep2000)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, CHANGE)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** Audi with 135 teeth on the crank and 1 tooth on the cam.
 * This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360,
