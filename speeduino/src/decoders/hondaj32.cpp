@@ -1,5 +1,6 @@
 #include "hondaj32.h"
 #include "shared/crank_angle_calculator.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -79,6 +80,33 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
 }
 
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
+{
+  // The tooth #1 times are only updated while we have sync. They are estimated from the tooth gap when sync is first gained,
+  // so this doesn't have to wait for a full revolution (as stdGetRevolutionTime(currentStatus, _decoderState, ) would)
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  uint32_t interval = 0U;
+  if ((sample.syncStatus==SyncStatus::None) || (toothOneInterval(sample, interval)==false)) { return shared::publishedRevolutionTime(current); }
+  return interval;
+}
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto calculator = decoders::shared::atomic_make_angle_caa(decoderState);  
+
+  // Tooth 1 time occurs 360/24 degrees after TDC.
+  ++calculator._toothCurrentCount;
+  int16_t crankAngle = calculator.calculateCrankAngle(currMicros, page4);
+
+  // Teeth 14 and 22 are unusually sized (18 degrees), but the missing tooth is smaller (12 degrees), 
+  // so this oddity only applies when _decoderState.toothCurrentCount = 14 || 22 (15 || 23 since we incremented _decoderState.toothCurrentCount above)
+  if ((calculator._toothCurrentCount == 15) || (calculator._toothCurrentCount == 23))
+  {
+    constexpr uint16_t HALF_TOOTH_WIDTH_DEG = (18U-12U)/2U;
+    crankAngle += HALF_TOOTH_WIDTH_DEG;
+  }
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
 
 }
 }

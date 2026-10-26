@@ -645,54 +645,30 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 *  when the interrupt for tooth 1 fires (as we just pass tooth 1), crank angle = 360/24 = 15 degrees.
 *  It follows that the first tooth in the string of 7 teeth is tooth 16. 
 */ 
-static uint32_t getRevolutionTime_HondaJ32(void)
-{
-  // The tooth #1 times are only updated while we have sync. They are estimated from the tooth gap when sync is first gained,
-  // so this doesn't have to wait for a full revolution (as stdGetRevolutionTime(currentStatus, _decoderState, ) would)
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t interval = 0U;
-  if ((sample.syncStatus==SyncStatus::None) || (toothOneInterval(sample, interval)==false)) { return publishedRevolutionTime(currentStatus); }
-  return interval;
-}
-
-static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);  
-
-  // Tooth 1 time occurs 360/24 degrees after TDC.
-  ++calculator._toothCurrentCount;
-  int16_t crankAngle = calculator.calculateCrankAngle(currMicros, configPage4);
-
-  // Teeth 14 and 22 are unusually sized (18 degrees), but the missing tooth is smaller (12 degrees), 
-  // so this oddity only applies when _decoderState.toothCurrentCount = 14 || 22 (15 || 23 since we incremented _decoderState.toothCurrentCount above)
-  if ((calculator._toothCurrentCount == 15) || (calculator._toothCurrentCount == 23))
-  {
-    constexpr uint16_t HALF_TOOTH_WIDTH_DEG = (18U-12U)/2U;
-    crankAngle += HALF_TOOTH_WIDTH_DEG;
-  }
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
-decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
+decoder_t __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
 {
   _decoderState = decoders::hondaj32::initialise();
 
   static const auto triggerPrimary = []() {
     decoders::hondaj32::triggerPrimary(micros(), currentStatus, _decoderState);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::hondaj32::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::hondaj32::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPrimary, RISING) // Don't honor the config, always use rising edge
-                  .setGetRevolutionTime(getRevolutionTime_HondaJ32)
-                  .setGetCrankAngle(getCrankAngle_HondaJ32)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Miata '99 to '05 with 4x 70 degree duration teeth running at cam speed.
 Teeth believed to be at the same angles as the 4g63 decoder.
