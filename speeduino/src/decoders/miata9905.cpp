@@ -141,8 +141,6 @@ void triggerSecondary(uint32_t curTime, const statuses &current, shared::state_t
     decoderState.lastGap = decoderState.curGap2;
     decoderState.secondaryToothCount++;
 
-    //TODO Add some secondary filtering here
-
     //Record the VVT tooth time
     if( (decoderState.toothCurrentCount == 1) && (curTime > decoderState.toothLastToothTime) )
     {
@@ -199,6 +197,10 @@ void setEndTeeth(const statuses &current, shared::state_t &decoderState, const c
       decoderState.ignitionEndTeeth[2] = 5;
       decoderState.ignitionEndTeeth[3] = 7;
     }
+    else 
+    {
+      // What to do?
+    }
   }
   else
   {
@@ -215,6 +217,10 @@ void setEndTeeth(const statuses &current, shared::state_t &decoderState, const c
       decoderState.ignitionEndTeeth[1] = 3;
       decoderState.ignitionEndTeeth[2] = 1; //Not used
       decoderState.ignitionEndTeeth[3] = 3; //Not used
+    }
+    else 
+    {
+      // What to do?
     }
   }
 }
