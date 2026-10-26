@@ -676,9 +676,8 @@ Teeth believed to be at the same angles as the 4g63 decoder.
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC.
 * (See: www.forum.diyefi.org/viewtopic.php?f=56&t=1077)
-* @defgroup miata_99_05 Miata '99 to '05
-* @{
 */
+
 int getCamAngle_Miata9905(void)
 {
   int16_t curAngle;
@@ -688,46 +687,6 @@ int getCamAngle_Miata9905(void)
   currentStatus.vvt1.angle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, currentStatus.vvt1.angle);
 
   return currentStatus.vvt1.angle;
-}
-
-static void triggerSetEndTeeth_Miata9905(void)
-{
-
-  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-  { 
-    if(currentStatus.advance >= 10)
-    {
-      _decoderState.ignitionEndTeeth[0] = 8;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 6;
-    }
-    else if (currentStatus.advance > 0)
-    {
-      _decoderState.ignitionEndTeeth[0] = 1;
-      _decoderState.ignitionEndTeeth[1] = 3;
-      _decoderState.ignitionEndTeeth[2] = 5;
-      _decoderState.ignitionEndTeeth[3] = 7;
-    }
-    
-  }
-  else
-  {
-    if(currentStatus.advance >= 10)
-    {
-      _decoderState.ignitionEndTeeth[0] = 4;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4; //Not used
-      _decoderState.ignitionEndTeeth[3] = 2; //Not used
-    }
-    else if(currentStatus.advance > 0)
-    {
-      _decoderState.ignitionEndTeeth[0] = 1;
-      _decoderState.ignitionEndTeeth[1] = 3;
-      _decoderState.ignitionEndTeeth[2] = 1; //Not used
-      _decoderState.ignitionEndTeeth[3] = 3; //Not used
-    }
-  }
 }
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
@@ -746,21 +705,22 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
   static const auto getCrankAngle = [](uint32_t curMicros) {
     return decoders::miata9905::getCrankAngle(curMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    decoders::miata9905::setEndTeeth(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Mazda AU version.
 Tooth #2 is defined as the next crank tooth after the single cam tooth.
