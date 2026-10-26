@@ -679,32 +679,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup miata_99_05 Miata '99 to '05
 * @{
 */
-static void triggerSec_Miata9905(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) || (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) )
-  {
-    _decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
-  }
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-    _decoderState.lastGap = _decoderState.curGap2;
-    _decoderState.secondaryToothCount++;
-
-    //TODO Add some secondary filtering here
-
-    //Record the VVT tooth time
-    if( (_decoderState.toothCurrentCount == 1) && (curTime2 > _decoderState.toothLastToothTime) )
-    {
-      _decoderState.lastVVTtime = curTime2 - _decoderState.toothLastToothTime;
-    }
-  }
-}
-
 static uint32_t getRevolutionTime_Miata9905(void)
 {
   tooth_speed_sample_t sample;
@@ -794,10 +768,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
   static const auto primaryTrigger = []() {
     decoders::miata9905::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::miata9905::triggerSecondary(micros(), currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Miata9905, getConfigSecTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_Miata9905)
                   .setGetCrankAngle(getCrankAngle_Miata9905)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)

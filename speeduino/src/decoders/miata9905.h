@@ -21,5 +21,7 @@ namespace miata9905 {
 
     void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 
+    void triggerSecondary(uint32_t curTime, const statuses &current, shared::state_t &decoderState);
+
 }
 }

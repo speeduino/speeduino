@@ -119,9 +119,34 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       else if( (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
     }
     // LCOV_EXCL_STOP
-    
+
     decoderState.secondaryToothCount = 0;
   } //Trigger filter
+}
+
+void triggerSecondary(uint32_t curTime, const statuses &current, shared::state_t &decoderState)
+{
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+
+  if((current.rotationStatus==EngineRotationStatus::Cranking) || (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) )
+  {
+    decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
+  }
+
+  if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime )
+  {
+    decoderState.toothLastSecToothTime = curTime;
+    decoderState.lastGap = decoderState.curGap2;
+    decoderState.secondaryToothCount++;
+
+    //TODO Add some secondary filtering here
+
+    //Record the VVT tooth time
+    if( (decoderState.toothCurrentCount == 1) && (curTime > decoderState.toothLastToothTime) )
+    {
+      decoderState.lastVVTtime = curTime - decoderState.toothLastToothTime;
+    }
+  }
 }
 
 }
