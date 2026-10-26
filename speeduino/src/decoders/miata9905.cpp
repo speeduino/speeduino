@@ -1,6 +1,7 @@
 #include "miata9905.h"
 #include "shared/perToothIgnition.h"
 #include "scheduledIO_ign.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -147,6 +148,31 @@ void triggerSecondary(uint32_t curTime, const statuses &current, shared::state_t
       decoderState.lastVVTtime = curTime - decoderState.toothLastToothTime;
     }
   }
+}
+
+uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState)
+{
+  uint32_t revolutionTime = 0U;
+
+  /*
+  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
+  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
+  */
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  if ( (current.RPM < current.crankRPM) && (sample.syncStatus==SyncStatus::Full) )
+  {
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
+    {
+      decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
+      return revolutionTime;
+    }
+    return shared::publishedRevolutionTime(current);
+  }
+
+  revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
+  decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if (decoderState.MAX_STALL_TIME < 366667UL) { decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+  return revolutionTime;
 }
 
 }

@@ -679,32 +679,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup miata_99_05 Miata '99 to '05
 * @{
 */
-static uint32_t getRevolutionTime_Miata9905(void)
-{
-  tooth_speed_sample_t sample;
-  uint32_t revolutionTime = 0U;
-
-  /*
-  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
-  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
-  */
-  sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  if ( (currentStatus.RPM < currentStatus.crankRPM) && (sample.syncStatus==SyncStatus::Full) )
-  {
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
-    {
-      _decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
-      return revolutionTime;
-    }
-    return publishedRevolutionTime(currentStatus);
-  }
-
-  revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if (_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-  return revolutionTime;
-}
-
 static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
 {
   return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
@@ -771,11 +745,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
   static const auto secondaryTrigger = []() {
     decoders::miata9905::triggerSecondary(micros(), currentStatus, _decoderState);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::miata9905::getRevolutionTime(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_Miata9905)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_Miata9905)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
                   .setReset(sharedDecoderReset)

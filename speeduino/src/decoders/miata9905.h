@@ -23,5 +23,7 @@ namespace miata9905 {
 
     void triggerSecondary(uint32_t curTime, const statuses &current, shared::state_t &decoderState);
 
+    uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState);
+
 }
 }
