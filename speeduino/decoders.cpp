@@ -679,11 +679,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup miata_99_05 Miata '99 to '05
 * @{
 */
-static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 int getCamAngle_Miata9905(void)
 {
   int16_t curAngle;
@@ -748,12 +743,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
   static const auto getRevolutionTime = []() {
     return decoders::miata9905::getRevolutionTime(currentStatus, _decoderState);
   };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::miata9905::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_Miata9905)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

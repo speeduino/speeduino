@@ -2,6 +2,7 @@
 #include "shared/perToothIgnition.h"
 #include "scheduledIO_ign.h"
 #include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -173,6 +174,11 @@ uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderStat
   decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   if (decoderState.MAX_STALL_TIME < 366667UL) { decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
   return revolutionTime;
+}
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(decoderState).calculateCrankAngle(currMicros, decoderState.toothAngles, page4));
 }
 
 }
