@@ -679,91 +679,6 @@ Tooth number one is at 355* ATDC.
 * @defgroup miata_99_05 Miata '99 to '05
 * @{
 */
-static void triggerPri_Miata9905(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) || (currentStatus.startRevolutions == 0) )
-  {
-    _decoderState.toothCurrentCount++;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    if( (_decoderState.toothCurrentCount == (_decoderState.triggerActualTeeth + 1)) )
-    {
-       _decoderState.toothCurrentCount = 1; //Reset the counter
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       currentStatus.startRevolutions++; //Counter
-    }
-    else
-    {
-      if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (configPage4.useResync == true) )
-      {
-        if(_decoderState.secondaryToothCount == 2)
-        {
-          _decoderState.toothCurrentCount = 6;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-      }
-    }
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-
-      //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (configPage4.triggerFilter == 1) || (currentStatus.RPM < 1400) )
-      {
-        //Lite filter
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; _decoderState.triggerFilterTime = _decoderState.curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-        else { _decoderState.triggerToothAngle = 110; _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 3UL)); } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
-      }
-      else if(configPage4.triggerFilter == 2)
-      {
-        //Medium filter level
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; _decoderState.triggerFilterTime = (_decoderState.curGap * 5) >> 2 ; } //87.5 degrees with a target of 110
-        else { _decoderState.triggerToothAngle = 110; _decoderState.triggerFilterTime = (_decoderState.curGap >> 1); } //55 degrees with a target of 70
-      }
-      else if (configPage4.triggerFilter == 3)
-      {
-        //Aggressive filter level
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 11UL)) ; } //96.26 degrees with a target of 110
-        else { _decoderState.triggerToothAngle = 110; _decoderState.triggerFilterTime = rshift<5>((uint32_t)(_decoderState.curGap * 9UL)); } //61.87 degrees with a target of 70
-      }
-      else if (configPage4.triggerFilter == 0)
-      {
-        //trigger filter is turned off.
-        _decoderState.triggerFilterTime = 0;
-        _decoderState.triggerSecFilterTime = 0;
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; } //96.26 degrees with a target of 110
-        else { _decoderState.triggerToothAngle = 110; }
-      }
-
-      //EXPERIMENTAL!
-      //New ignition mode is ONLY available on 9905 when the trigger angle is set to the stock value of 0.
-      if(    (configPage2.perToothIgn == true) 
-          && (configPage4.triggerAngle == 0) 
-          && (currentStatus.advance > 0) )
-      {
-        int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
-
-        //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-        else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-      }
-    } //Has sync
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
-    {
-      if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
-      else if( (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
-    }
-    _decoderState.secondaryToothCount = 0;
-  } //Trigger filter
-
-}
-
 static void triggerSec_Miata9905(void)
 {
   uint32_t curTime2 = micros();
@@ -876,8 +791,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
 {
   _decoderState = decoders::miata9905::initialise(micros(), currentStatus);
 
+  static const auto primaryTrigger = []() {
+    decoders::miata9905::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Miata9905, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Miata9905, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_Miata9905)
                   .setGetCrankAngle(getCrankAngle_Miata9905)
