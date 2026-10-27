@@ -1,4 +1,5 @@
 #include "mazdaau.h"
+#include "scheduledIO_ign.h"
 
 namespace decoders {
 
@@ -24,6 +25,45 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
   state.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
 
   return state;
+}
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t & decoderState, const config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( decoderState.curGap >= decoderState.triggerFilterTime )
+  {
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    decoderState.toothCurrentCount++;
+    if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 5) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
+    {
+       decoderState.toothCurrentCount = 1; //Reset the counter
+       decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+       decoderState.toothOneTime = curTime;
+       decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+       current.startRevolutions++; //Counter
+    }
+
+    if (decoderState.decoderStatus.syncStatus==SyncStatus::Full)
+    {
+      // LCOV_EXCL_START
+      // Not testable ATM
+      // Locked cranking timing is available, fixed at 12* BTDC
+      if ( (current.rotationStatus==EngineRotationStatus::Cranking) && page4.ignCranklock )
+      {
+        if( decoderState.toothCurrentCount == 1 ) { endCoilCharge(1U); }
+        else if( decoderState.toothCurrentCount == 3 ) { endCoilCharge(2U); }
+      }
+      // LCOV_EXCL_STOP
+
+      //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
+      if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) ) { decoderState.triggerToothAngle = 72; decoderState.triggerFilterTime = decoderState.curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
+      else { decoderState.triggerToothAngle = 108; decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 3UL)); } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
+
+      decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+      decoderState.toothLastToothTime = curTime;
+    } //Has sync
+  } //Filter time
 }
 
 }

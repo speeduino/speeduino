@@ -729,43 +729,6 @@ Tooth number one is at 348* ATDC.
 * @defgroup mazda_au Mazda AU
 * @{
 */
-static void triggerPri_MazdaAU(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-  {
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    _decoderState.toothCurrentCount++;
-    if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 5) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
-    {
-       _decoderState.toothCurrentCount = 1; //Reset the counter
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-       currentStatus.startRevolutions++; //Counter
-    }
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-      // Locked cranking timing is available, fixed at 12* BTDC
-      if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock )
-      {
-        if( _decoderState.toothCurrentCount == 1 ) { endCoilCharge(1U); }
-        else if( _decoderState.toothCurrentCount == 3 ) { endCoilCharge(2U); }
-      }
-
-      //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) ) { _decoderState.triggerToothAngle = 72; _decoderState.triggerFilterTime = _decoderState.curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
-      else { _decoderState.triggerToothAngle = 108; _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 3UL)); } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
-
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime;
-    } //Has sync
-  } //Filter time
-}
-
 static void triggerSec_MazdaAU(void)
 {
   uint32_t curTime2 = micros();
@@ -831,8 +794,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
 {
   _decoderState = decoders::mazdaau::initialise();
 
+  static const auto primaryTrigger = [] () {
+    decoders::mazdaau::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_MazdaAU, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_MazdaAU, FALLING)
                   .setGetRevolutionTime(getRevolutionTime_MazdaAU)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)

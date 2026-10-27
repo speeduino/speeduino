@@ -16,5 +16,7 @@ namespace mazdaau  {
 
     shared::state_t initialise(void);
 
+    void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t & decoderState, const config4 &page4);
+
 }
 }
