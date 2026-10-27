@@ -1,6 +1,7 @@
 #include "mazdaau.h"
 #include "scheduledIO_ign.h"
 #include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -114,5 +115,15 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   return stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
 }
 
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  int16_t crankAngle = 0;
+  if(decoderState.decoderStatus.syncStatus==SyncStatus::Full)
+  {
+    crankAngle = decoders::shared::atomic_make_lookup_caa(decoderState).calculateCrankAngle(currMicros, decoderState.toothAngles, page4);
+  }
+
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
 }
 }

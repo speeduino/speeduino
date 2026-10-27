@@ -726,20 +726,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
 /** Mazda AU version.
 Tooth #2 is defined as the next crank tooth after the single cam tooth.
 Tooth number one is at 348* ATDC.
-* @defgroup mazda_au Mazda AU
-* @{
 */
-static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
-{
-  int16_t crankAngle = 0;
-  if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-  {
-    crankAngle = decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
-  }
-
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
 {
   _decoderState = decoders::mazdaau::initialise();
@@ -753,20 +740,21 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
   static const auto getRevolutionTime = [] () {
     return decoders::mazdaau::getRevolutionTime(currentStatus, _decoderState);
   };
+  static const auto getCrankAngle = [] (uint32_t curTime) {
+    return decoders::mazdaau::getCrankAngle(curTime, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_MazdaAU)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Non-360 Dual wheel with 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
 There can be no missing teeth on the primary wheel.
