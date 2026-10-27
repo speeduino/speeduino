@@ -15,6 +15,16 @@ namespace detail {
 
 using fnCurMicros_t = decltype(micros)*;
 
+static inline uint32_t pwmTicksToPidCount(uint32_t pwmTicks)
+{
+    return pwmTicks << 2U;
+}
+
+static inline uint32_t pidCountToPwmTicks(uint32_t pidCount)
+{
+    return pidCount >> 2U;
+}
+
 struct state_t
 {
     uint8_t idleCounter = 0; //Used for tracking the number of calls to the idle control function
@@ -55,6 +65,28 @@ struct state_t
     {
         idle_pin.setPinLow();
         idle2_pin.setPinHigh(); //If 2 idle channels are in use, flip idle2 to be the opposite of idle1
+    }
+
+    /** Convert a duty percentage (0-100) to PWM timer ticks */
+    uint16_t loadToPwmTicks(uint8_t load) const
+    {
+        return percentage(load, idle_pwm_max_count);
+    }
+
+    /** Convert a PWM frequency (in Hz) to duty percentage (0-100)*/
+    inline uint8_t pwmTicksToLoad(uint16_t pwmFreq)
+    {
+        return (uint8_t)std::min((uint16_t)ONE_HUNDRED_PCT, fast_div32_16((uint32_t)(pwmFreq * UINT32_C(100)), idle_pwm_max_count));
+    }    
+
+    uint32_t rpmToPidCount(uint16_t rpm) const
+    {
+        return percentage(rpm, getPidMaxCount());
+    }
+
+    uint32_t getPidMaxCount(void) const
+    {
+        return pwmTicksToPidCount(idle_pwm_max_count);
     }    
 };
 
