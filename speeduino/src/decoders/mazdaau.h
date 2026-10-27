@@ -20,5 +20,6 @@ namespace mazdaau  {
 
     void triggerSecondary(uint32_t curTime, shared::state_t & decoderState);
 
+    uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState);
 }
 }

@@ -1,5 +1,6 @@
 #include "mazdaau.h"
 #include "scheduledIO_ign.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -92,6 +93,25 @@ void triggerSecondary(uint32_t curTime, shared::state_t & decoderState)
     }
     decoderState.secondaryToothCount++;
   }
+}
+
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
+{
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  uint32_t revolutionTime = 0U;
+
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
+
+  /*
+  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
+  Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
+  */
+  if (current.RPM < current.crankRPM)
+  {
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
+    return shared::publishedRevolutionTime(current);
+  }
+  return stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
 }
 
 }

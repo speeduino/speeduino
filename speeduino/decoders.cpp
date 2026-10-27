@@ -729,25 +729,6 @@ Tooth number one is at 348* ATDC.
 * @defgroup mazda_au Mazda AU
 * @{
 */
-static uint32_t getRevolutionTime_MazdaAU(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t revolutionTime = 0U;
-
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  /*
-  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
-  Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
-  */
-  if (currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
-    return publishedRevolutionTime(currentStatus);
-  }
-  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
 static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
 {
   int16_t crankAngle = 0;
@@ -769,11 +750,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
   static const auto secondaryTrigger = [] () {
     decoders::mazdaau::triggerSecondary(micros(), _decoderState);
   };
+  static const auto getRevolutionTime = [] () {
+    return decoders::mazdaau::getRevolutionTime(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
-                  .setGetRevolutionTime(getRevolutionTime_MazdaAU)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
