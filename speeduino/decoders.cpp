@@ -58,6 +58,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/gm24x.h"
 #include "src/decoders/jeep2000.h"
 #include "src/decoders/audi135.h"
+#include "src/decoders/hondad17.h"
 
 using namespace decoders::shared;
 
@@ -602,89 +603,31 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 }
 
 /** Honda D17 (1.7 liter 4 cyl SOHC).
-* 
-* @defgroup dec_honda_d17 Honda D17
-* @{
 */
-static void triggerPri_HondaD17(void)
-{
-   _decoderState.lastGap = _decoderState.curGap;
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-   _decoderState.toothCurrentCount++; //Increment the tooth counter
-
-   _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-   //
-   if( (_decoderState.toothCurrentCount == 13) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
-   {
-     _decoderState.toothCurrentCount = 0;
-   }
-   else if( (_decoderState.toothCurrentCount == 1) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
-   {
-     _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-     _decoderState.toothOneTime = curTime;
-     currentStatus.startRevolutions++; //Counter
-
-     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-     _decoderState.toothLastToothTime = curTime;
-   }
-   else
-   {
-     //13th tooth
-     _decoderState.targetGap = (_decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
-     if ( _decoderState.curGap < _decoderState.targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 13th tooth
-     {
-       _decoderState.toothCurrentCount = 0;
-       _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-     }
-     else
-     {
-       //The tooth times below don't get set on tooth 13(The magical 13th tooth should not be considered for any calculations that use those times)
-       _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-       _decoderState.toothLastToothTime = curTime;
-     }
-   }
-
-}
-
-static uint32_t getRevolutionTime_HondaD17(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_HondaD17(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  // if temptoothCurrentCount is 0, the last tooth seen was the 13th one. Based on this, ignore the 13th tooth and use the 12th one as the last reference.
-  if(calculator._toothCurrentCount == 0 )
-  {
-    calculator._toothCurrentCount = 12;
-  }
-  
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / 12; //The number of degrees that passes from tooth to tooth
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  
+  _decoderState = decoders::hondad17::initialise();
+
+  static const auto primaryTrigger = []() {
+    decoders::hondad17::triggerPrimary(micros(), currentStatus, _decoderState);
+  };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::hondad17::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_HondaD17, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_HondaD17)
-                  .setGetCrankAngle(getCrankAngle_HondaD17)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Honda J 32 (3.2 liter 6 cyl SOHC).
 *  The Honda J32a4 (and all J series I'm aware of) has a crank trigger with nominal 24 teeth (22 teeth actually present). 
