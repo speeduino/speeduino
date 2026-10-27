@@ -66,5 +66,33 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t & decod
   } //Filter time
 }
 
+void triggerSecondary(uint32_t curTime, shared::state_t & decoderState)
+{
+  decoderState.lastGap = decoderState.curGap2;
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+  decoderState.toothLastSecToothTime = curTime;
+
+  if(decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
+  {
+    //we find sync by looking for the 2 teeth that are close together. The next crank tooth after that is the one we're looking for.
+    //For the sake of this decoder, the lone cam tooth will be designated #1
+    if(decoderState.secondaryToothCount == 2)
+    {
+      decoderState.toothCurrentCount = 1;
+      decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    }
+    else
+    {
+      decoderState.triggerFilterTime = 1500; //In case the engine has been running and then lost sync.
+      decoderState.targetGap = (decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
+      if ( decoderState.curGap2 < decoderState.targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
+      {
+        decoderState.secondaryToothCount = 2;
+      }
+    }
+    decoderState.secondaryToothCount++;
+  }
+}
+
 }
 }

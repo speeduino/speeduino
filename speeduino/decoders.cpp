@@ -729,37 +729,6 @@ Tooth number one is at 348* ATDC.
 * @defgroup mazda_au Mazda AU
 * @{
 */
-static void triggerSec_MazdaAU(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.lastGap = _decoderState.curGap2;
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  //if ( _decoderState.curGap2 < _decoderState.triggerSecFilterTime ) { return; }
-  _decoderState.toothLastSecToothTime = curTime2;
-
-  if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
-  {
-    //we find sync by looking for the 2 teeth that are close together. The next crank tooth after that is the one we're looking for.
-    //For the sake of this decoder, the lone cam tooth will be designated #1
-    if(_decoderState.secondaryToothCount == 2)
-    {
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else
-    {
-      _decoderState.triggerFilterTime = 1500; //In case the engine has been running and then lost sync.
-      _decoderState.targetGap = (_decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
-      if ( _decoderState.curGap2 < _decoderState.targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
-      {
-        _decoderState.secondaryToothCount = 2;
-      }
-    }
-    _decoderState.secondaryToothCount++;
-  }
-}
-
-
 static uint32_t getRevolutionTime_MazdaAU(void)
 {
   tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
@@ -797,10 +766,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
   static const auto primaryTrigger = [] () {
     decoders::mazdaau::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto secondaryTrigger = [] () {
+    decoders::mazdaau::triggerSecondary(micros(), _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_MazdaAU, FALLING)
+                  .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime_MazdaAU)
                   .setGetCrankAngle(getCrankAngle_MazdaAU)
                   .setReset(sharedDecoderReset)
