@@ -53,7 +53,10 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       // Teeth 14 and 22 are about 18 rather than 15 degrees so don't update last_gap with this unusual spacing
       decoderState.lastGap = decoderState.curGap;
     }
-    // else decoderState.toothCurrentCount == 14 or 22.  Take no further action. 
+    else
+    {
+      // else decoderState.toothCurrentCount == 14 or 22.  Take no further action. 
+    }
   }
   else // we do not have sync yet. While syncing, treat tooth 14 and 22 as normal teeth
   {
