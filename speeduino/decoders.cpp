@@ -764,6 +764,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
 {
   _decoderState = decoders::non360::initialise(configPage4);
 
+  static const auto triggerPrimary = []() {
+    // Note reuse of dual wheel
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto triggerSecondary = []() {
+    // Note reuse of dual wheel
+    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
   static const auto getRevolutionTime = []() {
     return decoders::non360::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
@@ -772,8 +780,8 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
   };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4)) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
-                  .setSecondaryTrigger(triggerSec_DualWheel, FALLING) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
+                  .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4)) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
+                  .setSecondaryTrigger(triggerSecondary, FALLING) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
