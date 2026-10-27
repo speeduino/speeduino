@@ -1,84 +1,82 @@
-#include "decoders.h"
-#include "crankMaths.h"
 #include "../test_utils.h"
-#include "globals.h"
-#include "src/decoders/shared/decoder_state.h"
+#include "src/decoders/non360.h"
 
-extern decoders::shared::state_t _decoderState;
 
 static void test_getCrankAngle(void)
 {
   // Configure a simple non360 wheel: 8 teeth, no multiplier
-  configPage4.triggerTeeth = 8;
-  configPage4.TrigAngMul = 1;
-  configPage4.triggerAngle = 0;
-
-  auto decoder = triggerSetup_non360();
+  config4 page4 = {};
+  page4.triggerTeeth = 8;
+  page4.TrigAngMul = 1;
+  auto decoderState = decoders::non360::initialise(page4);
 
   // Deterministic angle conversion
   setAngleConverterRevolutionTime(2000);
 
-  _decoderState.toothLastToothTime = 10000;
+  decoderState.toothLastToothTime = 10000;
 
   // tooth 1 -> base 0
-  _decoderState.toothCurrentCount = 1;
-  TEST_ASSERT_EQUAL(18, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
+  decoderState.toothCurrentCount = 1;
+  TEST_ASSERT_EQUAL(18, decoders::non360::getCrankAngle(decoderState.toothLastToothTime + 100, decoderState, page4));
 
   // tooth 0 -> treated as last tooth (triggerTeeth)
-  _decoderState.toothCurrentCount = 0;
-  TEST_ASSERT_EQUAL(351, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 200));
+  decoderState.toothCurrentCount = 0;
+  TEST_ASSERT_EQUAL(351, decoders::non360::getCrankAngle(decoderState.toothLastToothTime + 200, decoderState, page4));
 
   // Test with TrigAngMul >1 and different tooth count
-  configPage4.triggerTeeth = 10;
-  configPage4.TrigAngMul = 2;
-  configPage4.triggerAngle = 0;
-  decoder = triggerSetup_non360(); // recompute triggerToothAngle
-  _decoderState.toothLastToothTime = 20000;
-  _decoderState.toothCurrentCount = 3;
-  TEST_ASSERT_EQUAL(81, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 50));
+  page4.triggerTeeth = 10;
+  page4.TrigAngMul = 2;
+  page4.triggerAngle = 0;
+  decoderState = decoders::non360::initialise(page4); // recompute triggerToothAngle
+  decoderState.toothLastToothTime = 20000;
+  decoderState.toothCurrentCount = 3;
+  TEST_ASSERT_EQUAL(81, decoders::non360::getCrankAngle(decoderState.toothLastToothTime + 50, decoderState, page4));
 
   // Wrap-around: force triggerAngle large so result >=720
-  configPage4.triggerTeeth = 8;
-  configPage4.TrigAngMul = 1;
-  configPage4.triggerAngle = 500;
-  decoder = triggerSetup_non360();
-  _decoderState.toothLastToothTime = 30000;
-  _decoderState.toothCurrentCount = 8; // base = 7*45 = 315 -> +500 = 815 >=720 -> subtract 720 -> 95
-  TEST_ASSERT_EQUAL(97, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 10));
+  page4.triggerTeeth = 8;
+  page4.TrigAngMul = 1;
+  page4.triggerAngle = 500;
+  decoderState = decoders::non360::initialise(page4);
+  decoderState.toothLastToothTime = 30000;
+  decoderState.toothCurrentCount = 8; // base = 7*45 = 315 -> +500 = 815 >=720 -> subtract 720 -> 95
+  TEST_ASSERT_EQUAL(97, decoders::non360::getCrankAngle(decoderState.toothLastToothTime + 10, decoderState, page4));
 }
 
 static void test_getRevolutionTime(void)
 {
   // Configure wheel and build decoder
-  configPage4.triggerTeeth = 8;
-  auto decoder = triggerSetup_non360();
+  statuses current={};
+  config4 page4 = {};
+  page4.triggerTeeth = 8;
+  // page4.TrigAngMul = 1;
+  auto decoderState = decoders::non360::initialise(page4);
 
   // Ensure staging allows cranking calculation
-  configPage4.StgCycles = 0;
+  page4.StgCycles = 0;
 
-  // --- Cranking path: currentStatus.RPM < crankRPM -> crankingGetRevolutionTime
-  currentStatus.setRpm(0);
-  currentStatus.crankRPM = 400;
-  currentStatus.startRevolutions = 0; // cranking
-  currentStatus.revolutionTime = UINT32_MAX;
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  // --- Cranking path: current.RPM < crankRPM -> crankingGetRevolutionTime
+  current.setRpm(0);
+  current.crankRPM = 400;
+  current.startRevolutions = 0; // cranking
+  current.revolutionTime = UINT32_MAX;
+  decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  decoderState.toothCurrentCount = 1;
+  decoderState.toothLastMinusOneToothTime = 1000UL;
   // Choose gap so (gap * triggerTeeth) == 60000us
-  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + (60000UL / configPage4.triggerTeeth); // 60000/8 = 7500
-  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+  decoderState.toothLastToothTime = decoderState.toothLastMinusOneToothTime + (60000UL / page4.triggerTeeth); // 60000/8 = 7500
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoders::non360::getRevolutionTime(current, decoderState, page4));
 
   // --- Running path: use stdGetRevolutionTime(CRANK_SPEED) via toothOne pair
-  currentStatus.setRpm(2000);
-  currentStatus.startRevolutions = 1; // not cranking
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  _decoderState.toothOneMinusOneTime = 1000UL;
-  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 60000UL; // revTime = 60000
-  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+  current.setRpm(2000);
+  current.startRevolutions = 1; // not cranking
+  decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  decoderState.toothOneMinusOneTime = 1000UL;
+  decoderState.toothOneTime = decoderState.toothOneMinusOneTime + 60000UL; // revTime = 60000
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoders::non360::getRevolutionTime(current, decoderState, page4));
 
   // --- Fallback: when sync lost, the speed is unknown
-  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
+  decoderState.decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL_UINT32(0UL, decoders::non360::getRevolutionTime(current, decoderState, page4));
 }
 
 void testNon360(void)
