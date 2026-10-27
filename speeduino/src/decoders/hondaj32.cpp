@@ -15,11 +15,6 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
   
   // Filter (ignore) triggers that are faster than this.
   state.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60 * 24));
-  state.toothCurrentCount = 0;
-  state.toothOneTime = 0;
-  state.toothOneMinusOneTime = 0;
-  state.lastGap = 0;
-  state.revolutionOne = 0;
 
   return state;
 }
