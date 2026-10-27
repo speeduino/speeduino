@@ -57,6 +57,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/4g63.h"
 #include "src/decoders/gm24x.h"
 #include "src/decoders/jeep2000.h"
+#include "src/decoders/audi135.h"
 
 using namespace decoders::shared;
 
@@ -570,99 +571,29 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Jeep2000(void)
 /** Audi with 135 teeth on the crank and 1 tooth on the cam.
 * This is very similar to the dual wheel decoder, however due to the 135 teeth not dividing evenly into 360,
 * only every 3rd crank tooth is used in calculating the crank angle. This effectively makes it a 45 tooth dual wheel setup.
-* @defgroup dec_audi135 Audi 135
-* @{
 */
-static void triggerPri_Audi135(void)
-{
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothSystemLastToothTime;
-   if ( (_decoderState.curGap > _decoderState.triggerFilterTime) || (currentStatus.startRevolutions == 0) )
-   {
-     _decoderState.toothSystemCount++;
-
-     if ( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full ) { _decoderState.toothLastToothTime = curTime; }
-     else
-     {
-       if ( _decoderState.toothSystemCount >= 3 )
-       {
-         //We only proceed for every third tooth
-
-         _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-         _decoderState.toothSystemLastToothTime = curTime;
-         _decoderState.toothSystemCount = 0;
-         _decoderState.toothCurrentCount++; //Increment the tooth counter
-
-         if ( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount > 45) )
-         {
-           _decoderState.toothCurrentCount = 1;
-           _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-           _decoderState.toothOneTime = curTime;
-           _decoderState.revolutionOne = !_decoderState.revolutionOne;
-           currentStatus.startRevolutions++; //Counter
-         }
-
-         _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-
-         _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-         _decoderState.toothLastToothTime = curTime;
-       } //3rd tooth check
-     } // Sync check
-   } // Trigger filter
-}
-
-static void triggerSec_Audi135(void)
-{
-  /*
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( _decoderState.curGap2 < _decoderState.triggerSecFilterTime ) { return; }
-  _decoderState.toothLastSecToothTime = curTime2;
-  */
-
-  if( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
-  {
-    _decoderState.toothCurrentCount = 0;
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    _decoderState.toothSystemCount = 3; //Need to set this to 3 so that the next primary tooth is counted
-  }
-  else if (configPage4.useResync == 1) { _decoderState.toothCurrentCount = 0; _decoderState.toothSystemCount = 3; }
-  else if ( (currentStatus.startRevolutions < 100) && (_decoderState.toothCurrentCount != 45) ) { _decoderState.toothCurrentCount = 0; }
-  _decoderState.revolutionOne = 1; //Sequential revolution reset
-}
-
-static uint32_t getRevolutionTime_Audi135(void)
-{
-   return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_Audi135(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  //Handle case where the secondary tooth was the last one seen
-  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 45; }
-
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 8; //135/3 = 45, 360/45 = 8 degrees every 3 teeth
-  _decoderState.toothCurrentCount = UINT8_MAX; //Default value
-  _decoderState.triggerFilterTime = (unsigned long)(MICROS_PER_SEC / (MAX_RPM / 60U * 135UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
-  
+  _decoderState = decoders::audi135::initialise();
+
+  static const auto primaryTrigger = []() {
+    decoders::audi135::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::audi135::triggerSecondary(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::audi135::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Audi135, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Audi135, RISING)
-                  .setGetRevolutionTime(getRevolutionTime_Audi135)
-                  .setGetCrankAngle(getCrankAngle_Audi135)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, RISING)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -670,7 +601,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Audi135(void)
                   .build();
 }
 
-/** @} */
 /** Honda D17 (1.7 liter 4 cyl SOHC).
 * 
 * @defgroup dec_honda_d17 Honda D17
