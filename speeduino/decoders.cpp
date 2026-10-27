@@ -759,56 +759,29 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
 
 /** Non-360 Dual wheel with 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
 There can be no missing teeth on the primary wheel.
-* @defgroup dec_non360 Non-360 Dual wheel
-* @{
 */
-static uint32_t getRevolutionTime_non360(void)
-{
-  if ( (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) && (_decoderState.toothCurrentCount != 0) )
-  {
-    if (currentStatus.RPM < currentStatus.crankRPM) { return crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, configPage4.triggerTeeth, CRANK_SPEED); }
-    return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-  }
-  return 0U; //Speed is unknown without sync
-}
-
-static int16_t getCrankAngle_non360(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle);
-
-  //Handle case where the secondary tooth was the last one seen
-  uint16_t toothCount = std::get<2>(data);
-  if(toothCount == 0)
-  { 
-    toothCount = configPage4.triggerTeeth; 
-  }
-
-  //Number of teeth that have passed since tooth 1, multiplied by the angle each tooth represents, plus the angle that tooth 1 is ATDC. This gives accuracy only to the nearest tooth.
-  //Have to divide by the multiplier to get back to actual crank angle.
-  int16_t crankAngle = ((toothCount - 1) * std::get<3>(data)) / configPage4.TrigAngMul;
-
-  decoders::shared::simple_crank_angle_calculator_t calculator;
-  std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore, std::ignore) = data;
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
 {
   _decoderState = decoders::non360::initialise(configPage4);
 
+  static const auto getRevolutionTime = []() {
+    return decoders::non360::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::non360::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4)) //Is identical to the dual wheel decoder, so that is used. Same goes for the secondary below
                   .setSecondaryTrigger(triggerSec_DualWheel, FALLING) //Note the use of the Dual Wheel trigger function here. No point in having the same code in twice.
-                  .setGetRevolutionTime(getRevolutionTime_non360)
-                  .setGetCrankAngle(getCrankAngle_non360)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Nissan 360 tooth on cam (Optical trigger disc inside distributor housing).
 See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
