@@ -10,6 +10,7 @@ A full copy of the license may be found in the projects root directory
 #include "preprocessor.h"
 #include "units.h"
 #include "globals.h"
+#include "shared/pwm.h"
 
 using namespace idleController::detail;
 TESTABLE_STATIC state_t _idleState;
@@ -17,11 +18,9 @@ TESTABLE_STATIC fnCurMicros_t _idleCurMicros = &micros;
 
 #define STEPPER_POWER_WHEN_ACTIVE 0
 
-TESTABLE_CONSTEXPR table2D_u8_u8_10 iacPWMTable(&configPage6.iacBins, &configPage6.iacOLPWMVal);
 TESTABLE_CONSTEXPR table2D_u8_u8_10 iacStepTable(&configPage6.iacBins, &configPage6.iacOLStepVal);
 //Open loop tables specifically for cranking
 TESTABLE_CONSTEXPR table2D_u8_u8_4 iacCrankStepsTable(&configPage6.iacCrankBins, &configPage6.iacCrankSteps);
-TESTABLE_CONSTEXPR table2D_u8_u8_4 iacCrankDutyTable(&configPage6.iacCrankBins, &configPage6.iacCrankDuty);
 
 /*
 These functions cover the PWM and stepper idle control
@@ -107,7 +106,7 @@ void initialiseIdle(bool forcehoming)
       configureIdlePID( configPage6, 
                         _idleState.rpmToPidCount(configPage2.iacCLminValue), 
                         _idleState.rpmToPidCount(configPage2.iacCLmaxValue),
-                        table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)));
+                        idleController::pwm::lookupCrankingLoad(currentStatus));
       _idleState.idleCounter = 0;
       break;
 
@@ -336,7 +335,7 @@ void idleControl(void)
       if( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+        currentStatus.idleLoad = idleController::pwm::lookupCrankingLoad(currentStatus);
         _idleState.idleTaper = 0;
       }
       else if ( currentStatus.rotationStatus!=EngineRotationStatus::Running)
@@ -344,7 +343,7 @@ void idleControl(void)
         if( configPage6.iacPWMrun == true)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
-          currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = idleController::pwm::lookupCrankingLoad(currentStatus); //All temps are offset by 40 degrees
           _idleState.idleTaper = 0;
         }
       }
@@ -353,15 +352,16 @@ void idleControl(void)
         if ( _idleState.idleTaper < configPage2.idleTaperTime )
         {
           //Tapering between cranking IAC value and running
-          currentStatus.idleLoad = map(_idleState.idleTaper, 0, configPage2.idleTaperTime,\
-          table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)),\
-          table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)));
+          currentStatus.idleLoad = map( _idleState.idleTaper, 
+                                        0, configPage2.idleTaperTime,
+                                        idleController::pwm::lookupCrankingLoad(currentStatus),
+                                        idleController::pwm::lookupRunningLoad(currentStatus));
           if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { _idleState.idleTaper++; }
         }
         else
         {
           //Standard running
-          currentStatus.idleLoad = table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = idleController::pwm::lookupRunningLoad(currentStatus); //All temps are offset by 40 degrees
         }
         // Add air conditioning idle-up - we only do this if the engine is running (A/C should never engage with engine off).
         if(configPage15.airConIdleSteps>0 && currentStatus.acStatus.turningOn == true) { currentStatus.idleLoad += configPage15.airConIdleSteps; }
@@ -379,7 +379,7 @@ void idleControl(void)
       if( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+        currentStatus.idleLoad = idleController::pwm::lookupCrankingLoad(currentStatus); //All temps are offset by 40 degrees
         _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
         _idleState.idle_pid_target_value = pwmTicksToPidCount(_idleState.idle_pwm_target_value);
         _idleState.idlePID.reset(currentStatus.RPM); //Update output to smooth transition
@@ -389,7 +389,7 @@ void idleControl(void)
         if( configPage6.iacPWMrun == true)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
-          currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = idleController::pwm::lookupCrankingLoad(currentStatus); //All temps are offset by 40 degrees
           _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
         }
       }
@@ -437,7 +437,7 @@ void idleControl(void)
       if( currentStatus.rotationStatus==EngineRotationStatus::Cranking )
       {
         //Currently cranking. Use the cranking table
-        currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+        currentStatus.idleLoad = idleController::pwm::lookupCrankingLoad(currentStatus); //All temps are offset by 40 degrees
         _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
         _idleState.idle_pid_target_value = pwmTicksToPidCount(_idleState.idle_pwm_target_value);
         _idleState.idlePID.reset(currentStatus.RPM); //Update output to smooth transition
@@ -447,14 +447,14 @@ void idleControl(void)
         if( configPage6.iacPWMrun == true)
         {
           //Engine is not running or cranking, but the run before crank flag is set. Use the cranking table
-          currentStatus.idleLoad = table2D_getValue(&iacCrankDutyTable, temperatureAddOffset(currentStatus.coolant)); //All temps are offset by 40 degrees
+          currentStatus.idleLoad = idleController::pwm::lookupCrankingLoad(currentStatus); //All temps are offset by 40 degrees
           _idleState.idle_pwm_target_value = _idleState.loadToPwmTicks(currentStatus.idleLoad);
         }
       }
       else
       {
         //Read the OL table as feedforward term
-        _idleState.FeedForwardTerm = _idleState.rpmToPidCount(table2D_getValue(&iacPWMTable, temperatureAddOffset(currentStatus.coolant)));
+        _idleState.FeedForwardTerm = _idleState.rpmToPidCount(idleController::pwm::lookupRunningLoad(currentStatus));
         
         // Add an offset to the feed forward term. When tuned correctly, the extra load from the air conditioning
         // should exactly cancel this out and the PID loop will be relatively unaffected.
