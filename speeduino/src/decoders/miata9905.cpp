@@ -3,6 +3,7 @@
 #include "scheduledIO_ign.h"
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
+#include "unit_testing.h"
 
 namespace decoders {
 
@@ -32,7 +33,6 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
 
   state.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * state.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   state.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  state.triggerSecFilterTime = 0; //Need to figure out something better for this
   state.decoderFeatures.hasFixedCrankingTiming = true;
   state.decoderStatus.toothAngleIsCorrect = true;
 
@@ -46,7 +46,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   {
     decoderState.toothCurrentCount++;
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    if( (decoderState.toothCurrentCount == (decoderState.triggerActualTeeth + 1)) )
+    if (decoderState.toothCurrentCount == (decoderState.triggerActualTeeth + 1))
     {
        decoderState.toothCurrentCount = 1; //Reset the counter
        decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
@@ -55,13 +55,11 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     }
     else
     {
-      if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (page4.useResync == true) )
+      if( ((decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (page4.useResync == true))
+        && (decoderState.secondaryToothCount == 2))
       {
-        if(decoderState.secondaryToothCount == 2)
-        {
-          decoderState.toothCurrentCount = 6;
-          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
+        decoderState.toothCurrentCount = 6;
+        decoderState.decoderStatus.syncStatus = SyncStatus::Full;
       }
     }
 
@@ -87,8 +85,12 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 11UL)) ; } //96.26 degrees with a target of 110
         else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = rshift<5>((uint32_t)(decoderState.curGap * 9UL)); } //61.87 degrees with a target of 70
       }
-      else if (page4.triggerFilter == 0)
+      else
       {
+        // LCOV_EXCL_START
+        INTERNAL_TEST_ASSERT(page4.triggerFilter==TRIGGER_FILTER_OFF);
+        // LCOV_EXCL_STOP
+        
         //trigger filter is turned off.
         decoderState.triggerFilterTime = 0;
         decoderState.triggerSecFilterTime = 0;
@@ -102,7 +104,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           && (page4.triggerAngle == 0) 
           && (current.advance > 0) )
       {
-        int16_t crankAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)];
+        int16_t crankAngle = decoderState.toothAngles[decoderState.toothCurrentCount-1];
 
         //Handle non-sequential tooth counts 
         if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) && (decoderState.toothCurrentCount > page2.nCylinders) ) { checkPerToothTiming(current, decoderState, page4, crankAngle, (decoderState.toothCurrentCount-page2.nCylinders) ); }
@@ -119,6 +121,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     {
       if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
       else if( (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
+      else { /* Nothing to do */}
     }
     // LCOV_EXCL_STOP
 
