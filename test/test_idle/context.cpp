@@ -50,10 +50,20 @@ static void prepare_stepper_run_table(void)
 
 void context_t::prepare_idle(uint8_t algorithm)
 {
+    // Idle test pins; 
+    constexpr uint8_t TEST_IDLE1_PIN = 18U;
+    constexpr uint8_t TEST_IDLE2_PIN = 19U;
+    constexpr uint8_t TEST_IDLEUP_INPUT_PIN = 20U;
+    constexpr uint8_t TEST_IDLEUP_OUTPUT_PIN = 21U;
+
     pins.pinIdle1 = TEST_IDLE1_PIN;
     pins.pinIdle2 = TEST_IDLE2_PIN;
     pins.pinIdleUp = TEST_IDLEUP_INPUT_PIN;
     pins.pinIdleUpOutput = TEST_IDLEUP_OUTPUT_PIN;
+    pins.pinStepperEnable = 22;
+    pins.pinStepperStep = 23;
+    pins.pinStepperDir = 24;
+
     page6.iacAlgorithm = algorithm;
     page6.idleKP = 100U;
     page6.idleKI = 50U;
@@ -73,8 +83,7 @@ void context_t::prepare_idle(uint8_t algorithm)
 
 void context_t::init(void)
 {
-    _idleState = idleController::detail::state_t();
-    initialiseIdle(false);
+    initialiseIdle(true);
 }
 
 uint32_t context_t::idleControl(uint32_t startTime, uint32_t increment, uint8_t stepCount)

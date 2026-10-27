@@ -14,6 +14,8 @@ void runAllTests(void)
     extern void testIdleControlPwmOlCl(void);
     extern void testIdleControlPwmCl(void);
     extern void testIdleInterrupt(void);
+    extern void testIdleControlState(void);
+    extern void testStepperState(void);
 
     testInitialiseIdle();
     testDisableIdle();
@@ -26,6 +28,8 @@ void runAllTests(void)
     testIdleControlPwmOlCl();
     testIdleControlPwmCl();
     testIdleInterrupt();
+    testIdleControlState();
+    testStepperState();
 }
 
 TEST_HARNESS(runAllTests)

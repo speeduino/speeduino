@@ -15,38 +15,26 @@ static void test_idleUpInputAndOutput(void)
   context.page2.idleUpOutputEnabled = true;
   context.init();
 
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
+  _idleState.pinIdleUpInput._pin.setPinLow();
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_TRUE(context.current.idleUpOutputActive);
-#if !defined(__AVR__)
-  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
-#endif
+  TEST_ASSERT_TRUE(_idleState.pinIdleUpOutput._pin.isPinHigh());
 
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
+  _idleState.pinIdleUpInput._pin.setPinHigh();
   idleControl();
   TEST_ASSERT_FALSE(context.current.idleUpActive);
-  TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
-#if !defined(__AVR__)
-  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
-#endif
+  TEST_ASSERT_TRUE(_idleState.pinIdleUpOutput._pin.isPinLow());
 
   context.page2.idleUpPolarity = 1U;
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, HIGH);
+  _idleState.pinIdleUpInput._pin.setPinHigh();
   idleControl();
   TEST_ASSERT_TRUE(context.current.idleUpActive);
-  TEST_ASSERT_TRUE(context.current.idleUpOutputActive);
-#if !defined(__AVR__)
-  TEST_ASSERT_EQUAL_UINT8(HIGH, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
-#endif
+  TEST_ASSERT_TRUE(_idleState.pinIdleUpOutput._pin.isPinHigh());
 
-  digitalWrite(TEST_IDLEUP_INPUT_PIN, LOW);
+  _idleState.pinIdleUpInput._pin.setPinLow();
   idleControl();
-#if !defined(__AVR__)
   TEST_ASSERT_FALSE(context.current.idleUpActive);
-  TEST_ASSERT_FALSE(context.current.idleUpOutputActive);
-  TEST_ASSERT_EQUAL_UINT8(LOW, digitalRead(TEST_IDLEUP_OUTPUT_PIN));
-#endif
+  TEST_ASSERT_TRUE(_idleState.pinIdleUpOutput._pin.isPinLow());
 }
 
 static void test_basic_coverage_allModes(void)

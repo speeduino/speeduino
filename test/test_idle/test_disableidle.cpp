@@ -107,11 +107,11 @@ static void test_disableIdle_stepper_moves_to_crank_target(void)
   context.init();
 
   context.current.idleUpActive = true;
-  _idleState.idleStepper.targetIdleStep = 0;
+  _idleState.idleStepper.targetStep = 0;
 
   disableIdle();
 
-  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(180, _idleState.idleStepper.targetStep);
   TEST_ASSERT_FALSE(context.current.idleOn);
   TEST_ASSERT_EQUAL_UINT8(0U, context.current.idleLoad);
 }
@@ -125,11 +125,11 @@ static void test_disableIdle_stepper_clamps_crank_target(void)
   context.init();
 
   context.current.idleUpActive = true;
-  _idleState.idleStepper.targetIdleStep = 0;
+  _idleState.idleStepper.targetStep = 0;
 
   disableIdle();
 
-  TEST_ASSERT_EQUAL_INT(60, _idleState.idleStepper.targetIdleStep);
+  TEST_ASSERT_EQUAL_INT(60, _idleState.idleStepper.targetStep);
 }
 
 static void test_disableIdle_stepper_unhomed_starts_homing(void)
@@ -139,13 +139,13 @@ static void test_disableIdle_stepper_unhomed_starts_homing(void)
   context.page6.iacStepHome = 2U;
   context.init();
 
-  _idleState.idleStepper.targetIdleStep = 321;
+  _idleState.idleStepper.targetStep = 321;
 
   disableIdle();
 
-  TEST_ASSERT_EQUAL_UINT(1U, _idleState.completedHomeSteps);
-  TEST_ASSERT_EQUAL_INT(321, _idleState.idleStepper.targetIdleStep);
-  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.stepperStatus);
+  TEST_ASSERT_EQUAL_UINT(1U, _idleState.idleStepper.completedHomeSteps);
+  TEST_ASSERT_EQUAL_INT(321, _idleState.idleStepper.targetStep);
+  TEST_ASSERT_EQUAL(idleController::detail::StepperStatus::STEPPING, _idleState.idleStepper.status);
 }
 
 void testDisableIdle(void)

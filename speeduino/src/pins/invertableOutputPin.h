@@ -36,6 +36,8 @@ public:
         }
     }
 
+#if !defined(UNIT_TEST)
 private:
+#endif
     bool _isInverted = false;
 };
