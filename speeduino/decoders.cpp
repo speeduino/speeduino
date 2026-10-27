@@ -61,6 +61,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/hondad17.h"
 #include "src/decoders/hondaj32.h"
 #include "src/decoders/miata9905.h"
+#include "src/decoders/mazdaau.h"
 
 using namespace decoders::shared;
 
@@ -828,21 +829,7 @@ static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 108; //The number of degrees that passes from tooth to tooth (primary). This is the maximum gap
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-  _decoderState.decoderFeatures.supportsSequential = true;
-
-  _decoderState.toothAngles[0] = 348; //tooth #1
-  _decoderState.toothAngles[1] = 96; //tooth #2
-  _decoderState.toothAngles[2] = 168; //tooth #3
-  _decoderState.toothAngles[3] = 276; //tooth #4
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
+  _decoderState = decoders::mazdaau::initialise();
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_MazdaAU, getConfigPriTriggerEdge(configPage4))
