@@ -59,6 +59,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/jeep2000.h"
 #include "src/decoders/audi135.h"
 #include "src/decoders/hondad17.h"
+#include "src/decoders/hondaj32.h"
 
 using namespace decoders::shared;
 
@@ -643,121 +644,31 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaD17(void)
 *  The second tooth in the string of 15 teeth is designated as tooth 1 in this code. This means that
 *  when the interrupt for tooth 1 fires (as we just pass tooth 1), crank angle = 360/24 = 15 degrees.
 *  It follows that the first tooth in the string of 7 teeth is tooth 16. 
-* @defgroup dec_honda_j_32 Honda J 32
-* @{
 */ 
-static void triggerPri_HondaJ32(void)
+decoder_t __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
 {
-  // This function is called only on rising edges, which occur as we lose sight of a tooth.
-  // This function sets the following state variables for use in other functions:
-  // _decoderState.toothLastToothTime, _decoderState.toothOneTime, _decoderState.revolutionOne (just toggles - not correct)
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  _decoderState.toothLastToothTime = curTime;
+  _decoderState = decoders::hondaj32::initialise();
 
-  _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-  
-  if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) // We have sync
-  {
-    _decoderState.toothCurrentCount++;
-
-    if (_decoderState.toothCurrentCount == 25) { // handle rollover.  Normal sized tooth here
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++;
-    }
-    else if (_decoderState.toothCurrentCount == 23 || _decoderState.toothCurrentCount == 15) // This is the first tooth after a missing tooth
-    {
-      _decoderState.toothCurrentCount++; // account for missing tooth
-      if (_decoderState.curGap < (_decoderState.lastGap >> 1) * 3) // This should be a big gap, if we find it's not actually big, we lost sync
-      {
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        _decoderState.toothCurrentCount=1;
-      }
-    }
-    else if (_decoderState.toothCurrentCount != 14 && _decoderState.toothCurrentCount != 22)
-    {
-      // Teeth 14 and 22 are about 18 rather than 15 degrees so don't update last_gap with this unusual spacing
-      _decoderState.lastGap = _decoderState.curGap;
-    }
-    // else _decoderState.toothCurrentCount == 14 or 22.  Take no further action. 
-  }
-  else // we do not have sync yet. While syncing, treat tooth 14 and 22 as normal teeth
-  {
-    if (_decoderState.curGap < (_decoderState.lastGap >> 1) * 3 || _decoderState.lastGap == 0){ // Regular tooth, _decoderState.lastGap == 0 at startup
-      _decoderState.toothCurrentCount++;  // Increment teeth between gaps
-      _decoderState.lastGap = _decoderState.curGap;
-    }
-    else { // First tooth after the missing tooth
-      if (_decoderState.toothCurrentCount == 15) {  // 15 teeth since the gap before this, meaning we just passed the second gap and are synced
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        _decoderState.toothCurrentCount = 16;  // This so happens to be the tooth number of the first tooth in the string of 7 (where we are now)
-        _decoderState.toothOneTime = curTime - (15 * _decoderState.lastGap); // Initialize tooth 1 times based on last gap width.
-        _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime - (24 * _decoderState.lastGap);
-      }
-      else{ // Unclear which gap we just passed. reset counter
-        _decoderState.toothCurrentCount = 1;
-      }
-    }
-  }
-}
-
-static uint32_t getRevolutionTime_HondaJ32(void)
-{
-  // The tooth #1 times are only updated while we have sync. They are estimated from the tooth gap when sync is first gained,
-  // so this doesn't have to wait for a full revolution (as stdGetRevolutionTime(currentStatus, _decoderState, ) would)
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t interval = 0U;
-  if ((sample.syncStatus==SyncStatus::None) || (toothOneInterval(sample, interval)==false)) { return publishedRevolutionTime(currentStatus); }
-  return interval;
-}
-
-static int16_t getCrankAngle_HondaJ32(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);  
-
-  // Tooth 1 time occurs 360/24 degrees after TDC.
-  ++calculator._toothCurrentCount;
-  int16_t crankAngle = calculator.calculateCrankAngle(currMicros, configPage4);
-
-  // Teeth 14 and 22 are unusually sized (18 degrees), but the missing tooth is smaller (12 degrees), 
-  // so this oddity only applies when _decoderState.toothCurrentCount = 14 || 22 (15 || 23 since we incremented _decoderState.toothCurrentCount above)
-  if ((calculator._toothCurrentCount == 15) || (calculator._toothCurrentCount == 23))
-  {
-    constexpr uint16_t HALF_TOOTH_WIDTH_DEG = (18U-12U)/2U;
-    crankAngle += HALF_TOOTH_WIDTH_DEG;
-  }
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
-decoder_t  __attribute__((optimize("Os"))) triggerSetup_HondaJ32(void)
-{
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / 24; //The number of degrees that passes from tooth to tooth
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/10U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  
-  // Filter (ignore) triggers that are faster than this.
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60 * 24));
-  _decoderState.toothCurrentCount = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.lastGap = 0;
-  _decoderState.revolutionOne = 0;
+  static const auto triggerPrimary = []() {
+    decoders::hondaj32::triggerPrimary(micros(), currentStatus, _decoderState);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::hondaj32::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::hondaj32::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_HondaJ32, RISING) // Don't honor the config, always use rising edge
-                  .setGetRevolutionTime(getRevolutionTime_HondaJ32)
-                  .setGetCrankAngle(getCrankAngle_HondaJ32)
+                  .setPrimaryTrigger(triggerPrimary, RISING) // Don't honor the config, always use rising edge
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Miata '99 to '05 with 4x 70 degree duration teeth running at cam speed.
 Teeth believed to be at the same angles as the 4g63 decoder.
