@@ -2,11 +2,7 @@
 #include "src/decoders/miata9905.h"
 #include "scheduler_ignition_controller.h"
 #include "atomic.h"
-
-static uint32_t calcNextTimePassPrimaryFilter(const decoders::shared::state_t &decoderState)
-{
-  return decoderState.toothLastToothTime + decoderState.triggerFilterTime + 1;
-}
+#include "../test_decoder_shared.h"
 
 static void test_triggerPrimary_gapcheck(void)
 {
@@ -263,11 +259,6 @@ static void test_triggerSecondary_resetfiltertime()
   decoderState.triggerFilterTime = 7777;
   decoders::miata9905::triggerSecondary(0, current, decoderState);
   TEST_ASSERT_NOT_EQUAL(1500, decoderState.triggerFilterTime);
-}
-
-static uint32_t calcNextTimePassSecondaryFilter(const decoders::shared::state_t &decoderState)
-{
-  return decoderState.toothLastSecToothTime + decoderState.triggerSecFilterTime + 1;
 }
 
 static void test_triggerSecondary_gapcheck(void)
