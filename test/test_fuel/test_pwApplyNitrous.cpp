@@ -14,7 +14,7 @@ static void test_pwApplyNitrous_No(void) {
 
   // No fuel, no nitrous adder
   TEST_ASSERT_EQUAL(0, pwApplyNitrous(0, page10, current));
-  current.nitrous_status = NITROUS_OFF;
+  current.nitrousStatus = NITROUS_OFF;
   TEST_ASSERT_EQUAL(200, pwApplyNitrous(200, page10, current));
 }
 
@@ -42,7 +42,7 @@ static void test_pwApplyNitrous_StageBoth(void) {
 
   setup_nitrous_stage1(page10, current);
   setup_nitrous_stage2(page10, current);
-  current.nitrous_status = NITROUS_BOTH;
+  current.nitrousStatus = NITROUS_BOTH;
 
   // Confirm nitrous is added
   TEST_ASSERT_UINT16_WITHIN(1U, 200+NITROUS_STAGE1_BOTH+NITROUS_STAGE2_ADDPW, pwApplyNitrous(200, page10, current));

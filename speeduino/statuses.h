@@ -225,9 +225,6 @@ struct statuses {
   bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
 
   // Status3 fields as defined in the INI.   
-  // TODO: resolve duplication with nitrous_status
-  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  bool nitrousActive : 1; ///< Nitrous on (true) or off (false)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
@@ -280,7 +277,7 @@ struct statuses {
   uint16_t canin[16]; ///< 16bit raw value of selected canin data for channels 0-15
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it every time it's used (Config page value is stored divided by 10) */
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
-  byte nitrous_status;
+  uint8_t nitrousStatus; ///< NITROUS_OFF, NITROUS_STAGE1, NITROUS_BOTH
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
   uint16_t fuelLoad;
   uint16_t ignLoad;
