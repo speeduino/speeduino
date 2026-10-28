@@ -797,28 +797,6 @@ See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
 * @defgroup dec_nissan360 Nissan 360 tooth on cam
 * @{
 */
-static uint32_t getRevolutionTime_Nissan360(void)
-{
-  //Can't use stdGetRevolutionTime as there is no separate cranking calc (stdGetRevolutionTime doesn't update if cranking)
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  uint32_t interval = 0U;
-  uint32_t revolutionTime = 0U;
-  if (sample.startRevolutions < 2U)
-  {
-    if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
-    revolutionTime = interval * 180UL; //Each tooth covers 2 crank degrees, so multiply by 180 to get a full revolution time.
-  }
-  else
-  {
-    if (toothOneInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
-    revolutionTime = interval >> 1; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
-  }
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  return revolutionTime;
-}
-
 static int16_t getCrankAngle_Nissan360(uint32_t currMicros)
 {
   auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.toothCurrentCount);
@@ -870,11 +848,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
   static const auto triggerSecondary = []() {
     decoders::nissan360::triggerSecondary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::nissan360::getRevolutionTime(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSecondary, CHANGE)
-                  .setGetRevolutionTime(getRevolutionTime_Nissan360)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_Nissan360)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
                   .setReset(sharedDecoderReset)
