@@ -123,7 +123,9 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
           decoderState.decoderStatus.syncStatus = SyncStatus::Full;
         }
       }
+      // LCOV_EXCL_START
       else { decoderState.decoderStatus.syncStatus = SyncStatus::None; } //This should really never happen (Only 4, 6 and 8 cylinder engines for this pattern)
+      // LCOV_EXCL_STOP
     }
     else
     {
@@ -144,6 +146,10 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
             decoderState.toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
           }
         } //Cylinder count
+        else
+        {
+          // Nothing to do on other cylinder counts
+        }
       } //use resync
     } //Has sync
   } //First getting sync or not
