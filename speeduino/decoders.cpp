@@ -996,8 +996,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
 {
   _decoderState = decoders::nissan360::initialise();
 
+  static const auto triggerPrimary = []() {
+    decoders::nissan360::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Nissan360, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Nissan360, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime_Nissan360)
                   .setGetCrankAngle(getCrankAngle_Nissan360)

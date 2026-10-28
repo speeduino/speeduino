@@ -16,5 +16,6 @@ namespace nissan360 {
 
     shared::state_t initialise(void);
 
+    void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 }
 }

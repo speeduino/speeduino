@@ -1,4 +1,5 @@
 #include "nissan360.h"
+#include "shared/perToothIgnition.h"
 
 namespace decoders {
 
@@ -18,6 +19,47 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
 
   return state;
 }
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( decoderState.curGap < decoderState.triggerFilterTime ) { return; }
+
+  decoderState.toothCurrentCount++; //Increment the tooth counter
+  decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+  decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+  decoderState.toothLastToothTime = curTime;
+
+  if ( decoderState.decoderStatus.syncStatus==SyncStatus::Full )
+  {
+    if ( decoderState.toothCurrentCount == 361 ) //2 complete crank revolutions
+    {
+      decoderState.toothCurrentCount = 1;
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      current.startRevolutions++; //Counter
+    }
+    //Recalc the new filter value
+    decoderState.setFilter(decoderState.curGap, page4);
+
+    //EXPERIMENTAL!
+    if(page2.perToothIgn == true)
+    {
+      int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * 2 ) + page4.triggerAngle;
+      if(crankAngle > CRANK_ANGLE_MAX_IGN) 
+      { 
+        crankAngle -= CRANK_ANGLE_MAX_IGN;
+        checkPerToothTiming(current, decoderState, page4, crankAngle, (decoderState.toothCurrentCount/2) );
+      }
+      else
+      {
+        checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount);
+      }
+    }
+  }
+}
+
 
 }
 }
