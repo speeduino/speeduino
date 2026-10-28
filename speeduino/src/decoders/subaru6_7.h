@@ -21,5 +21,8 @@ namespace subaru67 {
 
   void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState);
 
+  uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState);
+
+  int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4);
 }
 }

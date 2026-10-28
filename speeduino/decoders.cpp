@@ -838,25 +838,6 @@ This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (
 * @defgroup dec_subaru_6_7 Subaru 6/7
 * @{
 */
-static uint32_t getRevolutionTime_Subaru67(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  if (sample.startRevolutions==0U) { return 0U; } //No speed until the first revolution has completed
-  //As the tooth count is over 720 degrees
-  return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-}
-
-static int16_t getCrankAngle_Subaru67(uint32_t currMicros)
-{
-  int16_t crankAngle = 0;
-  if( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-  {
-    auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount, _decoderState.triggerToothAngle, _decoderState.decoderStatus.toothAngleIsCorrect);
-    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
-  }
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 static void triggerSetEndTeeth_Subaru67(void)
 {
   if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
@@ -905,12 +886,18 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
   static const auto secondaryTrigger = [] () {
     decoders::subaru67::triggerSecondary(micros(), currentStatus, _decoderState);
   };
+  static const auto getRevolutionTime = [] () {
+    return decoders::subaru67::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [] (uint32_t curMicros) {
+    return decoders::subaru67::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
-                  .setGetRevolutionTime(getRevolutionTime_Subaru67)
-                  .setGetCrankAngle(getCrankAngle_Subaru67)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

@@ -1,6 +1,8 @@
 #include "subaru6_7.h"
 #include "shared/perToothIgnition.h"
+#include "shared/rev_time_calcs.h"
 #include "scheduledIO_ign.h"
+#include "shared/crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -190,5 +192,24 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   }
 }
 
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
+{
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  if (sample.startRevolutions==0U) { return 0U; } //No speed until the first revolution has completed
+  //As the tooth count is over 720 degrees
+  return stdGetRevolutionTime(current, decoderState, CAM_SPEED);
 }
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  int16_t crankAngle = 0;
+  if( decoderState.decoderStatus.syncStatus==SyncStatus::Full )
+  {
+    auto data = atomic_copy(decoderState.toothLastToothTime, decoderState.toothLastMinusOneToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount, decoderState.triggerToothAngle, decoderState.decoderStatus.toothAngleIsCorrect);
+    crankAngle = decoders::shared::lookup_crank_angle_calculator_tooth_interval_t(data).calculateCrankAngle(currMicros, decoderState.toothAngles, page4);
+  }
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
+}
+
 }
