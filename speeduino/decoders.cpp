@@ -60,6 +60,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/audi135.h"
 #include "src/decoders/hondad17.h"
 #include "src/decoders/hondaj32.h"
+#include "src/decoders/miata9905.h"
 
 using namespace decoders::shared;
 
@@ -675,150 +676,7 @@ Teeth believed to be at the same angles as the 4g63 decoder.
 Tooth #1 is defined as the next crank tooth after the crank signal is HIGH when the cam signal is falling.
 Tooth number one is at 355* ATDC.
 * (See: www.forum.diyefi.org/viewtopic.php?f=56&t=1077)
-* @defgroup miata_99_05 Miata '99 to '05
-* @{
 */
-static void triggerPri_Miata9905(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) || (currentStatus.startRevolutions == 0) )
-  {
-    _decoderState.toothCurrentCount++;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    if( (_decoderState.toothCurrentCount == (_decoderState.triggerActualTeeth + 1)) )
-    {
-       _decoderState.toothCurrentCount = 1; //Reset the counter
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       currentStatus.startRevolutions++; //Counter
-    }
-    else
-    {
-      if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (configPage4.useResync == true) )
-      {
-        if(_decoderState.secondaryToothCount == 2)
-        {
-          _decoderState.toothCurrentCount = 6;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-      }
-    }
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-
-      //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (configPage4.triggerFilter == 1) || (currentStatus.RPM < 1400) )
-      {
-        //Lite filter
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; _decoderState.triggerFilterTime = _decoderState.curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-        else { _decoderState.triggerToothAngle = 110; _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 3UL)); } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
-      }
-      else if(configPage4.triggerFilter == 2)
-      {
-        //Medium filter level
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; _decoderState.triggerFilterTime = (_decoderState.curGap * 5) >> 2 ; } //87.5 degrees with a target of 110
-        else { _decoderState.triggerToothAngle = 110; _decoderState.triggerFilterTime = (_decoderState.curGap >> 1); } //55 degrees with a target of 70
-      }
-      else if (configPage4.triggerFilter == 3)
-      {
-        //Aggressive filter level
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 11UL)) ; } //96.26 degrees with a target of 110
-        else { _decoderState.triggerToothAngle = 110; _decoderState.triggerFilterTime = rshift<5>((uint32_t)(_decoderState.curGap * 9UL)); } //61.87 degrees with a target of 70
-      }
-      else if (configPage4.triggerFilter == 0)
-      {
-        //trigger filter is turned off.
-        _decoderState.triggerFilterTime = 0;
-        _decoderState.triggerSecFilterTime = 0;
-        if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 5) || (_decoderState.toothCurrentCount == 7) ) { _decoderState.triggerToothAngle = 70; } //96.26 degrees with a target of 110
-        else { _decoderState.triggerToothAngle = 110; }
-      }
-
-      //EXPERIMENTAL!
-      //New ignition mode is ONLY available on 9905 when the trigger angle is set to the stock value of 0.
-      if(    (configPage2.perToothIgn == true) 
-          && (configPage4.triggerAngle == 0) 
-          && (currentStatus.advance > 0) )
-      {
-        int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
-
-        //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > configPage2.nCylinders) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-configPage2.nCylinders) ); }
-        else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-      }
-    } //Has sync
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    if ( (currentStatus.RPM < (currentStatus.crankRPM + 30)) && (configPage4.ignCranklock) ) //The +30 here is a safety margin. When switching from fixed timing to normal, there can be a situation where a pulse started when fixed and ending when in normal mode causes problems. This prevents that.
-    {
-      if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 5) ) { endCoilCharge(1U); endCoilCharge(3U); }
-      else if( (_decoderState.toothCurrentCount == 3) || (_decoderState.toothCurrentCount == 7) ) { endCoilCharge(2U); endCoilCharge(4U); }
-    }
-    _decoderState.secondaryToothCount = 0;
-  } //Trigger filter
-
-}
-
-static void triggerSec_Miata9905(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  if((currentStatus.rotationStatus==EngineRotationStatus::Cranking) || (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) )
-  {
-    _decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
-  }
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-    _decoderState.lastGap = _decoderState.curGap2;
-    _decoderState.secondaryToothCount++;
-
-    //TODO Add some secondary filtering here
-
-    //Record the VVT tooth time
-    if( (_decoderState.toothCurrentCount == 1) && (curTime2 > _decoderState.toothLastToothTime) )
-    {
-      _decoderState.lastVVTtime = curTime2 - _decoderState.toothLastToothTime;
-    }
-  }
-}
-
-static uint32_t getRevolutionTime_Miata9905(void)
-{
-  tooth_speed_sample_t sample;
-  uint32_t revolutionTime = 0U;
-
-  /*
-  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
-  Because these signals aren't even (Alternating 110 and 70 degrees), this needs a special function
-  */
-  sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  if ( (currentStatus.RPM < currentStatus.crankRPM) && (sample.syncStatus==SyncStatus::Full) )
-  {
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true)
-    {
-      _decoderState.MAX_STALL_TIME = 366667UL; // 50RPM
-      return revolutionTime;
-    }
-    return publishedRevolutionTime(currentStatus);
-  }
-
-  revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if (_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-  return revolutionTime;
-}
-
-static int16_t getCrankAngle_Miata9905(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
 
 int getCamAngle_Miata9905(void)
 {
@@ -831,98 +689,38 @@ int getCamAngle_Miata9905(void)
   return currentStatus.vvt1.angle;
 }
 
-static void triggerSetEndTeeth_Miata9905(void)
-{
-
-  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL) 
-  { 
-    if(currentStatus.advance >= 10)
-    {
-      _decoderState.ignitionEndTeeth[0] = 8;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4;
-      _decoderState.ignitionEndTeeth[3] = 6;
-    }
-    else if (currentStatus.advance > 0)
-    {
-      _decoderState.ignitionEndTeeth[0] = 1;
-      _decoderState.ignitionEndTeeth[1] = 3;
-      _decoderState.ignitionEndTeeth[2] = 5;
-      _decoderState.ignitionEndTeeth[3] = 7;
-    }
-    
-  }
-  else
-  {
-    if(currentStatus.advance >= 10)
-    {
-      _decoderState.ignitionEndTeeth[0] = 4;
-      _decoderState.ignitionEndTeeth[1] = 2;
-      _decoderState.ignitionEndTeeth[2] = 4; //Not used
-      _decoderState.ignitionEndTeeth[3] = 2; //Not used
-    }
-    else if(currentStatus.advance > 0)
-    {
-      _decoderState.ignitionEndTeeth[0] = 1;
-      _decoderState.ignitionEndTeeth[1] = 3;
-      _decoderState.ignitionEndTeeth[2] = 1; //Not used
-      _decoderState.ignitionEndTeeth[3] = 3; //Not used
-    }
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary)
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.triggerActualTeeth = 8;
+  _decoderState = decoders::miata9905::initialise(micros(), currentStatus);
 
-  if(currentStatus.initialisationComplete == false) { _decoderState.secondaryToothCount = 0; _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  else { _decoderState.toothLastToothTime = 0; }
-  _decoderState.toothLastMinusOneToothTime = 0;
-
-  //Note that these angles are for every rising and falling edge
-
-  /*
-  _decoderState.toothAngles[0] = 350;
-  _decoderState.toothAngles[1] = 100;
-  _decoderState.toothAngles[2] = 170;
-  _decoderState.toothAngles[3] = 280;
-  */
-
-  _decoderState.toothAngles[0] = 710; //
-  _decoderState.toothAngles[1] = 100; //First crank pulse after the SINGLE cam pulse
-  _decoderState.toothAngles[2] = 170; //
-  _decoderState.toothAngles[3] = 280; //
-  _decoderState.toothAngles[4] = 350; //
-  _decoderState.toothAngles[5] = 460; //First crank pulse AFTER the DOUBLE cam pulse
-  _decoderState.toothAngles[6] = 530; //
-  _decoderState.toothAngles[7] = 640; //
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = 0; //Need to figure out something better for this
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true;
+  static const auto primaryTrigger = []() {
+    decoders::miata9905::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::miata9905::triggerSecondary(micros(), currentStatus, _decoderState);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::miata9905::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::miata9905::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::miata9905::setEndTeeth(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Miata9905, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Miata9905, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_Miata9905)
-                  .setGetCrankAngle(getCrankAngle_Miata9905)
-                  .setSetEndTeeth(triggerSetEndTeeth_Miata9905)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Mazda AU version.
 Tooth #2 is defined as the next crank tooth after the single cam tooth.
