@@ -63,6 +63,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/miata9905.h"
 #include "src/decoders/mazdaau.h"
 #include "src/decoders/non360.h"
+#include "src/decoders/nissan360.h"
 
 using namespace decoders::shared;
 
@@ -993,16 +994,7 @@ void triggerSetEndTeeth_Nissan360(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
 {
-	sharedDecoderReset();
-  _decoderState.decoderFeatures = decoder_features_t();
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  _decoderState.secondaryToothCount = 0; //Initially set to 0 prior to calculating the secondary window duration
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.triggerToothAngle = 2;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::nissan360::initialise();
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Nissan360, getConfigPriTriggerEdge(configPage4))
