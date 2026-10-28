@@ -835,47 +835,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
 
 /** Subaru 6/7 Trigger pattern decoder for 6 tooth (irregularly spaced) crank and 7 tooth (also fairly irregular) cam wheels (eg late 90's Impreza 2.2).
 This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (See: http://www.vems.hu/wiki/index.php?page=InputTrigger%2FSubaruTrigger ).
-* @defgroup dec_subaru_6_7 Subaru 6/7
-* @{
 */
-static void triggerSetEndTeeth_Subaru67(void)
-{
-  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
-  {
-    if(currentStatus.advance >= 10 ) 
-    { 
-      _decoderState.ignitionEndTeeth[0] = 12;
-      _decoderState.ignitionEndTeeth[1] = 3;
-      _decoderState.ignitionEndTeeth[2] = 6;
-      _decoderState.ignitionEndTeeth[3] = 9;
-    }
-    else 
-    { 
-      _decoderState.ignitionEndTeeth[0] = 1;
-      _decoderState.ignitionEndTeeth[1] = 4;
-      _decoderState.ignitionEndTeeth[2] = 7;
-      _decoderState.ignitionEndTeeth[3] = 10;
-    }
-  }
-  else    
-  {
-    if(currentStatus.advance >= 10 ) 
-    { 
-      _decoderState.ignitionEndTeeth[0] = 6;
-      _decoderState.ignitionEndTeeth[1] = 3;
-      //_decoderState.ignitionEndTeeth[2] = 6;
-      //_decoderState.ignitionEndTeeth[3] = 9;
-    }
-    else 
-    { 
-      _decoderState.ignitionEndTeeth[0] = 1;
-      _decoderState.ignitionEndTeeth[1] = 4;
-      //_decoderState.ignitionEndTeeth[2] = 7;
-      //_decoderState.ignitionEndTeeth[3] = 10;
-    }
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 {
   _decoderState = decoders::subaru67::initialise();
@@ -892,21 +852,22 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
   static const auto getCrankAngle = [] (uint32_t curMicros) {
     return decoders::subaru67::getCrankAngle(curMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = [] () {
+    decoders::subaru67::setEndTeeth(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_Subaru67)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Daihatsu +1 trigger for 3 and 4 cylinder engines.
 * Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained),

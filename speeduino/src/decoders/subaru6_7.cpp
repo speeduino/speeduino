@@ -210,6 +210,41 @@ int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, 
   }
   return decoders::shared::clampCrankAngle(crankAngle);
 }
+
+void setEndTeeth(const statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
+  {
+    if(current.advance >= 10 ) 
+    { 
+      decoderState.ignitionEndTeeth[0] = 12;
+      decoderState.ignitionEndTeeth[1] = 3;
+      decoderState.ignitionEndTeeth[2] = 6;
+      decoderState.ignitionEndTeeth[3] = 9;
+    }
+    else 
+    { 
+      decoderState.ignitionEndTeeth[0] = 1;
+      decoderState.ignitionEndTeeth[1] = 4;
+      decoderState.ignitionEndTeeth[2] = 7;
+      decoderState.ignitionEndTeeth[3] = 10;
+    }
+  }
+  else    
+  {
+    if(current.advance >= 10 ) 
+    { 
+      decoderState.ignitionEndTeeth[0] = 6;
+      decoderState.ignitionEndTeeth[1] = 3;
+    }
+    else 
+    { 
+      decoderState.ignitionEndTeeth[0] = 1;
+      decoderState.ignitionEndTeeth[1] = 4;
+    }
+  }
+}
+
 }
 
 }
