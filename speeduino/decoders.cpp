@@ -61,6 +61,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/hondad17.h"
 #include "src/decoders/hondaj32.h"
 #include "src/decoders/miata9905.h"
+#include "src/decoders/mazdaau.h"
 
 using namespace decoders::shared;
 
@@ -725,138 +726,35 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Miata9905(void)
 /** Mazda AU version.
 Tooth #2 is defined as the next crank tooth after the single cam tooth.
 Tooth number one is at 348* ATDC.
-* @defgroup mazda_au Mazda AU
-* @{
 */
-static void triggerPri_MazdaAU(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-  {
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    _decoderState.toothCurrentCount++;
-    if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 5) ) //Trigger is on CHANGE, hence 4 pulses = 1 crank rev
-    {
-       _decoderState.toothCurrentCount = 1; //Reset the counter
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-       currentStatus.startRevolutions++; //Counter
-    }
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-      // Locked cranking timing is available, fixed at 12* BTDC
-      if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock )
-      {
-        if( _decoderState.toothCurrentCount == 1 ) { endCoilCharge(1U); }
-        else if( _decoderState.toothCurrentCount == 3 ) { endCoilCharge(2U); }
-      }
-
-      //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
-      if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 3) ) { _decoderState.triggerToothAngle = 72; _decoderState.triggerFilterTime = _decoderState.curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
-      else { _decoderState.triggerToothAngle = 108; _decoderState.triggerFilterTime = rshift<3>((uint32_t)(_decoderState.curGap * 3UL)); } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
-
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime;
-    } //Has sync
-  } //Filter time
-}
-
-static void triggerSec_MazdaAU(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.lastGap = _decoderState.curGap2;
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  //if ( _decoderState.curGap2 < _decoderState.triggerSecFilterTime ) { return; }
-  _decoderState.toothLastSecToothTime = curTime2;
-
-  if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
-  {
-    //we find sync by looking for the 2 teeth that are close together. The next crank tooth after that is the one we're looking for.
-    //For the sake of this decoder, the lone cam tooth will be designated #1
-    if(_decoderState.secondaryToothCount == 2)
-    {
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else
-    {
-      _decoderState.triggerFilterTime = 1500; //In case the engine has been running and then lost sync.
-      _decoderState.targetGap = (_decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
-      if ( _decoderState.curGap2 < _decoderState.targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
-      {
-        _decoderState.secondaryToothCount = 2;
-      }
-    }
-    _decoderState.secondaryToothCount++;
-  }
-}
-
-
-static uint32_t getRevolutionTime_MazdaAU(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t revolutionTime = 0U;
-
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  /*
-  During cranking, revolution time is calculated 4 times per revolution, once for each tooth on the crank signal.
-  Because these signals aren't even (Alternating 108 and 72 degrees), this needs a special function
-  */
-  if (currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
-    return publishedRevolutionTime(currentStatus);
-  }
-  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_MazdaAU(uint32_t currMicros)
-{
-  int16_t crankAngle = 0;
-  if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-  {
-    crankAngle = decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4);
-  }
-
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_MazdaAU(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 108; //The number of degrees that passes from tooth to tooth (primary). This is the maximum gap
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-  _decoderState.decoderFeatures.supportsSequential = true;
+  _decoderState = decoders::mazdaau::initialise();
 
-  _decoderState.toothAngles[0] = 348; //tooth #1
-  _decoderState.toothAngles[1] = 96; //tooth #2
-  _decoderState.toothAngles[2] = 168; //tooth #3
-  _decoderState.toothAngles[3] = 276; //tooth #4
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = (int)(MICROS_PER_SEC / (MAX_RPM / 60U * 2U)) / 2U; //Same as above, but fixed at 2 teeth on the secondary input and divided by 2 (for cam speed)
-  _decoderState.decoderFeatures.hasFixedCrankingTiming = true;
+  static const auto primaryTrigger = [] () {
+    decoders::mazdaau::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto secondaryTrigger = [] () {
+    decoders::mazdaau::triggerSecondary(micros(), _decoderState);
+  };
+  static const auto getRevolutionTime = [] () {
+    return decoders::mazdaau::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [] (uint32_t curTime) {
+    return decoders::mazdaau::getCrankAngle(curTime, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_MazdaAU, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_MazdaAU, FALLING)
-                  .setGetRevolutionTime(getRevolutionTime_MazdaAU)
-                  .setGetCrankAngle(getCrankAngle_MazdaAU)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, FALLING)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Non-360 Dual wheel with 2 wheels located either both on the crank or with the primary on the crank and the secondary on the cam.
 There can be no missing teeth on the primary wheel.
