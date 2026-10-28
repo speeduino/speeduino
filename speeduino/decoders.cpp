@@ -797,138 +797,6 @@ See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
 * @defgroup dec_nissan360 Nissan 360 tooth on cam
 * @{
 */
-static void triggerPri_Nissan360(void)
-{
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-   if ( _decoderState.curGap < _decoderState.triggerFilterTime ) { return; }
-   
-   _decoderState.toothCurrentCount++; //Increment the tooth counter
-   _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-   _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-   _decoderState.toothLastToothTime = curTime;
-
-   if ( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-   {
-     if ( _decoderState.toothCurrentCount == 361 ) //2 complete crank revolutions
-     {
-       _decoderState.toothCurrentCount = 1;
-       _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-       _decoderState.toothOneTime = curTime;
-       currentStatus.startRevolutions++; //Counter
-     }
-     //Recalc the new filter value
-     _decoderState.setFilter(_decoderState.curGap, configPage4);
-
-     //EXPERIMENTAL!
-     if(configPage2.perToothIgn == true)
-     {
-        int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * 2 ) + configPage4.triggerAngle;
-        if(crankAngle > CRANK_ANGLE_MAX_IGN) 
-        { 
-          crankAngle -= CRANK_ANGLE_MAX_IGN;
-          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount/2) );
-        }
-        else
-        {
-          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-        }
-       
-     }
-   }
-}
-
-static void triggerSec_Nissan360(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  //if ( _decoderState.curGap2 < _decoderState.triggerSecFilterTime ) { return; }
-  _decoderState.toothLastSecToothTime = curTime2;
-  //OPTIONAL: Set filter at 25% of the current speed
-  //_decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2;
-
-
-  //Calculate number of primary teeth that this window has been active for
-  if( (_decoderState.secondaryToothCount == 0) || (currentStatus.decoder.secondary.isTriggered()) ) { _decoderState.secondaryToothCount = _decoderState.toothCurrentCount; } //This occurs on the first rotation upon powerup OR the start of a secondary window
-  else
-  {
-    //If we reach here, we are at the end of a secondary window
-    byte secondaryDuration = _decoderState.toothCurrentCount - _decoderState.secondaryToothCount; //How many primary teeth have passed during the duration of this secondary window
-
-    if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
-    {
-      if(configPage2.nCylinders == 4)
-      {
-        //Supported pattern is where all the inner windows as a different size (Most SR engines)
-        //These equate to 4,8,12,16 teeth spacings
-        if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
-        {
-          _decoderState.toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else if( (secondaryDuration >= 11) && (secondaryDuration <= 13) ) //Duration of window = 12 primary teeth
-        {
-          _decoderState.toothCurrentCount = 102; //End of second window is after 90+12 primary teeth
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else if( (secondaryDuration >= 7) && (secondaryDuration <= 9) ) //Duration of window = 8 primary teeth
-        {
-          _decoderState.toothCurrentCount = 188; //End of third window is after 90+90+8 primary teeth
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
-        {
-          _decoderState.toothCurrentCount = 274; //End of fourth window is after 90+90+90+4 primary teeth
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else { _decoderState.decoderStatus.syncStatus = SyncStatus::None; currentStatus.syncLossCounter++; } //This should really never happen
-      }
-      else if(configPage2.nCylinders == 6)
-      {
-        //Pattern on the 6 cylinders is 4-8-12-16-20-24
-        if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
-        {
-          _decoderState.toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-      }
-      else if(configPage2.nCylinders == 8)
-      {
-        //V8 Optispark
-        //Pattern on the 8 cylinders is the same as the 6 cylinder 4-8-12-16-20-24
-        if( (secondaryDuration >= 6) && (secondaryDuration <= 8) ) //Duration of window = 16 primary teeth
-        {
-          _decoderState.toothCurrentCount = 56; //End of the shortest of the individual windows. Occurs at 102 crank degrees. 
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-      }
-      else { _decoderState.decoderStatus.syncStatus = SyncStatus::None; } //This should really never happen (Only 4, 6 and 8 cylinder engines for this pattern)
-    }
-    else
-    {
-      if (configPage4.useResync == true)
-      {
-        //Already have sync, but do a verify every 720 degrees.
-        if(configPage2.nCylinders == 4)
-        {
-          if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
-          {
-            _decoderState.toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
-          }
-        }
-        else if(configPage2.nCylinders == 6)
-        {
-          if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
-          {
-            _decoderState.toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
-          }
-        } //Cylinder count
-      } //use resync
-    } //Has sync
-  } //First getting sync or not
-}
-
 static uint32_t getRevolutionTime_Nissan360(void)
 {
   //Can't use stdGetRevolutionTime as there is no separate cranking calc (stdGetRevolutionTime doesn't update if cranking)
@@ -999,10 +867,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
   static const auto triggerPrimary = []() {
     decoders::nissan360::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto triggerSecondary = []() {
+    decoders::nissan360::triggerSecondary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Nissan360, CHANGE)
+                  .setSecondaryTrigger(triggerSecondary, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime_Nissan360)
                   .setGetCrankAngle(getCrankAngle_Nissan360)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)

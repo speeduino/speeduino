@@ -60,6 +60,90 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
 }
 
+void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+  decoderState.toothLastSecToothTime = curTime;
+
+  //Calculate number of primary teeth that this window has been active for
+  if( (decoderState.secondaryToothCount == 0) || (current.decoder.secondary.isTriggered()) ) { decoderState.secondaryToothCount = decoderState.toothCurrentCount; } //This occurs on the first rotation upon powerup OR the start of a secondary window
+  else
+  {
+    //If we reach here, we are at the end of a secondary window
+    byte secondaryDuration = decoderState.toothCurrentCount - decoderState.secondaryToothCount; //How many primary teeth have passed during the duration of this secondary window
+
+    if(decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
+    {
+      if(page2.nCylinders == 4)
+      {
+        //Supported pattern is where all the inner windows as a different size (Most SR engines)
+        //These equate to 4,8,12,16 teeth spacings
+        if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
+        {
+          decoderState.toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        }
+        else if( (secondaryDuration >= 11) && (secondaryDuration <= 13) ) //Duration of window = 12 primary teeth
+        {
+          decoderState.toothCurrentCount = 102; //End of second window is after 90+12 primary teeth
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        }
+        else if( (secondaryDuration >= 7) && (secondaryDuration <= 9) ) //Duration of window = 8 primary teeth
+        {
+          decoderState.toothCurrentCount = 188; //End of third window is after 90+90+8 primary teeth
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        }
+        else if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
+        {
+          decoderState.toothCurrentCount = 274; //End of fourth window is after 90+90+90+4 primary teeth
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        }
+        else { decoderState.decoderStatus.syncStatus = SyncStatus::None; current.syncLossCounter++; } //This should really never happen
+      }
+      else if(page2.nCylinders == 6)
+      {
+        //Pattern on the 6 cylinders is 4-8-12-16-20-24
+        if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
+        {
+          decoderState.toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        }
+      }
+      else if(page2.nCylinders == 8)
+      {
+        //V8 Optispark
+        //Pattern on the 8 cylinders is the same as the 6 cylinder 4-8-12-16-20-24
+        if( (secondaryDuration >= 6) && (secondaryDuration <= 8) ) //Duration of window = 16 primary teeth
+        {
+          decoderState.toothCurrentCount = 56; //End of the shortest of the individual windows. Occurs at 102 crank degrees. 
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        }
+      }
+      else { decoderState.decoderStatus.syncStatus = SyncStatus::None; } //This should really never happen (Only 4, 6 and 8 cylinder engines for this pattern)
+    }
+    else
+    {
+      if (page4.useResync == true)
+      {
+        //Already have sync, but do a verify every 720 degrees.
+        if(page2.nCylinders == 4)
+        {
+          if( (secondaryDuration >= 15) && (secondaryDuration <= 17) ) //Duration of window = 16 primary teeth
+          {
+            decoderState.toothCurrentCount = 16; //End of first window (The longest) occurs 16 teeth after TDC
+          }
+        }
+        else if(page2.nCylinders == 6)
+        {
+          if( (secondaryDuration >= 3) && (secondaryDuration <= 5) ) //Duration of window = 4 primary teeth
+          {
+            decoderState.toothCurrentCount = 124; //End of smallest window is after 60+60+4 primary teeth
+          }
+        } //Cylinder count
+      } //use resync
+    } //Has sync
+  } //First getting sync or not
+}
 
 }
 }
