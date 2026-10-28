@@ -64,6 +64,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/mazdaau.h"
 #include "src/decoders/non360.h"
 #include "src/decoders/nissan360.h"
+#include "src/decoders/subaru6_7.h"
 
 using namespace decoders::shared;
 
@@ -1051,29 +1052,7 @@ static void triggerSetEndTeeth_Subaru67(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = 0;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.triggerToothAngle = 2;
-  _decoderState.decoderStatus.toothAngleIsCorrect = false;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 93U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-
-  _decoderState.toothAngles[0] = 710; //tooth #1
-  _decoderState.toothAngles[1] = 83; //tooth #2
-  _decoderState.toothAngles[2] = 115; //tooth #3
-  _decoderState.toothAngles[3] = 170; //tooth #4
-  _decoderState.toothAngles[4] = _decoderState.toothAngles[1] + 180;
-  _decoderState.toothAngles[5] = _decoderState.toothAngles[2] + 180;
-  _decoderState.toothAngles[6] = _decoderState.toothAngles[3] + 180;
-  _decoderState.toothAngles[7] = _decoderState.toothAngles[1] + 360;
-  _decoderState.toothAngles[8] = _decoderState.toothAngles[2] + 360;
-  _decoderState.toothAngles[9] = _decoderState.toothAngles[3] + 360;
-  _decoderState.toothAngles[10] = _decoderState.toothAngles[1] + 540;
-  _decoderState.toothAngles[11] = _decoderState.toothAngles[2] + 540;
+  _decoderState = decoders::subaru67::initialise();
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Subaru67, getConfigPriTriggerEdge(configPage4))
