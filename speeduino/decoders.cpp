@@ -838,123 +838,6 @@ This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (
 * @defgroup dec_subaru_6_7 Subaru 6/7
 * @{
 */
-static void triggerPri_Subaru67(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap < _decoderState.triggerFilterTime ) 
-  { return; }
-
-  _decoderState.toothCurrentCount++; //Increment the tooth counter
-  _decoderState.toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
-  _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-  _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-  _decoderState.toothLastToothTime = curTime;
-
- 
-  if(_decoderState.toothCurrentCount > 13) //can't have more than 12 teeth so have lost sync 
-  {
-    _decoderState.toothCurrentCount = 0; 
-    _decoderState.decoderStatus.syncStatus = SyncStatus::None; 
-    currentStatus.syncLossCounter++;
-  } 
-
-  //Sync is determined by counting the number of cam teeth that have passed between the crank teeth
-  switch(_decoderState.secondaryToothCount)
-  {
-    case 0:
-      //If no teeth have passed, we can't do anything
-      break;
-
-    case 1:
-      //Can't do anything with a single pulse from the cam either (We need either 2 or 3 pulses)
-      if(_decoderState.toothCurrentCount == 5 || _decoderState.toothCurrentCount == 11)
-      { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
-      else
-      { 
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None; 
-        currentStatus.syncLossCounter++;     
-        _decoderState.toothCurrentCount = 5; // we don't know if its 5 or 11, but we'll be right 50% of the time and speed up getting sync 50%
-      }
-      _decoderState.secondaryToothCount = 0;
-      break;
-
-    case 2:
-      if (_decoderState.toothCurrentCount == 8)  
-      {  _decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
-      else
-      { 
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        currentStatus.syncLossCounter++;
-        _decoderState.toothCurrentCount = 8;
-      }          
-      _decoderState.secondaryToothCount = 0;
-      break;
-
-    case 3:      
-      if( _decoderState.toothCurrentCount == 2)
-      {  _decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
-      else
-      {  
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None; 
-        currentStatus.syncLossCounter++;
-        _decoderState.toothCurrentCount = 2;
-      }
-      _decoderState.secondaryToothCount = 0;
-      break;
-
-    default:
-      //Almost certainly due to noise or cranking stop/start
-      _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-      _decoderState.decoderStatus.toothAngleIsCorrect = false;
-      currentStatus.syncLossCounter++;
-      _decoderState.secondaryToothCount = 0;
-      break;
-  }
-
-  //Check sync again
-  if ( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-  {
-    //Locked timing during cranking. This is fixed at 10* BTDC.
-    if ( (currentStatus.rotationStatus==EngineRotationStatus::Cranking) && configPage4.ignCranklock)
-    {
-      if( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount == 7) ) { endCoilCharge(1U); endCoilCharge(3U); }
-      else if( (_decoderState.toothCurrentCount == 4) || (_decoderState.toothCurrentCount == 10) ) { endCoilCharge(2U); endCoilCharge(4U); }
-    }
-
-    if ( _decoderState.toothCurrentCount > 12 ) // done 720 degrees so increment rotation
-    {
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++; //Counter
-    }
-
-    //Set the last angle between teeth for better calc accuracy
-    if(_decoderState.toothCurrentCount == 1) { _decoderState.triggerToothAngle = 55; } //Special case for tooth 1
-    else if(_decoderState.toothCurrentCount == 2) { _decoderState.triggerToothAngle = 93; } //Special case for tooth 2
-    else { _decoderState.triggerToothAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] - _decoderState.toothAngles[(_decoderState.toothCurrentCount-2)]; }
-    _decoderState.decoderStatus.toothAngleIsCorrect = true;
-
-
-    //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-    {
-      int16_t crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount - 1)] + configPage4.triggerAngle;
-      if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) )
-      {
-        crankAngle = _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)];
-
-        //Handle non-sequential tooth counts 
-        if( (configPage4.sparkMode != IGN_MODE_SEQUENTIAL) && (_decoderState.toothCurrentCount > 6) ) { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (_decoderState.toothCurrentCount-6) ); }
-        else { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-      }
-      else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-    }
-  }
- }
-
 static void triggerSec_Subaru67(void)
 {
   if( ((_decoderState.toothSystemCount == 0) || (_decoderState.toothSystemCount == 3)) )
@@ -1054,8 +937,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 {
   _decoderState = decoders::subaru67::initialise();
 
+  static const auto primaryTrigger = [] () {
+    decoders::subaru67::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Subaru67, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Subaru67, FALLING)
                   .setGetRevolutionTime(getRevolutionTime_Subaru67)
                   .setGetCrankAngle(getCrankAngle_Subaru67)

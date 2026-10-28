@@ -1,4 +1,6 @@
 #include "subaru6_7.h"
+#include "shared/perToothIgnition.h"
+#include "scheduledIO_ign.h"
 
 namespace decoders {
 
@@ -31,6 +33,125 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
   state.toothAngles[11] = state.toothAngles[2] + 540;
 
   return state;
+}
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( decoderState.curGap < decoderState.triggerFilterTime ) 
+  { return; }
+
+  decoderState.toothCurrentCount++; //Increment the tooth counter
+  decoderState.toothSystemCount++; //Used to count the number of primary pulses that have occurred since the last secondary. Is part of the noise filtering system.
+  decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+  decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+  decoderState.toothLastToothTime = curTime;
+
+ 
+  if(decoderState.toothCurrentCount > 13) //can't have more than 12 teeth so have lost sync 
+  {
+    decoderState.toothCurrentCount = 0; 
+    decoderState.decoderStatus.syncStatus = SyncStatus::None; 
+    current.syncLossCounter++;
+  } 
+
+  //Sync is determined by counting the number of cam teeth that have passed between the crank teeth
+  switch(decoderState.secondaryToothCount)
+  {
+    case 0:
+      //If no teeth have passed, we can't do anything
+      break;
+
+    case 1:
+      //Can't do anything with a single pulse from the cam either (We need either 2 or 3 pulses)
+      if(decoderState.toothCurrentCount == 5 || decoderState.toothCurrentCount == 11)
+      { decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
+      else
+      { 
+        decoderState.decoderStatus.syncStatus = SyncStatus::None; 
+        current.syncLossCounter++;     
+        decoderState.toothCurrentCount = 5; // we don't know if its 5 or 11, but we'll be right 50% of the time and speed up getting sync 50%
+      }
+      decoderState.secondaryToothCount = 0;
+      break;
+
+    case 2:
+      if (decoderState.toothCurrentCount == 8)  
+      {  decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
+      else
+      { 
+        decoderState.decoderStatus.syncStatus = SyncStatus::None;
+        current.syncLossCounter++;
+        decoderState.toothCurrentCount = 8;
+      }          
+      decoderState.secondaryToothCount = 0;
+      break;
+
+    case 3:      
+      if( decoderState.toothCurrentCount == 2)
+      {  decoderState.decoderStatus.syncStatus = SyncStatus::Full; }
+      else
+      {  
+        decoderState.decoderStatus.syncStatus = SyncStatus::None; 
+        current.syncLossCounter++;
+        decoderState.toothCurrentCount = 2;
+      }
+      decoderState.secondaryToothCount = 0;
+      break;
+
+    default:
+      //Almost certainly due to noise or cranking stop/start
+      decoderState.decoderStatus.syncStatus = SyncStatus::None;
+      decoderState.decoderStatus.toothAngleIsCorrect = false;
+      current.syncLossCounter++;
+      decoderState.secondaryToothCount = 0;
+      break;
+  }
+
+  //Check sync again
+  if ( decoderState.decoderStatus.syncStatus==SyncStatus::Full )
+  {
+    //Locked timing during cranking. This is fixed at 10* BTDC.
+    // LCOV_EXCL_START
+    // Not testable ATM
+    if ( (current.rotationStatus==EngineRotationStatus::Cranking) && page4.ignCranklock)
+    {
+      if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(1U); endCoilCharge(3U); }
+      else if( (decoderState.toothCurrentCount == 4) || (decoderState.toothCurrentCount == 10) ) { endCoilCharge(2U); endCoilCharge(4U); }
+    }
+    // LCOV_EXCL_STOP
+
+    if ( decoderState.toothCurrentCount > 12 ) // done 720 degrees so increment rotation
+    {
+      decoderState.toothCurrentCount = 1;
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      current.startRevolutions++; //Counter
+    }
+
+    //Set the last angle between teeth for better calc accuracy
+    if(decoderState.toothCurrentCount == 1) { decoderState.triggerToothAngle = 55; } //Special case for tooth 1
+    else if(decoderState.toothCurrentCount == 2) { decoderState.triggerToothAngle = 93; } //Special case for tooth 2
+    else { decoderState.triggerToothAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)] - decoderState.toothAngles[(decoderState.toothCurrentCount-2)]; }
+    decoderState.decoderStatus.toothAngleIsCorrect = true;
+
+
+    //NEW IGNITION MODE
+    if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
+    {
+      int16_t crankAngle = decoderState.toothAngles[(decoderState.toothCurrentCount - 1)] + page4.triggerAngle;
+      if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) )
+      {
+        crankAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)];
+
+        //Handle non-sequential tooth counts 
+        if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) && (decoderState.toothCurrentCount > 6) ) { checkPerToothTiming(current, decoderState, page4, crankAngle, (decoderState.toothCurrentCount-6) ); }
+        else { checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
+      }
+      else{ checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
+    }
+  }
 }
 
 }
