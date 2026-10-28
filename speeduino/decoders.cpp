@@ -838,44 +838,6 @@ This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (
 * @defgroup dec_subaru_6_7 Subaru 6/7
 * @{
 */
-static void triggerSec_Subaru67(void)
-{
-  if( ((_decoderState.toothSystemCount == 0) || (_decoderState.toothSystemCount == 3)) )
-  {
-    uint32_t curTime2 = micros();
-    _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-    
-    if ( _decoderState.curGap2 > _decoderState.triggerSecFilterTime ) 
-    {
-      _decoderState.toothLastSecToothTime = curTime2;
-      _decoderState.secondaryToothCount++;
-      _decoderState.toothSystemCount = 0;
-      
-      if(_decoderState.secondaryToothCount > 1)
-      {
-        //Set filter at 25% of the current speed
-        //Note that this can only be set on the 2nd or 3rd cam tooth in each set. 
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2;
-      }
-      else { _decoderState.triggerSecFilterTime = 0; } //Filter disabled  
-
-    }
-  }
-  else
-  {
-    //Sanity check
-    if(_decoderState.toothSystemCount > 3)
-    { 
-      _decoderState.toothSystemCount = 0; 
-      _decoderState.secondaryToothCount = 1;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::None; // impossible to have more than 3 crank teeth between cam teeth - must have noise but can't have sync
-      currentStatus.syncLossCounter++;
-    }
-    _decoderState.secondaryToothCount = 0;
-  }
-
-}
-
 static uint32_t getRevolutionTime_Subaru67(void)
 {
   tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
@@ -940,10 +902,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
   static const auto primaryTrigger = [] () {
     decoders::subaru67::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger = [] () {
+    decoders::subaru67::triggerSecondary(micros(), currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Subaru67, FALLING)
+                  .setSecondaryTrigger(secondaryTrigger, FALLING)
                   .setGetRevolutionTime(getRevolutionTime_Subaru67)
                   .setGetCrankAngle(getCrankAngle_Subaru67)
                   .setSetEndTeeth(triggerSetEndTeeth_Subaru67)

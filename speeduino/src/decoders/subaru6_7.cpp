@@ -154,5 +154,41 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
 }
 
+void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState)
+{
+  if( ((decoderState.toothSystemCount == 0) || (decoderState.toothSystemCount == 3)) )
+  {
+    decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+    
+    if ( decoderState.curGap2 > decoderState.triggerSecFilterTime ) 
+    {
+      decoderState.toothLastSecToothTime = curTime;
+      decoderState.secondaryToothCount++;
+      decoderState.toothSystemCount = 0;
+      
+      if(decoderState.secondaryToothCount > 1)
+      {
+        //Set filter at 25% of the current speed
+        //Note that this can only be set on the 2nd or 3rd cam tooth in each set. 
+        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2;
+      }
+      else { decoderState.triggerSecFilterTime = 0; } //Filter disabled  
+
+    }
+  }
+  else
+  {
+    //Sanity check
+    if(decoderState.toothSystemCount > 3)
+    { 
+      decoderState.toothSystemCount = 0; 
+      decoderState.secondaryToothCount = 1;
+      decoderState.decoderStatus.syncStatus = SyncStatus::None; // impossible to have more than 3 crank teeth between cam teeth - must have noise but can't have sync
+      current.syncLossCounter++;
+    }
+    decoderState.secondaryToothCount = 0;
+  }
+}
+
 }
 }
