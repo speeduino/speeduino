@@ -797,22 +797,6 @@ See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
 * @defgroup dec_nissan360 Nissan 360 tooth on cam
 * @{
 */
-static int16_t getCrankAngle_Nissan360(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.toothLastMinusOneToothTime, _decoderState.toothCurrentCount);
-
-  int16_t crankAngle = ( (std::get<2>(data) - 1U) * 2U) + configPage4.triggerAngle;
-  uint32_t halfTooth = (std::get<0>(data) - std::get<1>(data)) / 2U;
-  uint32_t elapsedTime = timeElapsed(currMicros, std::get<0>(data));
-  if (elapsedTime > halfTooth)
-  {
-    //Means we're over halfway to the next tooth, so add on 1 degree
-    crankAngle += 1;
-  }
-
-  return decoders::shared::clampCrankAngle(crankAngle);
-}
-
 static uint16_t __attribute__((noinline)) calcEndTooth_Nissan360(const IgnitionSchedule &schedule) {
   //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
   static constexpr uint8_t offset_teeth = 4;
@@ -851,12 +835,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
   static const auto getRevolutionTime = []() {
     return decoders::nissan360::getRevolutionTime(currentStatus, _decoderState);
   };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::nissan360::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSecondary, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_Nissan360)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

@@ -1,7 +1,8 @@
 #include "nissan360.h"
 #include "shared/perToothIgnition.h"
 #include "shared/rev_time_calcs.h"
-
+#include "shared/crank_angle_calculator.h"
+#include "elapsed_time.h"
 namespace decoders {
 
 namespace nissan360 {
@@ -167,6 +168,23 @@ uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderStat
   decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   return revolutionTime;
 }
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto data = atomic_copy(decoderState.toothLastToothTime, decoderState.toothLastMinusOneToothTime, decoderState.toothCurrentCount);
+
+  int16_t crankAngle = ( (std::get<2>(data) - 1U) * 2U) + page4.triggerAngle;
+  uint32_t halfTooth = (std::get<0>(data) - std::get<1>(data)) / 2U;
+  uint32_t elapsedTime = timeElapsed(currMicros, std::get<0>(data));
+  if (elapsedTime > halfTooth)
+  {
+    //Means we're over halfway to the next tooth, so add on 1 degree
+    crankAngle += 1;
+  }
+
+  return decoders::shared::clampCrankAngle(crankAngle);
+}
+
 
 }
 }
