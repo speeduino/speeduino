@@ -3,6 +3,8 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "elapsed_time.h"
+#include "scheduler_ignition_controller.h"
+
 namespace decoders {
 
 namespace nissan360 {
@@ -185,6 +187,30 @@ int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, 
   return decoders::shared::clampCrankAngle(crankAngle);
 }
 
+static uint16_t __attribute__((noinline)) calcEndTooth_Nissan360(const IgnitionSchedule &schedule, const config4 &page4) {
+  //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
+  static constexpr uint8_t offset_teeth = 4;
+  if(((int16_t)schedule.dischargeAngle - offset_teeth) > page4.triggerAngle) {
+     return ( (schedule.dischargeAngle - page4.triggerAngle) / 2 ) - offset_teeth; 
+  }
+  else { 
+    return ( (schedule.dischargeAngle + 720 - page4.triggerAngle) / 2 ) - offset_teeth; 
+  }
+}
+
+void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+{
+  decoderState.ignitionEndTeeth[0] = calcEndTooth_Nissan360(ignitionSchedule1, page4);
+#if (IGN_CHANNELS >= 2)
+  decoderState.ignitionEndTeeth[1] = calcEndTooth_Nissan360(ignitionSchedule2, page4);
+#endif
+#if (IGN_CHANNELS >= 3)
+  decoderState.ignitionEndTeeth[2] = calcEndTooth_Nissan360(ignitionSchedule3, page4);
+#endif
+#if (IGN_CHANNELS >= 4)
+  decoderState.ignitionEndTeeth[3] = calcEndTooth_Nissan360(ignitionSchedule4, page4);
+#endif
+}
 
 }
 }

@@ -23,5 +23,7 @@ namespace nissan360 {
     uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState);
 
     int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4);
+
+    void setEndTeeth(shared::state_t &decoderState, const config4 &page4);
 }
 }

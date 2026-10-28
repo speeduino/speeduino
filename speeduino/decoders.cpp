@@ -797,31 +797,6 @@ See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
 * @defgroup dec_nissan360 Nissan 360 tooth on cam
 * @{
 */
-static uint16_t __attribute__((noinline)) calcEndTooth_Nissan360(const IgnitionSchedule &schedule) {
-  //This uses 4 prior teeth, just to ensure there is sufficient time to set the schedule etc
-  static constexpr uint8_t offset_teeth = 4;
-  if(((int16_t)schedule.dischargeAngle - offset_teeth) > configPage4.triggerAngle) {
-     return ( (schedule.dischargeAngle - configPage4.triggerAngle) / 2 ) - offset_teeth; 
-  }
-  else { 
-    return ( (schedule.dischargeAngle + 720 - configPage4.triggerAngle) / 2 ) - offset_teeth; 
-  }
-}
-
-void triggerSetEndTeeth_Nissan360(void)
-{
-  _decoderState.ignitionEndTeeth[0] = calcEndTooth_Nissan360(ignitionSchedule1);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTooth_Nissan360(ignitionSchedule2);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTooth_Nissan360(ignitionSchedule3);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcEndTooth_Nissan360(ignitionSchedule4);
-#endif
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
 {
   _decoderState = decoders::nissan360::initialise();
@@ -838,13 +813,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
   static const auto getCrankAngle = [](uint32_t curMicros) {
     return decoders::nissan360::getCrankAngle(curMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    return decoders::nissan360::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSecondary, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_Nissan360)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
