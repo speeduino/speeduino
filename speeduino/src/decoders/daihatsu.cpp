@@ -1,6 +1,6 @@
 #include "daihatsu.h"
 #include "scheduledIO_ign.h"
-
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -106,6 +106,22 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   decoderState.toothLastToothTime = curTime;
 }
 
+uint32_t getRevolutionTime(statuses &current, shared::state_t &decoderState)
+{
+  static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
+  if( (crankingCalcEnabled==false) || (current.RPM >= current.crankRPM) )
+  {
+    return stdGetRevolutionTime(current, decoderState, CAM_SPEED); //Tracking over 2 crank revolutions
+  }
+
+  //Can't use standard cranking revolution time function due to extra tooth
+  if (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { return shared::publishedRevolutionTime(current); } //No sync
+  if ((decoderState.toothCurrentCount == 2U) || (decoderState.toothCurrentCount == 3U)) { return shared::publishedRevolutionTime(current); } //Extra tooth
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  uint32_t interval = 0U;
+  if (lastToothInterval(sample, interval)==false) { return shared::publishedRevolutionTime(current); }
+  return interval * (uint32_t)(decoderState.triggerActualTeeth - 1U);
+}
 
 }
 }

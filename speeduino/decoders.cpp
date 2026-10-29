@@ -874,30 +874,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 * Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained),
 * so crank angle is a made up figure based purely on the first teeth to be seen.
 * Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
-* @defgroup dec_daihatsu Daihatsu (3  and 4 cyl.)
-* @{
 */
-static uint32_t getRevolutionTime_Daihatsu(void)
-{
-  static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
-  if( (crankingCalcEnabled==false) || (currentStatus.RPM >= currentStatus.crankRPM) )
-  {
-    return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED); //Tracking over 2 crank revolutions
-  }
-
-  //Can't use standard cranking revolution time function due to extra tooth
-  if (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { return publishedRevolutionTime(currentStatus); } //No sync
-  if ((_decoderState.toothCurrentCount == 2U) || (_decoderState.toothCurrentCount == 3U)) { return publishedRevolutionTime(currentStatus); } //Extra tooth
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t interval = 0U;
-  if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
-  return interval * (uint32_t)(_decoderState.triggerActualTeeth - 1U);
-}
-static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 {
   _decoderState = decoders::daihatsu::initialise(configPage2);
@@ -905,19 +882,23 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
   static const auto primaryTrigger = []() {
     decoders::daihatsu::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::daihatsu::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  };
   
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_Daihatsu)
-                  .setGetCrankAngle(getCrankAngle_Daihatsu)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Harley Davidson (V2) with 2 unevenly Spaced Teeth.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from GMX7 and adapted for Harley.
