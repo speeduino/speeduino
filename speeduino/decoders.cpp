@@ -877,75 +877,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 * @defgroup dec_daihatsu Daihatsu (3  and 4 cyl.)
 * @{
 */
-static void triggerPri_Daihatsu(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-
-  //if ( _decoderState.curGap >= _decoderState.triggerFilterTime || (currentStatus.startRevolutions == 0 )
-  {
-    _decoderState.toothSystemCount++;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-      if( (_decoderState.toothCurrentCount == _decoderState.triggerActualTeeth) ) //Check if we're back to the beginning of a revolution
-      {
-         _decoderState.toothCurrentCount = 1; //Reset the counter
-         _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-         _decoderState.toothOneTime = curTime;
-         _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-         currentStatus.startRevolutions++; //Counter
-
-         //Need to set a special filter time for the next tooth
-         _decoderState.triggerFilterTime = 20; //Fix this later
-      }
-      else
-      {
-        _decoderState.toothCurrentCount++; //Increment the tooth counter
-        _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-      }
-
-      if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
-      {
-        //This locks the cranking timing to 0 degrees BTDC (All the triggers allow for)
-        if(_decoderState.toothCurrentCount == 1) { endCoilCharge(1U); }
-        else if(_decoderState.toothCurrentCount == 2) { endCoilCharge(2U); }
-        else if(_decoderState.toothCurrentCount == 3) { endCoilCharge(3U); }
-        else if(_decoderState.toothCurrentCount == 4) { endCoilCharge(4U); }
-      }
-    }
-    else //NO SYNC
-    {
-      //
-      if(_decoderState.toothSystemCount >= 3) //Need to have seen at least 3 teeth to determine SYNC
-      {
-        unsigned long targetTime;
-        //We need to try and find the extra tooth (#2) which is located 30 degrees after tooth #1
-        //Aim for tooth times less than about 60 degrees
-        if(configPage2.nCylinders == 3)
-        {
-          targetTime = (_decoderState.toothLastToothTime -  _decoderState.toothLastMinusOneToothTime) / 4; //Teeth are 240 degrees apart for 3 cylinder. 240/4 = 60
-        }
-        else
-        {
-          targetTime = ((_decoderState.toothLastToothTime -  _decoderState.toothLastMinusOneToothTime) * 3) / 8; //Teeth are 180 degrees apart for 4 cylinder. (180*3)/8 = 67
-        }
-        if(_decoderState.curGap < targetTime)
-        {
-          //Means we're on the extra tooth here
-          _decoderState.toothCurrentCount = 2; //Reset the counter
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-          _decoderState.triggerFilterTime = targetTime; //Lazy, but it works
-        }
-      }
-    }
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-  } //Trigger filter
-}
-
 static uint32_t getRevolutionTime_Daihatsu(void)
 {
   static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
@@ -970,9 +901,13 @@ static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 {
   _decoderState = decoders::daihatsu::initialise(configPage2);
+
+  static const auto primaryTrigger = []() {
+    decoders::daihatsu::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
   
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Daihatsu, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_Daihatsu)
                   .setGetCrankAngle(getCrankAngle_Daihatsu)
                   .setReset(sharedDecoderReset)
