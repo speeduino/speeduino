@@ -4,7 +4,7 @@
 #include "atomic.h"
 #include "scheduler_ignition_controller.h"
 
-struct trigger_context_t
+struct trigger_context_nis360_t
 {
   statuses current = {};
   config2 page2 = {};
@@ -22,7 +22,7 @@ struct trigger_context_t
   }
 };
 
-static void setup_primary_gap(trigger_context_t &context, uint16_t toothCount, uint32_t lastTime)
+static void setup_primary_gap(trigger_context_nis360_t &context, uint16_t toothCount, uint32_t lastTime)
 {
   context.decoderState.toothCurrentCount = toothCount;
   context.decoderState.toothLastToothTime = lastTime;
@@ -32,7 +32,7 @@ static void setup_primary_gap(trigger_context_t &context, uint16_t toothCount, u
 
 static void test_triggerPrimary_gapcheck(void)
 {
-  trigger_context_t context;
+  trigger_context_nis360_t context;
 
   constexpr uint16_t TOOTH_COUNT = 5; // Arbitrary
   constexpr uint32_t LAST_TOOTHTIME = 777777;
@@ -50,7 +50,7 @@ static void test_triggerPrimary_gapcheck(void)
 
 static void test_triggerPrimary_wrapCount(void)
 {
-  trigger_context_t context;
+  trigger_context_nis360_t context;
 
   setup_primary_gap(context, 360, 777777UL);
   context.current.startRevolutions = 1;
@@ -64,7 +64,7 @@ static void test_triggerPrimary_wrapCount(void)
 
 static void test_triggerPrimary_updatesTimers(void)
 {
-  trigger_context_t context;
+  trigger_context_nis360_t context;
 
   context.decoderState.toothLastToothTime = 100;
 
@@ -73,7 +73,7 @@ static void test_triggerPrimary_updatesTimers(void)
   TEST_ASSERT_EQUAL(1500, context.decoderState.toothLastToothTime);
 }
 
-static void setup_perTooth(trigger_context_t &context)
+static void setup_perTooth(trigger_context_nis360_t &context)
 {
   context.decoderState.toothCurrentCount = 49;
   context.decoderState.ignitionEndTeeth[0] = context.decoderState.toothCurrentCount+1;
@@ -92,7 +92,7 @@ static void setup_perTooth(trigger_context_t &context)
 
 static void test_primary_applies_per_tooth_timing(void)
 {
-  trigger_context_t context;
+  trigger_context_nis360_t context;
 
   setAngleConverterRevolutionTime(6000000UL);
   context.current.setRpm(3000);
@@ -121,7 +121,7 @@ static void test_primary_applies_per_tooth_timing(void)
 
 static void test_primary_skips_per_tooth_timing_when_disabled(void)
 {
-  trigger_context_t context;
+  trigger_context_nis360_t context;
 
   setAngleConverterRevolutionTime(6000000UL);
   CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
@@ -140,7 +140,7 @@ static void test_primary_skips_per_tooth_timing_when_disabled(void)
 
 static auto setup_secondary(uint8_t cylinders, bool resyc, uint16_t duration)
 {
-  trigger_context_t context;
+  trigger_context_nis360_t context;
 
   context.page2.nCylinders = cylinders;
   context.page4.useResync = resyc;
