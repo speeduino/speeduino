@@ -65,6 +65,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/non360.h"
 #include "src/decoders/nissan360.h"
 #include "src/decoders/subaru6_7.h"
+#include "src/decoders/daihatsu.h"
 
 using namespace decoders::shared;
 
@@ -968,33 +969,8 @@ static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerActualTeeth = configPage2.nCylinders + 1;
-  _decoderState.triggerToothAngle = 720 / _decoderState.triggerActualTeeth; //The number of degrees that passes from tooth to tooth
-  _decoderState.triggerFilterTime = MICROS_PER_MIN / MAX_RPM / configPage2.nCylinders; // Minimum time required between teeth
-  _decoderState.triggerFilterTime = _decoderState.triggerFilterTime / 2; //Safety margin
-  _decoderState.decoderFeatures.supportsSequential = true;
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle)*4U;//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
-
-  if(configPage2.nCylinders == 3)
-  {
-    _decoderState.toothAngles[0] = 0; //tooth #1
-    _decoderState.toothAngles[1] = 30; //tooth #2 (Extra tooth)
-    _decoderState.toothAngles[2] = 240; //tooth #3
-    _decoderState.toothAngles[3] = 480; //tooth #4
-  }
-  else
-  {
-    //Should be 4 cylinders here
-    _decoderState.toothAngles[0] = 0; //tooth #1
-    _decoderState.toothAngles[1] = 30; //tooth #2 (Extra tooth)
-    _decoderState.toothAngles[2] = 180; //tooth #3
-    _decoderState.toothAngles[3] = 360; //tooth #4
-    _decoderState.toothAngles[4] = 540; //tooth #5
-  }
-
+  _decoderState = decoders::daihatsu::initialise(configPage2);
+  
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Daihatsu, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_Daihatsu)
