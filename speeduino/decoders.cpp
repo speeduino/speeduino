@@ -66,6 +66,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/nissan360.h"
 #include "src/decoders/subaru6_7.h"
 #include "src/decoders/daihatsu.h"
+#include "src/decoders/harley.h"
 
 using namespace decoders::shared;
 
@@ -980,12 +981,7 @@ static int16_t getCrankAngle_Harley(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  _decoderState.triggerFilterTime = 1500;
+  _decoderState = decoders::harley::initialise(micros(), currentStatus);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Harley, RISING)
