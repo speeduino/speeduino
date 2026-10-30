@@ -940,96 +940,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 * @defgroup dec_36_2_2_2 36-2-2-2 Trigger wheel
 * @{
 */
-static void triggerPri_ThirtySixMinus222(void)
-{
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-   if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-   {
-     _decoderState.toothCurrentCount++; //Increment the tooth counter
-     _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-     //Begin the missing tooth detection
-     //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
-     //_decoderState.toothSystemCount is used to keep track of which missed tooth we're on. It will be set to 1 if that last tooth seen was the middle one in the -2-2 area. At all other times it will be 0
-     if(_decoderState.toothSystemCount == 0) { _decoderState.targetGap = ((_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
-
-
-     if( (_decoderState.toothLastToothTime == 0) || (_decoderState.toothLastMinusOneToothTime == 0) ) { _decoderState.curGap = 0; }
-
-     if ( (_decoderState.curGap > _decoderState.targetGap) )
-     {
-       {
-         if(_decoderState.toothSystemCount == 1)
-         {
-           //This occurs when we're at the first tooth after the 2 lots of 2x missing tooth.
-           if(configPage2.nCylinders == 4 ) { _decoderState.toothCurrentCount = 19; } //H4
-           else if(configPage2.nCylinders == 6) { _decoderState.toothCurrentCount = 12; } //H6 - NOT TESTED!
-           
-           _decoderState.toothSystemCount = 0;
-           _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-         }
-         else
-         {
-           //We've seen a missing tooth set, but do not yet know whether it is the single one or the double one.
-           _decoderState.toothSystemCount = 1;
-           _decoderState.toothCurrentCount++;
-           _decoderState.toothCurrentCount++; //Accurately reflect the actual tooth count, including the skipped ones
-         }
-         _decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
-         _decoderState.triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-       }
-     }
-     else
-     {
-       if(_decoderState.toothCurrentCount > 36)
-       {
-         //Means a complete rotation has occurred.
-         _decoderState.toothCurrentCount = 1;
-         _decoderState.revolutionOne = !_decoderState.revolutionOne; //Flip sequential revolution tracker
-         _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-         _decoderState.toothOneTime = curTime;
-         currentStatus.startRevolutions++; //Counter
-
-       }
-       else if(_decoderState.toothSystemCount == 1)
-       {
-          //This occurs when a set of missing teeth had been seen, but the next one was NOT missing.
-          if(configPage2.nCylinders == 4 )
-          { 
-            //H4
-            _decoderState.toothCurrentCount = 35; 
-            _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-          } 
-          else if(configPage2.nCylinders == 6) 
-          { 
-            //H6 - THIS NEEDS TESTING
-            _decoderState.toothCurrentCount = 34; 
-            _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-          } 
-          
-       }
-
-       //Filter can only be recalculated for the regular teeth, not the missing one.
-       _decoderState.setFilter(_decoderState.curGap, configPage4);
-
-       _decoderState.decoderStatus.toothAngleIsCorrect = true;
-       _decoderState.toothSystemCount = 0;
-     }
-
-     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-     _decoderState.toothLastToothTime = curTime;
-
-     //EXPERIMENTAL!
-     if(configPage2.perToothIgn == true)
-     {
-       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-     }
-
-   }
-}
-
 static uint32_t getRevolutionTime_ThirtySixMinus222(void)
 {
   uint32_t revolutionTime = 0;
@@ -1089,8 +999,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
 {
   _decoderState = decoders::thirtysixminus222::initialise(configPage4);
 
+  static const auto primaryTrigger = []() {
+    decoders::thirtysixminus222::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_ThirtySixMinus222, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_ThirtySixMinus222)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
