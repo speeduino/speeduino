@@ -1,5 +1,6 @@
 #include "harley.h"
 #include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -71,6 +72,21 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
     return shared::publishedRevolutionTime(current);
   }
   return stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
+}
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto data = atomic_copy(decoderState.toothLastToothTime, decoderState.revolutionOne, decoderState.toothCurrentCount);
+
+  int16_t crankAngle = 157;
+  if ( (std::get<2>(data) == 1U) || (std::get<2>(data) == 3U) )
+  {
+    crankAngle = 0;
+  }
+
+  decoders::shared::simple_crank_angle_calculator_t calculator;
+  std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
+  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, page4));
 }
 
 }

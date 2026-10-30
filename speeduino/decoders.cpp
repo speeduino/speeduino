@@ -904,24 +904,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 /** Harley Davidson (V2) with 2 unevenly Spaced Teeth.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from GMX7 and adapted for Harley.
 Only rising Edge is used for simplicity.The second input is ignored, as it does not help to resolve cam position.
-* @defgroup dec_harley Harley Davidson
-* @{
 */
-static int16_t getCrankAngle_Harley(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount);
-
-  int16_t crankAngle = 157;
-  if ( (std::get<2>(data) == 1U) || (std::get<2>(data) == 3U) )
-  {
-    crankAngle = 0;
-  }
-
-  decoders::shared::simple_crank_angle_calculator_t calculator;
-  std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 {
   _decoderState = decoders::harley::initialise(micros(), currentStatus);
@@ -932,18 +915,19 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
   static const auto getRevolutionTime = []() {
     return decoders::harley::getRevolutionTime(currentStatus, _decoderState);
   };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::harley::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, RISING)
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_Harley)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** 36-2-2-2 crank based trigger wheel.
 * A crank based trigger with a nominal 36 teeth, but 6 of these removed in 3 groups of 2.
