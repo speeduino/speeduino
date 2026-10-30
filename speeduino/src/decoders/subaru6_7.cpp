@@ -121,6 +121,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     {
       if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 7) ) { endCoilCharge(1U); endCoilCharge(3U); }
       else if( (decoderState.toothCurrentCount == 4) || (decoderState.toothCurrentCount == 10) ) { endCoilCharge(2U); endCoilCharge(4U); }
+      else { /* No action required */ }
     }
     // LCOV_EXCL_STOP
 
@@ -135,17 +136,17 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     //Set the last angle between teeth for better calc accuracy
     if(decoderState.toothCurrentCount == 1) { decoderState.triggerToothAngle = 55; } //Special case for tooth 1
     else if(decoderState.toothCurrentCount == 2) { decoderState.triggerToothAngle = 93; } //Special case for tooth 2
-    else { decoderState.triggerToothAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)] - decoderState.toothAngles[(decoderState.toothCurrentCount-2)]; }
+    else { decoderState.triggerToothAngle = decoderState.toothAngles[decoderState.toothCurrentCount-1] - decoderState.toothAngles[decoderState.toothCurrentCount-2]; }
     decoderState.decoderStatus.toothAngleIsCorrect = true;
 
 
     //NEW IGNITION MODE
     if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
     {
-      int16_t crankAngle = decoderState.toothAngles[(decoderState.toothCurrentCount - 1)] + page4.triggerAngle;
+      int16_t crankAngle = decoderState.toothAngles[decoderState.toothCurrentCount - 1] + page4.triggerAngle;
       if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) )
       {
-        crankAngle = decoderState.toothAngles[(decoderState.toothCurrentCount-1)];
+        crankAngle = decoderState.toothAngles[decoderState.toothCurrentCount-1];
 
         //Handle non-sequential tooth counts 
         if( (page4.sparkMode != IGN_MODE_SEQUENTIAL) && (decoderState.toothCurrentCount > 6) ) { checkPerToothTiming(current, decoderState, page4, crankAngle, (decoderState.toothCurrentCount-6) ); }
@@ -158,7 +159,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 
 void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState)
 {
-  if( ((decoderState.toothSystemCount == 0) || (decoderState.toothSystemCount == 3)) )
+  if( (decoderState.toothSystemCount == 0) || (decoderState.toothSystemCount == 3) )
   {
     decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
     
