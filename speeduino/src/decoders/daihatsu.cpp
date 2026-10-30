@@ -47,7 +47,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 
   if (decoderState.decoderStatus.syncStatus==SyncStatus::Full)
   {
-    if( (decoderState.toothCurrentCount == decoderState.triggerActualTeeth) ) //Check if we're back to the beginning of a revolution
+    if( decoderState.toothCurrentCount == decoderState.triggerActualTeeth ) //Check if we're back to the beginning of a revolution
     {
         decoderState.toothCurrentCount = 1; //Reset the counter
         decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
@@ -73,6 +73,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       else if(decoderState.toothCurrentCount == 2) { endCoilCharge(2U); }
       else if(decoderState.toothCurrentCount == 3) { endCoilCharge(3U); }
       else if(decoderState.toothCurrentCount == 4) { endCoilCharge(4U); }
+      else { /* Do nothing */}
     }
     // LCOV_EXCL_STOP
   }
@@ -81,7 +82,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     //
     if(decoderState.toothSystemCount >= 3) //Need to have seen at least 3 teeth to determine SYNC
     {
-      unsigned long targetTime;
+      uint32_t targetTime = 0;
       //We need to try and find the extra tooth (#2) which is located 30 degrees after tooth #1
       //Aim for tooth times less than about 60 degrees
       if(page2.nCylinders == 3)
@@ -106,7 +107,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   decoderState.toothLastToothTime = curTime;
 }
 
-uint32_t getRevolutionTime(statuses &current, shared::state_t &decoderState)
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
 {
   static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
   if( (crankingCalcEnabled==false) || (current.RPM >= current.crankRPM) )

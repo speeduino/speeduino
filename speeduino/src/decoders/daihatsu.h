@@ -21,7 +21,7 @@ namespace daihatsu {
 
   void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 
-  uint32_t getRevolutionTime(statuses &current, shared::state_t &decoderState);
+  uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState);
 
 }
 }
