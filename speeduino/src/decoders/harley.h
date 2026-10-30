@@ -17,5 +17,7 @@ namespace harley {
 
   shared::state_t initialise(uint32_t curMicros, const statuses &current);
 
+  void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4);
+
 }
 }

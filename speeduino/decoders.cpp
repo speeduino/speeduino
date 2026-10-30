@@ -907,47 +907,6 @@ Only rising Edge is used for simplicity.The second input is ignored, as it does 
 * @defgroup dec_harley Harley Davidson
 * @{
 */
-static void triggerPri_Harley(void)
-{
-  _decoderState.lastGap = _decoderState.curGap;
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  _decoderState.setFilter(_decoderState.curGap, configPage4); // Filtering adjusted according to setting
-  if (_decoderState.curGap > _decoderState.triggerFilterTime)
-  {
-    if (currentStatus.decoder.primary.isPinHigh()) // Has to be the same as in main() trigger-attach, for readability we do it this way.
-    {
-        _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-        _decoderState.targetGap = _decoderState.lastGap ; //Gap is the Time to next toothtrigger, so we know where we are
-        _decoderState.toothCurrentCount++;
-        if (_decoderState.curGap > _decoderState.targetGap)
-        {
-          _decoderState.toothCurrentCount = 1;
-          _decoderState.triggerToothAngle = 0;// Has to be equal to Angle Routine
-          _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-          _decoderState.toothOneTime = curTime;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else
-        {
-          _decoderState.toothCurrentCount = 2;
-          _decoderState.triggerToothAngle = 157;
-          //     _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-          //     _decoderState.toothOneTime = curTime;
-        }
-        _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-        _decoderState.toothLastToothTime = curTime;
-        currentStatus.startRevolutions++; //Counter
-    }
-    else
-    {
-      if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { currentStatus.syncLossCounter++; }
-      _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-      _decoderState.toothCurrentCount = 0;
-    } //Primary trigger high
-  } //Trigger filter
-}
-
 static uint32_t getRevolutionTime_Harley(void)
 {
   tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
@@ -983,8 +942,11 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 {
   _decoderState = decoders::harley::initialise(micros(), currentStatus);
 
+  static const auto primaryTrigger = []() {
+    decoders::harley::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Harley, RISING)
+                  .setPrimaryTrigger(primaryTrigger, RISING)
                   .setGetRevolutionTime(getRevolutionTime_Harley)
                   .setGetCrankAngle(getCrankAngle_Harley)
                   .setReset(sharedDecoderReset)
