@@ -1,29 +1,25 @@
-#include "decoders.h"
-#include "crankMaths.h"
-#include "../test_utils.h"
-#include "globals.h"
-#include "crankMaths.h"
-#include "src/decoders/shared/decoder_state.h"
+#include "../../test_utils.h"
+#include "src/decoders/subaru6_7.h"
 
-extern decoders::shared::state_t _decoderState;
 static void test_getCrankAngle(void)
-{  
-  auto decoder = triggerSetup_Subaru67();
+{
+  config4 page4={};
+  auto decoderState = decoders::subaru67::initialise();
 
   auto setup_case = [&](int toothNum, int trigAngle) {
     CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
-    _decoderState.toothLastMinusOneToothTime = 1500;
-    _decoderState.toothLastToothTime = 2000; // toothTime = 500
-    _decoderState.triggerToothAngle = 90; // scale interval-based angle to make delta noticeable
-    _decoderState.toothCurrentCount = toothNum;
-    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    _decoderState.decoderStatus.toothAngleIsCorrect = true;
-    configPage4.triggerAngle = trigAngle;
+    decoderState.toothLastMinusOneToothTime = 1500;
+    decoderState.toothLastToothTime = 2000; // toothTime = 500
+    decoderState.triggerToothAngle = 90; // scale interval-based angle to make delta noticeable
+    decoderState.toothCurrentCount = toothNum;
+    decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    decoderState.decoderStatus.toothAngleIsCorrect = true;
+    page4.triggerAngle = trigAngle;
   };
 
   auto run_case = [&](int toothNum, int trigAngle, int delta, int16_t expected) {
     setup_case(toothNum, trigAngle);
-    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
+    TEST_ASSERT_EQUAL(expected, decoders::subaru67::getCrankAngle(decoderState.toothLastToothTime + delta, decoderState, page4));
   };
 
   // dt = timeToAngleIntervalTooth(100) = 100*90/500 = 18
@@ -48,34 +44,121 @@ static void test_getCrankAngle(void)
 
   // Zero if not full sync
   setup_case(1, 0);
-  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
+  decoderState.decoderStatus.syncStatus = SyncStatus::None;
+  TEST_ASSERT_EQUAL(0, decoders::subaru67::getCrankAngle(decoderState.toothLastToothTime + 100, decoderState, page4));
   setup_case(1, 0);
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Partial;
-  TEST_ASSERT_EQUAL(0, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + 100));
+  decoderState.decoderStatus.syncStatus = SyncStatus::Partial;
+  TEST_ASSERT_EQUAL(0, decoders::subaru67::getCrankAngle(decoderState.toothLastToothTime + 100, decoderState, page4));
 }
 
 static void test_getRevolutionTime(void)
 {
-  auto decoder = triggerSetup_Subaru67();
+  statuses current={};
+  auto decoderState = decoders::subaru67::initialise();
 
-  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-  currentStatus.revolutionTime = 12345UL;
-  _decoderState.toothOneMinusOneTime = 1000UL;
-  _decoderState.toothOneTime = _decoderState.toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
+  decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  current.revolutionTime = 12345UL;
+  decoderState.toothOneMinusOneTime = 1000UL;
+  decoderState.toothOneTime = decoderState.toothOneMinusOneTime + 120000UL; // Cam speed: >>1 -> 60000
 
   // No speed until the first revolution has completed
-  currentStatus.startRevolutions = 0;
-  TEST_ASSERT_EQUAL_UINT32(0UL, decoder.getRevolutionTime());
+  current.startRevolutions = 0;
+  TEST_ASSERT_EQUAL_UINT32(0UL, decoders::subaru67::getRevolutionTime(current, decoderState));
 
-  currentStatus.startRevolutions = 1;
-  TEST_ASSERT_EQUAL_UINT32(60000UL, decoder.getRevolutionTime());
+  current.startRevolutions = 1;
+  TEST_ASSERT_EQUAL_UINT32(60000UL, decoders::subaru67::getRevolutionTime(current, decoderState));
+}
+
+
+static void test_setEndTeeth_sequential_advanced(void)
+{
+  statuses current;
+  config4 page4;
+  auto decoderState = decoders::subaru67::initialise();
+  
+  // Set up configs
+  page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  current.advance = 15; // >= 10
+  
+  // Execute function
+  decoders::subaru67::setEndTeeth(current, decoderState, page4);
+  
+  // Verify results (Sequential, Advanced)
+  TEST_ASSERT_EQUAL(12, decoderState.ignitionEndTeeth[0]);
+  TEST_ASSERT_EQUAL(3, decoderState.ignitionEndTeeth[1]);
+  TEST_ASSERT_EQUAL(6, decoderState.ignitionEndTeeth[2]);
+  TEST_ASSERT_EQUAL(9, decoderState.ignitionEndTeeth[3]);
+}
+
+static void test_setEndTeeth_sequential_retarded(void)
+{
+  statuses current;
+  config4 page4;
+  auto decoderState = decoders::subaru67::initialise();
+  
+  // Set up configs
+  page4.sparkMode = IGN_MODE_SEQUENTIAL;
+  current.advance = 5; // < 10
+  
+  // Execute function
+  decoders::subaru67::setEndTeeth(current, decoderState, page4);
+  
+  // Verify results (Sequential, Retarded)
+  TEST_ASSERT_EQUAL(1, decoderState.ignitionEndTeeth[0]);
+  TEST_ASSERT_EQUAL(4, decoderState.ignitionEndTeeth[1]);
+  TEST_ASSERT_EQUAL(7, decoderState.ignitionEndTeeth[2]);
+  TEST_ASSERT_EQUAL(10, decoderState.ignitionEndTeeth[3]);
+}
+
+static void test_setEndTeeth_non_sequential_advanced(void)
+{
+  statuses current;
+  config4 page4;
+  auto decoderState = decoders::subaru67::initialise();
+  
+  // Set up configs
+  page4.sparkMode = IGN_MODE_WASTED;
+  current.advance = 15; // >= 10
+  
+  // Execute function
+  decoders::subaru67::setEndTeeth(current, decoderState, page4);
+  
+  // Verify results (Non-Sequential, Advanced)
+  TEST_ASSERT_EQUAL(6, decoderState.ignitionEndTeeth[0]);
+  TEST_ASSERT_EQUAL(3, decoderState.ignitionEndTeeth[1]);
+}
+
+static void test_setEndTeeth_non_sequential_retarded(void)
+{
+  statuses current;
+  config4 page4;
+  auto decoderState = decoders::subaru67::initialise();
+  
+  // Set up configs
+  page4.sparkMode = IGN_MODE_WASTED;
+  current.advance = 5; // < 10
+  
+  // Execute function
+  decoders::subaru67::setEndTeeth(current, decoderState, page4);
+  
+  // Verify results (Non-Sequential, Retarded)
+  TEST_ASSERT_EQUAL(1, decoderState.ignitionEndTeeth[0]);
+  TEST_ASSERT_EQUAL(4, decoderState.ignitionEndTeeth[1]);
 }
 
 void testSubaru67(void)
 {
+  extern void testSubaru67Triggers(void);
+
+  testSubaru67Triggers();
+
   SET_UNITY_FILENAME() {
     RUN_TEST_P(test_getCrankAngle);
     RUN_TEST_P(test_getRevolutionTime);
+
+    RUN_TEST(test_setEndTeeth_sequential_advanced);
+    RUN_TEST(test_setEndTeeth_sequential_retarded);
+    RUN_TEST(test_setEndTeeth_non_sequential_advanced);
+    RUN_TEST(test_setEndTeeth_non_sequential_retarded);    
   }
 }
