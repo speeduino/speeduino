@@ -68,6 +68,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/daihatsu.h"
 #include "src/decoders/harley.h"
 #include "src/decoders/36minus222.h"
+#include "src/decoders/36minus21.h"
 
 using namespace decoders::shared;
 
@@ -1066,18 +1067,7 @@ static void triggerSetEndTeeth_ThirtySixMinus21(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
-  _decoderState.triggerActualTeeth = 33; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
-  _decoderState.toothLastMinusOneToothTime = 0;
-  _decoderState.toothCurrentCount = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::thirtysixminus21::initialise(configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_ThirtySixMinus21, getConfigPriTriggerEdge(configPage4))
