@@ -936,42 +936,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 * Note: This decoder supports both the H4 version (13-missing-16-missing-1-missing) and the H6 version of 36-2-2-2 (19-missing-10-missing-1-missing).
 * The decoder checks which pattern is selected in order to determine the tooth number
 * Note: www.thefactoryfiveforum.com/attachment.php?attachmentid=34279&d=1412431418
-* 
-* @defgroup dec_36_2_2_2 36-2-2-2 Trigger wheel
-* @{
 */
-static void triggerSetEndTeeth_ThirtySixMinus222(void)
-{
-  if(configPage2.nCylinders == 4 )
-  { 
-    if(currentStatus.advance < 10) { _decoderState.ignitionEndTeeth[0] = 36; }
-    else if(currentStatus.advance < 20) { _decoderState.ignitionEndTeeth[0] = 35; }
-    else if(currentStatus.advance < 30) { _decoderState.ignitionEndTeeth[0] = 34; }
-    else { _decoderState.ignitionEndTeeth[0] = 31; }
-
-    if(currentStatus.advance < 30) { _decoderState.ignitionEndTeeth[1] = 16; }
-    else { _decoderState.ignitionEndTeeth[1] = 13; }
-  }
-  else if(configPage2.nCylinders == 6) 
-  { 
-    //H6
-    if(currentStatus.advance < 10) { _decoderState.ignitionEndTeeth[0] = 36; }
-    else if(currentStatus.advance < 20) { _decoderState.ignitionEndTeeth[0] = 35; }
-    else if(currentStatus.advance < 30) { _decoderState.ignitionEndTeeth[0] = 34; }
-    else if(currentStatus.advance < 40) { _decoderState.ignitionEndTeeth[0] = 33; }
-    else { _decoderState.ignitionEndTeeth[0] = 31; }
-
-    if(currentStatus.advance < 20) { _decoderState.ignitionEndTeeth[1] = 9; }
-    else { _decoderState.ignitionEndTeeth[1] = 6; }
-
-    if(currentStatus.advance < 10) { _decoderState.ignitionEndTeeth[2] = 23; }
-    else if(currentStatus.advance < 20) { _decoderState.ignitionEndTeeth[2] = 22; }
-    else if(currentStatus.advance < 30) { _decoderState.ignitionEndTeeth[2] = 21; }
-    else if(currentStatus.advance < 40) { _decoderState.ignitionEndTeeth[2] = 20; }
-    else { _decoderState.ignitionEndTeeth[2] = 19; }
-  } 
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
 {
   _decoderState = decoders::thirtysixminus222::initialise(configPage4);
@@ -982,20 +947,25 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
   static const auto getRevolutionTime = []() {
     return decoders::thirtysixminus222::getRevolutionTime(currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    // Note reuse of missing tooth function
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::thirtysixminus222::setEndTeeth(currentStatus, _decoderState, configPage2);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
-                  .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** 36-2-1 / Mistsubishi 4B11 - A crank based trigger with a nominal 36 teeth, but with 1 single and 1 double missing tooth.
 * @defgroup dec_36_2_1 36-2-1 For Mistsubishi 4B11

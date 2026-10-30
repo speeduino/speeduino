@@ -133,5 +133,37 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   return revolutionTime;
 }
 
+void setEndTeeth(const statuses &current, shared::state_t &decoderState, const config2 &page2)
+{
+  if(page2.nCylinders == 4 )
+  { 
+    if(current.advance < 10) { decoderState.ignitionEndTeeth[0] = 36; }
+    else if(current.advance < 20) { decoderState.ignitionEndTeeth[0] = 35; }
+    else if(current.advance < 30) { decoderState.ignitionEndTeeth[0] = 34; }
+    else { decoderState.ignitionEndTeeth[0] = 31; }
+
+    if(current.advance < 30) { decoderState.ignitionEndTeeth[1] = 16; }
+    else { decoderState.ignitionEndTeeth[1] = 13; }
+  }
+  else if(page2.nCylinders == 6) 
+  { 
+    //H6
+    if(current.advance < 10) { decoderState.ignitionEndTeeth[0] = 36; }
+    else if(current.advance < 20) { decoderState.ignitionEndTeeth[0] = 35; }
+    else if(current.advance < 30) { decoderState.ignitionEndTeeth[0] = 34; }
+    else if(current.advance < 40) { decoderState.ignitionEndTeeth[0] = 33; }
+    else { decoderState.ignitionEndTeeth[0] = 31; }
+
+    if(current.advance < 20) { decoderState.ignitionEndTeeth[1] = 9; }
+    else { decoderState.ignitionEndTeeth[1] = 6; }
+
+    if(current.advance < 10) { decoderState.ignitionEndTeeth[2] = 23; }
+    else if(current.advance < 20) { decoderState.ignitionEndTeeth[2] = 22; }
+    else if(current.advance < 30) { decoderState.ignitionEndTeeth[2] = 21; }
+    else if(current.advance < 40) { decoderState.ignitionEndTeeth[2] = 20; }
+    else { decoderState.ignitionEndTeeth[2] = 19; }
+  } 
+}
+
 }
 }
