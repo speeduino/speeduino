@@ -940,29 +940,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 * @defgroup dec_36_2_2_2 36-2-2-2 Trigger wheel
 * @{
 */
-static uint32_t getRevolutionTime_ThirtySixMinus222(void)
-{
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    
-    if( (configPage2.nCylinders == 4) && (_decoderState.toothCurrentCount != 19) && (_decoderState.toothCurrentCount != 16) && (_decoderState.toothCurrentCount != 34) && (_decoderState.decoderStatus.toothAngleIsCorrect) )
-    {
-      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
-    }
-    else if( (configPage2.nCylinders == 6) && (_decoderState.toothCurrentCount != 9) && (_decoderState.toothCurrentCount != 12) && (_decoderState.toothCurrentCount != 33) && (_decoderState.decoderStatus.toothAngleIsCorrect) )
-    {
-      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
-    }
-    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-  }
-  return revolutionTime;
-}
-
 static void triggerSetEndTeeth_ThirtySixMinus222(void)
 {
   if(configPage2.nCylinders == 4 )
@@ -1002,10 +979,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
   static const auto primaryTrigger = []() {
     decoders::thirtysixminus222::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::thirtysixminus222::getRevolutionTime(currentStatus, _decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_ThirtySixMinus222)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus222)
                   .setReset(sharedDecoderReset)

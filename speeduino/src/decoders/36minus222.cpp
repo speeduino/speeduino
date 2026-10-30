@@ -1,5 +1,6 @@
 #include "36minus222.h"
 #include "shared/perToothIgnition.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -108,6 +109,28 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
        checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount);
      }
    }
+}
+
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  uint32_t revolutionTime = 0;
+  if( current.RPM < current.crankRPM)
+  {
+    if( (page2.nCylinders == 4) && (decoderState.toothCurrentCount != 19) && (decoderState.toothCurrentCount != 16) && (decoderState.toothCurrentCount != 34) && (decoderState.decoderStatus.toothAngleIsCorrect) )
+    {
+      revolutionTime = crankingGetRevolutionTime(current, decoderState, page4, 36, CRANK_SPEED);
+    }
+    else if( (page2.nCylinders == 6) && (decoderState.toothCurrentCount != 9) && (decoderState.toothCurrentCount != 12) && (decoderState.toothCurrentCount != 33) && (decoderState.decoderStatus.toothAngleIsCorrect) )
+    {
+      revolutionTime = crankingGetRevolutionTime(current, decoderState, page4, 36, CRANK_SPEED);
+    }
+    else { revolutionTime = shared::publishedRevolutionTime(current); } //Can't do per tooth calculation if we're at and of the missing teeth as it messes the calculation
+  }
+  else
+  {
+    revolutionTime = stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
+  }
+  return revolutionTime;
 }
 
 }
