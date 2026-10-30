@@ -1,4 +1,5 @@
 #include "harley.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -54,6 +55,22 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       decoderState.toothCurrentCount = 0;
     } //Primary trigger high
   } //Trigger filter
+}
+
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
+{
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  uint32_t revolutionTime = 0U;
+
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
+
+  if (current.RPM < current.crankRPM)
+  {
+    //Tooth #1 sets triggerToothAngle to 0, so there is no per tooth calculation: keep the last speed until the next tooth
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
+    return shared::publishedRevolutionTime(current);
+  }
+  return stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
 }
 
 }

@@ -907,22 +907,6 @@ Only rising Edge is used for simplicity.The second input is ignored, as it does 
 * @defgroup dec_harley Harley Davidson
 * @{
 */
-static uint32_t getRevolutionTime_Harley(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t revolutionTime = 0U;
-
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  if (currentStatus.RPM < currentStatus.crankRPM)
-  {
-    //Tooth #1 sets triggerToothAngle to 0, so there is no per tooth calculation: keep the last speed until the next tooth
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
-    return publishedRevolutionTime(currentStatus);
-  }
-  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
 static int16_t getCrankAngle_Harley(uint32_t currMicros)
 {
   auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount);
@@ -945,9 +929,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
   static const auto primaryTrigger = []() {
     decoders::harley::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::harley::getRevolutionTime(currentStatus, _decoderState);
+  };
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, RISING)
-                  .setGetRevolutionTime(getRevolutionTime_Harley)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_Harley)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
