@@ -133,5 +133,24 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   return revolutionTime;
 }
 
+void setEndTeeth(const statuses &current, shared::state_t &decoderState)
+{
+  if(current.advance < 9)
+  {
+    decoderState.ignitionEndTeeth[0] = 1;
+    decoderState.ignitionEndTeeth[1] = 5;
+    decoderState.ignitionEndTeeth[2] = 9;
+    decoderState.ignitionEndTeeth[3] = 13;  
+  }
+  else
+  {
+    decoderState.ignitionEndTeeth[0] = 16;
+    decoderState.ignitionEndTeeth[1] = 4;
+    decoderState.ignitionEndTeeth[2] = 8;
+    decoderState.ignitionEndTeeth[3] = 12;  
+  }
+}
+
+
 }
 }

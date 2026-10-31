@@ -25,5 +25,7 @@ namespace dsm420a {
 
   uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState);
 
+  void setEndTeeth(const statuses &current, shared::state_t &decoderState);
+
 }
 }

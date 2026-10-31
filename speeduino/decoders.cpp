@@ -1011,27 +1011,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 * Tracks the falling side of the signal.
 * Sync is determined by watching for a falling edge on the secondary signal and checking if the primary signal is high then.
 * https://github.com/noisymime/speeduino/issues/133
-* @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
-* @{
 */
-static void triggerSetEndTeeth_420a(void)
-{
-  if(currentStatus.advance < 9)
-  {
-    _decoderState.ignitionEndTeeth[0] = 1;
-    _decoderState.ignitionEndTeeth[1] = 5;
-    _decoderState.ignitionEndTeeth[2] = 9;
-    _decoderState.ignitionEndTeeth[3] = 13;  
-  }
-  else
-  {
-    _decoderState.ignitionEndTeeth[0] = 16;
-    _decoderState.ignitionEndTeeth[1] = 4;
-    _decoderState.ignitionEndTeeth[2] = 8;
-    _decoderState.ignitionEndTeeth[3] = 12;  
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
 {
   _decoderState = decoders::dsm420a::initialise();
@@ -1048,20 +1028,22 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
   };
+  static const auto setEndTeeth = []() {
+    decoders::dsm420a::setEndTeeth(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, FALLING) //Always falling edge
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_420a)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** Weber-Marelli trigger setup with 2 wheels, 4 teeth 90deg apart on crank and 2 90deg apart on cam.
 Uses DualWheel decoders, There can be no missing teeth on the primary wheel.
