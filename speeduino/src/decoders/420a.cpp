@@ -1,5 +1,6 @@
 #include "420a.h"
 #include "shared/perToothIgnition.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -115,6 +116,21 @@ void triggerSecondary(statuses &current, shared::state_t &decoderState)
       }
     }
   }
+}
+
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
+{
+  uint32_t revolutionTime = 0;
+  if( current.RPM < current.crankRPM)
+  {
+    //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
+    revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
+  }
+  else
+  {
+    revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
+  }
+  return revolutionTime;
 }
 
 }

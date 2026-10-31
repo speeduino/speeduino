@@ -23,5 +23,7 @@ namespace dsm420a {
 
   void triggerSecondary(statuses &current, shared::state_t &decoderState);
 
+  uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState);
+
 }
 }

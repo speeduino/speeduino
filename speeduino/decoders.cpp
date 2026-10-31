@@ -1014,26 +1014,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 * @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
 * @{
 */
-static uint32_t getRevolutionTime_420a(void)
-{
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-  }
-  return revolutionTime;
-}
-
-static int16_t getCrankAngle_420a(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 static void triggerSetEndTeeth_420a(void)
 {
   if(currentStatus.advance < 9)
@@ -1062,12 +1042,18 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
   static const auto secondaryTrigger = []() {
     decoders::dsm420a::triggerSecondary(currentStatus, _decoderState);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::dsm420a::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, FALLING) //Always falling edge
-                  .setGetRevolutionTime(getRevolutionTime_420a)
-                  .setGetCrankAngle(getCrankAngle_420a)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_420a)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
