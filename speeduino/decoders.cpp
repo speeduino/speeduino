@@ -69,6 +69,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/harley.h"
 #include "src/decoders/36minus222.h"
 #include "src/decoders/36minus21.h"
+#include "src/decoders/420a.h"
 
 using namespace decoders::shared;
 
@@ -1135,33 +1136,7 @@ static void triggerSetEndTeeth_420a(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = 0;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.triggerToothAngle = 20; //Is only correct for the 4 short pulses before each TDC
-  _decoderState.decoderStatus.toothAngleIsCorrect = false;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 93U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-
-  _decoderState.toothAngles[0] = 711; //tooth #1, just before #1 TDC
-  _decoderState.toothAngles[1] = 111;
-  _decoderState.toothAngles[2] = 131;
-  _decoderState.toothAngles[3] = 151;
-  _decoderState.toothAngles[4] = 171; //Just before #3 TDC
-  _decoderState.toothAngles[5] = _decoderState.toothAngles[1] + 180;
-  _decoderState.toothAngles[6] = _decoderState.toothAngles[2] + 180;
-  _decoderState.toothAngles[7] = _decoderState.toothAngles[3] + 180;
-  _decoderState.toothAngles[8] = _decoderState.toothAngles[4] + 180; //Just before #4 TDC
-  _decoderState.toothAngles[9]  = _decoderState.toothAngles[1] + 360;
-  _decoderState.toothAngles[10] = _decoderState.toothAngles[2] + 360;
-  _decoderState.toothAngles[11] = _decoderState.toothAngles[3] + 360;
-  _decoderState.toothAngles[12] = _decoderState.toothAngles[4] + 360; //Just before #2 TDC
-  _decoderState.toothAngles[13] = _decoderState.toothAngles[1] + 540;
-  _decoderState.toothAngles[14] = _decoderState.toothAngles[2] + 540;
-  _decoderState.toothAngles[15] = _decoderState.toothAngles[3] + 540;
+  _decoderState = decoders::dsm420a::initialise();
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_420a, getConfigPriTriggerEdge(configPage4))
