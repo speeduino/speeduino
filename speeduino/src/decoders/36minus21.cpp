@@ -106,5 +106,11 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   return revolutionTime;
 }
 
+void setEndTeeth(shared::state_t &decoderState)
+{
+  decoderState.ignitionEndTeeth[0] = 10; 
+  decoderState.ignitionEndTeeth[1] = 28; // Arbitrarily picked  at 180°.
+}
+
 }
 }

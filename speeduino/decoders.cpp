@@ -968,15 +968,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
 }
 
 /** 36-2-1 / Mistsubishi 4B11 - A crank based trigger with a nominal 36 teeth, but with 1 single and 1 double missing tooth.
-* @defgroup dec_36_2_1 36-2-1 For Mistsubishi 4B11
-* @{
 */
-static void triggerSetEndTeeth_ThirtySixMinus21(void)
-{
-  _decoderState.ignitionEndTeeth[0] = 10; 
-  _decoderState.ignitionEndTeeth[1] = 28; // Arbitrarily picked  at 180°.
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 {
   _decoderState = decoders::thirtysixminus21::initialise(configPage4);
@@ -995,21 +987,22 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
   static const auto getRevolutionTime = []() {
     return decoders::thirtysixminus21::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    return decoders::thirtysixminus21::setEndTeeth(_decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSecondary, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 //************************************************************************************************************************
 
