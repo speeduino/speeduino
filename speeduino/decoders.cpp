@@ -66,6 +66,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/nissan360.h"
 #include "src/decoders/subaru6_7.h"
 #include "src/decoders/daihatsu.h"
+#include "src/decoders/harley.h"
 
 using namespace decoders::shared;
 
@@ -903,102 +904,30 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 /** Harley Davidson (V2) with 2 unevenly Spaced Teeth.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from GMX7 and adapted for Harley.
 Only rising Edge is used for simplicity.The second input is ignored, as it does not help to resolve cam position.
-* @defgroup dec_harley Harley Davidson
-* @{
 */
-static void triggerPri_Harley(void)
-{
-  _decoderState.lastGap = _decoderState.curGap;
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  _decoderState.setFilter(_decoderState.curGap, configPage4); // Filtering adjusted according to setting
-  if (_decoderState.curGap > _decoderState.triggerFilterTime)
-  {
-    if (currentStatus.decoder.primary.isPinHigh()) // Has to be the same as in main() trigger-attach, for readability we do it this way.
-    {
-        _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-        _decoderState.targetGap = _decoderState.lastGap ; //Gap is the Time to next toothtrigger, so we know where we are
-        _decoderState.toothCurrentCount++;
-        if (_decoderState.curGap > _decoderState.targetGap)
-        {
-          _decoderState.toothCurrentCount = 1;
-          _decoderState.triggerToothAngle = 0;// Has to be equal to Angle Routine
-          _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-          _decoderState.toothOneTime = curTime;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else
-        {
-          _decoderState.toothCurrentCount = 2;
-          _decoderState.triggerToothAngle = 157;
-          //     _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-          //     _decoderState.toothOneTime = curTime;
-        }
-        _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-        _decoderState.toothLastToothTime = curTime;
-        currentStatus.startRevolutions++; //Counter
-    }
-    else
-    {
-      if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { currentStatus.syncLossCounter++; }
-      _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-      _decoderState.toothCurrentCount = 0;
-    } //Primary trigger high
-  } //Trigger filter
-}
-
-static uint32_t getRevolutionTime_Harley(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t revolutionTime = 0U;
-
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  if (currentStatus.RPM < currentStatus.crankRPM)
-  {
-    //Tooth #1 sets triggerToothAngle to 0, so there is no per tooth calculation: keep the last speed until the next tooth
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; }
-    return publishedRevolutionTime(currentStatus);
-  }
-  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-static int16_t getCrankAngle_Harley(uint32_t currMicros)
-{
-  auto data = atomic_copy(_decoderState.toothLastToothTime, _decoderState.revolutionOne, _decoderState.toothCurrentCount);
-
-  int16_t crankAngle = 157;
-  if ( (std::get<2>(data) == 1U) || (std::get<2>(data) == 3U) )
-  {
-    crankAngle = 0;
-  }
-
-  decoders::shared::simple_crank_angle_calculator_t calculator;
-  std::tie(calculator._toothLastToothTime, calculator._revZeroOrOne, std::ignore) = data;
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(crankAngle, currMicros, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Harley(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  _decoderState.triggerFilterTime = 1500;
+  _decoderState = decoders::harley::initialise(micros(), currentStatus);
 
+  static const auto primaryTrigger = []() {
+    decoders::harley::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::harley::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t curMicros) {
+    return decoders::harley::getCrankAngle(curMicros, _decoderState, configPage4);
+  };
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Harley, RISING)
-                  .setGetRevolutionTime(getRevolutionTime_Harley)
-                  .setGetCrankAngle(getCrankAngle_Harley)
+                  .setPrimaryTrigger(primaryTrigger, RISING)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** 36-2-2-2 crank based trigger wheel.
 * A crank based trigger with a nominal 36 teeth, but 6 of these removed in 3 groups of 2.
