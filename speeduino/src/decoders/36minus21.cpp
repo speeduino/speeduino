@@ -24,6 +24,69 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   return state;
 }
 
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( decoderState.curGap >= decoderState.triggerFilterTime ) //Pulses should never be less than decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+  {
+    decoderState.toothCurrentCount++; //Increment the tooth counter
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    //Begin the missing tooth detection
+    //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
+
+    decoderState.targetGap2 = (3 * (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) ; //Multiply by 3 (Checks for a gap 3x greater than the last one)
+    decoderState.targetGap = decoderState.targetGap2 >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to divide by 2 as in the missing tooth decoder)
+
+    if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
+
+    if ( (decoderState.curGap > decoderState.targetGap) )
+    {
+      if ( (decoderState.curGap < decoderState.targetGap2))
+      {
+          //we are at the tooth after the single gap
+          decoderState.toothCurrentCount = 20; //it's either 19 or 20, need to clarify engine direction!
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+      }
+      else 
+      {
+        //we are at the tooth after the double gap
+        decoderState.toothCurrentCount = 1; 
+        decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+      }
+
+      decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
+      decoderState.triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+    }
+  }
+  else
+  {
+    if(  (decoderState.toothCurrentCount > 36) || ( decoderState.toothCurrentCount==1)  )
+    {
+      //Means a complete rotation has occurred.
+      decoderState.toothCurrentCount = 1;
+      decoderState.revolutionOne = !decoderState.revolutionOne; //Flip sequential revolution tracker
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      current.startRevolutions++; //Counter
+    }
+
+    //Filter can only be recalculated for the regular teeth, not the missing one.
+    decoderState.setFilter(decoderState.curGap, page4);
+
+    decoderState.decoderStatus.toothAngleIsCorrect = true;
+  }
+
+  decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+  decoderState.toothLastToothTime = curTime;
+
+  //EXPERIMENTAL!
+  if(page2.perToothIgn == true)
+  {
+    int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
+    checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount);
+  }
+}
 
 }
 }
