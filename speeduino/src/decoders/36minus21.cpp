@@ -88,5 +88,23 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
 }
 
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4)
+{
+  uint32_t revolutionTime = 0;
+  if( current.RPM < current.crankRPM)
+  {
+    if( (decoderState.toothCurrentCount != 20) && (decoderState.decoderStatus.toothAngleIsCorrect) )
+    {
+      revolutionTime = crankingGetRevolutionTime(current, decoderState, page4, 36, CRANK_SPEED);
+    }
+    else { revolutionTime = shared::publishedRevolutionTime(current); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
+  }
+  else
+  {
+    revolutionTime = stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
+  }
+  return revolutionTime;
+}
+
 }
 }
