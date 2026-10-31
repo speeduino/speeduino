@@ -305,11 +305,6 @@ static void triggerPri_missingTooth(void)
   decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
 }
 
-static void triggerSec_missingTooth(void)
-{
-  decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
-}
-
 static void triggerThird_missingTooth(void)
 {
   decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
@@ -340,9 +335,13 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                       || (configPage2.injLayout == INJ_SEQUENTIAL) 
                       || (configPage6.vvtEnabled > 0) );
 
+  static const auto triggerSecondary = []() {
+    decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
+
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_missingTooth, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
+                  .setSecondaryTrigger(triggerSecondary, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
                   .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
                   .setGetRevolutionTime(getRevolutionTime_missingTooth)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
@@ -1003,12 +1002,20 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
   static const auto primaryTrigger = []() {
     decoders::thirtysixminus21::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto triggerSecondary = []() {
+    // Note reuse of missing tooth
+    decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    // Note reuse of missing tooth
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_missingTooth, getConfigSecTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSecondary, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_ThirtySixMinus21)
-                  .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
