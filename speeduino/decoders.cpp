@@ -65,6 +65,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/non360.h"
 #include "src/decoders/nissan360.h"
 #include "src/decoders/subaru6_7.h"
+#include "src/decoders/daihatsu.h"
 
 using namespace decoders::shared;
 
@@ -873,140 +874,31 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Subaru67(void)
 * Tooth equal to the number of cylinders are evenly spaced on the cam. No position sensing (Distributor is retained),
 * so crank angle is a made up figure based purely on the first teeth to be seen.
 * Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
-* @defgroup dec_daihatsu Daihatsu (3  and 4 cyl.)
-* @{
 */
-static void triggerPri_Daihatsu(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-
-  //if ( _decoderState.curGap >= _decoderState.triggerFilterTime || (currentStatus.startRevolutions == 0 )
-  {
-    _decoderState.toothSystemCount++;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)
-    {
-      if( (_decoderState.toothCurrentCount == _decoderState.triggerActualTeeth) ) //Check if we're back to the beginning of a revolution
-      {
-         _decoderState.toothCurrentCount = 1; //Reset the counter
-         _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-         _decoderState.toothOneTime = curTime;
-         _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-         currentStatus.startRevolutions++; //Counter
-
-         //Need to set a special filter time for the next tooth
-         _decoderState.triggerFilterTime = 20; //Fix this later
-      }
-      else
-      {
-        _decoderState.toothCurrentCount++; //Increment the tooth counter
-        _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-      }
-
-      if ( configPage4.ignCranklock && (currentStatus.rotationStatus==EngineRotationStatus::Cranking) )
-      {
-        //This locks the cranking timing to 0 degrees BTDC (All the triggers allow for)
-        if(_decoderState.toothCurrentCount == 1) { endCoilCharge(1U); }
-        else if(_decoderState.toothCurrentCount == 2) { endCoilCharge(2U); }
-        else if(_decoderState.toothCurrentCount == 3) { endCoilCharge(3U); }
-        else if(_decoderState.toothCurrentCount == 4) { endCoilCharge(4U); }
-      }
-    }
-    else //NO SYNC
-    {
-      //
-      if(_decoderState.toothSystemCount >= 3) //Need to have seen at least 3 teeth to determine SYNC
-      {
-        unsigned long targetTime;
-        //We need to try and find the extra tooth (#2) which is located 30 degrees after tooth #1
-        //Aim for tooth times less than about 60 degrees
-        if(configPage2.nCylinders == 3)
-        {
-          targetTime = (_decoderState.toothLastToothTime -  _decoderState.toothLastMinusOneToothTime) / 4; //Teeth are 240 degrees apart for 3 cylinder. 240/4 = 60
-        }
-        else
-        {
-          targetTime = ((_decoderState.toothLastToothTime -  _decoderState.toothLastMinusOneToothTime) * 3) / 8; //Teeth are 180 degrees apart for 4 cylinder. (180*3)/8 = 67
-        }
-        if(_decoderState.curGap < targetTime)
-        {
-          //Means we're on the extra tooth here
-          _decoderState.toothCurrentCount = 2; //Reset the counter
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-          _decoderState.triggerFilterTime = targetTime; //Lazy, but it works
-        }
-      }
-    }
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-  } //Trigger filter
-}
-
-static uint32_t getRevolutionTime_Daihatsu(void)
-{
-  static constexpr bool crankingCalcEnabled = false; //Special cranking processing is disabled for now
-  if( (crankingCalcEnabled==false) || (currentStatus.RPM >= currentStatus.crankRPM) )
-  {
-    return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED); //Tracking over 2 crank revolutions
-  }
-
-  //Can't use standard cranking revolution time function due to extra tooth
-  if (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) { return publishedRevolutionTime(currentStatus); } //No sync
-  if ((_decoderState.toothCurrentCount == 2U) || (_decoderState.toothCurrentCount == 3U)) { return publishedRevolutionTime(currentStatus); } //Extra tooth
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t interval = 0U;
-  if (lastToothInterval(sample, interval)==false) { return publishedRevolutionTime(currentStatus); }
-  return interval * (uint32_t)(_decoderState.triggerActualTeeth - 1U);
-}
-static int16_t getCrankAngle_Daihatsu(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Daihatsu(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerActualTeeth = configPage2.nCylinders + 1;
-  _decoderState.triggerToothAngle = 720 / _decoderState.triggerActualTeeth; //The number of degrees that passes from tooth to tooth
-  _decoderState.triggerFilterTime = MICROS_PER_MIN / MAX_RPM / configPage2.nCylinders; // Minimum time required between teeth
-  _decoderState.triggerFilterTime = _decoderState.triggerFilterTime / 2; //Safety margin
-  _decoderState.decoderFeatures.supportsSequential = true;
+  _decoderState = decoders::daihatsu::initialise(configPage2);
 
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle)*4U;//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
-
-  if(configPage2.nCylinders == 3)
-  {
-    _decoderState.toothAngles[0] = 0; //tooth #1
-    _decoderState.toothAngles[1] = 30; //tooth #2 (Extra tooth)
-    _decoderState.toothAngles[2] = 240; //tooth #3
-    _decoderState.toothAngles[3] = 480; //tooth #4
-  }
-  else
-  {
-    //Should be 4 cylinders here
-    _decoderState.toothAngles[0] = 0; //tooth #1
-    _decoderState.toothAngles[1] = 30; //tooth #2 (Extra tooth)
-    _decoderState.toothAngles[2] = 180; //tooth #3
-    _decoderState.toothAngles[3] = 360; //tooth #4
-    _decoderState.toothAngles[4] = 540; //tooth #5
-  }
-
+  static const auto primaryTrigger = []() {
+    decoders::daihatsu::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::daihatsu::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  };
+  
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Daihatsu, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_Daihatsu)
-                  .setGetCrankAngle(getCrankAngle_Daihatsu)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Harley Davidson (V2) with 2 unevenly Spaced Teeth.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from GMX7 and adapted for Harley.
