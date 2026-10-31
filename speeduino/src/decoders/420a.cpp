@@ -1,4 +1,5 @@
 #include "420a.h"
+#include "shared/perToothIgnition.h"
 
 namespace decoders {
 
@@ -34,6 +35,42 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(void)
   state.toothAngles[15] = state.toothAngles[3] + 540;
 
   return state;
+}
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( decoderState.curGap >= decoderState.triggerFilterTime ) //Pulses should never be less than decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
+  {
+    decoderState.toothCurrentCount++; //Increment the tooth counter
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
+
+    if( (decoderState.toothCurrentCount > 16) && (decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
+    {
+      //Means a complete rotation has occurred.
+      decoderState.toothCurrentCount = 1;
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      current.startRevolutions++; //Counter
+    }
+
+    //Filter can only be recalculated for the regular teeth, not the missing one.
+    decoderState.triggerFilterTime = 0;
+
+    decoderState.decoderStatus.toothAngleIsCorrect = false;
+
+    decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+    decoderState.toothLastToothTime = curTime;
+
+    //EXPERIMENTAL!
+    if(page2.perToothIgn == true)
+    {
+      int16_t crankAngle = ( decoderState.toothAngles[(decoderState.toothCurrentCount-1)] ) + page4.triggerAngle;
+      checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount);
+    }
+  }
 }
 
 }

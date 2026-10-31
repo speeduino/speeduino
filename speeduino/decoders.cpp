@@ -1014,43 +1014,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 * @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
 * @{
 */
-static void triggerPri_420a(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-  {
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if( (_decoderState.toothLastToothTime == 0) || (_decoderState.toothLastMinusOneToothTime == 0) ) { _decoderState.curGap = 0; }
-
-    if( (_decoderState.toothCurrentCount > 16) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
-    {
-      //Means a complete rotation has occurred.
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++; //Counter
-    }
-
-    //Filter can only be recalculated for the regular teeth, not the missing one.
-    _decoderState.triggerFilterTime = 0;
-
-    _decoderState.decoderStatus.toothAngleIsCorrect = false;
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    //EXPERIMENTAL!
-    if(configPage2.perToothIgn == true)
-    {
-      int16_t crankAngle = ( _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] ) + configPage4.triggerAngle;
-      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-    }
-  }
-}
-
 static void triggerSec_420a(void)
 {
   //Secondary trigger is only on falling edge
@@ -1138,8 +1101,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
 {
   _decoderState = decoders::dsm420a::initialise();
 
+  static const auto primaryTrigger = []() {
+    decoders::dsm420a::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_420a, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_420a, FALLING) //Always falling edge
                   .setGetRevolutionTime(getRevolutionTime_420a)
                   .setGetCrankAngle(getCrankAngle_420a)
