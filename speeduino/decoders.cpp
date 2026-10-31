@@ -1014,51 +1014,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 * @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
 * @{
 */
-static void triggerSec_420a(void)
-{
-  //Secondary trigger is only on falling edge
-
-  if(currentStatus.decoder.primary.isPinHigh())
-  {
-    //Secondary signal is falling and primary signal is HIGH
-    if( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
-    {
-      //If we don't have sync, then assume the signal is good
-      _decoderState.toothCurrentCount = 13;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else
-    {
-      //If we DO have sync, then check that the tooth count matches what we expect
-      if(_decoderState.toothCurrentCount != 13)
-      {
-        currentStatus.syncLossCounter++;
-        _decoderState.toothCurrentCount = 13;
-      }
-    }
-
-  }
-  else
-  {
-    //Secondary signal is falling and primary signal is LOW
-    if( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
-    {
-      //If we don't have sync, then assume the signal is good
-      _decoderState.toothCurrentCount = 5;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else
-    {
-      //If we DO have sync, then check that the tooth count matches what we expect
-      if(_decoderState.toothCurrentCount != 5)
-      {
-        currentStatus.syncLossCounter++;
-        _decoderState.toothCurrentCount = 5;
-      }
-    }
-  }
-}
-
 static uint32_t getRevolutionTime_420a(void)
 {
   uint32_t revolutionTime = 0;
@@ -1104,10 +1059,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
   static const auto primaryTrigger = []() {
     decoders::dsm420a::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::dsm420a::triggerSecondary(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_420a, FALLING) //Always falling edge
+                  .setSecondaryTrigger(secondaryTrigger, FALLING) //Always falling edge
                   .setGetRevolutionTime(getRevolutionTime_420a)
                   .setGetCrankAngle(getCrankAngle_420a)
                   .setSetEndTeeth(triggerSetEndTeeth_420a)

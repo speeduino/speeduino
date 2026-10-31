@@ -73,5 +73,49 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
 }
 
+void triggerSecondary(statuses &current, shared::state_t &decoderState)
+{
+  //Secondary trigger is only on falling edge
+
+  if(current.decoder.primary.isPinHigh())
+  {
+    //Secondary signal is falling and primary signal is HIGH
+    if( decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
+    {
+      //If we don't have sync, then assume the signal is good
+      decoderState.toothCurrentCount = 13;
+      decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    }
+    else
+    {
+      //If we DO have sync, then check that the tooth count matches what we expect
+      if(decoderState.toothCurrentCount != 13)
+      {
+        current.syncLossCounter++;
+        decoderState.toothCurrentCount = 13;
+      }
+    }
+  }
+  else
+  {
+    //Secondary signal is falling and primary signal is LOW
+    if( decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
+    {
+      //If we don't have sync, then assume the signal is good
+      decoderState.toothCurrentCount = 5;
+      decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    }
+    else
+    {
+      //If we DO have sync, then check that the tooth count matches what we expect
+      if(decoderState.toothCurrentCount != 5)
+      {
+        current.syncLossCounter++;
+        decoderState.toothCurrentCount = 5;
+      }
+    }
+  }
+}
+
 }
 }
