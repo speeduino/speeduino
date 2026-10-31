@@ -1048,73 +1048,21 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
 
 /** Weber-Marelli trigger setup with 2 wheels, 4 teeth 90deg apart on crank and 2 90deg apart on cam.
 Uses DualWheel decoders, There can be no missing teeth on the primary wheel.
-* @defgroup dec_weber_marelli Weber-Marelli
-* @{
 */
-static void triggerSec_Webber(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-
-    if ( (_decoderState.secondaryToothCount == 2) && (_decoderState.checkSyncToothCount == 3) )
-    {
-      if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
-      {
-        _decoderState.toothLastToothTime = micros();
-        _decoderState.toothLastMinusOneToothTime = micros() - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
-        _decoderState.toothCurrentCount = configPage4.triggerTeeth-1;
-
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-      }
-      else
-      {
-        if ( (_decoderState.toothCurrentCount != (configPage4.triggerTeeth-1U)) && (currentStatus.startRevolutions > 2U)) { currentStatus.syncLossCounter++; } //Indicates likely sync loss.
-        if (configPage4.useResync == 1) { _decoderState.toothCurrentCount = configPage4.triggerTeeth-1; }
-      }
-      _decoderState.revolutionOne = 1; //Sequential revolution reset
-      _decoderState.triggerSecFilterTime = _decoderState.curGap << 2; //4 crank teeth
-      _decoderState.secondaryToothCount = 1; //Next tooth should be first
-    } //Running, on first CAM pulse restart crank teeth count, on second the counter should be 3
-    else if ( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) && (_decoderState.toothCurrentCount >= 3) && (_decoderState.secondaryToothCount == 0) )
-    {
-      _decoderState.toothLastToothTime = micros();
-      _decoderState.toothLastMinusOneToothTime = micros() - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.revolutionOne = 1; //Sequential revolution reset
-
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    } //First start, between gaps on CAM pulses have 2 teeth, sync on first CAM pulse if seen 3 teeth or more
-    else
-    {
-      _decoderState.triggerSecFilterTime = _decoderState.curGap + (_decoderState.curGap>>1); //150% crank tooth
-      _decoderState.secondaryToothCount++;
-      _decoderState.checkSyncToothCount = 1; //Tooth 1 considered as already been seen
-    } //First time might fall here, second CAM tooth will
-  }
-  else
-  {
-    _decoderState.triggerSecFilterTime = _decoderState.curGap + (_decoderState.curGap>>1); //Noise region, using 150% of crank tooth
-    _decoderState.checkSyncToothCount = 1; //Reset tooth counter
-  } //Trigger filter
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Webber(void)
 {
   static const auto primaryTrigger = []() {
     decoders::webber::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::webber::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t(triggerSetup_DualWheel())
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_Webber, getConfigSecTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .build();
 }
-
-/** @} */
 
 /** Ford ST170 - a dedicated decoder for 01-04 Ford Focus ST170/SVT engine.
 Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running at cam speed.
