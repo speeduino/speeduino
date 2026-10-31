@@ -70,6 +70,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/36minus222.h"
 #include "src/decoders/36minus21.h"
 #include "src/decoders/420a.h"
+#include "src/decoders/webber.h"
 
 using namespace decoders::shared;
 
@@ -1050,45 +1051,6 @@ Uses DualWheel decoders, There can be no missing teeth on the primary wheel.
 * @defgroup dec_weber_marelli Weber-Marelli
 * @{
 */
-static void triggerPri_Webber(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-  {
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    if (_decoderState.checkSyncToothCount > 0) { _decoderState.checkSyncToothCount++; }
-    if ( _decoderState.triggerSecFilterTime <= _decoderState.curGap ) { _decoderState.triggerSecFilterTime = _decoderState.curGap + (_decoderState.curGap>>1); } //150% crank tooth
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    if ( _decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-    {
-      if ( (_decoderState.toothCurrentCount == 1) || (_decoderState.toothCurrentCount > configPage4.triggerTeeth) )
-      {
-        _decoderState.toothCurrentCount = 1;
-        _decoderState.revolutionOne = !_decoderState.revolutionOne; //Flip sequential revolution tracker
-        _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-        _decoderState.toothOneTime = curTime;
-        currentStatus.startRevolutions++; //Counter
-      }
-
-      _decoderState.setFilter(_decoderState.curGap, configPage4); //Recalc the new filter value
-    }
-    else
-    {
-      if ( (_decoderState.secondaryToothCount == 1) && (_decoderState.checkSyncToothCount == 4) )
-      {
-        _decoderState.toothCurrentCount = 2;
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        _decoderState.revolutionOne = 0; //Sequential revolution reset
-      }
-    }
-  } //Trigger filter
-}
-
 static void triggerSec_Webber(void)
 {
   uint32_t curTime2 = micros();
@@ -1142,8 +1104,12 @@ static void triggerSec_Webber(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Webber(void)
 {
+  static const auto primaryTrigger = []() {
+    decoders::webber::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+
   return decoder_builder_t(triggerSetup_DualWheel())
-                  .setPrimaryTrigger(triggerPri_Webber, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_Webber, getConfigSecTriggerEdge(configPage4))
                   .build();
 }
