@@ -36,9 +36,9 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 
     if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
 
-    if ( (decoderState.curGap > decoderState.targetGap) )
+    if (decoderState.curGap > decoderState.targetGap)
     {
-      if ( (decoderState.curGap < decoderState.targetGap2))
+      if (decoderState.curGap < decoderState.targetGap2)
       {
           //we are at the tooth after the single gap
           decoderState.toothCurrentCount = 20; //it's either 19 or 20, need to clarify engine direction!
