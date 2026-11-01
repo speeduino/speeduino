@@ -35,12 +35,12 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
      //Begin the missing tooth detection
      //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
      //decoderState.toothSystemCount is used to keep track of which missed tooth we're on. It will be set to 1 if that last tooth seen was the middle one in the -2-2 area. At all other times it will be 0
-     if(decoderState.toothSystemCount == 0) { decoderState.targetGap = ((decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
+     if(decoderState.toothSystemCount == 0) { decoderState.targetGap = (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime) * 2; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
 
 
      if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
 
-     if ( (decoderState.curGap > decoderState.targetGap) )
+     if (decoderState.curGap > decoderState.targetGap)
      {
        {
          if(decoderState.toothSystemCount == 1)
