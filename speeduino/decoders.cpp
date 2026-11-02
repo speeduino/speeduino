@@ -1148,115 +1148,6 @@ The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups 
 * @defgroup dec Chrysler NGC - 4, 6 and 8-cylinder
 * @{
 */
-static void triggerPri_NGC(void) 
-{
-  uint32_t curTime = micros();
-  // We need to know the polarity of the missing tooth to determine position
-  if (currentStatus.decoder.primary.isPinHigh()) {
-    _decoderState.toothLastToothRisingTime = curTime;
-    return;
-  }
-
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger.
-  {
-    _decoderState.toothCurrentCount++;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    bool isMissingTooth = false;
-
-    if ( _decoderState.toothLastToothTime > 0 && _decoderState.toothLastMinusOneToothTime > 0 ) { //Make sure we haven't enough tooth information to calculate missing tooth length
-
-      //Only check for missing tooth if we expect this one to be it or if we haven't found one yet
-      if (_decoderState.toothCurrentCount == 17 || _decoderState.toothCurrentCount == 35 || ( _decoderState.decoderStatus.syncStatus==SyncStatus::None) ) {
-        //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-        if (_decoderState.curGap > ( (_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime) * 2 ) )
-        {
-          isMissingTooth = true; //Missing tooth detected
-          _decoderState.triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-          _decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
-          
-          // Figure out the polarity of the missing tooth by comparing how far ago the last tooth rose
-          if ((_decoderState.toothLastToothRisingTime - _decoderState.toothLastToothTime) < (curTime - _decoderState.toothLastToothRisingTime)) {
-            //Just passed the HIGH missing tooth
-            _decoderState.toothCurrentCount = 1;
-
-            _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-            _decoderState.toothOneTime = curTime;
-
-            if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { currentStatus.startRevolutions++; }
-            else { currentStatus.startRevolutions = 0; }
-          }
-          else {
-            //Just passed the first tooth after the LOW missing tooth
-            _decoderState.toothCurrentCount = 19;
-          }
-
-          //If Sequential fuel or ignition is in use, further checks are needed before determining sync
-          if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
-          {
-            // Verify the tooth counters are valid and use this to determine current revolution
-            if (
-              ( configPage2.nCylinders == 4 && ( (_decoderState.toothCurrentCount == 1 && (_decoderState.secondaryToothCount == 1 || _decoderState.secondaryToothCount == 2) ) || (_decoderState.toothCurrentCount == 19 && _decoderState.secondaryToothCount == 4) ) ) ||
-              ( configPage2.nCylinders == 6 && ( (_decoderState.toothCurrentCount == 1 && (_decoderState.toothSystemCount == 1    || _decoderState.toothSystemCount == 2) )    || (_decoderState.toothCurrentCount == 19 && (_decoderState.toothSystemCount == 2 || _decoderState.toothSystemCount == 3) ) ) ) ||
-              ( configPage2.nCylinders == 8 && ( (_decoderState.toothCurrentCount == 1 && (_decoderState.toothSystemCount == 1    || _decoderState.toothSystemCount == 2) )    || (_decoderState.toothCurrentCount == 19 && (_decoderState.toothSystemCount == 3 || _decoderState.toothSystemCount == 4) ) ) ) )
-            {
-              _decoderState.revolutionOne = false;
-              _decoderState.decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit
-            }
-            else if (
-              ( configPage2.nCylinders == 4 && ( (_decoderState.toothCurrentCount == 1 && _decoderState.secondaryToothCount == 5)                          || (_decoderState.toothCurrentCount == 19 && _decoderState.secondaryToothCount == 7) ) ) ||
-              ( configPage2.nCylinders == 6 && ( (_decoderState.toothCurrentCount == 1 && (_decoderState.toothSystemCount == 4 || _decoderState.toothSystemCount == 5) ) || (_decoderState.toothCurrentCount == 19 && (_decoderState.toothSystemCount == 5 || _decoderState.toothSystemCount == 6) ) ) ) ||
-              ( configPage2.nCylinders == 8 && ( (_decoderState.toothCurrentCount == 1 && (_decoderState.toothSystemCount == 5 || _decoderState.toothSystemCount == 6) ) || (_decoderState.toothCurrentCount == 19 && (_decoderState.toothSystemCount == 7 || _decoderState.toothSystemCount == 8) ) ) ) )
-            {
-              _decoderState.revolutionOne = true;
-              _decoderState.decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit
-            }
-            // If tooth counters are not valid, set half sync bit
-            else {
-              if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { currentStatus.syncLossCounter++; }
-              _decoderState.decoderStatus.syncStatus = SyncStatus::Partial; //If there is primary trigger but no secondary we only have half sync.
-            }
-          }
-          else { _decoderState.decoderStatus.syncStatus = SyncStatus::Full; } //If nothing is using sequential, we have sync and also clear half sync bit
-
-        }
-        else {
-          // If we have found a missing tooth and don't get the next one at the correct tooth we end up here -> Resync
-          if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { currentStatus.syncLossCounter++; }
-          _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        }
-      }
-
-      if(isMissingTooth == false)
-      {
-        //Regular (non-missing) tooth
-        _decoderState.setFilter(_decoderState.curGap, configPage4);
-        _decoderState.decoderStatus.toothAngleIsCorrect = true;
-      }
-    }
-
-    if (isMissingTooth == true) { // If we have a missing tooth, copy the gap from the previous tooth as that is the correct normal tooth length
-      _decoderState.toothLastMinusOneToothTime = curTime - (_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime);
-    }
-    else {
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    }
-    _decoderState.toothLastToothTime = curTime;
-
-    //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-    {
-      int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
-      {
-        crankAngle += 360;
-        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
-      }
-    else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-    }
-  }
-}
-
 static void triggerSec_NGC4(void)
 {
   //Only check the cam wheel for sequential operation
@@ -1422,8 +1313,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 {
   _decoderState = decoders::ngc::initialise(configPage2, configPage4);
 
+  static const auto primaryTrigger = []() {
+    decoders::ngc::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_NGC, CHANGE)
+                  .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setSecondaryTrigger( configPage2.nCylinders == 4U ? triggerSec_NGC4 : triggerSec_NGC68,
                                         configPage2.nCylinders == 4U ? CHANGE : FALLING)
                   .setGetRevolutionTime(getRevolutionTime_NGC)
