@@ -1102,39 +1102,17 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
                   .build();
 }
 
-static void triggerSec_DRZ400(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-
-    if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
-    {
-      _decoderState.toothLastToothTime = micros();
-      _decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
-      _decoderState.toothCurrentCount = configPage4.triggerTeeth;
-      currentStatus.syncLossCounter++;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else 
-    {
-      // have rotation, set tooth to six so next tooth is 1 & duel wheel rotation code kicks in 
-      _decoderState.toothCurrentCount = 6;
-    }
-  }
-
-  _decoderState.triggerSecFilterTime = (_decoderState.toothOneTime - _decoderState.toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
 {
   _decoderState = decoders::drz400::initialise(configPage4);
 
+  static const auto secondaryTrigger = []() {
+    decoders::drz400::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_DRZ400, getConfigSecTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_DualWheel)
                   .setGetCrankAngle(getCrankAngle_DualWheel)
                   .setSetEndTeeth(triggerSetEndTeeth_DualWheel)

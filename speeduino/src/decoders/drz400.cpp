@@ -24,6 +24,30 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   return state;
 }
 
+void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+  if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime )
+  {
+    decoderState.toothLastSecToothTime = curTime;
+
+    if(decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
+    {
+      decoderState.toothLastToothTime = micros();
+      decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / page4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+      decoderState.toothCurrentCount = page4.triggerTeeth;
+      current.syncLossCounter++;
+      decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    }
+    else 
+    {
+      // have rotation, set tooth to six so next tooth is 1 & duel wheel rotation code kicks in 
+      decoderState.toothCurrentCount = 6;
+    }
+  }
+
+  decoderState.triggerSecFilterTime = (decoderState.toothOneTime - decoderState.toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
+}
 
 }
 }

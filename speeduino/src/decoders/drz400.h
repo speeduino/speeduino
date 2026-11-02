@@ -19,5 +19,7 @@ namespace drz400 {
 
   shared::state_t initialise(const config4 &page4);
 
+  void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4);
+
 }
 }
