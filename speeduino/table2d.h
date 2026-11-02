@@ -47,6 +47,10 @@ struct Bin {
   : _upper(array, binUpperIndex)
   {
   } 
+  constexpr Bin(const mcu8::iterator<const T> &upper)
+  : _upper(upper)
+  {
+  }
 
   const T upperValue(void) const noexcept { return *_upper; }
   const T lowerValue(void) const noexcept { return *(_upper-1); }
@@ -58,23 +62,23 @@ struct Bin {
   bool withinBin(const T value) const noexcept {
     return withinBin(value, lowerValue(), upperValue());
   }
-
+private:
   mcu8::iterator<const T> _upper;
 };
 
 
 template <typename TIter, typename TValue>
-static inline uint8_t findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
+static inline TIter findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
 {
   auto it = std::lower_bound(pStart, pEnd, value);
 
   if (it == pStart) {
     ++it;
   }
-  if (it != pEnd) {
-    return std::distance(pStart, it);
+  if (it == pEnd) {
+    --it;
   }
-  return std::distance(pStart, pEnd)-1U;
+  return it;
 }
 
 template <typename TIter, typename TValue>
@@ -83,7 +87,7 @@ static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, 
   // Ignore the cache during tests
 #if !defined(UNIT_TEST)
   // LCOV_EXCL_START
-  auto bin = Bin<TValue>(&*pStart, cachedUpperIndex);
+  auto bin = Bin<TValue>(std::next(pStart, cachedUpperIndex));
   if (bin.withinBin(value))
   {
     return bin;  
@@ -94,7 +98,7 @@ static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, 
 #endif
 
   // If we're not in the same bin, search 
-  return Bin<TValue>(&*pStart, findBinUpperIndex(pStart, pEnd, value));
+  return Bin<TValue>(findBinUpperIndex(pStart, pEnd, value));
 }
 
 // Generic interpolation

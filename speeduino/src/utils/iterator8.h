@@ -25,9 +25,15 @@ namespace mcu8 {
     private:
         T* ptr;
         uint8_t index; // The magic 1-byte counter
+    
+        // Grants access to private members of iterator<uint8_t> from iterator<const uint8_t>
+        template <typename U> friend class iterator;
 
     public:
         iterator(T* p, uint8_t idx) : ptr(p), index(idx) {}
+
+        template <typename U>
+        iterator(const iterator<U>& other) : ptr(other.ptr), index(other.index) {}
 
         // --- 1. Forward & Bidirectional (Increment / Decrement) ---
         iterator& operator++() { ++index; return *this; }
