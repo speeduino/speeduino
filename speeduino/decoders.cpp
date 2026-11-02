@@ -1067,34 +1067,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Webber(void)
 
 /** Ford ST170 - a dedicated decoder for 01-04 Ford Focus ST170/SVT engine.
 Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running at cam speed.
-* @defgroup dec_ford_st170 Ford ST170 (01-04 Focus)
-* @{
 */
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
-  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
-  return _decoderState.clampToActualTeeth(configPage4, (uint16_t)tempEndTooth, toothAdder);
-}
-
-static void triggerSetEndTeeth_FordST170(void)
-{
-  byte toothAdder = 0;
-   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
-
-  _decoderState.ignitionEndTeeth[0] = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder);
-#endif
-
-  // Removed ign channels >4 as an ST170 engine is a 4 cylinder
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
 {
   _decoderState = decoders::st170::initialise(configPage4);
@@ -1111,13 +1084,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
   };
+  static const auto setEndTeeth = []() {
+    decoders::st170::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_FordST170)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -1125,7 +1101,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
                   .build();
 }
 
-/** @} */
 static void triggerSec_DRZ400(void)
 {
   uint32_t curTime2 = micros();

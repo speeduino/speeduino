@@ -1,6 +1,7 @@
 #include "st170.h"
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
+#include "scheduler_ignition_controller.h"
 
 namespace decoders {
 
@@ -89,6 +90,31 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
     revolutionTime = stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
   }
   return revolutionTime;
+}
+
+static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder, const shared::state_t &decoderState, const config4 &page4) {
+  int16_t tempEndTooth = decoderState.toothNumFromScheduleAngles(page4, schedule);
+  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
+  return decoderState.clampToActualTeeth(page4, (uint16_t)tempEndTooth, toothAdder);
+}
+
+void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+{
+  byte toothAdder = 0;
+   if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
+
+  decoderState.ignitionEndTeeth[0] = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder, decoderState, page4);
+#if (IGN_CHANNELS >= 2)
+  decoderState.ignitionEndTeeth[1] = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 3)
+  decoderState.ignitionEndTeeth[2] = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 4)
+  decoderState.ignitionEndTeeth[3] = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder, decoderState, page4);
+#endif
+
+  // Removed ign channels >4 as an ST170 engine is a 4 cylinder
 }
 
 }
