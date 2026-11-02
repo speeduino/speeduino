@@ -26,9 +26,11 @@ namespace ngc {
 
     void triggerSecondary4(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 
-    void triggerSecondary68(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
+    void triggerSecondary68(uint32_t curTime, shared::state_t &decoderState, const config2 &page2, const config4 &page4);
 
     uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4);
+
+    void setEndTeeth(shared::state_t &decoderState, const config4 &page4);
 
 }
 }

@@ -1,6 +1,7 @@
 #include "ngc.h"
 #include "shared/perToothIgnition.h"
 #include "shared/rev_time_calcs.h"
+#include "scheduler_ignition_controller.h"
 
 namespace decoders {
 
@@ -212,7 +213,7 @@ void triggerSecondary4(uint32_t curTime, statuses &current, shared::state_t &dec
 
 #define secondaryToothLastCount decoderState.checkSyncToothCount
 
-void triggerSecondary68(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+void triggerSecondary68(uint32_t curTime, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
   //Only check the cam wheel for sequential operation
   if( page4.sparkMode != IGN_MODE_SEQUENTIAL && page2.injLayout != INJ_SEQUENTIAL ) {
@@ -279,6 +280,46 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   }
   return revolutionTime;
 }
+
+static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
+  if(toothNum == 17U || toothNum == 18U) { return 16U; } // These are missing teeth, so set the next one before instead
+  if(toothNum == 35U || toothNum == 36U) { return 34U; } // These are missing teeth, so set the next one before instead
+  if(toothNum == 53U || toothNum == 54U) { return 52U; } // These are missing teeth, so set the next one before instead
+  if(toothNum > 70U) { return 70U; } // These are missing teeth, so set the next one before instead
+  return toothNum;
+}
+
+static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(IgnitionSchedule &schedule, uint8_t toothAdder, const shared::state_t &decoderState, const config4 &page4) {
+  int16_t tempEndTooth = decoderState.toothNumFromScheduleAngles(page4, schedule);
+  return calcSetEndTeeth_NGC_SkipMissing(decoders::shared::clampToToothCount(page4, tempEndTooth - 1, toothAdder));
+}
+
+void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+{
+  byte toothAdder = 0;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) { toothAdder = page4.triggerTeeth; }
+  
+  decoderState.ignitionEndTeeth[0] = calcSetEndTeeth_NGC(ignitionSchedule1, toothAdder, decoderState, page4);
+#if (IGN_CHANNELS >= 2)
+  decoderState.ignitionEndTeeth[1] = calcSetEndTeeth_NGC(ignitionSchedule2, toothAdder, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 3)
+  decoderState.ignitionEndTeeth[2] = calcSetEndTeeth_NGC(ignitionSchedule3, toothAdder, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 4)
+  decoderState.ignitionEndTeeth[3] = calcSetEndTeeth_NGC(ignitionSchedule4, toothAdder, decoderState, page4);
+#endif
+#if IGN_CHANNELS >= 6
+  decoderState.ignitionEndTeeth[4] = calcSetEndTeeth_NGC(ignitionSchedule5, toothAdder, decoderState, page4);
+  decoderState.ignitionEndTeeth[5] = calcSetEndTeeth_NGC(ignitionSchedule6, toothAdder, decoderState, page4);
+#endif
+
+#if IGN_CHANNELS >= 8
+  decoderState.ignitionEndTeeth[6] = calcSetEndTeeth_NGC(ignitionSchedule7, toothAdder, decoderState, page4);
+  decoderState.ignitionEndTeeth[7] = calcSetEndTeeth_NGC(ignitionSchedule8, toothAdder, decoderState, page4);
+#endif
+}
+
 
 }
 }

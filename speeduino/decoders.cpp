@@ -1145,48 +1145,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
 The crank decoder uses the polarity of the missing teeth to determine position
 The 4-cyl cam decoder uses the polarity of the missing teeth to determine position
 The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups of teeth to determine position
-* @defgroup dec Chrysler NGC - 4, 6 and 8-cylinder
-* @{
 */
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
-  if(toothNum == 17U || toothNum == 18U) { return 16U; } // These are missing teeth, so set the next one before instead
-  if(toothNum == 35U || toothNum == 36U) { return 34U; } // These are missing teeth, so set the next one before instead
-  if(toothNum == 53U || toothNum == 54U) { return 52U; } // These are missing teeth, so set the next one before instead
-  if(toothNum > 70U) { return 70U; } // These are missing teeth, so set the next one before instead
-  return toothNum;
-}
-
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
-  return calcSetEndTeeth_NGC_SkipMissing(decoders::shared::clampToToothCount(configPage4, tempEndTooth - 1, toothAdder));
-}
-
-static void triggerSetEndTeeth_NGC(void)
-{
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-  
-  _decoderState.ignitionEndTeeth[0] = calcSetEndTeeth_NGC(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcSetEndTeeth_NGC(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcSetEndTeeth_NGC(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcSetEndTeeth_NGC(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  _decoderState.ignitionEndTeeth[4] = calcSetEndTeeth_NGC(ignitionSchedule5, toothAdder);
-  _decoderState.ignitionEndTeeth[5] = calcSetEndTeeth_NGC(ignitionSchedule6, toothAdder);
-  #endif
-
-  #if IGN_CHANNELS >= 8
-  _decoderState.ignitionEndTeeth[6] = calcSetEndTeeth_NGC(ignitionSchedule7, toothAdder);
-  _decoderState.ignitionEndTeeth[7] = calcSetEndTeeth_NGC(ignitionSchedule8, toothAdder);
-  #endif
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 {
   _decoderState = decoders::ngc::initialise(configPage2, configPage4);
@@ -1198,13 +1157,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
     decoders::ngc::triggerSecondary4(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
   static const auto secondaryTrigger68 = []() {
-    decoders::ngc::triggerSecondary68(micros(), currentStatus, _decoderState, configPage2, configPage4);
+    decoders::ngc::triggerSecondary68(micros(), _decoderState, configPage2, configPage4);
   };
   static const auto getRevolutionTime = []() {
     return decoders::ngc::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::ngc::setEndTeeth(_decoderState, configPage4);
   };
 
   return decoder_builder_t()
@@ -1213,7 +1175,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
                                         configPage2.nCylinders == 4U ? CHANGE : FALLING)
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_NGC)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
