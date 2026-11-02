@@ -65,7 +65,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
         if ( (decoderState.toothCurrentCount != (page4.triggerTeeth-1U)) && (current.startRevolutions > 2U)) { current.syncLossCounter++; } //Indicates likely sync loss.
         if (page4.useResync == 1) { decoderState.toothCurrentCount = page4.triggerTeeth-1; }
       }
-      decoderState.revolutionOne = 1; //Sequential revolution reset
+      decoderState.revolutionOne = true; //Sequential revolution reset
       decoderState.triggerSecFilterTime = decoderState.curGap << 2; //4 crank teeth
       decoderState.secondaryToothCount = 1; //Next tooth should be first
     } //Running, on first CAM pulse restart crank teeth count, on second the counter should be 3
@@ -74,7 +74,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       decoderState.toothLastToothTime = curTime;
       decoderState.toothLastMinusOneToothTime = curTime - 1500000; //Fixes RPM at 10rpm until a full revolution has taken place
       decoderState.toothCurrentCount = 1;
-      decoderState.revolutionOne = 1; //Sequential revolution reset
+      decoderState.revolutionOne = true; //Sequential revolution reset
 
       decoderState.decoderStatus.syncStatus = SyncStatus::Full;
     } //First start, between gaps on CAM pulses have 2 teeth, sync on first CAM pulse if seen 3 teeth or more
