@@ -29,5 +29,49 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(config4 &pa
   return state;
 }
 
+void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4, const config6 &page6, const config10 &page10)
+{
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+
+  //Safety check for initial startup
+  if( (decoderState.toothLastSecToothTime == 0) )
+  { 
+    decoderState.curGap2 = 0; 
+    decoderState.toothLastSecToothTime = curTime;
+  }
+
+  if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime )
+  {
+      decoderState.targetGap2 = (3 * (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+      decoderState.toothLastMinusOneSecToothTime = decoderState.toothLastSecToothTime;
+      if ( (decoderState.curGap2 >= decoderState.targetGap2) || (decoderState.secondaryToothCount == 5) )
+      {
+        decoderState.secondaryToothCount = 1;
+        decoderState.revolutionOne = 1; //Sequential revolution reset
+        decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+      }
+      else
+      {
+        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalculated for the regular teeth, not the missing one.
+        decoderState.secondaryToothCount++;
+      }
+
+    decoderState.toothLastSecToothTime = curTime;
+
+    //Record the VVT Angle
+    //We use the first tooth after the long gap as our reference, this remains in the same engine
+    //cycle even when the VVT is at either end of its full swing.
+    if( (page6.vvtEnabled > 0) && (decoderState.revolutionOne == 1) && (decoderState.secondaryToothCount == 1) )
+    {
+      int16_t curAngle = normalize((int16_t)0, (int16_t)360, current.decoder.getCrankAngle());
+      if( page6.vvtMode == VVT_MODE_CLOSED_LOOP )
+      {
+        curAngle = LOW_PASS_FILTER( (curAngle << 1), page4.ANGLEFILTER_VVT, curAngle);
+        current.vvt1.angle = 360 - curAngle - page10.vvtCL0DutyAng;
+      }
+    }
+  } //Trigger filter
+}
+
 }
 }

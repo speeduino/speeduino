@@ -1070,51 +1070,6 @@ Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running
 * @defgroup dec_ford_st170 Ford ST170 (01-04 Focus)
 * @{
 */
-static void triggerSec_FordST170(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  //Safety check for initial startup
-  if( (_decoderState.toothLastSecToothTime == 0) )
-  { 
-    _decoderState.curGap2 = 0; 
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-      _decoderState.targetGap2 = (3 * (_decoderState.toothLastSecToothTime - _decoderState.toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-      _decoderState.toothLastMinusOneSecToothTime = _decoderState.toothLastSecToothTime;
-      if ( (_decoderState.curGap2 >= _decoderState.targetGap2) || (_decoderState.secondaryToothCount == 5) )
-      {
-        _decoderState.secondaryToothCount = 1;
-        _decoderState.revolutionOne = 1; //Sequential revolution reset
-        _decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-      }
-      else
-      {
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalculated for the regular teeth, not the missing one.
-        _decoderState.secondaryToothCount++;
-      }
-
-    _decoderState.toothLastSecToothTime = curTime2;
-
-    //Record the VVT Angle
-    //We use the first tooth after the long gap as our reference, this remains in the same engine
-    //cycle even when the VVT is at either end of its full swing.
-    if( (configPage6.vvtEnabled > 0) && (_decoderState.revolutionOne == 1) && (_decoderState.secondaryToothCount == 1) )
-    {
-      int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
-      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
-      {
-        curAngle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
-        currentStatus.vvt1.angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
-      }
-    }
-  } //Trigger filter
-}
-
 static uint32_t getRevolutionTime_FordST170(void)
 {
   uint32_t revolutionTime = 0;
@@ -1167,9 +1122,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
 {
   _decoderState = decoders::st170::initialise(configPage4);
 
+  static const auto primaryTrigger = []() {
+    decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::st170::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_FordST170, getConfigSecTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_FordST170)
                   .setGetCrankAngle(getCrankAngle_FordST170)
                   .setSetEndTeeth(triggerSetEndTeeth_FordST170)
