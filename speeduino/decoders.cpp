@@ -68,6 +68,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/daihatsu.h"
 #include "src/decoders/harley.h"
 #include "src/decoders/36minus222.h"
+#include "src/decoders/36minus21.h"
 
 using namespace decoders::shared;
 
@@ -304,11 +305,6 @@ static void triggerPri_missingTooth(void)
   decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
 }
 
-static void triggerSec_missingTooth(void)
-{
-  decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
-}
-
 static void triggerThird_missingTooth(void)
 {
   decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
@@ -339,9 +335,13 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                       || (configPage2.injLayout == INJ_SEQUENTIAL) 
                       || (configPage6.vvtEnabled > 0) );
 
+  static const auto triggerSecondary = []() {
+    decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
+
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_missingTooth, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
+                  .setSecondaryTrigger(triggerSecondary, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
                   .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
                   .setGetRevolutionTime(getRevolutionTime_missingTooth)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
@@ -968,131 +968,41 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus222(void)
 }
 
 /** 36-2-1 / Mistsubishi 4B11 - A crank based trigger with a nominal 36 teeth, but with 1 single and 1 double missing tooth.
-* @defgroup dec_36_2_1 36-2-1 For Mistsubishi 4B11
-* @{
 */
-static void triggerPri_ThirtySixMinus21(void)
-{
-   uint32_t curTime = micros();
-   _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-   if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-   {
-     _decoderState.toothCurrentCount++; //Increment the tooth counter
-     _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-     //Begin the missing tooth detection
-     //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
-    
-     _decoderState.targetGap2 = (3 * (_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime)) ; //Multiply by 3 (Checks for a gap 3x greater than the last one)
-     _decoderState.targetGap = _decoderState.targetGap2 >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to divide by 2 as in the missing tooth decoder)
-
-     if( (_decoderState.toothLastToothTime == 0) || (_decoderState.toothLastMinusOneToothTime == 0) ) { _decoderState.curGap = 0; }
-
-     if ( (_decoderState.curGap > _decoderState.targetGap) )
-     {
-      if ( (_decoderState.curGap < _decoderState.targetGap2))
-       {
-           //we are at the tooth after the single gap
-           _decoderState.toothCurrentCount = 20; //it's either 19 or 20, need to clarify engine direction!
-           _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else 
-        {
-          //we are at the tooth after the double gap
-          _decoderState.toothCurrentCount = 1; 
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
- 
-         _decoderState.decoderStatus.toothAngleIsCorrect = false; //The tooth angle is double at this point
-         _decoderState.triggerFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-       }
-     }
-     else
-     {
-       if(  (_decoderState.toothCurrentCount > 36) || ( _decoderState.toothCurrentCount==1)  )
-       {
-         //Means a complete rotation has occurred.
-         _decoderState.toothCurrentCount = 1;
-         _decoderState.revolutionOne = !_decoderState.revolutionOne; //Flip sequential revolution tracker
-         _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-         _decoderState.toothOneTime = curTime;
-         currentStatus.startRevolutions++; //Counter
-
-       }
-
-       //Filter can only be recalculated for the regular teeth, not the missing one.
-       _decoderState.setFilter(_decoderState.curGap, configPage4);
-
-       _decoderState.decoderStatus.toothAngleIsCorrect = true;
-
-     }
-
-     _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-     _decoderState.toothLastToothTime = curTime;
-
-     //EXPERIMENTAL!
-     if(configPage2.perToothIgn == true)
-     {
-       int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-       checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-     }
-
-   
-}
-
-static uint32_t getRevolutionTime_ThirtySixMinus21(void)
-{
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if( (_decoderState.toothCurrentCount != 20) && (_decoderState.decoderStatus.toothAngleIsCorrect) )
-    {
-      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
-    }
-    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-  }
-  return revolutionTime;
-}
-
-static void triggerSetEndTeeth_ThirtySixMinus21(void)
-{
-  _decoderState.ignitionEndTeeth[0] = 10; 
-  _decoderState.ignitionEndTeeth[1] = 28; // Arbitrarily picked  at 180°.
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 10; //The number of degrees that passes from tooth to tooth
-  _decoderState.triggerActualTeeth = 33; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.checkSyncToothCount = (configPage4.triggerTeeth) >> 1; //50% of the total teeth.
-  _decoderState.toothLastMinusOneToothTime = 0;
-  _decoderState.toothCurrentCount = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::thirtysixminus21::initialise(configPage4);
+
+  static const auto primaryTrigger = []() {
+    decoders::thirtysixminus21::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto triggerSecondary = []() {
+    // Note reuse of missing tooth
+    decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    // Note reuse of missing tooth
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::thirtysixminus21::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    return decoders::thirtysixminus21::setEndTeeth(_decoderState);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_ThirtySixMinus21, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_missingTooth, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_ThirtySixMinus21)
-                  .setGetCrankAngle(getCrankAngle_missingTooth) //This uses the same function as the missing tooth decoder, so no need to duplicate code
-                  .setSetEndTeeth(triggerSetEndTeeth_ThirtySixMinus21)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSecondary, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 //************************************************************************************************************************
 
