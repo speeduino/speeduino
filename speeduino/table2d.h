@@ -44,20 +44,13 @@ static inline bool cacheExpired(const Table2DCache<axis_t, value_t> &cache) {
 template <typename T>
 struct Bin {
   constexpr Bin(const T *array, uint8_t binUpperIndex)
-  : upperIndex(binUpperIndex)
-  , _upperValue(array[binUpperIndex])
-  , _lowerValue(array[binUpperIndex-1U])
-  {
-  } 
-  constexpr Bin(uint8_t binUpperIndex, const T upperValue, const T lowerValue)
-  : upperIndex(binUpperIndex)
-  , _upperValue(upperValue)
-  , _lowerValue(lowerValue)
+  : _upper(array, binUpperIndex)
   {
   } 
 
-  const T upperValue(void) const noexcept { return _upperValue; }
-  const T lowerValue(void) const noexcept { return _lowerValue; }
+  const T upperValue(void) const noexcept { return *_upper; }
+  const T lowerValue(void) const noexcept { return *(_upper-1); }
+  uint8_t upperIndex(void) const noexcept { return _upper.pos(); }
 
   static bool withinBin(const T &value, const T &min, const T&max) noexcept {
     return (value <= max) && (value > min);
@@ -66,9 +59,7 @@ struct Bin {
     return withinBin(value, lowerValue(), upperValue());
   }
 
-  uint8_t upperIndex;
-  T _upperValue;
-  T _lowerValue;
+  mcu8::iterator<const T> _upper;
 };
 
 
@@ -183,15 +174,15 @@ struct table2D
       // We are exactly at the bin upper bound, so no need to interpolate
       if (axisValue==xBin.upperValue()) 
       {
-        cache.lastOutput = values[xBin.upperIndex];
-        cache.lastBinUpperIndex = xBin.upperIndex;
+        cache.lastOutput = values[xBin.upperIndex()];
+        cache.lastBinUpperIndex = xBin.upperIndex();
       } 
       else // Must be within the bin, interpolate
       {
         // LCOV_EXCL_BR_START
-        cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(values, xBin.upperIndex));
+        cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(values, xBin.upperIndex()));
         // LCOV_EXCL_BR_STOP
-        cache.lastBinUpperIndex = xBin.upperIndex;
+        cache.lastBinUpperIndex = xBin.upperIndex();
       }
       // Note: we cannot be at the bin lower bound here, as that would violate the bin definition of a non-inclusive lower bound
     }

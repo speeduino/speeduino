@@ -142,8 +142,8 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
   pValueCache->lastOutput = interpolate_3d_value(lookupValues, axisSize, values.data(), xBin, xFactor, yBin, yFactor);
   // Store the last lookup values so we can check them next time
   pValueCache->last_lookup = lookupValues;
-  pValueCache->lastBinMax.x = xBin.upperIndex;
-  pValueCache->lastBinMax.y = yBin.upperIndex;
+  pValueCache->lastBinMax.x = xBin.upperIndex();
+  pValueCache->lastBinMax.y = yBin.upperIndex();
 
   return pValueCache->lastOutput;
 
