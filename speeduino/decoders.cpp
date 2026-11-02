@@ -1023,7 +1023,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
     decoders::dsm420a::triggerSecondary(currentStatus, _decoderState);
   };
   static const auto getRevolutionTime = []() {
-    return decoders::dsm420a::getRevolutionTime(currentStatus, _decoderState);
+    return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
   };
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));

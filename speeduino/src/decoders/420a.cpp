@@ -68,7 +68,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     //EXPERIMENTAL!
     if(page2.perToothIgn == true)
     {
-      int16_t crankAngle = ( decoderState.toothAngles[(decoderState.toothCurrentCount-1)] ) + page4.triggerAngle;
+      int16_t crankAngle = ( decoderState.toothAngles[decoderState.toothCurrentCount-1] ) + page4.triggerAngle;
       checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount);
     }
   }
@@ -120,17 +120,8 @@ void triggerSecondary(statuses &current, shared::state_t &decoderState)
 
 uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
 {
-  uint32_t revolutionTime = 0;
-  if( current.RPM < current.crankRPM)
-  {
-    //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
-    revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
-  }
-  return revolutionTime;
+  //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
+  return stdGetRevolutionTime(current, decoderState, CAM_SPEED);
 }
 
 void setEndTeeth(const statuses &current, shared::state_t &decoderState)
