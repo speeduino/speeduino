@@ -1203,13 +1203,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
   static const auto getRevolutionTime = []() {
     return decoders::ngc::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setSecondaryTrigger( configPage2.nCylinders == 4U ? secondaryTrigger4 : secondaryTrigger68,
                                         configPage2.nCylinders == 4U ? CHANGE : FALLING)
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_missingTooth)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_NGC)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
