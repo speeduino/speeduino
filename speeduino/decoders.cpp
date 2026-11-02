@@ -1070,11 +1070,6 @@ Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running
 * @defgroup dec_ford_st170 Ford ST170 (01-04 Focus)
 * @{
 */
-static int16_t getCrankAngle_FordST170(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
-}
-
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
   int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
   tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
@@ -1113,12 +1108,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
   static const auto getRevolutionTime = []() {
     return decoders::st170::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_FordST170)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_FordST170)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
