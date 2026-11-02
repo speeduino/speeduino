@@ -1106,16 +1106,29 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
 {
   _decoderState = decoders::drz400::initialise(configPage4);
 
+  static const auto primaryTrigger = []() {
+    // Reuse dual wheel primary trigger
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
   static const auto secondaryTrigger = []() {
     decoders::drz400::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_DualWheel)
-                  .setGetCrankAngle(getCrankAngle_DualWheel)
-                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
