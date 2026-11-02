@@ -69,6 +69,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/harley.h"
 #include "src/decoders/36minus222.h"
 #include "src/decoders/36minus21.h"
+#include "src/decoders/420a.h"
 
 using namespace decoders::shared;
 
@@ -1010,172 +1011,39 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_ThirtySixMinus21(void)
 * Tracks the falling side of the signal.
 * Sync is determined by watching for a falling edge on the secondary signal and checking if the primary signal is high then.
 * https://github.com/noisymime/speeduino/issues/133
-* @defgroup dec_dsm_420a DSM 420a, For the DSM Eclipse
-* @{
 */
-static void triggerPri_420a(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-  {
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if( (_decoderState.toothLastToothTime == 0) || (_decoderState.toothLastMinusOneToothTime == 0) ) { _decoderState.curGap = 0; }
-
-    if( (_decoderState.toothCurrentCount > 16) && (_decoderState.decoderStatus.syncStatus==SyncStatus::Full) )
-    {
-      //Means a complete rotation has occurred.
-      _decoderState.toothCurrentCount = 1;
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++; //Counter
-    }
-
-    //Filter can only be recalculated for the regular teeth, not the missing one.
-    _decoderState.triggerFilterTime = 0;
-
-    _decoderState.decoderStatus.toothAngleIsCorrect = false;
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    //EXPERIMENTAL!
-    if(configPage2.perToothIgn == true)
-    {
-      int16_t crankAngle = ( _decoderState.toothAngles[(_decoderState.toothCurrentCount-1)] ) + configPage4.triggerAngle;
-      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-    }
-  }
-}
-
-static void triggerSec_420a(void)
-{
-  //Secondary trigger is only on falling edge
-
-  if(currentStatus.decoder.primary.isPinHigh())
-  {
-    //Secondary signal is falling and primary signal is HIGH
-    if( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
-    {
-      //If we don't have sync, then assume the signal is good
-      _decoderState.toothCurrentCount = 13;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else
-    {
-      //If we DO have sync, then check that the tooth count matches what we expect
-      if(_decoderState.toothCurrentCount != 13)
-      {
-        currentStatus.syncLossCounter++;
-        _decoderState.toothCurrentCount = 13;
-      }
-    }
-
-  }
-  else
-  {
-    //Secondary signal is falling and primary signal is LOW
-    if( _decoderState.decoderStatus.syncStatus!=SyncStatus::Full )
-    {
-      //If we don't have sync, then assume the signal is good
-      _decoderState.toothCurrentCount = 5;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else
-    {
-      //If we DO have sync, then check that the tooth count matches what we expect
-      if(_decoderState.toothCurrentCount != 5)
-      {
-        currentStatus.syncLossCounter++;
-        _decoderState.toothCurrentCount = 5;
-      }
-    }
-  }
-}
-
-static uint32_t getRevolutionTime_420a(void)
-{
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    //Possibly look at doing special handling for cranking in the future, but for now just use the standard method
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-  }
-  return revolutionTime;
-}
-
-static int16_t getCrankAngle_420a(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
-static void triggerSetEndTeeth_420a(void)
-{
-  if(currentStatus.advance < 9)
-  {
-    _decoderState.ignitionEndTeeth[0] = 1;
-    _decoderState.ignitionEndTeeth[1] = 5;
-    _decoderState.ignitionEndTeeth[2] = 9;
-    _decoderState.ignitionEndTeeth[3] = 13;  
-  }
-  else
-  {
-    _decoderState.ignitionEndTeeth[0] = 16;
-    _decoderState.ignitionEndTeeth[1] = 4;
-    _decoderState.ignitionEndTeeth[2] = 8;
-    _decoderState.ignitionEndTeeth[3] = 12;  
-  }
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_420a(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 360UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = 0;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.triggerToothAngle = 20; //Is only correct for the 4 short pulses before each TDC
-  _decoderState.decoderStatus.toothAngleIsCorrect = false;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 93U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::dsm420a::initialise();
 
-  _decoderState.toothAngles[0] = 711; //tooth #1, just before #1 TDC
-  _decoderState.toothAngles[1] = 111;
-  _decoderState.toothAngles[2] = 131;
-  _decoderState.toothAngles[3] = 151;
-  _decoderState.toothAngles[4] = 171; //Just before #3 TDC
-  _decoderState.toothAngles[5] = _decoderState.toothAngles[1] + 180;
-  _decoderState.toothAngles[6] = _decoderState.toothAngles[2] + 180;
-  _decoderState.toothAngles[7] = _decoderState.toothAngles[3] + 180;
-  _decoderState.toothAngles[8] = _decoderState.toothAngles[4] + 180; //Just before #4 TDC
-  _decoderState.toothAngles[9]  = _decoderState.toothAngles[1] + 360;
-  _decoderState.toothAngles[10] = _decoderState.toothAngles[2] + 360;
-  _decoderState.toothAngles[11] = _decoderState.toothAngles[3] + 360;
-  _decoderState.toothAngles[12] = _decoderState.toothAngles[4] + 360; //Just before #2 TDC
-  _decoderState.toothAngles[13] = _decoderState.toothAngles[1] + 540;
-  _decoderState.toothAngles[14] = _decoderState.toothAngles[2] + 540;
-  _decoderState.toothAngles[15] = _decoderState.toothAngles[3] + 540;
+  static const auto primaryTrigger = []() {
+    decoders::dsm420a::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::dsm420a::triggerSecondary(currentStatus, _decoderState);
+  };
+  static const auto getRevolutionTime = []() {
+    return stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_lookup_caa(_decoderState).calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
+  };
+  static const auto setEndTeeth = []() {
+    decoders::dsm420a::setEndTeeth(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_420a, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_420a, FALLING) //Always falling edge
-                  .setGetRevolutionTime(getRevolutionTime_420a)
-                  .setGetCrankAngle(getCrankAngle_420a)
-                  .setSetEndTeeth(triggerSetEndTeeth_420a)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, FALLING) //Always falling edge
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** Weber-Marelli trigger setup with 2 wheels, 4 teeth 90deg apart on crank and 2 90deg apart on cam.
 Uses DualWheel decoders, There can be no missing teeth on the primary wheel.
