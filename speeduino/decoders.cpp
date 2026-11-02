@@ -73,6 +73,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/webber.h"
 #include "src/decoders/st170.h"
 #include "src/decoders/drz400.h"
+#include "src/decoders/ngc.h"
 
 using namespace decoders::shared;
 
@@ -1419,54 +1420,7 @@ static void triggerSetEndTeeth_NGC(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-
-  //Primary trigger
-  configPage4.triggerTeeth = 36; //The number of teeth on the wheel incl missing teeth.
-  _decoderState.setTriggerToothAngle(10);  //The number of degrees that passes from tooth to tooth
-  _decoderState.triggerFilterTime = MICROS_PER_SEC / (MAX_RPM/60U) / (360U/_decoderState.triggerToothAngle); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.toothCurrentCount = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.toothLastMinusOneToothTime = 0;
-  _decoderState.toothLastToothRisingTime = 0;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-
-  //Secondary trigger
-  if (configPage2.nCylinders == 4) {
-    _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM/60U) / (360U/36U) * 2U); //Two nearest edges are 36 degrees apart. Multiply by 2 for half cam speed.
-  } else {
-    _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM/60U) / (360U/21U) * 2U); //Two nearest edges are 21 degrees apart. Multiply by 2 for half cam speed.
-  }
-  _decoderState.toothLastSecToothRisingTime = 0;
-  _decoderState.toothLastMinusOneSecToothTime = 0;
-
-  //_decoderState.toothAngles is reused to store the cam pattern, only used for 6 and 8 cylinder pattern
-  if (configPage2.nCylinders == 6) {
-    _decoderState.toothAngles[0] = 1; // Pos 0 is required to be the same as group 6 for easier math
-    _decoderState.toothAngles[1] = 3; // Group 1 ...
-    _decoderState.toothAngles[2] = 1;
-    _decoderState.toothAngles[3] = 2;
-    _decoderState.toothAngles[4] = 3;
-    _decoderState.toothAngles[5] = 2;
-    _decoderState.toothAngles[6] = 1;
-    _decoderState.toothAngles[7] = 3; // Pos 7 is required to be the same as group 1 for easier math
-  }
-  else if (configPage2.nCylinders == 8) {
-    _decoderState.toothAngles[0] = 3; // Pos 0 is required to be the same as group 8 for easier math
-    _decoderState.toothAngles[1] = 1; // Group 1 ...
-    _decoderState.toothAngles[2] = 1;
-    _decoderState.toothAngles[3] = 2;
-    _decoderState.toothAngles[4] = 3;
-    _decoderState.toothAngles[5] = 2;
-    _decoderState.toothAngles[6] = 2;
-    _decoderState.toothAngles[7] = 1;
-    _decoderState.toothAngles[8] = 3;
-    _decoderState.toothAngles[9] = 1; // Pos 9 is required to be the same as group 1 for easier math
-  }
+  _decoderState = decoders::ngc::initialise(configPage2, configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_NGC, CHANGE)
