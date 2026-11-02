@@ -1148,21 +1148,6 @@ The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups 
 * @defgroup dec Chrysler NGC - 4, 6 and 8-cylinder
 * @{
 */
-static uint32_t getRevolutionTime_NGC(void)
-{
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if (_decoderState.decoderStatus.toothAngleIsCorrect) { revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED); }
-    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at any of the missing teeth as it messes the calculation
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-  }
-  return revolutionTime;
-}
-
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16_t toothNum) {
   if(toothNum == 17U || toothNum == 18U) { return 16U; } // These are missing teeth, so set the next one before instead
   if(toothNum == 35U || toothNum == 36U) { return 34U; } // These are missing teeth, so set the next one before instead
@@ -1215,12 +1200,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
   static const auto secondaryTrigger68 = []() {
     decoders::ngc::triggerSecondary68(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::ngc::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setSecondaryTrigger( configPage2.nCylinders == 4U ? secondaryTrigger4 : secondaryTrigger68,
                                         configPage2.nCylinders == 4U ? CHANGE : FALLING)
-                  .setGetRevolutionTime(getRevolutionTime_NGC)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_missingTooth)
                   .setSetEndTeeth(triggerSetEndTeeth_NGC)
                   .setReset(sharedDecoderReset)
