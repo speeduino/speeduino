@@ -1148,113 +1148,6 @@ The 6 and 8-cyl cam decoder uses the amount of teeth in the two previous groups 
 * @defgroup dec Chrysler NGC - 4, 6 and 8-cylinder
 * @{
 */
-static void triggerSec_NGC4(void)
-{
-  //Only check the cam wheel for sequential operation
-  if( configPage4.sparkMode != IGN_MODE_SEQUENTIAL && configPage2.injLayout != INJ_SEQUENTIAL ) {
-    return;
-  }
-
-  uint32_t curTime2 = micros();
-
-  // We need to know the polarity of the missing tooth to determine position
-  if (currentStatus.decoder.secondary.isPinHigh()) {
-    _decoderState.toothLastSecToothRisingTime = curTime2;
-    return;
-  }
-
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  if ( _decoderState.curGap2 > _decoderState.triggerSecFilterTime )
-  {
-    if ( _decoderState.toothLastSecToothTime > 0 && _decoderState.toothLastMinusOneSecToothTime > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
-    {
-      if (_decoderState.secondaryToothCount > 0) { _decoderState.secondaryToothCount++; }
-
-      if (_decoderState.curGap2 >= ((3 * (_decoderState.toothLastSecToothTime - _decoderState.toothLastMinusOneSecToothTime)) >> 1)) // Check if we have a bigger gap, that is a long tooth
-      {
-        // Check long tooth polarity
-        if ((_decoderState.toothLastSecToothRisingTime - _decoderState.toothLastSecToothTime) < (curTime2 - _decoderState.toothLastSecToothRisingTime)) {
-          //Just passed the HIGH missing tooth
-          if ( _decoderState.secondaryToothCount == 0 || _decoderState.secondaryToothCount == 8 ) { _decoderState.secondaryToothCount = 1; } // synced
-          else if (_decoderState.secondaryToothCount > 0) { _decoderState.secondaryToothCount = 0; } //Any other number of teeth seen means we missed something or something extra was seen so attempt resync.
-        }
-        else {
-          //Just passed the first tooth after the LOW missing tooth
-          if ( _decoderState.secondaryToothCount == 0 || _decoderState.secondaryToothCount == 5 ) { _decoderState.secondaryToothCount = 5; }
-          else if (_decoderState.secondaryToothCount > 0) { _decoderState.secondaryToothCount = 0; }
-        }
-
-        _decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-      }
-      else if (_decoderState.secondaryToothCount > 0) {
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
-      }
-
-    }
-    
-    _decoderState.toothLastMinusOneSecToothTime = _decoderState.toothLastSecToothTime;
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-}
-
-#define secondaryToothLastCount _decoderState.checkSyncToothCount
-
-static void triggerSec_NGC68(void)
-{
-  //Only check the cam wheel for sequential operation
-  if( configPage4.sparkMode != IGN_MODE_SEQUENTIAL && configPage2.injLayout != INJ_SEQUENTIAL ) {
-    return;
-  }
-
-  uint32_t curTime2 = micros();
-
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  if ( _decoderState.curGap2 > _decoderState.triggerSecFilterTime )
-  {
-    if ( _decoderState.toothLastSecToothTime > 0 && _decoderState.toothLastToothTime > 0 && _decoderState.toothLastMinusOneToothTime > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
-    {
-      /* Cam wheel can have a single tooth in a group which can screw up the "_decoderState.targetGap" calculations
-         Instead use primary wheel tooth gap as comparison as those values are always correct. 2.1 primary teeth are the same duration as one secondary tooth. */
-      if (_decoderState.curGap2 >= (3 * (_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime) ) ) // Check if we have a bigger gap, that is missing teeth
-      {
-        //_decoderState.toothSystemCount > 0 means we have cam sync and identifies which group we have synced with
-        //_decoderState.toothAngles is reused to store the cam pattern
-        if (_decoderState.secondaryToothCount > 0 && secondaryToothLastCount > 0) { // Only check for cam sync if we have actually detected two groups and can get cam sync
-          if (_decoderState.toothSystemCount > 0 && _decoderState.secondaryToothCount == (unsigned int)_decoderState.toothAngles[_decoderState.toothSystemCount+1]) { // Do a quick check if we already have cam sync
-            _decoderState.toothSystemCount++;
-            if (_decoderState.toothSystemCount > configPage2.nCylinders) { _decoderState.toothSystemCount = 1; }
-          }
-          else { // Check for a pair of matching groups which tells us which group we are at, this should only happen when we don't have cam sync
-            _decoderState.toothSystemCount = 0; // We either haven't got cam sync yet or we lost cam sync
-            for (byte group = 1; group <= configPage2.nCylinders; group++) {
-              if (_decoderState.secondaryToothCount == (unsigned int)_decoderState.toothAngles[group] && secondaryToothLastCount == (byte)_decoderState.toothAngles[group-1] ) { // Find a matching pattern/position
-                _decoderState.toothSystemCount = group;
-                break;
-              }
-            }
-          }
-        }
-
-        secondaryToothLastCount = _decoderState.secondaryToothCount;
-        //This is the first tooth in this group
-        _decoderState.secondaryToothCount = 1;
-
-        _decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-
-      }
-      else if (_decoderState.secondaryToothCount > 0) {
-        //Normal tooth
-        _decoderState.secondaryToothCount++;
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed
-      }
-    }
-
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-}
-
 static uint32_t getRevolutionTime_NGC(void)
 {
   uint32_t revolutionTime = 0;
@@ -1316,10 +1209,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
   static const auto primaryTrigger = []() {
     decoders::ngc::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger4 = []() {
+    decoders::ngc::triggerSecondary4(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger68 = []() {
+    decoders::ngc::triggerSecondary68(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
-                  .setSecondaryTrigger( configPage2.nCylinders == 4U ? triggerSec_NGC4 : triggerSec_NGC68,
+                  .setSecondaryTrigger( configPage2.nCylinders == 4U ? secondaryTrigger4 : secondaryTrigger68,
                                         configPage2.nCylinders == 4U ? CHANGE : FALLING)
                   .setGetRevolutionTime(getRevolutionTime_NGC)
                   .setGetCrankAngle(getCrankAngle_missingTooth)

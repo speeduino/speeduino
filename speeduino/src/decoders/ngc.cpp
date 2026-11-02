@@ -161,5 +161,109 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
 }
 
+void triggerSecondary4(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  //Only check the cam wheel for sequential operation
+  if( page4.sparkMode != IGN_MODE_SEQUENTIAL && page2.injLayout != INJ_SEQUENTIAL ) {
+    return;
+  }
+
+  // We need to know the polarity of the missing tooth to determine position
+  if (current.decoder.secondary.isPinHigh()) {
+    decoderState.toothLastSecToothRisingTime = curTime;
+    return;
+  }
+
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+
+  if ( decoderState.curGap2 > decoderState.triggerSecFilterTime )
+  {
+    if ( decoderState.toothLastSecToothTime > 0 && decoderState.toothLastMinusOneSecToothTime > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
+    {
+      if (decoderState.secondaryToothCount > 0) { decoderState.secondaryToothCount++; }
+
+      if (decoderState.curGap2 >= ((3 * (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)) >> 1)) // Check if we have a bigger gap, that is a long tooth
+      {
+        // Check long tooth polarity
+        if ((decoderState.toothLastSecToothRisingTime - decoderState.toothLastSecToothTime) < (curTime - decoderState.toothLastSecToothRisingTime)) {
+          //Just passed the HIGH missing tooth
+          if ( decoderState.secondaryToothCount == 0 || decoderState.secondaryToothCount == 8 ) { decoderState.secondaryToothCount = 1; } // synced
+          else if (decoderState.secondaryToothCount > 0) { decoderState.secondaryToothCount = 0; } //Any other number of teeth seen means we missed something or something extra was seen so attempt resync.
+        }
+        else {
+          //Just passed the first tooth after the LOW missing tooth
+          if ( decoderState.secondaryToothCount == 0 || decoderState.secondaryToothCount == 5 ) { decoderState.secondaryToothCount = 5; }
+          else if (decoderState.secondaryToothCount > 0) { decoderState.secondaryToothCount = 0; }
+        }
+
+        decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+      }
+      else if (decoderState.secondaryToothCount > 0) {
+        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+      }
+
+    }
+    
+    decoderState.toothLastMinusOneSecToothTime = decoderState.toothLastSecToothTime;
+    decoderState.toothLastSecToothTime = curTime;
+  }
+}
+
+#define secondaryToothLastCount decoderState.checkSyncToothCount
+
+void triggerSecondary68(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  //Only check the cam wheel for sequential operation
+  if( page4.sparkMode != IGN_MODE_SEQUENTIAL && page2.injLayout != INJ_SEQUENTIAL ) {
+    return;
+  }
+
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+
+  if ( decoderState.curGap2 > decoderState.triggerSecFilterTime )
+  {
+    if ( decoderState.toothLastSecToothTime > 0 && decoderState.toothLastToothTime > 0 && decoderState.toothLastMinusOneToothTime > 0 ) //Make sure we have enough tooth information to calculate tooth lengths
+    {
+      /* Cam wheel can have a single tooth in a group which can screw up the "decoderState.targetGap" calculations
+         Instead use primary wheel tooth gap as comparison as those values are always correct. 2.1 primary teeth are the same duration as one secondary tooth. */
+      if (decoderState.curGap2 >= (3 * (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime) ) ) // Check if we have a bigger gap, that is missing teeth
+      {
+        //decoderState.toothSystemCount > 0 means we have cam sync and identifies which group we have synced with
+        //decoderState.toothAngles is reused to store the cam pattern
+        if (decoderState.secondaryToothCount > 0 && secondaryToothLastCount > 0) { // Only check for cam sync if we have actually detected two groups and can get cam sync
+          if (decoderState.toothSystemCount > 0 && decoderState.secondaryToothCount == (unsigned int)decoderState.toothAngles[decoderState.toothSystemCount+1]) { // Do a quick check if we already have cam sync
+            decoderState.toothSystemCount++;
+            if (decoderState.toothSystemCount > page2.nCylinders) { decoderState.toothSystemCount = 1; }
+          }
+          else { // Check for a pair of matching groups which tells us which group we are at, this should only happen when we don't have cam sync
+            decoderState.toothSystemCount = 0; // We either haven't got cam sync yet or we lost cam sync
+            for (byte group = 1; group <= page2.nCylinders; group++) {
+              if (decoderState.secondaryToothCount == (unsigned int)decoderState.toothAngles[group] && secondaryToothLastCount == (byte)decoderState.toothAngles[group-1] ) { // Find a matching pattern/position
+                decoderState.toothSystemCount = group;
+                break;
+              }
+            }
+          }
+        }
+
+        secondaryToothLastCount = decoderState.secondaryToothCount;
+        //This is the first tooth in this group
+        decoderState.secondaryToothCount = 1;
+
+        decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
+
+      }
+      else if (decoderState.secondaryToothCount > 0) {
+        //Normal tooth
+        decoderState.secondaryToothCount++;
+        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed
+      }
+    }
+
+    decoderState.toothLastSecToothTime = curTime;
+  }
+}
+
+
 }
 }
