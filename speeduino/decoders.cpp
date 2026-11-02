@@ -72,6 +72,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/420a.h"
 #include "src/decoders/webber.h"
 #include "src/decoders/st170.h"
+#include "src/decoders/drz400.h"
 
 using namespace decoders::shared;
 
@@ -1129,17 +1130,7 @@ static void triggerSec_DRZ400(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage4.TrigSpeed == 1) { _decoderState.triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
-  _decoderState.toothCurrentCount = UINT8_MAX; //Default value
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)); //Same as above, but fixed at 2 teeth on the secondary input
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;  
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::drz400::initialise(configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
