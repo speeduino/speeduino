@@ -9,6 +9,7 @@ This file is used for everything related to maps/tables including their definiti
 #include <stdint.h>
 #include <Arduino.h>
 #include "preprocessor.h"
+#include "src/utils/iterator8.h"
 
 /// @cond
 // private to table2D implementation
@@ -91,7 +92,7 @@ static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, 
   // Ignore the cache during tests
 #if !defined(UNIT_TEST)
   // LCOV_EXCL_START
-  auto bin = Bin<TValue>(pStart, cachedUpperIndex);
+  auto bin = Bin<TValue>(&*pStart, cachedUpperIndex);
   if (bin.withinBin(value))
   {
     return bin;  
@@ -102,7 +103,7 @@ static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, 
 #endif
 
   // If we're not in the same bin, search 
-  return Bin<TValue>(pStart, findBinUpperIndex(pStart, pEnd, value));
+  return Bin<TValue>(&*pStart, findBinUpperIndex(pStart, pEnd, value));
 }
 
 // Generic interpolation
@@ -177,7 +178,7 @@ struct table2D
     else 
     {
       // None of the cached or last values match, so we need to find the new value
-      auto xBin = _table2d_detail::findCachedBin(cache.lastBinUpperIndex, axis, axis+sizeT, axisValue);
+      auto xBin = _table2d_detail::findCachedBin(cache.lastBinUpperIndex, mcu8::begin(axis), mcu8::end(axis), axisValue);
 
       // We are exactly at the bin upper bound, so no need to interpolate
       if (axisValue==xBin.upperValue()) 
