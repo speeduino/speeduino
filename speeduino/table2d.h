@@ -43,17 +43,17 @@ static inline bool cacheExpired(const Table2DCache<axis_t, value_t> &cache) {
 
 template <typename T>
 struct Bin {
-  constexpr Bin(const T *array, uint8_t binUpperIndex)
+  explicit constexpr Bin(const T *array, uint8_t binUpperIndex)
   : _upper(array, binUpperIndex)
   {
   } 
-  constexpr Bin(const mcu8::iterator<const T> &upper)
+  explicit constexpr Bin(const mcu8::iterator<const T> &upper)
   : _upper(upper)
   {
   }
 
-  const T upperValue(void) const noexcept { return *_upper; }
-  const T lowerValue(void) const noexcept { return *(_upper-1); }
+  T upperValue(void) const noexcept { return *_upper; }
+  T lowerValue(void) const noexcept { return *(_upper-1); }
   uint8_t upperIndex(void) const noexcept { return _upper.pos(); }
 
   static bool withinBin(const T &value, const T &min, const T&max) noexcept {

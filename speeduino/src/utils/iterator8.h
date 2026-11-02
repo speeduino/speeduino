@@ -30,7 +30,7 @@ namespace mcu8 {
         template <typename U> friend class iterator;
 
     public:
-        iterator(T* p, uint8_t idx) : ptr(p), index(idx) {}
+        explicit iterator(T* p, uint8_t idx) : ptr(p), index(idx) {}
 
         template <typename U>
         iterator(const iterator<U>& other) : ptr(other.ptr), index(other.index) {}
@@ -51,22 +51,24 @@ namespace mcu8 {
         iterator& operator+=(int8_t n) { index += n; return *this; }
         iterator& operator-=(int8_t n) { index -= n; return *this; }
 
+        // --- Hidden Friends: Math Operators ---
         friend iterator operator+(iterator it, int8_t n) { it += n; return it; }
         friend iterator operator+(int8_t n, iterator it) { it += n; return it; }
         friend iterator operator-(iterator it, int8_t n) { it -= n; return it; }
         
-        // Distance between two iterators returns an 8-bit signed int
-        int8_t operator-(const iterator& other) const { 
-            return static_cast<int8_t>(index - other.index); 
+        // Distance between two iterators (Hidden Friend allows iterator vs const_iterator)
+        friend int8_t operator-(const iterator& lhs, const iterator& rhs) { 
+            return static_cast<int8_t>(lhs.index - rhs.index); 
         }
 
-        // --- 4. Relational Operators (All optimized to 8-bit register compares) ---
-        bool operator==(const iterator& other) const { return index == other.index; }
-        bool operator!=(const iterator& other) const { return index != other.index; }
-        bool operator<(const iterator& other)  const { return index <  other.index; }
-        bool operator>(const iterator& other)  const { return index >  other.index; }
-        bool operator<=(const iterator& other) const { return index <= other.index; }
-        bool operator>=(const iterator& other) const { return index >= other.index; }
+        // --- Hidden Friends: Relational Operators ---
+        // These are optimized to 8-bit register compares and perfectly support mixed const/non-const
+        friend bool operator==(const iterator& lhs, const iterator& rhs) { return lhs.index == rhs.index; }
+        friend bool operator!=(const iterator& lhs, const iterator& rhs) { return lhs.index != rhs.index; }
+        friend bool operator<(const iterator& lhs, const iterator& rhs)  { return lhs.index <  rhs.index; }
+        friend bool operator>(const iterator& lhs, const iterator& rhs)  { return lhs.index >  rhs.index; }
+        friend bool operator<=(const iterator& lhs, const iterator& rhs) { return lhs.index <= rhs.index; }
+        friend bool operator>=(const iterator& lhs, const iterator& rhs) { return lhs.index >= rhs.index; }
 
         uint8_t pos(void) const { return index; }
     };
