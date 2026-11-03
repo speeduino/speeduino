@@ -31,7 +31,7 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
 //We measure the width of a lobe so on the end of a lobe, but want to trigger on the beginning. Variable decoderState.toothCurrentCount tracks the downward events, and decoderState.secondaryToothCount updates on the upward events. Ideally, it should be the other way round but the engine stall routine resets decoderState.secondaryToothCount, so it would not sync again after an engine stall.
 void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4)
 {
-  if(current.decoder.primary.isTriggered()){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
+  if(page4.TrigEdge!=current.decoder.primary.isPinHigh()){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
     decoderState.curGap2 = curTime;
     decoderState.curGap = curTime - decoderState.toothLastToothTime;
     if ( (decoderState.curGap >= decoderState.triggerFilterTime) ){
