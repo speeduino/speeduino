@@ -190,12 +190,12 @@ void triggerSecondary4(uint32_t curTime, statuses &current, shared::state_t &dec
         if ((decoderState.toothLastSecToothRisingTime - decoderState.toothLastSecToothTime) < (curTime - decoderState.toothLastSecToothRisingTime)) {
           //Just passed the HIGH missing tooth
           if ( decoderState.secondaryToothCount == 0 || decoderState.secondaryToothCount == 8 ) { decoderState.secondaryToothCount = 1; } // synced
-          else if (decoderState.secondaryToothCount > 0) { decoderState.secondaryToothCount = 0; } //Any other number of teeth seen means we missed something or something extra was seen so attempt resync.
+          else { decoderState.secondaryToothCount = 0; } //Any other number of teeth seen means we missed something or something extra was seen so attempt resync.
         }
         else {
           //Just passed the first tooth after the LOW missing tooth
           if ( decoderState.secondaryToothCount == 0 || decoderState.secondaryToothCount == 5 ) { decoderState.secondaryToothCount = 5; }
-          else if (decoderState.secondaryToothCount > 0) { decoderState.secondaryToothCount = 0; }
+          else { decoderState.secondaryToothCount = 0; }
         }
 
         decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
@@ -286,7 +286,9 @@ static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC_SkipMissing(uint16
   if(toothNum == 35U || toothNum == 36U) { return 34U; } // These are missing teeth, so set the next one before instead
   if(toothNum == 53U || toothNum == 54U) { return 52U; } // These are missing teeth, so set the next one before instead
   if(toothNum > 70U) { return 70U; } // These are missing teeth, so set the next one before instead
+  // LCOV_EXCL_START
   return toothNum;
+  // LCOV_EXCL_STOP
 }
 
 static uint16_t __attribute__((noinline)) calcSetEndTeeth_NGC(IgnitionSchedule &schedule, uint8_t toothAdder, const shared::state_t &decoderState, const config4 &page4) {
