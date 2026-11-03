@@ -11,6 +11,9 @@
 #define COMMS_H
 
 extern Stream *pPrimarySerial;
+#if defined(SPEEDUINO_DUAL_SERIAL)
+void selectPrimaryTransport(Stream &port);
+#endif
 #define primarySerial (*pPrimarySerial)
 
 extern uint32_t serialReceiveStartTime; //!< The time in milliseconds at which the serial receive started. Used for calculating whether a timeout has occurred
