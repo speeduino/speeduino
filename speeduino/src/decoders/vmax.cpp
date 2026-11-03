@@ -120,7 +120,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     decoderState.lastGap = curGapLocal;
     return;
   }
-  else if( decoderState.decoderStatus.validTrigger == false)
+  else
   {
     decoderState.decoderStatus.validTrigger = true; //We reset this every time to ensure we only filter when needed.
   }
