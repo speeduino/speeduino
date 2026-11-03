@@ -74,6 +74,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/st170.h"
 #include "src/decoders/drz400.h"
 #include "src/decoders/ngc.h"
+#include "src/decoders/vmax.h"
 
 using namespace decoders::shared;
 
@@ -1317,19 +1318,7 @@ static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
-  _decoderState.triggerFilterTime = 1500;
-  _decoderState.decoderStatus.validTrigger = true; // We must start with a valid trigger or we cannot start measuring the lobe width. We only have a false trigger on the lobe up event when it doesn't pass the filter. Then, the lobe width will also not be beasured.
-  _decoderState.toothAngles[1] = 0;      //tooth #1, these are the absolute tooth positions
-  _decoderState.toothAngles[2] = 40;     //tooth #2
-  _decoderState.toothAngles[3] = 110;    //tooth #3
-  _decoderState.toothAngles[4] = 180;    //tooth #4
-  _decoderState.toothAngles[5] = 220;    //tooth #5
-  _decoderState.toothAngles[6] = 290;    //tooth #6
+  _decoderState = decoders::vmax::initialise(micros(), currentStatus);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Vmax, CHANGE)
