@@ -27,7 +27,6 @@ void runAllTests(void)
     extern void testMazdaAU(void);
     extern void testSubaru67(void);
     extern void test420a(void);
-    extern void testVMax(void);
     extern void testBasicDistributor(void);
     extern void testAudi135(void);
     extern void testDaihatsu(void);
@@ -54,7 +53,6 @@ void runAllTests(void)
     testMazdaAU();
     testSubaru67();
     test420a();
-    testVMax();
     testBasicDistributor();
     testAudi135();
     testDaihatsu();
