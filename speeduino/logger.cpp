@@ -67,7 +67,7 @@ static byte buildStatus3(const statuses &current)
 {
   bool bits[] = {
     isResetPreventActive(),
-    current.nitrousActive,
+    current.nitrousStatus!=NITROUS_OFF,
     current.secondFuelTableActive,
     current.vssUiRefresh,
     current.decoder.getStatus().syncStatus==SyncStatus::Partial,
@@ -685,7 +685,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 114: statusValue = currentStatus.VE2; break; //VE 2 (%)
     case 115: statusValue = currentStatus.advance1; break; //advance 1 
     case 116: statusValue = currentStatus.advance2; break; //advance 2 
-    case 117: statusValue = currentStatus.nitrous_status; break;
+    case 117: statusValue = currentStatus.nitrousStatus; break;
     case 118: statusValue = buildSdCardStatus(currentStatus); break; //SD card status
     case 119: statusValue = lowByte(currentStatus.EMAP); break; //2 bytes for EMAP
     case 120: statusValue = highByte(currentStatus.EMAP); break;

@@ -504,45 +504,45 @@ static void test_correctionSoftRevLimit(void) {
 extern int8_t correctionNitrous(int8_t advance);
 
 static void test_correctionNitrous_disabled(void) {
-    configPage10.n2o_enable = 0;
+    configPage10.n2o_enable = NITROUS_OFF;
     TEST_ASSERT_EQUAL(13, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-13, correctionNitrous(-13));
 }
 
 static void test_correctionNitrous_stage1(void) {
-    configPage10.n2o_enable = 1;
+    configPage10.n2o_enable = NITROUS_STAGE1;
     configPage10.n2o_stage1_retard = 5;
     configPage10.n2o_stage2_retard = 0;
     
-    currentStatus.nitrous_status = NITROUS_STAGE1;
+    currentStatus.nitrousStatus = NITROUS_STAGE1;
     TEST_ASSERT_EQUAL(8, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-18, correctionNitrous(-13));
     
-    currentStatus.nitrous_status = NITROUS_BOTH;
+    currentStatus.nitrousStatus = NITROUS_BOTH;
     TEST_ASSERT_EQUAL(8, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-18, correctionNitrous(-13));
 }
 
 static void test_correctionNitrous_stage2(void) {
-    configPage10.n2o_enable = 1;
+    configPage10.n2o_enable = NITROUS_STAGE1;
     configPage10.n2o_stage1_retard = 0;
     configPage10.n2o_stage2_retard = 5;
     
-    currentStatus.nitrous_status = NITROUS_STAGE2;
+    currentStatus.nitrousStatus = NITROUS_STAGE2;
     TEST_ASSERT_EQUAL(8, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-18, correctionNitrous(-13));
     
-    currentStatus.nitrous_status = NITROUS_BOTH;
+    currentStatus.nitrousStatus = NITROUS_BOTH;
     TEST_ASSERT_EQUAL(8, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-18, correctionNitrous(-13));
 }
 
 static void test_correctionNitrous_stageboth(void) {
-    configPage10.n2o_enable = 1;
+    configPage10.n2o_enable = NITROUS_STAGE1;
     configPage10.n2o_stage1_retard = 3;
     configPage10.n2o_stage2_retard = 5;
       
-    currentStatus.nitrous_status = NITROUS_BOTH;
+    currentStatus.nitrousStatus = NITROUS_BOTH;
     TEST_ASSERT_EQUAL(5, correctionNitrous(13));
     TEST_ASSERT_EQUAL(-21, correctionNitrous(-13));
 }

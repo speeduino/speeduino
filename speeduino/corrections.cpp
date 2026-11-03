@@ -35,6 +35,7 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "units.h"
 #include "fuel_calcs.h"
 #include "unit_testing.h"
+#include "src/controllers/nitrous/nitrousController.h"
 
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
@@ -1054,11 +1055,11 @@ TESTABLE_INLINE_STATIC int8_t correctionNitrous(int8_t advance)
   if(configPage10.n2o_enable != NITROUS_OFF)
   {
     //Check which stage is running (if any)
-    if( (currentStatus.nitrous_status == NITROUS_STAGE1) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+    if( isNitrousStage1(currentStatus.nitrousStatus) )
     {
       advance = advance - (int8_t)configPage10.n2o_stage1_retard;
     }
-    if( (currentStatus.nitrous_status == NITROUS_STAGE2) || (currentStatus.nitrous_status == NITROUS_BOTH) )
+    if( isNitrousStage2(currentStatus.nitrousStatus) )
     {
       advance = advance - (int8_t)configPage10.n2o_stage2_retard;
     }
