@@ -35,7 +35,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
 
   //Safety check for initial startup
-  if( (decoderState.toothLastSecToothTime == 0) )
+  if (decoderState.toothLastSecToothTime == 0)
   { 
     decoderState.curGap2 = 0; 
     decoderState.toothLastSecToothTime = curTime;
@@ -48,7 +48,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       if ( (decoderState.curGap2 >= decoderState.targetGap2) || (decoderState.secondaryToothCount == 5) )
       {
         decoderState.secondaryToothCount = 1;
-        decoderState.revolutionOne = 1; //Sequential revolution reset
+        decoderState.revolutionOne = true; //Sequential revolution reset
         decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
       }
       else
