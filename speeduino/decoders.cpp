@@ -1190,13 +1190,6 @@ Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of 
 * @defgroup dec_vmax Yamaha Vmax
 * @{
 */
-static int16_t getCrankAngle_Vmax(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_lookup_caa_secondary(_decoderState);
-  ++calculator._toothCurrentCount; // Since calculate() uses 0-based indices
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 {
   _decoderState = decoders::vmax::initialise(micros(), currentStatus);
@@ -1207,11 +1200,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
   static const auto getRevolutionTime = []() {
     return decoders::vmax::getRevolutionTime(currentStatus, _decoderState);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::vmax::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_Vmax)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)

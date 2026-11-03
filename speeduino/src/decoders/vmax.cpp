@@ -1,5 +1,6 @@
 #include "vmax.h"
 #include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -138,6 +139,13 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
     return shared::publishedRevolutionTime(current);
   }
   return stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
+}
+
+int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, const config4 &page4)
+{
+  auto calculator = decoders::shared::atomic_make_lookup_caa_secondary(decoderState);
+  ++calculator._toothCurrentCount; // Since calculate() uses 0-based indices
+  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, decoderState.toothAngles, page4));
 }
 
 }
