@@ -1190,109 +1190,6 @@ Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of 
 * @defgroup dec_vmax Yamaha Vmax
 * @{
 */
-//_decoderState.curGap = microseconds between primary triggers
-//_decoderState.curGap2 = microseconds between secondary triggers
-//_decoderState.toothCurrentCount = the current number for the end of a lobe
-//_decoderState.secondaryToothCount = the current number of the beginning of a lobe
-//We measure the width of a lobe so on the end of a lobe, but want to trigger on the beginning. Variable _decoderState.toothCurrentCount tracks the downward events, and _decoderState.secondaryToothCount updates on the upward events. Ideally, it should be the other way round but the engine stall routine resets _decoderState.secondaryToothCount, so it would not sync again after an engine stall.
-static void triggerPri_Vmax(void)
-{
-  uint32_t curTime = micros();
-  if(currentStatus.decoder.primary.isTriggered()){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
-    _decoderState.curGap2 = curTime;
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) ){
-      _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-      if (_decoderState.toothCurrentCount > 0) // We have sync based on the tooth width.
-      {
-          _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-          if (_decoderState.toothCurrentCount==1)
-          {
-            _decoderState.secondaryToothCount = 1;
-            _decoderState.triggerToothAngle = 70;// Has to be equal to Angle Routine, and describe the delta between two teeth.
-            _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-            _decoderState.toothOneTime = curTime;
-            _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-            //setFilter((_decoderState.curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*4)/7), configPage4 );//Angle to this tooth is 70, next is in 40, compensating.
-            currentStatus.startRevolutions++; //Counter
-          }
-          else if (_decoderState.toothCurrentCount==2)
-          {
-            _decoderState.secondaryToothCount = 2;
-            _decoderState.triggerToothAngle = 40;
-            //setFilter((_decoderState.curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*7)/4), configPage4 );//Angle to this tooth is 40, next is in 70, compensating.
-          }
-          else if (_decoderState.toothCurrentCount==3)
-          {
-            _decoderState.secondaryToothCount = 3;
-            _decoderState.triggerToothAngle = 70;
-            _decoderState.setFilter(_decoderState.curGap, configPage4);//Angle to this tooth is 70, next is in 70. No need to compensate.
-          }
-          else if (_decoderState.toothCurrentCount==4)
-          {
-            _decoderState.secondaryToothCount = 4;
-            _decoderState.triggerToothAngle = 70;
-            //setFilter((_decoderState.curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*4)/7), configPage4 );//Angle to this tooth is 70, next is in 40, compensating.
-          }
-          else if (_decoderState.toothCurrentCount==5)
-          {
-            _decoderState.secondaryToothCount = 5;
-            _decoderState.triggerToothAngle = 40;
-            //setFilter((_decoderState.curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*7)/4), configPage4 );//Angle to this tooth is 40, next is in 70, compensating.
-          }
-          else if (_decoderState.toothCurrentCount==6)
-          {
-            _decoderState.secondaryToothCount = 6;
-            _decoderState.triggerToothAngle = 70;
-            _decoderState.setFilter(_decoderState.curGap, configPage4);//Angle to this tooth is 70, next is in 70. No need to compensate.
-          }
-          _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-          _decoderState.toothLastToothTime = curTime;
-          if (_decoderState.triggerFilterTime > 50000){//The first pulse seen 
-            _decoderState.triggerFilterTime = 0;
-          }
-      }
-      else{
-        _decoderState.triggerFilterTime = 0;
-        return;//Zero, no sync yet.
-      }
-    }
-    else{
-      _decoderState.decoderStatus.validTrigger = false; //Flag this pulse as being an invalid trigger
-    }
-  }
-  else if( _decoderState.decoderStatus.validTrigger ) // Inverted due to vr conditioner. So this is the falling lobe. We only process if there was a valid trigger.
-  {
-    unsigned long curGapLocal = curTime - _decoderState.curGap2;
-    if (curGapLocal > (_decoderState.lastGap * 2)){// Small lobe is 5 degrees, big lobe is 45 degrees. So this should be the wide lobe.
-        if (_decoderState.toothCurrentCount == 0 || _decoderState.toothCurrentCount == 6){//Wide should be seen with _decoderState.toothCurrentCount = 0, when there is no sync yet, or _decoderState.toothCurrentCount = 6 when we have done a full revolution. 
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else{//Wide lobe seen where it shouldn't, adding a sync error.
-          currentStatus.syncLossCounter++;
-        }
-        _decoderState.toothCurrentCount = 1;
-    }
-    else if(_decoderState.toothCurrentCount == 6){//The 6th lobe should be wide, adding a sync error.
-        _decoderState.toothCurrentCount = 1;
-        currentStatus.syncLossCounter++;
-    }
-    else{// Small lobe, just add 1 to the _decoderState.toothCurrentCount.
-      _decoderState.toothCurrentCount++;
-    }
-    _decoderState.lastGap = curGapLocal;
-    return;
-  }
-  else if( _decoderState.decoderStatus.validTrigger == false)
-  {
-    _decoderState.decoderStatus.validTrigger = true; //We reset this every time to ensure we only filter when needed.
-  }
-}
-
 static uint32_t getRevolutionTime_Vmax(void)
 {
   tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
@@ -1320,8 +1217,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 {
   _decoderState = decoders::vmax::initialise(micros(), currentStatus);
 
+  static const auto primaryTrigger = []() {
+    decoders::vmax::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Vmax, CHANGE)
+                  .setPrimaryTrigger(primaryTrigger, CHANGE)
                   .setGetRevolutionTime(getRevolutionTime_Vmax)
                   .setGetCrankAngle(getCrankAngle_Vmax)
                   .setReset(sharedDecoderReset)
