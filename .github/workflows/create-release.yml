@@ -52,11 +52,17 @@ jobs:
         curl -k --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./.pio/build/black_F407VE/firmware.bin"   "https://webdisk.speeduino.com:2078/stm32f407/$TAG_NAME-stm32f407.bin"
         curl -k --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./reference/speeduino.ini"                "https://webdisk.speeduino.com:2078/$TAG_NAME.ini"
 
+    - name: Update versions list
+      if: startsWith(github.ref, 'refs/tags/')
+      continue-on-error: true
+      env:
+        WEB_PWD: ${{ secrets.WEB_PWD }}
+        TAG_NAME: ${{ github.ref_name }}
+      run: |
         wget https://speeduino.com/fw/versions
         sed -i "1s/^/$TAG_NAME\n/" versions
         curl -k --tlsv1.2 --ipv4 --user "speeduino_firmware@speeduino.com:$WEB_PWD" --basic -T "./versions"                               "https://webdisk.speeduino.com:2078/versions"
         
-    
     - name: Build Changelog
       id: github_release
       uses: mikepenz/release-changelog-builder-action@v5

@@ -25,7 +25,7 @@ using table3d_dim_t = uint8_t;
 using table3d_value_t = uint8_t;
 
 /** @brief The type of each axis value */
-using table3d_axis_t = int16_t;
+using table3d_axis_t = uint8_t;
 
 /** @brief Core 3d table generation macro
  * 
@@ -37,14 +37,10 @@ using table3d_axis_t = int16_t;
     GENERATOR(6, Rpm, Load, ##__VA_ARGS__) \
     GENERATOR(4, Rpm, Load, ##__VA_ARGS__) \
     GENERATOR(8, Rpm, Load, ##__VA_ARGS__) \
-    GENERATOR(8, Rpm, Tps, ##__VA_ARGS__) \
     GENERATOR(16, Rpm, Load, ##__VA_ARGS__)
 
 // Each 3d table is given a distinct type based on size & axis domains
 // This encapsulates the generation of the type name
 #define TABLE3D_TYPENAME_BASE(size, xDom, yDom) table3d ## size ## xDom ## yDom
-
-#define CAT_HELPER(a, b) a ## b
-#define CONCAT(A, B) CAT_HELPER(A, B)
 
 /** @} */

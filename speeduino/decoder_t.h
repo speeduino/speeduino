@@ -1,0 +1,176 @@
+#pragma once
+
+#include <stdint.h>
+#include "src/pins/boardInputPin.h"
+
+/** @brief This constant represents no trigger edge */
+static constexpr uint8_t TRIGGER_EDGE_NONE = 99;
+
+/** @brief This structure represents a trigger interrupt */
+struct interrupt_t
+{
+  using callback_t = void(*)(void);
+
+  /** @brief The callback function to be called on interrupt */
+  callback_t callback = nullptr;
+  /** @brief The edge type for the interrupt. E.g. RISING, FALLING, CHANGE */
+  uint8_t edge = TRIGGER_EDGE_NONE;
+
+  constexpr interrupt_t() = default;
+  constexpr interrupt_t(callback_t _callback, uint8_t _edge)
+  : callback(_callback)
+  , edge(_edge)
+  {
+  }
+
+  bool isSetup(void) const 
+  {
+    return edge!=TRIGGER_EDGE_NONE 
+        && callback!=nullptr;
+  }
+
+  /** @brief Attach the interrupt to a pin */
+  uint8_t attach(uint8_t pin);
+
+  /** @brief Detach the interrupt from a pin */
+  void detach(uint8_t pin);
+
+  /**
+   * @brief Does the pin state match the edge setting? 
+   * 
+   * @note Will always return true for the `CHANGE` trigger edge
+  */
+  bool isTriggered(void) const;
+
+  /** @brief Is the interrupt configured correctly? */
+  bool isValid(void) const
+  {
+    return isSetup()
+        && _pin.isValid();
+  }
+
+  bool isPinHigh(void) const {
+    return _pin.isPinHigh();
+  }
+
+  boardInputPin_t _pin;
+};
+
+/** \enum SyncStatus
+ * @brief The decoder trigger status
+ * */
+enum class SyncStatus : uint8_t {
+  /** No trigger pulses are being received. Either loss of sync or engine has stopped */
+  None, 
+  /** Primary & secondary triggers are configured, but we are only receiving pulses from the primary.
+   *  *Not a valid state if no secondary trigger is configured* 
+   */
+  Partial,
+  /** We are receiving pulses from both primary & secondary (where specified) triggers */
+  Full,
+}; 
+
+/** @brief Current decoder status */
+struct decoder_status_t {
+  bool validTrigger; ///> Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
+  bool toothAngleIsCorrect; ///> Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.ly set.
+  SyncStatus syncStatus; ///> Current sync status (none/partial/full)
+};
+
+
+struct decoder_features_t {
+  bool supports2ndDeriv : 1; ///> The use of the 2nd derivative calculation is limited to certain decoders. 
+  bool supportsSequential : 1; ///> Whether or not the decoder supports sequential operation
+  bool hasFixedCrankingTiming : 1; ///> Whether or not the decoder supports fixed cranking timing
+  bool supportsPerToothIgnition : 1; ///> Whether or not the decoder supports per-tooth ignition
+
+  decoder_features_t(void)
+    : supports2ndDeriv(false)
+    , supportsSequential(false)
+    , hasFixedCrankingTiming(false)
+    , supportsPerToothIgnition(false)
+  {}
+};
+
+/** @brief This structure represents a decoder configuration 
+ * 
+ * Create using decoder_builder_t
+*/
+struct decoder_t
+{
+  /** @brief The primary interrupt configuration - usually the crank trigger */
+  interrupt_t primary;
+  /** @brief The secondary interrupt configuration - usually the cam trigger */
+  interrupt_t secondary;
+  /** @brief The tertiary interrupt configuration - for decoders that use a 3rd input. E.g. VVT */
+  interrupt_t tertiary;
+
+  /// @{
+  /**
+   * @brief The function to get the current crank revolution time
+   * 
+   * This is the time in µS that one crank revolution would take at the current speed,
+   * as measured by the decoder. RPM is derived from this (see statuses::setRevolutionTime()).
+   * 
+   * @return The revolution time in µS, or 0 if the engine speed is unknown (E.g. no sync). If the decoder
+   * can't take a new measurement (E.g. no tooth history yet), it can return the current
+   * statuses::revolutionTime to keep the last known speed.
+   */
+  using getRevolutionTime_t = uint32_t(*)(void);
+  getRevolutionTime_t getRevolutionTime;
+  /// @}
+
+  /// @{
+  /** @brief The function to get the crank angle */
+  using getCrankAngle_t = int16_t(*)(uint32_t);
+  getCrankAngle_t pGetCrankAngle;
+  /// @}
+
+  /// @{
+  /** @brief The function to get the crank angle */
+  int16_t getCrankAngle(void) const {
+    return pGetCrankAngle(micros());
+  };
+  /// @}
+
+  /// @{
+  /** @brief The function to set the end teeth for ignition calculations */
+  using setEndTeeth_t = void(*)(void); 
+  setEndTeeth_t setEndTeeth;
+  /// @}
+
+  /// @{
+  /** @brief The function to reset the decoder. Called when the engine is stopped, or when the engine is started */
+  using reset_t = void(*)(void);
+  reset_t reset;
+  /// @}
+
+  /// @{
+  /**
+   * @brief The function to test if the engine is running
+   * 
+   * This is based on whether or not the decoder has detected a tooth recently
+   * 
+   * @param curTime The time in µS to use for the liveness check. Typically the result of a recent call to micros() 
+   * @return true If the engine is turning
+   * @return false If the engine is not turning
+   */  
+  using engine_running_t = bool(*)(uint32_t);
+  engine_running_t isEngineRunning;
+  /// @}
+
+  /// @{
+  /** @brief The function to get the current decoder status. */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnoexcept-type"  
+  using status_fun_t = decoder_status_t(*)(void)noexcept;
+#pragma GCC diagnostic pop
+  status_fun_t getStatus;
+  /// @}  
+
+  /// @{
+  /** @brief The function to get the current decoder feature set. */
+  using feature_fun_t = decoder_features_t(*)(void);
+  feature_fun_t getFeatures;
+  /// @}  
+};

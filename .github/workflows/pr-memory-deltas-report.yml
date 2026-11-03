@@ -1,0 +1,61 @@
+name: report-size-deltas
+
+on:
+  workflow_run:
+    workflows: ["calculate-memory-deltas"]
+    types:
+      - completed
+
+jobs:
+  report:
+
+    env:
+        SIZE_REPORT_FILE: size_report.md
+        PR_NUM_FILE: pr_number.txt
+        SOURCE_ARTIFACT: sketches-report-all
+
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure' }}
+    permissions:
+      pull-requests: write
+    
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.SOURCE_ARTIFACT }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ./
+
+      - name: Mark report from failed build
+        if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+        env:
+          SOURCE_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          report = Path(os.environ["SIZE_REPORT_FILE"])
+          warning = (
+              "> **Build failed:** [View build logs](" + os.environ["SOURCE_RUN_URL"] + "). "
+              "The measurements below may be incomplete; N/A is not zero.\n\n"
+          )
+          report.write_text(warning + report.read_text(encoding="utf-8"), encoding="utf-8")
+          PY
+
+      - name: Extract PR Number
+        id: extract-pr-id
+        run: |
+          echo "PR_NUM<<EOF" >> $GITHUB_OUTPUT
+          cat "${{ env.PR_NUM_FILE }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment on Pull Request
+        if: steps.extract-pr-id.outputs.PR_NUM != 'not-a-pr'      
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: ${{ env.SIZE_REPORT_FILE }}
+          comment-tag: size-report
+          pr-number:  ${{ steps.extract-pr-id.outputs.PR_NUM }}

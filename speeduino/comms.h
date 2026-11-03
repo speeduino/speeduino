@@ -10,17 +10,6 @@
 #ifndef COMMS_H
 #define COMMS_H
 
-#if defined(CORE_TEENSY)
-  #define BLOCKING_FACTOR       251
-  #define TABLE_BLOCKING_FACTOR 256
-#elif defined(CORE_STM32)
-  #define BLOCKING_FACTOR       121
-  #define TABLE_BLOCKING_FACTOR 64
-#elif defined(CORE_AVR)
-  #define BLOCKING_FACTOR       121
-  #define TABLE_BLOCKING_FACTOR 64
-#endif
-
 extern Stream *pPrimarySerial;
 #define primarySerial (*pPrimarySerial)
 
@@ -41,5 +30,8 @@ void serialTransmit(void);
  * @return true if the serial command has been waiting too long
 */
 bool isRxTimeout(void);
+
+/** @brief Test if the current storage write defer interval has expired. */
+bool storageWriteTimeoutExpired(void);
 
 #endif // COMMS_H

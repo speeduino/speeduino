@@ -1,0 +1,113 @@
+#include "decoder_builder.h"
+#include "preprocessor.h"
+#include "decoder_t.h"
+
+static void nullTriggerHandler (void){return;} //initialisation function for triggerhandlers, does exactly nothing
+static uint32_t nullGetRevolutionTime(void){return 0;} //initialisation function for getRevolutionTime, returns safe value of 0
+static int16_t nullGetCrankAngle(uint32_t currMicros){ UNUSED(currMicros); return 0;} //initialisation function for getCrankAngle, returns safe value of 0
+static bool nullEngineIsRunning(uint32_t currMillis) { UNUSED(currMillis); return false; }
+static decoder_status_t nullGetStatus(void) noexcept { return decoder_status_t{}; }
+static decoder_features_t nullGetFeatures(void) { return decoder_features_t(); }
+static constexpr interrupt_t NULL_TRIGGER = { &nullTriggerHandler, TRIGGER_EDGE_NONE };
+
+decoder_builder_t::decoder_builder_t(void)
+{
+    (void)setPrimaryTrigger(NULL_TRIGGER);
+    (void)setSecondaryTrigger(NULL_TRIGGER);
+    (void)setTertiaryTrigger(NULL_TRIGGER);
+    (void)setGetRevolutionTime(&nullGetRevolutionTime);
+    (void)setGetCrankAngle(&nullGetCrankAngle);
+    (void)setSetEndTeeth(&nullTriggerHandler);
+    (void)setReset(&nullTriggerHandler);
+    (void)setIsEngineRunning(&nullEngineIsRunning);
+    (void)setGetStatus(&nullGetStatus);
+    (void)setGetFeatures(&nullGetFeatures);
+}
+decoder_builder_t::decoder_builder_t(const decoder_t &decoder)
+{
+    (void)setPrimaryTrigger(decoder.primary);
+    (void)setSecondaryTrigger(decoder.secondary);
+    (void)setTertiaryTrigger(decoder.tertiary);
+    (void)setGetRevolutionTime(decoder.getRevolutionTime);
+    (void)setGetCrankAngle(decoder.pGetCrankAngle);
+    (void)setSetEndTeeth(decoder.setEndTeeth);
+    (void)setReset(decoder.reset);
+    (void)setIsEngineRunning(decoder.isEngineRunning);
+    (void)setGetStatus(decoder.getStatus);
+    (void)setGetFeatures(decoder.getFeatures);
+}
+
+decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t trigger)
+{
+    _decoder.primary = trigger.isSetup() ? trigger : NULL_TRIGGER;
+    return *this;
+}
+decoder_builder_t& decoder_builder_t::setPrimaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
+{
+    return setPrimaryTrigger( interrupt_t{ handler, edge } );
+}
+
+decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t trigger)
+{
+    _decoder.secondary = trigger.isSetup() ? trigger : NULL_TRIGGER;
+    return *this;
+}
+decoder_builder_t& decoder_builder_t::setSecondaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
+{
+    return setSecondaryTrigger( interrupt_t{ handler, edge } );
+}
+
+decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t trigger)
+{
+    _decoder.tertiary = trigger.isSetup() ? trigger : NULL_TRIGGER;
+    return *this;
+}
+decoder_builder_t& decoder_builder_t::setTertiaryTrigger(interrupt_t::callback_t handler, uint8_t edge)
+{
+    return setTertiaryTrigger( interrupt_t{ handler, edge } );
+}
+
+decoder_builder_t& decoder_builder_t::setGetRevolutionTime(decoder_t::getRevolutionTime_t getRevolutionTime)
+{
+    _decoder.getRevolutionTime = getRevolutionTime==nullptr ? &nullGetRevolutionTime : getRevolutionTime;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setGetCrankAngle(decoder_t::getCrankAngle_t getCrankAngle)
+{
+    _decoder.pGetCrankAngle = getCrankAngle==nullptr ? &nullGetCrankAngle : getCrankAngle;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setSetEndTeeth(decoder_t::setEndTeeth_t setEndTeeth)
+{
+    _decoder.setEndTeeth = setEndTeeth==nullptr ? &nullTriggerHandler : setEndTeeth;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setReset(decoder_t::reset_t reset)
+{
+    _decoder.reset = reset==nullptr ? &nullTriggerHandler : reset;
+    return *this;
+}
+
+decoder_builder_t& decoder_builder_t::setIsEngineRunning(decoder_t::engine_running_t isRunning)
+{
+    _decoder.isEngineRunning = isRunning==nullptr ? &nullEngineIsRunning : isRunning;
+    return *this;
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnoexcept-type"
+decoder_builder_t& decoder_builder_t::setGetStatus(decoder_t::status_fun_t getStatus)
+{
+    _decoder.getStatus = getStatus==nullptr ? &nullGetStatus : getStatus;
+    return *this;
+}
+#pragma GCC diagnostic pop
+
+decoder_builder_t& decoder_builder_t::setGetFeatures(decoder_t::feature_fun_t getFeatures)
+{
+    _decoder.getFeatures = getFeatures==nullptr ? &nullGetFeatures : getFeatures;
+    return *this;
+}

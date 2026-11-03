@@ -44,3 +44,35 @@
 #else
 #define TESTABLE_CONSTEXPR
 #endif
+
+#if !defined(UNIT_TEST) 
+/** 
+ * @brief Mark a function with constexpr, unless a unit test is in progress - 
+ * then the entity is inlined.
+ * 
+ * Useful for constexpr functions that need to be included in test coverage
+ * 
+ */
+#define TESTABLE_STATIC_CONSTEXPR static constexpr 
+#else
+#define TESTABLE_STATIC_CONSTEXPR static inline
+#endif
+
+#if !defined(UNIT_TEST) 
+/** 
+ * @brief A unit test only assert
+ * 
+ * Useful for asserting non-unit test code during unit tests. A regular assert
+ * will exit(1) on AVR, which is not useful
+ * 
+ */
+#define INTERNAL_TEST_ASSERT(expression) 
+#else
+#include <unity.h>
+#include "../test/file_name_guard_t.h"
+#define INTERNAL_TEST_ASSERT(expression) \
+{ \
+    unity_filename_guard_t guard(__FILE__); \
+    TEST_ASSERT_TRUE((expression)); \
+}
+#endif

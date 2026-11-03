@@ -1,0 +1,113 @@
+name: calculate-memory-deltas
+
+on:
+  - pull_request
+
+jobs:
+  size-delta:
+    env:
+        BASE_FOLDER: base-code
+        PR_FOLDER: pr-code
+        PIO_ENVS: '["megaatmega2560", "teensy41", "black_F407VE"]'
+        PR_LOG_FILE: pr-build.log
+        BASE_LOG_FILE: base-build.log
+        SIZE_REPORT_FILE: size_report.md
+        PR_NUM_FILE: pr_number.txt
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+
+    - name: Create Python venv
+      run: |
+        sudo apt-get install python3-venv
+        python3 -m venv PIO
+
+    - name: Install PlatformIO
+      run: |
+        source PIO/bin/activate
+        pip install platformio
+
+    - name: Build command line
+      if: ${{ env.PIO_ENVS }}
+      id: build_command_line
+      run: |
+        echo '${{ env.PIO_ENVS }}' | jq -r '.[0] |= "CMD_PIO_ENVS=-e " + . | join(" -e ")' >> $GITHUB_OUTPUT
+
+    - name: Checkout PR
+      uses: actions/checkout@v4
+      with:
+        path: ${{ env.PR_FOLDER }}
+        fetch-depth: 2
+
+    - name: Identify comparison base
+      id: comparison_base
+      working-directory: ${{ env.PR_FOLDER }}
+      run: |
+        # Compare the tested merge with its actual base, which may be newer
+        # than the base SHA retained in the pull request event.
+        git rev-parse --verify HEAD^2 > /dev/null
+        echo "sha=$(git rev-parse HEAD^1)" >> "$GITHUB_OUTPUT"
+
+    - name: Test memory report parsing
+      run: python -m unittest discover -s "${{ env.PR_FOLDER }}/.github/workflows/tests"
+
+    - name: Build PR Envs
+      id: build_pr
+      # Preserve measurements and logs before failing the final build check.
+      continue-on-error: true
+      run: |
+        set -o pipefail
+        source PIO/bin/activate
+        platformio run -d ${{ env.PR_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} 2>&1 | tee ${{ env.PR_LOG_FILE }}
+    
+    - name: Checkout Base Branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ steps.comparison_base.outputs.sha }}
+        path: ${{ env.BASE_FOLDER }}
+
+    - name: Build Base Envs
+      id: build_base
+      # Preserve measurements and logs before failing the final build check.
+      continue-on-error: true
+      run: |
+        set -o pipefail
+        source PIO/bin/activate
+        platformio run -d ${{ env.BASE_FOLDER }} ${{ steps.build_command_line.outputs.CMD_PIO_ENVS }} 2>&1 | tee ${{ env.BASE_LOG_FILE }}
+
+    - name: Generate artifacts
+      run: |
+        source PIO/bin/activate
+        python ${{ env.PR_FOLDER }}/.github/workflows/pr-memory-deltas.py ${{ env.BASE_LOG_FILE }} ${{ env.PR_LOG_FILE }} > ${{ env.SIZE_REPORT_FILE }}
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          echo "${{ github.event.number }}" > ${{ env.PR_NUM_FILE }}
+        else
+          echo "not-a-pr" > ${{ env.PR_NUM_FILE }}
+        fi
+
+    - name: Upload build logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: memory-build-logs
+        path: |
+          ${{ env.PR_LOG_FILE }}
+          ${{ env.BASE_LOG_FILE }}
+
+      # This step is needed to pass the size data to the report job.
+    - name: Upload sketches report to workflow artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sketches-report-all
+        path: |
+          ${{ env.SIZE_REPORT_FILE }}
+          ${{ env.PR_NUM_FILE }}
+
+    - name: Check build results
+      if: ${{ always() && (steps.build_pr.outcome == 'failure' || steps.build_base.outcome == 'failure') }}
+      run: |
+        echo "At least one firmware build failed; see memory-build-logs and the partial size report."
+        exit 1

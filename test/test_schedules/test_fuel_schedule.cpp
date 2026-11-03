@@ -1,0 +1,64 @@
+
+#include <Arduino.h>
+#include <unity.h>
+#include "../test_utils.h"
+#include "scheduler.h"
+#include <type_traits>
+
+using raw_counter_t = std::remove_reference<IgnitionSchedule::counter_t>::type;
+using raw_compare_t = std::remove_reference<IgnitionSchedule::compare_t>::type;
+
+static constexpr uint32_t TIMEOUT = 5000U;
+static constexpr uint32_t DURATION = 2000U;
+static constexpr COMPARE_TYPE INITIAL_COUNTER = 3333U;
+
+static void test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow(void) {
+    // TODO: fix this
+    // if (MAX_TIMER_PERIOD >=(uint32_t)UINT16_MAX)
+    // {
+    //     TEST_IGNORE_MESSAGE("Not applicable with large timer periodicity");
+    // }
+
+    // static constexpr uint32_t DURATION_OFFSET = 33;
+    // static constexpr uint32_t TIMEOUT_OFFSET = 77;
+
+    // raw_counter_t counter = {INITIAL_COUNTER};
+    // raw_compare_t compare = {0};
+    // FuelSchedule schedule(counter, compare);
+
+    // setchedule(schedule, TIMEOUT, DURATION, false);
+
+    // schedule._status = RUNNING;
+    // CRANK_ANGLE_MAX_INJ = 360;
+
+    // // Negative test
+    // // Calculate a revolution time that will result in 360° taking longer than MAX_TIMER_PERIOD
+    // uint32_t revTime = (uint32_t)MAX_TIMER_PERIOD+(MAX_TIMER_PERIOD/CRANK_ANGLE_MAX_INJ);
+    // setAngleConverterRevolutionTime(revTime);
+    // TEST_ASSERT_GREATER_THAN(MAX_TIMER_PERIOD, angleToTime((uint16_t)CRANK_ANGLE_MAX_INJ));
+    // setFuelScheduleDuration(schedule, TIMEOUT, DURATION);
+    // // Should not have changed
+    // TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
+    // TEST_ASSERT_EQUAL(RUNNING, schedule._status);
+    // TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION), schedule._duration);
+    // TEST_ASSERT_EQUAL(0, schedule._nextStartCompare);
+
+    // // Positive test
+    // setAngleConverterRevolutionTime(revTime/2U);
+    // TEST_ASSERT_LESS_THAN(MAX_TIMER_PERIOD, angleToTime((uint32_t)CRANK_ANGLE_MAX_INJ));    
+    // setFuelScheduleDuration(schedule, TIMEOUT+TIMEOUT_OFFSET, DURATION+DURATION_OFFSET);
+    // // Should not have changed
+    // TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT), schedule._compare);
+    // // These should have changed
+    // TEST_ASSERT_EQUAL(RUNNING_WITHNEXT, schedule._status);
+    // TEST_ASSERT_EQUAL(uS_TO_TIMER_COMPARE(DURATION+DURATION_OFFSET), schedule._duration);
+    // TEST_ASSERT_EQUAL(INITIAL_COUNTER + uS_TO_TIMER_COMPARE(TIMEOUT+TIMEOUT_OFFSET), schedule._nextStartCompare);
+}
+
+
+void test_fuel_schedule(void)
+{
+    SET_UNITY_FILENAME() {
+        RUN_TEST_P(test_fuel_schedule_RUNNING_to_RUNNINGWITHNEXT_Disallow);
+    }
+}

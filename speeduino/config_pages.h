@@ -10,233 +10,163 @@
 #pragma once
 
 #include <stdint.h>
+#include "board_definition.h" // Needed for struct packing.
 #include "load_source.h"
 
 using byte = uint8_t;
 
-#define EGO_TYPE_OFF      0
-#define EGO_TYPE_NARROW   1
-#define EGO_TYPE_WIDE     2
+constexpr uint8_t EGO_TYPE_OFF    = 0U;
+constexpr uint8_t EGO_TYPE_NARROW = 1U;
+constexpr uint8_t EGO_TYPE_WIDE   = 2U;
 
-#define INJ_TYPE_PORT 0
-#define INJ_TYPE_TBODY 1
+constexpr uint8_t INJ_TYPE_PORT  = 0U;
+constexpr uint8_t INJ_TYPE_TBODY = 1U;
 
-#define INJ_PAIRED 0
-#define INJ_SEMISEQUENTIAL 1
-#define INJ_BANKED          2
-#define INJ_SEQUENTIAL      3
+constexpr uint8_t INJ_PAIRED          = 0U;
+constexpr uint8_t INJ_SEMISEQUENTIAL  = 1U;
+constexpr uint8_t INJ_BANKED          = 2U;
+constexpr uint8_t INJ_SEQUENTIAL      = 3U;
 
-#define INJ_PAIR_13_24      0
-#define INJ_PAIR_14_23      1
+constexpr uint8_t INJ_PAIR_13_24      = 0U;
+constexpr uint8_t INJ_PAIR_14_23      = 1U;
 
-#define IGN_MODE_WASTED     0U
-#define IGN_MODE_SINGLE     1U
-#define IGN_MODE_WASTEDCOP  2U
-#define IGN_MODE_SEQUENTIAL 3U
-#define IGN_MODE_ROTARY     4U
+constexpr uint8_t IGN_MODE_WASTED     = 0U;
+constexpr uint8_t IGN_MODE_SINGLE     = 1U;
+constexpr uint8_t IGN_MODE_WASTEDCOP  = 2U;
+constexpr uint8_t IGN_MODE_SEQUENTIAL = 3U;
+constexpr uint8_t IGN_MODE_ROTARY     = 4U;
 
-#define SEC_TRIGGER_SINGLE  0
-#define SEC_TRIGGER_4_1     1
-#define SEC_TRIGGER_POLL    2
-#define SEC_TRIGGER_5_3_2   3
-#define SEC_TRIGGER_TOYOTA_3  4
+constexpr uint8_t SEC_TRIGGER_SINGLE   = 0U;
+constexpr uint8_t SEC_TRIGGER_4_1      = 1U;
+constexpr uint8_t SEC_TRIGGER_POLL     = 2U;
+constexpr uint8_t SEC_TRIGGER_5_3_2    = 3U;
+constexpr uint8_t SEC_TRIGGER_TOYOTA_3 = 4U;
 
-#define ROTARY_IGN_FC       0
-#define ROTARY_IGN_FD       1
-#define ROTARY_IGN_RX8      2
+constexpr uint8_t ROTARY_IGN_FC       = 0U;
+constexpr uint8_t ROTARY_IGN_FD       = 1U;
+constexpr uint8_t ROTARY_IGN_RX8      = 2U;
 
-#define BOOST_MODE_SIMPLE   0
-#define BOOST_MODE_FULL     1
+constexpr uint8_t BOOST_MODE_SIMPLE   = 0U;
+constexpr uint8_t BOOST_MODE_FULL     = 1U;
 
-#define EN_BOOST_CONTROL_BARO   0
-#define EN_BOOST_CONTROL_FIXED  1
+constexpr uint8_t EN_BOOST_CONTROL_BARO   = 0U;
+constexpr uint8_t EN_BOOST_CONTROL_FIXED  = 1U;
 
-#define WMI_MODE_SIMPLE       0
-#define WMI_MODE_PROPORTIONAL 1
-#define WMI_MODE_OPENLOOP     2
-#define WMI_MODE_CLOSEDLOOP   3
+constexpr uint8_t WMI_MODE_SIMPLE       = 0U;
+constexpr uint8_t WMI_MODE_PROPORTIONAL = 1U;
+constexpr uint8_t WMI_MODE_OPENLOOP     = 2U;
+constexpr uint8_t WMI_MODE_CLOSEDLOOP   = 3U;
 
-#define HARD_CUT_FULL       0
-#define HARD_CUT_ROLLING    1
+constexpr uint8_t HARD_CUT_FULL       = 0U;
+constexpr uint8_t HARD_CUT_ROLLING    = 1U;
 
-#define EVEN_FIRE           0
-#define ODD_FIRE            1
+constexpr uint8_t EVEN_FIRE           = 0U;
+constexpr uint8_t ODD_FIRE            = 1U;
 
-#define EGO_ALGORITHM_SIMPLE   0U
-#define EGO_ALGORITHM_INVALID1 1U
-#define EGO_ALGORITHM_PID      2U
-#define EGO_ALGORITHM_NONE     3U
+constexpr uint8_t EGO_ALGORITHM_SIMPLE   = 0U;
+constexpr uint8_t EGO_ALGORITHM_INVALID1 = 1U;
+constexpr uint8_t EGO_ALGORITHM_PID      = 2U;
+constexpr uint8_t EGO_ALGORITHM_NONE     = 3U;
 
-#define STAGING_MODE_TABLE  0
-#define STAGING_MODE_AUTO   1
+constexpr uint8_t STAGING_MODE_TABLE  = 0U;
+constexpr uint8_t STAGING_MODE_AUTO   = 1U;
 
-#define NITROUS_OFF         0
-#define NITROUS_STAGE1      1
-#define NITROUS_STAGE2      2
-#define NITROUS_BOTH        3
+constexpr uint8_t NITROUS_OFF         = 0U;
+constexpr uint8_t NITROUS_STAGE1      = 1U;
+constexpr uint8_t NITROUS_STAGE2      = 2U;
+constexpr uint8_t NITROUS_BOTH        = 3U;
 
-#define PROTECT_CUT_OFF     0
-#define PROTECT_CUT_IGN     1
-#define PROTECT_CUT_FUEL    2
-#define PROTECT_CUT_BOTH    3
-#define PROTECT_IO_ERROR    7
+constexpr uint8_t PROTECT_CUT_OFF     = 0U;
+constexpr uint8_t PROTECT_CUT_IGN     = 1U;
+constexpr uint8_t PROTECT_CUT_FUEL    = 2U;
+constexpr uint8_t PROTECT_CUT_BOTH    = 3U;
+constexpr uint8_t PROTECT_IO_ERROR    = 7U;
 
-#define AE_MODE_TPS         0
-#define AE_MODE_MAP         1
+constexpr uint8_t AE_MODE_TPS         = 0U;
+constexpr uint8_t AE_MODE_MAP         = 1U;
 
-#define AE_MODE_MULTIPLIER  0
-#define AE_MODE_ADDER       1
+constexpr uint8_t AE_MODE_MULTIPLIER  = 0U;
+constexpr uint8_t AE_MODE_ADDER       = 1U;
 
-#define KNOCK_MODE_OFF      0U
-#define KNOCK_MODE_DIGITAL  1U
-#define KNOCK_MODE_ANALOG   2U
+constexpr uint8_t KNOCK_MODE_OFF      = 0U;
+constexpr uint8_t KNOCK_MODE_DIGITAL  = 1U;
+constexpr uint8_t KNOCK_MODE_ANALOG   = 2U;
 
-#define KNOCK_TRIGGER_HIGH  0
-#define KNOCK_TRIGGER_LOW   1
+constexpr uint8_t KNOCK_TRIGGER_HIGH  = 0U;
+constexpr uint8_t KNOCK_TRIGGER_LOW   = 1U;
 
-#define FUEL2_MODE_OFF      0U
-#define FUEL2_MODE_MULTIPLY 1U
-#define FUEL2_MODE_ADD      2U
-#define FUEL2_MODE_CONDITIONAL_SWITCH   3U
-#define FUEL2_MODE_INPUT_SWITCH 4U
+constexpr uint8_t FUEL2_MODE_OFF      = 0U;
+constexpr uint8_t FUEL2_MODE_MULTIPLY = 1U;
+constexpr uint8_t FUEL2_MODE_ADD      = 2U;
+constexpr uint8_t FUEL2_MODE_CONDITIONAL_SWITCH   = 3U;
+constexpr uint8_t FUEL2_MODE_INPUT_SWITCH = 4U;
 
-#define SPARK2_MODE_OFF      0U
-#define SPARK2_MODE_MULTIPLY 1U
-#define SPARK2_MODE_ADD      2U
-#define SPARK2_MODE_CONDITIONAL_SWITCH   3U
-#define SPARK2_MODE_INPUT_SWITCH 4U
+constexpr uint8_t SPARK2_MODE_OFF      = 0U;
+constexpr uint8_t SPARK2_MODE_MULTIPLY = 1U;
+constexpr uint8_t SPARK2_MODE_ADD      = 2U;
+constexpr uint8_t SPARK2_MODE_CONDITIONAL_SWITCH   = 3U;
+constexpr uint8_t SPARK2_MODE_INPUT_SWITCH = 4U;
 
-#define FUEL2_CONDITION_RPM 0U
-#define FUEL2_CONDITION_MAP 1U
-#define FUEL2_CONDITION_TPS 2U
-#define FUEL2_CONDITION_ETH 3U
+constexpr uint8_t FUEL2_CONDITION_RPM = 0U;
+constexpr uint8_t FUEL2_CONDITION_MAP = 1U;
+constexpr uint8_t FUEL2_CONDITION_TPS = 2U;
+constexpr uint8_t FUEL2_CONDITION_ETH = 3U;
 
-#define SPARK2_CONDITION_RPM 0U
-#define SPARK2_CONDITION_MAP 1U
-#define SPARK2_CONDITION_TPS 2U
-#define SPARK2_CONDITION_ETH 3U
+constexpr uint8_t SPARK2_CONDITION_RPM = 0U;
+constexpr uint8_t SPARK2_CONDITION_MAP = 1U;
+constexpr uint8_t SPARK2_CONDITION_TPS = 2U;
+constexpr uint8_t SPARK2_CONDITION_ETH = 3U;
 
-#define RESET_CONTROL_DISABLED             0U
-#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1U
-#define RESET_CONTROL_PREVENT_ALWAYS       2U
-#define RESET_CONTROL_SERIAL_COMMAND       3U
+constexpr uint8_t OPEN_LOOP_BOOST     = 0U;
+constexpr uint8_t CLOSED_LOOP_BOOST   = 1U;
 
-#define SEC_TRIGGER_SINGLE  0
-#define SEC_TRIGGER_4_1     1
-#define SEC_TRIGGER_POLL    2
-#define SEC_TRIGGER_5_3_2   3
-#define SEC_TRIGGER_TOYOTA_3  4
+constexpr uint8_t SOFT_LIMIT_FIXED        = 0U;
+constexpr uint8_t SOFT_LIMIT_RELATIVE     = 1U;
 
-#define ROTARY_IGN_FC       0
-#define ROTARY_IGN_FD       1
-#define ROTARY_IGN_RX8      2
+constexpr uint8_t VVT_MODE_ONOFF       = 0U;
+constexpr uint8_t VVT_MODE_OPEN_LOOP   = 1U;
+constexpr uint8_t VVT_MODE_CLOSED_LOOP = 2U;
 
-#define BOOST_MODE_SIMPLE   0
-#define BOOST_MODE_FULL     1
+constexpr uint8_t VVT_LOAD_MAP      = 0U;
+constexpr uint8_t VVT_LOAD_TPS      = 1U;
 
-#define EN_BOOST_CONTROL_BARO   0
-#define EN_BOOST_CONTROL_FIXED  1
+constexpr uint8_t MULTIPLY_MAP_MODE_OFF   = 0U;
+constexpr uint8_t MULTIPLY_MAP_MODE_BARO  = 1U;
+constexpr uint8_t MULTIPLY_MAP_MODE_100   = 2U;
 
-#define WMI_MODE_SIMPLE       0
-#define WMI_MODE_PROPORTIONAL 1
-#define WMI_MODE_OPENLOOP     2
-#define WMI_MODE_CLOSEDLOOP   3
+constexpr uint8_t FOUR_STROKE         = 0U;
+constexpr uint8_t TWO_STROKE          = 1U;
 
-#define HARD_CUT_FULL       0
-#define HARD_CUT_ROLLING    1
+constexpr uint8_t GOING_LOW         = 0U;
+constexpr uint8_t GOING_HIGH        = 1U;
 
-#define EVEN_FIRE           0
-#define ODD_FIRE            1
+constexpr uint8_t IAC_ALGORITHM_NONE    = 0U;
+constexpr uint8_t IAC_ALGORITHM_ONOFF   = 1U;
+constexpr uint8_t IAC_ALGORITHM_PWM_OL  = 2U;
+constexpr uint8_t IAC_ALGORITHM_PWM_CL  = 3U;
+constexpr uint8_t IAC_ALGORITHM_STEP_OL = 4U;
+constexpr uint8_t IAC_ALGORITHM_STEP_CL = 5U;
+constexpr uint8_t IAC_ALGORITHM_PWM_OLCL  = 6U; //Openloop plus closedloop IAC control
+constexpr uint8_t IAC_ALGORITHM_STEP_OLCL  = 7U; //Openloop plus closedloop IAC control
 
-#define EGO_ALGORITHM_SIMPLE   0U
-#define EGO_ALGORITHM_INVALID1 1U
-#define EGO_ALGORITHM_PID      2U
-#define EGO_ALGORITHM_NONE     3U
+constexpr uint8_t BOOST_BY_GEAR_OFF      = 0U;
+constexpr uint8_t BOOST_BY_GEAR_PERCENT  = 1U;
+constexpr uint8_t BOOST_BY_GEAR_CONSTANT = 2U;
 
-#define STAGING_MODE_TABLE  0
-#define STAGING_MODE_AUTO   1
-
-#define NITROUS_OFF         0
-#define NITROUS_STAGE1      1
-#define NITROUS_STAGE2      2
-#define NITROUS_BOTH        3
-
-#define PROTECT_CUT_OFF     0
-#define PROTECT_CUT_IGN     1
-#define PROTECT_CUT_FUEL    2
-#define PROTECT_CUT_BOTH    3
-#define PROTECT_IO_ERROR    7
-
-#define AE_MODE_TPS         0
-#define AE_MODE_MAP         1
-
-#define AE_MODE_MULTIPLIER  0
-#define AE_MODE_ADDER       1
-
-#define KNOCK_MODE_OFF      0U
-#define KNOCK_MODE_DIGITAL  1U
-#define KNOCK_MODE_ANALOG   2U
-
-#define KNOCK_TRIGGER_HIGH  0
-#define KNOCK_TRIGGER_LOW   1
-
-#define FUEL2_MODE_OFF      0U
-#define FUEL2_MODE_MULTIPLY 1U
-#define FUEL2_MODE_ADD      2U
-#define FUEL2_MODE_CONDITIONAL_SWITCH   3U
-#define FUEL2_MODE_INPUT_SWITCH 4U
-
-#define SPARK2_MODE_OFF      0U
-#define SPARK2_MODE_MULTIPLY 1U
-#define SPARK2_MODE_ADD      2U
-#define SPARK2_MODE_CONDITIONAL_SWITCH   3U
-#define SPARK2_MODE_INPUT_SWITCH 4U
-
-#define FUEL2_CONDITION_RPM 0U
-#define FUEL2_CONDITION_MAP 1U
-#define FUEL2_CONDITION_TPS 2U
-#define FUEL2_CONDITION_ETH 3U
-
-#define SPARK2_CONDITION_RPM 0U
-#define SPARK2_CONDITION_MAP 1U
-#define SPARK2_CONDITION_TPS 2U
-#define SPARK2_CONDITION_ETH 3U
-
-#define RESET_CONTROL_DISABLED             0U
-#define RESET_CONTROL_PREVENT_WHEN_RUNNING 1U
-#define RESET_CONTROL_PREVENT_ALWAYS       2U
-#define RESET_CONTROL_SERIAL_COMMAND       3U
-
-#define OPEN_LOOP_BOOST     0
-#define CLOSED_LOOP_BOOST   1
-
-#define SOFT_LIMIT_FIXED        0
-#define SOFT_LIMIT_RELATIVE     1
-
-#define VVT_MODE_ONOFF      0
-#define VVT_MODE_OPEN_LOOP  1
-#define VVT_MODE_CLOSED_LOOP 2
-#define VVT_LOAD_MAP      0
-#define VVT_LOAD_TPS      1
-
-#define MULTIPLY_MAP_MODE_OFF   0
-#define MULTIPLY_MAP_MODE_BARO  1
-#define MULTIPLY_MAP_MODE_100   2
-
-#define FOUR_STROKE         0U
-#define TWO_STROKE          1U
-
-#define GOING_LOW         0
-#define GOING_HIGH        1
-
-#define BATTV_COR_MODE_WHOLE 0
-#define BATTV_COR_MODE_OPENTIME 1
+constexpr uint8_t FANMODE_OFF   = 0U;
+constexpr uint8_t FANMODE_ONOFF = 1U;
+constexpr uint8_t FANMODE_PWM   = 2U;
 
 enum MAPSamplingMethod {
   MAPSamplingInstantaneous = 0, 
   MAPSamplingCycleAverage = 1, 
   MAPSamplingCycleMinimum = 2,
   MAPSamplingIgnitionEventAverage= 3,
+};
+
+// A marker struct for the config pages.
+struct config_page_t
+{  
 };
 
 /** Page 2 of the config - mostly variables that are required for fuel.
@@ -246,7 +176,7 @@ enum MAPSamplingMethod {
  * See the ini file for further reference.
  * 
  */
-struct config2 {
+struct config2 : public config_page_t {
 
   byte aseTaperTime;
   byte aeColdPct;  //AE cold clt modifier %
@@ -257,10 +187,10 @@ struct config2 {
   byte useTachoSweep : 1;
   byte aeApplyMode : 1; ///< Acceleration enrichment calc mode: 0 = Multiply | 1 = Add (AE_MODE_ADDER)
   byte multiplyMAP : 2; ///< MAP value processing: 0 = off, 1 = div by currentStatus.baro, 2 = div by 100 (to gain usable value)
-  byte wueValues[10];   ///< Warm up enrichment array (10 bytes, transferred to @ref WUETable)
-  byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.ino)
+  byte wueValues[10];   ///< Warm up enrichment array
+  byte crankingPct;     ///< Cranking enrichment (See @ref config10, updates.cpp)
   byte pinMapping;      ///< The board / ping mapping number / id to be used (See: @ref setPinMapping in init.ino)
-  byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinTachOut, which defaults to board assigned tach pin)
+  byte tachoPin : 6;    ///< Custom pin setting for tacho output (if != 0, override copied to pinNumbers.pinTachOut, which defaults to board assigned tach pin)
   byte tachoDiv : 2;    ///< Whether to change the tacho speed ("half speed tacho" ?)
   byte tachoDuration;   //The duration of the tacho pulse in mS
   byte maeThresh;       /**< The MAPdot threshold that must be exceeded before AE is engaged */
@@ -295,7 +225,7 @@ struct config2 {
   //config2 in ini
   // cppcheck-suppress misra-c2012-6.1
   LoadSource fuelAlgorithm : 3;///< Fuel algorithm - 0=Manifold pressure/MAP (LOAD_SOURCE_MAP, default, proven), 1=Throttle/TPS (LOAD_SOURCE_TPS), 2=IMAP/EMAP (LOAD_SOURCE_IMAPEMAP)
-  byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref configPage4.FixAng)
+  byte fixAngEnable : 1; ///< Whether fixed/locked timing is enabled (0=disable, 1=enable, See @ref config4.FixAng)
   byte nInjectors : 4;   ///< Number of injectors
 
 
@@ -321,9 +251,7 @@ struct config2 {
   uint16_t mapMax;
   byte fpPrime; ///< Time (In seconds) that the fuel pump should be primed for on power up
   byte stoich;  ///< Stoichiometric ratio (x10, so e.g. 14.7 => 147)
-  uint16_t oddfire2; ///< The ATDC angle of channel 2 for oddfire
-  uint16_t oddfire3; ///< The ATDC angle of channel 3 for oddfire
-  uint16_t oddfire4; ///< The ATDC angle of channel 4 for oddfire
+  uint16_t oddfire[3]; ///< The ATDC angle of channel 2, 3 & 4 for oddfire
 
   byte idleUpPin : 6;
   byte idleUpPolarity : 1;
@@ -345,7 +273,7 @@ struct config2 {
 
   byte fanWhenOff : 1;      ///< Allow running fan with engine off: 0 = Only run fan when engine is running, 1 = Allow even with engine off
   byte fanWhenCranking : 1; ///< Set whether the fan output will stay on when the engine is cranking (0=force off, 1=allow on)
-  byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref configPage4.dwellRun, 1=Use @ref dwellTable)
+  byte useDwellMap : 1;     ///< Setting to change between fixed dwell value and dwell map (0=Fixed value from @ref config4.dwellRun, 1=Use @ref dwellTable)
   byte fanEnable : 2;       ///< Fan mode. 0=Off, 1=On/Off, 2=PWM
   byte rtc_mode : 2;        // Unused ?
   byte incorporateAFR : 1;  ///< Enable AFR target (stoich/afrtgt) compensation in PW calculation
@@ -378,12 +306,7 @@ struct config2 {
   
   uint16_t vssPulsesPerKm; ///< VSS (Vehicle speed sensor) pulses per Km
   byte vssSmoothing;
-  uint16_t vssRatio1;
-  uint16_t vssRatio2;
-  uint16_t vssRatio3;
-  uint16_t vssRatio4;
-  uint16_t vssRatio5;
-  uint16_t vssRatio6;
+  uint16_t vssRatios[6];
 
   byte idleUpOutputEnabled : 1;
   byte idleUpOutputInv : 1;
@@ -406,26 +329,35 @@ struct config2 {
 
   byte decelAmount;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
-#define IDLEADVANCE_MODE_OFF      0U
-#define IDLEADVANCE_MODE_ADDED    1U
-#define IDLEADVANCE_MODE_SWITCHED 2U
+constexpr uint8_t IDLEADVANCE_MODE_OFF      = 0U;
+constexpr uint8_t IDLEADVANCE_MODE_ADDED    = 1U;
+constexpr uint8_t IDLEADVANCE_MODE_SWITCHED = 2U;
 
-#define IDLEADVANCE_ALGO_TPS      0U
-#define IDLEADVANCE_ALGO_CTPS     1U
+constexpr uint8_t IDLEADVANCE_ALGO_TPS      = 0U;
+constexpr uint8_t IDLEADVANCE_ALGO_CTPS     = 1U;
+
+constexpr uint8_t VSS_MODE_OFF          = 0U;
+constexpr uint8_t VSS_MODE_INTERNAL_PIN = 1U;
+constexpr uint8_t VSS_MODE_EXTERNAL_KM  = 2U;
+constexpr uint8_t VSS_MODE_EXTERNAL_MI  = 3U;
+
+static inline bool isExternalVssMode(const config2 &page2) {
+  return page2.vssMode==VSS_MODE_EXTERNAL_KM
+      || page2.vssMode==VSS_MODE_EXTERNAL_MI;
+}
+
+constexpr uint8_t CRANK_SPEED = 0U;
+constexpr uint8_t CAM_SPEED   = 1U;
 
 /** Page 4 of the config - variables required for ignition and rpm/crank phase /cam phase decoding.
 * See the ini file for further reference.
 */
-struct config4 {
+struct config4 : public config_page_t {
 
   int16_t triggerAngle; ///< Angle (ATDC) when tooth No:1 on the primary wheel sends signal (-360 to +360 deg.)
-  int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref configPage2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
+  int8_t FixAng; ///< Fixed Ignition angle value (enabled by @ref config2.fixAngEnable, copied to ignFixValue, Negative values allowed, See corrections.ino)
   int8_t CrankAng; ///< Fixed start-up/cranking ignition angle (See: corrections.ino)
   byte TrigAngMul; ///< Multiplier for non evenly divisible tooth counts.
 
@@ -435,7 +367,7 @@ struct config4 {
   byte TrigPattern : 5; ///< Decoder configured (DECODER_MISSING_TOOTH, DECODER_BASIC_DISTRIBUTOR, DECODER_GM7X, ... See init.ino)
 
   byte TrigEdgeSec : 1; ///< Secondary (RPM2) Trigger Edge (See RPM1)
-  byte fuelPumpPin : 6; ///< Fuel pump pin (copied as override to pinFuelPump, defaults to board default, See: init.ino)
+  byte fuelPumpPin : 6; ///< Fuel pump pin (copied as override to pinNumbers.pinFuelPump, defaults to board default, See: init.ino)
   byte useResync : 1;
 
   byte sparkDur; ///< Spark duration in ms * 10
@@ -468,7 +400,7 @@ struct config4 {
   byte HardRevLim;    ///< Hard rev limit (RPM/100)
   byte taeBins[4];    ///< TPS based acceleration enrichment bins (Unit: %/s)
   byte taeValues[4];  ///< TPS based acceleration enrichment rates (Unit: % to add), values matched to thresholds of taeBins
-  byte wueBins[10];   ///< Warmup Enrichment bins (Values are in @ref configPage2.wueValues OLD:configTable1)
+  byte wueBins[10];   ///< Warmup Enrichment bins (Values are in @ref config2.wueValues OLD:configTable1)
   byte dwellLimit;
   byte dwellCorrectionValues[6]; ///< Correction table for dwell vs battery voltage
   byte iatRetBins[6]; ///< Inlet Air Temp timing retard curve bins (Unit: ...)
@@ -516,16 +448,17 @@ struct config4 {
   byte vvtMinClt;
   byte vvtDelay;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
+
+constexpr uint8_t TRIGGER_FILTER_OFF        = 0;
+constexpr uint8_t TRIGGER_FILTER_LITE       = 1;
+constexpr uint8_t TRIGGER_FILTER_MEDIUM     = 2;
+constexpr uint8_t TRIGGER_FILTER_AGGRESSIVE = 3;
 
 /** Page 6 of the config - mostly variables that are required for AFR targets and closed loop.
 See the ini file for further reference.
 */
-struct config6 {
+struct config6 : public config_page_t {
 
   byte egoAlgorithm : 2; ///< EGO Algorithm - Simple, PID, No correction
   byte egoType : 2;      ///< EGO Sensor Type 0=Disabled/None, 1=Narrowband, 2=Wideband
@@ -571,7 +504,7 @@ struct config6 {
   byte lnchSoftLim;
   int8_t lnchRetard; //Allow for negative advance value (ATDC)
   byte lnchHardLim;
-  byte lnchFuelAdd;
+  int8_t lnchFuelAdd; //Note signed. 
 
   //PID values for idle needed to go here as out of room in the idle page
   byte idleKP;
@@ -618,16 +551,31 @@ struct config6 {
   byte fanFreq;           // Fan PWM frequency
   byte fanPWMBins[4];     //Temperature Bins for the PWM fan control
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint8_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
+
+static inline bool isPwmIac(const config6 &page6) {
+  return page6.iacAlgorithm == IAC_ALGORITHM_PWM_OL
+      || page6.iacAlgorithm == IAC_ALGORITHM_PWM_CL
+      || page6.iacAlgorithm == IAC_ALGORITHM_PWM_OLCL;
+}
+
+static inline bool isStepperIac(const config6 &page6) {
+  return page6.iacAlgorithm == IAC_ALGORITHM_STEP_OL
+      || page6.iacAlgorithm == IAC_ALGORITHM_STEP_CL
+      || page6.iacAlgorithm == IAC_ALGORITHM_STEP_OLCL;
+}
+
+constexpr uint8_t HARD_REV_FIXED   = 1U;
+constexpr uint8_t HARD_REV_COOLANT = 2U;
+
+constexpr uint8_t AFR_PROTECT_OFF   = 0U;
+constexpr uint8_t AFR_PROTECT_FIXED = 1U;
+constexpr uint8_t AFR_PROTECT_TABLE = 2U;
 
 /** Page 9 of the config - mostly deals with CANBUS control.
 See ini file for further info (Config Page 10 in the ini).
 */
-struct config9 {
+struct config9 : public config_page_t {
   byte enable_secondarySerial:1;            //enable secondary serial
   byte intcan_available:1;                     //enable internal can module
   byte enable_intcan:1;
@@ -670,13 +618,7 @@ struct config9 {
   byte iacMaxSteps; // Step limit beyond which the stepper won't be driven. Should always be less than homing steps. Stored div 3 as per home steps.
   byte idleAdvStartDelay;     //delay for idle advance engage
   
-  byte boostByGear1;
-  byte boostByGear2;
-  byte boostByGear3;
-  byte boostByGear4;
-  byte boostByGear5;
-  byte boostByGear6;
-
+  byte boostByGear[6];
   byte PWMFanDuty[4];
   byte hardRevMode : 2;
   byte coolantProtRPM[6];
@@ -699,17 +641,13 @@ struct config9 {
   byte afrProtectCutTime; /* < Time in ms before cut. Stored value is divided by 100. Maximum of 2550 ms */
   byte afrProtectReactivationTPS; /* Disable engine protection cut once below this TPS percentage */
   
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 /** Page 10 - No specific purpose. Created initially for the cranking enrich curve.
 192 bytes long.
 See ini file for further info (Config Page 11 in the ini).
 */
-struct config10 {
+struct config10 : public config_page_t {
   byte crankingEnrichBins[4]; //Bytes 0-3
   byte crankingEnrichValues[4]; //Bytes 4-7
 
@@ -810,13 +748,13 @@ struct config10 {
   byte vvtCLKI; //Byte 128
   byte vvtCLKD; //Byte 129
   int16_t vvtCL0DutyAng; //Bytes 130-131
-  uint8_t vvtCLMinAng; //Byte 132
+  int8_t vvtCLMinAng; //Byte 132
   uint8_t vvtCLMaxAng; //Byte 133
 
   byte crankingEnrichTaper; //Byte 134
 
-  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinFuelPressure)
-  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinOilPressure)
+  byte fuelPressureEnable : 1; ///< Enable fuel pressure sensing from an analog pin (@ref pinNumbers_t.pinFuelPressure)
+  byte oilPressureEnable : 1;  ///< Enable oil pressure sensing from an analog pin (@ref pinNumbers_t.pinOilPressure)
   byte oilPressureProtEnbl : 1;
   byte oilPressurePin : 5;
 
@@ -885,25 +823,27 @@ struct config10 {
   //Byte 191
   byte lnchCtrlVss;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(2))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
-/** Config for programmable I/O comparison operation (between 2 vars).
- * Operations are implemented in utilities.ino (@ref checkProgrammableIO()).
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
+
+/** @brief Config for programmable I/O comparison operation (between 2 vars).
+ * Operations are implemented in @ref programmableIOControl().
  */
-struct cmpOperation{
+struct cmpOperation {
   uint8_t firstCompType : 3;  ///< First cmp. op (COMPARATOR_* ops, see below)
   uint8_t secondCompType : 3; ///< Second cmp. op (0=COMPARATOR_EQUAL, 1=COMPARATOR_NOT_EQUAL,2=COMPARATOR_GREATER,3=COMPARATOR_GREATER_EQUAL,4=COMPARATOR_LESS,5=COMPARATOR_LESS_EQUAL,6=COMPARATOR_CHANGE)
-  uint8_t bitwise : 2; ///< BITWISE_AND, BITWISE_OR, BITWISE_XOR
+  uint8_t bitwise : 2; ///< COMBINE_AND, COMBINE_OR, COMBINE_XOR
 };
+
+constexpr uint8_t SD_LOGGER_RATE_1HZ = 0;
+constexpr uint8_t SD_LOGGER_RATE_4HZ = 1;
+constexpr uint8_t SD_LOGGER_RATE_10HZ = 2;
+constexpr uint8_t SD_LOGGER_RATE_30HZ = 3;
 
 /**
 Page 13 - Programmable outputs logic rules.
-128 bytes long. Rules implemented in utilities.ino @ref checkProgrammableIO().
+128 bytes long. Rules implemented in @ref programmableIOControl().
 */
-struct config13 {
+struct config13 : public config_page_t {
   uint8_t outputInverted; ///< Invert (on/off) value before writing to output pin (for all programmable I/O:s).
   uint8_t kindOfLimiting; ///< Select which kind of output limiting are active (0 - minimum | 1 - maximum)
   uint8_t outputPin[8];   ///< Disable(0) or enable (set to valid pin number) Programmable Pin (output/target pin to set)
@@ -911,7 +851,7 @@ struct config13 {
   uint8_t firstDataIn[8]; ///< Set of first I/O vars to compare
   uint8_t secondDataIn[8];///< Set of second I/O vars to compare
   uint8_t outputTimeLimit[8]; ///< Output delay for each programmable I/O, kindOfLimiting bit dependent(Unit: 0.1S)
-  uint8_t unused_13[8]; // Unused
+  int8_t ignTrim[8]; ///< Per-cylinder ignition trim in degrees. 0 = no trim
   int16_t firstTarget[8]; ///< first  target value to compare with numeric comp
   int16_t secondTarget[8];///< second target value to compare with bitwise op
   //89bytes
@@ -946,17 +886,13 @@ struct config13 {
   byte hwTestIgnDuration;
   byte hwTestInjDuration;
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
 
 /**
 Page 15 - second page for VVT and boost control.
 256 bytes long. 
 */
-struct config15 {
+struct config15 : public config_page_t {
   byte boostControlEnable : 1; 
   byte unused15_1 : 7; //7bits unused
   byte boostDCWhenDisabled;
@@ -996,8 +932,4 @@ struct config15 {
   //Bytes 106-255
   byte Unused15_106_255[150];
 
-#if defined(CORE_AVR)
-  };
-#else
-  } __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 
-#endif
+} __attribute__((packed,aligned(__alignof__(uint16_t)))); //The 32 bit systems require all structs to be fully packed, aligned to their largest member type 

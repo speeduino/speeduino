@@ -1,6 +1,7 @@
+#include <avr-fast-shift.h>
 #include "globals.h"
 #include "crankMaths.h"
-#include "bit_shifts.h"
+#include "preprocessor.h"
 
 #define SECOND_DERIV_ENABLED                0          
 
@@ -10,37 +11,55 @@ byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
 int rpmDelta;
 #endif
 
+int16_t CRANK_ANGLE_MAX_IGN = 360;
+int16_t CRANK_ANGLE_MAX_INJ = 360; 
+
 typedef uint32_t UQ24X8_t;
 static constexpr uint8_t UQ24X8_Shift = 8U;
-
-/** @brief uS per degree at current RPM in UQ24.8 fixed point */
-static  UQ24X8_t microsPerDegree;
 static constexpr uint8_t microsPerDegree_Shift = UQ24X8_Shift;
 
-typedef uint16_t UQ1X15_t;
 static constexpr uint8_t UQ1X15_Shift = 15U;
-
-/** @brief Degrees per uS in UQ1.15 fixed point.
- * 
- * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
- */
-static UQ1X15_t degreesPerMicro;
 static constexpr uint8_t degreesPerMicro_Shift = UQ1X15_Shift;
 
-void setAngleConverterRevolutionTime(uint32_t revolutionTime) {
-  microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
-  degreesPerMicro = (uint16_t)UDIV_ROUND_CLOSEST(lshift<degreesPerMicro_Shift>(UINT32_C(360)), revolutionTime, uint32_t);
+/** @brief The factors used by the angle<->time conversion functions */
+static angle_converter_factors_t angleConverterFactors;
+
+angle_converter_factors_t calculateAngleConverterFactors(uint32_t revolutionTime) noexcept {
+  angle_converter_factors_t factors = { 0U, 0U };
+  if (revolutionTime!=0U)
+  {
+    factors.microsPerDegree = div360(lshift<microsPerDegree_Shift>(revolutionTime));
+    constexpr uint32_t UQ1X15_360 = UINT32_C(360) << degreesPerMicro_Shift;
+    factors.degreesPerMicro = (uint16_t)fast_div_closest(UQ1X15_360, revolutionTime);
+  }
+  return factors;
 }
 
-uint32_t angleToTimeMicroSecPerDegree(uint16_t angle) {
-  UQ24X8_t micros = (uint32_t)angle * (uint32_t)microsPerDegree;
+void applyAngleConverterFactors(const angle_converter_factors_t &factors) noexcept {
+  angleConverterFactors = factors;
+}
+
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept {
+  applyAngleConverterFactors(calculateAngleConverterFactors(revolutionTime));
+}
+
+BEGIN_LTO_ALWAYS_INLINE(uint32_t) angleToTime(uint16_t angle) noexcept {
+  UQ24X8_t micros = (uint32_t)angle * (uint32_t)angleConverterFactors.microsPerDegree;
   return rshift_round<microsPerDegree_Shift>(micros);
 }
+END_LTO_INLINE()
 
-uint16_t timeToAngleDegPerMicroSec(uint32_t time) {
-    uint32_t degFixed = time * (uint32_t)degreesPerMicro;
+BEGIN_LTO_ALWAYS_INLINE(COMPARE_TYPE) angleToTimerTicks(uint16_t angle) noexcept {
+    uint32_t micros = angleToTime(angle);
+    return uS_TO_TIMER_COMPARE(micros);
+}
+END_LTO_INLINE()
+
+BEGIN_LTO_ALWAYS_INLINE(uint16_t) timeToAngle(uint32_t time) noexcept {
+    uint32_t degFixed = time * (uint32_t)angleConverterFactors.degreesPerMicro;
     return rshift_round<degreesPerMicro_Shift>(degFixed);
 }
+END_LTO_INLINE()
 
 #if SECOND_DERIV_ENABLED!=0
 void doCrankSpeedCalcs(void)
@@ -50,7 +69,7 @@ void doCrankSpeedCalcs(void)
       //We use a 1st Deriv acceleration prediction, but only when there is an even spacing between primary sensor teeth
       //Any decoder that has uneven spacing has its triggerToothAngle set to 0
       //THIS IS CURRENTLY DISABLED FOR ALL DECODERS! It needs more work. 
-      if( (BIT_CHECK(decoderState, BIT_DECODER_2ND_DERIV)) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
+      if( (getDecoder().getFeatures().supports2ndDeriv) && (toothHistoryIndex >= 3) && (currentStatus.RPM < 2000) ) //toothHistoryIndex must be greater than or equal to 3 as we need the last 3 entries. Currently this mode only runs below 3000 rpm
       {
         //Only recalculate deltaV if the tooth has changed since last time (DeltaV stays the same until the next tooth)
         //if (deltaToothCount != toothCurrentCount)

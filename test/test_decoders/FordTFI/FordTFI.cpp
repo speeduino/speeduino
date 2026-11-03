@@ -1,0 +1,94 @@
+#include "decoders.h"
+#include "crankMaths.h"
+#include "../test_utils.h"
+#include "globals.h"
+#include "src/decoders/shared/decoder_state.h"
+
+extern decoders::shared::state_t _decoderState;
+
+static void test_getCrankAngle(void)
+{
+  auto run_case = [&](decoder_t &decoder, uint8_t toothCount, uint8_t trigTeeth, int16_t delta, int16_t trigAngle, int16_t expected) {
+    // trigTeeth is number of cylinders (configPage2.nCylinders)
+    configPage2.nCylinders = trigTeeth;
+    _decoderState.toothLastToothTime = 2000;
+    _decoderState.toothCurrentCount = toothCount;
+    _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    _decoderState.decoderStatus.toothAngleIsCorrect = true;
+    configPage4.triggerAngle = trigAngle;
+    CRANK_ANGLE_MAX_IGN = CRANK_ANGLE_MAX_INJ = 720;
+    setAngleConverterRevolutionTime(2000);
+    TEST_ASSERT_EQUAL(expected, decoder.pGetCrankAngle(_decoderState.toothLastToothTime + delta));
+  };
+
+  // timeToAngle(100) ~= 18 deg when revolution time = 2000
+  constexpr int16_t dt = 18;
+
+  // 4-cylinder tests (triggerToothAngle = 720/4 = 180)
+  configPage2.nCylinders = 4;
+  decoder_t dec4 = triggerSetup_FordTFI();
+  run_case(dec4, 1, 4, 100, 0, 0 + dt);
+  run_case(dec4, 2, 4, 100, 0, 180 + dt);
+  run_case(dec4, 3, 4, 100, 0, 360 + dt);
+  // _decoderState.toothCurrentCount == 0 treated as 2
+  run_case(dec4, 0, 4, 100, 0, 180 + dt);
+
+  // trigger offset
+  run_case(dec4, 2, 4, 100, 10, 180 + 10 + dt);
+
+  // 6-cylinder tests (triggerToothAngle = 120)
+  configPage2.nCylinders = 6;
+  decoder_t dec6 = triggerSetup_FordTFI();
+  run_case(dec6, 1, 6, 100, 0, 0 + dt);
+  run_case(dec6, 3, 6, 100, 0, 240 + dt);
+  run_case(dec6, 6, 6, 100, 0, 600 + dt);
+
+  // 8-cylinder tests (triggerToothAngle = 90)
+  configPage2.nCylinders = 8;
+  decoder_t dec8 = triggerSetup_FordTFI();
+  run_case(dec8, 1, 8, 100, 0, 0 + dt);
+  run_case(dec8, 4, 8, 100, 0, 270 + dt);
+  run_case(dec8, 8, 8, 100, 0, 630 + dt);
+
+  // Negative delta
+#if !defined(NATIVE_BOARD)
+  run_case(dec8, 8, 8, -100, 0, 630 - dt);
+#endif
+}
+
+static void test_getRevolutionTime(void)
+{
+  configPage2.nCylinders = 8;
+  auto decoder = triggerSetup_FordTFI();
+
+  // Prepare for cranking path: RPM < crankRPM
+  configPage4.StgCycles = 0;
+  currentStatus.startRevolutions = 1;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  currentStatus.setRpm(0);
+  currentStatus.crankRPM = 400;
+  currentStatus.revolutionTime = 99999UL;
+  _decoderState.toothLastMinusOneToothTime = 1000UL;
+  _decoderState.toothLastToothTime = _decoderState.toothLastMinusOneToothTime + 30000UL; // gap=30000 -> revTime = gap*totalTeeth/2 = 30000*8/2 = 120000
+  TEST_ASSERT_EQUAL_UINT32(120000UL, decoder.getRevolutionTime());
+
+  // Running path: should return stdGetRevolutionTime(CAM_SPEED) -> currentStatus.revolutionTime when no toothOne* update
+  currentStatus.setRpm(2000);
+  _decoderState.toothOneMinusOneTime = 0;
+  _decoderState.toothOneTime = 0;
+  _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
+
+  // If not synced, should return currentStatus.revolutionTime
+  _decoderState.decoderStatus.syncStatus = SyncStatus::None;
+  currentStatus.setRpm(555);
+  TEST_ASSERT_EQUAL_UINT32(99999UL, decoder.getRevolutionTime());
+}
+
+void testFordTFI(void)
+{
+  SET_UNITY_FILENAME() {
+    RUN_TEST_P(test_getCrankAngle);
+    RUN_TEST_P(test_getRevolutionTime);
+  }
+}

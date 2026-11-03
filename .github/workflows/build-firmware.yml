@@ -38,13 +38,13 @@ jobs:
         pip install --upgrade platformio
 
     - name: Build test atmel
-      run: platformio run -e megaatmega2560 -e megaatmega2560-6-3 -e megaatmega2560-8-1 -e megaatmega2561
+      run: platformio run -e megaatmega2560 -e megaatmega2560-6-3 -e megaatmega2560-8-1
 
     - name: Build test teensy
       run: platformio run -e teensy35 -e teensy36 -e teensy41
 
     - name: Build test STM32
-      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB
+      run: platformio run -e black_F407VE -e BlackPill_F401CC -e BlackPill_F411CE_USB -e black_F407VE-EEPROM-SRAM -e black_F407VE-EEPROM-SPI -e black_F407VE-EEPROM-FRAM -e BlackPill_F411CE_UART -e FCR_Micro_F4
 
     - name: Upload to Speeduino server
       if: github.event_name != 'pull_request' && github.repository_owner == 'speeduino' && github.ref_name == 'master'

@@ -19,3 +19,9 @@
 
 /** @brief Set the value ([0,1], [true, false]) of bit pos (0-7) in byte var */
 #define BIT_WRITE(var, pos, bitvalue) ((bitvalue) ? BIT_SET((var), (pos)) : BIT_CLEAR((var), (pos)))
+
+/** @brief Set the first n bits of a byte */
+static constexpr uint8_t setBits(uint8_t n)
+{
+    return (1U << n) - 1U;
+}

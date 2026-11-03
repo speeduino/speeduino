@@ -80,89 +80,45 @@ extern bool decoderHasSecondary; //Whether or not the pattern uses a secondary i
 extern bool decoderHasFixedCrankingTiming; 
 */
 
+// TODO: move these to logger.cpp
 void loggerPrimaryISR(void);
 void loggerSecondaryISR(void);
 void loggerTertiaryISR(void);
 
-//All of the below are the 6 required functions for each decoder / pattern
-void triggerSetup_missingTooth(void);
-void triggerPri_missingTooth(void);
-void triggerSec_missingTooth(void);
-void triggerThird_missingTooth(void);
-uint16_t getRPM_missingTooth(void);
-int getCrankAngle_missingTooth(void);
-extern void triggerSetEndTeeth_missingTooth(void);
+/// @brief Setup function for each decoder type.
+/// @{
+decoder_t triggerSetup_missingTooth(void);
+decoder_t triggerSetup_DualWheel(void);
+decoder_t triggerSetup_BasicDistributor(void);
+decoder_t triggerSetup_GM7X(void);
+decoder_t triggerSetup_4G63(void);
+decoder_t triggerSetup_24X(void);
+decoder_t triggerSetup_Jeep2000(void);
+decoder_t triggerSetup_Audi135(void);
+decoder_t triggerSetup_HondaD17(void);
+decoder_t triggerSetup_HondaJ32(void);
+decoder_t triggerSetup_Miata9905(void);
+decoder_t triggerSetup_MazdaAU(void);
+decoder_t triggerSetup_non360(void);
+decoder_t triggerSetup_Nissan360(void);
+decoder_t triggerSetup_Subaru67(void);
+decoder_t triggerSetup_Daihatsu(void);
+decoder_t triggerSetup_Harley(void);
+decoder_t triggerSetup_ThirtySixMinus222(void);
+decoder_t triggerSetup_ThirtySixMinus21(void);
+decoder_t triggerSetup_420a(void);
+decoder_t triggerSetup_Webber(void);
+decoder_t triggerSetup_FordST170(void);
+decoder_t triggerSetup_DRZ400(void);
+decoder_t triggerSetup_NGC(void);
+decoder_t triggerSetup_Renix(void);
+decoder_t triggerSetup_RoverMEMS(void);
+decoder_t triggerSetup_Vmax(void);
+decoder_t triggerSetup_SuzukiK6A(void);
+decoder_t triggerSetup_FordTFI(void);
+/// @}
 
-
-void triggerSetup_DualWheel(void);
-void triggerPri_DualWheel(void);
-void triggerSec_DualWheel(void);
-uint16_t getRPM_DualWheel(void);
-int getCrankAngle_DualWheel(void);
-void triggerSetEndTeeth_DualWheel(void);
-
-void triggerSetup_BasicDistributor(void);
-void triggerPri_BasicDistributor(void);
-void triggerSec_BasicDistributor(void);
-uint16_t getRPM_BasicDistributor(void);
-int getCrankAngle_BasicDistributor(void);
-void triggerSetEndTeeth_BasicDistributor(void);
-
-void triggerSetup_GM7X(void);
-void triggerPri_GM7X(void);
-void triggerSec_GM7X(void);
-uint16_t getRPM_GM7X(void);
-int getCrankAngle_GM7X(void);
-void triggerSetEndTeeth_GM7X(void);
-
-void triggerSetup_4G63(void);
-void triggerPri_4G63(void);
-void triggerSec_4G63(void);
-uint16_t getRPM_4G63(void);
-int getCrankAngle_4G63(void);
-void triggerSetEndTeeth_4G63(void);
-
-void triggerSetup_24X(void);
-void triggerPri_24X(void);
-void triggerSec_24X(void);
-uint16_t getRPM_24X(void);
-int getCrankAngle_24X(void);
-void triggerSetEndTeeth_24X(void);
-
-void triggerSetup_Jeep2000(void);
-void triggerPri_Jeep2000(void);
-void triggerSec_Jeep2000(void);
-uint16_t getRPM_Jeep2000(void);
-int getCrankAngle_Jeep2000(void);
-void triggerSetEndTeeth_Jeep2000(void);
-
-void triggerSetup_Audi135(void);
-void triggerPri_Audi135(void);
-void triggerSec_Audi135(void);
-uint16_t getRPM_Audi135(void);
-int getCrankAngle_Audi135(void);
-void triggerSetEndTeeth_Audi135(void);
-
-void triggerSetup_HondaD17(void);
-void triggerPri_HondaD17(void);
-void triggerSec_HondaD17(void);
-uint16_t getRPM_HondaD17(void);
-int getCrankAngle_HondaD17(void);
-void triggerSetEndTeeth_HondaD17(void);
-
-void triggerSetup_HondaJ32(void);
-void triggerPri_HondaJ32(void);
-void triggerSec_HondaJ32(void);
-uint16_t getRPM_HondaJ32(void);
-int getCrankAngle_HondaJ32(void);
-void triggerSetEndTeeth_HondaJ32(void);
-
-void triggerSetup_Miata9905(void);
-void triggerPri_Miata9905(void);
-void triggerSec_Miata9905(void);
-uint16_t getRPM_Miata9905(void);
-int getCrankAngle_Miata9905(void);
-void triggerSetEndTeeth_Miata9905(void);
+// TODO: use same VVT scheme as other decoders
 int getCamAngle_Miata9905(void);
 
 void triggerSetup_MazdaAU(void);

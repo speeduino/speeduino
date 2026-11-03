@@ -2,7 +2,59 @@
 #define CRANKMATHS_H
 
 #include "maths.h"
-#include "globals.h"
+#include "board_definition.h"
+
+/**
+ * @file
+ * 
+ * @brief Crank revolution based mathematical functions. 
+ * 
+ */
+
+/** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
+static constexpr uint32_t MICROS_PER_DEG_1_RPM = UDIV_ROUND_CLOSEST(MICROS_PER_MIN, 360UL, uint32_t);
+
+/** @brief The maximum rpm that the ECU will attempt to run at. 
+ * 
+ * It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be
+ * allowed to run. Lower number gives better performance 
+ **/
+static constexpr uint16_t MAX_RPM = 18000U;
+
+/** @brief Absolute minimum RPM that the crank math (& therefore all of Speeduino) can be used with.
+ * 
+ * This is dictated by the use of uint16_t as the base type for storing
+ * time --> angle conversion factor (degreesPerMicro)
+*/
+static constexpr uint16_t MIN_RPM = (uint16_t)UDIV_ROUND_UP(MICROS_PER_DEG_1_RPM, (uint32_t)UINT16_MAX/16UL, uint32_t);
+
+/**
+ * @brief Minimum time in µS that one crank revolution can take.
+ * 
+ * @note: many calculations are done over 2 revolutions (cycles), in which case this would be doubled 
+ */
+static constexpr uint16_t MIN_REVOLUTION_TIME = MICROS_PER_MIN/MAX_RPM;
+
+/**
+ * @brief Maximum time in µS that one crank revolution can take.
+ * 
+ * @note: many calculations are done over 2 revolutions (cycles), in which case this would be doubled 
+ */
+static constexpr uint32_t MAX_REVOLUTION_TIME = MICROS_PER_MIN/MIN_RPM;
+
+/**
+ * @brief Converts a crank revolution time to engine speed
+ * 
+ * @param revolutionTime The time in µS that one crank revolution takes. Zero if the engine speed is unknown
+ * @return The engine speed in RPM, rounded to the closest integer & limited to MAX_RPM. Zero if revolutionTime is zero
+ */
+static inline uint16_t RpmFromRevolutionTimeUs(uint32_t revolutionTime) {
+    if (revolutionTime==0U) { return 0U; }
+    return (uint16_t)clamp(fast_div_closest(MICROS_PER_MIN, revolutionTime), (uint32_t)0UL, (uint32_t)MAX_RPM);
+}
+
+extern int16_t CRANK_ANGLE_MAX_IGN; ///< The number of crank degrees that the system tracks ignition over.
+extern int16_t CRANK_ANGLE_MAX_INJ; ///< The number of crank degrees that the system tracks fuel injection over.
 
 /**
  * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_IGN]
@@ -10,51 +62,51 @@
  * @param angle A crank angle in degrees
  * @return int16_t 
  */
-static inline int16_t ignitionLimits(int16_t angle)
-{
-    return nudge(0, CRANK_ANGLE_MAX_IGN, angle, CRANK_ANGLE_MAX_IGN);
+static inline int16_t ignitionLimits(int16_t angle) {
+    return nudge((int16_t)0, (int16_t)CRANK_ANGLE_MAX_IGN, angle);
 }
+
+/** @brief The factors used to convert between crank angle & time. These are derived from the crank revolution time. */
+struct angle_converter_factors_t {
+  /** @brief uS per degree in UQ24.8 fixed point */
+  uint32_t microsPerDegree;
+  /** @brief Degrees per uS in UQ1.15 fixed point.
+   * 
+   * Ranges from 8 (0.000246) at MIN_RPM to 3542 (0.108) at MAX_RPM
+   */
+  uint16_t degreesPerMicro;
+};
 
 /**
- * @brief Makes one pass at nudging the angle to within [0,CRANK_ANGLE_MAX_INJ]
+ * @brief Calculate the angle<-->time conversion factors for a crank revolution time
  * 
- * @param angle A crank angle in degrees
- * @return int16_t 
+ * This does not change the factors in use (see applyAngleConverterFactors()), so the
+ * (relatively slow) divisions can be done outside of a critical section.
+ * 
+ * @param revolutionTime The crank revolution time in uS. Zero results in zero factors.
  */
-static inline int16_t injectorLimits(int16_t angle)
-{
-    int16_t tempAngle = angle;
-    if(tempAngle < 0) { tempAngle = tempAngle + CRANK_ANGLE_MAX_INJ; }
-    while(tempAngle > CRANK_ANGLE_MAX_INJ ) { tempAngle -= CRANK_ANGLE_MAX_INJ; }
-    return tempAngle;
-}
+angle_converter_factors_t calculateAngleConverterFactors(uint32_t revolutionTime) noexcept;
 
-/** @brief At 1 RPM, each degree of angular rotation takes this many microseconds */
-#define MICROS_PER_DEG_1_RPM INT32_C(166667)
-
-/** @brief The maximum rpm that the ECU will attempt to run at. 
+/**
+ * @brief Set the factors used by the degree<-->angle conversions
  * 
- * It is NOT related to the rev limiter, but is instead dictates how fast certain operations will be
- * allowed to run. Lower number gives better performance 
- **/
-#define MAX_RPM INT16_C(18000)
-
-/** @brief Absolute minimum RPM that the crank math (& therefore all of Speeduino) can be used with 
+ * @note If an ISR could be converting angles, call this from within an ATOMIC() block.
  * 
- * This is dictated by the use of uint16_t as the base type for storing
- * angle<->time conversion factor (degreesPerMicro)
-*/
-#define MIN_RPM ((MICROS_PER_DEG_1_RPM/(UINT16_MAX/16UL))+1UL)
+ * @param factors The factors to use. See calculateAngleConverterFactors()
+ */
+void applyAngleConverterFactors(const angle_converter_factors_t &factors) noexcept;
 
 /**
  * @brief Set the revolution time, from which some of the degree<-->angle conversions are derived
  * 
+ * Shorthand for applyAngleConverterFactors(calculateAngleConverterFactors(revolutionTime))
+ * 
  * @param revolutionTime The crank revolution time.
  */
-void setAngleConverterRevolutionTime(uint32_t revolutionTime);
+void setAngleConverterRevolutionTime(uint32_t revolutionTime) noexcept;
 
 /**
- * @name Converts angular degrees to the time interval that amount of rotation
+ * @brief Converts angular degrees to the time interval that amount of rotation
  * will take at current RPM.
  * 
  * Based on angle of [0,720] and min/max RPM, result ranges from
@@ -63,17 +115,25 @@ void setAngleConverterRevolutionTime(uint32_t revolutionTime);
  * @param angle Angle in degrees
  * @return Time interval in uS
  */
-uint32_t angleToTimeMicroSecPerDegree(uint16_t angle);
+uint32_t angleToTime(uint16_t angle) noexcept;
 
 /**
- * @name Converts a time interval in microsecods to the equivalent degrees of angular (crank)
+ * @brief Converts angular degrees to the equivalent timer ticks at current RPM.
+ * 
+ * @param angle Angle in degrees
+ * @return Number of timer ticks 
+ */
+COMPARE_TYPE angleToTimerTicks(uint16_t angle) noexcept;
+
+/**
+ * @brief Converts a time interval in microsecods to the equivalent degrees of angular (crank)
  * rotation at current RPM.
  *
- * Inverse of angleToTimeMicroSecPerDegree
+ * Inverse of angleToTime
  *
  * @param time Time interval in uS
  * @return Angle in degrees
  */
-uint16_t timeToAngleDegPerMicroSec(uint32_t time);
+uint16_t timeToAngle(uint32_t time) noexcept;
 
 #endif

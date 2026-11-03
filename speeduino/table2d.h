@@ -4,64 +4,125 @@ This file is used for everything related to maps/tables including their definiti
 #ifndef TABLE_H
 #define TABLE_H
 
+#include "src/utils/nominmax.h"
+#include <algorithm>
 #include <stdint.h>
+#include <Arduino.h>
+#include "preprocessor.h"
 
 /// @cond
 // private to table2D implementation
 
+namespace _table2d_detail {
+
 // The 2D table cache
-struct Table2DCache {
+template <typename axis_t, typename value_t>
+struct Table2DCache 
+{
   // Store the upper index of the bin we last found. This is used to make the next check faster
   // Since this is the *upper* index, it can never be 0.
-  uint8_t lastBinUpperIndex = 1U; // The algorithms rely on this being less than the length of the table AND non-zero
+  uint8_t lastBinUpperIndex = 1U; // The axis bin search algo relies on this being 1 initially
 
   //Store the last input and output for caching
-  int16_t lastInput = INT16_MAX;
-  int16_t lastOutput = 0;
+  axis_t lastInput = 0;
+  value_t lastOutput = 0;
   uint8_t cacheTime = 0U; //Tracks when the last cache value was set so it can expire after x seconds. A timeout is required to pickup when a tuning value is changed, otherwise the old cached value will continue to be returned as the X value isn't changing. 
 
   constexpr Table2DCache(void) = default;
 };
 
-// Captures the concept of an opaque array
-// (at some point this needs to be replaced with C++ templates)
-struct OpaqueArray {
-  enum TypeIndicator {
-    TYPE_UINT8,
-    TYPE_INT8,
-    TYPE_UINT16,
-    TYPE_INT16,
-  };
-  TypeIndicator type = TYPE_UINT8;
-  const void *data = nullptr;
+uint8_t getCacheTime(void);
 
-  explicit constexpr OpaqueArray(const uint8_t *data)
-    : type(TYPE_UINT8)
-    , data((const void *)data)
+// LCOV_EXCL_START
+template <typename axis_t, typename value_t>
+static inline bool cacheExpired(const Table2DCache<axis_t, value_t> &cache) {
+  return (cache.cacheTime != getCacheTime());
+}
+// LCOV_EXCL_STOP
+
+template <typename T>
+struct Bin {
+  constexpr Bin(const T *array, uint8_t binUpperIndex)
+  : upperIndex(binUpperIndex)
+  , _upperValue(array[binUpperIndex])
+  , _lowerValue(array[binUpperIndex-1U])
   {
-  };
-  explicit constexpr OpaqueArray(const int8_t *data)
-    : type(TYPE_INT8)
-    , data((const void *)data)
+  } 
+  constexpr Bin(uint8_t binUpperIndex, const T upperValue, const T lowerValue)
+  : upperIndex(binUpperIndex)
+  , _upperValue(upperValue)
+  , _lowerValue(lowerValue)
   {
-  };
-  explicit constexpr OpaqueArray(const uint16_t *data)
-    : type(TYPE_UINT16)
-    , data((const void *)data)
-  {
-  };
-  explicit constexpr OpaqueArray(const int16_t *data)
-    : type(TYPE_INT16)
-    , data((const void *)data)
-  {
-  };
-  
+  } 
+
+  const T upperValue(void) const noexcept { return _upperValue; }
+  const T lowerValue(void) const noexcept { return _lowerValue; }
+
+  static bool withinBin(const T &value, const T &min, const T&max) noexcept {
+    return (value <= max) && (value > min);
+  }
+  bool withinBin(const T value) const noexcept {
+    return withinBin(value, lowerValue(), upperValue());
+  }
+
+  uint8_t upperIndex;
+  T _upperValue;
+  T _lowerValue;
 };
 
+
+template <typename TIter, typename TValue>
+static inline uint8_t findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
+{
+  auto it = std::lower_bound(pStart, pEnd, value);
+
+  if (it == pStart) {
+    ++it;
+  }
+  if (it != pEnd) {
+    return std::distance(pStart, it);
+  }
+  return std::distance(pStart, pEnd)-1U;
+}
+
+template <typename TIter, typename TValue>
+static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, TIter pEnd, const TValue &value)  
+{
+  // Ignore the cache during tests
+#if !defined(UNIT_TEST)
+  // LCOV_EXCL_START
+  auto bin = Bin<TValue>(pStart, cachedUpperIndex);
+  if (bin.withinBin(value))
+  {
+    return bin;  
+  }
+  // LCOV_EXCL_STOP
+#else
+  UNUSED(cachedUpperIndex);
+#endif
+
+  // If we're not in the same bin, search 
+  return Bin<TValue>(pStart, findBinUpperIndex(pStart, pEnd, value));
+}
+
+// Generic interpolation
+// Exclude from code coverage - it's just a wrapper around map()
+// LCOV_EXCL_START
+template <typename axis_t, typename value_t>
+static inline value_t interpolate(const axis_t axisValue, const Bin<axis_t> &axisBin, const Bin<value_t> &valueBin) 
+{
+  return map(axisValue, axisBin.lowerValue(), axisBin.upperValue(), valueBin.lowerValue(), valueBin.upperValue());
+}
+// LCOV_EXCL_STOP
+
+// Specialized interpolation of uint8_t for performance
+uint8_t interpolate(const uint8_t axisValue, const Bin<uint8_t> &axisBin, const Bin<uint8_t> &valueBin);
+
+} // _table2d_detail
 /// @endcond
 
 /**
- * @brief A polymorphic 2D table.
+ * @brief A 2D table.
  * 
  * The table is designed to be used with the table2D_getValue function to interpolate values from a 2D table.
  *  * Construct by calling one of the constructors below
@@ -71,40 +132,103 @@ struct OpaqueArray {
  *    * The axis and values can be any integral type up to 16-bits wide.
  *    * Signed or unsigned.
  */
-struct table2D { // cppcheck-suppress ctuOneDefinitionRuleViolation; false positive
-  uint8_t length;
+template <typename axis_t, typename value_t, uint8_t sizeT>
+struct table2D
+{
+  using size_type = uint8_t;
 
-  OpaqueArray values;
-  OpaqueArray axis;
+  value_t (&values)[sizeT];
+  axis_t (&axis)[sizeT];
 
-  mutable Table2DCache cache;
+  mutable _table2d_detail::Table2DCache<axis_t, value_t> cache;
 
-  constexpr table2D(uint8_t length, const OpaqueArray &values, const OpaqueArray &bins) 
-    : length(length), values(values), axis(bins) {  
+  constexpr table2D(axis_t (*pAxisBin)[sizeT], value_t (*pCurve)[sizeT])
+    : values(*pCurve) //cppcheck-suppress misra-c2012-10.4
+    , axis(*pAxisBin) 
+  {
   }
-  constexpr table2D(uint8_t length, const uint8_t *values, const uint8_t *bins) 
-    : table2D(length, OpaqueArray(values), OpaqueArray(bins)) {
+  
+  static constexpr size_type size(void) { return sizeT; }  
+
+  value_t getValue(const axis_t axisValue) const noexcept {
+// Turn off caching during unit tests
+#if !defined(UNIT_TEST)
+    // LCOV_EXCL_START
+    // Check whether the X input is the same as last time this ran
+    if( (axisValue == cache.lastInput) && (!cacheExpired(cache)) ) 
+    { 
+      return cache.lastOutput; 
+    }
+    // LCOV_EXCL_STOP
+#endif
+
+    // Test if above the max axis value, clip to max data value
+    if(axisValue >= axis[sizeT-1U]) 
+    {
+      cache.lastOutput = values[sizeT-1U];
+      cache.lastBinUpperIndex = sizeT-1U;
+    } 
+    // Test if below the min axis value, clip to min data value
+    else if (axisValue <= axis[0]) 
+    {
+      cache.lastOutput = values[0];
+      cache.lastBinUpperIndex = 1U;
+    } 
+    else 
+    {
+      // None of the cached or last values match, so we need to find the new value
+      auto xBin = _table2d_detail::findCachedBin(cache.lastBinUpperIndex, axis, axis+sizeT, axisValue);
+
+      // We are exactly at the bin upper bound, so no need to interpolate
+      if (axisValue==xBin.upperValue()) 
+      {
+        cache.lastOutput = values[xBin.upperIndex];
+        cache.lastBinUpperIndex = xBin.upperIndex;
+      } 
+      else // Must be within the bin, interpolate
+      {
+        // LCOV_EXCL_BR_START
+        cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(values, xBin.upperIndex));
+        // LCOV_EXCL_BR_STOP
+        cache.lastBinUpperIndex = xBin.upperIndex;
+      }
+      // Note: we cannot be at the bin lower bound here, as that would violate the bin definition of a non-inclusive lower bound
+    }
+    cache.cacheTime = _table2d_detail::getCacheTime(); //As we're not using the cache value, set the current secl value to track when this new value was calculated
+    cache.lastInput = axisValue;
+
+    return cache.lastOutput;  
   }
-  constexpr table2D(uint8_t length, const uint8_t *values, const int8_t *bins)
-    : table2D(length, OpaqueArray(values), OpaqueArray(bins)) {
-  }
-  constexpr table2D(uint8_t length, const uint16_t *values, const uint16_t *bins)
-    : table2D(length, OpaqueArray(values), OpaqueArray(bins)) {
-  }
-  constexpr table2D(uint8_t length, const uint8_t *values, const uint16_t *bins)
-    : table2D(length, OpaqueArray(values), OpaqueArray(bins)) {
-  }
-  constexpr table2D(uint8_t length, const uint16_t *values, const uint8_t *bins)
-    : table2D(length, OpaqueArray(values), OpaqueArray(bins)) {
-  }
-  constexpr table2D(uint8_t length, const int16_t *values, const uint8_t *bins)
-    : table2D(length, OpaqueArray(values), OpaqueArray(bins)) {
-  } 
 };
 
-int16_t table2D_getAxisValue(const struct table2D *fromTable, uint8_t index);
-int16_t table2D_getRawValue(const struct table2D *fromTable, uint8_t index);
+/**
+ * @brief Interpolate a value from a 2d table.
+ * 
+ * @tparam axis_t The type of the table axis
+ * @tparam value_t The type of the table values
+ * @tparam sizeT  The size of the table (number of axis and value elements)
+ * @param fromTable the table to get the value from
+ * @param axisValue the value to look up in the table axis
+ * @return value_t table value corresponding to the axis value (possibly interpolated)
+ */
+template <typename axis_t, typename value_t, uint8_t sizeT>
+static inline value_t table2D_getValue(const table2D<axis_t, value_t, sizeT> *fromTable, const axis_t axisValue) noexcept 
+{
+  // LCOV_EXCL_START
+  return fromTable->getValue(axisValue);
+  // LCOV_EXCL_STOP
+}
 
-int16_t table2D_getValue(const struct table2D *fromTable, const int16_t X_in);
+// Hide use of template in the header file
+using table2D_i8_u8_4 = table2D<int8_t, uint8_t, 4U>;
+using table2D_u8_u8_4 = table2D<uint8_t, uint8_t, 4U>;
+using table2D_u8_u8_6 = table2D<uint8_t, uint8_t, 6U>;
+using table2D_u8_u8_8 = table2D<uint8_t, uint8_t, 8U>;
+using table2D_u8_u8_9 = table2D<uint8_t, uint8_t, 9U>;
+using table2D_u8_u8_10 = table2D<uint8_t, uint8_t, 10U>;
+using table2D_u16_u8_32 = table2D<uint16_t, uint8_t, 32U>;
+using table2D_u16_u16_32 = table2D<uint16_t, uint16_t, 32U>;
+using table2D_u8_u16_4 = table2D<uint8_t, uint16_t, 4U>;
+using table2D_u8_s16_6 = table2D<uint8_t, int16_t, 6U>;
 
 #endif // TABLE_H

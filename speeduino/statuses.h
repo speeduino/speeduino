@@ -8,83 +8,118 @@
 #pragma once
 
 #include <stdint.h>
-#include <SimplyAtomic.h>
 #include "bit_manip.h"
+#include "maths.h"
+#include "decoder_t.h"
+
+// Forward declares
+struct config4;
 
 using byte = uint8_t;
 
-//Define bit positions within engine variable
-#define BIT_ENGINE_RUN      0   // Engine running
-#define BIT_ENGINE_CRANK    1   // Engine cranking
-#define BIT_ENGINE_ASE      2   // after start enrichment (ASE)
-#define BIT_ENGINE_WARMUP   3   // Engine in warmup
-#define BIT_ENGINE_ACC      4   // in acceleration mode (TPS accel)
-#define BIT_ENGINE_DCC      5   // in deceleration mode
-#define BIT_ENGINE_MAPACC   6   // MAP acceleration mode
-#define BIT_ENGINE_MAPDCC   7   // MAP deceleration mode
+constexpr uint8_t BIT_TIMER_1HZ = 0;
+constexpr uint8_t BIT_TIMER_4HZ = 1;
+constexpr uint8_t BIT_TIMER_10HZ = 2;
+constexpr uint8_t BIT_TIMER_15HZ = 3;
+constexpr uint8_t BIT_TIMER_30HZ = 4;
+constexpr uint8_t BIT_TIMER_50HZ = 5;
+constexpr uint8_t BIT_TIMER_200HZ = 6;
+constexpr uint8_t BIT_TIMER_1KHZ = 7;
 
-// Bit masks for statuses::status1
-#define BIT_STATUS1_INJ1           0  //inj1
-#define BIT_STATUS1_INJ2           1  //inj2
-#define BIT_STATUS1_INJ3           2  //inj3
-#define BIT_STATUS1_INJ4           3  //inj4
-#define BIT_STATUS1_DFCO           4  //Deceleration fuel cutoff
-#define BIT_STATUS1_BOOSTCUT       5  //Fuel component of MAP based boost cut out
-#define BIT_STATUS1_TOOTHLOG1READY 6  //Used to flag if tooth log 1 is ready
-#define BIT_STATUS1_TOOTHLOG2READY 7  //Used to flag if tooth log 2 is ready (Log is not currently used)
+/** @brief The current status of scheduler channel cuts */
+enum class SchedulerCutStatus : uint8_t
+{
+  /** No cuts are in effect */
+  None, 
+  /** Rolling cut is in effect. */
+  Rolling, 
+  /** Full cut is applied. */
+  Full, 
+};
 
-// Bit masks for statuses::status2
-#define BIT_STATUS2_HLAUNCH         0  //Hard Launch indicator
-#define BIT_STATUS2_SLAUNCH         1  //Soft Launch indicator
-#define BIT_STATUS2_HRDLIM          2  //Hard limiter indicator
-#define BIT_STATUS2_SFTLIM          3  //Soft limiter indicator
-#define BIT_STATUS2_BOOSTCUT        4  //Spark component of MAP based boost cut out
-#define BIT_STATUS2_ERROR           5  // Error is detected
-#define BIT_STATUS2_IDLE            6  // idle on
-#define BIT_STATUS2_SYNC            7  // Whether engine has sync or not
 
-// Bit masks for statuses::status3
-#define BIT_STATUS3_RESET_PREVENT 0 //Indicates whether reset prevention is enabled
-#define BIT_STATUS3_NITROUS       1
-#define BIT_STATUS3_FUEL2_ACTIVE  2
-#define BIT_STATUS3_VSS_REFRESH   3
-#define BIT_STATUS3_HALFSYNC      4 //shows if there is only sync from primary trigger, but not from secondary.
-#define BIT_STATUS3_NSQUIRTS1     5 // Uses bits 5-7
+/** @brief The engine rotation status */
+enum class EngineRotationStatus : uint8_t
+{
+  /** Not rotating */
+  Stopped, 
+  /** Rotating below the cranking threshold. */
+  Cranking, 
+  /** Rotating above the cranking threshold. */
+  Running, 
+};
 
-// Bit masks for statuses::status4
-#define BIT_STATUS4_WMI_EMPTY     0 //Indicates whether the WMI tank is empty
-#define BIT_STATUS4_VVT1_ERROR    1 //VVT1 cam angle within limits or not
-#define BIT_STATUS4_VVT2_ERROR    2 //VVT2 cam angle within limits or not
-#define BIT_STATUS4_FAN           3 //Fan Status
-#define BIT_STATUS4_BURNPENDING   4
-#define BIT_STATUS4_STAGING_ACTIVE 5
-#define BIT_STATUS4_COMMS_COMPAT  6
-#define BIT_STATUS4_ALLOW_LEGACY_COMMS       7
+struct vvtStatus_t
+{
+  bool angleError : 1;  ///< Is the cam angle within limits (false) or not (true)
+  int16_t angle = 0;        ///< Measured cam angle
+  uint8_t targetAngle = 0;  ///< Target angle
+  uint8_t duty = 0;         ///< PWM duty
 
-// Bit masks for statuses::status5
-#define BIT_STATUS5_FLATSH         0  //Flat shift hard cut
-#define BIT_STATUS5_FLATSS         1  //Flat shift soft cut
-#define BIT_STATUS5_SPARK2_ACTIVE  2
-#define BIT_STATUS5_KNOCK_ACTIVE   3
-#define BIT_STATUS5_KNOCK_PULSE    4
-#define BIT_STATUS5_CLUTCH_PRESS   5
-#define BIT_STATUS5_UNUSED7        6
-#define BIT_STATUS5_UNUSED8        7
+  vvtStatus_t()
+  : angleError(false)
+  {
+  }
+};
 
-#define BIT_AIRCON_REQUEST        0 //Indicates whether the A/C button is pressed
-#define BIT_AIRCON_COMPRESSOR     1 //Indicates whether the A/C compressor is running
-#define BIT_AIRCON_RPM_LOCKOUT    2 //Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
-#define BIT_AIRCON_TPS_LOCKOUT    3 //Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
-#define BIT_AIRCON_TURNING_ON     4 //Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
-#define BIT_AIRCON_CLT_LOCKOUT    5 //Indicates the A/C is locked out either due to high coolant temp.
-#define BIT_AIRCON_FAN            6 //Indicates whether the A/C fan is running
-#define BIT_AIRCON_UNUSED8        7
+struct num_injector_t
+{
+  uint8_t primary : 4; /**< Number of primary injection outputs */
+  uint8_t secondary : 4; /**< Number of secondary injection outputs (staged injection only)*/
 
-#define ENGINE_PROTECT_BIT_RPM  0
-#define ENGINE_PROTECT_BIT_MAP  1
-#define ENGINE_PROTECT_BIT_OIL  2
-#define ENGINE_PROTECT_BIT_AFR  3
-#define ENGINE_PROTECT_BIT_COOLANT 4
+  uint8_t getTotalInjectors(void) const
+  {
+    return primary + secondary;
+  }
+  bool isPrimaryInjector(uint8_t channel) const
+  {
+    return channel>0 && channel<=primary;
+  }
+  bool isSecondaryInjector(uint8_t channel) const
+  {
+    return channel>primary && channel<=getTotalInjectors();
+  }
+};
+
+struct airConStatus_t
+{
+  bool acRequested : 1; ///< Indicates whether the A/C button is pressed
+  bool compressorOn : 1; ///< Indicates whether the A/C compressor is running
+  bool rpmLockoutActive : 1; ///< Indicates the A/C is locked out due to the RPM being too high/low, or the post-high/post-low-RPM "stand-down" lockout period
+  bool tpsLockoutActive : 1; ///< Indicates the A/C is locked out due to high TPS, or the post-high-TPS "stand-down" lockout period
+  bool turningOn : 1;  ///< Indicates the A/C request is on (i.e. A/C button pressed), the lockouts are off, however the start delay has not yet elapsed. This gives the idle up time to kick in before the compressor.
+  bool cltLockoutActive : 1;  ///< Indicates the A/C is locked out either due to high coolant temp.
+  bool fanOn : 1;  ///< Indicates whether the A/C fan is running
+
+  bool isLockoutActive(void) const
+  {
+    return rpmLockoutActive
+        || tpsLockoutActive
+        || cltLockoutActive
+        ;
+  }
+};
+
+struct launchStatus_t
+{
+  bool launchingSoft : 1;
+  bool launchingHard : 1;
+  bool flatShiftingHard : 1;
+  bool flatShiftingSoft : 1;
+  bool previousClutchTrigger : 1;
+  bool clutchTrigger : 1;
+  uint16_t clutchEngagedRPM = 0; ///< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift  
+
+  launchStatus_t()
+  : launchingSoft(false)
+  , launchingHard(false)
+  , flatShiftingHard(false)
+  , flatShiftingSoft(false)
+  , previousClutchTrigger(false)
+  , clutchTrigger(false)
+  {
+  }
+};
 
 /** @brief The status struct with current values for all 'live' variables.
 * 
@@ -94,30 +129,46 @@ using byte = uint8_t;
 * unit based values in similar variable(s) without ADC part in name (see sensors.ino for reading of sensors).
 */
 struct statuses {
+  /** @brief Default construct */
+  statuses(void);
+
+#if defined(UNIT_TEST)
+  /**
+   * @brief Set the RPM field, keeping RPMDiv100 in sync.
+   * 
+   * @note Unit tests only. Firmware code must use setRevolutionTime(), so that RPM & revolutionTime remain consistent.
+   * 
+   * @param rpm 
+   */
+  void setRpm(uint16_t rpm);
+#endif
+
+  /**
+   * @brief Set the crank revolution time & the values derived from it.
+   *
+   * This is the single point at which the engine speed is updated. It keeps the following in sync:
+   * - revolutionTime
+   * - RPM & RPMdiv100
+   * - The crank angle<->time conversion factors (see setAngleConverterRevolutionTime())
+   *
+   * @param revTime The time in µS that one crank revolution takes at the current speed.
+   * Zero means the engine speed is unknown (E.g. the engine has stopped): RPM will be zero and the
+   * angle<->time conversion factors are left unchanged.
+   */
+  void setRevolutionTime(uint32_t revTime);
+
+  bool isFixedCrankingIgnitionTimingActive(const config4 &page4) const;
+
   // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
-  volatile bool hasSync : 1; /**< Flag for crank/cam position being known by decoders (See decoders.ino).
-  This is used for sanity checking e.g. before logging tooth history or reading some sensors and computing readings. */
-  // cppcheck-suppress misra-c2012-6.1
   bool initialisationComplete : 1; ///< Tracks whether the setup() function has run completely
-  // cppcheck-suppress misra-c2012-6.1
-  bool clutchTrigger : 1;
-  // cppcheck-suppress misra-c2012-6.1
-  bool previousClutchTrigger : 1;
-  // cppcheck-suppress misra-c2012-6.1
-  volatile bool fpPrimed : 1; ///< Tracks whether or not the fuel pump priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
   volatile bool injPrimed : 1; ///< Tracks whether or not the injector priming has been completed yet
-  // cppcheck-suppress misra-c2012-6.1
-  volatile bool tachoSweepEnabled : 1;
-  // cppcheck-suppress misra-c2012-6.1
-  volatile bool tachoAlt : 1;
     
   uint16_t RPM;   ///< RPM - Current Revs per minute
   byte RPMdiv100; ///< RPM value scaled (divided by 100) to fit a byte (0-255, e.g. 12000 => 120)
-  long longRPM;   ///< RPM as long int (gets assigned to / maintained in statuses.RPM as well)
   uint16_t baroADC;
-  long MAP;     ///< Manifold absolute pressure. Has to be a long for PID calcs (Boost control)
-  int16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
+  uint16_t MAP;     ///< Manifold absolute pressure.
+  uint16_t EMAP; ///< EMAP ... (See @ref config6.useEMAP for EMAP enablement)
   uint8_t baro;   ///< Barometric pressure is simply the initial MAP reading, taken before the engine is running. Alternatively, can be taken from an external sensor
   uint8_t TPS;    /**< The current TPS reading (0% - 100%). Is the tpsADC value after the calibration is applied */
   uint8_t tpsADC; /**< byte (valued: 0-255) representation of the TPS. Downsampled from the original 10-bit (0-1023) reading, but before any calibration is applied */
@@ -160,82 +211,174 @@ struct statuses {
   bool CTPSActive;   /**< Whether the externally controlled closed throttle position sensor is currently active */
   volatile byte ethanolPct; /**< Ethanol reading (if enabled). 0 = No ethanol, 100 = pure ethanol. Eg E85 = 85. */
   volatile int8_t fuelTemp;
-  unsigned long AEEndTime; /**< The target end time used whenever AE (acceleration enrichment) is turned on */
-  volatile byte status1; ///< Status bits (See BIT_STATUS1_* defines on top of this file)
-  volatile byte status2;   ///< status 2/control indicator bits (launch control, boost cut, spark errors, See BIT_STATUS2_* defines)
-  volatile byte status3; ///< Status bits (See BIT_STATUS3_* defines on top of this file)
-  volatile byte status4; ///< Status bits (See BIT_STATUS4_* defines on top of this file)
-  volatile byte status5;  ///< Status 5 ... (See also @ref config10 Status 5* members and BIT_STATU5_* defines)
-  uint8_t engine; ///< Engine status bits (See BIT_ENGINE_* defines on top of this file)
-  unsigned int PW1; ///< In uS
-  unsigned int PW2; ///< In uS
-  unsigned int PW3; ///< In uS
-  unsigned int PW4; ///< In uS
-  unsigned int PW5; ///< In uS
-  unsigned int PW6; ///< In uS
-  unsigned int PW7; ///< In uS
-  unsigned int PW8; ///< In uS
+  unsigned long AEStartTime; /**< The time (µS) at which AE (acceleration enrichment) was last turned on. AE ends once aeTime has elapsed from this point */
+
+  // Status1 fields as defined in the INI
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isDFCOActive : 1;  ///< Deceleration Fuel Cut Off status: true == active, false == inactive
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  volatile bool isToothLog1Full : 1; ///< Boost Cut status: true == active, false == inactive
+
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool softLimitActive : 1; ///< Soft limit status: true == on, false == off 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool idleOn : 1; ///< Is the idle code active : true == active, false == inactive
+
+  // Status3 fields as defined in the INI.   
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool secondFuelTableActive : 1; ///< Secondary fuel table is use (true) or not (false)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool vssUiRefresh : 1; ///< Flag to indicate that the VSS value needs to be refreshed in the UI 
+
+  // Status4 fields as defined in the INI.   
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool wmiTankEmpty : 1; ///< Is the Water Methanol Injection tank empty (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool burnPending : 1;  ///< Is an EEPROM burn pending (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool stagingActive : 1; ///< Is fuel injection staging active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool commCompat : 1; ///< 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool allowLegacyComms : 1; ///< 
+
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool secondSparkTableActive : 1; ///< Secondary spark table is use (true) or not (false)
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool knockRetardActive : 1; ///< Is knock retardation active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool knockPulseDetected : 1;  ///<
+
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool aseIsActive : 1; ///< Is After Start Enrichment (ASE) active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool wueIsActive : 1; ///< Is Warm Up Enrichment (WUE) active (true) or not (false) 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  // TODO: acceleration has 3 states: Steady, Accelerating, Decelerating. Need to capture this better 
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isAcceleratingTPS : 1;  ///< Are we accelerating (true) or not (false), based on TPS
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isDeceleratingTPS : 1; ///< Are we decelerating (true) or not (false), based on TPS
+  EngineRotationStatus rotationStatus;
+  
   volatile byte runSecs; /**< Counter of seconds since cranking commenced (Maxes out at 255 to prevent overflow) */
   volatile byte secl; /**< Counter incrementing once per second. Will overflow after 255 and begin again. This is used by TunerStudio to maintain comms sync */
   volatile uint16_t loopsPerSecond; /**< A performance indicator showing the number of main loops that are being executed each second */ 
-  bool launchingSoft; /**< Indicator showing whether soft launch control adjustments are active */
-  bool launchingHard; /**< Indicator showing whether hard launch control adjustments are active */
+  // TODO: remove this: only updated & read in logger
   uint16_t freeRAM;
-  unsigned int clutchEngagedRPM; /**< The RPM at which the clutch was last depressed. Used for distinguishing between launch control and flat shift */ 
-  bool flatShiftingHard;
   volatile uint32_t startRevolutions; /**< A counter for how many revolutions have been completed since sync was achieved. */
   uint16_t boostTarget;
-  byte testOutputs;   ///< Test Output bits (only first bit used/tested ?)
+  // TODO: resolve conflict with testActive
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool isTestModeActive : 1; // Is hardware test mode on?
   bool testActive;    // Not in use ? Replaced by testOutputs ?
   uint16_t boostDuty; ///< Boost Duty percentage value * 100 to give 2 points of precision
   byte idleLoad;      ///< Either the current steps or current duty cycle for the idle control
   uint16_t canin[16]; ///< 16bit raw value of selected canin data for channels 0-15
-  uint8_t current_caninchannel = 0; /**< Current CAN channel, defaults to 0 */
   uint16_t crankRPM = 400; /**< The actual cranking RPM limit. This is derived from the value in the config page, but saves us multiplying it every time it's used (Config page value is stored divided by 10) */
   int16_t flexBoostCorrection; /**< Amount of boost added based on flex */
-  byte nitrous_status;
+  uint8_t nitrousStatus; ///< NITROUS_OFF, NITROUS_STAGE1, NITROUS_BOTH
   byte nSquirts;  ///< Number of injector squirts per cycle (per injector)
-  byte nChannels; /**< Number of fuel and ignition channels.  */
-  int16_t fuelLoad;
-  int16_t ignLoad;
-  bool fuelPumpOn; /**< Indicator showing the current status of the fuel pump */
+  uint16_t fuelLoad;
+  uint16_t ignLoad;
   volatile byte syncLossCounter;
   byte knockRetard;
   volatile byte knockCount;
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
-  int16_t vvt1Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt1TargetAngle;
-  long vvt1Duty; //Has to be a long for PID calcs (CL VVT control)
   uint16_t injAngle;
   byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
-  bool idleUpOutputActive; /**< Whether the idle up output is currently active */
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */
   byte oilPressure;  /**< Oil pressure in PSI */
-  byte engineProtectStatus;
+
+  /** @brief Engine protection status fields. */
+  struct engine_protect_flags_t
+  {
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool rpm : 1; ///< true if RPM limits have been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool coolant : 1; ///< true if coolant limits have been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool boostCut : 1; ///< true if the boost limit has been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool oil : 1; ///< true if the oil limit has been breached, false otherwise
+    // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+    bool afr : 1; ///< true if the afr limit has been breached, false otherwise
+
+    /** @brief Are any protections active */
+    // cppcheck-suppress misra-c2012-8.10 ; False positive - cannot make this static
+    inline bool isActive(void) const {
+      return rpm
+            || coolant
+            || boostCut
+            || oil
+            || afr
+            ;
+    }
+
+    /** @brief Reset all protections to off */
+    // cppcheck-suppress misra-c2012-8.10 ; False positive - cannot make this static
+    inline void reset(void) {
+      rpm = false;
+      boostCut = false;
+      oil = false;
+      afr = false;
+      coolant = false;
+    }  
+  };
+  engine_protect_flags_t engineProtect;
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool ioError : 1; ///< true if there is an analog pin conflict
+
   byte fanDuty;
   byte wmiPW;
-  int16_t vvt2Angle; //Has to be a long for PID calcs (CL VVT control)
-  byte vvt2TargetAngle;
-  long vvt2Duty; //Has to be a long for PID calcs (CL VVT control)
-  byte outputsStatus;
-  byte TS_SD_Status; //TunerStudios SD card status
-  byte airConStatus;
+
+  // SD card status fields.
+  // TODO: conditional compile on SD_LOGGING once board definition is separated from globals.h
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardPresent : 1; ///< true if a card is present, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  unsigned int sdCardType : 1; ///< 0==SD, 1==SDHC
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardReady : 1; ///< true if ready, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardLogging : 1; ///< true if logging active, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardError : 1;  ///< true if error, false if not
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  unsigned int sdCardFS : 1;  ///< File system type 0=no FAT16, 1=FAT32
+  // cppcheck-suppress misra-c2012-6.1 ; False positive - MISRA C:2012 Rule (R 6.1) permits the use of boolean for bit fields.
+  bool sdCardUnused : 1;  ///< true if unused, false if not
+
+  airConStatus_t acStatus = {};
+  
+  uint8_t systemTemp;
+  uint32_t revolutionTime; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that). Zero if the speed is unknown
+
+  uint8_t maxIgnOutputs; /**< Number of ignition outputs being used by the current tune configuration */
+  uint8_t injLayout : 3; ///< Normally the same value as config2::injLayout, but under some situations will change to one of the other INJ_* constants
+  num_injector_t injOutputs;
+  
+  /** @brief Fuel and ignition scheduler cut state. @see calculateFuelIgnitionChannelCut */
+  struct scheduler_cut_t
+  {
+    // Using bytes for compactness ATM, but that limits us to 8 fuel and 
+    // 8 ignition channels
+    byte ignitionChannelsPending = 0; ///< Any ignition channels that are pending injections before they are resumed
+    byte ignitionChannels = 0xFF; ///< Which ignition channels are on (1) or off (0)
+    byte fuelChannels = 0xFF; ///< Which fuel channels are on (1) or off (0)
+    SchedulerCutStatus status = SchedulerCutStatus::None;
+  };
+  scheduler_cut_t schedulerCutState;
+
+  decoder_t decoder; ///< The current decoder
+
+  uint8_t LOOP_TIMER; ///< The timer flags currently in effect
+
+  vvtStatus_t vvt1;
+  vvtStatus_t vvt2;
+
+  launchStatus_t launchStatus;
 };
-
-/**
- * @brief Non-atomic version of HasAnySync. **Should only be called in an ATOMIC() block***
- * 
- */
-static inline bool HasAnySyncUnsafe(const statuses &status) {
-  return status.hasSync || BIT_CHECK(status.status3, BIT_STATUS3_HALFSYNC);
-}
-
-static inline bool HasAnySync(const statuses &status) {
-  ATOMIC() {
-    return HasAnySyncUnsafe(status);
-  }
-  return false; // Just here to avoid compiler warning.
-}

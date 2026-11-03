@@ -14,34 +14,106 @@
 #include "updates.h"
 #include "pages.h"
 #include "comms_CAN.h"
-#include EEPROM_LIB_H //This is defined in the board .h files
+#include "scheduler.h"
+#include "units.h"
+#include "unit_testing.h"
+
+// Minimize flash usage of the non-performance critical code in this file.
+#pragma GCC optimize ("Os") 
+
+template <typename TAxis>
+static void multiplyAxis(TAxis &axis, uint8_t multiplier)
+{
+  for (auto &element: axis)
+  {
+    element = element * multiplier; 
+  }
+}
+
+template <typename TAxis>
+static void divideAxis(TAxis &axis, uint8_t divisor)
+{
+  for (auto &element: axis)
+  {
+    element = element / divisor; 
+  }
+}
+
+TESTABLE_STATIC void updateTableU16toU8(table2D_u16_u8_32 &targetTable, uint16_t u16EEpromBinAddress)
+{
+    uint16_t oldValues[32];
+    static_assert(targetTable.size()==32U, "Calibration size change - fix this!");
+
+    // Re-read the table axis from the old location
+    (void)loadObject(getStorageAPI(), u16EEpromBinAddress, targetTable.axis);
+
+    // Read old values and update table
+    (void)loadObject(getStorageAPI(), u16EEpromBinAddress+sizeof(oldValues), oldValues);
+    for (uint8_t i = 0; i < targetTable.size(); i++)
+    {
+      targetTable.values[i] = (uint8_t)oldValues[i];
+    }
+}
+
+// V26 changed coolant and IAT calibration table **values** from uint16_t to uint8_t
+TESTABLE_STATIC void upgradeV25toV26(void) {
+  if(loadEEPROMVersion() == 25U)
+  {
+    // Old EEPROM locations
+    constexpr uint16_t OLD_VALUE_SIZE = sizeof(table2D_u16_u16_32::values);
+    constexpr uint16_t STORAGE_END = 0xFFF;
+    constexpr uint16_t V25_EEPROM_CALIBRATION_CLT_VALUES = STORAGE_END-OLD_VALUE_SIZE;
+    constexpr uint16_t V25_EEPROM_CALIBRATION_CLT_BINS =  V25_EEPROM_CALIBRATION_CLT_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+    constexpr uint16_t V25_EEPROM_CALIBRATION_IAT_VALUES = V25_EEPROM_CALIBRATION_CLT_BINS-OLD_VALUE_SIZE;
+    constexpr uint16_t V25_EEPROM_CALIBRATION_IAT_BINS = V25_EEPROM_CALIBRATION_IAT_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+    constexpr uint16_t V25_EEPROM_CALIBRATION_O2_VALUES = V25_EEPROM_CALIBRATION_IAT_BINS-(uint16_t)sizeof(decltype(o2CalibrationTable)::values);
+    constexpr uint16_t V25_EEPROM_CALIBRATION_O2_BINS =   V25_EEPROM_CALIBRATION_O2_VALUES-(uint16_t)sizeof(decltype(o2CalibrationTable)::axis);
+    constexpr uint16_t V25_EEPROM_LAST_BARO = (V25_EEPROM_CALIBRATION_O2_BINS-(uint16_t)1);
+
+    updateTableU16toU8(cltCalibrationTable, V25_EEPROM_CALIBRATION_CLT_BINS);
+    updateTableU16toU8(iatCalibrationTable, V25_EEPROM_CALIBRATION_IAT_BINS);
+    // Read O2 data from old location directly into table
+    (void)loadObject(getStorageAPI(), V25_EEPROM_CALIBRATION_O2_BINS, o2CalibrationTable.axis);
+    (void)loadObject(getStorageAPI(), V25_EEPROM_CALIBRATION_O2_VALUES, o2CalibrationTable.values);
+    
+    saveLastBaro(getStorageAPI().read(V25_EEPROM_LAST_BARO));
+    saveAllCalibrationTables();
+
+    saveEEPROMVersion(26);
+  }
+}
+
+TESTABLE_STATIC void upgradeV26toV27(void) {
+  if(loadEEPROMVersion() == 26U)
+  {
+    for (uint8_t i = 0; i < _countof(configPage13.ignTrim); i++)
+    {
+      configPage13.ignTrim[i] = 0;
+    }
+
+    saveAllPages();
+    saveEEPROMVersion(27);
+  }
+}
 
 void doUpdates(void)
 {
-  #define CURRENT_DATA_VERSION    25
+  #define CURRENT_DATA_VERSION    27
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
-  if(readEEPROMVersion() == 2)
+  if(loadEEPROMVersion() == 2)
   {
-    auto table_it = ignitionTable.values.begin();
-    //while (!table_it.at_end()) //at_end() doesn't seem to be working for tables of size 16
-    for(uint8_t x=0; x<ignitionTable.values.num_rows;x++)
+    for (auto &element: ignitionTable.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row + 40;
-        ++row;
-      }      
-      ++table_it;
+        element = element + 40;
     }
-    writeAllConfig();
-    storeEEPROMVersion(3);
+    saveAllPages();
+    saveEEPROMVersion(3);
   }
   //June 2017 required the forced addition of some CAN values to avoid weird errors
-  if(readEEPROMVersion() == 3)
+  if(loadEEPROMVersion() == 3)
   {
     configPage9.speeduino_tsCanId = 0;
     configPage9.true_address = 256;
@@ -50,11 +122,11 @@ void doUpdates(void)
     //There was a bad value in the May base tune for the spark duration setting, fix it here if it's a problem
     if(configPage4.sparkDur == UINT8_MAX) { configPage4.sparkDur = 10; }
 
-    writeAllConfig();
-    storeEEPROMVersion(4);
+    saveAllPages();
+    saveEEPROMVersion(4);
   }
   //July 2017 adds a cranking enrichment curve in place of the single value. This converts that single value to the curve
-  if(readEEPROMVersion() == 4)
+  if(loadEEPROMVersion() == 4)
   {
     //Some default values for the bins (Doesn't matter too much here as the values against them will all be identical)
     configPage10.crankingEnrichBins[0] = 0;
@@ -67,49 +139,49 @@ void doUpdates(void)
     configPage10.crankingEnrichValues[2] = 100 + configPage2.crankingPct;
     configPage10.crankingEnrichValues[3] = 100 + configPage2.crankingPct;
 
-    writeAllConfig();
-    storeEEPROMVersion(5);
+    saveAllPages();
+    saveEEPROMVersion(5);
   }
   //September 2017 had a major change to increase the minimum table size to 128. This required multiple pieces of data being moved around
-  if(readEEPROMVersion() == 5)
+  if(loadEEPROMVersion() == 5)
   {
+    constexpr uint16_t EEPROM_CONFIG10_END_V6 = 2094; 
     //Data after page 4 has to move back 128 bytes
-    for(int x=0; x < 1152; x++)
+    for(uint16_t x=0U; x < 1152U; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 128; //
-      byte currentVal = EEPROM.read(startMem);
-      EEPROM.update(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V6 - x;
+      uint16_t startMem = endMem - 128U; //
+      (void)update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
     }
     //The remaining data only has to move back 64 bytes
-    for(int x=0; x < 352; x++)
+    for(uint16_t x=0; x < 352U; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - 1152 - x;
-      int startMem = endMem - 64; //
-      byte currentVal = EEPROM.read(startMem);
-      EEPROM.update(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V6 - 1152U - x;
+      uint16_t startMem = endMem - 64U; //
+      (void)update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
     }
 
-    storeEEPROMVersion(6);
-    loadConfig(); //Reload the config after changing everything in EEPROM
+    saveEEPROMVersion(6);
+    loadAllPages(); //Reload the config after changing everything in EEPROM
   }
   //November 2017 added the staging table that comes after boost and vvt in the EEPROM. This required multiple pieces of data being moved around
-  if(readEEPROMVersion() == 6)
+  if(loadEEPROMVersion() == 6)
   {
     //Data after page 8 has to move back 82 bytes
-    for(int x=0; x < 529; x++)
+    constexpr uint16_t EEPROM_CONFIG10_END_V7 = 2094;
+
+    for(uint16_t x=0U; x < 529U; x++)
     {
-      int endMem = EEPROM_CONFIG10_END - x;
-      int startMem = endMem - 82; //
-      byte currentVal = EEPROM.read(startMem);
-      EEPROM.update(endMem, currentVal);
+      uint16_t endMem = EEPROM_CONFIG10_END_V7 - x;
+      uint16_t startMem = endMem - 82U; //
+      (void)update(getStorageAPI(), endMem, getStorageAPI().read(startMem));
     }
 
-    storeEEPROMVersion(7);
-    loadConfig(); //Reload the config after changing everything in EEPROM
+    saveEEPROMVersion(7);
+    loadAllPages(); //Reload the config after changing everything in EEPROM
   }
 
-  if (readEEPROMVersion() == 7) {
+  if (loadEEPROMVersion() == 7) {
     //Convert whatever flex fuel settings are there into the new tables
 
     configPage10.flexBoostBins[0] = 0;
@@ -138,11 +210,11 @@ void doUpdates(void)
       configPage10.flexAdvAdj[x] = advanceAdder;
     }
 
-    writeAllConfig();
-    storeEEPROMVersion(8);
+    saveAllPages();
+    saveEEPROMVersion(8);
   }
 
-  if (readEEPROMVersion() == 8)
+  if (loadEEPROMVersion() == 8)
   {
     //May 2018 adds separate load sources for fuel and ignition. Copy the existing load algorithm into Both
     configPage2.fuelAlgorithm = (LoadSource)configPage2.legacyMAP; //Was configPage2.unused2_38c
@@ -151,11 +223,11 @@ void doUpdates(void)
     //Add option back in for open or closed loop boost. For all current configs to use closed
     configPage4.boostType = 1;
 
-    writeAllConfig();
-    storeEEPROMVersion(9);
+    saveAllPages();
+    saveEEPROMVersion(9);
   }
 
-  if(readEEPROMVersion() == 9)
+  if(loadEEPROMVersion() == 9)
   {
     //October 2018 set default values for all the aux in variables (These were introduced in Aug, but no defaults were set then)
     //All aux channels set to Off
@@ -173,11 +245,11 @@ void doUpdates(void)
     configPage4.ADCFILTER_MAP  = ADCFILTER_MAP_DEFAULT;
     configPage4.ADCFILTER_BARO = ADCFILTER_BARO_DEFAULT;
 
-    writeAllConfig();
-    storeEEPROMVersion(10);
+    saveAllPages();
+    saveEEPROMVersion(10);
   }
 
-  if(readEEPROMVersion() == 10)
+  if(loadEEPROMVersion() == 10)
   {
     //May 2019 version adds the use of a 2D table for the priming pulse rather than a single value.
     //This sets all the values in the 2D table to be the same as the previous single value
@@ -243,11 +315,11 @@ void doUpdates(void)
     configPage10.fuel2Mode = 0;
 
 
-    writeAllConfig();
-    storeEEPROMVersion(11);
+    saveAllPages();
+    saveEEPROMVersion(11);
   }
 
-  if(readEEPROMVersion() == 11)
+  if(loadEEPROMVersion() == 11)
   {
     //Sep 2019
     //A battery calibration offset value was introduced. Set default value to 0
@@ -261,11 +333,11 @@ void doUpdates(void)
     configPage10.fuel2SwitchVariable = 0; //Set switch variable to RPM
     configPage10.fuel2SwitchValue = 7000; //7000 RPM switch point is safe
 
-    writeAllConfig();
-    storeEEPROMVersion(12);
+    saveAllPages();
+    saveEEPROMVersion(12);
   }
 
-  if(readEEPROMVersion() == 12)
+  if(loadEEPROMVersion() == 12)
   {
     //Nov 2019
 
@@ -289,7 +361,7 @@ void doUpdates(void)
     configPage4.baroFuelValues[7] = 100;
 
     //Idle advance curve was added. Add default values
-    configPage2.idleAdvEnabled = 0; //Turn this off by default
+    configPage2.idleAdvEnabled = IDLEADVANCE_MODE_OFF; //Turn this off by default
     configPage2.idleAdvTPS = 5; //Active below 5% tps
     configPage2.idleAdvRPM = 20; //Active below 2000 RPM
     configPage4.idleAdvBins[0] = 30;
@@ -305,11 +377,11 @@ void doUpdates(void)
     configPage4.idleAdvValues[4] = 15;
     configPage4.idleAdvValues[5] = 15;
 
-    writeAllConfig();
-    storeEEPROMVersion(13);
+    saveAllPages();
+    saveEEPROMVersion(13);
   }
 
-  if(readEEPROMVersion() == 13)
+  if(loadEEPROMVersion() == 13)
   {
     //202005
     //Cranking enrichment range 0..1275% instead of older 0.255, so need to divide old values by 5
@@ -333,7 +405,7 @@ void doUpdates(void)
     //Introduced a DFCO delay option. Default it to 0
     configPage2.dfcoDelay = 0;
     //Introduced a minimum temperature for DFCO. Default it to 40C
-    configPage2.dfcoMinCLT = 80; //CALIBRATION_TEMPERATURE_OFFSET is 40
+    configPage2.dfcoMinCLT = temperatureAddOffset(40);
 
     //Update flex fuel ignition config values for 40 degrees offset
     for (int i=0; i<6; i++)
@@ -370,34 +442,38 @@ void doUpdates(void)
     configPage2.SoftLimitMode = SOFT_LIMIT_FIXED;
 
     //VSS was added for testing, disable it by default
-    configPage2.vssMode = 0;
+    configPage2.vssMode = VSS_MODE_OFF;
 
-    writeAllConfig();
-    storeEEPROMVersion(14);
-
+    saveAllPages();
+    saveEEPROMVersion(14);
   }
 
-  if(readEEPROMVersion() == 14)
+  if(loadEEPROMVersion() == 14)
   {
     //202008
 
     //MAJOR update to move the coolant, IAT and O2 calibrations to 2D tables
-    int y;
-    for(int x=0; x<(CALIBRATION_TABLE_SIZE/16); x++) //Each calibration table is 512 bytes long
+    
+    //These were the values used previously when all calibration tables were 512 long. They need to be retained so the update process (202005 -> 202008) can work
+    constexpr uint16_t EEPROM_CALIBRATION_O2_OLD = 2559U;
+    constexpr uint16_t EEPROM_CALIBRATION_IAT_OLD = 3071U;
+    constexpr uint16_t EEPROM_CALIBRATION_CLT_OLD = 3583U;
+
+    for(uint16_t x=0U; x<decltype(cltCalibrationTable)::size(); ++x) //Each calibration table is 512 bytes long
     {
-      y = EEPROM_CALIBRATION_CLT_OLD + (x * 16);
-      cltCalibration_values[x] = EEPROM.read(y);
-      cltCalibration_bins[x] = (x * 32);
+      uint16_t y = EEPROM_CALIBRATION_CLT_OLD + (x * 16U);
+      cltCalibrationTable.values[x] = getStorageAPI().read(y);
+      cltCalibrationTable.axis[x] = (x * 32U);
 
-      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16);
-      iatCalibration_values[x] = EEPROM.read(y);
-      iatCalibration_bins[x] = (x * 32);
+      y = EEPROM_CALIBRATION_IAT_OLD + (x * 16U);
+      iatCalibrationTable.values[x] = getStorageAPI().read(y);
+      iatCalibrationTable.axis[x] = (x * 32U);
 
-      y = EEPROM_CALIBRATION_O2_OLD + (x * 16);
-      o2Calibration_values[x] = EEPROM.read(y);
-      o2Calibration_bins[x] = (x * 32);
+      y = EEPROM_CALIBRATION_O2_OLD + (x * 16U);
+      o2CalibrationTable.values[x] = getStorageAPI().read(y);
+      o2CalibrationTable.axis[x] = (x * 32U);
     }
-    writeCalibration();
+    saveAllCalibrationTables();
 
     //Oil and fuel pressure inputs were introduced. Disable them both by default
     configPage10.oilPressureProtEnbl = false;
@@ -414,7 +490,7 @@ void doUpdates(void)
     for(int i=0; i<6; i++)
     {
       configPage10.wmiAdvBins[i] = i*100/2;
-      configPage10.wmiAdvAdj[i] = OFFSET_IGNITION;
+      configPage10.wmiAdvAdj[i] = IGNITION_ADVANCE_LARGE.toRaw(0);
     }
 
     //Programmable outputs added. Set all to disabled
@@ -437,49 +513,43 @@ void doUpdates(void)
     //ASE taper time added
     configPage2.aseTaperTime = 10; //1 second taper
 
-    writeAllConfig();
-    storeEEPROMVersion(15);
+    saveAllPages();
+    saveEEPROMVersion(15);
   }
 
-  if(readEEPROMVersion() == 15)
+  if(loadEEPROMVersion() == 15)
   {
     //202012
     configPage10.spark2Mode = 0; //Disable 2nd spark table
 
-    writeAllConfig();
-    storeEEPROMVersion(16);
+    saveAllPages();
+    saveEEPROMVersion(16);
   }
 
-  //Move this #endif to only do latest updates to safe ROM space on small devices.
-  #endif
-  if(readEEPROMVersion() == 16)
+  if(loadEEPROMVersion() == 16)
   {
     //Fix for wrong placed page 13
-    for(int x=EEPROM_CONFIG14_END; x>=EEPROM_CONFIG13_START; x--)
+    constexpr uint16_t EEPROM_CONFIG14_END_V16 = 2998U;
+    constexpr uint16_t EEPROM_CONFIG13_START_V16 = 2580U;
+    constexpr uint16_t SHIFT_DISTANCE = 112U;
+    for(uint16_t x=EEPROM_CONFIG14_END_V16; x>=EEPROM_CONFIG13_START_V16; x--)
     {
-      EEPROM.update(x, EEPROM.read(x-112));
+      (void)update(getStorageAPI(), x, getStorageAPI().read(x-SHIFT_DISTANCE));
     }
 
     configPage6.iacPWMrun = false; // just in case. This should be false anyways, but sill.
     configPage2.useDwellMap = 0; //Dwell map added, use old fixed value as default
 
-    writeAllConfig();
-    storeEEPROMVersion(17);
+    saveAllPages();
+    saveEEPROMVersion(17);
   }
 
-  if(readEEPROMVersion() == 17)
+  if(loadEEPROMVersion() == 17)
   {
     //VVT stuff has now 0.5 accuracy, so shift values in vvt table by one.
-    auto table_it = vvtTable.values.begin();
-    while (!table_it.at_end())
+    for (auto &element: vvtTable.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = *row << 1;
-        ++row;
-      }      
-      ++table_it;
+      element = element << 1;
     }
 
     configPage10.vvtCLholdDuty = configPage10.vvtCLholdDuty << 1;
@@ -516,11 +586,11 @@ void doUpdates(void)
     configPage13.outputTimeLimit[6] = 0;
     configPage13.outputTimeLimit[7] = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(18);
+    saveAllPages();
+    saveEEPROMVersion(18);
   }
 
-  if(readEEPROMVersion() == 18)
+  if(loadEEPROMVersion() == 18)
   {
     //202202
     configPage2.fanEnable = configPage6.fanUnused; // PWM Fan mode added, but take the previous setting of Fan in use.
@@ -541,16 +611,14 @@ void doUpdates(void)
     // Each table Y axis need to be updated as well if TPS is the source
     if(configPage2.fuelAlgorithm == LOAD_SOURCE_TPS)
     {
-      multiplyTableLoad(&fuelTable,  fuelTable.type_key,  4);
-      multiplyTableLoad(&afrTable,   afrTable.type_key,   4);
-      multiplyTableLoad(&trim1Table, trim1Table.type_key, 4);
-      multiplyTableLoad(&trim2Table, trim2Table.type_key, 4);
-      multiplyTableLoad(&trim3Table, trim3Table.type_key, 4);
-      multiplyTableLoad(&trim4Table, trim4Table.type_key, 4);
-      multiplyTableLoad(&trim5Table, trim5Table.type_key, 4);
-      multiplyTableLoad(&trim6Table, trim6Table.type_key, 4);
-      multiplyTableLoad(&trim7Table, trim7Table.type_key, 4);
-      multiplyTableLoad(&trim8Table, trim8Table.type_key, 4);
+      multiplyAxis(fuelTable.axisY,  4);
+      multiplyAxis(afrTable.axisY,   4);
+
+      for (auto& table : trimTables)
+      {
+        multiplyAxis(table.axisY, 4);
+      }
+
       if(configPage4.sparkMode == IGN_MODE_ROTARY)
       { 
         for(uint8_t x = 0; x < 8; x++)
@@ -559,22 +627,22 @@ void doUpdates(void)
         }
       }
     }
-    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable, ignitionTable.type_key, 4); }
-    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&fuelTable2, fuelTable2.type_key, 4); }
-    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyTableLoad(&ignitionTable2, ignitionTable2.type_key, 4); }
-    multiplyTableLoad(&boostTable, boostTable.type_key, 2); // Boost table used 1.0 previously, so it only needs a 2x multiplier
+    if(configPage2.ignAlgorithm == LOAD_SOURCE_TPS) { multiplyAxis(ignitionTable.axisY, 4); }
+    if(configPage10.fuel2Algorithm == LOAD_SOURCE_TPS) { multiplyAxis(fuelTable2.axisY, 4); }
+    if(configPage10.spark2Algorithm == LOAD_SOURCE_TPS) { multiplyAxis(ignitionTable2.axisY, 4); }
+    multiplyAxis(boostTable.axisY, 2); // Boost table used 1.0 previously.axisY, so it only needs a 2x multiplier
 
     if(configPage6.vvtLoadSource == VVT_LOAD_TPS)
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they only need to be multiplied by 2 when updating
-      multiplyTableLoad(&vvtTable, vvtTable.type_key, 2);
-      multiplyTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      multiplyAxis(vvtTable.axisY, 2);
+      multiplyAxis(vvt2Table.axisY, 2);
     }
     else
     {
       //NOTE: The VVT tables all had 1.0 as the multiply value rather than 2.0 used in all other tables. For this reason they need to be divided by 2 when updating
-      divideTableLoad(&vvtTable, vvtTable.type_key, 2);
-      divideTableLoad(&vvt2Table, vvt2Table.type_key, 2);
+      divideAxis(vvtTable.axisY, 2);
+      divideAxis(vvt2Table.axisY, 2);
     }
 
 
@@ -603,11 +671,11 @@ void doUpdates(void)
     configPage13.onboard_log_tr4_thr_off = 0;
     configPage13.onboard_log_tr5_Epin_pin = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(19);
+    saveAllPages();
+    saveEEPROMVersion(19);
   }
   
-  if(readEEPROMVersion() == 19)
+  if(loadEEPROMVersion() == 19)
   {
     //202207
 
@@ -630,50 +698,39 @@ void doUpdates(void)
     
     //Fill the boostTableLookupDuty with all 50% duty cycle. This is the same as the hardcoded 50% DC that had been used before.
     //This makes the boostcontrol fully backwards compatible.  
-    auto table_it = boostTableLookupDuty.values.begin();
-    while (!table_it.at_end())
+    for (auto &element: boostTableLookupDuty.values)
     {
-      auto row = *table_it;
-      while (!row.at_end())
-      {
-        *row = 50*2;
-        ++row;
-      }      
-      ++table_it;
-    }
+      element = 50*2;
+    }    
 
     //Set some sensible values at the RPM axis
-    auto table_X = boostTableLookupDuty.axisX.begin();
     uint16_t i = 0;
-    while (!table_X.at_end())
+    for(auto &x: boostTableLookupDuty.axisX)
     {
       ++i;
-      *table_X = 1000+(500*i);
-      ++table_X;
+      x = 1000+(500*i);
     }
 
     //Set some sensible values at the boosttarget axis
-    auto table_Y = boostTableLookupDuty.axisY.begin();
     i = 0;
-    while (!table_Y.at_end())
+    for(auto &y: boostTableLookupDuty.axisY)
     {
       ++i;
-      *table_Y = (120 + 10*i);
-      ++table_Y;
+      y = (120 + 10*i);
     }
 
     //AFR Protection added, add default values
-    configPage9.afrProtectEnabled = 0; //Disable by default
+    configPage9.afrProtectEnabled = AFR_PROTECT_OFF; //Disable by default
     configPage9.afrProtectMinMAP = 90; //Is divided by 2, value represents 180kPa
     configPage9.afrProtectMinRPM = 40; //4000 RPM min
     configPage9.afrProtectMinTPS = 160; //80% TPS min
     configPage9.afrProtectDeviation = 14; //1.4 AFR deviation    
     
-    writeAllConfig();
-    storeEEPROMVersion(20);
+    saveAllPages();
+    saveEEPROMVersion(20);
   }
 
-  if(readEEPROMVersion() == 20)
+  if(loadEEPROMVersion() == 20)
   {
     //202305
     configPage2.taeMinChange = 4; //Default is 2% minimum change to match prior behaviour. (4 = 2% account for 0.5 resolution)
@@ -699,11 +756,11 @@ void doUpdates(void)
     //Option to power stepper motor constantly was added. Default to previous behaviour
     configPage9.iacStepperPower = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(21);
+    saveAllPages();
+    saveEEPROMVersion(21);
   }
 
-  if(readEEPROMVersion() == 21)
+  if(loadEEPROMVersion() == 21)
   {
     //202310
 
@@ -720,11 +777,11 @@ void doUpdates(void)
     //DFCO Hyster was multiplied by 2 to allow a range of 0-500. Existing values must be halved
     configPage4.dfcoHyster = configPage4.dfcoHyster / 2;
 
-    writeAllConfig();
-    storeEEPROMVersion(22);
+    saveAllPages();
+    saveEEPROMVersion(22);
   }
 
-  if(readEEPROMVersion() == 22)
+  if(loadEEPROMVersion() == 22)
   {
     //202402
     
@@ -747,11 +804,11 @@ void doUpdates(void)
     //rusEFI CAN Wideband
     configPage2.canWBO = 0;
 
-    writeAllConfig();
-    storeEEPROMVersion(23);
+    saveAllPages();
+    saveEEPROMVersion(23);
   }
 
-  if(readEEPROMVersion() == 23)
+  if(loadEEPROMVersion() == 23)
   {
     //202501
     configPage10.knock_mode = KNOCK_MODE_OFF;
@@ -782,22 +839,22 @@ void doUpdates(void)
     }
     ((uint8_t *)&configPage10)[74] = origlnchCtrlTPS;
 
-    writeAllConfig();
-    storeEEPROMVersion(24);
+    saveAllPages();
+    saveEEPROMVersion(24);
   }
   
-  if(readEEPROMVersion() == 24)
+  if(loadEEPROMVersion() == 24)
   {
     //202504
-
-
-    writeAllConfig();
-    storeEEPROMVersion(25);
+    saveEEPROMVersion(25);
   }
-  
-  
+  upgradeV25toV26();
+  upgradeV26toV27();
+  //Move this #endif to only do latest updates to safe ROM space on small devices.
+  #endif
+
   //Final check is always for 255 and 0 (Brand new arduino)
-  if( (readEEPROMVersion() == 0) || (readEEPROMVersion() == 255) )
+  if( (loadEEPROMVersion() == 0) || (loadEEPROMVersion() == 255) )
   {
     configPage9.true_address = 0x200;
     
@@ -813,31 +870,11 @@ void doUpdates(void)
 
     configPage4.FILTER_FLEX = FILTER_FLEX_DEFAULT;
 
-    storeEEPROMVersion(CURRENT_DATA_VERSION);
+    saveEEPROMVersion(CURRENT_DATA_VERSION);
   }
 
   //Check to see if someone has downgraded versions:
-  if( readEEPROMVersion() > CURRENT_DATA_VERSION ) { storeEEPROMVersion(CURRENT_DATA_VERSION); }
-}
-
-void multiplyTableLoad(void *pTable, table_type_t key, uint8_t multiplier)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it * multiplier; 
-    ++y_it;
-  }
-}
-
-void divideTableLoad(void *pTable, table_type_t key, uint8_t divisor)
-{
-  auto y_it = y_begin(pTable, key);
-  while(!y_it.at_end())
-  {
-    *y_it = *y_it / divisor; //Previous TS scale was 2.0, now is 0.5, 4x increase
-    ++y_it;
-  }
+  if( loadEEPROMVersion() > CURRENT_DATA_VERSION ) { saveEEPROMVersion(CURRENT_DATA_VERSION); }
 }
 
 void multiplyTableValue(uint8_t pageNum, uint8_t multiplier)

@@ -1,0 +1,15 @@
+ignore:
+  - "test"
+  - "lib/ArduinoFake"
+  - "speeduino/board*"
+  - "speeduino/src/SPIAsEEPROM"
+coverage:
+  status:
+    project:
+      default:   # default is the status check's name, not default settings
+        threshold: 1% #  Allowed drop leeway percentage
+    patch:
+      default:   # default is the status check's name, not default settings
+        target: 90%    # Required coverage for newly added/modified code lines
+  range: 80..90 # 80% == yellow, 90% == green
+  

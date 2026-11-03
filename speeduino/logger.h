@@ -9,19 +9,13 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include "globals.h" // Needed for FPU_MAX_SIZE
+#include "statuses.h"
 
-#ifndef UNIT_TEST // Scope guard for unit testing
-  #define LOG_ENTRY_SIZE      138 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-#else
-  #define LOG_ENTRY_SIZE      1 /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
-#endif
+constexpr uint8_t LOG_ENTRY_SIZE = 138; /**< The size of the live data packet. This MUST match ochBlockSize setting in the ini file */
 
 byte getTSLogEntry(uint16_t byteNum);
 int16_t getReadableLogEntry(uint16_t logIndex);
-#if defined(FPU_MAX_SIZE) && FPU_MAX_SIZE >= 32 //cppcheck-suppress misra-c2012-20.9
-  float getReadableFloatLogEntry(uint16_t logIndex);
-#endif
+float getReadableFloatLogEntry(uint16_t logIndex);
 uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum);
 bool is2ByteEntry(uint8_t key);
 
@@ -36,5 +30,11 @@ void stopCompositeLoggerTertiary(void);
 
 void startCompositeLoggerCams(void);
 void stopCompositeLoggerCams(void);
+
+/** @brief Build the TunerStudio engine status byte from the current status */
+byte buildEngineStatus(const statuses &current);
+
+/** @brief Build the TunerStudio SD card status byte from the current status */
+byte buildSdCardStatus(const statuses &current);
 
 #endif
