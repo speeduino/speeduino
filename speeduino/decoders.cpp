@@ -1190,22 +1190,6 @@ Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of 
 * @defgroup dec_vmax Yamaha Vmax
 * @{
 */
-static uint32_t getRevolutionTime_Vmax(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t revolutionTime = 0U;
-
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  if (currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; } //triggerToothAngle is zero until the first tooth after sync
-    return publishedRevolutionTime(currentStatus);
-  }
-  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-
 static int16_t getCrankAngle_Vmax(uint32_t currMicros)
 {
   auto calculator = decoders::shared::atomic_make_lookup_caa_secondary(_decoderState);
@@ -1220,10 +1204,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
   static const auto primaryTrigger = []() {
     decoders::vmax::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::vmax::getRevolutionTime(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, CHANGE)
-                  .setGetRevolutionTime(getRevolutionTime_Vmax)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_Vmax)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

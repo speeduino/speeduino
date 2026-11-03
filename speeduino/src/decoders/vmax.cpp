@@ -1,4 +1,5 @@
 #include "vmax.h"
+#include "shared/rev_time_calcs.h"
 
 namespace decoders {
 
@@ -122,6 +123,21 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   {
     decoderState.decoderStatus.validTrigger = true; //We reset this every time to ensure we only filter when needed.
   }
+}
+
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState)
+{
+  auto sample = atomicToothSpeedSample(current, decoderState);
+  uint32_t revolutionTime = 0U;
+
+  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
+
+  if (current.RPM < current.crankRPM)
+  {
+    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; } //triggerToothAngle is zero until the first tooth after sync
+    return shared::publishedRevolutionTime(current);
+  }
+  return stdGetRevolutionTime(current, decoderState, CRANK_SPEED);
 }
 
 }
