@@ -1249,67 +1249,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  *
  * Support no cam, single tooth Cam (or half moon cam), and multi tooth (5-3-2 teeth)
  */
-static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t channelToothAdder = 36 + (int16_t)toothAdder;
-  int16_t tempIgnitionEndTooth = ( (schedule.dischargeAngle - configPage4.triggerAngle) / (int16_t)(10) ) - 1;
-  if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth -= channelToothAdder; }
-  if(tempIgnitionEndTooth <= 0) { tempIgnitionEndTooth += channelToothAdder; }
-  if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth = channelToothAdder; }
- return tempIgnitionEndTooth;
-}
-
-static void triggerSetEndTeeth_RoverMEMS(void)
-{
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  int16_t tempIgnitionEndTooth[5]; // cheating with the array - location 1 is spark 1, location 0 not used.   
-  int16_t toothAdder = 0;
-
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
-
-  tempIgnitionEndTooth[1] = calcEndTooth_RoverMEMS(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  tempIgnitionEndTooth[2] = calcEndTooth_RoverMEMS(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  tempIgnitionEndTooth[3] = calcEndTooth_RoverMEMS(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  tempIgnitionEndTooth[4] = calcEndTooth_RoverMEMS(ignitionSchedule4, toothAdder);
-#endif
-
-  // take into account the missing teeth on the Rover flywheels
-  int tempCount=0;
- 
-  if(configPage4.sparkMode == IGN_MODE_SEQUENTIAL)
-  {
-    // check the calculated trigger tooth exists, if it doesn't use the previous tooth
-    // nb the _decoderState.toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
- 
-    for(tempCount=1;tempCount <5;tempCount++)
-    {
-      if(tempIgnitionEndTooth[tempCount] == (_decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (_decoderState.toothAngles[2]) ||
-         tempIgnitionEndTooth[tempCount] == (_decoderState.toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (_decoderState.toothAngles[4]) ||
-         tempIgnitionEndTooth[tempCount] == (36 + _decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (36 + _decoderState.toothAngles[2]) ||
-         tempIgnitionEndTooth[tempCount] == (36 + _decoderState.toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (36 + _decoderState.toothAngles[4])  )
-      { tempIgnitionEndTooth[tempCount]--; }
-    }
-  }
-  else
-  {
-    for(tempCount=1;tempCount<5;tempCount++)
-    {
-      if(tempIgnitionEndTooth[tempCount] == (_decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (_decoderState.toothAngles[2]) )
-      { tempIgnitionEndTooth[tempCount]--; }  
-    }
-  }
-  
-  
-  _decoderState.ignitionEndTeeth[0] = tempIgnitionEndTooth[1];  
-  _decoderState.ignitionEndTeeth[1] = tempIgnitionEndTooth[2];
-  _decoderState.ignitionEndTeeth[2] = tempIgnitionEndTooth[3];
-  _decoderState.ignitionEndTeeth[3] = tempIgnitionEndTooth[4];
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 {
   _decoderState = decoders::rovermems::initialise(configPage4);
@@ -1323,11 +1262,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
   static const auto getRevolutionTime = []() {
     return decoders::rovermems::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    decoders::rovermems::setEndTeeth(_decoderState, configPage4);
+  };
+
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4)) 
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
+                  .setSetEndTeeth(setEndTeeth)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

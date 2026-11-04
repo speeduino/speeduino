@@ -1,8 +1,9 @@
 /**
  * @file 
- * @brief * Rover MEMS decoder
+ * @brief Rover MEMS decoder
  * 
- * Covers multiple trigger wheels used interchanbably over the range of MEMS units. 
+ * Covers multiple trigger wheels used interchangeably over the range of MEMS units including 
+ * T Series, O Series, Mini and K Series
  * 
  * Specifically covers teeth patterns on the primary trigger (crank):
  * 3 gap 14 gap 2 gap 13 gap
@@ -32,5 +33,7 @@ namespace rovermems {
   void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4, const config6 &page6, const config10 &page10);
 
   uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4);
+
+  void setEndTeeth(shared::state_t &decoderState, const config4 &page4);
 }
 }

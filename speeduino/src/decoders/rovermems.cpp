@@ -2,6 +2,7 @@
 #include "shared/perToothIgnition.h"
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
+#include "scheduler_ignition_controller.h"
 
 namespace decoders {
 
@@ -285,6 +286,65 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   return revolutionTime;
 }
 
+static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSchedule &schedule, uint8_t toothAdder, const config4 &page4) {
+  int16_t channelToothAdder = 36 + (int16_t)toothAdder;
+  int16_t tempIgnitionEndTooth = ( (schedule.dischargeAngle - page4.triggerAngle) / (int16_t)(10) ) - 1;
+  if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth -= channelToothAdder; }
+  if(tempIgnitionEndTooth <= 0) { tempIgnitionEndTooth += channelToothAdder; }
+  if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth = channelToothAdder; }
+ return tempIgnitionEndTooth;
+}
+
+void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+{
+  int16_t tempIgnitionEndTooth[5]; // cheating with the array - location 1 is spark 1, location 0 not used.   
+  int16_t toothAdder = 0;
+
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
+
+  tempIgnitionEndTooth[1] = calcEndTooth_RoverMEMS(ignitionSchedule1, toothAdder, page4);
+#if (IGN_CHANNELS >= 2)
+  tempIgnitionEndTooth[2] = calcEndTooth_RoverMEMS(ignitionSchedule2, toothAdder, page4);
+#endif
+#if (IGN_CHANNELS >= 3)
+  tempIgnitionEndTooth[3] = calcEndTooth_RoverMEMS(ignitionSchedule3, toothAdder, page4);
+#endif
+#if (IGN_CHANNELS >= 4)
+  tempIgnitionEndTooth[4] = calcEndTooth_RoverMEMS(ignitionSchedule4, toothAdder, page4);
+#endif
+
+  // take into account the missing teeth on the Rover flywheels
+  int tempCount=0;
+ 
+  if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
+  {
+    // check the calculated trigger tooth exists, if it doesn't use the previous tooth
+    // nb the decoderState.toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
+ 
+    for(tempCount=1;tempCount <5;tempCount++)
+    {
+      if(tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[2]) ||
+         tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[4]) ||
+         tempIgnitionEndTooth[tempCount] == (36 + decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (36 + decoderState.toothAngles[2]) ||
+         tempIgnitionEndTooth[tempCount] == (36 + decoderState.toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (36 + decoderState.toothAngles[4])  )
+      { tempIgnitionEndTooth[tempCount]--; }
+    }
+  }
+  else
+  {
+    for(tempCount=1;tempCount<5;tempCount++)
+    {
+      if(tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[2]) )
+      { tempIgnitionEndTooth[tempCount]--; }  
+    }
+  }
+  
+  
+  decoderState.ignitionEndTeeth[0] = tempIgnitionEndTooth[1];  
+  decoderState.ignitionEndTeeth[1] = tempIgnitionEndTooth[2];
+  decoderState.ignitionEndTeeth[2] = tempIgnitionEndTooth[3];
+  decoderState.ignitionEndTeeth[3] = tempIgnitionEndTooth[4];
+}
 
 }
 }
