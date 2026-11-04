@@ -25,13 +25,11 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(config4 &pa
    return state;
 }
 
-#define ID_TOOTH_PATTERN 0 // have we identified teeth to skip for calculating RPM?
-#define SKIP_TOOTH1 1
-#define SKIP_TOOTH2 2
-#define SKIP_TOOTH3 3
-#define SKIP_TOOTH4 4
-
-static volatile unsigned long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
+constexpr uint8_t ID_TOOTH_PATTERN = 0; // have we identified teeth to skip for calculating RPM?
+constexpr uint8_t SKIP_TOOTH1 = 1;
+constexpr uint8_t SKIP_TOOTH2 = 2;
+constexpr uint8_t SKIP_TOOTH3 = 3;
+constexpr uint8_t SKIP_TOOTH4 = 4;
 
 static void triggerRoverMEMSCommon(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
 {
@@ -74,8 +72,8 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
 
       if ( decoderState.curGap > decoderState.targetGap) // we've found a gap
       {
-        roverMEMSTeethSeen = roverMEMSTeethSeen << 2; // add the space for the gap and the tooth we've just seen so shift 2 bits
-        roverMEMSTeethSeen++; // add the tooth seen to the variable
+        decoderState.roverMEMSTeethSeen = decoderState.roverMEMSTeethSeen << 2; // add the space for the gap and the tooth we've just seen so shift 2 bits
+        decoderState.roverMEMSTeethSeen++; // add the tooth seen to the variable
         decoderState.toothCurrentCount++; // Increment the tooth counter on the wheel (used to spot a revolution and trigger igition timing)
 
         // the missing tooth gap messing up timing as it appears in different parts of the cycle. Don't update setFilter as it would be wrong with the gap
@@ -83,8 +81,8 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       }
       else //Regular (non-missing) tooth so update things
       {    
-        roverMEMSTeethSeen = roverMEMSTeethSeen << 1; // make a space, shift the bits 1 place to the left
-        roverMEMSTeethSeen++; // add the tooth seen
+        decoderState.roverMEMSTeethSeen = decoderState.roverMEMSTeethSeen << 1; // make a space, shift the bits 1 place to the left
+        decoderState.roverMEMSTeethSeen++; // add the tooth seen
         decoderState.toothCurrentCount++; //Increment the tooth counter on the wheel (used to spot a revolution)
         decoderState.setFilter(decoderState.curGap, page4);
       }
@@ -92,7 +90,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
       if( decoderState.toothCurrentCount >= decoderState.triggerActualTeeth )
       {                           //12345678901234567890123456789012 
-        if( roverMEMSTeethSeen == 0b11111101111111011111111110111111) // Binary pattern for trigger pattern 9-7-10-6- (#5)
+        if( decoderState.roverMEMSTeethSeen == 0b11111101111111011111111110111111) // Binary pattern for trigger pattern 9-7-10-6- (#5)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 5)
           {
@@ -107,7 +105,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }  
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //123456789012345678901234567890123456
-        else if( roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
+        else if( decoderState.roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 4)
           {
@@ -122,7 +120,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }  
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //123456789012345678901234567890123456
-        else if(roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- (#3)
+        else if(decoderState.roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- (#3)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 3)
           {
@@ -137,7 +135,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           } 
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //12345678901234567890123456789012
-        else if(roverMEMSTeethSeen == 0b11111101111101111111111110111101) // Binary pattern for trigger pattern 11-5-12-4- (#2)
+        else if(decoderState.roverMEMSTeethSeen == 0b11111101111101111111111110111101) // Binary pattern for trigger pattern 11-5-12-4- (#2)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 2)
           {
@@ -152,7 +150,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }  
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //12345678901234567890123456789012
-        else if(roverMEMSTeethSeen == 0b11111111111101111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
+        else if(decoderState.roverMEMSTeethSeen == 0b11111111111101111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 1)
           {
