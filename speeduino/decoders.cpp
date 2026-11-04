@@ -1249,165 +1249,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  *
  * Support no cam, single tooth Cam (or half moon cam), and multi tooth (5-3-2 teeth)
  */
-volatile unsigned long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
-
-static void triggerRoverMEMSCommon(uint32_t curTime)
-{
-  // pattern 1 isn't unique & if we don't have a cam we need special code to identify if we're tooth 18 or 36 - this allows batch injection but not spark to run
-  // as we have to be greater than 18 teeth when using the cam this code also works for that.
-  if( _decoderState.toothCurrentCount > 18) 
-  {
-    _decoderState.toothCurrentCount = 1;
-    _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-    _decoderState.toothOneTime = curTime;
-    _decoderState.revolutionOne = !_decoderState.revolutionOne; //Flip sequential revolution tracker   
-  }
-
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) || (configPage2.injLayout == INJ_SEQUENTIAL) )
-  {
-    //If either fuel or ignition is sequential, only declare sync if the cam tooth has been seen OR if the missing wheel is on the cam
-    if( (_decoderState.secondaryToothCount > 0) || (configPage4.TrigSpeed == CAM_SPEED) )
-    {
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full; //the engine is fully synced so clear the Half Sync bit
-      if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) { _decoderState.secondaryToothCount = 0; } //Reset the secondary tooth counter to prevent it overflowing
-    }
-    else if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) 
-    { _decoderState.decoderStatus.syncStatus = SyncStatus::Partial; } //If there is primary trigger but no secondary we only have half sync.
-  }
-  else { _decoderState.decoderStatus.syncStatus = SyncStatus::Partial; } //If nothing is using sequential, we  set half sync bit
-
-  currentStatus.startRevolutions++;  
-}
-
-static void triggerPri_RoverMEMS(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;      
-
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime ) //Pulses should never be less than _decoderState.triggerFilterTime, so if they are it means a false trigger. (A 36-1 wheel at 8000pm will have triggers approx. every 200uS)
-  {
-    if( (_decoderState.toothLastToothTime > 0) && (_decoderState.toothLastMinusOneToothTime > 0) ) // have we seen more than 1 tooth so we start processing
-    {   
-      //Begin the missing tooth detection
-      _decoderState.targetGap = (3 * (_decoderState.toothLastToothTime - _decoderState.toothLastMinusOneToothTime)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
-
-      if ( _decoderState.curGap > _decoderState.targetGap) // we've found a gap
-      {
-        roverMEMSTeethSeen = roverMEMSTeethSeen << 2; // add the space for the gap and the tooth we've just seen so shift 2 bits
-        roverMEMSTeethSeen++; // add the tooth seen to the variable
-        _decoderState.toothCurrentCount++; // Increment the tooth counter on the wheel (used to spot a revolution and trigger igition timing)
-
-        // the missing tooth gap messing up timing as it appears in different parts of the cycle. Don't update setFilter as it would be wrong with the gap
-        _decoderState.toothCurrentCount++;
-      }
-      else //Regular (non-missing) tooth so update things
-      {    
-        roverMEMSTeethSeen = roverMEMSTeethSeen << 1; // make a space, shift the bits 1 place to the left
-        roverMEMSTeethSeen++; // add the tooth seen
-        _decoderState.toothCurrentCount++; //Increment the tooth counter on the wheel (used to spot a revolution)
-        _decoderState.setFilter(_decoderState.curGap, configPage4);
-      }
-
-      // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
-      if( _decoderState.toothCurrentCount >= _decoderState.triggerActualTeeth )
-      {                           //12345678901234567890123456789012 
-        if( roverMEMSTeethSeen == 0b11111101111111011111111110111111) // Binary pattern for trigger pattern 9-7-10-6- (#5)
-        {
-          if(_decoderState.toothAngles[ID_TOOTH_PATTERN] != 5)
-          {
-            //teeth to skip when calculating RPM as they've just had a gap
-            _decoderState.toothAngles[SKIP_TOOTH1] = 1;
-            _decoderState.toothAngles[SKIP_TOOTH2] = 11;
-            _decoderState.toothAngles[SKIP_TOOTH3] = 19;
-            _decoderState.toothAngles[SKIP_TOOTH4] = 30;
-            _decoderState.toothAngles[ID_TOOTH_PATTERN] = 5;
-            configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
-            _decoderState.triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
-          }  
-          triggerRoverMEMSCommon(curTime);                         
-        }                             //123456789012345678901234567890123456
-        else if( roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
-        {
-          if(_decoderState.toothAngles[ID_TOOTH_PATTERN] != 4)
-          {
-            //teeth to skip when calculating RPM as they've just had a gap
-            _decoderState.toothAngles[SKIP_TOOTH1] = 8;
-            _decoderState.toothAngles[SKIP_TOOTH2] = 11;
-            _decoderState.toothAngles[SKIP_TOOTH3] = 25;
-            _decoderState.toothAngles[SKIP_TOOTH4] = 27;
-            _decoderState.toothAngles[ID_TOOTH_PATTERN] = 4;
-            configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
-            _decoderState.triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
-          }  
-          triggerRoverMEMSCommon(curTime);                         
-        }                             //123456789012345678901234567890123456
-        else if(roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- (#3)
-        {
-          if(_decoderState.toothAngles[ID_TOOTH_PATTERN] != 3)
-          {
-            //teeth to skip when calculating RPM as they've just had a gap
-            _decoderState.toothAngles[SKIP_TOOTH1] = 8;
-            _decoderState.toothAngles[SKIP_TOOTH2] = 10;
-            _decoderState.toothAngles[SKIP_TOOTH3] = 24;
-            _decoderState.toothAngles[SKIP_TOOTH4] = 27;
-            _decoderState.toothAngles[ID_TOOTH_PATTERN] = 3;
-            configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
-            _decoderState.triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
-          } 
-          triggerRoverMEMSCommon(curTime);                           
-        }                             //12345678901234567890123456789012
-        else if(roverMEMSTeethSeen == 0b11111101111101111111111110111101) // Binary pattern for trigger pattern 11-5-12-4- (#2)
-        {
-          if(_decoderState.toothAngles[ID_TOOTH_PATTERN] != 2)
-          {
-            //teeth to skip when calculating RPM as they've just had a gap
-            _decoderState.toothAngles[SKIP_TOOTH1] = 1;
-            _decoderState.toothAngles[SKIP_TOOTH2] = 12;
-            _decoderState.toothAngles[SKIP_TOOTH3] = 17;
-            _decoderState.toothAngles[SKIP_TOOTH4] = 29;
-            _decoderState.toothAngles[ID_TOOTH_PATTERN] = 2;
-            configPage4.triggerMissingTeeth = 4; // this could be read in from the config file, but people could adjust it.
-            _decoderState.triggerActualTeeth = 36; // should be 32 if not hacking toothcounter 
-          }  
-          triggerRoverMEMSCommon(curTime);  
-        }                             //12345678901234567890123456789012
-        else if(roverMEMSTeethSeen == 0b11111111111101111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
-        {
-          if(_decoderState.toothAngles[ID_TOOTH_PATTERN] != 1)
-          {
-            //teeth to skip when calculating RPM as they've just had a gap
-            _decoderState.toothAngles[SKIP_TOOTH1] = 1;
-            _decoderState.toothAngles[SKIP_TOOTH2] = 18;
-            _decoderState.toothAngles[ID_TOOTH_PATTERN] = 1;
-            configPage4.triggerMissingTeeth = 2; // this should be read in from the config file, but people could adjust it.            
-            _decoderState.triggerActualTeeth = 36; // should be 34 if not hacking toothcounter 
-          }
-          triggerRoverMEMSCommon(curTime); 
-        }
-        else if(_decoderState.toothCurrentCount > _decoderState.triggerActualTeeth+1) // no patterns match after a rotation when we only need 32 teeth to match, we've lost sync
-        {
-          _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-          currentStatus.syncLossCounter++;              
-        }
-      }
-    }
-    
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    //NEW IGNITION MODE
-    if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-    {  
-      int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-      if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true))
-      { crankAngle += 360; checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); }
-      else
-      { checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-    }     
-  }
-
-}
-
 static void triggerSec_RoverMEMS(void) 
 {
   uint32_t curTime2 = micros();
@@ -1573,8 +1414,11 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 {
   _decoderState = decoders::rovermems::initialise(configPage4);
 
+  static const auto primaryTrigger = []() {
+    decoders::rovermems::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_RoverMEMS, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_RoverMEMS, getConfigSecTriggerEdge(configPage4)) 
                   .setGetRevolutionTime(getRevolutionTime_RoverMEMS)
                   .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
