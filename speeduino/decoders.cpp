@@ -72,6 +72,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/420a.h"
 #include "src/decoders/webber.h"
 #include "src/decoders/st170.h"
+#include "src/decoders/drz400.h"
 
 using namespace decoders::shared;
 
@@ -1101,52 +1102,33 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
                   .build();
 }
 
-static void triggerSec_DRZ400(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.toothLastSecToothTime = curTime2;
-
-    if(_decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
-    {
-      _decoderState.toothLastToothTime = micros();
-      _decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / configPage4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
-      _decoderState.toothCurrentCount = configPage4.triggerTeeth;
-      currentStatus.syncLossCounter++;
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    else 
-    {
-      // have rotation, set tooth to six so next tooth is 1 & duel wheel rotation code kicks in 
-      _decoderState.toothCurrentCount = 6;
-    }
-  }
-
-  _decoderState.triggerSecFilterTime = (_decoderState.toothOneTime - _decoderState.toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DRZ400(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth
-  if(configPage4.TrigSpeed == 1) { _decoderState.triggerToothAngle = 720 / configPage4.triggerTeeth; } //Account for cam speed
-  _decoderState.toothCurrentCount = UINT8_MAX; //Default value
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 2U)); //Same as above, but fixed at 2 teeth on the secondary input
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;  
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::drz400::initialise(configPage4);
+
+  static const auto primaryTrigger = []() {
+    // Reuse dual wheel primary trigger
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::drz400::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_DRZ400, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_DualWheel)
-                  .setGetCrankAngle(getCrankAngle_DualWheel)
-                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)

@@ -14,9 +14,11 @@ void runAllTests(void)
 {
     extern void testWebber(void);
     extern void testFordST170(void);
+    extern void testDRZ400(void);
 
     testWebber();
     testFordST170();
+    testDRZ400();
 }
 
 TEST_HARNESS(runAllTests)
