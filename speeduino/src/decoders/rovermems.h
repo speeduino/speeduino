@@ -30,5 +30,7 @@ namespace rovermems {
   void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, config4 &page4);
 
   void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4, const config6 &page6, const config10 &page10);
+
+  uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4);
 }
 }

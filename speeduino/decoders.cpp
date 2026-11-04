@@ -1249,25 +1249,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  *
  * Support no cam, single tooth Cam (or half moon cam), and multi tooth (5-3-2 teeth)
  */
-static uint32_t getRevolutionTime_RoverMEMS(void)
-{
-  uint32_t revolutionTime = 0;
-
-  if( currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if( (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH1]) && 
-        (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH2]) && 
-        (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH3]) && 
-        (_decoderState.toothCurrentCount != (unsigned int) _decoderState.toothAngles[SKIP_TOOTH4]) )
-    { revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED); }
-    else
-    { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation as the missing tooth messes the calculation
-  }
-  else
-  { revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED); }
-  return revolutionTime;
-}
-
 static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSchedule &schedule, uint8_t toothAdder) {
   int16_t channelToothAdder = 36 + (int16_t)toothAdder;
   int16_t tempIgnitionEndTooth = ( (schedule.dischargeAngle - configPage4.triggerAngle) / (int16_t)(10) ) - 1;
@@ -1339,10 +1320,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
   static const auto secondaryTrigger = []() {
     decoders::rovermems::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::rovermems::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4)) 
-                  .setGetRevolutionTime(getRevolutionTime_RoverMEMS)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   
                   .setReset(sharedDecoderReset)

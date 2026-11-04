@@ -1,5 +1,7 @@
 #include "rovermems.h"
 #include "shared/perToothIgnition.h"
+#include "shared/rev_time_calcs.h"
+#include "shared/crank_angle_calculator.h"
 
 namespace decoders {
 
@@ -262,6 +264,25 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       }
     }
   } //Trigger filter
+}
+
+uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decoderState, const config4 &page4)
+{
+  uint32_t revolutionTime = 0;
+
+  if( current.RPM < current.crankRPM)
+  {
+    if( (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH1]) && 
+        (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH2]) && 
+        (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH3]) && 
+        (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH4]) )
+    { revolutionTime = crankingGetRevolutionTime(current, decoderState, page4, 36, CRANK_SPEED); }
+    else
+    { revolutionTime = shared::publishedRevolutionTime(current); } //Can't do per tooth calculation as the missing tooth messes the calculation
+  }
+  else
+  { revolutionTime = stdGetRevolutionTime(current, decoderState, CRANK_SPEED); }
+  return revolutionTime;
 }
 
 
