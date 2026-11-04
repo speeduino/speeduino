@@ -1249,87 +1249,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  *
  * Support no cam, single tooth Cam (or half moon cam), and multi tooth (5-3-2 teeth)
  */
-static void triggerSec_RoverMEMS(void) 
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  //Safety check for initial startup
-  if( (_decoderState.toothLastSecToothTime == 0) )
-  { 
-    _decoderState.targetGap2 = _decoderState.curGap * 2;
-    _decoderState.curGap2 = 0; 
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-  
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-    _decoderState.secondaryToothCount++;
-    _decoderState.toothLastSecToothTime = curTime2;
-    
-
-    //Record the VVT Angle
-    if( configPage6.vvtEnabled > 0 &&
-        ( (configPage4.trigPatternSec == SEC_TRIGGER_SINGLE) || 
-          (configPage4.trigPatternSec == SEC_TRIGGER_5_3_2 && _decoderState.secondaryToothCount == 6 ) ) )
-    {
-      int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
-
-      curAngle -= configPage4.triggerAngle; //Value at TDC
-      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= configPage10.vvtCLMinAng; }
-
-      currentStatus.vvt1.angle = curAngle;
-    }
-
-    if(configPage4.trigPatternSec == SEC_TRIGGER_SINGLE)
-    {
-      //Standard single tooth cam trigger
-      _decoderState.revolutionOne = true;
-      _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 1; //Next secondary filter is half the current gap        
-    }
-    else if (configPage4.trigPatternSec == SEC_TRIGGER_5_3_2) // multi tooth cam 
-    {
-      if (_decoderState.curGap2 < _decoderState.targetGap2) // ie normal tooth sized gap, not a single or double gap
-      {
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 1; //Next secondary filter is half the current gap        
-        _decoderState.targetGap2 = (3 * (_decoderState.curGap2)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)        
-      }
-      else
-      {  
-        // gap either single or double - nb remember we've got the tooth after the gap, so on the 5 tooth pattern we'll see here tooth 6
-        if(_decoderState.secondaryToothCount == 6)
-        {
-          // if we've got the tooth after the gap from reading 5 teeth we're on cycle 360-720 & tooth 18-36
-          _decoderState.revolutionOne = false;
-          if(_decoderState.toothCurrentCount < 19)
-          {
-            _decoderState.toothCurrentCount += 18;
-          }
-        }
-        else if (_decoderState.secondaryToothCount == 4)
-        {
-          // we've got the tooth after the gap from reading 3 teeth we're on cycle 0-360 & tooth 1-18
-          _decoderState.revolutionOne = true;
-          if(_decoderState.toothCurrentCount > 17)
-          {
-            _decoderState.toothCurrentCount -= 18;
-          }
-        }
-        else if (_decoderState.secondaryToothCount == 3)
-        {
-          // if we've got the tooth after the gap from reading 2 teeth we're on cycle 0-360 & tooth 18-36
-          _decoderState.revolutionOne = true;
-          if(_decoderState.toothCurrentCount < 19)
-          {
-            _decoderState.toothCurrentCount += 18;
-          }
-        }
-        _decoderState.secondaryToothCount = 1; // as we've had a gap we need to reset to this being the first tooth after the gap
-      }
-    }
-  } //Trigger filter
-}
-
 static uint32_t getRevolutionTime_RoverMEMS(void)
 {
   uint32_t revolutionTime = 0;
@@ -1417,9 +1336,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
   static const auto primaryTrigger = []() {
     decoders::rovermems::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::rovermems::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_RoverMEMS, getConfigSecTriggerEdge(configPage4)) 
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4)) 
                   .setGetRevolutionTime(getRevolutionTime_RoverMEMS)
                   .setSetEndTeeth(triggerSetEndTeeth_RoverMEMS)
                   .setGetCrankAngle(getCrankAngle_missingTooth)   

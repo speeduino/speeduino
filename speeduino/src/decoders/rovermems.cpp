@@ -183,8 +183,87 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       { checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
     }     
   }
-
 }
+
+void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4, const config6 &page6, const config10 &page10)
+{
+  decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime;
+
+  //Safety check for initial startup
+  if( (decoderState.toothLastSecToothTime == 0) )
+  { 
+    decoderState.targetGap2 = decoderState.curGap * 2;
+    decoderState.curGap2 = 0; 
+    decoderState.toothLastSecToothTime = curTime;
+  }
+  
+  if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime )
+  {
+    decoderState.secondaryToothCount++;
+    decoderState.toothLastSecToothTime = curTime;
+
+    //Record the VVT Angle
+    if( page6.vvtEnabled > 0 &&
+        ( (page4.trigPatternSec == SEC_TRIGGER_SINGLE) || 
+          (page4.trigPatternSec == SEC_TRIGGER_5_3_2 && decoderState.secondaryToothCount == 6 ) ) )
+    {
+      int16_t curAngle = normalize((int16_t)0, (int16_t)360, current.decoder.getCrankAngle());
+
+      curAngle -= page4.triggerAngle; //Value at TDC
+      if( page6.vvtMode == VVT_MODE_CLOSED_LOOP ) { curAngle -= page10.vvtCLMinAng; }
+
+      current.vvt1.angle = curAngle;
+    }
+
+    if(page4.trigPatternSec == SEC_TRIGGER_SINGLE)
+    {
+      //Standard single tooth cam trigger
+      decoderState.revolutionOne = true;
+      decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap        
+    }
+    else if (page4.trigPatternSec == SEC_TRIGGER_5_3_2) // multi tooth cam 
+    {
+      if (decoderState.curGap2 < decoderState.targetGap2) // ie normal tooth sized gap, not a single or double gap
+      {
+        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap        
+        decoderState.targetGap2 = (3 * (decoderState.curGap2)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)        
+      }
+      else
+      {  
+        // gap either single or double - nb remember we've got the tooth after the gap, so on the 5 tooth pattern we'll see here tooth 6
+        if(decoderState.secondaryToothCount == 6)
+        {
+          // if we've got the tooth after the gap from reading 5 teeth we're on cycle 360-720 & tooth 18-36
+          decoderState.revolutionOne = false;
+          if(decoderState.toothCurrentCount < 19)
+          {
+            decoderState.toothCurrentCount += 18;
+          }
+        }
+        else if (decoderState.secondaryToothCount == 4)
+        {
+          // we've got the tooth after the gap from reading 3 teeth we're on cycle 0-360 & tooth 1-18
+          decoderState.revolutionOne = true;
+          if(decoderState.toothCurrentCount > 17)
+          {
+            decoderState.toothCurrentCount -= 18;
+          }
+        }
+        else if (decoderState.secondaryToothCount == 3)
+        {
+          // if we've got the tooth after the gap from reading 2 teeth we're on cycle 0-360 & tooth 18-36
+          decoderState.revolutionOne = true;
+          if(decoderState.toothCurrentCount < 19)
+          {
+            decoderState.toothCurrentCount += 18;
+          }
+        }
+        decoderState.secondaryToothCount = 1; // as we've had a gap we need to reset to this being the first tooth after the gap
+      }
+    }
+  } //Trigger filter
+}
+
 
 }
 }
