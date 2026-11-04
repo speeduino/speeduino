@@ -1,5 +1,6 @@
 #include "vmax.h"
 #include "shared/perToothIgnition.h"
+#include "scheduler_ignition_controller.h"
 
 namespace decoders {
 
@@ -109,6 +110,41 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       }
     }
   } 
+}
+
+static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(const IgnitionSchedule &schedule, uint8_t toothAdder, const shared::state_t &decoderState, const config4 &page4) {
+  int16_t tempEndTooth = decoderState.toothNumFromScheduleAngles(page4, schedule) - 1;
+  // Clamp to tooth count
+  return decoderState.clampToActualTeeth(page4, decoders::shared::clampToToothCount(page4, tempEndTooth, toothAdder), toothAdder);
+}
+
+void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+{
+  byte toothAdder = 0;
+  if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) { toothAdder = page4.triggerTeeth; }
+
+  decoderState.ignitionEndTeeth[0] = calcEndTeeth_Renix(ignitionSchedule1, toothAdder, decoderState, page4);
+#if (IGN_CHANNELS >= 2)
+  decoderState.ignitionEndTeeth[1] = calcEndTeeth_Renix(ignitionSchedule2, toothAdder, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 3)
+  decoderState.ignitionEndTeeth[2] = calcEndTeeth_Renix(ignitionSchedule3, toothAdder, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 4)
+  decoderState.ignitionEndTeeth[3] = calcEndTeeth_Renix(ignitionSchedule4, toothAdder, decoderState, page4);
+#endif
+#if IGN_CHANNELS >= 5
+  decoderState.ignitionEndTeeth[4] = calcEndTeeth_Renix(ignitionSchedule5, toothAdder, decoderState, page4);
+#endif
+#if IGN_CHANNELS >= 6
+  decoderState.ignitionEndTeeth[5] = calcEndTeeth_Renix(ignitionSchedule6, toothAdder, decoderState, page4);
+#endif
+#if IGN_CHANNELS >= 7
+  decoderState.ignitionEndTeeth[6] = calcEndTeeth_Renix(ignitionSchedule7, toothAdder, decoderState, page4);
+#endif
+#if IGN_CHANNELS >= 8
+  decoderState.ignitionEndTeeth[7] = calcEndTeeth_Renix(ignitionSchedule8, toothAdder, decoderState, page4);
+#endif
 }
 
 }

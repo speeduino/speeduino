@@ -1208,45 +1208,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 * Double missing tooth in the pattern is actually a large tooth and a large gap. If the trigger is set to rising you'll see the start of the large tooth
 * then the gap. If its not set to rising the code won't work due to seeing two gaps
 */
-
-static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule) - 1;
-  // Clamp to tooth count
-  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
-}
-
-static void triggerSetEndTeeth_Renix(void)
-{
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_Renix(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_Renix(ignitionSchedule2, toothAdder);
-  currentStatus.canin[1] = _decoderState.ignitionEndTeeth[1];
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_Renix(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcEndTeeth_Renix(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  _decoderState.ignitionEndTeeth[4] = calcEndTeeth_Renix(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  _decoderState.ignitionEndTeeth[5] = calcEndTeeth_Renix(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  _decoderState.ignitionEndTeeth[6] = calcEndTeeth_Renix(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  _decoderState.ignitionEndTeeth[7] = calcEndTeeth_Renix(ignitionSchedule8, toothAdder);
-#endif
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
 {
   _decoderState = decoders::renix::initialise(configPage2, configPage4);
@@ -1260,12 +1221,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    decoders::renix::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_Renix)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
