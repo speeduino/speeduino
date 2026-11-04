@@ -1,4 +1,5 @@
 #include "vmax.h"
+#include "shared/perToothIgnition.h"
 
 namespace decoders {
 
@@ -31,6 +32,83 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   state.toothCurrentCount = 1;
 
   return state;
+}
+
+// variables used to help calculate gap on the physical 44 or 66 teeth we're pretending don't exist in most of the speeduino code
+// reusing existing variables to save storage space as these aren't used in the code for their original purpose.
+#define renixSystemLastToothTime         decoderState.toothLastToothRisingTime
+#define renixSystemLastMinusOneToothTime decoderState.toothLastSecToothRisingTime
+
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  decoderState.curGap = curTime - renixSystemLastToothTime;
+
+  if ( decoderState.curGap >= decoderState.triggerFilterTime )   
+  {
+       
+    decoderState.toothSystemCount++;
+
+    if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0)
+    { decoderState.targetGap = (2 * (renixSystemLastToothTime - renixSystemLastMinusOneToothTime));}  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
+    else 
+    { decoderState.targetGap = 100000000L; } // random large number to stop system thinking we have a gap for the first few teeth on start up
+
+    if( decoderState.curGap >= decoderState.targetGap )
+    { 
+      /* add two teeth to account for the gap we've just seen */      
+      decoderState.toothSystemCount++;
+      decoderState.toothSystemCount++;
+   
+      if( decoderState.toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
+      {
+        // lost sync
+        decoderState.decoderStatus.syncStatus = SyncStatus::None;
+        current.syncLossCounter++;            
+        decoderState.toothSystemCount = 1; // first tooth after gap is always 1
+        decoderState.toothCurrentCount = 1; // Reset as we've lost sync
+      }
+    }
+    else
+    { 
+      //Recalc the new filter value, only do this on the single gap tooth 
+      decoderState.setFilter(decoderState.curGap, page4);  
+    }
+    renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
+    renixSystemLastToothTime = curTime;
+
+    if( decoderState.toothSystemCount == 12  || decoderState.toothLastToothTime == 0) // decoderState.toothLastToothTime used to ensure we set the value so the code that handles the fuel pump in speeduino.ini has a value to use once the engine is running.
+    {
+      decoderState.toothCurrentCount++;
+
+      if( (page2.nCylinders == 6 && decoderState.toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
+          (page2.nCylinders == 4 && decoderState.toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
+      {
+        decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+        decoderState.toothOneTime = curTime;
+        decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+        current.startRevolutions++; //Counter               
+        decoderState.revolutionOne = !decoderState.revolutionOne;
+        decoderState.toothCurrentCount = 1;  
+      }
+
+      decoderState.toothSystemCount = 1;
+      decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+      decoderState.toothLastToothTime = curTime; 
+
+
+      //NEW IGNITION MODE
+      if( (page2.perToothIgn == true) && (current.rotationStatus!=EngineRotationStatus::Cranking) ) 
+      {
+        int16_t crankAngle = ( (decoderState.toothCurrentCount - 1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
+        if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (decoderState.revolutionOne == true) && (page4.TrigSpeed == CRANK_SPEED) )
+        {
+          crankAngle += 360;
+          checkPerToothTiming(current, decoderState, page4, crankAngle, (page4.triggerTeeth + decoderState.toothCurrentCount)); 
+        }
+        else{ checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount); }
+      }
+    }
+  } 
 }
 
 }
