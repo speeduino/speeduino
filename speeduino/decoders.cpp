@@ -86,13 +86,6 @@ TESTABLE_STATIC state_t _decoderState;
 #define TOOTH_CAM_SECONDARY 1
 #define TOOTH_CAM_TERTIARY  2
 
-// used by the ROVER MEMS pattern
-#define ID_TOOTH_PATTERN 0 // have we identified teeth to skip for calculating RPM?
-#define SKIP_TOOTH1 1
-#define SKIP_TOOTH2 2
-#define SKIP_TOOTH3 3
-#define SKIP_TOOTH4 4
-
 // note the sequence of these defines which reference the bits used in a byte has moved when the third trigger & engine cycle was incorporated
 constexpr uint8_t COMPOSITE_LOG_PRI = 0;
 constexpr uint8_t COMPOSITE_LOG_SEC = 1;
@@ -1265,13 +1258,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
   static const auto setEndTeeth = []() {
     decoders::rovermems::setEndTeeth(_decoderState, configPage4);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4)) 
                   .setGetRevolutionTime(getRevolutionTime)
                   .setSetEndTeeth(setEndTeeth)
-                  .setGetCrankAngle(getCrankAngle_missingTooth)   
+                  .setGetCrankAngle(getCrankAngle)   
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
