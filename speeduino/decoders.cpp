@@ -76,6 +76,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/ngc.h"
 #include "src/decoders/vmax.h"
 #include "src/decoders/renix.h"
+#include "src/decoders/rovermems.h"
 
 using namespace decoders::shared;
 
@@ -1570,24 +1571,7 @@ static void triggerSetEndTeeth_RoverMEMS(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-  for(_decoderState.toothOneTime = 0; _decoderState.toothOneTime < 10; _decoderState.toothOneTime++)   // repurpose variable temporarily to help clear _decoderState.toothAngles.
-    { _decoderState.toothAngles[_decoderState.toothOneTime] = 0; }// Repurpose _decoderState.toothAngles to store data needed for this implementation.
- 
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U)); // only 1 tooth on the wheel not 36
-
-  configPage4.triggerTeeth = 36;
-  _decoderState.triggerToothAngle = 360 / configPage4.triggerTeeth; //The number of degrees that passes from tooth to tooth 360 / 36 theortical teeth
-  _decoderState.triggerActualTeeth = 36; //The number of physical teeth on the wheel. Need to fix now so we can identify the wheel on the first rotation and not risk a  type 1 wheel not being spotted
-  _decoderState.toothLastMinusOneToothTime = 0;
-  _decoderState.toothCurrentCount = 0; // current tooth
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.revolutionOne=0;
-
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * 2U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
+  _decoderState = decoders::rovermems::initialise(configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_RoverMEMS, getConfigPriTriggerEdge(configPage4))
