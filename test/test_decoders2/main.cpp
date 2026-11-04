@@ -13,8 +13,10 @@ void tearDown(void)
 void runAllTests(void)
 {
     extern void testWebber(void);
+    extern void testFordST170(void);
 
     testWebber();
+    testFordST170();
 }
 
 TEST_HARNESS(runAllTests)

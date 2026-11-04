@@ -71,6 +71,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/36minus21.h"
 #include "src/decoders/420a.h"
 #include "src/decoders/webber.h"
+#include "src/decoders/st170.h"
 
 using namespace decoders::shared;
 
@@ -1066,132 +1067,33 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Webber(void)
 
 /** Ford ST170 - a dedicated decoder for 01-04 Ford Focus ST170/SVT engine.
 Standard 36-1 trigger wheel running at crank speed and 8-3 trigger wheel running at cam speed.
-* @defgroup dec_ford_st170 Ford ST170 (01-04 Focus)
-* @{
 */
-static void triggerSec_FordST170(void)
-{
-  uint32_t curTime2 = micros();
-  _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime;
-
-  //Safety check for initial startup
-  if( (_decoderState.toothLastSecToothTime == 0) )
-  { 
-    _decoderState.curGap2 = 0; 
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime )
-  {
-      _decoderState.targetGap2 = (3 * (_decoderState.toothLastSecToothTime - _decoderState.toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-      _decoderState.toothLastMinusOneSecToothTime = _decoderState.toothLastSecToothTime;
-      if ( (_decoderState.curGap2 >= _decoderState.targetGap2) || (_decoderState.secondaryToothCount == 5) )
-      {
-        _decoderState.secondaryToothCount = 1;
-        _decoderState.revolutionOne = 1; //Sequential revolution reset
-        _decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
-      }
-      else
-      {
-        _decoderState.triggerSecFilterTime = _decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalculated for the regular teeth, not the missing one.
-        _decoderState.secondaryToothCount++;
-      }
-
-    _decoderState.toothLastSecToothTime = curTime2;
-
-    //Record the VVT Angle
-    //We use the first tooth after the long gap as our reference, this remains in the same engine
-    //cycle even when the VVT is at either end of its full swing.
-    if( (configPage6.vvtEnabled > 0) && (_decoderState.revolutionOne == 1) && (_decoderState.secondaryToothCount == 1) )
-    {
-      int16_t curAngle = normalize((int16_t)0, (int16_t)360, currentStatus.decoder.getCrankAngle());
-      if( configPage6.vvtMode == VVT_MODE_CLOSED_LOOP )
-      {
-        curAngle = LOW_PASS_FILTER( (curAngle << 1), configPage4.ANGLEFILTER_VVT, curAngle);
-        currentStatus.vvt1.angle = 360 - curAngle - configPage10.vvtCL0DutyAng;
-      }
-    }
-  } //Trigger filter
-}
-
-static uint32_t getRevolutionTime_FordST170(void)
-{
-  uint32_t revolutionTime = 0;
-  if( currentStatus.RPM < currentStatus.crankRPM )
-  {
-    if(_decoderState.toothCurrentCount != 1)
-    {
-      revolutionTime = crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, 36, CRANK_SPEED);
-    }
-    else { revolutionTime = publishedRevolutionTime(currentStatus); } //Can't do per tooth calculation if we're at tooth #1 as the missing tooth messes the calculation
-  }
-  else
-  {
-    revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-  }
-  return revolutionTime;
-}
-
-static int16_t getCrankAngle_FordST170(uint32_t currMicros)
-{
-  return decoders::shared::clampCrankAngle(decoders::shared::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
-}
-
-static uint16_t __attribute__((noinline)) calcSetEndTeeth_FordST170(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule);
-  tempEndTooth = nudge((int16_t)1, (int16_t)(36U + toothAdder + 1U), (int16_t)(tempEndTooth - 1));
-  return _decoderState.clampToActualTeeth(configPage4, (uint16_t)tempEndTooth, toothAdder);
-}
-
-static void triggerSetEndTeeth_FordST170(void)
-{
-  byte toothAdder = 0;
-   if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
-
-  _decoderState.ignitionEndTeeth[0] = calcSetEndTeeth_FordST170(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcSetEndTeeth_FordST170(ignitionSchedule2, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcSetEndTeeth_FordST170(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcSetEndTeeth_FordST170(ignitionSchedule4, toothAdder);
-#endif
-
-  // Removed ign channels >4 as an ST170 engine is a 4 cylinder
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  //Set these as we are using the existing missing tooth primary decoder and these will never change.
-  configPage4.triggerTeeth = 36;  
-  configPage4.triggerMissingTeeth = 1;
-  configPage4.TrigSpeed = CRANK_SPEED;
-  
-  _decoderState.setTriggerToothAngle(360 / configPage4.triggerTeeth);
-  _decoderState.triggerActualTeeth = configPage4.triggerTeeth - configPage4.triggerMissingTeeth; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * configPage4.triggerTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  
-  _decoderState.triggerSecFilterTime = MICROS_PER_MIN / MAX_RPM / 8U / 2U; //Cam pattern is 8-3, so 2 nearest teeth are 90 deg crank angle apart. Cam can be advanced by 60 deg, so going from fully retarded to fully advanced closes the gap to 30 deg. Zetec cam pulleys aren't keyed from factory, so I subtracted additional 10 deg to avoid filter to be too aggressive. And there you have it 720/20=36.
-  
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  _decoderState.checkSyncToothCount = (36) >> 1; //50% of the total teeth.
-  _decoderState.toothLastMinusOneToothTime = 0;
-  _decoderState.toothCurrentCount = 0;
-  _decoderState.toothOneTime = 0;
-  _decoderState.toothOneMinusOneTime = 0;
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle * (1U + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
+  _decoderState = decoders::st170::initialise(configPage4);
+
+  static const auto primaryTrigger = []() {
+    decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::st170::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::st170::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return (int16_t)decoders::shared::clampCrankAngle(decoders::shared::atomic_make_angle_caa(_decoderState).calculateCrankAngle(currMicros, configPage4));
+  };
+  static const auto setEndTeeth = []() {
+    decoders::st170::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_FordST170, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_FordST170)
-                  .setGetCrankAngle(getCrankAngle_FordST170)
-                  .setSetEndTeeth(triggerSetEndTeeth_FordST170)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -1199,7 +1101,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordST170(void)
                   .build();
 }
 
-/** @} */
 static void triggerSec_DRZ400(void)
 {
   uint32_t curTime2 = micros();
