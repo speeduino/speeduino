@@ -190,7 +190,6 @@ static void test_setGetStatus(void)
 static decoder_features_t fakeGetFeatures(void)
 {
     static decoder_features_t features;
-    features.supports2ndDeriv = true;
     features.supportsSequential = true;
     return features;
 }
@@ -199,7 +198,7 @@ static void test_setGetFeatures(void)
 {
     auto builder = decoder_builder_t().setGetFeatures( fakeGetFeatures );
 
-    TEST_ASSERT_TRUE( builder.build().getFeatures().supports2ndDeriv );
+    TEST_ASSERT_TRUE( builder.build().getFeatures().supportsSequential );
 
     assert_decoder_builder( builder );
 

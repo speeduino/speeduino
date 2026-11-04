@@ -78,14 +78,12 @@ struct decoder_status_t {
 };
 
 struct decoder_features_t {
-  bool supports2ndDeriv : 1; ///> The use of the 2nd derivative calculation is limited to certain decoders. 
   bool supportsSequential : 1; ///> Whether or not the decoder supports sequential operation
   bool hasFixedCrankingTiming : 1; ///> Whether or not the decoder supports fixed cranking timing
   bool supportsPerToothIgnition : 1; ///> Whether or not the decoder supports per-tooth ignition
 
   decoder_features_t(void)
-    : supports2ndDeriv(false)
-    , supportsSequential(false)
+    : supportsSequential(false)
     , hasFixedCrankingTiming(false)
     , supportsPerToothIgnition(false)
   {}
