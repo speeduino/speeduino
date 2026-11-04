@@ -75,6 +75,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/drz400.h"
 #include "src/decoders/ngc.h"
 #include "src/decoders/vmax.h"
+#include "src/decoders/renix.h"
 
 using namespace decoders::shared;
 
@@ -1326,29 +1327,7 @@ static void triggerSetEndTeeth_Renix(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  if( configPage2.nCylinders == 4)
-  {
-    _decoderState.setTriggerToothAngle(90); //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
-    configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
-    configPage4.triggerMissingTeeth = 0;
-    _decoderState.triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
-    _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 44U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  }
-  else if (configPage2.nCylinders == 6)
-  {
-    _decoderState.setTriggerToothAngle(60);
-    configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 6 teeth.
-    configPage4.triggerMissingTeeth = 0;
-    _decoderState.triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
-    _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 66U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  }
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-
-  _decoderState.toothSystemCount = 1;
-  _decoderState.toothCurrentCount = 1;
+  _decoderState = decoders::renix::initialise(configPage2, configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_Renix, getConfigPriTriggerEdge(configPage4))
