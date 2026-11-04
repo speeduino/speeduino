@@ -1254,11 +1254,17 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
   static const auto primaryTrigger = []() {
     decoders::renix::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_missingTooth)
-                  .setGetCrankAngle(getCrankAngle_missingTooth)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_Renix)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
