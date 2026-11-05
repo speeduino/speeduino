@@ -17,9 +17,8 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
 
   state.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
 
-  state.triggerActualTeeth = page2.nCylinders;
-  if(state.triggerActualTeeth == 0) { state.triggerActualTeeth = 1; }
-
+  state.triggerActualTeeth = std::max((uint16_t)page2.nCylinders, (uint16_t)1U);
+  
   state.setTriggerToothAngle(720U / state.triggerActualTeeth); //The number of degrees that passes from tooth to tooth, half cylinder count
   state.toothCurrentCount = 0; //Default value
   state.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 30U * state.triggerActualTeeth)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
