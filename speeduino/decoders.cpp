@@ -1315,71 +1315,6 @@ Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have 
 
 */
 
-/** Ford TFI Secondary (Falling Edge).
- * 
- * */
-static void triggerSec_FordTFI(void)
-{
-  uint32_t curTime2 = micros();
-  if (curTime2 >= _decoderState.toothLastSecToothTime) 
-    { _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime; } 
-  else
-    { _decoderState.curGap2 = (4294967296 - _decoderState.toothLastSecToothTime + curTime2); }
-  
- 
-  //Safety check for initial startup
-  if( (_decoderState.toothLastSecToothTime == 0) )
-  { 
-    _decoderState.curGap2 = 0; 
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-  
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime ) // Valid tooth falling edge
-  {     
-    if ((_decoderState.curGap > 0) && (_decoderState.curGap < 20000000)) // Limit to prevent overflow
-    {  
-      _decoderState.targetGap2 = percentage(110, _decoderState.curGap); // Wide last teeth gap min
-      _decoderState.targetGap3 = percentage(90, _decoderState.curGap); // Narrow last teeth minus one gap max
-    }
-    else 
-    {
-    _decoderState.targetGap2 = 0;
-    _decoderState.targetGap3 = 0;
-    }
-    if ( (_decoderState.curGap2 > _decoderState.targetGap2) && (_decoderState.curGap3 < _decoderState.targetGap3) && (_decoderState.lastGap < _decoderState.targetGap2) && (_decoderState.lastGap > _decoderState.targetGap3) ) // Signature Tooth detected
-    {
-      if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (currentStatus.startRevolutions <= configPage4.StgCycles) )
-      {
-        _decoderState.toothCurrentCount = 2; // Last primary tooth was #2
-        _decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-      }
-      else 
-      {
-        if ( (_decoderState.toothCurrentCount != 2) && (currentStatus.startRevolutions > 2)) 
-        { 
-          currentStatus.syncLossCounter++;
-        } //Indicates likely sync loss.
-        if (configPage4.useResync == 1) 
-        { 
-          _decoderState.toothCurrentCount = 2;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;  
-        }
-      }
-      _decoderState.lastSyncRevolution = currentStatus.startRevolutions ; // Revolution count when signature tooth was detected
-
-    }
-
-  _decoderState.toothLastSecToothTime = curTime2; // 
-  _decoderState.lastGap = _decoderState.curGap3; // Minus two Gap
-  _decoderState.curGap3 = _decoderState.curGap2; // Minus one Gap
-
-  } //Trigger filter
-  //else { currentStatus.syncLossCounter = 0; }
-  _decoderState.triggerSecFilterTime = _decoderState.curGap >> 1; //Set filter at 50 % speed of last primary gap
-}
-
 /** Ford TFI - Get RPM.
  * 
  * */
@@ -1496,10 +1431,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   static const auto primaryTrigger = []() {
     decoders::ford_tfi::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto secondaryTrigger = []() {
+    decoders::ford_tfi::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_FordTFI, getConfigSecTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_FordTFI)
                   .setGetCrankAngle(getCrankAngle_FordTFI)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)

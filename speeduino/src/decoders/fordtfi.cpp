@@ -75,5 +75,67 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
    } //Trigger filter
 }
 
+// Ford TFI Secondary (Falling Edge).
+void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  if (curTime >= decoderState.toothLastSecToothTime) 
+    { decoderState.curGap2 = curTime - decoderState.toothLastSecToothTime; } 
+  else
+    { decoderState.curGap2 = (4294967296 - decoderState.toothLastSecToothTime + curTime); }
+  
+ 
+  //Safety check for initial startup
+  if( (decoderState.toothLastSecToothTime == 0) )
+  { 
+    decoderState.curGap2 = 0; 
+    decoderState.toothLastSecToothTime = curTime;
+  }
+  
+
+  if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime ) // Valid tooth falling edge
+  {     
+    if ((decoderState.curGap > 0) && (decoderState.curGap < 20000000)) // Limit to prevent overflow
+    {  
+      decoderState.targetGap2 = percentage(110, decoderState.curGap); // Wide last teeth gap min
+      decoderState.targetGap3 = percentage(90, decoderState.curGap); // Narrow last teeth minus one gap max
+    }
+    else 
+    {
+    decoderState.targetGap2 = 0;
+    decoderState.targetGap3 = 0;
+    }
+    if ( (decoderState.curGap2 > decoderState.targetGap2) && (decoderState.curGap3 < decoderState.targetGap3) && (decoderState.lastGap < decoderState.targetGap2) && (decoderState.lastGap > decoderState.targetGap3) ) // Signature Tooth detected
+    {
+      if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (current.startRevolutions <= page4.StgCycles) )
+      {
+        decoderState.toothCurrentCount = 2; // Last primary tooth was #2
+        decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
+        decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+      }
+      else 
+      {
+        if ( (decoderState.toothCurrentCount != 2) && (current.startRevolutions > 2)) 
+        { 
+          current.syncLossCounter++;
+        } //Indicates likely sync loss.
+        if (page4.useResync == 1) 
+        { 
+          decoderState.toothCurrentCount = 2;
+          decoderState.decoderStatus.syncStatus = SyncStatus::Full;  
+        }
+      }
+      decoderState.lastSyncRevolution = current.startRevolutions ; // Revolution count when signature tooth was detected
+
+    }
+
+  decoderState.toothLastSecToothTime = curTime; // 
+  decoderState.lastGap = decoderState.curGap3; // Minus two Gap
+  decoderState.curGap3 = decoderState.curGap2; // Minus one Gap
+
+  } //Trigger filter
+  //else { current.syncLossCounter = 0; }
+  decoderState.triggerSecFilterTime = decoderState.curGap >> 1; //Set filter at 50 % speed of last primary gap
+}
+
 }
 }
