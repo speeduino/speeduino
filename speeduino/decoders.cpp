@@ -78,6 +78,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/renix.h"
 #include "src/decoders/rovermems.h"
 #include "src/decoders/k6a.h"
+#include "src/decoders/fordtfi.h"
 
 using namespace decoders::shared;
 
@@ -1536,21 +1537,7 @@ static void triggerSetEndTeeth_FordTFI(void)
  * */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerActualTeeth = configPage2.nCylinders;
-  if(_decoderState.triggerActualTeeth == 0) { _decoderState.triggerActualTeeth = 1; }
-
-  _decoderState.setTriggerToothAngle(720U / _decoderState.triggerActualTeeth); //The number of degrees that passes from tooth to tooth, half cylinder count
-  _decoderState.toothCurrentCount = 0; //Default value
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 30U * configPage2.nCylinders)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = _decoderState.triggerFilterTime * 4U /5u; //Same as above, but slightly about lower due to signature trigger (about 80%)
-  _decoderState.lastSyncRevolution = 0;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  if(configPage2.nCylinders <= 4U) { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
-  else { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
+  _decoderState = decoders::ford_tfi::initialise(configPage2);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))
