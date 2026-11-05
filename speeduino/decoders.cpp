@@ -74,6 +74,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/st170.h"
 #include "src/decoders/drz400.h"
 #include "src/decoders/ngc.h"
+#include "src/decoders/vmax.h"
 
 using namespace decoders::shared;
 
@@ -98,12 +99,7 @@ constexpr uint8_t COMPOSITE_LOG_TRIG = 3;
 constexpr uint8_t COMPOSITE_LOG_SYNC = 4;
 constexpr uint8_t COMPOSITE_ENGINE_CYCLE = 5;
 
-/** Universal (shared between decoders) decoder routines.
-*
-* @defgroup dec_uni Universal Decoder Routines
-* 
-* @{
-*/
+/** Universal (shared between decoders) decoder routines. */
 // whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
 
 /** Add tooth log entry to toothHistory (array).
@@ -301,7 +297,6 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
   return page10.TrigEdgeThrd == 0U ? RISING : FALLING;
 }
 
-/** @} */
   
 // LCOV_EXCL_START
 // Exclude one line wrappers from coverage
@@ -407,8 +402,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * No position sensing (Distributor is retained) so crank angle is
 * a made up figure based purely on the first teeth to be seen.
 * Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
-* @defgroup dec_dist Basic Distributor
-* @{
 */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
@@ -438,7 +431,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
                 .setGetFeatures(sharedGetDecoderFeatures)
                 .build();
 }
-/** @} */
 
 /** Decode GM 7X trigger wheel with six equally spaced teeth and a seventh tooth for cylinder identification.
 * Note: Within the decoder code pf GM7X, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
@@ -803,8 +795,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
 
 /** Nissan 360 tooth on cam (Optical trigger disc inside distributor housing).
 See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
-* @defgroup dec_nissan360 Nissan 360 tooth on cam
-* @{
 */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
 {
@@ -838,8 +828,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Subaru 6/7 Trigger pattern decoder for 6 tooth (irregularly spaced) crank and 7 tooth (also fairly irregular) cam wheels (eg late 90's Impreza 2.2).
 This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (See: http://www.vems.hu/wiki/index.php?page=InputTrigger%2FSubaruTrigger ).
@@ -1186,155 +1174,25 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 /** Yamaha Vmax 1990+ with 6 uneven teeth, triggering on the wide lobe.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from Harley and made to work on the Yamah Vmax.
 Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of the lobe. This is required to identify the wide lobe.
-* @defgroup dec_vmax Yamaha Vmax
-* @{
 */
-//_decoderState.curGap = microseconds between primary triggers
-//_decoderState.curGap2 = microseconds between secondary triggers
-//_decoderState.toothCurrentCount = the current number for the end of a lobe
-//_decoderState.secondaryToothCount = the current number of the beginning of a lobe
-//We measure the width of a lobe so on the end of a lobe, but want to trigger on the beginning. Variable _decoderState.toothCurrentCount tracks the downward events, and _decoderState.secondaryToothCount updates on the upward events. Ideally, it should be the other way round but the engine stall routine resets _decoderState.secondaryToothCount, so it would not sync again after an engine stall.
-static void triggerPri_Vmax(void)
-{
-  uint32_t curTime = micros();
-  if(currentStatus.decoder.primary.isTriggered()){// Forwarded from the config page to setup the primary trigger edge (rising or falling). Inverting VR-conditioners require FALLING, non-inverting VR-conditioners require RISING in the Trigger edge setup.
-    _decoderState.curGap2 = curTime;
-    _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-    if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) ){
-      _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-      if (_decoderState.toothCurrentCount > 0) // We have sync based on the tooth width.
-      {
-          _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-          if (_decoderState.toothCurrentCount==1)
-          {
-            _decoderState.secondaryToothCount = 1;
-            _decoderState.triggerToothAngle = 70;// Has to be equal to Angle Routine, and describe the delta between two teeth.
-            _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-            _decoderState.toothOneTime = curTime;
-            _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-            //setFilter((_decoderState.curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*4)/7), configPage4 );//Angle to this tooth is 70, next is in 40, compensating.
-            currentStatus.startRevolutions++; //Counter
-          }
-          else if (_decoderState.toothCurrentCount==2)
-          {
-            _decoderState.secondaryToothCount = 2;
-            _decoderState.triggerToothAngle = 40;
-            //setFilter((_decoderState.curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*7)/4), configPage4 );//Angle to this tooth is 40, next is in 70, compensating.
-          }
-          else if (_decoderState.toothCurrentCount==3)
-          {
-            _decoderState.secondaryToothCount = 3;
-            _decoderState.triggerToothAngle = 70;
-            _decoderState.setFilter(_decoderState.curGap, configPage4);//Angle to this tooth is 70, next is in 70. No need to compensate.
-          }
-          else if (_decoderState.toothCurrentCount==4)
-          {
-            _decoderState.secondaryToothCount = 4;
-            _decoderState.triggerToothAngle = 70;
-            //setFilter((_decoderState.curGap/1.75));//Angle to this tooth is 70, next is in 40, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*4)/7), configPage4 );//Angle to this tooth is 70, next is in 40, compensating.
-          }
-          else if (_decoderState.toothCurrentCount==5)
-          {
-            _decoderState.secondaryToothCount = 5;
-            _decoderState.triggerToothAngle = 40;
-            //setFilter((_decoderState.curGap*1.75));//Angle to this tooth is 40, next is in 70, compensating.
-            _decoderState.setFilter( ((_decoderState.curGap*7)/4), configPage4 );//Angle to this tooth is 40, next is in 70, compensating.
-          }
-          else if (_decoderState.toothCurrentCount==6)
-          {
-            _decoderState.secondaryToothCount = 6;
-            _decoderState.triggerToothAngle = 70;
-            _decoderState.setFilter(_decoderState.curGap, configPage4);//Angle to this tooth is 70, next is in 70. No need to compensate.
-          }
-          _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-          _decoderState.toothLastToothTime = curTime;
-          if (_decoderState.triggerFilterTime > 50000){//The first pulse seen 
-            _decoderState.triggerFilterTime = 0;
-          }
-      }
-      else{
-        _decoderState.triggerFilterTime = 0;
-        return;//Zero, no sync yet.
-      }
-    }
-    else{
-      _decoderState.decoderStatus.validTrigger = false; //Flag this pulse as being an invalid trigger
-    }
-  }
-  else if( _decoderState.decoderStatus.validTrigger ) // Inverted due to vr conditioner. So this is the falling lobe. We only process if there was a valid trigger.
-  {
-    unsigned long curGapLocal = curTime - _decoderState.curGap2;
-    if (curGapLocal > (_decoderState.lastGap * 2)){// Small lobe is 5 degrees, big lobe is 45 degrees. So this should be the wide lobe.
-        if (_decoderState.toothCurrentCount == 0 || _decoderState.toothCurrentCount == 6){//Wide should be seen with _decoderState.toothCurrentCount = 0, when there is no sync yet, or _decoderState.toothCurrentCount = 6 when we have done a full revolution. 
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        }
-        else{//Wide lobe seen where it shouldn't, adding a sync error.
-          currentStatus.syncLossCounter++;
-        }
-        _decoderState.toothCurrentCount = 1;
-    }
-    else if(_decoderState.toothCurrentCount == 6){//The 6th lobe should be wide, adding a sync error.
-        _decoderState.toothCurrentCount = 1;
-        currentStatus.syncLossCounter++;
-    }
-    else{// Small lobe, just add 1 to the _decoderState.toothCurrentCount.
-      _decoderState.toothCurrentCount++;
-    }
-    _decoderState.lastGap = curGapLocal;
-    return;
-  }
-  else if( _decoderState.decoderStatus.validTrigger == false)
-  {
-    _decoderState.decoderStatus.validTrigger = true; //We reset this every time to ensure we only filter when needed.
-  }
-}
-
-static uint32_t getRevolutionTime_Vmax(void)
-{
-  tooth_speed_sample_t sample = atomicToothSpeedSample(currentStatus, _decoderState);
-  uint32_t revolutionTime = 0U;
-
-  if (sample.syncStatus!=SyncStatus::Full) { return 0U; } //Speed is unknown without sync
-
-  if (currentStatus.RPM < currentStatus.crankRPM)
-  {
-    if (revolutionTimeFromLastTooth(sample, revolutionTime)==true) { return revolutionTime; } //triggerToothAngle is zero until the first tooth after sync
-    return publishedRevolutionTime(currentStatus);
-  }
-  return stdGetRevolutionTime(currentStatus, _decoderState, CRANK_SPEED);
-}
-
-
-static int16_t getCrankAngle_Vmax(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_lookup_caa_secondary(_decoderState);
-  ++calculator._toothCurrentCount; // Since calculate() uses 0-based indices
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 0; // The number of degrees that passes from tooth to tooth, ev. 0. It alternates uneven
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * 60U); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initi check to prevent the fuel pump just staying on all the time
-  _decoderState.triggerFilterTime = 1500;
-  _decoderState.decoderStatus.validTrigger = true; // We must start with a valid trigger or we cannot start measuring the lobe width. We only have a false trigger on the lobe up event when it doesn't pass the filter. Then, the lobe width will also not be beasured.
-  _decoderState.toothAngles[1] = 0;      //tooth #1, these are the absolute tooth positions
-  _decoderState.toothAngles[2] = 40;     //tooth #2
-  _decoderState.toothAngles[3] = 110;    //tooth #3
-  _decoderState.toothAngles[4] = 180;    //tooth #4
-  _decoderState.toothAngles[5] = 220;    //tooth #5
-  _decoderState.toothAngles[6] = 290;    //tooth #6
+  _decoderState = decoders::vmax::initialise(micros(), currentStatus);
+
+  static const auto primaryTrigger = []() {
+    decoders::vmax::triggerPrimary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::vmax::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::vmax::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Vmax, CHANGE)
-                  .setGetRevolutionTime(getRevolutionTime_Vmax)
-                  .setGetCrankAngle(getCrankAngle_Vmax)
+                  .setPrimaryTrigger(primaryTrigger, CHANGE)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -1342,18 +1200,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
                   .build();
 }
 
-/** @} */
-
 /** Renix 44-2-2  and 66-2-2-2 decoder.  
 * Renix trigger wheel doesn't decode into 360 degrees nicely (360/44 = 8.18 degrees or 360/66 = 5.454545). Speeduino can't handle any teeth that have a decimal point.
 * Solution is to count teeth, every 11 teeth = a proper angle. For 66 tooth decoder its 60 degrees per 11 teeth, for 44 tooth decoder its 90 degrees per 11 teeth.
 * This means the system sees 4 teeth on the 44 tooth wheel and 6 teeth on the 66 tooth wheel.
 * Double missing tooth in the pattern is actually a large tooth and a large gap. If the trigger is set to rising you'll see the start of the large tooth
 * then the gap. If its not set to rising the code won't work due to seeing two gaps
-*
-*
-* @defgroup dec_renix Renix decoder 
-* @{
 */
 
 // variables used to help calculate gap on the physical 44 or 66 teeth we're pretending don't exist in most of the speeduino code
@@ -1510,8 +1362,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
                   .build();
 }
 
-/** @} */
-
 /*****************************************************************
  * Rover MEMS decoder
  * Covers multiple trigger wheels used interchanbably over the range of MEMS units
@@ -1522,9 +1372,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  * 17 gap 17 gap 
  *
  * Support no cam, single tooth Cam (or half moon cam), and multi tooth (5-3-2 teeth)
- *
- * @defgroup dec_rover_mems Rover MEMS all versions including T Series, O Series, Mini and K Series
- * @{
  */
 volatile unsigned long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
 
@@ -1879,13 +1726,10 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** Suzuki K6A 3 cylinder engine
 
 * (See: https://www.msextra.com/forums/viewtopic.php?t=74614)
-* @defgroup Suzuki_K6A Suzuki K6A 
-* @{
 */
 static void triggerPri_SuzukiK6A(void)
 {
@@ -2204,13 +2048,9 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
                   .build();
 }
 
-/** @} */
-
 /** Ford TFI - Distributor mounted signal tooth wheel. Same number of teeth as cylinders.
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
 
-* @defgroup Ford_TFI Ford TFI
-* @{
 */
 /** Ford TFI Primary (Rising Edge).
  * 
@@ -2463,4 +2303,3 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
