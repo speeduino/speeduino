@@ -255,5 +255,17 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   } //Trigger filter
 }
 
+uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState)
+{
+  //Cranking code needs working out. 
+
+  uint32_t revolutionTime = stdGetRevolutionTime(current, decoderState, CAM_SPEED);
+
+  decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(decoderState.MAX_STALL_TIME < 366667UL) { decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+
+  return revolutionTime;
+}
+
 }
 }

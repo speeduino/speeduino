@@ -1280,18 +1280,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 
 * (See: https://www.msextra.com/forums/viewtopic.php?t=74614)
 */
-static uint32_t getRevolutionTime_SuzukiK6A(void)
-{
-  //Cranking code needs working out. 
-
-  uint32_t revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-
-  return revolutionTime;
-}
-
 static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
 {
   auto calculator = decoders::shared::atomic_make_lookup_caa(_decoderState);
@@ -1341,10 +1329,13 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
   static const auto primaryTrigger = []() {
     decoders::k6a::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::k6a::getRevolutionTime(currentStatus, _decoderState);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
-                  .setGetRevolutionTime(getRevolutionTime_SuzukiK6A)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_SuzukiK6A)
                   .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
                   .setReset(sharedDecoderReset)
