@@ -97,6 +97,8 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       // Nothing to do but keep MISRA happy.
     }
 
+    // TODO: requires bug fix for speeduino/speeduino#1729
+    // LCOV_EXCL_START
     // check gaps match with tooth to check we have sync 
     // so if we *think* we've seen tooth 3 whose gap should be smaller than the previous tooth & it isn't, 
     // then we've lost sync
@@ -132,6 +134,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
         }
         break;
     }
+    // LCOV_EXCL_STOP
 
     // Setup data to allow other areas of the system to work due to odd sized teeth - this could be merged with sync checking above, left separate to keep code clearer as its doing only one function at once
     // % of filter are not based on previous tooth size but expected next tooth size

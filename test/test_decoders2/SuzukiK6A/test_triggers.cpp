@@ -103,7 +103,7 @@ static void test_triggerPrimary_loses_sync_after_tooth_range(void)
 
   static void test_triggerPrimary_loses_sync_when_short_tooth_gap_is_too_long(void)
   {
-    // TODO: requires bug fix
+    // TODO: requires bug fix for speeduino/speeduino#1729
   #if false
     context_k6a_t context;
     context.init();
@@ -125,7 +125,7 @@ static void test_triggerPrimary_loses_sync_after_tooth_range(void)
 
   static void test_triggerPrimary_loses_sync_when_long_tooth_gap_is_too_short(void)
   {
-    // TODO: requires bug fix
+    // TODO: requires bug fix for speeduino/speeduino#1729
   #if false
     context_k6a_t context;
     context.init();
