@@ -77,6 +77,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/vmax.h"
 #include "src/decoders/renix.h"
 #include "src/decoders/rovermems.h"
+#include "src/decoders/k6a.h"
 
 using namespace decoders::shared;
 
@@ -1541,48 +1542,7 @@ static void triggerSetEndTeeth_SuzukiK6A(void)
 
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) - set to a value, needs to be set per tooth
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
-
-  configPage4.TrigSpeed = CAM_SPEED;
-  _decoderState.triggerActualTeeth = 7;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.curGap = _decoderState.curGap2 = _decoderState.curGap3 = 0;
-
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  else { _decoderState.toothLastToothTime = 0; }
-  _decoderState.toothLastMinusOneToothTime = 0;
-
-  // based on data in msextra page linked to above we can deduce,
-  // gap between rising and falling edge of a normal 70 degree tooth is 48 degrees, this means the gap is 70 degrees - 48 degrees = 22 degrees.
-  // assume this is constant for all similar sized gaps and teeth
-  // sync tooth is 35 degrees - eyeball looks like the tooth is 50% tooth and 50% gap so guess its 17 degrees and 18 degrees.
-
-  // coded every tooth here in case you want to try "change" setting on the trigger setup (this is defined in init.ino and what i've set it to, otherwise you need code to select rising or falling in init.ino (steal it from another trigger)). 
-  // If you don't want change then drop the 'falling' edges listed below and half the number of edges + reduce the _decoderState.triggerActualTeeth
-  // nb as you can edit the trigger offset using rising or falling edge setup below is irrelevant as you can adjust via the trigger offset to cover the difference.
-
-  // not using _decoderState.toothAngles[0] as i'm hoping it makes logic easier
-
-  _decoderState.toothAngles[0] = -70;                 // Wrap around to 650, 
-  _decoderState.toothAngles[1] = 0;                   // 0 TDC cylinder 1, 
-  _decoderState.toothAngles[2] = 170;                 // 170 - end of cylinder 1, start of cylinder 3, trigger ignition for cylinder 3 on this tooth
-  _decoderState.toothAngles[3] = 240;                 // 70 TDC cylinder 3
-  _decoderState.toothAngles[4] = 410;                 // 170  - end of cylinder 3, start of cylinder2, trigger ignition for cylinder 2 on this tooth
-  _decoderState.toothAngles[5] = 480;                 // 70 TDC cylinder 2 
-  _decoderState.toothAngles[6] = 515;                 // 35 Additional sync tooth
-  _decoderState.toothAngles[7] = 650;                 // 135 end of cylinder 2, start of cylinder 1, trigger ignition for cylinder 1 on this tooth
-  _decoderState.toothAngles[8] = 720;                 // 70 - gap to rotation to TDC1. array item 1 and 8 are the same, code never gets here its for reference only
-
-  
-  _decoderState.MAX_STALL_TIME = (3333UL * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = 0; //Need to figure out something better for this
-  _decoderState.decoderStatus.toothAngleIsCorrect = false;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
+  _decoderState = decoders::k6a::initialise(micros(), currentStatus, configPage4);
 
   return decoder_builder_t()
                   .setPrimaryTrigger(triggerPri_SuzukiK6A, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
