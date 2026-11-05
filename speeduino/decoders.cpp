@@ -32,19 +32,14 @@ A full copy of the license may be found in the projects root directory
  * - To group all decoders together add 1) @defgroup dec Decoders (on top) and 2) "@ingroup dec" to each decoder (under @defgroup)
  * - To compare Speeduino Doxyfile to default config, do: `doxygen -g Doxyfile.default ; diff Doxyfile.default Doxyfile`
  */
-#include <limits.h>
 #include "globals.h"
 #include "decoders.h"
-#include "elapsed_time.h"
 #include "scheduler.h"
 #include "crankMaths.h"
-#include "timers.h"
 #include "unit_testing.h"
-#include "atomic.h"
 #include "decoder_init.h"
 #include "decoder_builder.h"
 #include "scheduledIO_ign.h"
-#include "src/pins/boardInputPin.h"
 #include "scheduler_ignition_controller.h"
 #include "src/decoders/shared/crank_angle_calculator.h"
 #include "src/decoders/shared/decoder_state.h"
@@ -294,35 +289,6 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
   return page10.TrigEdgeThrd == 0U ? RISING : FALLING;
 }
 
-  
-// LCOV_EXCL_START
-// Exclude one line wrappers from coverage
-static void triggerPri_missingTooth(void)
-{
-  decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
-}
-
-static void triggerThird_missingTooth(void)
-{
-  decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
-}
-
-static uint32_t getRevolutionTime_missingTooth(void)
-{
-  return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
-}
-
-static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
-{
-  return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
-}
-
-static void triggerSetEndTeeth_missingTooth(void)
-{
-  decoders::missing_tooth::setEndTeeth(_decoderState, configPage4);
-}
-// LCOV_EXCL_STOP
-
 decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
 {
   _decoderState = decoders::missing_tooth::initialise(configPage4);
@@ -332,17 +298,32 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                       || (configPage2.injLayout == INJ_SEQUENTIAL) 
                       || (configPage6.vvtEnabled > 0) );
 
+  static const auto triggerPrimary = []() {
+    decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
   static const auto triggerSecondary = []() {
     decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
   };
+  static const auto triggerTertiary = []() {
+    decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::missing_tooth::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSecondary, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
-                  .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
-                  .setGetRevolutionTime(getRevolutionTime_missingTooth)
-                  .setGetCrankAngle(getCrankAngle_missingTooth)
-                  .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
+                  .setTertiaryTrigger(triggerTertiary, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -350,44 +331,32 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .build();
 }
 
-// LCOV_EXCL_START
-// Exclude one line wrappers from coverage
-static void triggerPri_DualWheel(void)
-{
-    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
-}
-
-static void triggerSec_DualWheel(void)
-{
-    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
-}
-
-static uint32_t getRevolutionTime_DualWheel(void)
-{
-    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
-}
-
-static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
-{
-    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
-}
-
-static void triggerSetEndTeeth_DualWheel(void)
-{
-    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
-}
-// LCOV_EXCL_STOP
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 {
   _decoderState = decoders::dual_wheel::initialise(configPage4);
 
+  static const auto triggerPrimary = []() {
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto triggerSecondary = []() {
+    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_DualWheel, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_DualWheel)
-                  .setGetCrankAngle(getCrankAngle_DualWheel)
-                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSecondary, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
