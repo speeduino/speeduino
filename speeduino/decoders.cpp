@@ -1280,19 +1280,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 
 * (See: https://www.msextra.com/forums/viewtopic.php?t=74614)
 */
-static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_lookup_caa(_decoderState);
-
-  // TODO: check if this can be removed.
-  if (calculator._toothCurrentCount!=0U) {
-    _decoderState.triggerToothAngle = (uint16_t)_decoderState.toothAngles[calculator._toothCurrentCount] - (uint16_t)_decoderState.toothAngles[calculator._toothCurrentCount-1U];
-  }
-  ++calculator._toothCurrentCount;
-  
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
 // Assumes no advance greater than 48 degrees. Triggers on the tooth before the ignition event
 static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionSchedule &schedule) {
   //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
@@ -1332,11 +1319,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
   static const auto getRevolutionTime = []() {
     return decoders::k6a::getRevolutionTime(currentStatus, _decoderState);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::k6a::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_SuzukiK6A)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)

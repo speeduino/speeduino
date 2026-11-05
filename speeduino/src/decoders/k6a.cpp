@@ -267,5 +267,18 @@ uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderStat
   return revolutionTime;
 }
 
+int16_t getCrankAngle(uint32_t currMicros, shared::state_t &decoderState, const config4 &page4)
+{
+  auto calculator = decoders::shared::atomic_make_lookup_caa(decoderState);
+
+  // TODO: check if this can be removed.
+  if (calculator._toothCurrentCount!=0U) {
+    decoderState.triggerToothAngle = (uint16_t)decoderState.toothAngles[calculator._toothCurrentCount] - (uint16_t)decoderState.toothAngles[calculator._toothCurrentCount-1U];
+  }
+  ++calculator._toothCurrentCount;
+  
+  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, decoderState.toothAngles, page4));
+}
+
 }
 }
