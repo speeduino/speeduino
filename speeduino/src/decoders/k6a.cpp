@@ -280,5 +280,33 @@ int16_t getCrankAngle(uint32_t currMicros, shared::state_t &decoderState, const 
   return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, decoderState.toothAngles, page4));
 }
 
+static uint16_t __attribute__((noinline)) calcEndTooth(const IgnitionSchedule &schedule, const shared::state_t &decoderState, const config4 &page4) {
+  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
+  const int16_t tempIgnitionEndTooth = ignitionLimits(schedule.dischargeAngle - page4.triggerAngle);
+
+  uint8_t nCount=1U;
+  while ((nCount<8U) && (tempIgnitionEndTooth > decoderState.toothAngles[nCount])) {
+    ++nCount;
+  }
+  if(nCount==1U || nCount==8U) {
+    // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
+    return 7U;
+  } 
+
+  // The tooth we want is the tooth prior to this one.     
+  return nCount-1U;
+}
+
+void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
+{
+  decoderState.ignitionEndTeeth[0] = calcEndTooth(ignitionSchedule1, decoderState, page4);
+#if (IGN_CHANNELS >= 2)
+  decoderState.ignitionEndTeeth[1] = calcEndTooth(ignitionSchedule2, decoderState, page4);
+#endif
+#if (IGN_CHANNELS >= 3)
+  decoderState.ignitionEndTeeth[2] = calcEndTooth(ignitionSchedule3, decoderState, page4);
+#endif
+}
+
 }
 }

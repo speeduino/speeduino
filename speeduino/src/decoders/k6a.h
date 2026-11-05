@@ -22,5 +22,7 @@ namespace k6a {
 
   int16_t getCrankAngle(uint32_t currMicros, shared::state_t &decoderState, const config4 &page4);
 
+  void setEndTeeth(shared::state_t &decoderState, const config4 &page4);
+
 }
 }

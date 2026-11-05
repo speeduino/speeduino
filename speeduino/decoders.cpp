@@ -1280,35 +1280,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 
 * (See: https://www.msextra.com/forums/viewtopic.php?t=74614)
 */
-// Assumes no advance greater than 48 degrees. Triggers on the tooth before the ignition event
-static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionSchedule &schedule) {
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  const int16_t tempIgnitionEndTooth = ignitionLimits(schedule.dischargeAngle - configPage4.triggerAngle);
-
-  uint8_t nCount=1U;
-  while ((nCount<8U) && (tempIgnitionEndTooth > _decoderState.toothAngles[nCount])) {
-    ++nCount;
-  }
-  if(nCount==1U || nCount==8U) {
-    // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-    return 7U;
-  } 
-
-  // The tooth we want is the tooth prior to this one.     
-  return nCount-1U;
-}
-
-static void triggerSetEndTeeth_SuzukiK6A(void)
-{
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_SuzukiK6A(ignitionSchedule1);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_SuzukiK6A(ignitionSchedule2);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_SuzukiK6A(ignitionSchedule3);
-#endif
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 {
   _decoderState = decoders::k6a::initialise(micros(), currentStatus, configPage4);
@@ -1322,12 +1293,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return decoders::k6a::getCrankAngle(currMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    decoders::k6a::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
