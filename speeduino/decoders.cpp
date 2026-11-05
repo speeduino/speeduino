@@ -75,6 +75,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/drz400.h"
 #include "src/decoders/ngc.h"
 #include "src/decoders/vmax.h"
+#include "src/decoders/renix.h"
 
 using namespace decoders::shared;
 
@@ -1207,154 +1208,28 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 * Double missing tooth in the pattern is actually a large tooth and a large gap. If the trigger is set to rising you'll see the start of the large tooth
 * then the gap. If its not set to rising the code won't work due to seeing two gaps
 */
-
-// variables used to help calculate gap on the physical 44 or 66 teeth we're pretending don't exist in most of the speeduino code
-// reusing existing variables to save storage space as these aren't used in the code for their original purpose.
-#define renixSystemLastToothTime         _decoderState.toothLastToothRisingTime
-#define renixSystemLastMinusOneToothTime _decoderState.toothLastSecToothRisingTime
-
-static void triggerPri_Renix(void)
-{
-  uint32_t curTime = micros();
-  _decoderState.curGap = curTime - renixSystemLastToothTime;
-
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime )   
-  {
-       
-    _decoderState.toothSystemCount++;
-
-    if( renixSystemLastToothTime != 0 && renixSystemLastMinusOneToothTime != 0)
-    { _decoderState.targetGap = (2 * (renixSystemLastToothTime - renixSystemLastMinusOneToothTime));}  // in real world the physical 2 tooth gap is bigger than 2 teeth - more like 2.5
-    else 
-    { _decoderState.targetGap = 100000000L; } // random large number to stop system thinking we have a gap for the first few teeth on start up
-
-    if( _decoderState.curGap >= _decoderState.targetGap )
-    { 
-      /* add two teeth to account for the gap we've just seen */      
-      _decoderState.toothSystemCount++;
-      _decoderState.toothSystemCount++;
-   
-      if( _decoderState.toothSystemCount != 12) // if not 12 (the first tooth after the gap) then we've lost sync
-      {
-        // lost sync
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        currentStatus.syncLossCounter++;            
-        _decoderState.toothSystemCount = 1; // first tooth after gap is always 1
-        _decoderState.toothCurrentCount = 1; // Reset as we've lost sync
-      }
-    }
-    else
-    { 
-      //Recalc the new filter value, only do this on the single gap tooth 
-      _decoderState.setFilter(_decoderState.curGap, configPage4);  
-    }
-    renixSystemLastMinusOneToothTime = renixSystemLastToothTime; // needed for target gap calculation
-    renixSystemLastToothTime = curTime;
-
-    if( _decoderState.toothSystemCount == 12  || _decoderState.toothLastToothTime == 0) // _decoderState.toothLastToothTime used to ensure we set the value so the code that handles the fuel pump in speeduino.ini has a value to use once the engine is running.
-    {
-      _decoderState.toothCurrentCount++;
-
-      if( (configPage2.nCylinders == 6 && _decoderState.toothCurrentCount == 7) ||    // 6 Pretend teeth on the 66 tooth wheel, if get to severn rotate round back to first tooth
-          (configPage2.nCylinders == 4 && _decoderState.toothCurrentCount == 5 ) )    // 4 Pretend teeth on the 44 tooth wheel, if get to five rotate round back to first tooth
-      {
-        _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-        _decoderState.toothOneTime = curTime;
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-        currentStatus.startRevolutions++; //Counter               
-        _decoderState.revolutionOne = !_decoderState.revolutionOne;
-        _decoderState.toothCurrentCount = 1;  
-      }
-
-      _decoderState.toothSystemCount = 1;
-      _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-      _decoderState.toothLastToothTime = curTime; 
-
-
-      //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) && (currentStatus.rotationStatus!=EngineRotationStatus::Cranking) ) 
-      {
-        int16_t crankAngle = ( (_decoderState.toothCurrentCount - 1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-        if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (_decoderState.revolutionOne == true) && (configPage4.TrigSpeed == CRANK_SPEED) )
-        {
-          crankAngle += 360;
-          checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, (configPage4.triggerTeeth + _decoderState.toothCurrentCount)); 
-        }
-        else{ checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount); }
-      }
-    }
-  } 
-}
-
-static uint16_t __attribute__((noinline)) calcEndTeeth_Renix(const IgnitionSchedule &schedule, uint8_t toothAdder) {
-  int16_t tempEndTooth = _decoderState.toothNumFromScheduleAngles(configPage4, schedule) - 1;
-  // Clamp to tooth count
-  return _decoderState.clampToActualTeeth(configPage4, decoders::shared::clampToToothCount(configPage4, tempEndTooth, toothAdder), toothAdder);
-}
-
-static void triggerSetEndTeeth_Renix(void)
-{
-  byte toothAdder = 0;
-  if( (configPage4.sparkMode == IGN_MODE_SEQUENTIAL) && (configPage4.TrigSpeed == CRANK_SPEED) ) { toothAdder = configPage4.triggerTeeth; }
-
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_Renix(ignitionSchedule1, toothAdder);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_Renix(ignitionSchedule2, toothAdder);
-  currentStatus.canin[1] = _decoderState.ignitionEndTeeth[1];
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_Renix(ignitionSchedule3, toothAdder);
-#endif
-#if (IGN_CHANNELS >= 4)
-  _decoderState.ignitionEndTeeth[3] = calcEndTeeth_Renix(ignitionSchedule4, toothAdder);
-#endif
-#if IGN_CHANNELS >= 5
-  _decoderState.ignitionEndTeeth[4] = calcEndTeeth_Renix(ignitionSchedule5, toothAdder);
-#endif
-#if IGN_CHANNELS >= 6
-  _decoderState.ignitionEndTeeth[5] = calcEndTeeth_Renix(ignitionSchedule6, toothAdder);
-#endif
-#if IGN_CHANNELS >= 7
-  _decoderState.ignitionEndTeeth[6] = calcEndTeeth_Renix(ignitionSchedule7, toothAdder);
-#endif
-#if IGN_CHANNELS >= 8
-  _decoderState.ignitionEndTeeth[7] = calcEndTeeth_Renix(ignitionSchedule8, toothAdder);
-#endif
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  if( configPage2.nCylinders == 4)
-  {
-    _decoderState.setTriggerToothAngle(90); //The number of degrees that passes from tooth to tooth (primary) this changes between 41 and 49 degrees
-    configPage4.triggerTeeth = 4; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 8 teeth.
-    configPage4.triggerMissingTeeth = 0;
-    _decoderState.triggerActualTeeth = 4; //The number of teeth we're pretending physically existing on the wheel.
-    _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 44U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  }
-  else if (configPage2.nCylinders == 6)
-  {
-    _decoderState.setTriggerToothAngle(60);
-    configPage4.triggerTeeth = 6; // wheel has 44 teeth but we use these to work out which tooth angle to use, therefore speeduino thinks we only have 6 teeth.
-    configPage4.triggerMissingTeeth = 0;
-    _decoderState.triggerActualTeeth = 6; //The number of teeth we're pretending physically existing on the wheel.
-    _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 66U)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  }
-  _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm). Largest gap between teeth is 90 or 60 degrees depending on decoder.
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
+  _decoderState = decoders::renix::initialise(configPage2, configPage4);
 
-  _decoderState.toothSystemCount = 1;
-  _decoderState.toothCurrentCount = 1;
+  static const auto primaryTrigger = []() {
+    decoders::renix::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::renix::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_Renix, getConfigPriTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_missingTooth)
-                  .setGetCrankAngle(getCrankAngle_missingTooth)
-                  .setSetEndTeeth(triggerSetEndTeeth_Renix)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
