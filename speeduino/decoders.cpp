@@ -1313,85 +1313,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 /** Ford TFI - Distributor mounted signal tooth wheel. Same number of teeth as cylinders.
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
 */
-
-/** Ford TFI - Set End Teeth.
- * 
- * */
-static void triggerSetEndTeeth_FordTFI(void)
-{
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - configPage4.triggerAngle);
-  tempEndAngle = ignitionLimits((tempEndAngle));
-
-  switch(configPage2.nCylinders)
-  {
-    case 4:
-      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 1;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-      }
-      break;
-    case 6:
-      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 1;
-      }
-      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-      }
-      break;
-    case 8:
-      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 4;
-        _decoderState.ignitionEndTeeth[3] = 1;
-      }
-      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 4;
-        _decoderState.ignitionEndTeeth[2] = 1;
-        _decoderState.ignitionEndTeeth[3] = 2;
-      }
-      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 4;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-        _decoderState.ignitionEndTeeth[3] = 3;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-        _decoderState.ignitionEndTeeth[3] = 4;
-      }
-      break;
-  }
-}
-
-/** Ford TFI Setup.
- * 
- * */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
 {
   _decoderState = decoders::ford_tfi::initialise(configPage2);
@@ -1408,13 +1329,16 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   static const auto getCrankAngle = [](uint32_t currMicros) {
     return decoders::ford_tfi::getCrankAngle(currMicros, _decoderState, configPage4);
   };
+  static const auto setEndTeeth = []() {
+    decoders::ford_tfi::setEndTeeth(_decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle)
-                  .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)

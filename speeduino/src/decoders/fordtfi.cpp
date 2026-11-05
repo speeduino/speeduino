@@ -161,5 +161,77 @@ int16_t getCrankAngle(uint32_t currMicros, const shared::state_t &decoderState, 
   return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, page4));
 }
 
+void setEndTeeth(shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  int16_t tempEndAngle = (ignitionSchedule1.dischargeAngle - page4.triggerAngle);
+  tempEndAngle = ignitionLimits(tempEndAngle);
+
+  switch(page2.nCylinders)
+  {
+    case 4:
+      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
+      {
+        decoderState.ignitionEndTeeth[0] = 2;
+        decoderState.ignitionEndTeeth[1] = 1;
+      }
+      else
+      {
+        decoderState.ignitionEndTeeth[0] = 1;
+        decoderState.ignitionEndTeeth[1] = 2;
+      }
+      break;
+    case 6:
+      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
+      {
+        decoderState.ignitionEndTeeth[0] = 2;
+        decoderState.ignitionEndTeeth[1] = 3;
+        decoderState.ignitionEndTeeth[2] = 1;
+      }
+      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
+      {
+        decoderState.ignitionEndTeeth[0] = 3;
+        decoderState.ignitionEndTeeth[1] = 1;
+        decoderState.ignitionEndTeeth[2] = 2;
+      }
+      else
+      {
+        decoderState.ignitionEndTeeth[0] = 1;
+        decoderState.ignitionEndTeeth[1] = 2;
+        decoderState.ignitionEndTeeth[2] = 3;
+      }
+      break;
+    case 8:
+      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
+      {
+        decoderState.ignitionEndTeeth[0] = 2;
+        decoderState.ignitionEndTeeth[1] = 3;
+        decoderState.ignitionEndTeeth[2] = 4;
+        decoderState.ignitionEndTeeth[3] = 1;
+      }
+      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
+      {
+        decoderState.ignitionEndTeeth[0] = 3;
+        decoderState.ignitionEndTeeth[1] = 4;
+        decoderState.ignitionEndTeeth[2] = 1;
+        decoderState.ignitionEndTeeth[3] = 2;
+      }
+      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
+      {
+        decoderState.ignitionEndTeeth[0] = 4;
+        decoderState.ignitionEndTeeth[1] = 1;
+        decoderState.ignitionEndTeeth[2] = 2;
+        decoderState.ignitionEndTeeth[3] = 3;
+      }
+      else
+      {
+        decoderState.ignitionEndTeeth[0] = 1;
+        decoderState.ignitionEndTeeth[1] = 2;
+        decoderState.ignitionEndTeeth[2] = 3;
+        decoderState.ignitionEndTeeth[3] = 4;
+      }
+      break;
+  }
+}
+
 }
 }
