@@ -53,6 +53,10 @@ static void triggerRoverMEMSCommon(uint32_t curTime, statuses &current, shared::
     }
     else if(decoderState.decoderStatus.syncStatus!=SyncStatus::Full) 
     { decoderState.decoderStatus.syncStatus = SyncStatus::Partial; } //If there is primary trigger but no secondary we only have half sync.
+    else
+    {
+      // No action - retain current sync status
+    }
   }
   else { decoderState.decoderStatus.syncStatus = SyncStatus::Partial; } //If nothing is using sequential, we  set half sync bit
 
@@ -90,7 +94,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       // reduce checks to minimise cpu load when looking for key point to identify where we are on the wheel
       if( decoderState.toothCurrentCount >= decoderState.triggerActualTeeth )
       {                           //12345678901234567890123456789012 
-        if( decoderState.roverMEMSTeethSeen == 0b11111101111111011111111110111111) // Binary pattern for trigger pattern 9-7-10-6- (#5)
+        if( decoderState.roverMEMSTeethSeen == 0b11111101111111011111111110111111U) // Binary pattern for trigger pattern 9-7-10-6- (#5)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 5)
           {
@@ -105,7 +109,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }  
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //123456789012345678901234567890123456
-        else if( decoderState.roverMEMSTeethSeen == 0b11011101111111111111101101111111) // Binary pattern for trigger pattern 3-14-2-13- (#4)
+        else if( decoderState.roverMEMSTeethSeen == 0b11011101111111111111101101111111U) // Binary pattern for trigger pattern 3-14-2-13- (#4)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 4)
           {
@@ -120,7 +124,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }  
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //123456789012345678901234567890123456
-        else if(decoderState.roverMEMSTeethSeen == 0b11011011111111111111011101111111) // Binary pattern for trigger pattern 2-14-3-13- (#3)
+        else if(decoderState.roverMEMSTeethSeen == 0b11011011111111111111011101111111U) // Binary pattern for trigger pattern 2-14-3-13- (#3)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 3)
           {
@@ -135,7 +139,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           } 
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //12345678901234567890123456789012
-        else if(decoderState.roverMEMSTeethSeen == 0b11111101111101111111111110111101) // Binary pattern for trigger pattern 11-5-12-4- (#2)
+        else if(decoderState.roverMEMSTeethSeen == 0b11111101111101111111111110111101U) // Binary pattern for trigger pattern 11-5-12-4- (#2)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 2)
           {
@@ -150,7 +154,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }  
           triggerRoverMEMSCommon(curTime, current, decoderState, page2, page4);
         }                             //12345678901234567890123456789012
-        else if(decoderState.roverMEMSTeethSeen == 0b11111111111101111111111111111101) // Binary pattern for trigger pattern 17-17- (#1)
+        else if(decoderState.roverMEMSTeethSeen == 0b11111111111101111111111111111101U) // Binary pattern for trigger pattern 17-17- (#1)
         {
           if(decoderState.toothAngles[ID_TOOTH_PATTERN] != 1)
           {
@@ -167,6 +171,10 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
         {
           decoderState.decoderStatus.syncStatus = SyncStatus::None;
           current.syncLossCounter++;              
+        }
+        else
+        {
+          // ???
         }
       }
     }
@@ -259,8 +267,16 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
             decoderState.toothCurrentCount += 18;
           }
         }
+        else
+        {
+          // Non-sequential tooth.
+        }
         decoderState.secondaryToothCount = 1; // as we've had a gap we need to reset to this being the first tooth after the gap
       }
+    }
+    else
+    {
+      // Unknown secondary pattern
     }
   } //Trigger filter
 }
@@ -271,10 +287,10 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
 
   if( current.RPM < current.crankRPM)
   {
-    if( (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH1]) && 
-        (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH2]) && 
-        (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH3]) && 
-        (decoderState.toothCurrentCount != (unsigned int) decoderState.toothAngles[SKIP_TOOTH4]) )
+    if( (decoderState.toothCurrentCount != (uint16_t) decoderState.toothAngles[SKIP_TOOTH1]) && 
+        (decoderState.toothCurrentCount != (uint16_t) decoderState.toothAngles[SKIP_TOOTH2]) && 
+        (decoderState.toothCurrentCount != (uint16_t) decoderState.toothAngles[SKIP_TOOTH3]) && 
+        (decoderState.toothCurrentCount != (uint16_t) decoderState.toothAngles[SKIP_TOOTH4]) )
     { revolutionTime = crankingGetRevolutionTime(current, decoderState, page4, 36, CRANK_SPEED); }
     else
     { revolutionTime = shared::publishedRevolutionTime(current); } //Can't do per tooth calculation as the missing tooth messes the calculation
@@ -284,7 +300,7 @@ uint32_t getRevolutionTime(const statuses &current, const shared::state_t &decod
   return revolutionTime;
 }
 
-static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSchedule &schedule, uint8_t toothAdder, const config4 &page4) {
+static int16_t __attribute__((noinline)) calcEndTooth(const IgnitionSchedule &schedule, uint8_t toothAdder, const config4 &page4) {
   int16_t channelToothAdder = 36 + (int16_t)toothAdder;
   int16_t tempIgnitionEndTooth = ( (schedule.dischargeAngle - page4.triggerAngle) / (int16_t)(10) ) - 1;
   if(tempIgnitionEndTooth > channelToothAdder) { tempIgnitionEndTooth -= channelToothAdder; }
@@ -295,31 +311,29 @@ static int16_t __attribute__((noinline)) calcEndTooth_RoverMEMS(const IgnitionSc
 
 void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
 {
-  int16_t tempIgnitionEndTooth[5]; // cheating with the array - location 1 is spark 1, location 0 not used.   
+  int16_t tempIgnitionEndTooth[5] = {}; // cheating with the array - location 1 is spark 1, location 0 not used.   
   int16_t toothAdder = 0;
 
   if( (page4.sparkMode == IGN_MODE_SEQUENTIAL) && (page4.TrigSpeed == CRANK_SPEED) ) { toothAdder = 36; }
 
-  tempIgnitionEndTooth[1] = calcEndTooth_RoverMEMS(ignitionSchedule1, toothAdder, page4);
+  tempIgnitionEndTooth[1] = calcEndTooth(ignitionSchedule1, toothAdder, page4);
 #if (IGN_CHANNELS >= 2)
-  tempIgnitionEndTooth[2] = calcEndTooth_RoverMEMS(ignitionSchedule2, toothAdder, page4);
+  tempIgnitionEndTooth[2] = calcEndTooth(ignitionSchedule2, toothAdder, page4);
 #endif
 #if (IGN_CHANNELS >= 3)
-  tempIgnitionEndTooth[3] = calcEndTooth_RoverMEMS(ignitionSchedule3, toothAdder, page4);
+  tempIgnitionEndTooth[3] = calcEndTooth(ignitionSchedule3, toothAdder, page4);
 #endif
 #if (IGN_CHANNELS >= 4)
-  tempIgnitionEndTooth[4] = calcEndTooth_RoverMEMS(ignitionSchedule4, toothAdder, page4);
+  tempIgnitionEndTooth[4] = calcEndTooth(ignitionSchedule4, toothAdder, page4);
 #endif
 
   // take into account the missing teeth on the Rover flywheels
-  int tempCount=0;
- 
   if(page4.sparkMode == IGN_MODE_SEQUENTIAL)
   {
     // check the calculated trigger tooth exists, if it doesn't use the previous tooth
     // nb the decoderState.toothAngles[x] holds the tooth after the gap, hence the '-1' to see if it matches a gap
  
-    for(tempCount=1;tempCount <5;tempCount++)
+    for(uint8_t tempCount=1;tempCount <5;tempCount++)
     {
       if(tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[2]) ||
          tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[3]) || tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[4]) ||
@@ -330,7 +344,7 @@ void setEndTeeth(shared::state_t &decoderState, const config4 &page4)
   }
   else
   {
-    for(tempCount=1;tempCount<5;tempCount++)
+    for(uint8_t tempCount=1;tempCount<5;tempCount++)
     {
       if(tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[1]) || tempIgnitionEndTooth[tempCount] == (decoderState.toothAngles[2]) )
       { tempIgnitionEndTooth[tempCount]--; }  
