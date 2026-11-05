@@ -41,7 +41,6 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   state.toothAngles[7] = 650;                 // 135 end of cylinder 2, start of cylinder 1, trigger ignition for cylinder 1 on this tooth
   state.toothAngles[8] = 720;                 // 70 - gap to rotation to TDC1. array item 1 and 8 are the same, code never gets here its for reference only
 
-
   state.MAX_STALL_TIME = (3333UL * state.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
   state.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
   state.triggerSecFilterTime = 0; //Need to figure out something better for this
@@ -51,6 +50,210 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   return state;
 }
 
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, config4 &page4)
+{
+  decoderState.curGap = curTime - decoderState.toothLastToothTime;
+  if ( (decoderState.curGap >= decoderState.triggerFilterTime) || (current.startRevolutions == 0U) )
+  {    
+    decoderState.toothCurrentCount++;
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+    decoderState.toothLastToothTime = curTime;
+
+    // now to figure out if its a normal tooth or the extra sync tooth
+    // pattern is normally small tooth, big tooth, small tooth, big tooth. The extra tooth breaks the pattern go it goes, big tooth (decoderState.curGap3), small tooth(decoderState.curGap2), small tooth(decoderState.curGap)
+    // reuse decoderState.curGap2 and decoderState.curGap3 (from secondary and Tertiary decoders) to store previous tooth sizes as not needed in this decoder.
+    
+    if ( (  decoderState.curGap <= decoderState.curGap2 ) && 
+         ( decoderState.curGap2 <= decoderState.curGap3 ) )
+    {
+      // cur Gap is smaller than last gap & last gap is smaller than gap before that - means we must be on sync tooth
+      decoderState.toothCurrentCount = 6; // set tooth counter to correct tooth
+      decoderState.decoderStatus.syncStatus = SyncStatus::Full;
+    }
+    
+    decoderState.curGap3 = decoderState.curGap2; // update values for next time we're in the loop
+    decoderState.curGap2 = decoderState.curGap;
+    
+    
+    if( (decoderState.toothCurrentCount == (decoderState.triggerActualTeeth + 1U)) && decoderState.decoderStatus.syncStatus==SyncStatus::Full  )
+    {
+      // seen enough teeth to have a revolution of the crank
+      decoderState.toothCurrentCount = 1; //Reset the counter
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      current.startRevolutions = current.startRevolutions + 2U; // increment for 2 revs as we do 720 degrees on the the crank       
+    }
+    else if (decoderState.toothCurrentCount > (decoderState.triggerActualTeeth + 1U))
+    {
+      // Lost sync
+      decoderState.decoderStatus.syncStatus = SyncStatus::None; 
+      current.syncLossCounter++;
+      decoderState.triggerFilterTime = 0;
+      decoderState.toothCurrentCount=0;
+    } else {
+      // We have sync, but are part way through a revolution
+      // Nothing to do but keep MISRA happy.
+    }
+
+    // check gaps match with tooth to check we have sync 
+    // so if we *think* we've seen tooth 3 whose gap should be smaller than the previous tooth & it isn't, 
+    // then we've lost sync
+    switch (decoderState.toothCurrentCount)
+    {
+      case 1:
+      case 3:      
+      case 5:      
+      case 6:
+        // current tooth gap is bigger than previous tooth gap = syncloss
+        // eg tooth 3 should be smaller than tooth 2 gap, if its not then we've lost sync and the tooth 3 we've just seen isn't really tooth 3
+        if (decoderState.curGap > decoderState.curGap2)
+        { 
+          decoderState.decoderStatus.syncStatus = SyncStatus::None; 
+          current.syncLossCounter++;
+          decoderState.triggerFilterTime = 0;
+          decoderState.toothCurrentCount=2;
+        }          
+        break;
+
+      case 2:
+      case 4:
+      case 7:
+      default:
+        // current tooth gap is smaller than the previous tooth gap = syncloss
+        // eg tooth 2 should be bigger than tooth 1, if its not then we've got syncloss
+        if (decoderState.curGap < decoderState.curGap2)
+        { 
+          decoderState.decoderStatus.syncStatus = SyncStatus::None; 
+          current.syncLossCounter++;
+          decoderState.triggerFilterTime = 0;
+          decoderState.toothCurrentCount=1;
+        }
+        break;
+    }
+
+    // Setup data to allow other areas of the system to work due to odd sized teeth - this could be merged with sync checking above, left separate to keep code clearer as its doing only one function at once
+    // % of filter are not based on previous tooth size but expected next tooth size
+    // decoderState.triggerToothAngle is the size of the previous tooth not the future tooth
+    if (decoderState.decoderStatus.syncStatus==SyncStatus::Full )
+    {
+      switch (decoderState.toothCurrentCount) // Set tooth angle based on previous gap and decoderState.triggerFilterTime based on previous gap and next gap
+      {
+        case 2:
+        case 4:
+          // equivalent of tooth 1 except we've not done rotation code yet so its 8
+          // 170 degree tooth, next tooth is 70
+          switch (page4.triggerFilter)
+          {
+            case 1: // 25 % 17 degrees
+              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap);
+              break;
+            case 2: // 50 % 35 degrees
+              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap) + rshift<4>((uint32_t)decoderState.curGap);
+              break;
+            case 3: // 75 % 52 degrees
+              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<4>((uint32_t)decoderState.curGap);
+              break;
+            default:
+              decoderState.triggerFilterTime = 0;
+              break;
+          }          
+          break;
+
+        case 5:
+          // 70 degrees, next tooth is 35
+          switch (page4.triggerFilter)
+          {
+            case 1: // 25 % 8 degrees
+              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap);
+              break;
+            case 2: // 50 % 17 degrees
+              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap);
+              break;
+            case 3: // 75 % 25 degrees
+              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
+              break;
+            default:
+              decoderState.triggerFilterTime = 0;
+              break;
+          }
+          break;
+
+        case 6:
+          // sync tooth, next tooth is 135
+          switch (page4.triggerFilter)
+          {
+            case 1: // 25 % 33 degrees
+              decoderState.triggerFilterTime = decoderState.curGap;
+              break;
+            case 2: // 50 % 67 degrees
+              decoderState.triggerFilterTime = decoderState.curGap * 2U;
+              break;
+            case 3: // 75 % 100 degrees
+              decoderState.triggerFilterTime = decoderState.curGap * 3U;
+              break;
+            default:
+              decoderState.triggerFilterTime = 0;
+              break;
+          }
+          break;
+
+        case 7:
+          // 135 degre tooth, next tooth is 70
+          switch (page4.triggerFilter)
+          {
+            case 1: // 25 % 17 degrees
+              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap);
+              break;
+            case 2: // 50 % 35 degrees
+              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap);
+              break;
+            case 3: // 75 % 52 degrees
+              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
+              break;
+            default:
+              decoderState.triggerFilterTime = 0;
+              break;
+          }          
+          break;
+
+        case 1:
+        case 3:
+          // 70 degree tooth, next tooth is 170
+          switch (page4.triggerFilter)
+          {
+            case 1: // 25 % 42 degrees
+              decoderState.triggerFilterTime = rshift<1>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
+              break;
+            case 2: // 50 % 85 degrees
+              decoderState.triggerFilterTime = decoderState.curGap + rshift<2>((uint32_t)decoderState.curGap);
+              break;
+            case 3: // 75 % 127 degrees
+              decoderState.triggerFilterTime = decoderState.curGap + rshift<1>((uint32_t)decoderState.curGap) + rshift<2>((uint32_t)decoderState.curGap);
+              break;
+            default:
+              decoderState.triggerFilterTime = 0;
+              break;
+          }
+          break;
+
+        default:
+          decoderState.triggerFilterTime = 0;
+          break;
+      }
+      
+      //NEW IGNITION MODE
+      if( (page2.perToothIgn == true) ) 
+      {  
+        int16_t crankAngle = decoderState.toothAngles[decoderState.toothCurrentCount] + page4.triggerAngle;
+        checkPerToothTiming(current, decoderState, page4, crankAngle, decoderState.toothCurrentCount);
+      }     
+
+    } // has sync
+
+  } //Trigger filter
+}
 
 }
 }
