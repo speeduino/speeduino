@@ -99,12 +99,7 @@ constexpr uint8_t COMPOSITE_LOG_TRIG = 3;
 constexpr uint8_t COMPOSITE_LOG_SYNC = 4;
 constexpr uint8_t COMPOSITE_ENGINE_CYCLE = 5;
 
-/** Universal (shared between decoders) decoder routines.
-*
-* @defgroup dec_uni Universal Decoder Routines
-* 
-* @{
-*/
+/** Universal (shared between decoders) decoder routines. */
 // whichTooth - 0 for Primary (Crank), 1 for Secondary (Cam)
 
 /** Add tooth log entry to toothHistory (array).
@@ -302,7 +297,6 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
   return page10.TrigEdgeThrd == 0U ? RISING : FALLING;
 }
 
-/** @} */
   
 // LCOV_EXCL_START
 // Exclude one line wrappers from coverage
@@ -408,8 +402,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 * No position sensing (Distributor is retained) so crank angle is
 * a made up figure based purely on the first teeth to be seen.
 * Note: This is a very simple decoder. See http://www.megamanual.com/ms2/GM_7pinHEI.htm
-* @defgroup dec_dist Basic Distributor
-* @{
 */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
 {
@@ -439,7 +431,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_BasicDistributor(void)
                 .setGetFeatures(sharedGetDecoderFeatures)
                 .build();
 }
-/** @} */
 
 /** Decode GM 7X trigger wheel with six equally spaced teeth and a seventh tooth for cylinder identification.
 * Note: Within the decoder code pf GM7X, the sync tooth is referred to as tooth #3 rather than tooth #7. This makes for simpler angle calculations
@@ -804,8 +795,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_non360(void)
 
 /** Nissan 360 tooth on cam (Optical trigger disc inside distributor housing).
 See http://wiki.r31skylineclub.com/index.php/Crank_Angle_Sensor .
-* @defgroup dec_nissan360 Nissan 360 tooth on cam
-* @{
 */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
 {
@@ -839,8 +828,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Nissan360(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-
-/** @} */
 
 /** Subaru 6/7 Trigger pattern decoder for 6 tooth (irregularly spaced) crank and 7 tooth (also fairly irregular) cam wheels (eg late 90's Impreza 2.2).
 This seems to be present in late 90's Subaru. In 2001 Subaru moved to 36-2-2-2 (See: http://www.vems.hu/wiki/index.php?page=InputTrigger%2FSubaruTrigger ).
@@ -1187,8 +1174,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_NGC(void)
 /** Yamaha Vmax 1990+ with 6 uneven teeth, triggering on the wide lobe.
 Within the decoder code, the sync tooth is referred to as tooth #1. Derived from Harley and made to work on the Yamah Vmax.
 Trigger is based on 'CHANGE' so we get a signal on the up and downward edges of the lobe. This is required to identify the wide lobe.
-* @defgroup dec_vmax Yamaha Vmax
-* @{
 */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
 {
@@ -1215,18 +1200,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Vmax(void)
                   .build();
 }
 
-/** @} */
-
 /** Renix 44-2-2  and 66-2-2-2 decoder.  
 * Renix trigger wheel doesn't decode into 360 degrees nicely (360/44 = 8.18 degrees or 360/66 = 5.454545). Speeduino can't handle any teeth that have a decimal point.
 * Solution is to count teeth, every 11 teeth = a proper angle. For 66 tooth decoder its 60 degrees per 11 teeth, for 44 tooth decoder its 90 degrees per 11 teeth.
 * This means the system sees 4 teeth on the 44 tooth wheel and 6 teeth on the 66 tooth wheel.
 * Double missing tooth in the pattern is actually a large tooth and a large gap. If the trigger is set to rising you'll see the start of the large tooth
 * then the gap. If its not set to rising the code won't work due to seeing two gaps
-*
-*
-* @defgroup dec_renix Renix decoder 
-* @{
 */
 
 // variables used to help calculate gap on the physical 44 or 66 teeth we're pretending don't exist in most of the speeduino code
@@ -1383,8 +1362,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
                   .build();
 }
 
-/** @} */
-
 /*****************************************************************
  * Rover MEMS decoder
  * Covers multiple trigger wheels used interchanbably over the range of MEMS units
@@ -1395,9 +1372,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_Renix(void)
  * 17 gap 17 gap 
  *
  * Support no cam, single tooth Cam (or half moon cam), and multi tooth (5-3-2 teeth)
- *
- * @defgroup dec_rover_mems Rover MEMS all versions including T Series, O Series, Mini and K Series
- * @{
  */
 volatile unsigned long roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
 
@@ -1752,13 +1726,10 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
 
 /** Suzuki K6A 3 cylinder engine
 
 * (See: https://www.msextra.com/forums/viewtopic.php?t=74614)
-* @defgroup Suzuki_K6A Suzuki K6A 
-* @{
 */
 static void triggerPri_SuzukiK6A(void)
 {
@@ -2077,13 +2048,9 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
                   .build();
 }
 
-/** @} */
-
 /** Ford TFI - Distributor mounted signal tooth wheel. Same number of teeth as cylinders.
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
 
-* @defgroup Ford_TFI Ford TFI
-* @{
 */
 /** Ford TFI Primary (Rising Edge).
  * 
@@ -2336,4 +2303,3 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
                   .setGetFeatures(sharedGetDecoderFeatures)
                   .build();
 }
-/** @} */
