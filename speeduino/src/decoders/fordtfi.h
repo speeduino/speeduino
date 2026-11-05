@@ -20,5 +20,7 @@ namespace ford_tfi {
 
     void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config4 &page4);
 
+    uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config4 &page4);
+
 }
 }

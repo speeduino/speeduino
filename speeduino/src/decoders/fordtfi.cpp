@@ -137,5 +137,19 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   decoderState.triggerSecFilterTime = decoderState.curGap >> 1; //Set filter at 50 % speed of last primary gap
 }
 
+uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config4 &page4)
+{
+  const uint8_t distributorSpeed = CAM_SPEED;
+
+  const bool useCrankingCalc = (current.RPM < current.crankRPM) || (current.RPM < 1500U);
+  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(current, decoderState, page4, decoderState.triggerActualTeeth, distributorSpeed)
+                                                  : stdGetRevolutionTime(current, decoderState, distributorSpeed);
+
+  decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
+  if(decoderState.MAX_STALL_TIME < 366667UL) { decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
+
+  return revolutionTime;
+}
+
 }
 }

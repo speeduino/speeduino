@@ -1312,26 +1312,7 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 
 /** Ford TFI - Distributor mounted signal tooth wheel. Same number of teeth as cylinders.
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
-
 */
-
-/** Ford TFI - Get RPM.
- * 
- * */
-static uint32_t getRevolutionTime_FordTFI(void)
-{
-  const uint8_t distributorSpeed = CAM_SPEED;
-
-  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
-  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, _decoderState.triggerActualTeeth, distributorSpeed)
-                                                  : stdGetRevolutionTime(currentStatus, _decoderState, distributorSpeed);
-
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-
-  return revolutionTime;
-  
-}
 
 /** Ford TFI - Get Crank angle.
  * 
@@ -1434,11 +1415,14 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   static const auto secondaryTrigger = []() {
     decoders::ford_tfi::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
   };
+  static const auto getRevolutionTime = []() {
+    return decoders::ford_tfi::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_FordTFI)
+                  .setGetRevolutionTime(getRevolutionTime)
                   .setGetCrankAngle(getCrankAngle_FordTFI)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
                   .setReset(sharedDecoderReset)
