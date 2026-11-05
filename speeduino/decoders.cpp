@@ -1314,52 +1314,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
 
 */
-/** Ford TFI Primary (Rising Edge).
- * 
- * */
-static void triggerPri_FordTFI(void)
-{
-  uint32_t curTime = micros(); // Get current time and gap duration with micros rollover
-  if (curTime >= _decoderState.toothLastToothTime) 
-    { _decoderState.curGap = curTime - _decoderState.toothLastToothTime; } 
-  else
-    { _decoderState.curGap = (4294967296 - _decoderState.toothLastToothTime + curTime); }
- 
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-  {
-    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { _decoderState.setFilter(_decoderState.curGap, configPage4); } //Recalc the new filter value
-    else { _decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored
-    
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    
-    if(_decoderState.toothCurrentCount > _decoderState.triggerActualTeeth)//Check if we're back to the beginning of a revolution
-    {
-      if ( (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)  && ( (_decoderState.lastSyncRevolution) + 3  < currentStatus.startRevolutions)) // Revolution count when signature tooth was detected, Allow up to 4 cam revolution without sync signal detected
-      {
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        currentStatus.syncLossCounter++;
-      }
-      _decoderState.toothCurrentCount = 1; //Reset the counter
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++; //Counter
-    }
-
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if(configPage2.perToothIgn == true)
-    {
-      int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-      uint16_t currentTooth = _decoderState.toothCurrentCount;
-      if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
-    }
-        
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-   } //Trigger filter
-}
 
 /** Ford TFI Secondary (Falling Edge).
  * 
@@ -1539,8 +1493,12 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
 {
   _decoderState = decoders::ford_tfi::initialise(configPage2);
 
+  static const auto primaryTrigger = []() {
+    decoders::ford_tfi::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSec_FordTFI, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime_FordTFI)
                   .setGetCrankAngle(getCrankAngle_FordTFI)

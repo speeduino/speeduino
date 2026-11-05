@@ -31,5 +31,49 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   return state;
 }
 
+// Primary (Rising Edge)
+void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decoderState, const config2 &page2, const config4 &page4)
+{
+  if (curTime >= decoderState.toothLastToothTime) 
+    { decoderState.curGap = curTime - decoderState.toothLastToothTime; } 
+  else
+    { decoderState.curGap = (4294967296 - decoderState.toothLastToothTime + curTime); }
+ 
+  if ( decoderState.curGap >= decoderState.triggerFilterTime )
+  {
+    if(decoderState.decoderStatus.syncStatus==SyncStatus::Full) { decoderState.setFilter(decoderState.curGap, page4); } //Recalc the new filter value
+    else { decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored
+    
+    decoderState.toothCurrentCount++; //Increment the tooth counter
+    
+    if(decoderState.toothCurrentCount > decoderState.triggerActualTeeth)//Check if we're back to the beginning of a revolution
+    {
+      if ( (decoderState.decoderStatus.syncStatus==SyncStatus::Full)  && ( (decoderState.lastSyncRevolution) + 3  < current.startRevolutions)) // Revolution count when signature tooth was detected, Allow up to 4 cam revolution without sync signal detected
+      {
+        decoderState.decoderStatus.syncStatus = SyncStatus::None;
+        current.syncLossCounter++;
+      }
+      decoderState.toothCurrentCount = 1; //Reset the counter
+      decoderState.toothOneMinusOneTime = decoderState.toothOneTime;
+      decoderState.toothOneTime = curTime;
+      current.startRevolutions++; //Counter
+    }
+
+    decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
+
+    if(page2.perToothIgn == true)
+    {
+      int16_t crankAngle = ( (decoderState.toothCurrentCount-1) * decoderState.triggerToothAngle ) + page4.triggerAngle;
+      uint16_t currentTooth = decoderState.toothCurrentCount;
+      if(decoderState.toothCurrentCount > (decoderState.triggerActualTeeth/2) ) { currentTooth = (decoderState.toothCurrentCount - (decoderState.triggerActualTeeth/2)); }
+      checkPerToothTiming(current, decoderState, page4, crankAngle, currentTooth);
+    }
+        
+    decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
+    decoderState.toothLastToothTime = curTime;
+
+   } //Trigger filter
+}
+
 }
 }
