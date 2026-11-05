@@ -19,6 +19,7 @@ void runAllTests(void)
   extern void testVMax(void);
   extern void testRenix(void);
   extern void testRoverMems(void);
+  extern void testSuzukiK6A();
 
   testWebber();
   testFordST170();
@@ -27,6 +28,7 @@ void runAllTests(void)
   testVMax();
   testRenix();
   testRoverMems();
+  testSuzukiK6A();
 }
 
 TEST_HARNESS(runAllTests)
