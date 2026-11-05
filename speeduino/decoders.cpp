@@ -1314,19 +1314,6 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
 */
 
-/** Ford TFI - Get Crank angle.
- * 
- * */
-static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  //Handle case where the secondary tooth was the last one seen
-  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 2; } 
-
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
-}
-
 /** Ford TFI - Set End Teeth.
  * 
  * */
@@ -1418,12 +1405,15 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
   static const auto getRevolutionTime = []() {
     return decoders::ford_tfi::getRevolutionTime(currentStatus, _decoderState, configPage4);
   };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::ford_tfi::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
 
   return decoder_builder_t()
                   .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
                   .setGetRevolutionTime(getRevolutionTime)
-                  .setGetCrankAngle(getCrankAngle_FordTFI)
+                  .setGetCrankAngle(getCrankAngle)
                   .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
