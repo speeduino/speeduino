@@ -77,6 +77,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/vmax.h"
 #include "src/decoders/renix.h"
 #include "src/decoders/rovermems.h"
+#include "src/decoders/k6a.h"
 
 using namespace decoders::shared;
 
@@ -1279,316 +1280,28 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_RoverMEMS(void)
 
 * (See: https://www.msextra.com/forums/viewtopic.php?t=74614)
 */
-static void triggerPri_SuzukiK6A(void)
-{
-  uint32_t curTime = micros();  
-  _decoderState.curGap = curTime - _decoderState.toothLastToothTime;
-  if ( (_decoderState.curGap >= _decoderState.triggerFilterTime) || (currentStatus.startRevolutions == 0U) )
-  {    
-    _decoderState.toothCurrentCount++;
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-    // now to figure out if its a normal tooth or the extra sync tooth
-    // pattern is normally small tooth, big tooth, small tooth, big tooth. The extra tooth breaks the pattern go it goes, big tooth (_decoderState.curGap3), small tooth(_decoderState.curGap2), small tooth(_decoderState.curGap)
-    // reuse _decoderState.curGap2 and _decoderState.curGap3 (from secondary and Tertiary decoders) to store previous tooth sizes as not needed in this decoder.
-    
-    if ( (  _decoderState.curGap <= _decoderState.curGap2 ) && 
-         ( _decoderState.curGap2 <= _decoderState.curGap3 ) )
-    {
-      // cur Gap is smaller than last gap & last gap is smaller than gap before that - means we must be on sync tooth
-      _decoderState.toothCurrentCount = 6; // set tooth counter to correct tooth
-      _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-    }
-    
-    _decoderState.curGap3 = _decoderState.curGap2; // update values for next time we're in the loop
-    _decoderState.curGap2 = _decoderState.curGap;
-    
-    
-    if( (_decoderState.toothCurrentCount == (_decoderState.triggerActualTeeth + 1U)) && _decoderState.decoderStatus.syncStatus==SyncStatus::Full  )
-    {
-      // seen enough teeth to have a revolution of the crank
-      _decoderState.toothCurrentCount = 1; //Reset the counter
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions = currentStatus.startRevolutions + 2U; // increment for 2 revs as we do 720 degrees on the the crank       
-    }
-    else if (_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth + 1U))
-    {
-      // Lost sync
-      _decoderState.decoderStatus.syncStatus = SyncStatus::None; 
-      currentStatus.syncLossCounter++;
-      _decoderState.triggerFilterTime = 0;
-      _decoderState.toothCurrentCount=0;
-    } else {
-      // We have sync, but are part way through a revolution
-      // Nothing to do but keep MISRA happy.
-    }
-
-    // check gaps match with tooth to check we have sync 
-    // so if we *think* we've seen tooth 3 whose gap should be smaller than the previous tooth & it isn't, 
-    // then we've lost sync
-    switch (_decoderState.toothCurrentCount)
-    {
-      case 1:
-      case 3:      
-      case 5:      
-      case 6:
-        // current tooth gap is bigger than previous tooth gap = syncloss
-        // eg tooth 3 should be smaller than tooth 2 gap, if its not then we've lost sync and the tooth 3 we've just seen isn't really tooth 3
-        if (_decoderState.curGap > _decoderState.curGap2)
-        { 
-          _decoderState.decoderStatus.syncStatus = SyncStatus::None; 
-          currentStatus.syncLossCounter++;
-          _decoderState.triggerFilterTime = 0;
-          _decoderState.toothCurrentCount=2;
-        }          
-        break;
-
-      case 2:
-      case 4:
-      case 7:
-      default:
-        // current tooth gap is smaller than the previous tooth gap = syncloss
-        // eg tooth 2 should be bigger than tooth 1, if its not then we've got syncloss
-        if (_decoderState.curGap < _decoderState.curGap2)
-        { 
-          _decoderState.decoderStatus.syncStatus = SyncStatus::None; 
-          currentStatus.syncLossCounter++;
-          _decoderState.triggerFilterTime = 0;
-          _decoderState.toothCurrentCount=1;
-        }
-        break;
-    }
-
-    // Setup data to allow other areas of the system to work due to odd sized teeth - this could be merged with sync checking above, left separate to keep code clearer as its doing only one function at once
-    // % of filter are not based on previous tooth size but expected next tooth size
-    // _decoderState.triggerToothAngle is the size of the previous tooth not the future tooth
-    if (_decoderState.decoderStatus.syncStatus==SyncStatus::Full )
-    {
-      switch (_decoderState.toothCurrentCount) // Set tooth angle based on previous gap and _decoderState.triggerFilterTime based on previous gap and next gap
-      {
-        case 2:
-        case 4:
-          // equivalent of tooth 1 except we've not done rotation code yet so its 8
-          // 170 degree tooth, next tooth is 70
-          switch (configPage4.triggerFilter)
-          {
-            case 1: // 25 % 17 degrees
-              _decoderState.triggerFilterTime = rshift<3>((uint32_t)_decoderState.curGap);
-              break;
-            case 2: // 50 % 35 degrees
-              _decoderState.triggerFilterTime = rshift<3>((uint32_t)_decoderState.curGap) + rshift<4>((uint32_t)_decoderState.curGap);
-              break;
-            case 3: // 75 % 52 degrees
-              _decoderState.triggerFilterTime = rshift<2>((uint32_t)_decoderState.curGap) + rshift<4>((uint32_t)_decoderState.curGap);
-              break;
-            default:
-              _decoderState.triggerFilterTime = 0;
-              break;
-          }          
-          break;
-
-        case 5:
-          // 70 degrees, next tooth is 35
-          switch (configPage4.triggerFilter)
-          {
-            case 1: // 25 % 8 degrees
-              _decoderState.triggerFilterTime = rshift<3>((uint32_t)_decoderState.curGap);
-              break;
-            case 2: // 50 % 17 degrees
-              _decoderState.triggerFilterTime = rshift<2>((uint32_t)_decoderState.curGap);
-              break;
-            case 3: // 75 % 25 degrees
-              _decoderState.triggerFilterTime = rshift<2>((uint32_t)_decoderState.curGap) + rshift<3>((uint32_t)_decoderState.curGap);
-              break;
-            default:
-              _decoderState.triggerFilterTime = 0;
-              break;
-          }
-          break;
-
-        case 6:
-          // sync tooth, next tooth is 135
-          switch (configPage4.triggerFilter)
-          {
-            case 1: // 25 % 33 degrees
-              _decoderState.triggerFilterTime = _decoderState.curGap;
-              break;
-            case 2: // 50 % 67 degrees
-              _decoderState.triggerFilterTime = _decoderState.curGap * 2U;
-              break;
-            case 3: // 75 % 100 degrees
-              _decoderState.triggerFilterTime = _decoderState.curGap * 3U;
-              break;
-            default:
-              _decoderState.triggerFilterTime = 0;
-              break;
-          }
-          break;
-
-        case 7:
-          // 135 degre tooth, next tooth is 70
-          switch (configPage4.triggerFilter)
-          {
-            case 1: // 25 % 17 degrees
-              _decoderState.triggerFilterTime = rshift<3>((uint32_t)_decoderState.curGap);
-              break;
-            case 2: // 50 % 35 degrees
-              _decoderState.triggerFilterTime = rshift<2>((uint32_t)_decoderState.curGap);
-              break;
-            case 3: // 75 % 52 degrees
-              _decoderState.triggerFilterTime = rshift<2>((uint32_t)_decoderState.curGap) + rshift<3>((uint32_t)_decoderState.curGap);
-              break;
-            default:
-              _decoderState.triggerFilterTime = 0;
-              break;
-          }          
-          break;
-
-        case 1:
-        case 3:
-          // 70 degree tooth, next tooth is 170
-          switch (configPage4.triggerFilter)
-          {
-            case 1: // 25 % 42 degrees
-              _decoderState.triggerFilterTime = rshift<1>((uint32_t)_decoderState.curGap) + rshift<3>((uint32_t)_decoderState.curGap);
-              break;
-            case 2: // 50 % 85 degrees
-              _decoderState.triggerFilterTime = _decoderState.curGap + rshift<2>((uint32_t)_decoderState.curGap);
-              break;
-            case 3: // 75 % 127 degrees
-              _decoderState.triggerFilterTime = _decoderState.curGap + rshift<1>((uint32_t)_decoderState.curGap) + rshift<2>((uint32_t)_decoderState.curGap);
-              break;
-            default:
-              _decoderState.triggerFilterTime = 0;
-              break;
-          }
-          break;
-
-        default:
-          _decoderState.triggerFilterTime = 0;
-          break;
-      }
-      
-      //NEW IGNITION MODE
-      if( (configPage2.perToothIgn == true) ) 
-      {  
-        int16_t crankAngle = _decoderState.toothAngles[_decoderState.toothCurrentCount] + configPage4.triggerAngle;
-        checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, _decoderState.toothCurrentCount);
-      }     
-
-    } // has sync
-
-  } //Trigger filter
-}
-
-static uint32_t getRevolutionTime_SuzukiK6A(void)
-{
-  //Cranking code needs working out. 
-
-  uint32_t revolutionTime = stdGetRevolutionTime(currentStatus, _decoderState, CAM_SPEED);
-
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-
-  return revolutionTime;
-}
-
-static int16_t getCrankAngle_SuzukiK6A(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_lookup_caa(_decoderState);
-
-  // TODO: check if this can be removed.
-  if (calculator._toothCurrentCount!=0U) {
-    _decoderState.triggerToothAngle = (uint16_t)_decoderState.toothAngles[calculator._toothCurrentCount] - (uint16_t)_decoderState.toothAngles[calculator._toothCurrentCount-1U];
-  }
-  ++calculator._toothCurrentCount;
-  
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, _decoderState.toothAngles, configPage4));
-}
-
-// Assumes no advance greater than 48 degrees. Triggers on the tooth before the ignition event
-static uint16_t __attribute__((noinline)) calcEndTeeth_SuzukiK6A(const IgnitionSchedule &schedule) {
-  //Temp variables are used here to avoid potential issues if a trigger interrupt occurs part way through this function
-  const int16_t tempIgnitionEndTooth = ignitionLimits(schedule.dischargeAngle - configPage4.triggerAngle);
-
-  uint8_t nCount=1U;
-  while ((nCount<8U) && (tempIgnitionEndTooth > _decoderState.toothAngles[nCount])) {
-    ++nCount;
-  }
-  if(nCount==1U || nCount==8U) {
-    // didn't find a match, use tooth 7 as it must be greater than 7 but less than 1.  
-    return 7U;
-  } 
-
-  // The tooth we want is the tooth prior to this one.     
-  return nCount-1U;
-}
-
-static void triggerSetEndTeeth_SuzukiK6A(void)
-{
-  _decoderState.ignitionEndTeeth[0] = calcEndTeeth_SuzukiK6A(ignitionSchedule1);
-#if (IGN_CHANNELS >= 2)
-  _decoderState.ignitionEndTeeth[1] = calcEndTeeth_SuzukiK6A(ignitionSchedule2);
-#endif
-#if (IGN_CHANNELS >= 3)
-  _decoderState.ignitionEndTeeth[2] = calcEndTeeth_SuzukiK6A(ignitionSchedule3);
-#endif
-}
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerToothAngle = 90; //The number of degrees that passes from tooth to tooth (primary) - set to a value, needs to be set per tooth
-  _decoderState.toothCurrentCount = 99; //Fake tooth count represents no sync
+  _decoderState = decoders::k6a::initialise(micros(), currentStatus, configPage4);
 
-  configPage4.TrigSpeed = CAM_SPEED;
-  _decoderState.triggerActualTeeth = 7;
-  _decoderState.toothCurrentCount = 1;
-  _decoderState.curGap = _decoderState.curGap2 = _decoderState.curGap3 = 0;
-
-  if(currentStatus.initialisationComplete == false) { _decoderState.toothLastToothTime = micros(); } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
-  else { _decoderState.toothLastToothTime = 0; }
-  _decoderState.toothLastMinusOneToothTime = 0;
-
-  // based on data in msextra page linked to above we can deduce,
-  // gap between rising and falling edge of a normal 70 degree tooth is 48 degrees, this means the gap is 70 degrees - 48 degrees = 22 degrees.
-  // assume this is constant for all similar sized gaps and teeth
-  // sync tooth is 35 degrees - eyeball looks like the tooth is 50% tooth and 50% gap so guess its 17 degrees and 18 degrees.
-
-  // coded every tooth here in case you want to try "change" setting on the trigger setup (this is defined in init.ino and what i've set it to, otherwise you need code to select rising or falling in init.ino (steal it from another trigger)). 
-  // If you don't want change then drop the 'falling' edges listed below and half the number of edges + reduce the _decoderState.triggerActualTeeth
-  // nb as you can edit the trigger offset using rising or falling edge setup below is irrelevant as you can adjust via the trigger offset to cover the difference.
-
-  // not using _decoderState.toothAngles[0] as i'm hoping it makes logic easier
-
-  _decoderState.toothAngles[0] = -70;                 // Wrap around to 650, 
-  _decoderState.toothAngles[1] = 0;                   // 0 TDC cylinder 1, 
-  _decoderState.toothAngles[2] = 170;                 // 170 - end of cylinder 1, start of cylinder 3, trigger ignition for cylinder 3 on this tooth
-  _decoderState.toothAngles[3] = 240;                 // 70 TDC cylinder 3
-  _decoderState.toothAngles[4] = 410;                 // 170  - end of cylinder 3, start of cylinder2, trigger ignition for cylinder 2 on this tooth
-  _decoderState.toothAngles[5] = 480;                 // 70 TDC cylinder 2 
-  _decoderState.toothAngles[6] = 515;                 // 35 Additional sync tooth
-  _decoderState.toothAngles[7] = 650;                 // 135 end of cylinder 2, start of cylinder 1, trigger ignition for cylinder 1 on this tooth
-  _decoderState.toothAngles[8] = 720;                 // 70 - gap to rotation to TDC1. array item 1 and 8 are the same, code never gets here its for reference only
-
-  
-  _decoderState.MAX_STALL_TIME = (3333UL * _decoderState.triggerToothAngle); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
-  _decoderState.triggerFilterTime = 1500; //10000 rpm, assuming we're triggering on both edges off the crank tooth.
-  _decoderState.triggerSecFilterTime = 0; //Need to figure out something better for this
-  _decoderState.decoderStatus.toothAngleIsCorrect = false;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
+  static const auto primaryTrigger = []() {
+    decoders::k6a::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::k6a::getRevolutionTime(currentStatus, _decoderState);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::k6a::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::k6a::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_SuzukiK6A, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
-                  .setGetRevolutionTime(getRevolutionTime_SuzukiK6A)
-                  .setGetCrankAngle(getCrankAngle_SuzukiK6A)
-                  .setSetEndTeeth(triggerSetEndTeeth_SuzukiK6A)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4)) // only primary, no secondary, trigger pattern is over 720 degrees
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)

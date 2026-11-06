@@ -15,8 +15,6 @@ void runAllTests(void)
     extern void testMissingTooth(void);
     extern void testDualWheel(void);
     extern void testNissan360(void);
-    extern void testSuzukiK6A_setEndTeeth(void);
-    extern void testSuzukiK6A_getCrankAngle(void);
     extern void testGM7X(void);
     extern void testHondaJ32(void);
     extern void test4G63(void);
@@ -39,8 +37,6 @@ void runAllTests(void)
     testMissingTooth();
     testDualWheel();
     testNissan360();
-    testSuzukiK6A_setEndTeeth();
-    testSuzukiK6A_getCrankAngle();
     testGM7X();
     testHondaJ32();
     test4G63();
