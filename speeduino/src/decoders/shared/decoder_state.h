@@ -52,6 +52,7 @@ namespace shared {
 #ifdef USE_LIBDIVIDE
         libdivide::libdivide_s16_t divTriggerToothAngle{};
 #endif
+        uint32_t roverMEMSTeethSeen = 0; // used for flywheel gap pattern matching
 
         /**
          * Sets the new filter time based on the current settings.

@@ -18,6 +18,7 @@ void runAllTests(void)
   extern void testNGC(void);
   extern void testVMax(void);
   extern void testRenix(void);
+  extern void testRoverMems(void);
 
   testWebber();
   testFordST170();
@@ -25,6 +26,7 @@ void runAllTests(void)
   testNGC();
   testVMax();
   testRenix();
+  testRoverMems();
 }
 
 TEST_HARNESS(runAllTests)
