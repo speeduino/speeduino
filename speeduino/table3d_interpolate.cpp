@@ -100,7 +100,7 @@ TESTABLE_INLINE_STATIC QU1X8_t compute_bin_position(const uint16_t &value, const
 /** @brief Get the top right corner of the *value* coordinates in a 3D table, based on x/y axis coords. */
 TESTABLE_INLINE_STATIC row_col2d toTopRight(const table3d_bin_t &xBin, const table3d_bin_t &yBin, const table3d_dim_t &axisSize)
 {
-  return { (table3d_dim_t)(axisSize*yBin.upperIndex), xBin.upperIndex };
+  return { (table3d_dim_t)(axisSize*yBin.upperIndex()), xBin.upperIndex() };
 }
 
 /** @brief Get the bottom left corner of the *value* coordinates in a 3D table, based on top right corner. */

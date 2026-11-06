@@ -9,6 +9,7 @@ This file is used for everything related to maps/tables including their definiti
 #include <stdint.h>
 #include <Arduino.h>
 #include "preprocessor.h"
+#include "src/utils/iterator8.h"
 
 /// @cond
 // private to table2D implementation
@@ -42,21 +43,18 @@ static inline bool cacheExpired(const Table2DCache<axis_t, value_t> &cache) {
 
 template <typename T>
 struct Bin {
-  constexpr Bin(const T *array, uint8_t binUpperIndex)
-  : upperIndex(binUpperIndex)
-  , _upperValue(array[binUpperIndex])
-  , _lowerValue(array[binUpperIndex-1U])
+  explicit constexpr Bin(const T *array, uint8_t binUpperIndex)
+  : _upper(array, binUpperIndex)
   {
   } 
-  constexpr Bin(uint8_t binUpperIndex, const T upperValue, const T lowerValue)
-  : upperIndex(binUpperIndex)
-  , _upperValue(upperValue)
-  , _lowerValue(lowerValue)
+  explicit constexpr Bin(const mcu8::iterator<const T> &upper)
+  : _upper(upper)
   {
-  } 
+  }
 
-  const T upperValue(void) const noexcept { return _upperValue; }
-  const T lowerValue(void) const noexcept { return _lowerValue; }
+  T upperValue(void) const noexcept { return *_upper; }
+  T lowerValue(void) const noexcept { return *(_upper-1); }
+  uint8_t upperIndex(void) const noexcept { return _upper.pos(); }
 
   static bool withinBin(const T &value, const T &min, const T&max) noexcept {
     return (value <= max) && (value > min);
@@ -64,25 +62,23 @@ struct Bin {
   bool withinBin(const T value) const noexcept {
     return withinBin(value, lowerValue(), upperValue());
   }
-
-  uint8_t upperIndex;
-  T _upperValue;
-  T _lowerValue;
+private:
+  mcu8::iterator<const T> _upper;
 };
 
 
 template <typename TIter, typename TValue>
-static inline uint8_t findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
+static inline TIter findBinUpperIndex(TIter pStart, TIter pEnd, const TValue &value) 
 {
   auto it = std::lower_bound(pStart, pEnd, value);
 
   if (it == pStart) {
     ++it;
   }
-  if (it != pEnd) {
-    return std::distance(pStart, it);
+  if (it == pEnd) {
+    --it;
   }
-  return std::distance(pStart, pEnd)-1U;
+  return it;
 }
 
 template <typename TIter, typename TValue>
@@ -91,7 +87,7 @@ static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, 
   // Ignore the cache during tests
 #if !defined(UNIT_TEST)
   // LCOV_EXCL_START
-  auto bin = Bin<TValue>(pStart, cachedUpperIndex);
+  auto bin = Bin<TValue>(std::next(pStart, cachedUpperIndex));
   if (bin.withinBin(value))
   {
     return bin;  
@@ -102,7 +98,7 @@ static inline Bin<TValue> findCachedBin(uint8_t cachedUpperIndex, TIter pStart, 
 #endif
 
   // If we're not in the same bin, search 
-  return Bin<TValue>(pStart, findBinUpperIndex(pStart, pEnd, value));
+  return Bin<TValue>(findBinUpperIndex(pStart, pEnd, value));
 }
 
 // Generic interpolation
@@ -177,20 +173,20 @@ struct table2D
     else 
     {
       // None of the cached or last values match, so we need to find the new value
-      auto xBin = _table2d_detail::findCachedBin(cache.lastBinUpperIndex, axis, axis+sizeT, axisValue);
+      auto xBin = _table2d_detail::findCachedBin(cache.lastBinUpperIndex, mcu8::begin(axis), mcu8::end(axis), axisValue);
 
       // We are exactly at the bin upper bound, so no need to interpolate
       if (axisValue==xBin.upperValue()) 
       {
-        cache.lastOutput = values[xBin.upperIndex];
-        cache.lastBinUpperIndex = xBin.upperIndex;
+        cache.lastOutput = values[xBin.upperIndex()];
+        cache.lastBinUpperIndex = xBin.upperIndex();
       } 
       else // Must be within the bin, interpolate
       {
         // LCOV_EXCL_BR_START
-        cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(values, xBin.upperIndex));
+        cache.lastOutput = _table2d_detail::interpolate(axisValue, xBin, _table2d_detail::Bin<value_t>(values, xBin.upperIndex()));
         // LCOV_EXCL_BR_STOP
-        cache.lastBinUpperIndex = xBin.upperIndex;
+        cache.lastBinUpperIndex = xBin.upperIndex();
       }
       // Note: we cannot be at the bin lower bound here, as that would violate the bin definition of a non-inclusive lower bound
     }
