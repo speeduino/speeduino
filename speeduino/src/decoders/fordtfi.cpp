@@ -132,7 +132,6 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   decoderState.curGap3 = decoderState.curGap2; // Minus one Gap
 
   } //Trigger filter
-  //else { current.syncLossCounter = 0; }
   decoderState.triggerSecFilterTime = decoderState.curGap >> 1; //Set filter at 50 % speed of last primary gap
 }
 
