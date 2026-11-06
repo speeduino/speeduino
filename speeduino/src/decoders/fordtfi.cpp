@@ -84,7 +84,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   
  
   //Safety check for initial startup
-  if( (decoderState.toothLastSecToothTime == 0) )
+  if (decoderState.toothLastSecToothTime == 0)
   { 
     decoderState.curGap2 = 0; 
     decoderState.toothLastSecToothTime = curTime;
@@ -166,6 +166,7 @@ void setEndTeeth(shared::state_t &decoderState, const config2 &page2, const conf
 
   switch(page2.nCylinders)
   {
+    default:
     case 4:
       if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
       {
