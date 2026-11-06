@@ -32,19 +32,14 @@ A full copy of the license may be found in the projects root directory
  * - To group all decoders together add 1) @defgroup dec Decoders (on top) and 2) "@ingroup dec" to each decoder (under @defgroup)
  * - To compare Speeduino Doxyfile to default config, do: `doxygen -g Doxyfile.default ; diff Doxyfile.default Doxyfile`
  */
-#include <limits.h>
 #include "globals.h"
 #include "decoders.h"
-#include "elapsed_time.h"
 #include "scheduler.h"
 #include "crankMaths.h"
-#include "timers.h"
 #include "unit_testing.h"
-#include "atomic.h"
 #include "decoder_init.h"
 #include "decoder_builder.h"
 #include "scheduledIO_ign.h"
-#include "src/pins/boardInputPin.h"
 #include "scheduler_ignition_controller.h"
 #include "src/decoders/shared/crank_angle_calculator.h"
 #include "src/decoders/shared/decoder_state.h"
@@ -78,6 +73,7 @@ A full copy of the license may be found in the projects root directory
 #include "src/decoders/renix.h"
 #include "src/decoders/rovermems.h"
 #include "src/decoders/k6a.h"
+#include "src/decoders/fordtfi.h"
 
 using namespace decoders::shared;
 
@@ -293,35 +289,6 @@ static uint8_t getConfigTerTriggerEdge(const config10 &page10)
   return page10.TrigEdgeThrd == 0U ? RISING : FALLING;
 }
 
-  
-// LCOV_EXCL_START
-// Exclude one line wrappers from coverage
-static void triggerPri_missingTooth(void)
-{
-  decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
-}
-
-static void triggerThird_missingTooth(void)
-{
-  decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
-}
-
-static uint32_t getRevolutionTime_missingTooth(void)
-{
-  return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
-}
-
-static int16_t getCrankAngle_missingTooth(uint32_t currMicros)
-{
-  return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
-}
-
-static void triggerSetEndTeeth_missingTooth(void)
-{
-  decoders::missing_tooth::setEndTeeth(_decoderState, configPage4);
-}
-// LCOV_EXCL_STOP
-
 decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
 {
   _decoderState = decoders::missing_tooth::initialise(configPage4);
@@ -331,17 +298,32 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                       || (configPage2.injLayout == INJ_SEQUENTIAL) 
                       || (configPage6.vvtEnabled > 0) );
 
+  static const auto triggerPrimary = []() {
+    decoders::missing_tooth::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
   static const auto triggerSecondary = []() {
     decoders::missing_tooth::triggerSecondary(micros(), currentStatus, _decoderState, configPage4, configPage6, configPage10);
   };
+  static const auto triggerTertiary = []() {
+    decoders::missing_tooth::triggerTertiary(micros(), currentStatus, _decoderState, configPage4, configPage6);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::missing_tooth::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::missing_tooth::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::missing_tooth::setEndTeeth(_decoderState, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_missingTooth, getConfigPriTriggerEdge(configPage4))
+                  .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
                   .setSecondaryTrigger(triggerSecondary, hasSecondary ? getConfigSecTriggerEdge(configPage4) : TRIGGER_EDGE_NONE)
-                  .setTertiaryTrigger(triggerThird_missingTooth, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
-                  .setGetRevolutionTime(getRevolutionTime_missingTooth)
-                  .setGetCrankAngle(getCrankAngle_missingTooth)
-                  .setSetEndTeeth(triggerSetEndTeeth_missingTooth)
+                  .setTertiaryTrigger(triggerTertiary, configPage10.vvt2Enabled ? getConfigTerTriggerEdge(configPage10) : TRIGGER_EDGE_NONE)
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -349,44 +331,32 @@ decoder_t __attribute__((optimize("Os"))) triggerSetup_missingTooth(void)
                   .build();
 }
 
-// LCOV_EXCL_START
-// Exclude one line wrappers from coverage
-static void triggerPri_DualWheel(void)
-{
-    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
-}
-
-static void triggerSec_DualWheel(void)
-{
-    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
-}
-
-static uint32_t getRevolutionTime_DualWheel(void)
-{
-    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
-}
-
-static int16_t getCrankAngle_DualWheel(uint32_t currMicros)
-{
-    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
-}
-
-static void triggerSetEndTeeth_DualWheel(void)
-{
-    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
-}
-// LCOV_EXCL_STOP
-
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_DualWheel(void)
 {
   _decoderState = decoders::dual_wheel::initialise(configPage4);
 
+  static const auto triggerPrimary = []() {
+    decoders::dual_wheel::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto triggerSecondary = []() {
+    decoders::dual_wheel::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::dual_wheel::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::dual_wheel::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::dual_wheel::setEndTeeth(_decoderState, configPage4);
+  };
+
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_DualWheel, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_DualWheel, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_DualWheel)
-                  .setGetCrankAngle(getCrankAngle_DualWheel)
-                  .setSetEndTeeth(triggerSetEndTeeth_DualWheel)
+                  .setPrimaryTrigger(triggerPrimary, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(triggerSecondary, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)
@@ -1311,253 +1281,33 @@ decoder_t  __attribute__((optimize("Os"))) triggerSetup_SuzukiK6A(void)
 
 /** Ford TFI - Distributor mounted signal tooth wheel. Same number of teeth as cylinders.
 Evenly spaced rising edge triggers, Cylinder 1 has a narrow teeth and will have a signature falling edge
-
 */
-/** Ford TFI Primary (Rising Edge).
- * 
- * */
-static void triggerPri_FordTFI(void)
-{
-  uint32_t curTime = micros(); // Get current time and gap duration with micros rollover
-  if (curTime >= _decoderState.toothLastToothTime) 
-    { _decoderState.curGap = curTime - _decoderState.toothLastToothTime; } 
-  else
-    { _decoderState.curGap = (4294967296 - _decoderState.toothLastToothTime + curTime); }
- 
-  if ( _decoderState.curGap >= _decoderState.triggerFilterTime )
-  {
-    if(_decoderState.decoderStatus.syncStatus==SyncStatus::Full) { _decoderState.setFilter(_decoderState.curGap, configPage4); } //Recalc the new filter value
-    else { _decoderState.triggerFilterTime = 0; } //If we don't yet have sync, ensure that the filter won't prevent future valid pulses from being ignored
-    
-    _decoderState.toothCurrentCount++; //Increment the tooth counter
-    
-    if(_decoderState.toothCurrentCount > _decoderState.triggerActualTeeth)//Check if we're back to the beginning of a revolution
-    {
-      if ( (_decoderState.decoderStatus.syncStatus==SyncStatus::Full)  && ( (_decoderState.lastSyncRevolution) + 3  < currentStatus.startRevolutions)) // Revolution count when signature tooth was detected, Allow up to 4 cam revolution without sync signal detected
-      {
-        _decoderState.decoderStatus.syncStatus = SyncStatus::None;
-        currentStatus.syncLossCounter++;
-      }
-      _decoderState.toothCurrentCount = 1; //Reset the counter
-      _decoderState.toothOneMinusOneTime = _decoderState.toothOneTime;
-      _decoderState.toothOneTime = curTime;
-      currentStatus.startRevolutions++; //Counter
-    }
-
-    _decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-
-    if(configPage2.perToothIgn == true)
-    {
-      int16_t crankAngle = ( (_decoderState.toothCurrentCount-1) * _decoderState.triggerToothAngle ) + configPage4.triggerAngle;
-      uint16_t currentTooth = _decoderState.toothCurrentCount;
-      if(_decoderState.toothCurrentCount > (_decoderState.triggerActualTeeth/2) ) { currentTooth = (_decoderState.toothCurrentCount - (_decoderState.triggerActualTeeth/2)); }
-      checkPerToothTiming(currentStatus, _decoderState, configPage4, crankAngle, currentTooth);
-    }
-        
-    _decoderState.toothLastMinusOneToothTime = _decoderState.toothLastToothTime;
-    _decoderState.toothLastToothTime = curTime;
-
-   } //Trigger filter
-}
-
-/** Ford TFI Secondary (Falling Edge).
- * 
- * */
-static void triggerSec_FordTFI(void)
-{
-  uint32_t curTime2 = micros();
-  if (curTime2 >= _decoderState.toothLastSecToothTime) 
-    { _decoderState.curGap2 = curTime2 - _decoderState.toothLastSecToothTime; } 
-  else
-    { _decoderState.curGap2 = (4294967296 - _decoderState.toothLastSecToothTime + curTime2); }
-  
- 
-  //Safety check for initial startup
-  if( (_decoderState.toothLastSecToothTime == 0) )
-  { 
-    _decoderState.curGap2 = 0; 
-    _decoderState.toothLastSecToothTime = curTime2;
-  }
-  
-
-  if ( _decoderState.curGap2 >= _decoderState.triggerSecFilterTime ) // Valid tooth falling edge
-  {     
-    if ((_decoderState.curGap > 0) && (_decoderState.curGap < 20000000)) // Limit to prevent overflow
-    {  
-      _decoderState.targetGap2 = percentage(110, _decoderState.curGap); // Wide last teeth gap min
-      _decoderState.targetGap3 = percentage(90, _decoderState.curGap); // Narrow last teeth minus one gap max
-    }
-    else 
-    {
-    _decoderState.targetGap2 = 0;
-    _decoderState.targetGap3 = 0;
-    }
-    if ( (_decoderState.curGap2 > _decoderState.targetGap2) && (_decoderState.curGap3 < _decoderState.targetGap3) && (_decoderState.lastGap < _decoderState.targetGap2) && (_decoderState.lastGap > _decoderState.targetGap3) ) // Signature Tooth detected
-    {
-      if( (_decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (currentStatus.startRevolutions <= configPage4.StgCycles) )
-      {
-        _decoderState.toothCurrentCount = 2; // Last primary tooth was #2
-        _decoderState.triggerFilterTime = 0; //Need to turn the filter off here otherwise the first primary tooth after achieving sync is ignored
-        _decoderState.decoderStatus.syncStatus = SyncStatus::Full;
-      }
-      else 
-      {
-        if ( (_decoderState.toothCurrentCount != 2) && (currentStatus.startRevolutions > 2)) 
-        { 
-          currentStatus.syncLossCounter++;
-        } //Indicates likely sync loss.
-        if (configPage4.useResync == 1) 
-        { 
-          _decoderState.toothCurrentCount = 2;
-          _decoderState.decoderStatus.syncStatus = SyncStatus::Full;  
-        }
-      }
-      _decoderState.lastSyncRevolution = currentStatus.startRevolutions ; // Revolution count when signature tooth was detected
-
-    }
-
-  _decoderState.toothLastSecToothTime = curTime2; // 
-  _decoderState.lastGap = _decoderState.curGap3; // Minus two Gap
-  _decoderState.curGap3 = _decoderState.curGap2; // Minus one Gap
-
-  } //Trigger filter
-  //else { currentStatus.syncLossCounter = 0; }
-  _decoderState.triggerSecFilterTime = _decoderState.curGap >> 1; //Set filter at 50 % speed of last primary gap
-}
-
-/** Ford TFI - Get RPM.
- * 
- * */
-static uint32_t getRevolutionTime_FordTFI(void)
-{
-  const uint8_t distributorSpeed = CAM_SPEED;
-
-  const bool useCrankingCalc = (currentStatus.RPM < currentStatus.crankRPM) || (currentStatus.RPM < 1500U);
-  const uint32_t revolutionTime = useCrankingCalc ? crankingGetRevolutionTime(currentStatus, _decoderState, configPage4, _decoderState.triggerActualTeeth, distributorSpeed)
-                                                  : stdGetRevolutionTime(currentStatus, _decoderState, distributorSpeed);
-
-  _decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
-  if(_decoderState.MAX_STALL_TIME < 366667UL) { _decoderState.MAX_STALL_TIME = 366667UL; } //Check for 50rpm minimum
-
-  return revolutionTime;
-  
-}
-
-/** Ford TFI - Get Crank angle.
- * 
- * */
-static int16_t getCrankAngle_FordTFI(uint32_t currMicros)
-{
-  auto calculator = decoders::shared::atomic_make_angle_caa(_decoderState);
-
-  //Handle case where the secondary tooth was the last one seen
-  if(calculator._toothCurrentCount == 0) { calculator._toothCurrentCount = 2; } 
-
-  return decoders::shared::clampCrankAngle(calculator.calculateCrankAngle(currMicros, configPage4));
-}
-
-/** Ford TFI - Set End Teeth.
- * 
- * */
-static void triggerSetEndTeeth_FordTFI(void)
-{
-  int tempEndAngle = (ignitionSchedule1.dischargeAngle - configPage4.triggerAngle);
-  tempEndAngle = ignitionLimits((tempEndAngle));
-
-  switch(configPage2.nCylinders)
-  {
-    case 4:
-      if( (tempEndAngle > 180) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 1;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-      }
-      break;
-    case 6:
-      if( (tempEndAngle > 120) && (tempEndAngle <= 240) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 1;
-      }
-      else if( (tempEndAngle > 240) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-      }
-      break;
-    case 8:
-      if( (tempEndAngle > 90) && (tempEndAngle <= 180) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 2;
-        _decoderState.ignitionEndTeeth[1] = 3;
-        _decoderState.ignitionEndTeeth[2] = 4;
-        _decoderState.ignitionEndTeeth[3] = 1;
-      }
-      else if( (tempEndAngle > 180) && (tempEndAngle <= 270) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 3;
-        _decoderState.ignitionEndTeeth[1] = 4;
-        _decoderState.ignitionEndTeeth[2] = 1;
-        _decoderState.ignitionEndTeeth[3] = 2;
-      }
-      else if( (tempEndAngle > 270) || (tempEndAngle <= 0) )
-      {
-        _decoderState.ignitionEndTeeth[0] = 4;
-        _decoderState.ignitionEndTeeth[1] = 1;
-        _decoderState.ignitionEndTeeth[2] = 2;
-        _decoderState.ignitionEndTeeth[3] = 3;
-      }
-      else
-      {
-        _decoderState.ignitionEndTeeth[0] = 1;
-        _decoderState.ignitionEndTeeth[1] = 2;
-        _decoderState.ignitionEndTeeth[2] = 3;
-        _decoderState.ignitionEndTeeth[3] = 4;
-      }
-      break;
-  }
-}
-
-/** Ford TFI Setup.
- * 
- * */
 decoder_t  __attribute__((optimize("Os"))) triggerSetup_FordTFI(void)
 {
-  _decoderState.decoderFeatures = decoder_features_t();
-	sharedDecoderReset();
-  _decoderState.triggerActualTeeth = configPage2.nCylinders;
-  if(_decoderState.triggerActualTeeth == 0) { _decoderState.triggerActualTeeth = 1; }
+  _decoderState = decoders::ford_tfi::initialise(configPage2);
 
-  _decoderState.setTriggerToothAngle(720U / _decoderState.triggerActualTeeth); //The number of degrees that passes from tooth to tooth, half cylinder count
-  _decoderState.toothCurrentCount = 0; //Default value
-  _decoderState.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 30U * configPage2.nCylinders)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
-  _decoderState.triggerSecFilterTime = _decoderState.triggerFilterTime * 4U /5u; //Same as above, but slightly about lower due to signature trigger (about 80%)
-  _decoderState.lastSyncRevolution = 0;
-  _decoderState.decoderFeatures.supportsSequential = true;
-  _decoderState.decoderStatus.toothAngleIsCorrect = true; //This is always true for this pattern
-  _decoderState.decoderFeatures.supportsPerToothIgnition = true;
-  if(configPage2.nCylinders <= 4U) { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/90U) * _decoderState.triggerToothAngle); }//Minimum 90rpm. (1851uS is the time per degree at 90rpm). This uses 90rpm rather than 50rpm due to the potentially very high stall time on a 4 cylinder if we wait that long.
-  else { _decoderState.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * _decoderState.triggerToothAngle); } //Minimum 50rpm. (3200uS is the time per degree at 50rpm).
+  static const auto primaryTrigger = []() {
+    decoders::ford_tfi::triggerPrimary(micros(), currentStatus, _decoderState, configPage2, configPage4);
+  };
+  static const auto secondaryTrigger = []() {
+    decoders::ford_tfi::triggerSecondary(micros(), currentStatus, _decoderState, configPage4);
+  };
+  static const auto getRevolutionTime = []() {
+    return decoders::ford_tfi::getRevolutionTime(currentStatus, _decoderState, configPage4);
+  };
+  static const auto getCrankAngle = [](uint32_t currMicros) {
+    return decoders::ford_tfi::getCrankAngle(currMicros, _decoderState, configPage4);
+  };
+  static const auto setEndTeeth = []() {
+    decoders::ford_tfi::setEndTeeth(_decoderState, configPage2, configPage4);
+  };
 
   return decoder_builder_t()
-                  .setPrimaryTrigger(triggerPri_FordTFI, getConfigPriTriggerEdge(configPage4))
-                  .setSecondaryTrigger(triggerSec_FordTFI, getConfigSecTriggerEdge(configPage4))
-                  .setGetRevolutionTime(getRevolutionTime_FordTFI)
-                  .setGetCrankAngle(getCrankAngle_FordTFI)
-                  .setSetEndTeeth(triggerSetEndTeeth_FordTFI)
+                  .setPrimaryTrigger(primaryTrigger, getConfigPriTriggerEdge(configPage4))
+                  .setSecondaryTrigger(secondaryTrigger, getConfigSecTriggerEdge(configPage4))
+                  .setGetRevolutionTime(getRevolutionTime)
+                  .setGetCrankAngle(getCrankAngle)
+                  .setSetEndTeeth(setEndTeeth)
                   .setReset(sharedDecoderReset)
                   .setIsEngineRunning(sharedEngineIsRunning)
                   .setGetStatus(sharedGetStatus)

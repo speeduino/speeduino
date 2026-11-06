@@ -72,24 +72,15 @@ enum class SyncStatus : uint8_t {
 
 /** @brief Current decoder status */
 struct decoder_status_t {
-  bool validTrigger; ///> Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
-  bool toothAngleIsCorrect; ///> Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.ly set.
-  SyncStatus syncStatus; ///> Current sync status (none/partial/full)
+  bool validTrigger = false; ///> Is set true when the last trigger (Primary or secondary) was valid (ie passed filters)
+  bool toothAngleIsCorrect = false; ///> Whether or not the triggerToothAngle variable is currently accurate. Some patterns have times when the triggerToothAngle variable cannot be accurately set.ly set.
+  SyncStatus syncStatus = SyncStatus::None; ///> Current sync status (none/partial/full)
 };
 
-
 struct decoder_features_t {
-  bool supports2ndDeriv : 1; ///> The use of the 2nd derivative calculation is limited to certain decoders. 
   bool supportsSequential : 1; ///> Whether or not the decoder supports sequential operation
   bool hasFixedCrankingTiming : 1; ///> Whether or not the decoder supports fixed cranking timing
   bool supportsPerToothIgnition : 1; ///> Whether or not the decoder supports per-tooth ignition
-
-  decoder_features_t(void)
-    : supports2ndDeriv(false)
-    , supportsSequential(false)
-    , hasFixedCrankingTiming(false)
-    , supportsPerToothIgnition(false)
-  {}
 };
 
 /** @brief This structure represents a decoder configuration 
