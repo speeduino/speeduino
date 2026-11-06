@@ -141,6 +141,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     // decoderState.triggerToothAngle is the size of the previous tooth not the future tooth
     if (decoderState.decoderStatus.syncStatus==SyncStatus::Full )
     {
+      decoderState.triggerFilterTime = 0;
       switch (decoderState.toothCurrentCount) // Set tooth angle based on previous gap and decoderState.triggerFilterTime based on previous gap and next gap
       {
         case 2:
@@ -159,7 +160,6 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
               decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<4>((uint32_t)decoderState.curGap);
               break;
             default:
-              decoderState.triggerFilterTime = 0;
               break;
           }          
           break;
@@ -178,7 +178,6 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
               decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
               break;
             default:
-              decoderState.triggerFilterTime = 0;
               break;
           }
           break;
@@ -197,7 +196,6 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
               decoderState.triggerFilterTime = decoderState.curGap * 3U;
               break;
             default:
-              decoderState.triggerFilterTime = 0;
               break;
           }
           break;
@@ -216,7 +214,6 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
               decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
               break;
             default:
-              decoderState.triggerFilterTime = 0;
               break;
           }          
           break;
@@ -236,13 +233,11 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
               decoderState.triggerFilterTime = decoderState.curGap + rshift<1>((uint32_t)decoderState.curGap) + rshift<2>((uint32_t)decoderState.curGap);
               break;
             default:
-              decoderState.triggerFilterTime = 0;
               break;
           }
           break;
 
         default:
-          decoderState.triggerFilterTime = 0;
           break;
       }
       
