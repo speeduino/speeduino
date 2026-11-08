@@ -14,7 +14,7 @@ static void test_initialises_four_cylinder_layout(void)
     TEST_ASSERT_EQUAL_UINT16(180, decoderState.triggerToothAngle);
     TEST_ASSERT_EQUAL_UINT32(366667, decoderState.MAX_STALL_TIME);
     TEST_ASSERT_EQUAL_UINT32(1500, decoderState.triggerFilterTime);
-    TEST_ASSERT_EQUAL_UINT32(0, decoderState.toothLastToothTime);
+    TEST_ASSERT_EQUAL_UINT32(1234, decoderState.toothLastToothTime);
     TEST_ASSERT_TRUE(decoderState.decoderFeatures.supportsSequential);
     TEST_ASSERT_TRUE(decoderState.decoderFeatures.hasFixedCrankingTiming);
     TEST_ASSERT_TRUE(decoderState.decoderFeatures.supportsPerToothIgnition);
@@ -39,7 +39,7 @@ static void test_initialises_six_cylinder_layout_and_startup_timestamp(void)
     TEST_ASSERT_EQUAL_UINT16(180, decoderState.triggerToothAngle);
     TEST_ASSERT_EQUAL_UINT32(366667, decoderState.MAX_STALL_TIME);
     TEST_ASSERT_EQUAL_UINT32(1500, decoderState.triggerFilterTime);
-    TEST_ASSERT_EQUAL_UINT32(1234, decoderState.toothLastToothTime);
+    TEST_ASSERT_EQUAL_UINT32(0, decoderState.toothLastToothTime);
 
     for(size_t index = 0; index < 12; ++index)
     {
