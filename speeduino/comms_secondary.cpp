@@ -25,6 +25,7 @@ sendcancommand is called when a command is to be sent either to serial3
 #include "logger.h"
 #include "page_crc.h"
 #include "board_definition.h"
+#include "unit_testing.h"
 
 uint8_t currentSecondaryCommand;
 SECONDARY_SERIAL_T* pSecondarySerial;
@@ -39,24 +40,29 @@ static constexpr uint8_t CAN_FRAME_DATA_BYTES = 8U;
 #endif
 
 // Handle a 'G' reply from the CAN interface: <success><channel><8 data bytes>.
-// Assumes the caller has confirmed enough bytes are available to read.
-static void processSecondaryCanReply(void)
+// Leave incomplete replies buffered, including a partial two-byte failure reply.
+TESTABLE_INLINE_STATIC bool processSecondaryCanReply(Stream &port)
 {
-  const uint8_t cmdSuccessful = secondarySerial.read();      // 0 == fail, 1 == good
-  const uint8_t destcaninchannel = secondarySerial.read();   // the input channel that requested the data value
+  // Evaluate readiness from one snapshot; later arrivals wait for the next call.
+  const int availableBytes = port.available();
+  if (availableBytes < 2) { return false; }
+  const bool successfulReply = port.peek() != 0;
+  if (successfulReply && (availableBytes < (CAN_FRAME_DATA_BYTES + 2))) { return false; }
+  const uint8_t cmdSuccessful = port.read();      // 0 == fail, 1 == good
+  const uint8_t destcaninchannel = port.read();   // the input channel that requested the data value
 
   // Nothing further is sent for a failed request.
-  if (cmdSuccessful == 0U) { return; }
+  if (cmdSuccessful == 0U) { return true; }
 
   uint8_t Gdata[CAN_FRAME_DATA_BYTES + 1U] = { 0U };
   for (uint8_t Gx = 0U; Gx < CAN_FRAME_DATA_BYTES; Gx++)
   {
-    Gdata[Gx] = secondarySerial.read();
+    Gdata[Gx] = port.read();
   }
 
   // Ignore out-of-range channels: destcaninchannel indexes both
   // caninput_source_start_byte[] and canin[].
-  if (destcaninchannel >= _countof(currentStatus.canin)) { return; }
+  if (destcaninchannel >= _countof(currentStatus.canin)) { return true; }
 
   // Mask to a valid data-byte index (0..CAN_FRAME_DATA_BYTES-1)
   const uint8_t startByte = configPage9.caninput_source_start_byte[destcaninchannel] & (CAN_FRAME_DATA_BYTES - 1U);
@@ -67,6 +73,7 @@ static void processSecondaryCanReply(void)
     Ghigh = Gdata[startByte + 1U];
   }
   currentStatus.canin[destcaninchannel] = ((uint16_t)Ghigh << 8) | Gdata[startByte];
+  return true;
 }
 
 void secondserial_Command(void)
@@ -106,10 +113,9 @@ void secondserial_Command(void)
 
     case 'G': // this is the reply command sent by the Can interface
       serialSecondaryStatusFlag = SERIAL_COMMAND_INPROGRESS_LEGACY;
-      if (secondarySerial.available() >= 9)
+      if (processSecondaryCanReply(secondarySerial))
       {
         serialSecondaryStatusFlag = SERIAL_INACTIVE;
-        processSecondaryCanReply();
       }
       break;
 
