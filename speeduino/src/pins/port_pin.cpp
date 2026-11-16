@@ -7,9 +7,18 @@ port_pin_t::port_pin_t(uint8_t pinNum, uint8_t mode)
 {
     if (pinNum!=NOT_A_PIN)
     {
-        _port = portOutputRegister(digitalPinToPort(pinNum));
-        _mask = digitalPinToBitMask(pinNum);
-        pinMode(pinNum, mode);
+    	auto port = digitalPinToPort(pinNum);
+
+      if (mode==OUTPUT)
+      {
+        _port = portOutputRegister(port);
+      }
+      else
+      {
+        _port = portInputRegister(port);
+      }
+      _mask = digitalPinToBitMask(pinNum);
+      pinMode(pinNum, mode);
     }
 }
 
