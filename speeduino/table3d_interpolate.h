@@ -4,6 +4,7 @@
 #include "table3d_typedefs.h"
 #include "maths.h"
 #include "table2d.h"
+#include "src/utils/iterator8.h"
 
 /**
  * @file 
@@ -134,15 +135,15 @@ table3d_value_t get3DTableValue(struct table3DGetValueCache *pValueCache,
   constexpr table3d_dim_t axisSize = std::tuple_size<TXAxis>::value;
 
   // Figure out where on the axes the incoming coord are
-  auto xBin = _table2d_detail::findCachedBin(pValueCache->lastBinMax.x, std::begin(xAxis), std::end(xAxis), (table3d_dim_t)div_round_closest_u16<xFactor>(lookupValues.x));
-  auto yBin = _table2d_detail::findCachedBin(pValueCache->lastBinMax.y, std::begin(yAxis), std::end(yAxis), (table3d_dim_t)div_round_closest_u16<yFactor>(lookupValues.y));
+  auto xBin = _table2d_detail::findCachedBin(pValueCache->lastBinMax.x, mcu8::begin(xAxis), mcu8::end(xAxis), (table3d_dim_t)div_round_closest_u16<xFactor>(lookupValues.x));
+  auto yBin = _table2d_detail::findCachedBin(pValueCache->lastBinMax.y, mcu8::begin(yAxis), mcu8::end(yAxis), (table3d_dim_t)div_round_closest_u16<yFactor>(lookupValues.y));
   
   // Interpolate based on the bin positions
   pValueCache->lastOutput = interpolate_3d_value(lookupValues, axisSize, values.data(), xBin, xFactor, yBin, yFactor);
   // Store the last lookup values so we can check them next time
   pValueCache->last_lookup = lookupValues;
-  pValueCache->lastBinMax.x = xBin.upperIndex;
-  pValueCache->lastBinMax.y = yBin.upperIndex;
+  pValueCache->lastBinMax.x = xBin.upperIndex();
+  pValueCache->lastBinMax.y = yBin.upperIndex();
 
   return pValueCache->lastOutput;
 
