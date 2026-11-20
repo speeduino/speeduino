@@ -274,7 +274,6 @@ void legacySerialCommand(void)
       if(primarySerial.available() >= 6)
       {
         byte offset1, offset2, length1, length2;
-        int length;
         byte tempPage;
 
         primarySerial.read(); // First byte of the page identifier can be ignored. It's always 0
@@ -285,10 +284,18 @@ void legacySerialCommand(void)
         valueOffset = word(offset2, offset1);
         length1 = primarySerial.read();
         length2 = primarySerial.read();
-        length = word(length2, length1);
-        for(int i = 0; i < length; i++)
+        const uint16_t length = word(length2, length1);
+        const uint16_t pageSize = getPageSize(tempPage);
+        const uint16_t pageOffset = (uint16_t)valueOffset;
+        if (tempPage == 0U || tempPage >= getPageCount() ||
+            pageOffset > pageSize || length > pageSize - pageOffset)
         {
-          primarySerial.write( getPageValue(tempPage, valueOffset + i) );
+          serialStatusFlag = SERIAL_INACTIVE;
+          break;
+        }
+        for(uint16_t i = 0; i < length; i++)
+        {
+          primarySerial.write( getPageValue(tempPage, (uint16_t)valueOffset + i) );
         }
 
         serialStatusFlag = SERIAL_INACTIVE;
@@ -621,7 +628,6 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
       if(targetPort.available() >= 6)
       {
         byte offset1, offset2, length1, length2;
-        int length;
         byte tempPage;
 
         targetPort.read(); // First byte of the page identifier can be ignored. It's always 0
@@ -632,10 +638,18 @@ void legacySerialHandler(byte cmd, Stream &targetPort, SerialStatus &targetStatu
         valueOffset = word(offset2, offset1);
         length1 = targetPort.read();
         length2 = targetPort.read();
-        length = word(length2, length1);
-        for(int i = 0; i < length; i++)
+        const uint16_t length = word(length2, length1);
+        const uint16_t pageSize = getPageSize(tempPage);
+        const uint16_t pageOffset = (uint16_t)valueOffset;
+        if (tempPage == 0U || tempPage >= getPageCount() ||
+            pageOffset > pageSize || length > pageSize - pageOffset)
         {
-          targetPort.write( getPageValue(tempPage, valueOffset + i) );
+          targetStatusFlag = SERIAL_INACTIVE;
+          break;
+        }
+        for(uint16_t i = 0; i < length; i++)
+        {
+          targetPort.write( getPageValue(tempPage, (uint16_t)valueOffset + i) );
         }
 
         targetStatusFlag = SERIAL_INACTIVE;
