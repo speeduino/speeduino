@@ -155,10 +155,10 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
               decoderState.triggerFilterTime = decoderState.curGap*ONE_EIGTH;
               break;
             case 2: // 50 % 35 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_EIGTH) + (decoderState.curGap*ONE_SIXTEENTH);
+              decoderState.triggerFilterTime = decoderState.curGap*THREE_SIXTEENTHS;
               break;
             case 3: // 75 % 52 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER) + (decoderState.curGap*ONE_SIXTEENTH);
+              decoderState.triggerFilterTime = decoderState.curGap*FIVE_SIXTEENTHS;
               break;
             default:
               break;
@@ -170,13 +170,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 8 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_EIGTH);
+              decoderState.triggerFilterTime = decoderState.curGap*ONE_EIGTH;
               break;
             case 2: // 50 % 17 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER);
+              decoderState.triggerFilterTime = decoderState.curGap*ONE_QUARTER;
               break;
             case 3: // 75 % 25 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER) + (decoderState.curGap*ONE_EIGTH);
+              decoderState.triggerFilterTime = decoderState.curGap*THREE_EIGTHS;
               break;
             default:
               break;
@@ -206,13 +206,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_EIGTH);
+              decoderState.triggerFilterTime = decoderState.curGap*ONE_EIGTH;
               break;
             case 2: // 50 % 35 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER);
+              decoderState.triggerFilterTime = decoderState.curGap*ONE_QUARTER;
               break;
             case 3: // 75 % 52 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER) + (decoderState.curGap*ONE_EIGTH);
+              decoderState.triggerFilterTime = decoderState.curGap*THREE_EIGTHS;
               break;
             default:
               break;
@@ -225,13 +225,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 42 degrees
-              decoderState.triggerFilterTime = (decoderState.curGap*ONE_HALF) + (decoderState.curGap*ONE_EIGTH);
+              decoderState.triggerFilterTime = decoderState.curGap*FIVE_EIGTHS;
               break;
             case 2: // 50 % 85 degrees
-              decoderState.triggerFilterTime = decoderState.curGap + (decoderState.curGap*ONE_QUARTER);
+              decoderState.triggerFilterTime = decoderState.curGap*FIVE_QUARTERS;
               break;
             case 3: // 75 % 127 degrees
-              decoderState.triggerFilterTime = decoderState.curGap + (decoderState.curGap*ONE_HALF) + (decoderState.curGap*ONE_QUARTER);
+              decoderState.triggerFilterTime = decoderState.curGap*SEVEN_QUARTERS;
               break;
             default:
               break;
