@@ -4,6 +4,7 @@
 #include "shared/crank_angle_calculator.h"
 #include "elapsed_time.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -171,7 +172,7 @@ uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderStat
   else
   {
     if (toothOneInterval(sample, interval)==false) { return shared::publishedRevolutionTime(current); }
-    revolutionTime = interval >> 1; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
+    revolutionTime = interval * ONE_HALF; //The time in uS that one revolution would take at current speed (The time tooth 1 was last seen, minus the time it was seen prior to that)
   }
   decoderState.MAX_STALL_TIME = revolutionTime << 1; //Set the stall time to be twice the current RPM. This is a safe figure as there should be no single revolution where this changes more than this
   return revolutionTime;

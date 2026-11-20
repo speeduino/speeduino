@@ -3,7 +3,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
-#include "unit_testing.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -41,7 +41,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       }
       else
       {
-        decoderState.targetGap = (decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
+        decoderState.targetGap = decoderState.lastGap*ONE_HALF; //The target gap is set at half the last tooth gap
         if ( decoderState.curGap < decoderState.targetGap ) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the magical 3rd tooth
         {
           decoderState.toothCurrentCount = 3;

@@ -4,6 +4,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "unit_testing.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -71,19 +72,19 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       {
         //Lite filter
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = decoderState.curGap; } //Trigger filter is set to whatever time it took to do 70 degrees (Next trigger is 110 degrees away)
-        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 3UL)); } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = decoderState.curGap*THREE_EIGTHS; } //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
       }
       else if(page4.triggerFilter == 2)
       {
         //Medium filter level
-        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = (decoderState.curGap * 5) >> 2 ; } //87.5 degrees with a target of 110
-        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = (decoderState.curGap >> 1); } //55 degrees with a target of 70
+        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = decoderState.curGap * FIVE_QUARTERS; } //87.5 degrees with a target of 110
+        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = decoderState.curGap*ONE_HALF; } //55 degrees with a target of 70
       }
       else if (page4.triggerFilter == 3)
       {
         //Aggressive filter level
-        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 11UL)) ; } //96.26 degrees with a target of 110
-        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = rshift<5>((uint32_t)(decoderState.curGap * 9UL)); } //61.87 degrees with a target of 70
+        if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = decoderState.curGap * ELEVEN_EIGTHS; } //96.26 degrees with a target of 110
+        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = rshift<5>((uint32_t)(decoderState.curGap * 9UL)); } //61.87 degrees with a target of 70 
       }
       else
       {

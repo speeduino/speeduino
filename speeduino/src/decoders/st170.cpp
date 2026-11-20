@@ -2,6 +2,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -43,7 +44,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
 
   if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime )
   {
-      decoderState.targetGap2 = (3 * (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+      decoderState.targetGap2 = (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)*ONE_AND_HALF; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
       decoderState.toothLastMinusOneSecToothTime = decoderState.toothLastSecToothTime;
       if ( (decoderState.curGap2 >= decoderState.targetGap2) || (decoderState.secondaryToothCount == 5) )
       {
@@ -53,7 +54,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       }
       else
       {
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalculated for the regular teeth, not the missing one.
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER; //Set filter at 25% of the current speed. Filter can only be recalculated for the regular teeth, not the missing one.
         decoderState.secondaryToothCount++;
       }
 

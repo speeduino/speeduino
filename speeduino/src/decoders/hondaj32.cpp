@@ -1,6 +1,7 @@
 #include "hondaj32.h"
 #include "shared/crank_angle_calculator.h"
 #include "shared/rev_time_calcs.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -42,7 +43,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     else if (decoderState.toothCurrentCount == 23 || decoderState.toothCurrentCount == 15) // This is the first tooth after a missing tooth
     {
       decoderState.toothCurrentCount++; // account for missing tooth
-      if (decoderState.curGap < (decoderState.lastGap >> 1) * 3) // This should be a big gap, if we find it's not actually big, we lost sync
+      if (decoderState.curGap < (decoderState.lastGap*ONE_AND_HALF)) // This should be a big gap, if we find it's not actually big, we lost sync
       {
         decoderState.decoderStatus.syncStatus = SyncStatus::None;
         decoderState.toothCurrentCount=1;
@@ -60,7 +61,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   }
   else // we do not have sync yet. While syncing, treat tooth 14 and 22 as normal teeth
   {
-    if (decoderState.curGap < (decoderState.lastGap >> 1) * 3 || decoderState.lastGap == 0){ // Regular tooth, decoderState.lastGap == 0 at startup
+    if (decoderState.curGap < (decoderState.lastGap*ONE_AND_HALF) || decoderState.lastGap == 0){ // Regular tooth, decoderState.lastGap == 0 at startup
       decoderState.toothCurrentCount++;  // Increment teeth between gaps
       decoderState.lastGap = decoderState.curGap;
     }

@@ -3,6 +3,7 @@
 #include "shared/rev_time_calcs.h"
 #include "scheduledIO_ign.h"
 #include "shared/crank_angle_calculator.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -173,7 +174,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       {
         //Set filter at 25% of the current speed
         //Note that this can only be set on the 2nd or 3rd cam tooth in each set. 
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2;
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER;
       }
       else { decoderState.triggerSecFilterTime = 0; } //Filter disabled  
 

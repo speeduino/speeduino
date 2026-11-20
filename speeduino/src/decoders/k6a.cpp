@@ -3,6 +3,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -151,13 +152,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = decoderState.curGap*ONE_EIGTH;
               break;
             case 2: // 50 % 35 degrees
-              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap) + rshift<4>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_EIGTH) + (decoderState.curGap*ONE_SIXTEENTH);
               break;
             case 3: // 75 % 52 degrees
-              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<4>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER) + (decoderState.curGap*ONE_SIXTEENTH);
               break;
             default:
               break;
@@ -169,13 +170,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 8 degrees
-              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_EIGTH);
               break;
             case 2: // 50 % 17 degrees
-              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER);
               break;
             case 3: // 75 % 25 degrees
-              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER) + (decoderState.curGap*ONE_EIGTH);
               break;
             default:
               break;
@@ -205,13 +206,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 17 degrees
-              decoderState.triggerFilterTime = rshift<3>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_EIGTH);
               break;
             case 2: // 50 % 35 degrees
-              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER);
               break;
             case 3: // 75 % 52 degrees
-              decoderState.triggerFilterTime = rshift<2>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_QUARTER) + (decoderState.curGap*ONE_EIGTH);
               break;
             default:
               break;
@@ -224,13 +225,13 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           switch (page4.triggerFilter)
           {
             case 1: // 25 % 42 degrees
-              decoderState.triggerFilterTime = rshift<1>((uint32_t)decoderState.curGap) + rshift<3>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = (decoderState.curGap*ONE_HALF) + (decoderState.curGap*ONE_EIGTH);
               break;
             case 2: // 50 % 85 degrees
-              decoderState.triggerFilterTime = decoderState.curGap + rshift<2>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = decoderState.curGap + (decoderState.curGap*ONE_QUARTER);
               break;
             case 3: // 75 % 127 degrees
-              decoderState.triggerFilterTime = decoderState.curGap + rshift<1>((uint32_t)decoderState.curGap) + rshift<2>((uint32_t)decoderState.curGap);
+              decoderState.triggerFilterTime = decoderState.curGap + (decoderState.curGap*ONE_HALF) + (decoderState.curGap*ONE_QUARTER);
               break;
             default:
               break;

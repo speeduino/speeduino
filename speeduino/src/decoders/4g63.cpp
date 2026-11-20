@@ -5,6 +5,7 @@
 #include "scheduler_ignition_controller.h"
 #include "scheduledIO_ign.h"
 #include "unit_testing.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -82,7 +83,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   if ( (decoderState.curGap >= decoderState.triggerFilterTime) || (current.startRevolutions == 0) )
   {
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    decoderState.triggerFilterTime = decoderState.curGap >> 2; //This only applies during non-sync conditions. If there is sync then decoderState.triggerFilterTime gets changed again below with a better value.
+    decoderState.triggerFilterTime = decoderState.curGap*ONE_QUARTER; //This only applies during non-sync conditions. If there is sync then decoderState.triggerFilterTime gets changed again below with a better value.
 
     decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
     decoderState.toothLastToothTime = curTime;
@@ -133,7 +134,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           }
           else
           {
-            decoderState.triggerFilterTime = (decoderState.curGap >> 2); //Trigger filter is set to (70/4)=17.5=17 degrees (Next trigger is 50 degrees away).
+            decoderState.triggerFilterTime = decoderState.curGap*ONE_QUARTER; //Trigger filter is set to (70/4)=17.5=17 degrees (Next trigger is 50 degrees away).
           }
         }
         else
@@ -141,12 +142,12 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           if(page2.nCylinders == 4)
           {
             decoderState.triggerToothAngle = 110;
-            decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 3UL)); //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
+            decoderState.triggerFilterTime = decoderState.curGap*THREE_EIGTHS; //Trigger filter is set to (110*3)/8=41.25=41 degrees (Next trigger is 70 degrees away).
           }
           else
           {
             decoderState.triggerToothAngle = 50;
-            decoderState.triggerFilterTime = decoderState.curGap >> 1; //Trigger filter is set to 25 degrees (Next trigger is 70 degrees away).
+            decoderState.triggerFilterTime = decoderState.curGap*ONE_HALF; //Trigger filter is set to 25 degrees (Next trigger is 70 degrees away).
           }
         }
       }
@@ -158,11 +159,11 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           decoderState.triggerToothAngle = 70; 
           if(page2.nCylinders == 4)
           { 
-            decoderState.triggerFilterTime = (decoderState.curGap * 5) >> 2 ; //87.5 degrees with a target of 110
+            decoderState.triggerFilterTime = decoderState.curGap*FIVE_QUARTERS ; //87.5 degrees with a target of 110
           }
           else
           {
-            decoderState.triggerFilterTime = decoderState.curGap >> 1 ; //35 degrees with a target of 50
+            decoderState.triggerFilterTime = decoderState.curGap*ONE_HALF; //35 degrees with a target of 50
           }
         } 
         else 
@@ -170,12 +171,12 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           if(page2.nCylinders == 4)
           { 
             decoderState.triggerToothAngle = 110; 
-            decoderState.triggerFilterTime = (decoderState.curGap >> 1); //55 degrees with a target of 70
+            decoderState.triggerFilterTime = decoderState.curGap*ONE_HALF; //55 degrees with a target of 70
           }
           else
           {
             decoderState.triggerToothAngle = 50; 
-            decoderState.triggerFilterTime = (decoderState.curGap * 3) >> 2; //Trigger filter is set to (50*3)/4=37.5=37 degrees (Next trigger is 70 degrees away).
+            decoderState.triggerFilterTime = decoderState.curGap*THREE_QUARTERS; //Trigger filter is set to (50*3)/4=37.5=37 degrees (Next trigger is 70 degrees away).
           }
         } 
       }
@@ -187,11 +188,11 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           decoderState.triggerToothAngle = 70; 
           if(page2.nCylinders == 4)
           { 
-            decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 11UL));//96.26 degrees with a target of 110
+            decoderState.triggerFilterTime = decoderState.curGap*ELEVEN_EIGTHS;//96.26 degrees with a target of 110
           }
           else
           {
-            decoderState.triggerFilterTime = decoderState.curGap >> 1 ; //35 degrees with a target of 50
+            decoderState.triggerFilterTime = decoderState.curGap*ONE_HALF; //35 degrees with a target of 50
           }
         } 
         else 
@@ -275,18 +276,13 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   {
     decoderState.toothLastSecToothTime = curTime;
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
-    decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Basic 50% filter for the secondary reading
-    //More aggressive options:
-    //62.5%:
-    //decoderState.triggerSecFilterTime = (decoderState.curGap2 * 9) >> 5;
-    //75%:
-    //decoderState.triggerSecFilterTime = (decoderState.curGap2 * 6) >> 3;
+    decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_HALF; //Basic 50% filter for the secondary reading
 
     if (decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
     {
 
       decoderState.triggerFilterTime = 1500; //If this is removed, can have trouble getting sync again after the engine is turned off (but ECU not reset).
-      decoderState.triggerSecFilterTime = decoderState.triggerSecFilterTime >> 1; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
+      decoderState.triggerSecFilterTime = decoderState.triggerSecFilterTime*ONE_HALF; //Divide the secondary filter time by 2 again, making it 25%. Only needed when cranking
       if(current.decoder.primary.isPinHigh())
       {
         if(page2.nCylinders == 4)

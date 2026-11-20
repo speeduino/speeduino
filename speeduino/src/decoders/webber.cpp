@@ -1,4 +1,5 @@
 #include "webber.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -11,7 +12,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
   {
     decoderState.toothCurrentCount++; //Increment the tooth counter
     if (decoderState.checkSyncToothCount > 0) { decoderState.checkSyncToothCount++; }
-    if ( decoderState.triggerSecFilterTime <= decoderState.curGap ) { decoderState.triggerSecFilterTime = decoderState.curGap + (decoderState.curGap>>1); } //150% crank tooth
+    if ( decoderState.triggerSecFilterTime <= decoderState.curGap ) { decoderState.triggerSecFilterTime = decoderState.curGap + (decoderState.curGap*ONE_HALF); } //150% crank tooth
     decoderState.decoderStatus.validTrigger = true; //Flag this pulse as being a valid trigger (ie that it passed filters)
 
     decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
@@ -80,14 +81,14 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
     } //First start, between gaps on CAM pulses have 2 teeth, sync on first CAM pulse if seen 3 teeth or more
     else
     {
-      decoderState.triggerSecFilterTime = decoderState.curGap + (decoderState.curGap>>1); //150% crank tooth
+      decoderState.triggerSecFilterTime = decoderState.curGap + (decoderState.curGap*ONE_HALF); //150% crank tooth
       decoderState.secondaryToothCount++;
       decoderState.checkSyncToothCount = 1; //Tooth 1 considered as already been seen
     } //First time might fall here, second CAM tooth will
   }
   else
   {
-    decoderState.triggerSecFilterTime = decoderState.curGap + (decoderState.curGap>>1); //Noise region, using 150% of crank tooth
+    decoderState.triggerSecFilterTime = decoderState.curGap + (decoderState.curGap*ONE_HALF); //Noise region, using 150% of crank tooth
     decoderState.checkSyncToothCount = 1; //Reset tooth counter
   } //Trigger filter
 }
