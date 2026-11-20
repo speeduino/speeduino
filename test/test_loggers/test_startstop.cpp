@@ -12,7 +12,7 @@ static void test_start_stop(void)
 {
     configPage4.triggerTeeth = 6; // Prevent division by zero
     configPage2.nCylinders = 4; // Needed to prevent division by zero.
-    currentStatus.initialisationComplete = decoderToTest!=DECODER_4G63;
+    currentStatus.initialisationComplete = true;
 #if defined(STM32F407xx)
     pinNumbers.pinTrigger = PD3; //The CAS pin
     pinNumbers.pinTrigger2 = PD4; //The Cam Sensor pin
