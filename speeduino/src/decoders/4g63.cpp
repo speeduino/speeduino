@@ -200,7 +200,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
           if(page2.nCylinders == 4)
           { 
             decoderState.triggerToothAngle = 110; 
-            decoderState.triggerFilterTime = rshift<5>((uint32_t)(decoderState.curGap * 9UL)); //61.87 degrees with a target of 70
+            decoderState.triggerFilterTime = decoderState.curGap*NINE_SIXTEENTHS; //61.87 degrees with a target of 70
           }
           else
           {
