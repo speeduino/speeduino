@@ -24,6 +24,9 @@ public:
     return exp;
   }
 
+  static constexpr uint8_t denominator_ = denominator;
+  static constexpr uint8_t shift_ = log2_exact(denominator);
+
   explicit constexpr FastFraction(uint8_t numerator)
   : numerator_(numerator)
   {
@@ -38,7 +41,7 @@ public:
   /// @{
   friend uint32_t operator*(uint32_t lhs, const FastFraction &fraction)
   {
-    return rshift<log2_exact(denominator)>(lhs*fraction.numerator_);
+    return rshift<shift_>(lhs*fraction.numerator_);
   }
   friend uint32_t operator*(const FastFraction &fraction, uint32_t rhs)
   {

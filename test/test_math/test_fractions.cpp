@@ -1,5 +1,6 @@
 #include "../test_utils.h"
 #include "src/utils/FractionalMath.h"
+#include "../timer.hpp"
 
 template <uint8_t denominator>
 static void assert_fraction(const FastFraction<denominator> &fraction, uint32_t toConvert)
@@ -60,8 +61,52 @@ static void test_fractions(void)
   test_fraction(ONE_AND_HALF);
 }
 
+static void test_perf_div(void)
+{
+  constexpr uint16_t iters = 1;
+  constexpr uint16_t start_index = 0;
+  constexpr uint16_t end_index = 9999;
+  constexpr uint16_t step = 7;
+
+  static constexpr auto fraction = ONE_SIXTEENTH*FastFraction<1>(7);
+  auto nativeTestDiv = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((index*99UL)*fraction.numerator_)/fraction.denominator_; };
+  auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += (index*99UL)*fraction; };
+  auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_index, end_index, step, nativeTestDiv, optimizedTest);
+  
+  // The checksums will be different due to rounding. This is only
+  // here to force the compiler to run the loops above
+  TEST_ASSERT_EQUAL(comparison.timeA.result, comparison.timeB.result);
+
+#if defined(__AVR__) // Speed up only noticeable on AVR
+  TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
+}
+
+static void test_perf_shift(void)
+{
+  constexpr uint16_t iters = 1;
+  constexpr uint16_t start_index = 0;
+  constexpr uint16_t end_index = 9999;
+  constexpr uint16_t step = 7;
+
+  static constexpr auto fraction = ONE_SIXTEENTH*FastFraction<1>(7);
+  auto nativeTestDiv = [] (uint16_t index, uint32_t &checkSum) { checkSum += ((index*99UL)*fraction.numerator_) >> fraction.shift_; };
+  auto optimizedTest = [] (uint16_t index, uint32_t &checkSum) { checkSum += (index*99UL)*fraction; };
+  auto comparison = compare_executiontime<uint16_t, uint32_t>(iters, start_index, end_index, step, nativeTestDiv, optimizedTest);
+  
+  // The checksums will be different due to rounding. This is only
+  // here to force the compiler to run the loops above
+  TEST_ASSERT_EQUAL(comparison.timeA.result, comparison.timeB.result);
+
+#if defined(__AVR__) // Speed up only noticeable on AVR
+  TEST_ASSERT_LESS_THAN(comparison.timeA.durationMicros, comparison.timeB.durationMicros);
+#endif
+}
+
 void testFractions(void) {
   unity_filename_guard_t guard(__FILE__);
 
   RUN_TEST_P(test_fractions);
+  RUN_TEST_P(test_perf_div);
+  RUN_TEST_P(test_perf_shift);
 }
