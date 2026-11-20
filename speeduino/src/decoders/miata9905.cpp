@@ -84,7 +84,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
       {
         //Aggressive filter level
         if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) || (decoderState.toothCurrentCount == 5) || (decoderState.toothCurrentCount == 7) ) { decoderState.triggerToothAngle = 70; decoderState.triggerFilterTime = decoderState.curGap * ELEVEN_EIGTHS; } //96.26 degrees with a target of 110
-        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = rshift<5>((uint32_t)(decoderState.curGap * 9UL)); } //61.87 degrees with a target of 70 
+        else { decoderState.triggerToothAngle = 110; decoderState.triggerFilterTime = decoderState.curGap*NINE_SIXTEENTHS; } //61.87 degrees with a target of 70 
       }
       else
       {

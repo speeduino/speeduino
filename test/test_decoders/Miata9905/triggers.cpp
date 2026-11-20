@@ -156,7 +156,7 @@ static void test_triggerPrimary_filters(void)
   test_triggerPrimary_filter(TRIGGER_FILTER_OFF, 0, 0);
   test_triggerPrimary_filter(TRIGGER_FILTER_LITE, 375, 1001);
   test_triggerPrimary_filter(TRIGGER_FILTER_MEDIUM, 500, 1251);
-  test_triggerPrimary_filter(TRIGGER_FILTER_AGGRESSIVE, 281, 1376);
+  test_triggerPrimary_filter(TRIGGER_FILTER_AGGRESSIVE, 563, 1376);
 }
 
 static void setup_perTooth(statuses &current, decoders::shared::state_t &decoderState, config2 &page2, config4 &page4)
