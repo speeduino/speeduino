@@ -539,7 +539,7 @@ void serialReceive(void)
   //If there is a serial receive in progress, read as much from the buffer as possible or until we receive all bytes
   while( (primarySerial.available() > 0) && (serialStatusFlag == SERIAL_RECEIVE_INPROGRESS) )
   {
-    if (serialBytesRxTx < serialPayloadLength )
+    if (serialBytesRxTx < serialPayloadLength && serialBytesRxTx < TS_SERIAL_BUFFER_SIZE )
     {
       serialPayload[serialBytesRxTx] = (byte)primarySerial.read();
       ++serialBytesRxTx;
