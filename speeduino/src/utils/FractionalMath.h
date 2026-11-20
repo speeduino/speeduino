@@ -62,6 +62,8 @@ constexpr FastFraction<2> ONE_HALF(1);
 constexpr auto ONE_QUARTER = ONE_HALF*ONE_HALF;
 constexpr auto ONE_EIGTH = ONE_QUARTER*ONE_HALF;
 constexpr auto ONE_SIXTEENTH = ONE_EIGTH*ONE_HALF;
+constexpr auto THREE_SIXTEENTHS = ONE_SIXTEENTH*FastFraction<1>(3);
+constexpr auto FIVE_SIXTEENTHS = ONE_SIXTEENTH*FastFraction<1>(5);
 constexpr auto THREE_EIGTHS = ONE_EIGTH*FastFraction<1>(3);
 constexpr auto THREE_QUARTERS = ONE_QUARTER*FastFraction<1>(3);
 constexpr auto FIVE_EIGTHS = ONE_EIGTH*FastFraction<1>(5);
@@ -70,4 +72,5 @@ constexpr auto ELEVEN_EIGTHS = ONE_EIGTH*FastFraction<1>(11);
 constexpr auto NINE_SIXTEENTHS = ONE_SIXTEENTH*FastFraction<1>(9);
 constexpr auto FIVE_QUARTERS = ONE_QUARTER*FastFraction<1>(5);
 constexpr auto ONE_AND_HALF = ONE_HALF*FastFraction<1>(3);
+constexpr auto SEVEN_QUARTERS = ONE_QUARTER*FastFraction<1>(7);
 /// @}

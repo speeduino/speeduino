@@ -28,6 +28,12 @@ static void test_fractions(void)
 
   TEST_ASSERT_EQUAL(1, ONE_SIXTEENTH*16);
   test_fraction(ONE_SIXTEENTH);  
+
+  TEST_ASSERT_EQUAL(3, THREE_SIXTEENTHS*16);
+  test_fraction(THREE_SIXTEENTHS);  
+
+  TEST_ASSERT_EQUAL(5, FIVE_SIXTEENTHS*16);
+  test_fraction(FIVE_SIXTEENTHS);  
   
   TEST_ASSERT_EQUAL(3, THREE_EIGTHS*8);
   test_fraction(THREE_EIGTHS);
