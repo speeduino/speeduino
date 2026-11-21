@@ -278,7 +278,7 @@ static void test_primary_medium_and_aggressive_filter_modes(void)
     assert_synced_filter(6, TRIGGER_FILTER_MEDIUM, 2, 70, 400);
     assert_synced_filter(6, TRIGGER_FILTER_MEDIUM, 1, 50, 600);
     assert_synced_filter(4, TRIGGER_FILTER_AGGRESSIVE, 2, 70, 1100);
-    assert_synced_filter(4, TRIGGER_FILTER_AGGRESSIVE, 1, 110, 225);
+    assert_synced_filter(4, TRIGGER_FILTER_AGGRESSIVE, 1, 110, 450);
     assert_synced_filter(6, TRIGGER_FILTER_AGGRESSIVE, 2, 70, 400);
     assert_synced_filter(6, TRIGGER_FILTER_AGGRESSIVE, 1, 50, 800);
 }

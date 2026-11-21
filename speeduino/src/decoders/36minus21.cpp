@@ -1,6 +1,7 @@
 #include "36minus21.h"
 #include "shared/perToothIgnition.h"
 #include "shared/rev_time_calcs.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -14,7 +15,7 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   state.triggerActualTeeth = 33; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt. Not Used
   state.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U * 36)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   state.decoderFeatures.supportsPerToothIgnition = true;
-  state.checkSyncToothCount = (page4.triggerTeeth) >> 1; //50% of the total teeth.
+  state.checkSyncToothCount = page4.triggerTeeth*ONE_HALF; //50% of the total teeth.
   state.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * state.triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return state;
@@ -32,7 +33,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     //If the time between the current tooth and the last is greater than 2x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after a gap
 
     decoderState.targetGap2 = (3 * (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) ; //Multiply by 3 (Checks for a gap 3x greater than the last one)
-    decoderState.targetGap = decoderState.targetGap2 >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to divide by 2 as in the missing tooth decoder)
+    decoderState.targetGap = decoderState.targetGap2*ONE_HALF;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to divide by 2 as in the missing tooth decoder)
 
     if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
 

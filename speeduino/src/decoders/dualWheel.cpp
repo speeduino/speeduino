@@ -3,6 +3,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -74,7 +75,7 @@ namespace dual_wheel {
         if ( decoderState.curGap2 >= decoderState.triggerSecFilterTime )
         {
             decoderState.toothLastSecToothTime = curTime;
-            decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed
+            decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER; //Set filter at 25% of the current speed
 
             if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (current.startRevolutions <= page4.StgCycles) )
             {
@@ -95,7 +96,7 @@ namespace dual_wheel {
         }
         else 
         {
-            decoderState.triggerSecFilterTime = current.revolutionTime >> 1; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and decoderState.triggerSecFilterTime get out of alignment and decoderState.curGap2 never exceeds the filter value
+            decoderState.triggerSecFilterTime = current.revolutionTime*ONE_HALF; //Set filter at 25% of the current cam speed. This needs to be performed here to prevent a situation where the RPM and decoderState.triggerSecFilterTime get out of alignment and decoderState.curGap2 never exceeds the filter value
         } //Trigger filter
     }
 
