@@ -22,7 +22,7 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(uint32_t cu
   state.triggerToothAngle = 180; //The number of degrees that passes from tooth to tooth (primary)
   state.toothCurrentCount = 99; //Fake tooth count represents no sync
   state.MAX_STALL_TIME = 366667UL; //Minimum 50rpm based on the 110 degree tooth spacing
-  if(!current.initialisationComplete == false) { state.toothLastToothTime = curMicros; } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
+  if(!current.initialisationComplete) { state.toothLastToothTime = curMicros; } //Set a startup value here to avoid filter errors when starting. This MUST have the initial check to prevent the fuel pump just staying on all the time
 
   //Note that these angles are for every rising and falling edge
   if(page2.nCylinders == 6)

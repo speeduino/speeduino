@@ -33,8 +33,8 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
 
     if(decoderState.decoderStatus.syncStatus!=SyncStatus::Full)
     {
-      decoderState.toothLastToothTime = micros();
-      decoderState.toothLastMinusOneToothTime = micros() - ((MICROS_PER_MIN/10U) / page4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
+      decoderState.toothLastToothTime = curTime;
+      decoderState.toothLastMinusOneToothTime = curTime - ((MICROS_PER_MIN/10U) / page4.triggerTeeth); //Fixes RPM at 10rpm until a full revolution has taken place
       decoderState.toothCurrentCount = page4.triggerTeeth;
       current.syncLossCounter++;
       decoderState.decoderStatus.syncStatus = SyncStatus::Full;
