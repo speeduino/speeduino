@@ -794,7 +794,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionAFRClosedLoop(void)
 Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-fuel_corrections_t correctionsFuel(void)
+fuel_corrections_t getCorrectionsFuel(void)
 {
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
   return {
