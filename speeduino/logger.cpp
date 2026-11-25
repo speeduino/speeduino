@@ -203,8 +203,8 @@ byte getTSLogEntry(uint16_t byteNum)
     case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
     case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
     case 16: statusValue = lowByte(currentStatus.fuelCorrections.acceleration >> 1U); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
-    case 17: statusValue = lowByte(currentStatus.corrections); break; //Total GammaE (%)
-    case 18: statusValue = highByte(currentStatus.corrections); break; //Total GammaE (%)
+    case 17: statusValue = lowByte(currentStatus.totalFuelCorrectionPct); break; //Total GammaE (%)
+    case 18: statusValue = highByte(currentStatus.totalFuelCorrectionPct); break; //Total GammaE (%)
     case 19: statusValue = currentStatus.VE1; break; //VE 1 (%)
     case 20: statusValue = currentStatus.VE2; break; //VE 2 (%)
     case 21: statusValue = currentStatus.afrTarget; break;
@@ -394,7 +394,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 12: statusValue = currentStatus.fuelCorrections.wue; break; //Warmup enrichment (%)
     case 13: statusValue = currentStatus.RPM; break; //rpm HB
     case 14: statusValue = currentStatus.fuelCorrections.acceleration; break; //TPS acceleration enrichment (%)
-    case 15: statusValue = currentStatus.corrections; break; //Total GammaE (%)
+    case 15: statusValue = currentStatus.totalFuelCorrectionPct; break; //Total GammaE (%)
     case 16: statusValue = currentStatus.VE1; break; //VE 1 (%)
     case 17: statusValue = currentStatus.VE2; break; //VE 2 (%)
     case 18: statusValue = currentStatus.afrTarget; break;
@@ -574,7 +574,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
     case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
     case 16: statusValue = currentStatus.fuelCorrections.acceleration; break; //acceleration enrichment (%)
-    case 17: statusValue = currentStatus.corrections; break; //Total GammaE (%)
+    case 17: statusValue = currentStatus.totalFuelCorrectionPct; break; //Total GammaE (%)
     case 18: statusValue = currentStatus.VE; break; //Current VE 1 (%)
     case 19: statusValue = currentStatus.afrTarget; break;
     case 20: statusValue = lowByte(fuelSchedule1.pw); break; //Pulsewidth 1 multiplied by 10 in ms. Have to convert from uS to mS.

@@ -228,7 +228,7 @@ struct statuses {
   int8_t advance1;    /**< The advance value from ignition table 1 */
   int8_t advance2;    /**< The advance value from ignition table 2 */
   fuel_corrections_t fuelCorrections = {};
-  uint16_t corrections; /**< The total current corrections % amount */
+  uint16_t totalFuelCorrectionPct; /**< The total current corrections % amount */
   int8_t flexIgnCorrection;/**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;    /**< Current AFR Target looked up from AFR target table (x10 ? See @ref afrTable)*/
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */

@@ -20,7 +20,7 @@ static ComputePulseWidthsContext getBasicFullContext(void) {
   context.page2.reqFuel = 11;
   context.current.MAP = 94;
   context.current.VE = 130U;
-  context.current.corrections = 113U;
+  context.current.totalFuelCorrectionPct = 113U;
   return context;
 }
 
@@ -128,7 +128,7 @@ static void test_PW_Large_Correction()
   //This is the same as the test_PW_No_Multiply, but with correction changed to 600
   auto context = getBasicFullContext();
   
-  context.current.corrections = 600;
+  context.current.totalFuelCorrectionPct = 600;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(8586, result.primary);
@@ -140,7 +140,7 @@ static void test_PW_Very_Large_Correction()
   //This is the same as the test_PW_No_Multiply, but with correction changed to 1500
   auto context = getBasicFullContext();
   
-  context.current.corrections = 1500;
+  context.current.totalFuelCorrectionPct = 1500;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(21465, result.primary);
@@ -152,7 +152,7 @@ static void test_PW_Zero_Correction()
   //This is the same as the test_PW_No_Multiply, but with correction changed to 0
   auto context = getBasicFullContext();
   
-  context.current.corrections = 0;
+  context.current.totalFuelCorrectionPct = 0;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(0, result.primary);

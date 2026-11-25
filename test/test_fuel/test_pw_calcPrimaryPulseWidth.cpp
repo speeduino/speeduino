@@ -11,7 +11,7 @@ extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2
 static uint16_t calcPrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
   context.current.VE = VE;
   context.current.MAP = MAP;
-  context.current.corrections = corrections; 
+  context.current.totalFuelCorrectionPct = corrections; 
   context.page2.reqFuel = REQ_FUEL/100U;
   return calcPrimaryPulseWidth(injOpenTime, context.page2, context.page6, context.page10, context.current);
 }

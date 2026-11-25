@@ -149,7 +149,7 @@ TESTABLE_INLINE_STATIC uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, cons
               computeInitialPw(REQ_FUEL, current.VE), 
               page2, current),
             page2, page6, current), 
-        current.corrections), 
+        current.totalFuelCorrectionPct), 
       injOpenTime), 
       REQ_FUEL, page2, current);
 
@@ -246,7 +246,7 @@ TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const st
 }
 
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
-  if (current.corrections!=0U) {
+  if (current.totalFuelCorrectionPct!=0U) {
     uint16_t pwLimit = calculatePWLimit(page2, current);
     uint16_t injOpenTime = calculateOpenTime(page2, current);
     uint16_t primaryPw = applyPwLimits(calcPrimaryPulseWidth( injOpenTime, 
