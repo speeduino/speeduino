@@ -794,25 +794,24 @@ TESTABLE_INLINE_STATIC uint8_t correctionAFRClosedLoop(void)
 Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-uint16_t correctionsFuel(void)
+fuel_corrections_t correctionsFuel(void)
 {
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
-  currentStatus.fuelCorrections.wue = correctionWUE();
-  currentStatus.fuelCorrections.ase = correctionASE();
-  currentStatus.fuelCorrections.cranking = correctionCranking();
-  currentStatus.fuelCorrections.acceleration = correctionAccel();
-  currentStatus.fuelCorrections.floodClear = correctionFloodClear();
-  currentStatus.fuelCorrections.closedLoopAFR = correctionAFRClosedLoop();
-  currentStatus.fuelCorrections.iat = correctionIATDensity();
-  currentStatus.fuelCorrections.baro = correctionBaro();
-  currentStatus.fuelCorrections.flex = correctionFlex();
-  currentStatus.fuelCorrections.fuelTemp = correctionFuelTemp();
-  currentStatus.fuelCorrections.launch = correctionLaunch();
-  currentStatus.fuelCorrections.dfco = correctionDFCOfuel();
-  //Voltage correction is applied to the injector opening time
-  currentStatus.fuelCorrections.battery = correctionBatVoltage();
-
-  return currentStatus.fuelCorrections.calculatePWCorrection(configPage2, currentStatus);
+  return {
+    .wue = correctionWUE(),
+    .ase = correctionASE(),
+    .acceleration = correctionAccel(),
+    .floodClear = correctionFloodClear(),
+    .closedLoopAFR = correctionAFRClosedLoop(),
+    .iat = correctionIATDensity(),
+    .baro = correctionBaro(),
+    .flex = correctionFlex(),
+    .fuelTemp = correctionFuelTemp(),
+    .launch = correctionLaunch(),
+    .dfco = correctionDFCOfuel(),
+    .cranking = correctionCranking(),
+    .battery = correctionBatVoltage(),
+  };
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************

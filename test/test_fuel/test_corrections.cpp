@@ -1657,27 +1657,27 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.TPS = 50; //25% actual value
 
   reset_AE();
-  TEST_ASSERT_EQUAL(232U, correctionsFuel());
+  TEST_ASSERT_EQUAL(232U, correctionsFuel().calculatePWCorrection(configPage2, currentStatus));
 
   configPage2.aeApplyMode = AE_MODE_ADDER;
   currentStatus.TPSlast = 0;
   currentStatus.TPS = 50;
   reset_AE();
-  TEST_ASSERT_EQUAL(100U, correctionsFuel());
+  TEST_ASSERT_EQUAL(100U, correctionsFuel().calculatePWCorrection(configPage2, currentStatus));
 
   // Deceeleration
   configPage2.aeApplyMode = AE_MODE_MULTIPLIER;
   currentStatus.TPSlast = 50;
   currentStatus.TPS = 45; 
   reset_AE();
-  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel());
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel().calculatePWCorrection(configPage2, currentStatus));
   TEST_ASSERT_LESS_THAN(0U, currentStatus.tpsDOT); 
 
   configPage2.aeApplyMode = AE_MODE_ADDER;
   currentStatus.TPSlast = 50;
   currentStatus.TPS = 45;
   reset_AE();
-  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel());
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel().calculatePWCorrection(configPage2, currentStatus));
   TEST_ASSERT_LESS_THAN(0U, currentStatus.tpsDOT); 
 }
 
@@ -1734,7 +1734,7 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   TEST_ASSERT_FALSE(isDFCOActive());
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
 
-  TEST_ASSERT_EQUAL(1500U, correctionsFuel());
+  TEST_ASSERT_EQUAL(1500U, correctionsFuel().calculatePWCorrection(configPage2, currentStatus));
 }
 
 static void test_corrections_correctionsFuel(void) {

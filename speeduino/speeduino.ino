@@ -395,7 +395,8 @@ BEGIN_LTO_ALWAYS_INLINE(void) loop(void)
       //Calculate an injector pulsewidth from the VE
       currentStatus.afrTarget = calculateAfrTarget(afrTable, currentStatus, configPage2, configPage6);
       currentStatus.isDFCOActive = isDFCOActive();
-      currentStatus.corrections = correctionsFuel();
+      currentStatus.fuelCorrections = correctionsFuel(); 
+      currentStatus.corrections = currentStatus.fuelCorrections.calculatePWCorrection(configPage2, currentStatus);
 
       pulseWidths pulse_widths = computePulseWidths(
                                     configPage2,
