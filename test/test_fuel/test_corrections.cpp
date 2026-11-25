@@ -131,7 +131,7 @@ static void test_corrections_cranking_taper_noase(void) {
   currentStatus.aseIsActive = false;
   
   configPage10.crankingEnrichTaper = 100U;
-  currentStatus.ASEValue = 100U;
+  currentStatus.fuelCorrections.ase = 100U;
 
   // Reset taper
   currentStatus.rotationStatus = EngineRotationStatus::Cranking;
@@ -163,7 +163,7 @@ static void test_corrections_cranking_taper_withase(void) {
   configPage10.crankingEnrichTaper = 100U;
   
   currentStatus.aseIsActive = true;
-  currentStatus.ASEValue = 50U;
+  currentStatus.fuelCorrections.ase = 50U;
 
   // Reset taper
   currentStatus.rotationStatus = EngineRotationStatus::Cranking;
@@ -359,7 +359,7 @@ static void setup_ego_simple(void) {
   currentStatus.MAP = (configPage9.egoMAPMin + ((configPage9.egoMAPMax-configPage9.egoMAPMin)/2U))*2U;
   
   currentStatus.afrTarget = currentStatus.O2;
-  currentStatus.egoCorrection = 100U;
+  currentStatus.fuelCorrections.closedLoopAFR = 100U;
   
   currentStatus.isDFCOActive = false;
 
@@ -440,9 +440,9 @@ static void test_corrections_closedloop_off_invalidconditions_map(void) {
 static void test_corrections_closedloop_outsidecycle(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.egoCorrection = 123U;
+  currentStatus.fuelCorrections.closedLoopAFR = 123U;
   ignitionCount = AFRnextCycle - (configPage6.egoCount/2U); 
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR, correctionAFRClosedLoop());
 }
 
 //Test what happens when AFRnextCycle has rolled over but ignitionCount has not. 
@@ -450,23 +450,23 @@ static void test_corrections_closedloop_outsidecycle(void) {
 static void test_corrections_closedloop_cycle_countrollover(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.egoCorrection = 101U;
+  currentStatus.fuelCorrections.closedLoopAFR = 101U;
   ignitionCount = UINT16_MAX - (configPage6.egoCount/2); 
   AFRnextCycle = ignitionCount + configPage6.egoCount; //This will overflow AFRnextCycle
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_nocorrection(void) {
   setup_ego_simple();
-  currentStatus.egoCorrection = 101U;
+  currentStatus.fuelCorrections.closedLoopAFR = 101U;
   currentStatus.O2 = currentStatus.afrTarget;
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_lean(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR+1U, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
@@ -476,8 +476,8 @@ static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
 
   for (uint8_t index=0; index<configPage6.egoLimit; ++index) {
     setup_valid_ego_cycle();
-    currentStatus.egoCorrection = 100U + index;
-    TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+    currentStatus.fuelCorrections.closedLoopAFR = 100U + index;
+    TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR+1U, correctionAFRClosedLoop());
   }
   setup_valid_ego_cycle();
   TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
@@ -490,7 +490,7 @@ static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
 static void test_corrections_closedloop_simple_rich(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget - 1U;
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection-1U, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR-1U, correctionAFRClosedLoop());
 }
 
 static void test_rich_max_correction(void) {
@@ -500,7 +500,7 @@ static void test_rich_max_correction(void) {
   uint8_t counter = 0;
   while (correction>(100U-configPage6.egoLimit)) {
     setup_valid_ego_cycle();
-    currentStatus.egoCorrection = 100U - counter;
+    currentStatus.fuelCorrections.closedLoopAFR = 100U - counter;
     correction = correctionAFRClosedLoop();
     TEST_ASSERT_LESS_THAN(100U, correction);
     ++counter;
@@ -1580,12 +1580,12 @@ static void test_corrections_baro_lookup(void) {
   setup_baro_correction();
 
   currentStatus.baro = 65;
-  currentStatus.baroCorrection = 1U;
-  TEST_ASSERT_NOT_EQUAL(currentStatus.baroCorrection, correctionBaro());
+  currentStatus.fuelCorrections.baro = 1U;
+  TEST_ASSERT_NOT_EQUAL(currentStatus.fuelCorrections.baro, correctionBaro());
   TEST_ASSERT_EQUAL(115, correctionBaro());
 
   currentStatus.baro = 105;
-  currentStatus.baroCorrection = 1U;
+  currentStatus.fuelCorrections.baro = 1U;
   TEST_ASSERT_EQUAL(75, correctionBaro());
   TEST_ASSERT_EQUAL(75, correctionBaro());
 }
@@ -1624,7 +1624,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.launchStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
   currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.ASEValue = 100U;
+  currentStatus.fuelCorrections.ase = 100U;
 
   configPage2.dfcoEnabled = 0;
   configPage10.crankingEnrichTaper = 0U; //Disable cranking enrich taper
@@ -1710,11 +1710,11 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.ethanolPct = 100;
   currentStatus.launchStatus.launchingHard = false;
   currentStatus.launchStatus.launchingSoft = false;
-  currentStatus.AEamount = 100U;
-  currentStatus.ASEValue = 100U;
+  currentStatus.fuelCorrections.acceleration = 100U;
+  currentStatus.fuelCorrections.ase = 100U;
   currentStatus.TPSlast = 0;
   currentStatus.TPS = currentStatus.TPSlast;
-  currentStatus.AEamount = 100;
+  currentStatus.fuelCorrections.acceleration = 100;
 
   configPage4.wueBins[9] = 100;
   configPage2.wueValues[9] = 100; //Use a value other than 100 here to ensure we are using the non-default value

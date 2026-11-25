@@ -121,6 +121,35 @@ struct launchStatus_t
   }
 };
 
+/** 
+ * @brief The corrections that are/will be applied to the pulse width 
+ * 
+ * These are percentages: 
+ *   1. 100% representing "no correction".
+ *   2. <100% results in a lean correction
+ *   3. >100% results in a rich coorection
+ * 
+ * Individual corrections are combined to produce a single correction 
+ * percentage which is then applied to the base pulse width.  
+ */
+struct fuel_corrections_t
+{
+  uint8_t wue = ONE_HUNDRED_PCT; /**< Warm Up Enrichment */
+  uint8_t ase = ONE_HUNDRED_PCT; /**< After Start Enrichment */
+  uint16_t acceleration = ONE_HUNDRED_PCT; /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
+  uint8_t floodClear = ONE_HUNDRED_PCT;
+  uint8_t closedLoopAFR = ONE_HUNDRED_PCT; /**< The amount of closed loop AFR enrichment currently being applied */
+  uint8_t iat = ONE_HUNDRED_PCT; /**< The amount of inlet air temperature adjustment currently being applied */
+  uint8_t baro = ONE_HUNDRED_PCT; /**< The amount of correction being applied for the current baro reading */
+  uint8_t flex = ONE_HUNDRED_PCT; /**< Amount of correction being applied to compensate for ethanol content */
+  uint8_t fuelTemp = ONE_HUNDRED_PCT; /**< Amount of correction being applied to compensate for fuel temperature */
+  uint8_t launch = ONE_HUNDRED_PCT; /**< The amount of correction being applied if launch control is active */
+  uint8_t dfco = ONE_HUNDRED_PCT; /**< Deceleration Fuel Cut Off */
+  uint16_t cranking = ONE_HUNDRED_PCT; ///< Cranking correction
+
+  uint8_t battery = ONE_HUNDRED_PCT; ///< Voltage correction is applied to the injector opening time
+};
+
 /** @brief The status struct with current values for all 'live' variables.
 * 
 * Instantiated as global currentStatus.
@@ -194,16 +223,8 @@ struct statuses {
   int8_t advance;     /**< The current advance value being used in the spark calculation. Can be the same as advance1 or advance2, or a calculated value of both */
   int8_t advance1;    /**< The advance value from ignition table 1 */
   int8_t advance2;    /**< The advance value from ignition table 2 */
+  fuel_corrections_t fuelCorrections = {};
   uint16_t corrections; /**< The total current corrections % amount */
-  uint16_t AEamount;    /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
-  byte egoCorrection; /**< The amount of closed loop AFR enrichment currently being applied */
-  byte wueCorrection; /**< The amount of warmup enrichment currently being applied */
-  byte batCorrection; /**< The amount of battery voltage enrichment currently being applied */
-  byte iatCorrection; /**< The amount of inlet air temperature adjustment currently being applied */
-  byte baroCorrection; /**< The amount of correction being applied for the current baro reading */
-  byte launchCorrection;   /**< The amount of correction being applied if launch control is active */
-  byte flexCorrection;     /**< Amount of correction being applied to compensate for ethanol content */
-  byte fuelTempCorrection; /**< Amount of correction being applied to compensate for fuel temperature */
   int8_t flexIgnCorrection;/**< Amount of additional advance being applied based on flex. Note the type as this allows for negative values */
   byte afrTarget;    /**< Current AFR Target looked up from AFR target table (x10 ? See @ref afrTable)*/
   byte CLIdleTarget; /**< The target idle RPM (when closed loop idle control is active) */
@@ -287,7 +308,6 @@ struct statuses {
   bool toothLogEnabled;
   byte compositeTriggerUsed; // 0 means composite logger disabled, 2 means use secondary input (1st cam), 3 means use tertiary input (2nd cam), 4 means log both cams together
   uint16_t injAngle;
-  byte ASEValue;
   uint16_t vss;      /**< Current speed reading. Natively stored in kph and converted to mph in TS if required */
   byte gear;         /**< Current gear (Calculated from vss) */
   byte fuelPressure; /**< Fuel pressure in PSI */

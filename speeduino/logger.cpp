@@ -194,15 +194,15 @@ byte getTSLogEntry(uint16_t byteNum)
     case 5: statusValue = highByte(currentStatus.MAP); break;
     case 6: statusValue = temperatureAddOffset(currentStatus.IAT); break; //mat
     case 7: statusValue = temperatureAddOffset(currentStatus.coolant); break; //Coolant ADC
-    case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
+    case 8: statusValue = currentStatus.fuelCorrections.battery; break; //Battery voltage correction (%)
     case 9: statusValue = currentStatus.battery10; break; //battery voltage
     case 10: statusValue = currentStatus.O2; break; //O2
-    case 11: statusValue = currentStatus.egoCorrection; break; //Exhaust gas correction (%)
-    case 12: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
-    case 13: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
+    case 11: statusValue = currentStatus.fuelCorrections.closedLoopAFR; break; //Exhaust gas correction (%)
+    case 12: statusValue = currentStatus.fuelCorrections.iat; break; //Air temperature Correction (%)
+    case 13: statusValue = currentStatus.fuelCorrections.wue; break; //Warmup enrichment (%)
     case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
     case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
-    case 16: statusValue = lowByte(currentStatus.AEamount >> 1U); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
+    case 16: statusValue = lowByte(currentStatus.fuelCorrections.acceleration >> 1U); break; //TPS acceleration enrichment (%) divided by 2 (Can exceed 255)
     case 17: statusValue = lowByte(currentStatus.corrections); break; //Total GammaE (%)
     case 18: statusValue = highByte(currentStatus.corrections); break; //Total GammaE (%)
     case 19: statusValue = currentStatus.VE1; break; //VE 1 (%)
@@ -238,7 +238,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 34: statusValue = highByte(currentStatus.rpmDOT); break;
 
     case 35: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
-    case 36: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
+    case 36: statusValue = currentStatus.fuelCorrections.flex; break; //Flex fuel correction (% above or below 100)
     case 37: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
 
     case 38: statusValue = currentStatus.idleLoad; break;
@@ -315,9 +315,9 @@ byte getTSLogEntry(uint16_t byteNum)
     case 98: statusValue = currentStatus.vvt1.duty; break;
     case 99: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 100: statusValue = highByte(currentStatus.flexBoostCorrection); break;
-    case 101: statusValue = currentStatus.baroCorrection; break;
+    case 101: statusValue = currentStatus.fuelCorrections.baro; break;
     case 102: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-    case 103: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 103: statusValue = currentStatus.fuelCorrections.ase; break; //Current ASE (%)
     case 104: statusValue = lowByte(currentStatus.vss); break;
     case 105: statusValue = highByte(currentStatus.vss); break;
     case 106: statusValue = currentStatus.gear; break;
@@ -331,7 +331,7 @@ byte getTSLogEntry(uint16_t byteNum)
     case 114: statusValue = currentStatus.vvt2.duty; break;
     case 115: statusValue = getProgrammableIOOutputStatus(); break;
     case 116: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
-    case 117: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
+    case 117: statusValue = currentStatus.fuelCorrections.fuelTemp; break; //Fuel temperature Correction (%)
     case 118: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 119: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 120: statusValue = buildSdCardStatus(currentStatus); break; //SD card status
@@ -386,14 +386,14 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 4: statusValue = currentStatus.MAP; break; //2 bytes for MAP
     case 5: statusValue = currentStatus.IAT; break; //mat
     case 6: statusValue = currentStatus.coolant; break; //Coolant ADC
-    case 7: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
+    case 7: statusValue = currentStatus.fuelCorrections.battery; break; //Battery voltage correction (%)
     case 8: statusValue = currentStatus.battery10; break; //battery voltage
     case 9: statusValue = currentStatus.O2; break; //O2
-    case 10: statusValue = currentStatus.egoCorrection; break; //Exhaust gas correction (%)
-    case 11: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
-    case 12: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
+    case 10: statusValue = currentStatus.fuelCorrections.closedLoopAFR; break; //Exhaust gas correction (%)
+    case 11: statusValue = currentStatus.fuelCorrections.iat; break; //Air temperature Correction (%)
+    case 12: statusValue = currentStatus.fuelCorrections.wue; break; //Warmup enrichment (%)
     case 13: statusValue = currentStatus.RPM; break; //rpm HB
-    case 14: statusValue = currentStatus.AEamount; break; //TPS acceleration enrichment (%)
+    case 14: statusValue = currentStatus.fuelCorrections.acceleration; break; //TPS acceleration enrichment (%)
     case 15: statusValue = currentStatus.corrections; break; //Total GammaE (%)
     case 16: statusValue = currentStatus.VE1; break; //VE 1 (%)
     case 17: statusValue = currentStatus.VE2; break; //VE 2 (%)
@@ -417,7 +417,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 26: statusValue = buildStatus2(currentStatus); break; //Spark related bitfield
     case 27: statusValue = currentStatus.rpmDOT; break;
     case 28: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
-    case 29: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
+    case 29: statusValue = currentStatus.fuelCorrections.flex; break; //Flex fuel correction (% above or below 100)
     case 30: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
     case 31: statusValue = currentStatus.idleLoad; break;
     case 32: statusValue = buildTestOutput(currentStatus); break;
@@ -469,9 +469,9 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 66: statusValue = currentStatus.vvt1.targetAngle; break;
     case 67: statusValue = currentStatus.vvt1.duty; break;
     case 68: statusValue = currentStatus.flexBoostCorrection; break;
-    case 69: statusValue = currentStatus.baroCorrection; break;
+    case 69: statusValue = currentStatus.fuelCorrections.baro; break;
     case 70: statusValue = currentStatus.VE; break; //Current VE (%). Can be equal to VE1 or VE2 or a calculated value from both of them
-    case 71: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 71: statusValue = currentStatus.fuelCorrections.ase; break; //Current ASE (%)
     case 72: statusValue = currentStatus.vss; break;
     case 73: statusValue = currentStatus.gear; break;
     case 74: statusValue = currentStatus.fuelPressure; break;
@@ -483,7 +483,7 @@ int16_t getReadableLogEntry(uint16_t logIndex)
     case 80: statusValue = currentStatus.vvt2.duty; break;
     case 81: statusValue = getProgrammableIOOutputStatus(); break;
     case 82: statusValue = currentStatus.fuelTemp; break; //Fuel temperature from flex sensor
-    case 83: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
+    case 83: statusValue = currentStatus.fuelCorrections.fuelTemp; break; //Fuel temperature Correction (%)
     case 84: statusValue = currentStatus.advance1; break; //advance 1 (%)
     case 85: statusValue = currentStatus.advance2; break; //advance 2 (%)
     case 86: statusValue = buildSdCardStatus(currentStatus); break; //SD card status
@@ -565,15 +565,15 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 5: statusValue = highByte(currentStatus.MAP); break;
     case 6: statusValue = temperatureAddOffset(currentStatus.IAT); break; //mat
     case 7: statusValue = temperatureAddOffset(currentStatus.coolant); break; //Coolant ADC
-    case 8: statusValue = currentStatus.batCorrection; break; //Battery voltage correction (%)
+    case 8: statusValue = currentStatus.fuelCorrections.battery; break; //Battery voltage correction (%)
     case 9: statusValue = currentStatus.battery10; break; //battery voltage
     case 10: statusValue = currentStatus.O2; break; //O2
-    case 11: statusValue = currentStatus.egoCorrection; break; //Exhaust gas correction (%)
-    case 12: statusValue = currentStatus.iatCorrection; break; //Air temperature Correction (%)
-    case 13: statusValue = currentStatus.wueCorrection; break; //Warmup enrichment (%)
+    case 11: statusValue = currentStatus.fuelCorrections.closedLoopAFR; break; //Exhaust gas correction (%)
+    case 12: statusValue = currentStatus.fuelCorrections.iat; break; //Air temperature Correction (%)
+    case 13: statusValue = currentStatus.fuelCorrections.wue; break; //Warmup enrichment (%)
     case 14: statusValue = lowByte(currentStatus.RPM); break; //rpm HB
     case 15: statusValue = highByte(currentStatus.RPM); break; //rpm LB
-    case 16: statusValue = currentStatus.AEamount; break; //acceleration enrichment (%)
+    case 16: statusValue = currentStatus.fuelCorrections.acceleration; break; //acceleration enrichment (%)
     case 17: statusValue = currentStatus.corrections; break; //Total GammaE (%)
     case 18: statusValue = currentStatus.VE; break; //Current VE 1 (%)
     case 19: statusValue = currentStatus.afrTarget; break;
@@ -594,7 +594,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 32: statusValue = lowByte(currentStatus.rpmDOT); break;
     case 33: statusValue = highByte(currentStatus.rpmDOT); break;
     case 34: statusValue = currentStatus.ethanolPct; break; //Flex sensor value (or 0 if not used)
-    case 35: statusValue = currentStatus.flexCorrection; break; //Flex fuel correction (% above or below 100)
+    case 35: statusValue = currentStatus.fuelCorrections.flex; break; //Flex fuel correction (% above or below 100)
     case 36: statusValue = currentStatus.flexIgnCorrection; break; //Ignition correction (Increased degrees of advance) for flex fuel
     case 37: statusValue = currentStatus.idleLoad; break;
     case 38: statusValue = buildTestOutput(currentStatus); break; // testEnabled(0), testActive(1)
@@ -636,7 +636,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 73: statusValue = currentStatus.tpsADC; break;
     case 74: statusValue = 0U /*getNextError()*/; break; // errorNum (0:1), currentError(2:7)
 
-    case 75: statusValue = currentStatus.launchCorrection; break;
+    case 75: statusValue = currentStatus.fuelCorrections.launch; break;
 #if INJ_CHANNELS>=2
     case 76: statusValue = lowByte(fuelSchedule2.pw); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
     case 77: statusValue = highByte(fuelSchedule2.pw); break; //Pulsewidth 2 multiplied by 10 in ms. Have to convert from uS to mS.
@@ -666,8 +666,8 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 95: statusValue = currentStatus.vvt1.duty; break;
     case 96: statusValue = lowByte(currentStatus.flexBoostCorrection); break;
     case 97: statusValue = highByte(currentStatus.flexBoostCorrection); break;
-    case 98: statusValue = currentStatus.baroCorrection; break;
-    case 99: statusValue = currentStatus.ASEValue; break; //Current ASE (%)
+    case 98: statusValue = currentStatus.fuelCorrections.baro; break;
+    case 99: statusValue = currentStatus.fuelCorrections.ase; break; //Current ASE (%)
     case 100: statusValue = lowByte(currentStatus.vss); break; //speed reading from the speed sensor
     case 101: statusValue = highByte(currentStatus.vss); break;
     case 102: statusValue = currentStatus.gear; break; 
@@ -680,7 +680,7 @@ uint8_t getLegacySecondarySerialLogEntry(uint16_t byteNum)
     case 109: statusValue = currentStatus.vvt2.duty; break;
     case 110: statusValue = getProgrammableIOOutputStatus(); break;
     case 111: statusValue = temperatureAddOffset(currentStatus.fuelTemp); break; //Fuel temperature from flex sensor
-    case 112: statusValue = currentStatus.fuelTempCorrection; break; //Fuel temperature Correction (%)
+    case 112: statusValue = currentStatus.fuelCorrections.fuelTemp; break; //Fuel temperature Correction (%)
     case 113: statusValue = currentStatus.VE1; break; //VE 1 (%)
     case 114: statusValue = currentStatus.VE2; break; //VE 2 (%)
     case 115: statusValue = currentStatus.advance1; break; //advance 1 

@@ -123,7 +123,7 @@ static void test_calcPrimaryPulseWidth_MapModeBaro(void) {
 static ComputePulseWidthsContext getIncludeAeContext(void) {
   auto context = getBasicPwContext();
   context.page2.aeApplyMode = AE_MODE_ADDER;
-  context.current.AEamount = 105U;
+  context.current.fuelCorrections.acceleration = 105U;
   context.current.isAcceleratingTPS = true;
   return context;
 }
@@ -135,11 +135,11 @@ static void test_calcPrimaryPulseWidth_AeAdder(void) {
 
   // AE off in all cases below
   context = getIncludeAeContext();
-  context.current.AEamount = 100U;
+  context.current.fuelCorrections.acceleration = 100U;
   TEST_ASSERT_EQUAL(750, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   context = getIncludeAeContext();
-  context.current.AEamount = 50U;
+  context.current.fuelCorrections.acceleration = 50U;
   TEST_ASSERT_EQUAL(750, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   context = getIncludeAeContext();

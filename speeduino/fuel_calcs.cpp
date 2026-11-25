@@ -128,8 +128,8 @@ static inline uint32_t includeOpenTime(uint32_t intermediate, uint16_t injOpen) 
 
 static inline uint32_t includeAe(uint32_t intermediate, uint16_t REQ_FUEL, const config2 &page2, const statuses &current) {
   // We need to add Acceleration Enrichment pct increase if the engine is accelerating
-  if ((current.isAcceleratingTPS) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.AEamount>100U)) {
-    return intermediate + percentageApprox((uint16_t)(current.AEamount - 100U), REQ_FUEL);
+  if ((current.isAcceleratingTPS) && (page2.aeApplyMode == AE_MODE_ADDER) && (current.fuelCorrections.acceleration>100U)) {
+    return intermediate + percentageApprox((uint16_t)(current.fuelCorrections.acceleration - 100U), REQ_FUEL);
   }
   return intermediate;
 }
@@ -242,7 +242,7 @@ TESTABLE_INLINE_STATIC pulseWidths calculateSecondaryPw(uint16_t primaryPw, uint
 
 TESTABLE_INLINE_STATIC uint16_t calculateOpenTime(const config2 &page2, const statuses &current) {
   // Convert injector open time from tune to microseconds & apply voltage correction if required
-  return page2.injOpen * current.batCorrection; 
+  return page2.injOpen * current.fuelCorrections.battery; 
 }
 
 pulseWidths computePulseWidths(const config2 &page2, const config6 &page6, const config10 &page10, const statuses &current) {
