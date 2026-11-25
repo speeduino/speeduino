@@ -790,14 +790,6 @@ TESTABLE_INLINE_STATIC uint8_t correctionAFRClosedLoop(void)
                 (uint8_t)(BASELINE_FUEL_CORRECTION + configPage6.egoLimit));
 }
 
-
-static inline uint32_t combineCorrections(uint32_t sumCorrections, uint16_t correction) {
-  if (correction == NO_FUEL_CORRECTION) {
-    return sumCorrections;
-  }
-  return percentageApprox(correction, sumCorrections);
-}
-
 /** Dispatch calculations for all fuel related corrections.
 Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
@@ -806,49 +798,21 @@ uint16_t correctionsFuel(void)
 {
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
   currentStatus.fuelCorrections.wue = correctionWUE();
-  uint32_t sumCorrections = currentStatus.fuelCorrections.wue;
-
   currentStatus.fuelCorrections.ase = correctionASE();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.ase);
-
   currentStatus.fuelCorrections.cranking = correctionCranking();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.cranking);
-
   currentStatus.fuelCorrections.acceleration = correctionAccel();
-  if ( (configPage2.aeApplyMode == AE_MODE_MULTIPLIER) || (currentStatus.isDeceleratingTPS) ) // multiply by the AE amount in case of multiplier AE mode or Decel
-  {
-    sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.acceleration);
-  }
-
   currentStatus.fuelCorrections.floodClear = correctionFloodClear();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.floodClear);
-
   currentStatus.fuelCorrections.closedLoopAFR = correctionAFRClosedLoop();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.closedLoopAFR);
-
+  currentStatus.fuelCorrections.iat = correctionIATDensity();
+  currentStatus.fuelCorrections.baro = correctionBaro();
+  currentStatus.fuelCorrections.flex = correctionFlex();
+  currentStatus.fuelCorrections.fuelTemp = correctionFuelTemp();
+  currentStatus.fuelCorrections.launch = correctionLaunch();
+  currentStatus.fuelCorrections.dfco = correctionDFCOfuel();
   //Voltage correction is applied to the injector opening time
   currentStatus.fuelCorrections.battery = correctionBatVoltage();
-  
-  currentStatus.fuelCorrections.iat = correctionIATDensity();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.iat);
 
-  currentStatus.fuelCorrections.baro = correctionBaro();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.baro);
-
-  currentStatus.fuelCorrections.flex = correctionFlex();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.flex);
-
-  currentStatus.fuelCorrections.fuelTemp = correctionFuelTemp();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.fuelTemp);
-
-  currentStatus.fuelCorrections.launch = correctionLaunch();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.launch);
-
-  currentStatus.fuelCorrections.dfco = correctionDFCOfuel();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelCorrections.dfco);
-
-  //This is the maximum allowable increase
-  return (std::min)((uint16_t)1500U, (uint16_t)sumCorrections);
+  return currentStatus.fuelCorrections.calculatePWCorrection(configPage2, currentStatus);
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************

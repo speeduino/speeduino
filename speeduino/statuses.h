@@ -14,6 +14,8 @@
 
 // Forward declares
 struct config4;
+struct config2;
+struct statuses;
 
 using byte = uint8_t;
 
@@ -147,6 +149,8 @@ struct fuel_corrections_t
   uint8_t dfco = ONE_HUNDRED_PCT; /**< Deceleration Fuel Cut Off */
   uint16_t cranking = ONE_HUNDRED_PCT; ///< Cranking correction
 
+  uint16_t calculatePWCorrection(const config2 &page2, const statuses &current) const;
+  
   uint8_t battery = ONE_HUNDRED_PCT; ///< Voltage correction is applied to the injector opening time
 };
 
