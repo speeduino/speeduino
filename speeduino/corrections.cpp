@@ -595,29 +595,28 @@ TESTABLE_INLINE_STATIC uint8_t correctionDFCOfuel(void)
   return scaleValue;
 }
 
-/** @brief Returns true if deceleration fuel cutoff should be on, false if its off */
-bool isDFCOActive(void)
+bool isDFCOActive(const statuses &current, const config2 &page2, const config4 &page4)
 {
   bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1U )
+  if ( page2.dfcoEnabled == 1U )
   {
     static uint8_t dfcoDelay;
 
-    if ( currentStatus.isDFCOActive ) 
+    if ( current.isDFCOActive ) 
     {
-      DFCOValue = ( currentStatus.RPM > RPM_MEDIUM.toUser( configPage4.dfcoRPM) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
+      DFCOValue = ( current.RPM > RPM_MEDIUM.toUser( page4.dfcoRPM) ) && ( current.TPS < page4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoDelay = 0; }
     }
     else 
     {
-      if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) 
-        && (currentStatus.coolant >= temperatureRemoveOffset(configPage2.dfcoMinCLT)) 
-        && (currentStatus.RPM > (RPM_MEDIUM.toUser(configPage4.dfcoRPM) + RPM_FINE.toUser(configPage4.dfcoHyster)))
-        && (currentStatus.aseIsActive == false) )
+      if ( (current.TPS < page4.dfcoTPSThresh) 
+        && (current.coolant >= temperatureRemoveOffset(page2.dfcoMinCLT)) 
+        && (current.RPM > (RPM_MEDIUM.toUser(page4.dfcoRPM) + RPM_FINE.toUser(page4.dfcoHyster)))
+        && (current.aseIsActive == false) )
       {
-        if( dfcoDelay < configPage2.dfcoDelay )
+        if( dfcoDelay < page2.dfcoDelay )
         {
-          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
+          if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
         }
         else { DFCOValue = true; }
       }

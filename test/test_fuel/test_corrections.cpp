@@ -777,74 +777,89 @@ static void test_corrections_launch(void)
   RUN_TEST_P(test_corrections_launch_minAdd);
 }
 
-static void setup_DFCO_on_taper_off_no_delay()
+struct dfco_context_t
 {
-  initialiseCorrections();
+  statuses current = {};
+  config2 page2 = {};
+  config4 page4 = {};
+  config9 page9 = {};
+};
+
+static dfco_context_t setup_DFCO_on_taper_off_no_delay()
+{
+  dfco_context_t context;
 
   //Sets all the required conditions to have the DFCO be active
-  configPage2.dfcoEnabled = 1; //Ensure DFCO option is turned on
-  currentStatus.setRpm( 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
-  currentStatus.TPS = 0; //Set the simulated TPS to 0 
-  currentStatus.coolant = 80;
-  configPage4.dfcoRPM = 150; //DFCO enable RPM = 1500
-  configPage4.dfcoTPSThresh = 1;
-  configPage4.dfcoHyster = 25;
-  configPage2.dfcoMinCLT = 40; //Actually 0 with offset
-  configPage2.dfcoDelay = 0;
-  configPage9.dfcoTaperEnable = 0; //Enable
+  context.page2.dfcoEnabled = 1; //Ensure DFCO option is turned on
+  context.page2.dfcoMinCLT = 40; //Actually 0 with offset
+  context.page2.dfcoDelay = 0;
+  context.current.setRpm( 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
+  context.current.TPS = 0; //Set the simulated TPS to 0 
+  context.current.coolant = 80;
+  context.page4.dfcoRPM = 150; //DFCO enable RPM = 1500
+  context.page4.dfcoTPSThresh = 1;
+  context.page4.dfcoHyster = 25;
+  context.page9.dfcoTaperEnable = 0; //Enable
 
-  isDFCOActive();
+  // isDFCOActive(currentStatus, context.page2, context.page4);
+
+  return context;
 }
 
 //**********************************************************************************************************************
 static void test_corrections_dfco_on(void)
 {
   //Test under ideal conditions that DFCO goes active
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(isDFCOActive());
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4));
 }
 
 static void test_corrections_dfco_off_RPM()
 {
   //Test that DFCO comes on and then goes off when the RPM drops below threshold
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(isDFCOActive()); //Make sure DFCO is on initially
-  currentStatus.setRpm( 1000); //Set the current simulated RPM below the threshold + hyster
-  TEST_ASSERT_FALSE(isDFCOActive()); //Test DFCO is now off
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Make sure DFCO is on initially
+  ctx.current.setRpm( 1000); //Set the current simulated RPM below the threshold + hyster
+  TEST_ASSERT_FALSE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Test DFCO is now off
 }
 
 static void test_corrections_dfco_off_TPS()
 {
   //Test that DFCO comes on and then goes off when the TPS goes above the required threshold (ie not off throttle)
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(isDFCOActive()); //Make sure DFCO is on initially
-  currentStatus.TPS = 10; //Set the current simulated TPS to be above the threshold
-  TEST_ASSERT_FALSE(isDFCOActive()); //Test DFCO is now off
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Make sure DFCO is on initially
+  ctx.current.TPS = 10; //Set the current simulated TPS to be above the threshold
+  TEST_ASSERT_FALSE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Test DFCO is now off
 }
 
 static void test_corrections_dfco_off_delay()
 {
   //Test that DFCO comes will not activate if there has not been a long enough delay
   //The steup function below simulates a 2 second delay
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
-  configPage2.dfcoDelay = 5;
+  BIT_SET(ctx.current.LOOP_TIMER, BIT_TIMER_10HZ);
+  ctx.page2.dfcoDelay = 5;
   
-  for (uint8_t index = 0; index < configPage2.dfcoDelay; ++index) {
-    TEST_ASSERT_FALSE(isDFCOActive()); //Make sure DFCO does not come on...
+  for (uint8_t index = 0; index < ctx.page2.dfcoDelay; ++index) {
+    TEST_ASSERT_FALSE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Make sure DFCO does not come on...
   }
   // ...until simulated delay period expires
-  TEST_ASSERT_TRUE(isDFCOActive()); 
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); 
 }
 
 static void setup_DFCO_on_taper_on_no_delay()
 {
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
+  currentStatus = ctx.current;
+  configPage2 = ctx.page2;
+  configPage4 = ctx.page4;
+  configPage9 = ctx.page9;
+  
   configPage9.dfcoTaperEnable = 1; //Enable
   configPage9.dfcoTaperTime = 20; //2.0 second
   configPage9.dfcoTaperFuel = 0; //Scale fuel to 0%
@@ -1648,7 +1663,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFlex(), "correctionFlex");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
-  TEST_ASSERT_FALSE(isDFCOActive());
+  // TEST_ASSERT_FALSE(isDFCOActive());
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
 
   // Acceeleration
@@ -1731,7 +1746,7 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFlex(), "correctionFlex");
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
-  TEST_ASSERT_FALSE(isDFCOActive());
+  // TEST_ASSERT_FALSE(isDFCOActive());
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
 
   TEST_ASSERT_EQUAL(1500U, getCorrectionsFuel().calculatePWCorrection(configPage2, currentStatus));

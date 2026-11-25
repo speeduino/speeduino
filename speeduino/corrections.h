@@ -10,7 +10,7 @@ All functions in the gamma file return
 void initialiseCorrections(void);
 
 /** @brief Returns true if deceleration fuel cutoff should be on, false if its off */
-bool isDFCOActive(void);
+bool isDFCOActive(const statuses &current, const config2 &page2, const config4 &page4);
 
 fuel_corrections_t getCorrectionsFuel(void);
 uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &current, const config2 &page2, const config6 &page6);
