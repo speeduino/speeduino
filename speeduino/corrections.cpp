@@ -595,10 +595,8 @@ TESTABLE_INLINE_STATIC uint8_t correctionDFCOfuel(void)
   return scaleValue;
 }
 
-/*
- * Returns true if deceleration fuel cutoff should be on, false if its off
- */
-TESTABLE_INLINE_STATIC bool isDFCOActive(void)
+/** @brief Returns true if deceleration fuel cutoff should be on, false if its off */
+bool isDFCOActive(void)
 {
   bool DFCOValue = false;
   if ( configPage2.dfcoEnabled == 1U )
@@ -806,7 +804,6 @@ This is the only function that should be called from anywhere outside the file
 */
 uint16_t correctionsFuel(void)
 {
-  currentStatus.isDFCOActive = isDFCOActive();
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
   currentStatus.fuelCorrections.wue = correctionWUE();
   uint32_t sumCorrections = currentStatus.fuelCorrections.wue;

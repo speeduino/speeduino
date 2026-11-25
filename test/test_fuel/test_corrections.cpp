@@ -777,8 +777,6 @@ static void test_corrections_launch(void)
   RUN_TEST_P(test_corrections_launch_minAdd);
 }
 
-extern bool isDFCOActive(void);
-
 static void setup_DFCO_on_taper_off_no_delay()
 {
   initialiseCorrections();
