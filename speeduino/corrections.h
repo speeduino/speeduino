@@ -1,20 +1,23 @@
 /*
 All functions in the gamma file return
-
 */
 #ifndef CORRECTIONS_H
 #define CORRECTIONS_H
 
-#include "maths.h"
-#include "statuses.h"
+#include "src/corrections/fuel_corrections_t.h"
+
+/// @cond
+// Forward declarations
+struct config2;
+struct config4;
+struct statuses; 
+struct table3d16RpmLoad;
+/// @endcond
 
 void initialiseCorrections(void);
 
 /** @brief Returns true if deceleration fuel cutoff should be on, false if its off */
 bool isDFCOActive(const statuses &current, const config2 &page2, const config4 &page4);
-
-// Constant that represents "no fuel correction"
-static constexpr uint8_t NO_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 
 fuel_corrections_t getCorrectionsFuel(void);
 

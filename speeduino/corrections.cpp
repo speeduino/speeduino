@@ -26,7 +26,6 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "globals.h"
 #include "corrections.h"
 #include "elapsed_time.h"
-#include "timers.h"
 #include "maths.h"
 #include "sensors.h"
 #include "unit_testing.h"
@@ -36,6 +35,8 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "fuel_calcs.h"
 #include "unit_testing.h"
 #include "src/controllers/nitrous/nitrousController.h"
+#include "statuses.h"
+#include "config_pages.h"
 
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
