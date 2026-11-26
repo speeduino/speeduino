@@ -136,22 +136,22 @@ struct launchStatus_t
  */
 struct fuel_corrections_t
 {
-  uint8_t wue = ONE_HUNDRED_PCT; /**< Warm Up Enrichment */
-  uint8_t ase = ONE_HUNDRED_PCT; /**< After Start Enrichment */
-  uint16_t acceleration = ONE_HUNDRED_PCT; /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
-  uint8_t floodClear = ONE_HUNDRED_PCT;
-  uint8_t closedLoopAFR = ONE_HUNDRED_PCT; /**< The amount of closed loop AFR enrichment currently being applied */
-  uint8_t iat = ONE_HUNDRED_PCT; /**< The amount of inlet air temperature adjustment currently being applied */
-  uint8_t baro = ONE_HUNDRED_PCT; /**< The amount of correction being applied for the current baro reading */
-  uint8_t flex = ONE_HUNDRED_PCT; /**< Amount of correction being applied to compensate for ethanol content */
-  uint8_t fuelTemp = ONE_HUNDRED_PCT; /**< Amount of correction being applied to compensate for fuel temperature */
-  uint8_t launch = ONE_HUNDRED_PCT; /**< The amount of correction being applied if launch control is active */
-  uint8_t dfco = ONE_HUNDRED_PCT; /**< Deceleration Fuel Cut Off */
-  uint16_t cranking = ONE_HUNDRED_PCT; ///< Cranking correction
+  uint8_t wue = NO_FUEL_CORRECTION; /**< Warm Up Enrichment */
+  uint8_t ase = NO_FUEL_CORRECTION; /**< After Start Enrichment */
+  uint16_t acceleration = NO_FUEL_CORRECTION; /**< The amount of acceleration enrichment currently being applied. 100=No change. Varies above 255 */
+  uint8_t floodClear = NO_FUEL_CORRECTION;
+  uint8_t closedLoopAFR = NO_FUEL_CORRECTION; /**< The amount of closed loop AFR enrichment currently being applied */
+  uint8_t iat = NO_FUEL_CORRECTION; /**< The amount of inlet air temperature adjustment currently being applied */
+  uint8_t baro = NO_FUEL_CORRECTION; /**< The amount of correction being applied for the current baro reading */
+  uint8_t flex = NO_FUEL_CORRECTION; /**< Amount of correction being applied to compensate for ethanol content */
+  uint8_t fuelTemp = NO_FUEL_CORRECTION; /**< Amount of correction being applied to compensate for fuel temperature */
+  uint8_t launch = NO_FUEL_CORRECTION; /**< The amount of correction being applied if launch control is active */
+  uint8_t dfco = NO_FUEL_CORRECTION; /**< Deceleration Fuel Cut Off */
+  uint16_t cranking = NO_FUEL_CORRECTION; ///< Cranking correction
 
   uint16_t calculatePWCorrection(const config2 &page2, const statuses &current) const;
   
-  uint8_t battery = ONE_HUNDRED_PCT; ///< Voltage correction is applied to the injector opening time
+  uint8_t battery = NO_FUEL_CORRECTION; ///< Voltage correction is applied to the injector opening time
 };
 
 /** @brief The status struct with current values for all 'live' variables.

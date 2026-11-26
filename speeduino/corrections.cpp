@@ -68,8 +68,6 @@ TESTABLE_CONSTEXPR table2D_u8_u8_6 flexAdvTable(&configPage10.flexAdvBins, &conf
 TESTABLE_CONSTEXPR table2D_u8_u8_6 fuelTempTable(&configPage10.fuelTempBins, &configPage10.fuelTempValues);
 TESTABLE_CONSTEXPR table2D_u8_u8_6 wmiAdvTable(&configPage10.wmiAdvBins, &configPage10.wmiAdvAdj);
 
-// Constant that represents "no fuel correction"
-static constexpr uint8_t NO_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 // Constant that represents the baseline fuel correction to be modified
 // (yes, it's the same as NO_FUEL_CORRECTION, but captures a slightly different concept)
 static constexpr uint8_t BASELINE_FUEL_CORRECTION = ONE_HUNDRED_PCT;

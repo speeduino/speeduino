@@ -52,7 +52,7 @@ bool statuses::isFixedCrankingIgnitionTimingActive(const config4 &page4) const
 }
 
 static inline uint32_t combineCorrections(uint32_t sumCorrections, uint16_t correction) {
-  if (correction == ONE_HUNDRED_PCT) {
+  if (correction == NO_FUEL_CORRECTION) {
     return sumCorrections;
   }
   return percentageApprox(correction, sumCorrections);
