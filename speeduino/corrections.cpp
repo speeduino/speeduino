@@ -1274,10 +1274,9 @@ uint16_t correctionsDwell(uint16_t dwell)
  * @param base_advance - Base ignition advance (deg. ?)
  * @return Advance considering all (~12) individual corrections
  */
-int8_t correctionsIgn(int8_t base_advance)
+int8_t correctionsIgn(int8_t advance)
 {
-  int8_t advance;
-  advance = correctionFlexTiming(base_advance);
+  advance = correctionFlexTiming(advance);
   advance = correctionWMITiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);
