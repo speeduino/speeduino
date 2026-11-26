@@ -88,6 +88,8 @@ uint32_t calculatePageCRC32(byte pageNum)
 {
   FastCRC32 crcCalc;
   page_iterator_t entity = page_begin(pageNum);
+  // An empty or invalid page has the CRC32 of an empty byte sequence.
+  if (entity.type == End) { return 0U; }
   // Initial CRC calc
   uint32_t crc = compute_crc(entity, &FastCRC32::crc32, crcCalc);
 
