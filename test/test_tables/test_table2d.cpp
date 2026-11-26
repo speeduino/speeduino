@@ -200,7 +200,6 @@ static void test_withinBin(const _table2d_detail::Bin<TIntegral> &testSubject)
 template <typename axis_t, typename value_t, uint8_t sizeT>
 static void test_withinBin(axis_t (&pAxisBin)[sizeT], value_t (&)[sizeT])
 {
-    test_withinBin(_table2d_detail::Bin<axis_t>(1, pAxisBin[1], pAxisBin[0]));
     test_withinBin(_table2d_detail::Bin<axis_t>(pAxisBin, 1));
 }
 
@@ -211,8 +210,8 @@ static void test_withinBin(void) {
 template <typename axis_t, uint8_t sizeT>
 static void assert_findBin(axis_t (&pAxisBin)[sizeT], axis_t lookUp, uint8_t expectedUpperIndex)
 {
-    _table2d_detail::Bin<axis_t> result = _table2d_detail::findCachedBin(UINT8_MAX, pAxisBin, pAxisBin+sizeT, lookUp);
-    TEST_ASSERT_EQUAL(expectedUpperIndex, result.upperIndex);
+    _table2d_detail::Bin<axis_t> result = _table2d_detail::findCachedBin(UINT8_MAX, mcu8::begin(pAxisBin), mcu8::end(pAxisBin), lookUp);
+    TEST_ASSERT_EQUAL(expectedUpperIndex, result.upperIndex());
     TEST_ASSERT_EQUAL(pAxisBin[expectedUpperIndex-1], result.lowerValue());
     TEST_ASSERT_EQUAL(pAxisBin[expectedUpperIndex], result.upperValue());
 }
