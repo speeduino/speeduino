@@ -102,7 +102,11 @@ void doUpdates(void)
   //Only the latest update for small flash devices must be retained
    #ifndef SMALL_FLASH_MODE
 
-  //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
+   // LCOV_EXCL_START
+   // This legacy code has already been field tested and will never 
+   // be modified so no need for coverage
+
+   //May 2017 firmware introduced a -40 offset on the ignition table. Update that table to +40
   if(loadEEPROMVersion() == 2)
   {
     for (auto &element: ignitionTable.values)
@@ -848,6 +852,8 @@ void doUpdates(void)
     //202504
     saveEEPROMVersion(25);
   }
+  // LCOV_EXCL_END
+  
   upgradeV25toV26();
   upgradeV26toV27();
   //Move this #endif to only do latest updates to safe ROM space on small devices.
