@@ -816,17 +816,17 @@ void sendValuesLegacy(void)
   bytestosend -= primarySerial.write(99); // knock
   bytestosend -= primarySerial.write(99); // knock
 
-  temp = currentStatus.egoCorrection * 10;
+  temp = currentStatus.fuelCorrections.closedLoopAFR * 10;
   bytestosend -= primarySerial.write(temp>>8); // egocor1
   bytestosend -= primarySerial.write(temp); // egocor1
   bytestosend -= primarySerial.write(temp>>8); // egocor2
   bytestosend -= primarySerial.write(temp); // egocor2
 
-  temp = currentStatus.iatCorrection * 10;
+  temp = currentStatus.fuelCorrections.iat * 10;
   bytestosend -= primarySerial.write(temp>>8); // aircor
   bytestosend -= primarySerial.write(temp); // aircor
 
-  temp = currentStatus.wueCorrection * 10;
+  temp = currentStatus.fuelCorrections.wue * 10;
   bytestosend -= primarySerial.write(temp>>8); // warmcor
   bytestosend -= primarySerial.write(temp); // warmcor
 
@@ -837,7 +837,7 @@ void sendValuesLegacy(void)
   bytestosend -= primarySerial.write(99); // baroCorrection
   bytestosend -= primarySerial.write(99); // baroCorrection
 
-  temp = currentStatus.corrections * 10;
+  temp = currentStatus.totalFuelCorrectionPct * 10;
   bytestosend -= primarySerial.write(temp>>8); // gammaEnrich
   bytestosend -= primarySerial.write(temp); // gammaEnrich
 

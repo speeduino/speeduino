@@ -26,7 +26,6 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "globals.h"
 #include "corrections.h"
 #include "elapsed_time.h"
-#include "timers.h"
 #include "maths.h"
 #include "sensors.h"
 #include "unit_testing.h"
@@ -36,6 +35,8 @@ There are 2 top level functions that call more detailed corrections for Fuel and
 #include "fuel_calcs.h"
 #include "unit_testing.h"
 #include "src/controllers/nitrous/nitrousController.h"
+#include "statuses.h"
+#include "config_pages.h"
 
 /** Instance of the PID object in case that algorithm is used (Always instantiated).
 * Needs to be global as it maintains state outside of each function call.
@@ -68,8 +69,6 @@ TESTABLE_CONSTEXPR table2D_u8_u8_6 flexAdvTable(&configPage10.flexAdvBins, &conf
 TESTABLE_CONSTEXPR table2D_u8_u8_6 fuelTempTable(&configPage10.fuelTempBins, &configPage10.fuelTempValues);
 TESTABLE_CONSTEXPR table2D_u8_u8_6 wmiAdvTable(&configPage10.wmiAdvBins, &configPage10.wmiAdvAdj);
 
-// Constant that represents "no fuel correction"
-static constexpr uint8_t NO_FUEL_CORRECTION = ONE_HUNDRED_PCT;
 // Constant that represents the baseline fuel correction to be modified
 // (yes, it's the same as NO_FUEL_CORRECTION, but captures a slightly different concept)
 static constexpr uint8_t BASELINE_FUEL_CORRECTION = ONE_HUNDRED_PCT;
@@ -88,12 +87,7 @@ void initialiseCorrections(void)
 
   currentStatus.flexIgnCorrection = 0;
   //Default value of no adjustment must be set to avoid randomness on first correction cycle after startup
-  currentStatus.egoCorrection = NO_FUEL_CORRECTION; 
-  currentStatus.ASEValue = NO_FUEL_CORRECTION;
-  currentStatus.wueCorrection = NO_FUEL_CORRECTION;
-  currentStatus.iatCorrection = NO_FUEL_CORRECTION;
-  currentStatus.baroCorrection = NO_FUEL_CORRECTION;
-  currentStatus.batCorrection = NO_FUEL_CORRECTION;
+  currentStatus.fuelCorrections = fuel_corrections_t();
   AFRnextCycle = 0;
   currentStatus.knockRetardActive = false;
   currentStatus.knockPulseDetected = false;
@@ -110,7 +104,7 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 */
 TESTABLE_INLINE_STATIC uint8_t correctionWUE(void)
 {
-  uint8_t WUEValue = currentStatus.wueCorrection;
+  uint8_t WUEValue = currentStatus.fuelCorrections.wue;
 
   // Only update as fast as the sensor is read
   if( BIT_CHECK(currentStatus.LOOP_TIMER, CLT_READ_TIMER_BIT) ) { 
@@ -144,8 +138,8 @@ static inline uint16_t lookUpCrankingEnrichmentPct(void) {
 //Taper start value needs to account for ASE that is now running, so total correction does not increase when taper begins
 static inline uint16_t computeCrankingTaperStartPct(uint16_t crankingPercent) {
   // Avoid 32-bit division if possible
-  if (currentStatus.aseIsActive && currentStatus.ASEValue!=NO_FUEL_CORRECTION) {
-    return fast_div32_16((uint32_t)crankingPercent * BASELINE_FUEL_CORRECTION, currentStatus.ASEValue);
+  if (currentStatus.aseIsActive && currentStatus.fuelCorrections.ase!=NO_FUEL_CORRECTION) {
+    return fast_div32_16((uint32_t)crankingPercent * BASELINE_FUEL_CORRECTION, currentStatus.fuelCorrections.ase);
   }
 
   return crankingPercent;
@@ -228,7 +222,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
       }
     } else {
       // ASE is in effect, but we're not due to update, so reuse previous value.
-      ASEValue = currentStatus.ASEValue;
+      ASEValue = currentStatus.fuelCorrections.ase;
     }    
   } else {
     // ASE is finished, nothing to do but keep MISRA checker happy 
@@ -242,7 +236,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionASE(void)
 static inline void accelEnrichmentOff(void) {
   currentStatus.isAcceleratingTPS = false;
   currentStatus.isDeceleratingTPS = false;
-  currentStatus.AEamount = 0;
+  currentStatus.fuelCorrections.acceleration = 0;
 }
 
 static inline bool isAccelEnrichmentOn(void) {
@@ -349,7 +343,7 @@ static inline uint16_t correctionAccel( const aeTimeoutExpiredCallback_t onTimeo
     } else {
       //Enrichment still needs to keep running. 
       //Simply return the current amount
-      accelCorrection = currentStatus.AEamount;
+      accelCorrection = currentStatus.fuelCorrections.acceleration;
     }
   }
 
@@ -415,7 +409,7 @@ static inline int16_t computeMapDot(void) {
 }
 
 static inline uint16_t correctionAccelModeMap(void) {
-  uint16_t aeCorrection = currentStatus.AEamount;
+  uint16_t aeCorrection = currentStatus.fuelCorrections.acceleration;
 
   // No point in updating faster than the MAP sensor is read
   if (BIT_CHECK(currentStatus.LOOP_TIMER, MAP_READ_TIMER_BIT)) {
@@ -472,7 +466,7 @@ static inline int16_t computeTPSDOT(void) {
 }
 
 static inline uint16_t correctionAccelModeTps(void) {
-  uint16_t aeCorrection = currentStatus.AEamount;
+  uint16_t aeCorrection = currentStatus.fuelCorrections.acceleration;
 
   // No point in updating faster than the TPS is read
   if (BIT_CHECK(currentStatus.LOOP_TIMER, TPS_READ_TIMER_BIT)) {
@@ -527,7 +521,7 @@ Uses a 2D enrichment table (WUETable) where the X axis is engine temp and the Y 
 TESTABLE_INLINE_STATIC byte correctionBatVoltage(void)
 {
   // No point in updating more often than the sensor is read
-  uint8_t correction = currentStatus.batCorrection;
+  uint8_t correction = currentStatus.fuelCorrections.battery;
   if( BIT_CHECK(currentStatus.LOOP_TIMER, BAT_READ_TIMER_BIT) ) { 
     correction = table2D_getValue(&injectorVCorrectionTable, currentStatus.battery10);
   }
@@ -543,7 +537,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionIATDensity(void)
   if( BIT_CHECK(currentStatus.LOOP_TIMER, IAT_READ_TIMER_BIT) ) { 
     return table2D_getValue(&IATDensityCorrectionTable, temperatureAddOffset(currentStatus.IAT)); //currentStatus.IAT is the actual temperature, values in IATDensityCorrectionTable.axisX are temp+offset
   }
-  return currentStatus.iatCorrection;
+  return currentStatus.fuelCorrections.iat;
 }
 
 // ============================= Baro pressure correction =============================
@@ -557,7 +551,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionBaro(void)
   if( BIT_CHECK(currentStatus.LOOP_TIMER, BARO_READ_TIMER_BIT) ) { 
     return (uint8_t)table2D_getValue(&baroFuelTable, currentStatus.baro);
   }
-  return currentStatus.baroCorrection;
+  return currentStatus.fuelCorrections.baro;
 }
 
 // ============================= Launch control correction =============================
@@ -600,31 +594,28 @@ TESTABLE_INLINE_STATIC uint8_t correctionDFCOfuel(void)
   return scaleValue;
 }
 
-/*
- * Returns true if deceleration fuel cutoff should be on, false if its off
- */
-TESTABLE_INLINE_STATIC bool correctionDFCO(void)
+bool isDFCOActive(const statuses &current, const config2 &page2, const config4 &page4)
 {
   bool DFCOValue = false;
-  if ( configPage2.dfcoEnabled == 1U )
+  if ( page2.dfcoEnabled == 1U )
   {
     static uint8_t dfcoDelay;
 
-    if ( currentStatus.isDFCOActive ) 
+    if ( current.isDFCOActive ) 
     {
-      DFCOValue = ( currentStatus.RPM > RPM_MEDIUM.toUser( configPage4.dfcoRPM) ) && ( currentStatus.TPS < configPage4.dfcoTPSThresh ); 
+      DFCOValue = ( current.RPM > RPM_MEDIUM.toUser( page4.dfcoRPM) ) && ( current.TPS < page4.dfcoTPSThresh ); 
       if ( DFCOValue == false) { dfcoDelay = 0; }
     }
     else 
     {
-      if ( (currentStatus.TPS < configPage4.dfcoTPSThresh) 
-        && (currentStatus.coolant >= temperatureRemoveOffset(configPage2.dfcoMinCLT)) 
-        && (currentStatus.RPM > (RPM_MEDIUM.toUser(configPage4.dfcoRPM) + RPM_FINE.toUser(configPage4.dfcoHyster)))
-        && (currentStatus.aseIsActive == false) )
+      if ( (current.TPS < page4.dfcoTPSThresh) 
+        && (current.coolant >= temperatureRemoveOffset(page2.dfcoMinCLT)) 
+        && (current.RPM > (RPM_MEDIUM.toUser(page4.dfcoRPM) + RPM_FINE.toUser(page4.dfcoHyster)))
+        && (current.aseIsActive == false) )
       {
-        if( dfcoDelay < configPage2.dfcoDelay )
+        if( dfcoDelay < page2.dfcoDelay )
         {
-          if( BIT_CHECK(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
+          if( BIT_CHECK(current.LOOP_TIMER, BIT_TIMER_10HZ) ) { ++dfcoDelay; }
         }
         else { DFCOValue = true; }
       }
@@ -675,19 +666,19 @@ uint8_t calculateAfrTarget(table3d16RpmLoad &afrLookUpTable, const statuses &cur
 }
 
 static inline uint8_t computeSimpleLeanCorrection(const statuses &current, const config6 &page6) {
-  if(current.egoCorrection < (BASELINE_FUEL_CORRECTION + page6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
+  if(current.fuelCorrections.closedLoopAFR < (BASELINE_FUEL_CORRECTION + page6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
   {
-    return current.egoCorrection+1U; //Increase the fuelling by 1%
+    return current.fuelCorrections.closedLoopAFR+1U; //Increase the fuelling by 1%
   }
-  return current.egoCorrection; //Means we're at the maximum adjustment amount, so simply return that again
+  return current.fuelCorrections.closedLoopAFR; //Means we're at the maximum adjustment amount, so simply return that again
 }
 
 static inline uint8_t computeSimpleRichCorrection(const statuses &current, const config6 &page6) {
-  if(current.egoCorrection > (BASELINE_FUEL_CORRECTION - page6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
+  if(current.fuelCorrections.closedLoopAFR > (BASELINE_FUEL_CORRECTION - page6.egoLimit) ) //Fuelling adjustment must be at most the egoLimit amount (up or down)
   {
-    return (current.egoCorrection - 1U); //Decrease the fuelling by 1%
+    return (current.fuelCorrections.closedLoopAFR - 1U); //Decrease the fuelling by 1%
   }
-  return current.egoCorrection; //Means we're at the maximum adjustment amount, so simply return that again  
+  return current.fuelCorrections.closedLoopAFR; //Means we're at the maximum adjustment amount, so simply return that again  
 }
 
 static inline uint8_t computeSimpleCorrection(const statuses &current, const config6 &page6) {
@@ -697,7 +688,7 @@ static inline uint8_t computeSimpleCorrection(const statuses &current, const con
   if(current.O2 < current.afrTarget) {
     return computeSimpleRichCorrection(current, page6);
   }
-  return current.egoCorrection; //Means we're already right on target
+  return current.fuelCorrections.closedLoopAFR; //Means we're already right on target
 }
 
 static inline uint8_t computePIDCorrection(const statuses &current, const config6 &page6) {
@@ -787,7 +778,7 @@ TESTABLE_INLINE_STATIC uint8_t correctionAFRClosedLoop(void)
       }
     } else {
       // Not within the upcoming cycle, so reuse current correction
-      correction = currentStatus.egoCorrection; 
+      correction = currentStatus.fuelCorrections.closedLoopAFR; 
     }
   } //egoType
 
@@ -797,63 +788,28 @@ TESTABLE_INLINE_STATIC uint8_t correctionAFRClosedLoop(void)
                 (uint8_t)(BASELINE_FUEL_CORRECTION + configPage6.egoLimit));
 }
 
-
-static inline uint32_t combineCorrections(uint32_t sumCorrections, uint16_t correction) {
-  if (correction == NO_FUEL_CORRECTION) {
-    return sumCorrections;
-  }
-  return percentageApprox(correction, sumCorrections);
-}
-
 /** Dispatch calculations for all fuel related corrections.
 Calls all the other corrections functions and combines their results.
 This is the only function that should be called from anywhere outside the file
 */
-uint16_t correctionsFuel(void)
+fuel_corrections_t getCorrectionsFuel(void)
 {
   //The values returned by each of the correction functions are multiplied together and then divided back to give a single 0-255 value.
-  currentStatus.wueCorrection = correctionWUE();
-  uint32_t sumCorrections = currentStatus.wueCorrection;
-
-  currentStatus.ASEValue = correctionASE();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.ASEValue);
-
-  sumCorrections = combineCorrections(sumCorrections, correctionCranking());
-
-  currentStatus.AEamount = correctionAccel();
-  if ( (configPage2.aeApplyMode == AE_MODE_MULTIPLIER) || (currentStatus.isDeceleratingTPS) ) // multiply by the AE amount in case of multiplier AE mode or Decel
-  {
-    sumCorrections = combineCorrections(sumCorrections, currentStatus.AEamount);
-  }
-
-  sumCorrections = combineCorrections(sumCorrections, correctionFloodClear());
-
-  currentStatus.egoCorrection = correctionAFRClosedLoop();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.egoCorrection);
-
-  //Voltage correction is applied to the injector opening time
-  currentStatus.batCorrection = correctionBatVoltage();
-  
-  currentStatus.iatCorrection = correctionIATDensity();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.iatCorrection);
-
-  currentStatus.baroCorrection = correctionBaro();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.baroCorrection);
-
-  currentStatus.flexCorrection = correctionFlex();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.flexCorrection);
-
-  currentStatus.fuelTempCorrection = correctionFuelTemp();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.fuelTempCorrection);
-
-  currentStatus.launchCorrection = correctionLaunch();
-  sumCorrections = combineCorrections(sumCorrections, currentStatus.launchCorrection);
-
-  currentStatus.isDFCOActive = correctionDFCO();
-  sumCorrections = combineCorrections(sumCorrections, correctionDFCOfuel());
-
-  //This is the maximum allowable increase
-  return (std::min)((uint16_t)1500U, (uint16_t)sumCorrections);
+  return {
+    .wue = correctionWUE(),
+    .ase = correctionASE(),
+    .acceleration = correctionAccel(),
+    .floodClear = correctionFloodClear(),
+    .closedLoopAFR = correctionAFRClosedLoop(),
+    .iat = correctionIATDensity(),
+    .baro = correctionBaro(),
+    .flex = correctionFlex(),
+    .fuelTemp = correctionFuelTemp(),
+    .launch = correctionLaunch(),
+    .dfco = correctionDFCOfuel(),
+    .cranking = correctionCranking(),
+    .battery = correctionBatVoltage(),
+  };
 }
 
 //******************************** IGNITION ADVANCE CORRECTIONS ********************************
@@ -1317,10 +1273,9 @@ uint16_t correctionsDwell(uint16_t dwell)
  * @param base_advance - Base ignition advance (deg. ?)
  * @return Advance considering all (~12) individual corrections
  */
-int8_t correctionsIgn(int8_t base_advance)
+int8_t correctionsIgn(int8_t advance)
 {
-  int8_t advance;
-  advance = correctionFlexTiming(base_advance);
+  advance = correctionFlexTiming(advance);
   advance = correctionWMITiming(advance);
   advance = correctionIATretard(advance);
   advance = correctionCLTadvance(advance);

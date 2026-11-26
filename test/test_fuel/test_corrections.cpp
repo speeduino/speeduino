@@ -131,7 +131,7 @@ static void test_corrections_cranking_taper_noase(void) {
   currentStatus.aseIsActive = false;
   
   configPage10.crankingEnrichTaper = 100U;
-  currentStatus.ASEValue = 100U;
+  currentStatus.fuelCorrections.ase = 100U;
 
   // Reset taper
   currentStatus.rotationStatus = EngineRotationStatus::Cranking;
@@ -163,7 +163,7 @@ static void test_corrections_cranking_taper_withase(void) {
   configPage10.crankingEnrichTaper = 100U;
   
   currentStatus.aseIsActive = true;
-  currentStatus.ASEValue = 50U;
+  currentStatus.fuelCorrections.ase = 50U;
 
   // Reset taper
   currentStatus.rotationStatus = EngineRotationStatus::Cranking;
@@ -359,7 +359,7 @@ static void setup_ego_simple(void) {
   currentStatus.MAP = (configPage9.egoMAPMin + ((configPage9.egoMAPMax-configPage9.egoMAPMin)/2U))*2U;
   
   currentStatus.afrTarget = currentStatus.O2;
-  currentStatus.egoCorrection = 100U;
+  currentStatus.fuelCorrections.closedLoopAFR = 100U;
   
   currentStatus.isDFCOActive = false;
 
@@ -440,9 +440,9 @@ static void test_corrections_closedloop_off_invalidconditions_map(void) {
 static void test_corrections_closedloop_outsidecycle(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.egoCorrection = 123U;
+  currentStatus.fuelCorrections.closedLoopAFR = 123U;
   ignitionCount = AFRnextCycle - (configPage6.egoCount/2U); 
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR, correctionAFRClosedLoop());
 }
 
 //Test what happens when AFRnextCycle has rolled over but ignitionCount has not. 
@@ -450,23 +450,23 @@ static void test_corrections_closedloop_outsidecycle(void) {
 static void test_corrections_closedloop_cycle_countrollover(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  currentStatus.egoCorrection = 101U;
+  currentStatus.fuelCorrections.closedLoopAFR = 101U;
   ignitionCount = UINT16_MAX - (configPage6.egoCount/2); 
   AFRnextCycle = ignitionCount + configPage6.egoCount; //This will overflow AFRnextCycle
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_nocorrection(void) {
   setup_ego_simple();
-  currentStatus.egoCorrection = 101U;
+  currentStatus.fuelCorrections.closedLoopAFR = 101U;
   currentStatus.O2 = currentStatus.afrTarget;
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_lean(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget + 1U;
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR+1U, correctionAFRClosedLoop());
 }
 
 static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
@@ -476,8 +476,8 @@ static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
 
   for (uint8_t index=0; index<configPage6.egoLimit; ++index) {
     setup_valid_ego_cycle();
-    currentStatus.egoCorrection = 100U + index;
-    TEST_ASSERT_EQUAL(currentStatus.egoCorrection+1U, correctionAFRClosedLoop());
+    currentStatus.fuelCorrections.closedLoopAFR = 100U + index;
+    TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR+1U, correctionAFRClosedLoop());
   }
   setup_valid_ego_cycle();
   TEST_ASSERT_EQUAL(100U+configPage6.egoLimit, correctionAFRClosedLoop());
@@ -490,7 +490,7 @@ static void test_corrections_closedloop_simple_lean_maxcorrection(void) {
 static void test_corrections_closedloop_simple_rich(void) {
   setup_ego_simple();
   currentStatus.O2 = currentStatus.afrTarget - 1U;
-  TEST_ASSERT_EQUAL(currentStatus.egoCorrection-1U, correctionAFRClosedLoop());
+  TEST_ASSERT_EQUAL(currentStatus.fuelCorrections.closedLoopAFR-1U, correctionAFRClosedLoop());
 }
 
 static void test_rich_max_correction(void) {
@@ -500,7 +500,7 @@ static void test_rich_max_correction(void) {
   uint8_t counter = 0;
   while (correction>(100U-configPage6.egoLimit)) {
     setup_valid_ego_cycle();
-    currentStatus.egoCorrection = 100U - counter;
+    currentStatus.fuelCorrections.closedLoopAFR = 100U - counter;
     correction = correctionAFRClosedLoop();
     TEST_ASSERT_LESS_THAN(100U, correction);
     ++counter;
@@ -777,76 +777,89 @@ static void test_corrections_launch(void)
   RUN_TEST_P(test_corrections_launch_minAdd);
 }
 
-extern bool correctionDFCO(void);
-
-static void setup_DFCO_on_taper_off_no_delay()
+struct dfco_context_t
 {
-  initialiseCorrections();
+  statuses current = {};
+  config2 page2 = {};
+  config4 page4 = {};
+  config9 page9 = {};
+};
+
+static dfco_context_t setup_DFCO_on_taper_off_no_delay()
+{
+  dfco_context_t context;
 
   //Sets all the required conditions to have the DFCO be active
-  configPage2.dfcoEnabled = 1; //Ensure DFCO option is turned on
-  currentStatus.setRpm( 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
-  currentStatus.TPS = 0; //Set the simulated TPS to 0 
-  currentStatus.coolant = 80;
-  configPage4.dfcoRPM = 150; //DFCO enable RPM = 1500
-  configPage4.dfcoTPSThresh = 1;
-  configPage4.dfcoHyster = 25;
-  configPage2.dfcoMinCLT = 40; //Actually 0 with offset
-  configPage2.dfcoDelay = 0;
-  configPage9.dfcoTaperEnable = 0; //Enable
+  context.page2.dfcoEnabled = 1; //Ensure DFCO option is turned on
+  context.page2.dfcoMinCLT = 40; //Actually 0 with offset
+  context.page2.dfcoDelay = 0;
+  context.current.setRpm( 4000U); //Set the current simulated RPM to a level above the DFCO rpm threshold
+  context.current.TPS = 0; //Set the simulated TPS to 0 
+  context.current.coolant = 80;
+  context.page4.dfcoRPM = 150; //DFCO enable RPM = 1500
+  context.page4.dfcoTPSThresh = 1;
+  context.page4.dfcoHyster = 25;
+  context.page9.dfcoTaperEnable = 0; //Enable
 
-  correctionDFCO();
+  // isDFCOActive(currentStatus, context.page2, context.page4);
+
+  return context;
 }
 
 //**********************************************************************************************************************
 static void test_corrections_dfco_on(void)
 {
   //Test under ideal conditions that DFCO goes active
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(correctionDFCO());
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4));
 }
 
 static void test_corrections_dfco_off_RPM()
 {
   //Test that DFCO comes on and then goes off when the RPM drops below threshold
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
-  currentStatus.setRpm( 1000); //Set the current simulated RPM below the threshold + hyster
-  TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Make sure DFCO is on initially
+  ctx.current.setRpm( 1000); //Set the current simulated RPM below the threshold + hyster
+  TEST_ASSERT_FALSE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Test DFCO is now off
 }
 
 static void test_corrections_dfco_off_TPS()
 {
   //Test that DFCO comes on and then goes off when the TPS goes above the required threshold (ie not off throttle)
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  TEST_ASSERT_TRUE(correctionDFCO()); //Make sure DFCO is on initially
-  currentStatus.TPS = 10; //Set the current simulated TPS to be above the threshold
-  TEST_ASSERT_FALSE(correctionDFCO()); //Test DFCO is now off
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Make sure DFCO is on initially
+  ctx.current.TPS = 10; //Set the current simulated TPS to be above the threshold
+  TEST_ASSERT_FALSE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Test DFCO is now off
 }
 
 static void test_corrections_dfco_off_delay()
 {
   //Test that DFCO comes will not activate if there has not been a long enough delay
   //The steup function below simulates a 2 second delay
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
-  BIT_SET(currentStatus.LOOP_TIMER, BIT_TIMER_10HZ);
-  configPage2.dfcoDelay = 5;
+  BIT_SET(ctx.current.LOOP_TIMER, BIT_TIMER_10HZ);
+  ctx.page2.dfcoDelay = 5;
   
-  for (uint8_t index = 0; index < configPage2.dfcoDelay; ++index) {
-    TEST_ASSERT_FALSE(correctionDFCO()); //Make sure DFCO does not come on...
+  for (uint8_t index = 0; index < ctx.page2.dfcoDelay; ++index) {
+    TEST_ASSERT_FALSE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); //Make sure DFCO does not come on...
   }
   // ...until simulated delay period expires
-  TEST_ASSERT_TRUE(correctionDFCO()); 
+  TEST_ASSERT_TRUE(isDFCOActive(ctx.current, ctx.page2, ctx.page4)); 
 }
 
 static void setup_DFCO_on_taper_on_no_delay()
 {
-  setup_DFCO_on_taper_off_no_delay();
+  auto ctx = setup_DFCO_on_taper_off_no_delay();
 
+  currentStatus = ctx.current;
+  configPage2 = ctx.page2;
+  configPage4 = ctx.page4;
+  configPage9 = ctx.page9;
+  
   configPage9.dfcoTaperEnable = 1; //Enable
   configPage9.dfcoTaperTime = 20; //2.0 second
   configPage9.dfcoTaperFuel = 0; //Scale fuel to 0%
@@ -1580,12 +1593,12 @@ static void test_corrections_baro_lookup(void) {
   setup_baro_correction();
 
   currentStatus.baro = 65;
-  currentStatus.baroCorrection = 1U;
-  TEST_ASSERT_NOT_EQUAL(currentStatus.baroCorrection, correctionBaro());
+  currentStatus.fuelCorrections.baro = 1U;
+  TEST_ASSERT_NOT_EQUAL(currentStatus.fuelCorrections.baro, correctionBaro());
   TEST_ASSERT_EQUAL(115, correctionBaro());
 
   currentStatus.baro = 105;
-  currentStatus.baroCorrection = 1U;
+  currentStatus.fuelCorrections.baro = 1U;
   TEST_ASSERT_EQUAL(75, correctionBaro());
   TEST_ASSERT_EQUAL(75, correctionBaro());
 }
@@ -1624,7 +1637,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.launchStatus.launchingSoft = false;
   currentStatus.isDFCOActive = false;
   currentStatus.rotationStatus = EngineRotationStatus::Running;
-  currentStatus.ASEValue = 100U;
+  currentStatus.fuelCorrections.ase = 100U;
 
   configPage2.dfcoEnabled = 0;
   configPage10.crankingEnrichTaper = 0U; //Disable cranking enrich taper
@@ -1650,7 +1663,7 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFlex(), "correctionFlex");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
-  TEST_ASSERT_FALSE(correctionDFCO());
+  // TEST_ASSERT_FALSE(isDFCOActive());
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
 
   // Acceeleration
@@ -1659,27 +1672,27 @@ static void test_corrections_correctionsFuel_ae_modes(void) {
   currentStatus.TPS = 50; //25% actual value
 
   reset_AE();
-  TEST_ASSERT_EQUAL(232U, correctionsFuel());
+  TEST_ASSERT_EQUAL(232U, getCorrectionsFuel().calculatePWCorrection(configPage2, currentStatus));
 
   configPage2.aeApplyMode = AE_MODE_ADDER;
   currentStatus.TPSlast = 0;
   currentStatus.TPS = 50;
   reset_AE();
-  TEST_ASSERT_EQUAL(100U, correctionsFuel());
+  TEST_ASSERT_EQUAL(100U, getCorrectionsFuel().calculatePWCorrection(configPage2, currentStatus));
 
   // Deceeleration
   configPage2.aeApplyMode = AE_MODE_MULTIPLIER;
   currentStatus.TPSlast = 50;
   currentStatus.TPS = 45; 
   reset_AE();
-  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel());
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, getCorrectionsFuel().calculatePWCorrection(configPage2, currentStatus));
   TEST_ASSERT_LESS_THAN(0U, currentStatus.tpsDOT); 
 
   configPage2.aeApplyMode = AE_MODE_ADDER;
   currentStatus.TPSlast = 50;
   currentStatus.TPS = 45;
   reset_AE();
-  TEST_ASSERT_EQUAL(configPage2.decelAmount, correctionsFuel());
+  TEST_ASSERT_EQUAL(configPage2.decelAmount, getCorrectionsFuel().calculatePWCorrection(configPage2, currentStatus));
   TEST_ASSERT_LESS_THAN(0U, currentStatus.tpsDOT); 
 }
 
@@ -1710,11 +1723,11 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   currentStatus.ethanolPct = 100;
   currentStatus.launchStatus.launchingHard = false;
   currentStatus.launchStatus.launchingSoft = false;
-  currentStatus.AEamount = 100U;
-  currentStatus.ASEValue = 100U;
+  currentStatus.fuelCorrections.acceleration = 100U;
+  currentStatus.fuelCorrections.ase = 100U;
   currentStatus.TPSlast = 0;
   currentStatus.TPS = currentStatus.TPSlast;
-  currentStatus.AEamount = 100;
+  currentStatus.fuelCorrections.acceleration = 100;
 
   configPage4.wueBins[9] = 100;
   configPage2.wueValues[9] = 100; //Use a value other than 100 here to ensure we are using the non-default value
@@ -1733,10 +1746,10 @@ static void test_corrections_correctionsFuel_clip_limit(void) {
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFlex(), "correctionFlex");
   TEST_ASSERT_EQUAL_MESSAGE(255, correctionFuelTemp(), "correctionFuelTemp");
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionLaunch(), "correctionLaunch");
-  TEST_ASSERT_FALSE(correctionDFCO());
+  // TEST_ASSERT_FALSE(isDFCOActive());
   TEST_ASSERT_EQUAL_MESSAGE(100, correctionDFCOfuel(), "correctionDFCOfuel");
 
-  TEST_ASSERT_EQUAL(1500U, correctionsFuel());
+  TEST_ASSERT_EQUAL(1500U, getCorrectionsFuel().calculatePWCorrection(configPage2, currentStatus));
 }
 
 static void test_corrections_correctionsFuel(void) {

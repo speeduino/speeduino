@@ -20,7 +20,7 @@ static ComputePulseWidthsContext getBasicFullContext(void) {
   context.page2.reqFuel = 11;
   context.current.MAP = 94;
   context.current.VE = 130U;
-  context.current.corrections = 113U;
+  context.current.totalFuelCorrectionPct = 113U;
   return context;
 }
 
@@ -30,8 +30,8 @@ static void test_PW_batt_correction(void) {
   // Same as test_PW_No_Multiply, but we apply battery correction to open time
   auto context = getBasicFullContext();
 
-  context.current.batCorrection = 50U;
-  uint16_t expectedOffset = (context.page2.injOpen*(100-context.current.batCorrection));
+  context.current.fuelCorrections.battery = 50U;
+  uint16_t expectedOffset = (context.page2.injOpen*(100-context.current.fuelCorrections.battery));
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
@@ -44,9 +44,9 @@ static void test_PW_ae_adder(void) {
   // Same as test_PW_No_Multiply, but we add in acceleration enrichment
   context.current.isAcceleratingTPS = true;
   context.page2.aeApplyMode = AE_MODE_ADDER;
-  context.current.AEamount = 105U;
+  context.current.fuelCorrections.acceleration = 105U;
   uint16_t reqFuel = context.page2.reqFuel * 100U;
-  uint16_t expectedOffset = (reqFuel*(context.current.AEamount-100U))/100;
+  uint16_t expectedOffset = (reqFuel*(context.current.fuelCorrections.acceleration-100U))/100;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_UINT16_WITHIN(1U, NO_MULTIPLY_EXPECTED + expectedOffset, result.primary);
@@ -128,7 +128,7 @@ static void test_PW_Large_Correction()
   //This is the same as the test_PW_No_Multiply, but with correction changed to 600
   auto context = getBasicFullContext();
   
-  context.current.corrections = 600;
+  context.current.totalFuelCorrectionPct = 600;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(8586, result.primary);
@@ -140,7 +140,7 @@ static void test_PW_Very_Large_Correction()
   //This is the same as the test_PW_No_Multiply, but with correction changed to 1500
   auto context = getBasicFullContext();
   
-  context.current.corrections = 1500;
+  context.current.totalFuelCorrectionPct = 1500;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(21465, result.primary);
@@ -152,7 +152,7 @@ static void test_PW_Zero_Correction()
   //This is the same as the test_PW_No_Multiply, but with correction changed to 0
   auto context = getBasicFullContext();
   
-  context.current.corrections = 0;
+  context.current.totalFuelCorrectionPct = 0;
 
   pulseWidths result = computePulseWidths(context);
   TEST_ASSERT_EQUAL(0, result.primary);

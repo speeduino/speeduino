@@ -11,7 +11,7 @@ extern uint16_t calcPrimaryPulseWidth(uint16_t injOpenTime, const config2 &page2
 static uint16_t calcPrimaryPulseWidth(uint16_t REQ_FUEL, uint8_t VE, uint16_t MAP, uint16_t corrections, uint16_t injOpenTime, ComputePulseWidthsContext &context) {
   context.current.VE = VE;
   context.current.MAP = MAP;
-  context.current.corrections = corrections; 
+  context.current.totalFuelCorrectionPct = corrections; 
   context.page2.reqFuel = REQ_FUEL/100U;
   return calcPrimaryPulseWidth(injOpenTime, context.page2, context.page6, context.page10, context.current);
 }
@@ -123,7 +123,7 @@ static void test_calcPrimaryPulseWidth_MapModeBaro(void) {
 static ComputePulseWidthsContext getIncludeAeContext(void) {
   auto context = getBasicPwContext();
   context.page2.aeApplyMode = AE_MODE_ADDER;
-  context.current.AEamount = 105U;
+  context.current.fuelCorrections.acceleration = 105U;
   context.current.isAcceleratingTPS = true;
   return context;
 }
@@ -135,11 +135,11 @@ static void test_calcPrimaryPulseWidth_AeAdder(void) {
 
   // AE off in all cases below
   context = getIncludeAeContext();
-  context.current.AEamount = 100U;
+  context.current.fuelCorrections.acceleration = 100U;
   TEST_ASSERT_EQUAL(750, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   context = getIncludeAeContext();
-  context.current.AEamount = 50U;
+  context.current.fuelCorrections.acceleration = 50U;
   TEST_ASSERT_EQUAL(750, calcPrimaryPulseWidth(1000, 75, 1, 100, 0, context));
 
   context = getIncludeAeContext();

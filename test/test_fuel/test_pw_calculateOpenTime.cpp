@@ -11,10 +11,10 @@ static void test_calculateOpenTime_Correct(void) {
 
   page2.injOpen = 100;
 
-  current.batCorrection = 66; 
-  TEST_ASSERT_EQUAL(page2.injOpen * current.batCorrection, calculateOpenTime(page2, current));
-  current.batCorrection = 133; 
-  TEST_ASSERT_EQUAL(page2.injOpen * current.batCorrection, calculateOpenTime(page2, current));
+  current.fuelCorrections.battery = 66; 
+  TEST_ASSERT_EQUAL(page2.injOpen * current.fuelCorrections.battery, calculateOpenTime(page2, current));
+  current.fuelCorrections.battery = 133; 
+  TEST_ASSERT_EQUAL(page2.injOpen * current.fuelCorrections.battery, calculateOpenTime(page2, current));
 }
 
 void testCalculateOpenTime(void)
