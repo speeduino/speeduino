@@ -2,6 +2,7 @@
 #include "shared/perToothIgnition.h"
 #include "shared/rev_time_calcs.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -184,7 +185,7 @@ void triggerSecondary4(uint32_t curTime, const statuses &current, shared::state_
     {
       if (decoderState.secondaryToothCount > 0) { decoderState.secondaryToothCount++; }
 
-      if (decoderState.curGap2 >= ((3 * (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)) >> 1)) // Check if we have a bigger gap, that is a long tooth
+      if (decoderState.curGap2 >= ((decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)*ONE_AND_HALF)) // Check if we have a bigger gap, that is a long tooth
       {
         // Check long tooth polarity
         if ((decoderState.toothLastSecToothRisingTime - decoderState.toothLastSecToothTime) < (curTime - decoderState.toothLastSecToothRisingTime)) {
@@ -201,7 +202,7 @@ void triggerSecondary4(uint32_t curTime, const statuses &current, shared::state_
         decoderState.triggerSecFilterTime = 0; //This is used to prevent a condition where serious intermittent signals (Eg someone furiously plugging the sensor wire in and out) can leave the filter in an unrecoverable state
       }
       else if (decoderState.secondaryToothCount > 0) {
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
       } else {
         // No secondary tooth, do nothing
       }
@@ -258,7 +259,7 @@ void triggerSecondary68(uint32_t curTime, shared::state_t &decoderState, const c
       else if (decoderState.secondaryToothCount > 0) {
         //Normal tooth
         decoderState.secondaryToothCount++;
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER; //Set filter at 25% of the current speed
       } else {
         // No secondary tooth, do nothing
       }

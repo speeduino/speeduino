@@ -1,6 +1,7 @@
 #include "decoder_state.h"
 #include "atomic.h"
 #include "elapsed_time.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -11,13 +12,13 @@ void state_t::setFilter(unsigned long curGap, const config4 &page4)
     switch(page4.triggerFilter)
     {
         case TRIGGER_FILTER_LITE: 
-        triggerFilterTime = curGap >> 2;
+        triggerFilterTime = curGap * ONE_QUARTER;
         break;
         case TRIGGER_FILTER_MEDIUM: 
-        triggerFilterTime = curGap >> 1;
+        triggerFilterTime = curGap * ONE_HALF;
         break;
         case TRIGGER_FILTER_AGGRESSIVE: 
-        triggerFilterTime = (curGap * 3) >> 2;
+        triggerFilterTime = curGap * THREE_QUARTERS;
         break;
         case TRIGGER_FILTER_OFF: 
         default:

@@ -3,6 +3,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -72,7 +73,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
     if( (decoderState.toothLastToothTime > 0) && (decoderState.toothLastMinusOneToothTime > 0) ) // have we seen more than 1 tooth so we start processing
     {   
       //Begin the missing tooth detection
-      decoderState.targetGap = (3 * (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+      decoderState.targetGap = (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)*ONE_AND_HALF;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
 
       if ( decoderState.curGap > decoderState.targetGap) // we've found a gap
       {
@@ -228,14 +229,14 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
     {
       //Standard single tooth cam trigger
       decoderState.revolutionOne = true;
-      decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap        
+      decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_HALF; //Next secondary filter is half the current gap        
     }
     else if (page4.trigPatternSec == SEC_TRIGGER_5_3_2) // multi tooth cam 
     {
       if (decoderState.curGap2 < decoderState.targetGap2) // ie normal tooth sized gap, not a single or double gap
       {
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap        
-        decoderState.targetGap2 = (3 * (decoderState.curGap2)) >> 1;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)        
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_HALF; //Next secondary filter is half the current gap        
+        decoderState.targetGap2 = decoderState.curGap2*ONE_AND_HALF;  //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)        
       }
       else
       {  

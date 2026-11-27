@@ -1,6 +1,7 @@
 #include "36minus222.h"
 #include "shared/perToothIgnition.h"
 #include "shared/rev_time_calcs.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -14,7 +15,7 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   state.triggerActualTeeth = 30; //The number of physical teeth on the wheel. Doing this here saves us a calculation each time in the interrupt
   state.triggerFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60UL * 36UL)); //Trigger filter time is the shortest possible time (in uS) that there can be between crank teeth (ie at max RPM). Any pulses that occur faster than this time will be discarded as noise
   state.decoderFeatures.supportsPerToothIgnition = true;
-  state.checkSyncToothCount = page4.triggerTeeth >> 1; //50% of the total teeth.
+  state.checkSyncToothCount = page4.triggerTeeth*ONE_HALF; //50% of the total teeth.
   state.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * state.triggerToothAngle * 2U ); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return state;

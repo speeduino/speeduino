@@ -3,6 +3,7 @@
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -132,7 +133,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
   decoderState.curGap3 = decoderState.curGap2; // Minus one Gap
 
   } //Trigger filter
-  decoderState.triggerSecFilterTime = decoderState.curGap >> 1; //Set filter at 50 % speed of last primary gap
+  decoderState.triggerSecFilterTime = decoderState.curGap*ONE_HALF; //Set filter at 50 % speed of last primary gap
 }
 
 uint32_t getRevolutionTime(const statuses &current, shared::state_t &decoderState, const config4 &page4)

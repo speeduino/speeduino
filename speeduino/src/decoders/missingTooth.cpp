@@ -4,6 +4,7 @@
 #include "shared/crank_angle_calculator.h"
 #include "scheduler_ignition_controller.h"
 #include "unit_testing.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -30,7 +31,7 @@ shared::state_t __attribute__((optimize("Os"), noinline)) initialise(const confi
   {
     state.triggerSecFilterTime = (MICROS_PER_SEC / (MAX_RPM / 60U));
   }
-  state.checkSyncToothCount = (page4.triggerTeeth) >> 1; //50% of the total teeth.
+  state.checkSyncToothCount = page4.triggerTeeth*ONE_HALF; //50% of the total teeth.
   state.MAX_STALL_TIME = ((MICROS_PER_DEG_1_RPM/50U) * state.triggerToothAngle * (page4.triggerMissingTeeth + 1U)); //Minimum 50rpm. (3333uS is the time per degree at 50rpm)
 
   return state;
@@ -69,11 +70,11 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t &decode
         2. We have sync and are in the final 1/4 of the wheel (Missing tooth will/should never occur in the first 3/4)
         3. RPM is under 2000. This is to ensure that we don't interfere with strange timing when cranking or idling. Optimisation not really required at these speeds anyway
         */
-        if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (current.RPM < 2000) || (decoderState.toothCurrentCount >= (3 * decoderState.triggerActualTeeth >> 2)) )
+        if( (decoderState.decoderStatus.syncStatus!=SyncStatus::Full) || (current.RPM < 2000) || (decoderState.toothCurrentCount >= (decoderState.triggerActualTeeth*THREE_EIGTHS)) )
         {
           //Begin the missing tooth detection
           //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
-          if(page4.triggerMissingTeeth == 1) { decoderState.targetGap = (3 * (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)) >> 1; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
+          if(page4.triggerMissingTeeth == 1) { decoderState.targetGap = (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime)*ONE_AND_HALF; } //Multiply by 1.5 (Checks for a gap 1.5x greater than the last one) (Uses bitshift to multiply by 3 then divide by 2. Much faster than multiplying by 1.5)
           else { decoderState.targetGap = (decoderState.toothLastToothTime - decoderState.toothLastMinusOneToothTime) * page4.triggerMissingTeeth; } //Multiply by 2 (Checks for a gap 2x greater than the last one)
 
           if( (decoderState.toothLastToothTime == 0) || (decoderState.toothLastMinusOneToothTime == 0) ) { decoderState.curGap = 0; }
@@ -186,7 +187,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
     switch (page4.trigPatternSec)
     {
       case SEC_TRIGGER_4_1:
-        decoderState.targetGap2 = (3 * (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)) >> 1; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
+        decoderState.targetGap2 = (decoderState.toothLastSecToothTime - decoderState.toothLastMinusOneSecToothTime)*ONE_AND_HALF; //If the time between the current tooth and the last is greater than 1.5x the time between the last tooth and the tooth before that, we make the assertion that we must be at the first tooth after the gap
         decoderState.toothLastMinusOneSecToothTime = decoderState.toothLastSecToothTime;
         if ( (decoderState.curGap2 >= decoderState.targetGap2) || (decoderState.secondaryToothCount > 3) )
         {
@@ -197,7 +198,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
         }
         else
         {
-          decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
+          decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER; //Set filter at 25% of the current speed. Filter can only be recalc'd for the regular teeth, not the missing one.
           decoderState.secondaryToothCount++;
         }
         break;
@@ -205,7 +206,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       case SEC_TRIGGER_POLL:
         //Poll is effectively the same as SEC_TRIGGER_SINGLE, however we do not reset decoderState.revolutionOne
         //We do still need to record the angle for VVT though
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_HALF; //Next secondary filter is half the current gap
         triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
         break;
 
@@ -213,7 +214,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
       case SEC_TRIGGER_SINGLE:
         //Standard single tooth cam trigger
         decoderState.revolutionOne = true; //Sequential revolution reset
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 1; //Next secondary filter is half the current gap
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_HALF; //Next secondary filter is half the current gap
         decoderState.secondaryToothCount++;
         triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
         break;
@@ -228,7 +229,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
           triggerRecordVVT1Angle(current, decoderState, page4, page6, page10);
         }        
         //Next secondary filter is 25% the current gap, done here so we don't get a great big gap for the 1st tooth
-        decoderState.triggerSecFilterTime = decoderState.curGap2 >> 2; 
+        decoderState.triggerSecFilterTime = decoderState.curGap2*ONE_QUARTER; 
         break;
     }
     decoderState.toothLastSecToothTime = curTime;
@@ -249,7 +250,7 @@ void triggerTertiary(uint32_t curTime, statuses &current, shared::state_t &decod
 
   if ( decoderState.curGap3 >= decoderState.triggerThirdFilterTime )
   {
-    decoderState.triggerThirdFilterTime = decoderState.curGap3 >> 2; //Next third filter is 25% the current gap
+    decoderState.triggerThirdFilterTime = decoderState.curGap3*ONE_QUARTER; //Next third filter is 25% the current gap
     
     int16_t curAngle = normalize((int16_t)0, (int16_t)360, current.decoder.getCrankAngle());
 

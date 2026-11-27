@@ -1,6 +1,7 @@
 #include "drz400.h"
 #include "scheduledIO_ign.h"
 #include "shared/rev_time_calcs.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -46,7 +47,7 @@ void triggerSecondary(uint32_t curTime, statuses &current, shared::state_t &deco
     }
   }
 
-  decoderState.triggerSecFilterTime = (decoderState.toothOneTime - decoderState.toothOneMinusOneTime) >> 1; //Set filter at 50% of the current crank speed. 
+  decoderState.triggerSecFilterTime = (decoderState.toothOneTime - decoderState.toothOneMinusOneTime)*ONE_HALF; //Set filter at 50% of the current crank speed. 
 }
 
 }

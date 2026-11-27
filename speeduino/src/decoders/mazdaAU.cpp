@@ -2,6 +2,7 @@
 #include "scheduledIO_ign.h"
 #include "shared/rev_time_calcs.h"
 #include "shared/crank_angle_calculator.h"
+#include "src/utils/FractionalMath.h"
 
 namespace decoders {
 
@@ -60,7 +61,7 @@ void triggerPrimary(uint32_t curTime, statuses &current, shared::state_t & decod
 
       //Whilst this is an uneven tooth pattern, if the specific angle between the last 2 teeth is specified, 1st deriv prediction can be used
       if( (decoderState.toothCurrentCount == 1) || (decoderState.toothCurrentCount == 3) ) { decoderState.triggerToothAngle = 72; decoderState.triggerFilterTime = decoderState.curGap; } //Trigger filter is set to whatever time it took to do 72 degrees (Next trigger is 108 degrees away)
-      else { decoderState.triggerToothAngle = 108; decoderState.triggerFilterTime = rshift<3>((uint32_t)(decoderState.curGap * 3UL)); } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
+      else { decoderState.triggerToothAngle = 108; decoderState.triggerFilterTime =decoderState.curGap*THREE_EIGTHS; } //Trigger filter is set to (108*3)/8=40 degrees (Next trigger is 70 degrees away).
 
       decoderState.toothLastMinusOneToothTime = decoderState.toothLastToothTime;
       decoderState.toothLastToothTime = curTime;
@@ -86,7 +87,7 @@ void triggerSecondary(uint32_t curTime, shared::state_t & decoderState)
     else
     {
       decoderState.triggerFilterTime = 1500; //In case the engine has been running and then lost sync.
-      decoderState.targetGap = (decoderState.lastGap) >> 1; //The target gap is set at half the last tooth gap
+      decoderState.targetGap = decoderState.lastGap*ONE_HALF; //The target gap is set at half the last tooth gap
       if ( decoderState.curGap2 < decoderState.targetGap) //If the gap between this tooth and the last one is less than half of the previous gap, then we are very likely at the extra (3rd) tooth on the cam). This tooth is located at 421 crank degrees (aka 61 degrees) and therefore the last crank tooth seen was number 1 (At 350 degrees)
       {
         decoderState.secondaryToothCount = 2;
